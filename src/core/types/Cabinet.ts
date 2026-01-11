@@ -70,6 +70,22 @@ export interface EdgeMaterial {
 }
 
 // ============================================
+// PANEL POSITION OVERRIDES (Per-Panel Config)
+// ============================================
+
+export interface PanelPositionOverrides {
+  frontSetback: number;       // 0-50mm - distance from cabinet front
+  backSetback: number;        // 0-100mm - distance from cabinet back (LED space)
+  gapFromBelow: number | null; // null = auto-calculated, number = manual Y position offset
+}
+
+export const DEFAULT_POSITION_OVERRIDES: PanelPositionOverrides = {
+  frontSetback: 20,
+  backSetback: 28,
+  gapFromBelow: null,
+};
+
+// ============================================
 // PANEL TYPES
 // ============================================
 
@@ -99,25 +115,29 @@ export interface CabinetPanel {
   id: string;
   role: PanelRole;
   name: string;
-  
+
   // Finish dimensions (after edge banding)
   finishWidth: number;    // mm
   finishHeight: number;   // mm
-  
+
   // Material assignments
   coreMaterialId: string;
   faces: PanelFaces;
   edges: PanelEdges;
   grainDirection: GrainDirection;
-  
+
   // Computed values (calculated from materials)
   computed: PanelComputed;
-  
+
   // 3D positioning (Visual Layer only)
   position: [number, number, number];
   rotation: [number, number, number];
   visible: boolean;
   selected: boolean;
+
+  // Per-panel position overrides (for shelves/dividers)
+  positionOverrides?: PanelPositionOverrides;
+  useCustomPosition?: boolean;
 }
 
 // ============================================

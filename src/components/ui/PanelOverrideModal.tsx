@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+import { DEFAULT_POSITION_OVERRIDES } from '../../core/types/Cabinet';
 
 interface PanelConfigModalProps {
   panelId: string | null;
@@ -24,6 +25,8 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
   const edgeMaterials = useCabinetStore((s) => s.edgeMaterials);
   const updatePanelMaterial = useCabinetStore((s) => s.updatePanelMaterial);
   const updatePanelEdge = useCabinetStore((s) => s.updatePanelEdge);
+  const updatePanelPositionOverride = useCabinetStore((s) => s.updatePanelPositionOverride);
+  const resetPanelPosition = useCabinetStore((s) => s.resetPanelPosition);
   
   // Draggable state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -177,6 +180,101 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
             </div>
           </div>
           
+          {/* Position Overrides - Only for Shelf and Divider */}
+          {(panel.role === 'SHELF' || panel.role === 'DIVIDER') && (
+            <div className="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-emerald-300">Position Overrides</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-400">
+                    {panel.useCustomPosition ? 'Custom' : 'Auto'}
+                  </span>
+                  {panel.useCustomPosition && (
+                    <button
+                      onClick={() => resetPanelPosition(panelId)}
+                      className="px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-colors"
+                    >
+                      Reset to Auto
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Front Setback */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-zinc-400">Front Setback</span>
+                  <span className="text-xs text-emerald-400 font-mono">
+                    {panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback} mm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback}
+                  onChange={(e) => updatePanelPositionOverride(panelId, 'frontSetback', Number(e.target.value))}
+                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+                <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                  <span>0</span>
+                  <span>100 mm</span>
+                </div>
+              </div>
+
+              {/* Back Setback (LED) */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-zinc-400">Back Setback (LED)</span>
+                  <span className="text-xs text-emerald-400 font-mono">
+                    {panel.positionOverrides?.backSetback ?? DEFAULT_POSITION_OVERRIDES.backSetback} mm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={panel.positionOverrides?.backSetback ?? DEFAULT_POSITION_OVERRIDES.backSetback}
+                  onChange={(e) => updatePanelPositionOverride(panelId, 'backSetback', Number(e.target.value))}
+                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+                <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                  <span>0</span>
+                  <span>100 mm</span>
+                </div>
+              </div>
+
+              {/* Gap Height - Only for Shelf */}
+              {panel.role === 'SHELF' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-zinc-400">Gap Height (from bottom)</span>
+                    <span className="text-xs text-emerald-400 font-mono">
+                      {panel.positionOverrides?.gapFromBelow !== null && panel.positionOverrides?.gapFromBelow !== undefined
+                        ? `${panel.positionOverrides.gapFromBelow} mm`
+                        : 'Auto'}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max={cabinet ? cabinet.dimensions.height - 100 : 600}
+                    step="5"
+                    value={panel.positionOverrides?.gapFromBelow ?? Math.round((cabinet?.dimensions.height || 720) / 3)}
+                    onChange={(e) => updatePanelPositionOverride(panelId, 'gapFromBelow', Number(e.target.value))}
+                    className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                    <span>0</span>
+                    <span>{cabinet ? cabinet.dimensions.height - 100 : 600} mm</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Edge Banding */}
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-3">Edge Banding</label>
@@ -185,11 +283,11 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                 const edgeId = panel.edges?.[side];
                 const sideLabels = {
                   top: 'Front Edge',
-                  bottom: 'Back Edge', 
+                  bottom: 'Back Edge',
                   left: 'Left Edge',
                   right: 'Right Edge'
                 };
-                
+
                 return (
                   <div key={side} className="flex items-center gap-2">
                     <span className="text-xs text-zinc-400 w-20">{sideLabels[side]}:</span>

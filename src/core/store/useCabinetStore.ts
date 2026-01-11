@@ -19,9 +19,11 @@ import {
   CabinetType,
   JointType,
   PanelRole,
+  PanelPositionOverrides,
   DEFAULT_DIMENSIONS,
   DEFAULT_STRUCTURE,
   DEFAULT_MANUFACTURING,
+  DEFAULT_POSITION_OVERRIDES,
   calculateRealThickness,
   calculateCutSize,
   createId,
@@ -1264,7 +1266,14 @@ function generatePanels(
   structure: CabinetStructure,
   defaultCoreId: string,
   defaultSurfaceId: string,
-  defaultEdgeId: string
+  defaultEdgeId: string,
+  existingOverrides?: Map<string, {
+    role: PanelRole;
+    index: number;
+    overrides?: PanelPositionOverrides;
+    useCustomPosition?: boolean;
+    xPosition?: number; // Custom X position for dividers
+  }>
 ): CabinetPanel[] {
   const panels: CabinetPanel[] = [];
   const { width: W, height: H, depth: D, toeKickHeight: Leg } = dimensions;
@@ -1322,10 +1331,12 @@ function generatePanels(
     left: top ? defaultEdgeId : null,     // "left" = top edge
     right: bottom ? defaultEdgeId : null, // "right" = bottom edge
   });
-  
-  // Cabinet body height (excluding toe kick)
-  const bodyH = H - Leg;
-  
+
+  // Cabinet body height - Toe Kick is ONLY a floor offset, NOT a height reduction
+  // H = full cabinet body height, Leg = vertical offset from floor
+  // Panel dimensions use H, panel positions offset by Leg
+  const bodyH = H;
+
   // ========== LEFT SIDE & RIGHT SIDE ==========
   // Joint type determines construction:
   // - OVERLAY: Top/Bottom sit ON TOP of sides → Side is SHORTER
@@ -1506,49 +1517,147 @@ function generatePanels(
   }
   
   // ========== SHELVES ==========
-  // Use depthInternal calculated from Back Panel Logic
-  // Shelf Depth = depthInternal - FrontSetback - ET(front edge)
-  const shelfW = W - (2 * T) - MANUFACTURING_PARAMS.clearance;  // Side clearance for adjustability
-  const shelfD = depthInternal - MANUFACTURING_PARAMS.shelfSetbackFront - ET;
+  // When dividers exist, shelves are split into segments (Shelf 1a, 1b, 1c, etc.)
+  // Each segment can be configured independently
   const usableHeight = bodyH - (2 * T);
   const shelfSpacing = usableHeight / (structure.shelfCount + 1);
-  
-  for (let i = 0; i < structure.shelfCount; i++) {
-    const shelfY = Leg + T + shelfSpacing * (i + 1);
-    // Shelf Z position: centered in usable depth area
-    const shelfZ = (D/2 - MANUFACTURING_PARAMS.shelfSetbackFront - ET/2) - (shelfD/2);
-    
-    panels.push({
-      id: createId(),
-      role: 'SHELF',
-      name: `Shelf ${i + 1}`,
-      finishWidth: shelfW,
-      finishHeight: shelfD,
-      coreMaterialId: defaultCoreId,
-      faces: { faceA: defaultSurfaceId, faceB: null },
-      edges: makeEdges(true, false, false, false), // Only front edge
-      grainDirection: 'HORIZONTAL',
-      computed: computePanel(shelfW, shelfD, ET, 0, 0, 0),
-      position: [0, shelfY, shelfZ],
-      rotation: [0, 0, 0],
-      visible: true,
-      selected: false,
-    });
+
+  // Calculate shelf segments based on dividers
+  const segmentCount = structure.dividerCount + 1; // Number of horizontal segments
+  const dividerThickness = T; // Divider panel thickness
+  const internalWidth = W - (2 * T) - MANUFACTURING_PARAMS.clearance;
+
+  // Calculate segment positions (X coordinates of dividers)
+  // IMPORTANT: Use actual custom positions from existingOverrides if available
+  // This ensures shelves resize correctly when dividers are moved
+  const dividerPositions: number[] = [];
+  if (structure.dividerCount > 0) {
+    const dividerSpacingX = (W - 2*T) / (structure.dividerCount + 1);
+    for (let d = 0; d < structure.dividerCount; d++) {
+      // Check if this divider has a custom X position
+      const existingDividerData = existingOverrides?.get(`DIVIDER-${d}`);
+      const hasCustomPosition = existingDividerData?.useCustomPosition && existingDividerData?.xPosition !== undefined;
+
+      if (hasCustomPosition && existingDividerData.xPosition !== undefined) {
+        // Use the actual custom X position
+        dividerPositions.push(existingDividerData.xPosition);
+      } else {
+        // Use auto-calculated position
+        dividerPositions.push(-W/2 + T + dividerSpacingX * (d + 1));
+      }
+    }
   }
-  
+
+  // Generate segment labels (a, b, c, d, ...)
+  const getSegmentLabel = (segIndex: number): string => {
+    return String.fromCharCode(97 + segIndex); // 97 = 'a'
+  };
+
+  for (let i = 0; i < structure.shelfCount; i++) {
+    // For each shelf row, create segments based on dividers
+    for (let seg = 0; seg < segmentCount; seg++) {
+      // Unique key for this shelf segment
+      const segmentKey = `SHELF-${i}-${seg}`;
+
+      // Get existing overrides for this shelf segment
+      const existingData = existingOverrides?.get(segmentKey);
+      const overrides = existingData?.overrides;
+      const useCustomPosition = existingData?.useCustomPosition || false;
+
+      // Use custom setbacks if defined, otherwise use defaults
+      const frontSetback = overrides?.frontSetback ?? MANUFACTURING_PARAMS.shelfSetbackFront;
+      const backSetback = overrides?.backSetback ?? MANUFACTURING_PARAMS.shelfSetbackBack;
+
+      // Calculate shelf depth based on setbacks (round to 1 decimal)
+      const shelfD = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+
+      // Calculate segment width
+      let segmentWidth: number;
+      let segmentX: number;
+
+      if (segmentCount === 1) {
+        // No dividers - full width shelf
+        segmentWidth = Math.round(internalWidth * 10) / 10; // Round to 1 decimal
+        segmentX = 0;
+      } else {
+        // Calculate segment boundaries
+        const leftBoundary = seg === 0
+          ? -W/2 + T + MANUFACTURING_PARAMS.clearance/2
+          : dividerPositions[seg - 1] + dividerThickness/2;
+
+        const rightBoundary = seg === segmentCount - 1
+          ? W/2 - T - MANUFACTURING_PARAMS.clearance/2
+          : dividerPositions[seg] - dividerThickness/2;
+
+        segmentWidth = Math.round((rightBoundary - leftBoundary) * 10) / 10; // Round to 1 decimal
+        segmentX = (leftBoundary + rightBoundary) / 2;
+      }
+
+      // Calculate Y position
+      let shelfY: number;
+      if (useCustomPosition && overrides?.gapFromBelow !== null && overrides?.gapFromBelow !== undefined) {
+        shelfY = Leg + T + overrides.gapFromBelow + T/2;
+      } else {
+        shelfY = Leg + T + shelfSpacing * (i + 1);
+      }
+
+      // Shelf Z position: centered based on front setback
+      const shelfZ = (D/2 - frontSetback - ET/2) - (shelfD/2);
+
+      // Generate name: "Shelf 1" if no dividers, "Shelf 1a", "Shelf 1b" if dividers exist
+      const shelfName = segmentCount === 1
+        ? `Shelf ${i + 1}`
+        : `Shelf ${i + 1}${getSegmentLabel(seg)}`;
+
+      panels.push({
+        id: createId(),
+        role: 'SHELF',
+        name: shelfName,
+        finishWidth: segmentWidth,
+        finishHeight: shelfD,
+        coreMaterialId: defaultCoreId,
+        faces: { faceA: defaultSurfaceId, faceB: null },
+        edges: makeEdges(true, false, false, false), // Only front edge
+        grainDirection: 'HORIZONTAL',
+        computed: computePanel(segmentWidth, shelfD, ET, 0, 0, 0),
+        position: [segmentX, shelfY, shelfZ],
+        rotation: [0, 0, 0],
+        visible: true,
+        selected: false,
+        positionOverrides: overrides,
+        useCustomPosition: useCustomPosition,
+      });
+    }
+  }
+
   // ========== DIVIDERS ==========
   // Divider Depth = depthInternal (no front setback for dividers)
   // Only front edge
   if (structure.dividerCount > 0) {
     const dividerSpacing = (W - 2*T) / (structure.dividerCount + 1);
     const dividerH = usableHeight;
-    const dividerD = depthInternal - ET;  // Full internal depth minus front edge
-    
+
     for (let i = 0; i < structure.dividerCount; i++) {
-      const dividerX = -W/2 + T + dividerSpacing * (i + 1);
+      // Get existing overrides for this divider
+      const existingData = existingOverrides?.get(`DIVIDER-${i}`);
+      const overrides = existingData?.overrides;
+      const useCustomPosition = existingData?.useCustomPosition || false;
+
+      // Use custom setbacks if defined, otherwise use defaults
+      const frontSetback = overrides?.frontSetback ?? 0; // Dividers default to no front setback
+      const backSetback = overrides?.backSetback ?? 0;
+
+      // Calculate divider depth based on setbacks
+      const dividerD = depthInternal - frontSetback - backSetback - ET;
+
+      // Use custom X position if defined, otherwise calculate auto position
+      const autoX = -W/2 + T + dividerSpacing * (i + 1);
+      const dividerX = (useCustomPosition && existingData?.xPosition !== undefined)
+        ? existingData.xPosition
+        : autoX;
       // Divider Z: starts from front with edge, extends back
-      const dividerZ = (D/2 - ET/2) - (dividerD/2);
-      
+      const dividerZ = (D/2 - frontSetback - ET/2) - (dividerD/2);
+
       panels.push({
         id: createId(),
         role: 'DIVIDER',
@@ -1564,10 +1673,12 @@ function generatePanels(
         rotation: [0, 0, 0],
         visible: true,
         selected: false,
+        positionOverrides: overrides,
+        useCustomPosition: useCustomPosition,
       });
     }
   }
-  
+
   return panels;
 }
 
@@ -1637,7 +1748,19 @@ interface CabinetActions {
   // Per-panel material actions
   updatePanelMaterial: (panelId: string, target: 'core' | 'faceA' | 'faceB', materialId: string) => void;
   updatePanelEdge: (panelId: string, side: 'top' | 'bottom' | 'left' | 'right', edgeId: string | null) => void;
-  
+
+  // Per-panel position actions
+  updatePanelPositionOverride: (panelId: string, field: keyof PanelPositionOverrides, value: number | null) => void;
+  resetPanelPosition: (panelId: string) => void;
+
+  // Divider position action
+  moveDivider: (dividerIndex: number, newXPosition: number) => void;
+  movePartialDividerById: (panelId: string, newXPosition: number) => void;
+
+  // Compartment actions - add shelf/divider within a specific compartment
+  addShelfInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerY?: number }) => void;
+  addDividerInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerX?: number }) => void;
+
   // Recalculation
   recalculate: () => void;
 }
@@ -1907,58 +2030,512 @@ export const useCabinetStore = create<CabinetStore>()(
     updatePanelEdge: (panelId, side, edgeId) => {
       set((state) => {
         if (!state.cabinet) return;
-        
+
         const panel = state.cabinet.panels.find(p => p.id === panelId);
         if (!panel) return;
-        
+
         if (!panel.edges) {
           panel.edges = { top: null, bottom: null, left: null, right: null };
         }
-        
+
         panel.edges[side] = edgeId;
-        
+
         // Recalculate cut size based on new edge thicknesses
         const getEdgeThickness = (id: string | null) => {
           if (!id) return 0;
           const edge = state.edgeMaterials[id as keyof typeof state.edgeMaterials];
           return edge?.thickness || 0;
         };
-        
+
         const edgeT = getEdgeThickness(panel.edges.top);
         const edgeB = getEdgeThickness(panel.edges.bottom);
         const edgeL = getEdgeThickness(panel.edges.left);
         const edgeR = getEdgeThickness(panel.edges.right);
-        
+
         // Cut size = Finish - edges + pre-milling
         const preMilling = 0.5;
         panel.computed.cutWidth = panel.finishWidth - edgeL - edgeR + (2 * preMilling);
         panel.computed.cutHeight = panel.finishHeight - edgeT - edgeB + (2 * preMilling);
-        
+
         // Recalculate edge length
-        panel.computed.edgeLength = 
+        panel.computed.edgeLength =
           (edgeT > 0 ? panel.finishWidth : 0) +
           (edgeB > 0 ? panel.finishWidth : 0) +
           (edgeL > 0 ? panel.finishHeight : 0) +
           (edgeR > 0 ? panel.finishHeight : 0);
-        
+
         // Recalculate cabinet totals
         state.cabinet.computed = calculateTotals(state.cabinet.panels);
       });
     },
-    
+
+    // ========== PER-PANEL POSITION ACTIONS ==========
+    updatePanelPositionOverride: (panelId, field, value) => {
+      set((state) => {
+        if (!state.cabinet) return;
+
+        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        if (!panel) return;
+
+        // Initialize position overrides if not exists
+        if (!panel.positionOverrides) {
+          panel.positionOverrides = { ...DEFAULT_POSITION_OVERRIDES };
+        }
+
+        panel.positionOverrides[field] = value as number;
+        panel.useCustomPosition = true;
+        state.cabinet.updatedAt = Date.now();
+      });
+      // Recalculate to apply new position
+      get().recalculate();
+    },
+
+    resetPanelPosition: (panelId) => {
+      set((state) => {
+        if (!state.cabinet) return;
+
+        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        if (!panel) return;
+
+        panel.positionOverrides = undefined;
+        panel.useCustomPosition = false;
+        state.cabinet.updatedAt = Date.now();
+      });
+      get().recalculate();
+    },
+
+    // ========== DIVIDER POSITION ==========
+    moveDivider: (dividerIndex, newXPosition) => {
+      set((state) => {
+        if (!state.cabinet) return;
+
+        // Find all dividers sorted by X position
+        const dividers = state.cabinet.panels
+          .filter(p => p.role === 'DIVIDER')
+          .sort((a, b) => a.position[0] - b.position[0]);
+
+        if (dividerIndex < 0 || dividerIndex >= dividers.length) return;
+
+        const divider = dividers[dividerIndex];
+        const T = 18; // Panel thickness
+        const W = state.cabinet.dimensions.width;
+
+        // Clamp new position within cabinet bounds
+        const minX = -W/2 + T + 50; // At least 50mm from left side
+        const maxX = W/2 - T - 50;  // At least 50mm from right side
+        const clampedX = Math.max(minX, Math.min(maxX, newXPosition));
+
+        // Update divider position
+        divider.position = [clampedX, divider.position[1], divider.position[2]];
+        divider.useCustomPosition = true;
+
+        // Store the X position override
+        if (!divider.positionOverrides) {
+          divider.positionOverrides = {
+            frontSetback: 0,
+            backSetback: 0,
+            gapFromBelow: null,
+          };
+        }
+
+        state.cabinet.updatedAt = Date.now();
+      });
+
+      // Recalculate to update shelves that depend on divider positions
+      get().recalculate();
+    },
+
+    // Move a partial divider by its panel ID (for partial dividers within compartments)
+    movePartialDividerById: (panelId, newXPosition) => {
+      set((state) => {
+        if (!state.cabinet) return;
+
+        // Find the panel by ID
+        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        if (!panel || panel.role !== 'DIVIDER') return;
+
+        const T = 18; // Panel thickness
+        const W = state.cabinet.dimensions.width;
+        const H = state.cabinet.dimensions.height;
+
+        // Get full-height dividers for column boundaries
+        const usableHeight = H - 2 * T;
+        const fullHeightDividers = state.cabinet.panels
+          .filter(p => p.role === 'DIVIDER' && p.finishHeight >= usableHeight - 10)
+          .sort((a, b) => a.position[0] - b.position[0]);
+        const dividerXPositions = fullHeightDividers.map(p => p.position[0]);
+
+        // Find which column this partial divider is in (based on its current position)
+        const currentX = panel.position[0];
+        let colIndex = 0;
+        for (let i = 0; i < dividerXPositions.length; i++) {
+          if (currentX > dividerXPositions[i]) {
+            colIndex = i + 1;
+          }
+        }
+
+        // Get column boundaries
+        const columnCount = dividerXPositions.length + 1;
+        const leftBound = colIndex === 0 ? -W/2 + T : dividerXPositions[colIndex - 1] + T/2;
+        const rightBound = colIndex === columnCount - 1 ? W/2 - T : dividerXPositions[colIndex] - T/2;
+
+        // Clamp new position within column bounds (with at least 50mm from each side)
+        const minX = leftBound + 50;
+        const maxX = rightBound - 50;
+        const clampedX = Math.max(minX, Math.min(maxX, newXPosition));
+
+        // Update panel position
+        panel.position = [clampedX, panel.position[1], panel.position[2]];
+        panel.useCustomPosition = true;
+
+        // Store the X position in a way we can reference later
+        if (!panel.positionOverrides) {
+          panel.positionOverrides = {
+            frontSetback: 0,
+            backSetback: 0,
+            gapFromBelow: null,
+          };
+        }
+
+        state.cabinet.updatedAt = Date.now();
+      });
+
+      // Note: Do NOT call recalculate() here because partial dividers
+      // are not tracked in structure.dividerCount and would be lost during regeneration.
+      // Just update the position directly in the panels array.
+    },
+
+    // ========== COMPARTMENT ACTIONS ==========
+    // Add a shelf within a specific compartment (splits the compartment horizontally)
+    // Creates a PARTIAL shelf only within the compartment bounds (column width)
+    // Now accepts optional bounds parameter for sub-compartment support
+    addShelfInCompartment: (col, row, bounds) => {
+      const state = get();
+      if (!state.cabinet) return;
+
+      const { width: W, height: H, depth: D, toeKickHeight: Leg } = state.cabinet.dimensions;
+      const { panels } = state.cabinet;
+      const T = 18;
+      const bodyH = H;
+      const ET = 1; // Edge thickness
+
+      // Get divider X positions to determine column boundaries
+      // Only count FULL-HEIGHT dividers as column boundaries (exclude partial dividers)
+      const usableHeight = H - 2 * T; // Full height minus top and bottom panels
+      const dividerPanels = panels
+        .filter(p => p.role === 'DIVIDER')
+        .filter(p => p.finishHeight >= usableHeight - 10) // Only full-height dividers
+        .sort((a, b) => a.position[0] - b.position[0]);
+      const dividerXPositions = dividerPanels.map(p => p.position[0]);
+      const columnCount = dividerXPositions.length + 1;
+
+      // Get column boundaries (fallback if bounds not provided)
+      const colLeftX = col === 0 ? -W/2 + T : dividerXPositions[col - 1] + T/2;
+      const colRightX = col === columnCount - 1 ? W/2 - T : dividerXPositions[col] - T/2;
+      const colCenterX = (colLeftX + colRightX) / 2;
+      const columnWidth = colRightX - colLeftX;
+
+      // Get shelves in this column to determine compartment Y bounds (fallback)
+      // Only count FULL-WIDTH shelves as row boundaries (exclude partial shelves)
+      const shelvesInCol = panels
+        .filter(p => p.role === 'SHELF')
+        .filter(p => {
+          const shelfX = p.position[0];
+          const shelfHalfWidth = p.finishWidth / 2;
+          const overlapsColumn = shelfX - shelfHalfWidth <= colCenterX && shelfX + shelfHalfWidth >= colCenterX;
+          // Check if shelf spans most of the column width (at least 80%)
+          const isFullWidth = p.finishWidth >= columnWidth * 0.8;
+          return overlapsColumn && isFullWidth;
+        })
+        .sort((a, b) => a.position[1] - b.position[1]);
+
+      const shelfYs = [...new Set(shelvesInCol.map(s => s.position[1]))].sort((a, b) => a - b);
+      const rowCount = shelfYs.length + 1;
+
+      // Use provided bounds or calculate from col/row (fallback for backward compatibility)
+      const leftX = bounds?.leftX ?? colLeftX;
+      const rightX = bounds?.rightX ?? colRightX;
+      const subCompartmentWidth = rightX - leftX;
+      const bottomY = bounds?.bottomY ?? (row === 0 ? Leg + T : shelfYs[row - 1] + T/2);
+      const topY = bounds?.topY ?? (row === rowCount - 1 ? Leg + bodyH - T : shelfYs[row] - T/2);
+
+      // New shelf position: use provided centerY or calculate from bounds
+      const newShelfY = bounds?.centerY ?? (bottomY + topY) / 2;
+      const newShelfX = (leftX + rightX) / 2;
+
+      // Calculate shelf dimensions
+      const frontSetback = 20; // Default front setback
+      const backSetback = 28;  // Default back setback
+      const depthInternal = D - T; // Internal depth
+      const shelfDepth = depthInternal - frontSetback - backSetback - ET;
+      const shelfWidth = subCompartmentWidth - 2; // Small clearance, use sub-compartment width
+
+      // Shelf Z position
+      const shelfZ = (D/2 - frontSetback - ET/2) - (shelfDepth/2);
+
+      // Get materials
+      const defaultCoreId = state.cabinet.materials.defaultCore;
+      const defaultSurfaceId = state.cabinet.materials.defaultSurface;
+      const defaultEdgeId = state.cabinet.materials.defaultEdge;
+
+      // Get edge thickness from materials
+      const edgeMat = state.edgeMaterials[defaultEdgeId as keyof typeof state.edgeMaterials];
+      const edgeThickness = edgeMat?.thickness || 1;
+
+      // Compute panel values
+      const computePanel = (finishW: number, finishH: number, edgeTop: number) => {
+        const cutW = finishW - edgeTop;
+        const cutH = finishH;
+        const surfaceArea = (finishW * finishH) / 1000000;
+        const edgeLength = edgeTop > 0 ? finishW / 1000 : 0;
+        return {
+          realThickness: T,
+          cutWidth: cutW,
+          cutHeight: cutH,
+          surfaceArea,
+          edgeLength,
+          cost: 0,
+          co2: 0,
+        };
+      };
+
+      // Create partial shelf panel directly
+      set((state) => {
+        if (!state.cabinet) return;
+
+        // Count existing shelves to generate name
+        const existingShelfCount = state.cabinet.panels.filter(p => p.role === 'SHELF').length;
+
+        const newShelf: CabinetPanel = {
+          id: createId(),
+          role: 'SHELF',
+          name: `Shelf ${existingShelfCount + 1}`,
+          finishWidth: shelfWidth,
+          finishHeight: shelfDepth, // For shelf, finishHeight is depth
+          coreMaterialId: defaultCoreId,
+          faces: { faceA: defaultSurfaceId, faceB: null },
+          edges: { top: defaultEdgeId, bottom: null, left: null, right: null }, // Only front edge
+          grainDirection: 'HORIZONTAL',
+          computed: computePanel(shelfWidth, shelfDepth, edgeThickness),
+          position: [newShelfX, newShelfY, shelfZ],
+          rotation: [0, 0, 0],
+          visible: true,
+          selected: false,
+          useCustomPosition: true, // Mark as custom since it's a partial shelf
+          positionOverrides: {
+            frontSetback: frontSetback,
+            backSetback: backSetback,
+            gapFromBelow: newShelfY - Leg - T - T/2, // Store Y position
+          },
+        };
+
+        state.cabinet.panels.push(newShelf);
+        state.cabinet.updatedAt = Date.now();
+
+        // Recalculate totals
+        state.cabinet.computed = {
+          totalCost: state.cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
+          totalCO2: state.cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
+          panelCount: state.cabinet.panels.length,
+          totalSurfaceArea: state.cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
+          totalEdgeLength: state.cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+        };
+      });
+    },
+
+    // Add a divider within a specific compartment (splits the compartment horizontally)
+    // Creates a PARTIAL divider only within the compartment bounds, not full height
+    // Now accepts optional bounds parameter for sub-compartment support
+    addDividerInCompartment: (col, row, bounds) => {
+      const state = get();
+      if (!state.cabinet) return;
+
+      const { width: W, height: H, depth: D, toeKickHeight: Leg } = state.cabinet.dimensions;
+      const { panels } = state.cabinet;
+      const T = 18;
+      const bodyH = H;
+      const ET = 1; // Edge thickness
+
+      // Get divider X positions to determine column boundaries
+      // Only count FULL-HEIGHT dividers as column boundaries (exclude partial dividers)
+      const usableHeight = H - 2 * T; // Full height minus top and bottom panels
+      const dividerPanels = panels
+        .filter(p => p.role === 'DIVIDER')
+        .filter(p => p.finishHeight >= usableHeight - 10) // Only full-height dividers
+        .sort((a, b) => a.position[0] - b.position[0]);
+      const dividerXPositions = dividerPanels.map(p => p.position[0]);
+      const columnCount = dividerXPositions.length + 1;
+
+      // Get column boundaries (fallback if bounds not provided)
+      const colLeftX = col === 0 ? -W/2 + T : dividerXPositions[col - 1] + T/2;
+      const colRightX = col === columnCount - 1 ? W/2 - T : dividerXPositions[col] - T/2;
+      const colCenterX = (colLeftX + colRightX) / 2;
+      const columnWidth = colRightX - colLeftX;
+
+      // Get shelves in this column to determine compartment Y bounds (fallback)
+      // Only count FULL-WIDTH shelves as row boundaries (exclude partial shelves)
+      const shelvesInCol = panels
+        .filter(p => p.role === 'SHELF')
+        .filter(p => {
+          const shelfX = p.position[0];
+          const shelfHalfWidth = p.finishWidth / 2;
+          const overlapsColumn = shelfX - shelfHalfWidth <= colCenterX && shelfX + shelfHalfWidth >= colCenterX;
+          // Check if shelf spans most of the column width (at least 80%)
+          const isFullWidth = p.finishWidth >= columnWidth * 0.8;
+          return overlapsColumn && isFullWidth;
+        })
+        .sort((a, b) => a.position[1] - b.position[1]);
+
+      const shelfYs = [...new Set(shelvesInCol.map(s => s.position[1]))].sort((a, b) => a - b);
+      const rowCount = shelfYs.length + 1;
+
+      // Use provided bounds or calculate from col/row (fallback for backward compatibility)
+      const leftX = bounds?.leftX ?? colLeftX;
+      const rightX = bounds?.rightX ?? colRightX;
+      const bottomY = bounds?.bottomY ?? (row === 0 ? Leg + T : shelfYs[row - 1] + T/2);
+      const topY = bounds?.topY ?? (row === rowCount - 1 ? Leg + bodyH - T : shelfYs[row] - T/2);
+      const compartmentHeight = topY - bottomY;
+
+      // New partial divider position: use provided centerX or calculate from bounds
+      const newDividerX = bounds?.centerX ?? (leftX + rightX) / 2;
+      const newDividerY = (bottomY + topY) / 2;
+
+      // Calculate divider dimensions
+      const depthInternal = D - T; // Internal depth
+      const dividerD = depthInternal - ET; // Divider depth (no front setback for dividers)
+      const dividerH = compartmentHeight; // Only as tall as the compartment
+
+      // Divider Z position
+      const dividerZ = (D/2 - ET/2) - (dividerD/2);
+
+      // Get materials
+      const defaultCoreId = state.cabinet.materials.defaultCore;
+      const defaultSurfaceId = state.cabinet.materials.defaultSurface;
+      const defaultEdgeId = state.cabinet.materials.defaultEdge;
+
+      // Get edge thickness from materials
+      const edgeMat = state.edgeMaterials[defaultEdgeId as keyof typeof state.edgeMaterials];
+      const edgeThickness = edgeMat?.thickness || 1;
+
+      // Compute panel values
+      const computePanel = (finishW: number, finishH: number, edgeTop: number) => {
+        const cutW = finishW - edgeTop;
+        const cutH = finishH;
+        const surfaceArea = (finishW * finishH) / 1000000;
+        const edgeLength = edgeTop > 0 ? finishW / 1000 : 0;
+        return {
+          realThickness: T,
+          cutWidth: cutW,
+          cutHeight: cutH,
+          surfaceArea,
+          edgeLength,
+          cost: 0,
+          co2: 0,
+        };
+      };
+
+      // Create partial divider panel directly
+      set((state) => {
+        if (!state.cabinet) return;
+
+        // Count existing dividers to generate name
+        const existingDividerCount = state.cabinet.panels.filter(p => p.role === 'DIVIDER').length;
+
+        const newDivider: CabinetPanel = {
+          id: createId(),
+          role: 'DIVIDER',
+          name: `Divider ${existingDividerCount + 1}`,
+          finishWidth: dividerD,
+          finishHeight: dividerH,
+          coreMaterialId: defaultCoreId,
+          faces: { faceA: defaultSurfaceId, faceB: null },
+          edges: { top: defaultEdgeId, bottom: null, left: null, right: null },
+          grainDirection: 'VERTICAL',
+          computed: computePanel(dividerD, dividerH, edgeThickness),
+          position: [newDividerX, newDividerY, dividerZ],
+          rotation: [0, 0, 0],
+          visible: true,
+          selected: false,
+          useCustomPosition: true, // Mark as custom since it's a partial divider
+          positionOverrides: {
+            frontSetback: 0,
+            backSetback: 0,
+            gapFromBelow: bottomY - Leg - T, // Store bottom boundary
+          },
+        };
+
+        state.cabinet.panels.push(newDivider);
+        state.cabinet.updatedAt = Date.now();
+
+        // Recalculate totals
+        state.cabinet.computed = {
+          totalCost: state.cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
+          totalCO2: state.cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
+          panelCount: state.cabinet.panels.length,
+          totalSurfaceArea: state.cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
+          totalEdgeLength: state.cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+        };
+      });
+    },
+
     // ========== RECALCULATION ==========
     recalculate: () => {
       set((state) => {
         if (!state.cabinet) return;
-        
+
+        // Preserve existing panel overrides before regenerating
+        const existingOverrides = new Map<string, {
+          role: PanelRole;
+          index: number;
+          overrides?: PanelPositionOverrides;
+          useCustomPosition?: boolean;
+          xPosition?: number; // Custom X position for dividers
+        }>();
+
+        // Index shelves and dividers by their name pattern
+        // Shelf names: "Shelf 1", "Shelf 1a", "Shelf 1b", etc.
+        // Divider names: "Divider 1", "Divider 2", etc.
+        let dividerIndex = 0;
+        state.cabinet.panels.forEach(panel => {
+          if (panel.role === 'SHELF') {
+            // Parse shelf name to get row and segment
+            // "Shelf 1" -> row=0, seg=0
+            // "Shelf 1a" -> row=0, seg=0
+            // "Shelf 2b" -> row=1, seg=1
+            const match = panel.name.match(/Shelf (\d+)([a-z])?/);
+            if (match) {
+              const row = parseInt(match[1], 10) - 1; // Convert to 0-based
+              const segLetter = match[2];
+              const seg = segLetter ? segLetter.charCodeAt(0) - 97 : 0; // 'a'=0, 'b'=1, etc.
+              const key = `SHELF-${row}-${seg}`;
+              existingOverrides.set(key, {
+                role: panel.role,
+                index: row,
+                overrides: panel.positionOverrides,
+                useCustomPosition: panel.useCustomPosition,
+              });
+            }
+          } else if (panel.role === 'DIVIDER') {
+            existingOverrides.set(`DIVIDER-${dividerIndex}`, {
+              role: panel.role,
+              index: dividerIndex,
+              overrides: panel.positionOverrides,
+              useCustomPosition: panel.useCustomPosition,
+              xPosition: panel.position[0], // Preserve X position for dividers
+            });
+            dividerIndex++;
+          }
+        });
+
         const newPanels = generatePanels(
           state.cabinet.dimensions,
           state.cabinet.structure,
           state.cabinet.materials.defaultCore,
           state.cabinet.materials.defaultSurface,
-          state.cabinet.materials.defaultEdge
+          state.cabinet.materials.defaultEdge,
+          existingOverrides
         );
-        
+
         state.cabinet.panels = newPanels;
         state.cabinet.computed = calculateTotals(newPanels);
       });

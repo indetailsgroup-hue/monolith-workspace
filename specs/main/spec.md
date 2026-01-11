@@ -675,6 +675,49 @@ CutSize = FinishSize − (EdgeThickness₁ + EdgeThickness₂) + PreMill
 **Priority:** Medium
 **Estimated Effort:** Core feature (already implemented)
 
+### US9: Add Shelves/Dividers via Compartment Right-Click
+**As a designer, I want to right-click on a compartment to add shelves or dividers, so that I can quickly customize cabinet internal organization without navigating menus.**
+
+**Acceptance Criteria:**
+- Right-click on any compartment shows green dashed highlight
+- Plus (+) button appears at compartment center
+- Click + button opens menu with "Add Shelf" and "Add Divider" options
+- Second popup allows quantity input (1-10)
+- Multiple items are evenly distributed in the compartment
+- Sub-compartments (created by partial dividers) are independently selectable
+- Cancel/Escape closes the popup without changes
+
+**Priority:** High
+**Estimated Effort:** Core feature (implemented v2.5)
+
+### US10: Editable Compartment Dimensions
+**As a designer, I want to click dimension labels on the 3D viewport to edit compartment widths and heights, so that I can fine-tune cabinet organization visually.**
+
+**Acceptance Criteria:**
+- Blue dimension labels show compartment width and height
+- Click on label opens inline input for editing
+- Width changes move the adjacent divider
+- Height changes adjust shelf position (gapFromBelow)
+- Orange labels show partial divider positions (left/right distances)
+- Click partial divider labels to reposition within sub-compartment
+
+**Priority:** Medium
+**Estimated Effort:** Core feature (implemented v2.5)
+
+### US11: Per-Panel Position Overrides
+**As a designer, I want to configure individual shelf/divider positions, so that I can create custom layouts that deviate from auto-calculated positions.**
+
+**Acceptance Criteria:**
+- Shelf/Divider panels show "Position Overrides" section in Panel Config Modal
+- Front Setback slider: 0-100mm from cabinet front
+- Back Setback slider: 0-100mm from cabinet back (LED space)
+- Gap Height slider: Manual Y position for shelves
+- "Reset to Auto" button restores default positioning
+- Custom position indicator (*) shows on per-panel dimension labels
+
+**Priority:** Medium
+**Estimated Effort:** Core feature (implemented v2.5)
+
 ## Edge Cases
 
 ### EC1: Extreme Dimensions
@@ -853,8 +896,18 @@ These features may be considered for future versions based on user feedback and 
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Created:** 2026-01-09
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-11
 **Author:** Claude (via Spec Kit Analysis)
 **Status:** DRAFT
+
+---
+
+## Changelog
+
+### v1.1 (2026-01-11)
+- Added US9: Add Shelves/Dividers via Compartment Right-Click
+- Added US10: Editable Compartment Dimensions
+- Added US11: Per-Panel Position Overrides
+- Features implemented: Sub-compartment detection, quantity input popup, multiple item distribution
