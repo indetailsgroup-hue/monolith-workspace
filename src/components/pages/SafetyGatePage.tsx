@@ -9,8 +9,8 @@
  * - Export Integrity section
  */
 
-import React, { useState } from 'react';
-import { useCabinet, useCabinetStore } from '../../core/store/useCabinetStore';
+import { useState } from 'react';
+import { useCabinet } from '../../core/store/useCabinetStore';
 
 // Types
 type Verdict = 'PASS' | 'WARN' | 'FAIL';
@@ -100,9 +100,9 @@ export function SafetyGatePage() {
   const profile = '1536';
   
   // Calculate verdict based on cabinet
-  const panelCount = cabinet?.panels?.length || 0;
+  // const _panelCount = cabinet?.panels?.length || 0;
   const hasWarnings = (cabinet?.structure?.shelfCount || 0) > 5;
-  const verdict: Verdict = hasWarnings ? 'WARN' : 'PASS';
+  const hasErrors = false; const verdict: Verdict = hasErrors ? 'FAIL' : hasWarnings ? 'WARN' : 'PASS';
   
   // Rules data
   const rules: Rule[] = [
@@ -131,7 +131,7 @@ export function SafetyGatePage() {
     { id: 'RAIL-WALL-HEAVY-45', name: 'Wall Rail Heavy', maxLoad: '80kg', used: 2 },
   ];
   
-  const passCount = rules.filter(r => r.status === 'PASS').length;
+  // const _passCount = rules.filter(r => r.status === 'PASS').length;
   const warnCount = rules.filter(r => r.status === 'WARN').length;
   const criticalElements = warnCount > 0 ? warnCount : 0;
   const minMargin = Math.min(...rules.map(r => parseFloat(r.margin) || Infinity)).toFixed(1);

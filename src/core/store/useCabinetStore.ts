@@ -113,7 +113,7 @@ const CORE_MATERIALS_CATALOG = {
 
 // === SURFACE MATERIALS ===
 // Texture Size: 1523 x 3070 mm (real-world laminate sheet size)
-const TEXTURE_SIZE_MM = { width: 1523, height: 3070 };
+// const _TEXTURE_SIZE_MM = { width: 1523, height: 3070 };
 
 const SURFACE_MATERIALS_CATALOG = {
   // --- SOLID COLORS ---
@@ -1799,10 +1799,10 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateCoreMaterial: (id, updates) => {
       set((state) => {
-        if (state.coreMaterials[id]) {
+        if ((state.coreMaterials as Record<string, typeof state.coreMaterials[keyof typeof state.coreMaterials]>)[id]) {
           state.coreMaterials = {
             ...state.coreMaterials,
-            [id]: { ...state.coreMaterials[id], ...updates }
+            [id]: { ...(state.coreMaterials as any)[id], ...updates }
           };
         }
       });
@@ -1811,7 +1811,7 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteCoreMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.coreMaterials;
+        const { [id]: removed, ...rest } = state.coreMaterials as any;
         state.coreMaterials = rest as typeof state.coreMaterials;
       });
     },
@@ -1828,10 +1828,10 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateSurfaceMaterial: (id, updates) => {
       set((state) => {
-        if (state.surfaceMaterials[id]) {
+        if ((state.surfaceMaterials as any)[id]) {
           state.surfaceMaterials = {
             ...state.surfaceMaterials,
-            [id]: { ...state.surfaceMaterials[id], ...updates }
+            [id]: { ...(state.surfaceMaterials as any)[id], ...updates }
           };
         }
       });
@@ -1840,7 +1840,7 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteSurfaceMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.surfaceMaterials;
+        const { [id]: removed, ...rest } = state.surfaceMaterials as any;
         state.surfaceMaterials = rest as typeof state.surfaceMaterials;
       });
     },
@@ -1857,10 +1857,10 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateEdgeMaterial: (id, updates) => {
       set((state) => {
-        if (state.edgeMaterials[id]) {
+        if ((state.edgeMaterials as any)[id]) {
           state.edgeMaterials = {
             ...state.edgeMaterials,
-            [id]: { ...state.edgeMaterials[id], ...updates }
+            [id]: { ...(state.edgeMaterials as any)[id], ...updates }
           };
         }
       });
@@ -1869,7 +1869,7 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteEdgeMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.edgeMaterials;
+        const { [id]: removed, ...rest } = state.edgeMaterials as any;
         state.edgeMaterials = rest as typeof state.edgeMaterials;
       });
     },

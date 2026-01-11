@@ -84,7 +84,7 @@ export function useCameraView(viewType: ViewType, controlsRef?: React.RefObject<
     // Simple instant transition (can add GSAP for smooth animation later)
     camera.position.copy(targetPos);
     camera.lookAt(targetLookAt);
-    camera.fov = preset.fov;
+    (camera as any).fov = preset.fov;
     camera.updateProjectionMatrix();
     
     // Update controls target if available
@@ -157,7 +157,7 @@ export function CameraController({ viewType }: CameraControllerProps) {
     
     camera.position.set(...preset.position);
     camera.lookAt(new Vector3(...preset.target));
-    camera.fov = preset.fov;
+    (camera as any).fov = preset.fov;
     camera.updateProjectionMatrix();
   }, [viewType, camera]);
   

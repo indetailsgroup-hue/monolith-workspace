@@ -186,7 +186,7 @@ export function applyWorldScaleUVToBox(
   
   let uvIndex = 0;
   for (let face = 0; face < 6; face++) {
-    const faceUV = faceUVs[face];
+    const faceUV = (faceUVs as Record<number, number[]>)[face];
     
     // Triangle 1: vertices 0, 1, 2
     // v0 (bottom-left)

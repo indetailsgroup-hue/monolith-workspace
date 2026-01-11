@@ -15,10 +15,10 @@
  * - Save/Load Project System
  */
 
-import React, { useState, Suspense, useEffect, useRef } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
-import { AppShell, SpecState, GateStatus } from './components/layout/AppShell';
+import { AppShell } from './components/layout/AppShell';
 import { DesignerIntentPanel } from './components/layout/DesignerIntentPanel';
 import { ParametricContractPanel } from './components/layout/ParametricContractPanel';
 import { Cabinet3D } from './components/canvas/Cabinet3D';
@@ -138,9 +138,10 @@ export function App() {
   const specState = useSpecState();
   const gateStatus = useGateStatus();
   const runValidation = useSpecStore((s) => s.runValidation);
-  const freezeSpec = useSpecStore((s) => s.freezeSpec);
-  const releaseSpec = useSpecStore((s) => s.releaseSpec);
-  const unfreezeSpec = useSpecStore((s) => s.unfreezeSpec);
+  // These will be used when gate controls are implemented in the UI
+  void useSpecStore.getState().freezeSpec;
+  void useSpecStore.getState().releaseSpec;
+  void useSpecStore.getState().unfreezeSpec;
   
   // Project store
   const initializeProject = useProjectStore((s) => s.initialize);

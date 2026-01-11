@@ -10,12 +10,12 @@
  * Uses Framer Motion for animations
  */
 
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 
 // Animation configuration
 const ANIMATION_DURATION = 300;
-const STAGGER_DELAY = 50;
+// const _STAGGER_DELAY = 50;
 
 // ============================================
 // SORTABLE LIST (Drag to Reorder)
@@ -331,7 +331,7 @@ interface AnimatedPanelListProps<T extends { id: string }> {
 export function AnimatedPanelList<T extends { id: string }>({
   items,
   selectedId,
-  onSelectItem,
+  onSelectItem: _onSelectItem,
   renderItem,
   emptyMessage = 'No items',
   className = ''

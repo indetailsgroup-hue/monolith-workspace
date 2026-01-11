@@ -10,7 +10,7 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping } from 'three';
 import { ThreeEvent, useThree } from '@react-three/fiber';
-import { Edges, Html } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 // NO ALIAS IMPORTS - Use relative paths only (North Star Rule #3)
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
 import { CabinetPanel } from '../../core/types/Cabinet';
@@ -237,7 +237,7 @@ function Panel3DComponent({ panel, baseColor, texture, edgeColor, edgeThickness,
     
     // Get edge assignments from panel
     const hasTop = panel.edges?.top != null && panel.edges.top !== '';
-    const hasBottom = panel.edges?.bottom != null && panel.edges.bottom !== '';
+    // const _hasBottom = panel.edges?.bottom != null && panel.edges.bottom !== '';
     const hasLeft = panel.edges?.left != null && panel.edges.left !== '';
     const hasRight = panel.edges?.right != null && panel.edges.right !== '';
     

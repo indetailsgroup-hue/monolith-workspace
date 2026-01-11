@@ -26,8 +26,8 @@ import {
   Columns,
   Rows,
 } from 'lucide-react';
-import { useCabinetStore, useCabinet } from '@/core/store/useCabinetStore';
-import { CabinetType, JointType } from '@/core/types/Cabinet';
+import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+import { CabinetType, JointType } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
 
 interface ConfiguratorPanelProps {
@@ -52,8 +52,8 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
   } = useCabinetStore();
   
   // State for showing more materials
-  const [showAllMaterials, setShowAllMaterials] = useState(false);
-  const [showAllEdges, setShowAllEdges] = useState(false);
+  const [_showAllMaterials, _setShowAllMaterials] = useState(false);
+  const [_showAllEdges, _setShowAllEdges] = useState(false);
   
   // Create cabinet if none exists
   if (!cabinet) {
@@ -578,7 +578,7 @@ interface PanelToggleProps {
   onChange?: () => void;
 }
 
-function PanelToggle({ label, icon: Icon, active, disabled, count, onChange }: PanelToggleProps) {
+function PanelToggle({ label, icon: _Icon, active, disabled, count, onChange }: PanelToggleProps) {
   return (
     <button
       onClick={onChange}

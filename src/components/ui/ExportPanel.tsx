@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+import { useCabinet } from '../../core/store/useCabinetStore';
 
 // Validation types
 interface ValidationResult {
@@ -257,7 +257,7 @@ interface ExportPanelProps {
 
 export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
   const cabinet = useCabinet();
-  const [isExporting, setIsExporting] = useState(false);
+  const [_isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<string | null>(null);
   
   // Run validation

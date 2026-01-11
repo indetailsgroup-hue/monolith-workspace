@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { useCabinetStore } from '../../core/store/useCabinetStore';
+// import { useCabinetStore } from '../../core/store/useCabinetStore';
 
 // Hardware catalog types
 interface HardwareItem {

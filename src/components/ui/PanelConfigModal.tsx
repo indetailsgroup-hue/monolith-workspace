@@ -102,7 +102,7 @@ export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
     let formula = '';
     if (panel.role === 'SHELF') {
       // Shelf depth formula
-      const safeDepth = calculateInternalDepth(cabinet.dimensions.depth, DEFAULT_BACK_CONFIG, 2);
+      // const _safeDepth = calculateInternalDepth(cabinet.dimensions.depth, DEFAULT_BACK_CONFIG, 2);
       formula = getShelfDepthFormula(
         cabinet.dimensions.depth,
         DEFAULT_BACK_CONFIG,

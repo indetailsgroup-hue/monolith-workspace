@@ -11,7 +11,7 @@
  * Requires: npm install motion
  */
 
-import React, { useState, ReactNode } from "react"
+import { useState, ReactNode } from "react"
 import { motion, AnimatePresence } from "motion/react"
 
 // ============================================

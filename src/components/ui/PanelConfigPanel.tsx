@@ -19,8 +19,8 @@ import {
   ArrowLeft,
   Grid3X3,
 } from 'lucide-react';
-import { useCabinetStore, useCabinet } from '@/core/store/useCabinetStore';
-import { CabinetPanel } from '@/core/types/Cabinet';
+import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+// import { CabinetPanel } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
 
 interface PanelConfigPanelProps {
@@ -44,17 +44,17 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
   if (!panel || !cabinet) return null;
   
   // Get current materials for this panel
-  const currentCore = coreMaterials[panel.coreMaterialId];
-  const currentFaceA = surfaceMaterials[panel.faces?.faceA || cabinet.materials.defaultSurface];
+  // const _currentCore = (coreMaterials as Record<string, typeof coreMaterials[keyof typeof coreMaterials]>)[panel.coreMaterialId];
+  const currentFaceA = (surfaceMaterials as Record<string, typeof surfaceMaterials[keyof typeof surfaceMaterials]>)[panel.faces?.faceA || cabinet.materials.defaultSurface];
   const currentFaceB = panel.faces?.faceB 
-    ? surfaceMaterials[panel.faces.faceB] 
+    ? (surfaceMaterials as Record<string, typeof surfaceMaterials[keyof typeof surfaceMaterials]>)[panel.faces.faceB] 
     : currentFaceA;
   
   // Edge materials
-  const edgeTop = panel.edges?.top ? edgeMaterials[panel.edges.top] : null;
-  const edgeRight = panel.edges?.right ? edgeMaterials[panel.edges.right] : null;
-  const edgeBottom = panel.edges?.bottom ? edgeMaterials[panel.edges.bottom] : null;
-  const edgeLeft = panel.edges?.left ? edgeMaterials[panel.edges.left] : null;
+  const edgeTop = panel.edges?.top ? (edgeMaterials as Record<string, typeof edgeMaterials[keyof typeof edgeMaterials]>)[panel.edges.top] : null;
+  const edgeRight = panel.edges?.right ? (edgeMaterials as Record<string, typeof edgeMaterials[keyof typeof edgeMaterials]>)[panel.edges.right] : null;
+  const edgeBottom = panel.edges?.bottom ? (edgeMaterials as Record<string, typeof edgeMaterials[keyof typeof edgeMaterials]>)[panel.edges.bottom] : null;
+  const edgeLeft = panel.edges?.left ? (edgeMaterials as Record<string, typeof edgeMaterials[keyof typeof edgeMaterials]>)[panel.edges.left] : null;
   
   // Panel title based on role
   const getPanelTitle = (role: string) => {

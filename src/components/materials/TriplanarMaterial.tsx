@@ -20,7 +20,7 @@ import {
   Vector3,
   DoubleSide
 } from 'three';
-import { useFrame } from '@react-three/fiber';
+// import { useFrame } from '@react-three/fiber';
 
 // ============================================
 // SHADER CODE

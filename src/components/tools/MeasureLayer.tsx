@@ -12,10 +12,10 @@
  * - Minimal visual noise
  */
 
-import { useRef, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Line, Html } from '@react-three/drei';
 import { ThreeEvent } from '@react-three/fiber';
-import { Vector3 } from 'three';
+// import { Vector3 } from 'three';
 import { useMeasureStore, formatDistance, MeasureSegment } from '../../core/store/useMeasureStore';
 
 // ============================================

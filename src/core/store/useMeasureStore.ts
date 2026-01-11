@@ -23,7 +23,7 @@ import { immer } from 'zustand/middleware/immer';
 export interface MeasurePoint {
   id: string;
   world: [number, number, number];  // World coordinates in mm
-  snapType?: 'vertex' | 'edge' | 'face' | 'grid';
+  snapType?: SnapMode;
 }
 
 export interface MeasureSegment {
@@ -140,7 +140,7 @@ export const useMeasureStore = create<MeasureState>()(
       const point: MeasurePoint = {
         id: generateId(),
         world,
-        snapType: snapType || 'none',
+        snapType: (snapType || undefined) as typeof snapType,
       };
       
       if (state.activeMode === 'idle') {

@@ -108,9 +108,9 @@ function ContractContent() {
   
   if (!cabinet) return <div className="p-4 text-zinc-500">Loading...</div>;
   
-  const currentCore = coreMaterials[cabinet.materials.defaultCore];
-  const currentSurface = surfaceMaterials[cabinet.materials.defaultSurface];
-  const currentEdge = edgeMaterials[cabinet.materials.defaultEdge];
+  const currentCore = (coreMaterials as Record<string, typeof coreMaterials[keyof typeof coreMaterials]>)[cabinet.materials.defaultCore];
+  const currentSurface = (surfaceMaterials as Record<string, typeof surfaceMaterials[keyof typeof surfaceMaterials]>)[cabinet.materials.defaultSurface];
+  const currentEdge = (edgeMaterials as Record<string, typeof edgeMaterials[keyof typeof edgeMaterials]>)[cabinet.materials.defaultEdge];
   const totalThickness = (currentCore?.thickness || 16) + ((currentSurface?.thickness || 0.3) * 2);
 
   return (

@@ -498,7 +498,7 @@ export const getHingePositions = (
   hingeType: keyof typeof HINGES = 'salice_series_b'
 ): number[] => {
   const hinge = HINGES[hingeType];
-  const [fromTop, fromBottom] = hinge.positioning?.positions_from_edge || [100, 100];
+  const [fromTop, fromBottom] = (hinge as any).positioning?.positions_from_edge || [100, 100];
   
   if (doorHeight > 1200) {
     // 3 hinges for tall doors

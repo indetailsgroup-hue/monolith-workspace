@@ -9,7 +9,7 @@
  * - HORIZONTAL layout (row)
  */
 
-import React from 'react';
+
 import { useToolStore, TOOL_INFO, ToolId } from '../../core/store/useToolStore';
 import { useMeasureStore } from '../../core/store/useMeasureStore';
 

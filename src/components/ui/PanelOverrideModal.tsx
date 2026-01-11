@@ -140,7 +140,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               onChange={(e) => updatePanelMaterial(panelId, 'core', e.target.value)}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
             >
-              <option value="">Use Default ({coreMaterials[cabinet.materials.defaultCore]?.name})</option>
+              <option value="">Use Default ({(coreMaterials as Record<string, typeof coreMaterials[keyof typeof coreMaterials]>)[cabinet.materials.defaultCore]?.name})</option>
               {Object.values(coreMaterials).map((mat) => (
                 <option key={mat.id} value={mat.id}>{mat.name} ({mat.thickness}mm)</option>
               ))}
@@ -153,7 +153,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               <label className="block text-sm font-medium text-zinc-300 mb-2">Surface A (Front)</label>
               <select
                 value={currentSurfaceA || ''}
-                onChange={(e) => updatePanelMaterial(panelId, 'faceA', e.target.value || null)}
+                onChange={(e) => updatePanelMaterial(panelId, 'faceA', e.target.value || '')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Use Default</option>
@@ -166,7 +166,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               <label className="block text-sm font-medium text-zinc-300 mb-2">Surface B (Back)</label>
               <select
                 value={currentSurfaceB || ''}
-                onChange={(e) => updatePanelMaterial(panelId, 'faceB', e.target.value || null)}
+                onChange={(e) => updatePanelMaterial(panelId, 'faceB', e.target.value || '')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">None / Backing</option>
@@ -195,7 +195,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                     <span className="text-xs text-zinc-400 w-20">{sideLabels[side]}:</span>
                     <select
                       value={edgeId || ''}
-                      onChange={(e) => updatePanelEdge(panelId, side, e.target.value || null)}
+                      onChange={(e) => updatePanelEdge(panelId, side, e.target.value || '')}
                       className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">None</option>
@@ -240,7 +240,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               // Reset to defaults
               updatePanelMaterial(panelId, 'core', cabinet.materials.defaultCore);
               updatePanelMaterial(panelId, 'faceA', cabinet.materials.defaultSurface);
-              updatePanelMaterial(panelId, 'faceB', null);
+              updatePanelMaterial(panelId, 'faceB', '');
             }}
             className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
           >
