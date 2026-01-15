@@ -9,7 +9,6 @@
  * v1.0: Initial cursor HUD
  */
 
-import React from 'react';
 import type { CursorHUDData } from '@/core/modeling/dragInteraction';
 
 interface CursorHUDProps {
@@ -85,8 +84,8 @@ export function CursorHUD({ data }: CursorHUDProps) {
           </div>
         ))}
 
-        {/* Fine mode indicator */}
-        {data.fineMode && (
+        {/* Snap mode indicator */}
+        {data.shiftHeld && (
           <div
             style={{
               marginTop: 4,
@@ -100,13 +99,13 @@ export function CursorHUD({ data }: CursorHUDProps) {
             <span
               style={{
                 fontSize: 9,
-                color: '#22c55e',
+                color: '#f59e0b',
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
               }}
             >
-              Fine Mode
+              Snap Mode
             </span>
             <span
               style={{
@@ -114,7 +113,7 @@ export function CursorHUD({ data }: CursorHUDProps) {
                 color: '#6b7280',
               }}
             >
-              (0.1mm steps)
+              ({data.snapValue ?? 0.5}mm steps)
             </span>
           </div>
         )}
@@ -131,7 +130,7 @@ export function CursorHUD({ data }: CursorHUDProps) {
         >
           <span>↕ Depth</span>
           <span>↔ Offset</span>
-          <span>Shift=Fine</span>
+          <span>Shift=Snap</span>
         </div>
       </div>
     </div>

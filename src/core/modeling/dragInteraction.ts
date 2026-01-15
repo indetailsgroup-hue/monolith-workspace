@@ -58,15 +58,23 @@ export interface DualAxisConfig {
     sensitivity: number;
     min: number;
     max: number;
+    /** Normal drag snap (small, e.g. 0.1mm) */
     snapGrid?: number;
+    /** Shift snap (precision, e.g. 0.5mm or 1mm) */
+    shiftSnapGrid?: number;
   };
   horizontal: {
     param: string;
     sensitivity: number;
     min: number;
     max: number;
+    /** Normal drag snap */
     snapGrid?: number;
+    /** Shift snap (precision) */
+    shiftSnapGrid?: number;
   };
+  /** Shift mode behavior: 'snap' = snap to grid, 'fine' = reduce sensitivity */
+  shiftMode: 'snap' | 'fine';
   fineSensitivityMultiplier: number;
 }
 
@@ -256,15 +264,18 @@ const DEFAULT_DUAL_CONFIG: DualAxisConfig = {
     sensitivity: 10, // 10px = 1mm
     min: 0,
     max: 50,
-    snapGrid: 0.5,
+    snapGrid: 0.1, // Normal: 0.1mm precision
+    shiftSnapGrid: 0.5, // Shift: snap to 0.5mm increments
   },
   horizontal: {
     param: 'offset',
     sensitivity: 10,
     min: 0,
     max: 100,
-    snapGrid: 1,
+    snapGrid: 0.1,
+    shiftSnapGrid: 1, // Shift: snap to 1mm increments
   },
+  shiftMode: 'snap', // Default: Shift = snap to grid
   fineSensitivityMultiplier: 0.1,
 };
 
@@ -302,7 +313,7 @@ export function updateDualAxisDragState(
   state: DualAxisDragState,
   currentX: number,
   currentY: number,
-  fineMode: boolean,
+  shiftHeld: boolean,
   config: Partial<DualAxisConfig> = {}
 ): DualAxisDragState {
   const cfg = { ...DEFAULT_DUAL_CONFIG, ...config };
@@ -311,13 +322,15 @@ export function updateDualAxisDragState(
   const deltaY = state.startY - currentY; // Up = positive (depth increases)
   const deltaX = currentX - state.startX; // Right = positive (offset increases)
 
-  // Apply sensitivity with fine mode
-  const vertSens = fineMode
-    ? cfg.vertical.sensitivity / cfg.fineSensitivityMultiplier
-    : cfg.vertical.sensitivity;
-  const horizSens = fineMode
-    ? cfg.horizontal.sensitivity / cfg.fineSensitivityMultiplier
-    : cfg.horizontal.sensitivity;
+  // Apply sensitivity based on shift mode
+  let vertSens = cfg.vertical.sensitivity;
+  let horizSens = cfg.horizontal.sensitivity;
+
+  if (shiftHeld && cfg.shiftMode === 'fine') {
+    // Fine mode: reduce sensitivity for precision
+    vertSens = cfg.vertical.sensitivity / cfg.fineSensitivityMultiplier;
+    horizSens = cfg.horizontal.sensitivity / cfg.fineSensitivityMultiplier;
+  }
 
   // Calculate new values
   let vertValue = state.verticalInitial + deltaY / vertSens;
@@ -327,12 +340,25 @@ export function updateDualAxisDragState(
   vertValue = Math.max(cfg.vertical.min, Math.min(cfg.vertical.max, vertValue));
   horizValue = Math.max(cfg.horizontal.min, Math.min(cfg.horizontal.max, horizValue));
 
-  // Snap to grid
-  if (cfg.vertical.snapGrid) {
-    vertValue = Math.round(vertValue / cfg.vertical.snapGrid) * cfg.vertical.snapGrid;
-  }
-  if (cfg.horizontal.snapGrid) {
-    horizValue = Math.round(horizValue / cfg.horizontal.snapGrid) * cfg.horizontal.snapGrid;
+  // Snap to grid - use shiftSnapGrid when Shift held (snap mode), otherwise use normal snapGrid
+  if (shiftHeld && cfg.shiftMode === 'snap') {
+    // Shift + snap mode: use precision snap grid
+    const vertSnap = cfg.vertical.shiftSnapGrid ?? cfg.vertical.snapGrid;
+    const horizSnap = cfg.horizontal.shiftSnapGrid ?? cfg.horizontal.snapGrid;
+    if (vertSnap) {
+      vertValue = Math.round(vertValue / vertSnap) * vertSnap;
+    }
+    if (horizSnap) {
+      horizValue = Math.round(horizValue / horizSnap) * horizSnap;
+    }
+  } else {
+    // Normal mode: use regular snap grid
+    if (cfg.vertical.snapGrid) {
+      vertValue = Math.round(vertValue / cfg.vertical.snapGrid) * cfg.vertical.snapGrid;
+    }
+    if (cfg.horizontal.snapGrid) {
+      horizValue = Math.round(horizValue / cfg.horizontal.snapGrid) * cfg.horizontal.snapGrid;
+    }
   }
 
   return {
@@ -341,7 +367,7 @@ export function updateDualAxisDragState(
     currentY,
     verticalValue: vertValue,
     horizontalValue: horizValue,
-    fineMode,
+    fineMode: shiftHeld,
   };
 }
 
@@ -449,5 +475,10 @@ export interface CursorHUDData {
   x: number;
   y: number;
   values: Array<{ label: string; value: number; unit: string }>;
-  fineMode: boolean;
+  /** Shift key is held */
+  shiftHeld: boolean;
+  /** Current snap mode */
+  snapMode: 'normal' | 'shift';
+  /** Current snap value (e.g., 0.5mm) */
+  snapValue?: number;
 }
