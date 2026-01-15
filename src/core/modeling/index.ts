@@ -89,3 +89,37 @@ export {
   getSeverityColor,
   getSeverityIcon,
 } from './preflight';
+
+// Modifier Keys
+export {
+  useModKeysStore,
+  useShiftKey,
+  useAltKey,
+  useCtrlKey,
+  installModKeysListeners,
+} from './modKeysStore';
+
+// Snap Utilities
+export type { SnapConfig } from './snap';
+export {
+  SNAP_PRESETS,
+  snapValue,
+  snapClamp,
+  formatSnapValue,
+  getSnapConfig,
+} from './snap';
+
+// Numeric Entry (CAD-style)
+export type { NumericField } from './numericEntryStore';
+export {
+  useNumericEntryStore,
+  useNumericEntryActive,
+  useNumericEntryField,
+  useNumericEntryBuffer,
+  useNumericEntryValue,
+} from './numericEntryStore';
+export type { NumericEntryOptions } from './numericEntryKeys';
+export {
+  installNumericEntryKeys,
+  createToolApplyHandler,
+} from './numericEntryKeys';

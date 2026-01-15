@@ -5,14 +5,17 @@
  * - Depth handle (vertical arrow)
  * - Offset handle (horizontal arrow)
  * - Visual feedback during drag
+ * - Shift snap support (precision increments)
  *
- * v1.0: Initial tool gizmo
+ * v1.1: Added Shift snap integration
  */
 
 import { useRef, useState, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Line, Cone, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { useShiftKey } from '../../core/modeling/modKeysStore';
+import { snapClamp, getSnapConfig } from '../../core/modeling/snap';
 
 interface ToolGizmoProps {
   /** World position of the gizmo */
@@ -39,6 +42,8 @@ interface ToolGizmoProps {
   minOffset?: number;
   /** Maximum offset */
   maxOffset?: number;
+  /** Snap step when Shift held (mm, default 1) */
+  snapStepMm?: number;
 }
 
 export function ToolGizmo({
@@ -54,9 +59,11 @@ export function ToolGizmo({
   maxDepth = 50,
   minOffset = 0,
   maxOffset = 100,
+  snapStepMm = 1,
 }: ToolGizmoProps) {
   const { gl } = useThree();
   const groupRef = useRef<THREE.Group>(null);
+  const shiftHeld = useShiftKey();
 
   // Dragging state
   const [draggingAxis, setDraggingAxis] = useState<'depth' | 'offset' | null>(null);
@@ -99,18 +106,21 @@ export function ToolGizmo({
 
       const sensitivity = 200; // pixels per unit (adjust as needed)
       const start = dragStartRef.current;
+      const snapConfig = getSnapConfig(shiftHeld, snapStepMm, 0.1);
 
       if (draggingAxis === 'depth') {
         const deltaY = start.screenY - e.clientY; // Up = increase
-        const newValue = Math.max(minDepth, Math.min(maxDepth, start.value + (deltaY / sensitivity) * maxDepth));
+        const rawValue = start.value + (deltaY / sensitivity) * maxDepth;
+        const newValue = snapClamp(rawValue, snapConfig, minDepth, maxDepth);
         onDepthChange(newValue, true);
       } else {
         const deltaX = e.clientX - start.screenX; // Right = increase
-        const newValue = Math.max(minOffset, Math.min(maxOffset, start.value + (deltaX / sensitivity) * maxOffset));
+        const rawValue = start.value + (deltaX / sensitivity) * maxOffset;
+        const newValue = snapClamp(rawValue, snapConfig, minOffset, maxOffset);
         onOffsetChange(newValue, true);
       }
     },
-    [draggingAxis, minDepth, maxDepth, minOffset, maxOffset, onDepthChange, onOffsetChange]
+    [draggingAxis, minDepth, maxDepth, minOffset, maxOffset, onDepthChange, onOffsetChange, shiftHeld, snapStepMm]
   );
 
   const handlePointerUp = useCallback(() => {
@@ -232,6 +242,25 @@ export function ToolGizmo({
         <sphereGeometry args={[handleRadius, 16, 16]} />
         <meshBasicMaterial color="#fff" opacity={0.8} transparent />
       </mesh>
+
+      {/* Shift snap indicator */}
+      {(draggingAxis || hoverAxis) && (
+        <Html position={[0, -0.03, 0]} center>
+          <div
+            style={{
+              padding: '2px 6px',
+              backgroundColor: shiftHeld ? 'rgba(245, 158, 11, 0.9)' : 'rgba(0,0,0,0.6)',
+              borderRadius: 4,
+              color: '#fff',
+              fontSize: 10,
+              fontFamily: 'system-ui, sans-serif',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {shiftHeld ? `Snap: ${snapStepMm}mm` : 'Shift=Snap'}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
