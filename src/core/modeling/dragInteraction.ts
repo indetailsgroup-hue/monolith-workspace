@@ -7,9 +7,10 @@
  * - Shift + drag → fine control (0.1mm steps)
  *
  * v1.0: Initial drag interaction
+ * v1.1: Added dual-axis support for depth/offset
  */
 
-export type DragAxis = 'vertical' | 'horizontal';
+export type DragAxis = 'vertical' | 'horizontal' | 'dual';
 
 export interface DragState {
   isDragging: boolean;
@@ -25,6 +26,48 @@ export interface DragState {
   currentValue: number;
   /** Fine control mode (Shift held) */
   fineMode: boolean;
+}
+
+/**
+ * Dual-axis drag state for simultaneous depth + offset control
+ */
+export interface DualAxisDragState {
+  isDragging: boolean;
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+  /** Vertical parameter (depth) */
+  verticalParam: string;
+  verticalInitial: number;
+  verticalValue: number;
+  /** Horizontal parameter (offset/width/gap) */
+  horizontalParam: string;
+  horizontalInitial: number;
+  horizontalValue: number;
+  /** Fine control mode */
+  fineMode: boolean;
+}
+
+/**
+ * Configuration for dual-axis drag
+ */
+export interface DualAxisConfig {
+  vertical: {
+    param: string;
+    sensitivity: number;
+    min: number;
+    max: number;
+    snapGrid?: number;
+  };
+  horizontal: {
+    param: string;
+    sensitivity: number;
+    min: number;
+    max: number;
+    snapGrid?: number;
+  };
+  fineSensitivityMultiplier: number;
 }
 
 export interface DragConfig {
@@ -201,4 +244,210 @@ export function debounceUpdate<T>(
       timeoutId = null;
     }, delay);
   };
+}
+
+// ============================================================================
+// Dual-Axis Drag System (Plasticity-style)
+// ============================================================================
+
+const DEFAULT_DUAL_CONFIG: DualAxisConfig = {
+  vertical: {
+    param: 'depth',
+    sensitivity: 10, // 10px = 1mm
+    min: 0,
+    max: 50,
+    snapGrid: 0.5,
+  },
+  horizontal: {
+    param: 'offset',
+    sensitivity: 10,
+    min: 0,
+    max: 100,
+    snapGrid: 1,
+  },
+  fineSensitivityMultiplier: 0.1,
+};
+
+/**
+ * Create initial dual-axis drag state
+ */
+export function createDualAxisDragState(
+  verticalParam: string,
+  verticalInitial: number,
+  horizontalParam: string,
+  horizontalInitial: number,
+  startX: number,
+  startY: number
+): DualAxisDragState {
+  return {
+    isDragging: true,
+    startX,
+    startY,
+    currentX: startX,
+    currentY: startY,
+    verticalParam,
+    verticalInitial,
+    verticalValue: verticalInitial,
+    horizontalParam,
+    horizontalInitial,
+    horizontalValue: horizontalInitial,
+    fineMode: false,
+  };
+}
+
+/**
+ * Update dual-axis drag state
+ */
+export function updateDualAxisDragState(
+  state: DualAxisDragState,
+  currentX: number,
+  currentY: number,
+  fineMode: boolean,
+  config: Partial<DualAxisConfig> = {}
+): DualAxisDragState {
+  const cfg = { ...DEFAULT_DUAL_CONFIG, ...config };
+
+  // Calculate deltas
+  const deltaY = state.startY - currentY; // Up = positive (depth increases)
+  const deltaX = currentX - state.startX; // Right = positive (offset increases)
+
+  // Apply sensitivity with fine mode
+  const vertSens = fineMode
+    ? cfg.vertical.sensitivity / cfg.fineSensitivityMultiplier
+    : cfg.vertical.sensitivity;
+  const horizSens = fineMode
+    ? cfg.horizontal.sensitivity / cfg.fineSensitivityMultiplier
+    : cfg.horizontal.sensitivity;
+
+  // Calculate new values
+  let vertValue = state.verticalInitial + deltaY / vertSens;
+  let horizValue = state.horizontalInitial + deltaX / horizSens;
+
+  // Clamp to min/max
+  vertValue = Math.max(cfg.vertical.min, Math.min(cfg.vertical.max, vertValue));
+  horizValue = Math.max(cfg.horizontal.min, Math.min(cfg.horizontal.max, horizValue));
+
+  // Snap to grid
+  if (cfg.vertical.snapGrid) {
+    vertValue = Math.round(vertValue / cfg.vertical.snapGrid) * cfg.vertical.snapGrid;
+  }
+  if (cfg.horizontal.snapGrid) {
+    horizValue = Math.round(horizValue / cfg.horizontal.snapGrid) * cfg.horizontal.snapGrid;
+  }
+
+  return {
+    ...state,
+    currentX,
+    currentY,
+    verticalValue: vertValue,
+    horizontalValue: horizValue,
+    fineMode,
+  };
+}
+
+/**
+ * Hook-friendly dual-axis drag handler factory
+ */
+export function createDualAxisDragHandlers(
+  verticalParam: string,
+  verticalInitial: number,
+  horizontalParam: string,
+  horizontalInitial: number,
+  config: Partial<DualAxisConfig>,
+  onUpdate: (values: { vertical: number; horizontal: number }, isDragging: boolean, cursorPos: { x: number; y: number }) => void
+) {
+  let state: DualAxisDragState | null = null;
+
+  const handleMouseDown = (e: MouseEvent) => {
+    state = createDualAxisDragState(
+      verticalParam,
+      verticalInitial,
+      horizontalParam,
+      horizontalInitial,
+      e.clientX,
+      e.clientY
+    );
+    onUpdate(
+      { vertical: state.verticalValue, horizontal: state.horizontalValue },
+      true,
+      { x: e.clientX, y: e.clientY }
+    );
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Set cursor to indicate dragging
+    document.body.style.cursor = 'move';
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!state) return;
+    state = updateDualAxisDragState(state, e.clientX, e.clientY, e.shiftKey, config);
+    onUpdate(
+      { vertical: state.verticalValue, horizontal: state.horizontalValue },
+      true,
+      { x: e.clientX, y: e.clientY }
+    );
+  };
+
+  const handleMouseUp = (e: MouseEvent) => {
+    if (state) {
+      onUpdate(
+        { vertical: state.verticalValue, horizontal: state.horizontalValue },
+        false,
+        { x: e.clientX, y: e.clientY }
+      );
+    }
+    cleanup();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && state) {
+      onUpdate(
+        { vertical: state.verticalInitial, horizontal: state.horizontalInitial },
+        false,
+        { x: state.currentX, y: state.currentY }
+      );
+      cleanup();
+    }
+  };
+
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (state && e.key === 'Shift') {
+      state = updateDualAxisDragState(state, state.currentX, state.currentY, false, config);
+      onUpdate(
+        { vertical: state.verticalValue, horizontal: state.horizontalValue },
+        true,
+        { x: state.currentX, y: state.currentY }
+      );
+    }
+  };
+
+  const cleanup = () => {
+    state = null;
+    document.body.style.cursor = '';
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+    window.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener('keyup', handleKeyUp);
+  };
+
+  return {
+    onMouseDown: handleMouseDown,
+    cleanup,
+  };
+}
+
+// ============================================================================
+// Cursor Position for HUD
+// ============================================================================
+
+export interface CursorHUDData {
+  visible: boolean;
+  x: number;
+  y: number;
+  values: Array<{ label: string; value: number; unit: string }>;
+  fineMode: boolean;
 }

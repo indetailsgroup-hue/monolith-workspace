@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import type { PreflightResult, ValidationError, ValidationSeverity } from '@/core/modeling/preflight';
+import type { PreflightResult, ValidationError } from '@/core/modeling/preflight';
 import { getSeverityColor, getSeverityIcon } from '@/core/modeling/preflight';
 
 interface PreflightOverlayProps {
@@ -37,7 +37,6 @@ export function PreflightOverlay({
   if (!result) return null;
 
   const hasErrors = result.errors.length > 0;
-  const hasWarnings = result.warnings.length > 0;
   const totalIssues = result.errors.length + result.warnings.length;
 
   if (totalIssues === 0) {
@@ -324,27 +323,43 @@ function ValidationErrorItem({ error, onFix, onDismiss }: ValidationErrorItemPro
           {error.code}
         </div>
 
-        {/* Suggested fix */}
-        {error.suggestedValue !== undefined && (
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: '#6b7280' }}>
-              Suggested: {error.suggestedValue}mm
-            </span>
+        {/* Auto-fix action */}
+        {(error.fixDescription || error.suggestedValue !== undefined) && (
+          <div
+            style={{
+              marginTop: 8,
+              padding: '8px 10px',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12 }}>💡</span>
+              <span style={{ fontSize: 11, color: '#22c55e' }}>
+                {error.fixDescription || `Set to ${error.suggestedValue}mm`}
+              </span>
+            </div>
             {onFix && (
               <button
                 onClick={() => onFix(error)}
                 style={{
-                  padding: '4px 10px',
-                  backgroundColor: `${color}20`,
-                  border: `1px solid ${color}40`,
+                  padding: '4px 12px',
+                  backgroundColor: '#22c55e',
+                  border: 'none',
                   borderRadius: 4,
-                  color,
+                  color: '#fff',
                   fontSize: 10,
                   fontWeight: 600,
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                Apply Fix
+                Fix Now
               </button>
             )}
           </div>

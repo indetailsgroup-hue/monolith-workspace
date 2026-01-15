@@ -55,13 +55,23 @@ export {
 } from './useModelingStore';
 
 // Drag Interaction
-export type { DragAxis, DragState, DragConfig } from './dragInteraction';
+export type {
+  DragAxis,
+  DragState,
+  DragConfig,
+  DualAxisDragState,
+  DualAxisConfig,
+  CursorHUDData,
+} from './dragInteraction';
 export {
   createDragState,
   updateDragState,
   endDrag,
   createDragHandlers,
   debounceUpdate,
+  createDualAxisDragState,
+  updateDualAxisDragState,
+  createDualAxisDragHandlers,
 } from './dragInteraction';
 
 // Preflight Validation
@@ -71,6 +81,7 @@ export type {
   PreflightResult,
   PanelContext,
   ToolContext,
+  AutoFixAction,
 } from './preflight';
 export {
   validateIntent,

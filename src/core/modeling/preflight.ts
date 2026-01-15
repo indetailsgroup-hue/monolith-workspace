@@ -20,6 +20,15 @@ import type { DesignIntent, EdgeProfileIntent, GrooveIntent, ProfileAsset } from
 
 export type ValidationSeverity = 'error' | 'warning' | 'info';
 
+/** Type of auto-fix action */
+export type AutoFixAction =
+  | { type: 'clamp-depth'; maxDepth: number }
+  | { type: 'use-alternative-tool'; toolRadius: number }
+  | { type: 'increase-offset'; minOffset: number }
+  | { type: 'use-thicker-panel'; minThickness: number }
+  | { type: 'remove-intent' }
+  | { type: 'adjust-spacing'; minSpacing: number };
+
 export interface ValidationError {
   id: string;
   severity: ValidationSeverity;
@@ -29,6 +38,10 @@ export interface ValidationError {
   targetId?: string;
   /** Suggested fix value */
   suggestedValue?: number;
+  /** Auto-fix action (one-click fix) */
+  autoFix?: AutoFixAction;
+  /** Human-readable fix description */
+  fixDescription?: string;
   /** Additional context */
   context?: Record<string, unknown>;
 }
@@ -113,6 +126,8 @@ function validateDepthVsThickness(
       message: `${intentType} depth (${depth}mm) exceeds safe limit (${maxAllowedDepth}mm) for ${panel.thickness}mm panel`,
       targetId: intent.target.panelId,
       suggestedValue: maxAllowedDepth,
+      autoFix: { type: 'clamp-depth', maxDepth: maxAllowedDepth },
+      fixDescription: `Clamp to safe max (${maxAllowedDepth}mm)`,
       context: {
         currentDepth: depth,
         panelThickness: panel.thickness,
@@ -129,6 +144,8 @@ function validateDepthVsThickness(
       code: 'DEPTH_NEAR_LIMIT',
       message: `${intentType} depth (${depth}mm) is close to maximum safe limit`,
       targetId: intent.target.panelId,
+      autoFix: { type: 'clamp-depth', maxDepth: maxAllowedDepth - 1 },
+      fixDescription: `Reduce to ${maxAllowedDepth - 1}mm for safety margin`,
     };
   }
 
@@ -158,6 +175,8 @@ function validateToolRadius(
       message: `Profile requires R${requiredRadius}mm tool, not available. Closest: R${closest}mm`,
       targetId: intent.target.panelId,
       suggestedValue: closest,
+      autoFix: { type: 'use-alternative-tool', toolRadius: closest },
+      fixDescription: `Use R${closest}mm tool instead`,
       context: {
         requiredRadius,
         availableRadii: available,
@@ -189,6 +208,8 @@ function validateEdgeDistance(
       message: `Groove offset (${offset}mm) is less than minimum edge distance (${tools.minEdgeDistance}mm)`,
       targetId: intent.target.panelId,
       suggestedValue: tools.minEdgeDistance,
+      autoFix: { type: 'increase-offset', minOffset: tools.minEdgeDistance },
+      fixDescription: `Increase offset to ${tools.minEdgeDistance}mm`,
       context: {
         currentOffset: offset,
         minRequired: tools.minEdgeDistance,
@@ -266,6 +287,8 @@ function validateProfileMinThickness(
       code: 'PANEL_TOO_THIN_FOR_PROFILE',
       message: `Panel (${panel.thickness}mm) is too thin for ${profile.name} (requires ${profile.minThickness}mm)`,
       targetId: intent.target.panelId,
+      autoFix: { type: 'use-thicker-panel', minThickness: profile.minThickness },
+      fixDescription: `Use ${profile.minThickness}mm panel or choose different profile`,
       context: {
         panelThickness: panel.thickness,
         requiredThickness: profile.minThickness,
