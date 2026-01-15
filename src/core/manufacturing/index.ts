@@ -1,12 +1,13 @@
 /**
  * Manufacturing Module - Factory Operations & Gate System
  *
- * Step 5 of Plasticity-Style Modeling Layer:
+ * Step 5-6 of Plasticity-Style Modeling Layer:
  * - OperationGraph: Machine-readable operations from DesignIntent
  * - Gate: Pre-freeze validation combining Preflight + OpGraph
  * - Snapshot: Immutable frozen state with hash verification
+ * - Release: FROZEN → RELEASED workflow with approval signatures
  *
- * v1.0: Initial manufacturing module
+ * v1.1: Added release module (Step 6)
  */
 
 // ============================================================================
@@ -62,3 +63,36 @@ export {
   exportSnapshot,
   importSnapshot,
 } from './gate';
+
+// ============================================================================
+// Release (Step 6)
+// ============================================================================
+
+export type {
+  ApprovalRole,
+  ApprovalSignature,
+  ApprovalRequirement,
+  ReleaseFile,
+  ReleaseBundle,
+  ReleaseBundleMeta,
+} from './release';
+export {
+  DEFAULT_APPROVAL_REQUIREMENT,
+  getBundleMeta,
+  fnv1aHash,
+  signPayloadMock,
+  createApprovalSignature,
+  verifyApprovalSignature,
+  signManifest,
+  buildReleaseBundle,
+  extractManifest,
+  verifyBundleIntegrity,
+  exportBundleAsJson,
+  downloadBundle,
+  downloadBundleFile,
+  useReleaseStore,
+  useApprovals,
+  useLastBundle,
+  useApprovalModalOpen,
+  useCanRelease,
+} from './release';
