@@ -1,12 +1,13 @@
 /**
  * Modeling Release Panel - FROZEN → RELEASED Workflow
  *
- * Step 6 of Plasticity-Style Modeling Layer:
+ * Step 6-7 of Plasticity-Style Modeling Layer:
  * - Shows current approval status
  * - Requires explicit approval before release
  * - Builds release bundle with manifest + signatures
+ * - Includes ExportPanel for factory export (Step 7)
  *
- * v1.0: Initial modeling release panel
+ * v1.1: Added ExportPanel integration (Step 7)
  */
 
 import { useState } from 'react';
@@ -21,6 +22,7 @@ import { buildReleaseBundle, downloadBundle, getBundleMeta } from '../../core/ma
 import type { FrozenSnapshot } from '../../core/manufacturing/gate/snapshot';
 import type { OperationGraph } from '../../core/manufacturing/opgraph/types';
 import ApprovalModal from './ApprovalModal';
+import { ExportPanel } from '../../export/ui/ExportPanel';
 
 interface ModelingReleasePanelProps {
   /** Current frozen snapshot (required for release) */
@@ -365,6 +367,9 @@ export function ModelingReleasePanel({
             Clear Approvals
           </button>
         )}
+
+        {/* Export Panel (Step 7) - Only show after release */}
+        {lastBundle && <ExportPanel releaseBundle={lastBundle} />}
       </div>
 
       {/* Approval Modal */}
