@@ -51,4 +51,30 @@ export {
   useToolMode,
   useCommandPaletteOpen,
   useAvailableCommands,
+  usePreflightResult,
 } from './useModelingStore';
+
+// Drag Interaction
+export type { DragAxis, DragState, DragConfig } from './dragInteraction';
+export {
+  createDragState,
+  updateDragState,
+  endDrag,
+  createDragHandlers,
+  debounceUpdate,
+} from './dragInteraction';
+
+// Preflight Validation
+export type {
+  ValidationSeverity,
+  ValidationError,
+  PreflightResult,
+  PanelContext,
+  ToolContext,
+} from './preflight';
+export {
+  validateIntent,
+  validateAllIntents,
+  getSeverityColor,
+  getSeverityIcon,
+} from './preflight';

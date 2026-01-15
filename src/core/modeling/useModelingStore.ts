@@ -21,6 +21,8 @@ import type {
   ProfileAsset,
   ModelingCommand,
 } from './types';
+import type { PreflightResult, PanelContext } from './preflight';
+import { validateIntent } from './preflight';
 
 /** Generate unique ID */
 function generateId(): string {
@@ -57,6 +59,10 @@ interface ModelingState {
 
   // Preview
   previewIntent: DesignIntent | null;
+
+  // Preflight Validation
+  preflightResult: PreflightResult | null;
+  preflightPanelContext: PanelContext | null;
 }
 
 // ============================================================================
@@ -99,6 +105,15 @@ interface ModelingActions {
   // Preview
   setPreviewIntent: (intent: DesignIntent | null) => void;
 
+  // Preflight Validation
+  runPreflight: (intent: DesignIntent, panelContext: PanelContext) => PreflightResult;
+  clearPreflight: () => void;
+  commitIntentWithPreflight: (
+    cabinetId: string,
+    intent: Omit<DesignIntent, 'id' | 'createdAt'>,
+    panelContext: PanelContext
+  ) => { success: boolean; intentId?: string; result: PreflightResult };
+
   // Profile Library
   addCustomProfile: (profile: Omit<ProfileAsset, 'id'>) => string;
   removeCustomProfile: (profileId: string) => void;
@@ -133,6 +148,8 @@ const initialState: ModelingState = {
   profiles: [], // Will be populated from BUILT_IN_PROFILES
   customProfiles: [],
   previewIntent: null,
+  preflightResult: null,
+  preflightPanelContext: null,
 };
 
 // ============================================================================
@@ -395,6 +412,62 @@ export const useModelingStore = create<ModelingState & ModelingActions>()(
     },
 
     // ========================================================================
+    // Preflight Validation Actions
+    // ========================================================================
+
+    runPreflight: (intent, panelContext) => {
+      const profile = intent.type === 'edge-profile'
+        ? get().getProfileById((intent as any).profileId)
+        : undefined;
+
+      const result = validateIntent(intent, panelContext, profile);
+
+      set((state) => {
+        state.preflightResult = result;
+        state.preflightPanelContext = panelContext;
+      });
+
+      return result;
+    },
+
+    clearPreflight: () => {
+      set((state) => {
+        state.preflightResult = null;
+        state.preflightPanelContext = null;
+      });
+    },
+
+    commitIntentWithPreflight: (cabinetId, intentData, panelContext) => {
+      // Create temporary intent for validation
+      const tempIntent: DesignIntent = {
+        ...intentData,
+        id: 'temp-validation',
+        createdAt: new Date().toISOString(),
+      } as DesignIntent;
+
+      // Run preflight validation
+      const profile = tempIntent.type === 'edge-profile'
+        ? get().getProfileById((tempIntent as any).profileId)
+        : undefined;
+
+      const result = validateIntent(tempIntent, panelContext, profile);
+
+      // Store preflight result
+      set((state) => {
+        state.preflightResult = result;
+        state.preflightPanelContext = panelContext;
+      });
+
+      // Only commit if no errors (warnings allowed)
+      if (result.valid) {
+        const intentId = get().addIntent(cabinetId, intentData);
+        return { success: true, intentId, result };
+      }
+
+      return { success: false, result };
+    },
+
+    // ========================================================================
     // Profile Library Actions
     // ========================================================================
 
@@ -473,6 +546,11 @@ export const useAvailableCommands = () => {
   return MODELING_COMMANDS.filter((cmd: any) =>
     cmd.requiresSelection.includes(selectionType) || cmd.requiresSelection.includes('none')
   );
+};
+
+/** Get current preflight result */
+export const usePreflightResult = (): PreflightResult | null => {
+  return useModelingStore((s) => s.preflightResult);
 };
 
 // ============================================================================
