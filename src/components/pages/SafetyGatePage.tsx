@@ -146,9 +146,9 @@ export function SafetyGatePage() {
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">Safety & Gate — {jobId}</h1>
+            <h1 className="text-xl font-semibold">Safety Diagnostics (Local)</h1>
             <p className="text-sm text-zinc-500 mt-1">
-              Snapshot {snapshotId} • {machine} {profile}
+              Demo Job: {jobId} (mock) • {snapshotId} • {machine} {profile}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -156,12 +156,31 @@ export function SafetyGatePage() {
               Gate {gateDecision}
             </Badge>
             <Badge variant="released">specState: {specState}</Badge>
-            <button className="px-4 py-2 text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors">
-              ← Back to Job
-            </button>
+            <a
+              href="/"
+              className="px-4 py-2 text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
+            >
+              ← Back to Designer
+            </a>
           </div>
         </div>
       </header>
+
+      {/* Warning Banner - Local diagnostics only */}
+      <div className="mx-6 mt-4 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
+        <div className="flex items-start gap-3">
+          <span className="text-amber-400 text-lg">⚠️</span>
+          <div>
+            <div className="font-semibold text-amber-300">Local Diagnostics Only</div>
+            <p className="text-sm text-amber-200/80 mt-1 leading-relaxed">
+              This page runs local rules and uses mock/demo data. It is <strong>not authoritative</strong>.
+              <br />
+              Gate authority and export unlock are enforced by <strong>server verification</strong> at{' '}
+              <code className="bg-black/30 px-1 rounded">/projects/:projectId/validation</code>.
+            </p>
+          </div>
+        </div>
+      </div>
       
       <div className="flex">
         {/* Sidebar */}

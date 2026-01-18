@@ -15,9 +15,10 @@
  * /factory                     - Factory dashboard (FACTORY role)
  * /factory/jobs/:jobId         - Factory job detail (FACTORY role)
  * /finance                     - Finance screen (FINANCE role)
- * /safety                      - Safety & Gate page
+ * /safety                      - Redirect to /diagnostics/safety
+ * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.1
+ * @version 0.12.2
  */
 
 import { useMemo } from 'react';
@@ -594,9 +595,14 @@ export const router = createBrowserRouter([
     path: '/finance',
     element: <FinancePage />,
   },
-  // Safety & Gate page
+  // Legacy safety route - redirect to diagnostics
   {
     path: '/safety',
+    element: <Navigate to="/diagnostics/safety" replace />,
+  },
+  // Safety diagnostics (local-only, not authoritative)
+  {
+    path: '/diagnostics/safety',
     element: <SafetyGatePage />,
   },
   // 404
