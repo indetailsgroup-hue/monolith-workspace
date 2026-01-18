@@ -1,8 +1,9 @@
 /**
  * Factory Store - Zustand state management for Factory Ops UI
  * P1.1 Factory Ops UX
+ * P7A: Activity / Audit Timeline
  *
- * @version 0.12.0
+ * @version 0.12.7
  */
 
 import { create } from "zustand";
@@ -40,6 +41,12 @@ import {
   fetchExportOptionsApi,
   runGatedExportApi,
 } from "../api/exportApi";
+import type {
+  ActivityRecord,
+  ActivityCacheEntry,
+  ActivityFetchStatus,
+} from "../types/activity";
+import { fetchJobActivityApi } from "../api/activityApi";
 
 // ============================================================================
 // Filter & Sort
@@ -120,8 +127,11 @@ interface FactoryState {
   exportOptions: ExportOptionsResponse | null;
   exportOptionsLoading: boolean;
 
-  // Activity log
+  // Activity log (legacy client-side)
   activityLog: ActivityLogEntry[];
+
+  // Server-authoritative Activity Timeline (P7A)
+  serverActivityByJobId: Record<string, ActivityCacheEntry>;
 
   // Incident banner
   incidentActive: boolean;
@@ -196,9 +206,14 @@ interface FactoryActions {
   clearGatedExportCache: (jobId: string) => void;
   clearAllGatedExportCache: () => void;
 
-  // Activity log
+  // Activity log (legacy client-side)
   addActivity: (entry: Omit<ActivityLogEntry, "id">) => void;
   clearActivityLog: () => void;
+
+  // Server-authoritative Activity Timeline (P7A)
+  getServerActivityCacheEntry: (jobId: string) => ActivityCacheEntry;
+  fetchServerActivity: (jobId: string) => Promise<ActivityRecord[]>;
+  clearServerActivityCache: (jobId: string) => void;
 
   // Incident
   setIncident: (active: boolean, message?: string) => void;
@@ -252,6 +267,9 @@ const initialState: FactoryState = {
   exportOptionsLoading: false,
 
   activityLog: [],
+
+  // Server-authoritative Activity Timeline (P7A)
+  serverActivityByJobId: {},
 
   incidentActive: false,
   incidentMessage: null,
@@ -859,6 +877,74 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
     clearActivityLog: () =>
       set((state) => {
         state.activityLog = [];
+      }),
+
+    // ========================================================================
+    // Server-authoritative Activity Timeline (P7A)
+    // ========================================================================
+
+    getServerActivityCacheEntry: (jobId) => {
+      const state = get();
+      return (
+        state.serverActivityByJobId[jobId] || {
+          status: "IDLE" as ActivityFetchStatus,
+          items: [],
+          error: undefined,
+          fetchedAt: undefined,
+        }
+      );
+    },
+
+    fetchServerActivity: async (jobId) => {
+      // Check if already loading
+      const currentEntry = get().serverActivityByJobId[jobId];
+      if (currentEntry?.status === "LOADING") {
+        // Return cached items while loading
+        return currentEntry.items;
+      }
+
+      // Set loading state
+      set((state) => {
+        state.serverActivityByJobId[jobId] = {
+          status: "LOADING",
+          items: state.serverActivityByJobId[jobId]?.items || [],
+          error: undefined,
+          fetchedAt: undefined,
+        };
+      });
+
+      try {
+        const response = await fetchJobActivityApi(jobId);
+
+        set((state) => {
+          state.serverActivityByJobId[jobId] = {
+            status: "DONE",
+            items: response.items,
+            error: undefined,
+            fetchedAt: response.fetchedAt,
+          };
+        });
+
+        return response.items;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch activity";
+
+        set((state) => {
+          state.serverActivityByJobId[jobId] = {
+            status: "ERROR",
+            items: [],
+            error: errorMessage,
+            fetchedAt: new Date().toISOString(),
+          };
+        });
+
+        return [];
+      }
+    },
+
+    clearServerActivityCache: (jobId) =>
+      set((state) => {
+        delete state.serverActivityByJobId[jobId];
       }),
 
     // ========================================================================

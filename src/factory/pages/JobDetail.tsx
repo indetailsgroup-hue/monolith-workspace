@@ -1,11 +1,11 @@
 /**
  * JobDetail - Individual job view with verify & export
- * P1.1 Factory Ops UX + P2.1 Packet Viewer + P2.2 Gated Export
+ * P1.1 Factory Ops UX + P2.1 Packet Viewer + P2.2 Gated Export + P7A Activity Timeline
  *
  * Flow: Overview → Packet → Factory Check → Export
  * 100% read-only - no editing capabilities.
  *
- * @version 0.12.0
+ * @version 0.12.7
  */
 
 import React, { useEffect, useCallback, useState } from "react";
@@ -24,6 +24,7 @@ import {
   ExportActions,
   type ExportRequest,
 } from "../components/export";
+import { ActivityTimeline } from "../components/activity/ActivityTimeline";
 
 export interface JobDetailProps {
   jobId: string;
@@ -52,6 +53,9 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
     fetchExportOptions,
     getExportCacheEntry,
     runGatedExport,
+    // P7A Activity Timeline
+    getServerActivityCacheEntry,
+    fetchServerActivity,
   } = useFactoryStore();
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -189,7 +193,13 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
           />
         )}
 
-        {activeTab === "activity" && <ActivityTab jobId={jobId} />}
+        {activeTab === "activity" && (
+          <ActivityTab
+            jobId={jobId}
+            fetchServerActivity={fetchServerActivity}
+            getServerActivityCacheEntry={getServerActivityCacheEntry}
+          />
+        )}
       </div>
     </div>
   );
@@ -697,62 +707,46 @@ function ExportResultCard({
 }
 
 // ============================================================================
-// Activity Tab
+// Activity Tab (P7A Server-Authoritative)
 // ============================================================================
 
 interface ActivityTabProps {
   jobId: string;
+  fetchServerActivity: (jobId: string) => Promise<unknown>;
+  getServerActivityCacheEntry: (jobId: string) => {
+    status: "IDLE" | "LOADING" | "DONE" | "ERROR";
+    items: import("../types/activity").ActivityRecord[];
+    error?: string;
+  };
 }
 
-function ActivityTab({ jobId }: ActivityTabProps): React.ReactElement {
-  const { activityLog } = useFactoryStore();
-  const jobActivities = activityLog.filter((a) => a.jobId === jobId);
+function ActivityTab({
+  jobId,
+  fetchServerActivity,
+  getServerActivityCacheEntry,
+}: ActivityTabProps): React.ReactElement {
+  const activityState = getServerActivityCacheEntry(jobId);
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    if (activityState.status === "IDLE") {
+      fetchServerActivity(jobId);
+    }
+  }, [jobId, activityState.status, fetchServerActivity]);
+
+  // Handle refresh
+  const handleRefresh = useCallback(() => {
+    fetchServerActivity(jobId);
+  }, [jobId, fetchServerActivity]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        maxWidth: 600,
-        margin: "0 auto",
-      }}
-    >
-      <h3 style={{ margin: 0, color: "#888" }}>Activity Log</h3>
-      {jobActivities.length === 0 ? (
-        <div style={{ color: "#666", textAlign: "center", padding: 40 }}>
-          No activity yet
-        </div>
-      ) : (
-        jobActivities.map((activity) => (
-          <div
-            key={activity.id}
-            style={{
-              padding: 12,
-              backgroundColor: "#1a1a2e",
-              border: "1px solid #3a3a5a",
-              borderRadius: 8,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ fontWeight: 500 }}>{activity.type}</span>
-              <span style={{ fontSize: 12, color: "#666" }}>
-                {new Date(activity.timestamp).toLocaleString("th-TH")}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "#888" }}>
-              by {activity.actor}
-            </div>
-          </div>
-        ))
-      )}
-    </div>
+    <ActivityTimeline
+      jobId={jobId}
+      items={activityState.items}
+      loading={activityState.status === "LOADING"}
+      error={activityState.error}
+      onRefresh={handleRefresh}
+    />
   );
 }
 
