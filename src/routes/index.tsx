@@ -18,11 +18,12 @@
  * /safety                      - Redirect to /diagnostics/safety
  * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.5
+ * @version 0.12.6
  */
 
 import { useMemo, useEffect, useState, useCallback } from 'react';
-import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { isPitchMode, withSearchParams } from '../core/ui/pitch';
 import { App } from '../App';
 import { SafetyGatePage } from '../components/pages/SafetyGatePage';
 import { ValidationScreen } from '../pages/ValidationScreen';
@@ -144,11 +145,16 @@ function SwimlaneConnector({ status }: { status: SwimlaneStatus }) {
 
 function ProjectHomePage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const cabinet = useCabinetStore((s) => s.cabinet);
   const specState = useSpecStore((s) => s.specState);
 
   const effectiveProjectId = projectId || 'current';
   const jobId = effectiveProjectId;
+
+  // Pitch mode: clean demo UI with narrative, hide tech noise
+  const pitch = isPitchMode(location.search);
 
   // Role gate dialog state
   const [roleGateDialogOpen, setRoleGateDialogOpen] = useState(false);
@@ -275,83 +281,152 @@ function ProjectHomePage() {
       color: 'white',
       padding: '32px',
     }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '32px',
-      }}>
-        <div>
-          <Link to="/" style={{ color: '#6b7280', fontSize: '12px', textDecoration: 'none' }}>
-            ← Back to Workspace
-          </Link>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, marginTop: '8px' }}>{projectName}</h1>
-          <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
-            Project ID: {effectiveProjectId} • Job ID: {jobId} • Spec: {specState}
-          </p>
-        </div>
-        {/* Server Verify Status */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Header - Pitch mode shows clean version */}
+      {pitch ? (
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 700 }}>{projectName}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
             <VerifyVerdictPill verdict={verdictDisplay} />
-            <button
-              onClick={() => refreshStatus(jobId)}
-              disabled={isLoading}
-              style={{
-                padding: '8px 12px',
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '32px',
+        }}>
+          <div>
+            <Link to="/" style={{ color: '#6b7280', fontSize: '12px', textDecoration: 'none' }}>
+              ← Back to Workspace
+            </Link>
+            <h1 style={{ fontSize: '28px', fontWeight: 700, marginTop: '8px' }}>{projectName}</h1>
+            <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
+              Project ID: {effectiveProjectId} • Job ID: {jobId} • Spec: {specState}
+            </p>
+          </div>
+          {/* Server Verify Status */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <VerifyVerdictPill verdict={verdictDisplay} />
+              <button
+                onClick={() => refreshStatus(jobId)}
+                disabled={isLoading}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #374151',
+                  background: isLoading ? '#1f2937' : '#111',
+                  color: isLoading ? '#6b7280' : '#9ca3af',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isLoading ? 'Checking...' : '↻ Refresh'}
+              </button>
+              <div style={{
+                padding: '8px 16px',
+                background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
                 borderRadius: '8px',
-                border: '1px solid #374151',
-                background: isLoading ? '#1f2937' : '#111',
-                color: isLoading ? '#6b7280' : '#9ca3af',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '12px',
-                fontWeight: 500,
+              }}>
+                <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600, fontSize: '13px' }}>
+                  {specState}
+                </span>
+              </div>
+            </div>
+            {/* Error or Last Checked Info */}
+            {verifyError ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#ef4444', fontSize: '12px' }}>
+                  Error: {verifyError.slice(0, 50)}{verifyError.length > 50 ? '...' : ''}
+                </span>
+                <button
+                  onClick={() => refreshStatus(jobId)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ef4444',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#fca5a5',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : lastCheckedMs ? (
+              <span style={{ color: '#6b7280', fontSize: '11px' }}>
+                Last checked: {getRelativeTime(lastCheckedMs)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Pitch Mode: Narrative Header */}
+      {pitch && (
+        <div style={{
+          marginBottom: '24px',
+          padding: '20px',
+          borderRadius: '16px',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
+          background: 'rgba(139, 92, 246, 0.05)',
+        }}>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#c4b5fd' }}>
+            Design → Factory Check → Export
+          </div>
+          <div style={{
+            marginTop: '8px',
+            fontSize: '14px',
+            color: 'rgba(255, 255, 255, 0.7)',
+            lineHeight: 1.6,
+          }}>
+            Gate authority is <b style={{ color: '#a78bfa' }}>server verification</b>.
+            Export unlocks only on <b style={{ color: '#86efac' }}>PASS</b>.
+          </div>
+          <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate(withSearchParams(`/projects/${effectiveProjectId}/validation`, location.search))}
+              style={{
+                padding: '12px 20px',
+                borderRadius: '10px',
+                border: '1px solid rgba(139, 92, 246, 0.4)',
+                background: 'rgba(139, 92, 246, 0.15)',
+                color: '#c4b5fd',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
                 transition: 'all 0.2s ease',
               }}
             >
-              {isLoading ? 'Checking...' : '↻ Refresh'}
+              🛡️ Run Factory Check
             </button>
-            <div style={{
-              padding: '8px 16px',
-              background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-              border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
-              borderRadius: '8px',
-            }}>
-              <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600, fontSize: '13px' }}>
-                {specState}
-              </span>
-            </div>
-          </div>
-          {/* Error or Last Checked Info */}
-          {verifyError ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: '#ef4444', fontSize: '12px' }}>
-                Error: {verifyError.slice(0, 50)}{verifyError.length > 50 ? '...' : ''}
-              </span>
+            {canAccessFactory && (
               <button
-                onClick={() => refreshStatus(jobId)}
+                onClick={() => navigate(`/factory/jobs/${effectiveProjectId}`)}
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ef4444',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#fca5a5',
+                  padding: '12px 20px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(34, 197, 94, 0.4)',
+                  background: 'rgba(34, 197, 94, 0.15)',
+                  color: '#86efac',
                   cursor: 'pointer',
-                  fontSize: '11px',
-                  fontWeight: 500,
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
                 }}
               >
-                Retry
+                📦 Open Export (Factory Ops)
               </button>
-            </div>
-          ) : lastCheckedMs ? (
-            <span style={{ color: '#6b7280', fontSize: '11px' }}>
-              Last checked: {getRelativeTime(lastCheckedMs)}
-            </span>
-          ) : null}
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Swimlane */}
       <div style={{
@@ -386,7 +461,8 @@ function ProjectHomePage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Hidden in pitch mode (CTAs are in narrative header) */}
+      {!pitch && (
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -502,6 +578,7 @@ function ProjectHomePage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Role Gate Dialog */}
       <RoleGateDialog
