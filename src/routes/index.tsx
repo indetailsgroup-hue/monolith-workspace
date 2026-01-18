@@ -126,13 +126,12 @@ function ProjectHomePage() {
   const { projectId } = useParams<{ projectId: string }>();
   const cabinet = useCabinetStore((s) => s.cabinet);
   const specState = useSpecStore((s) => s.specState);
-  const validation = useSpecStore((s) => s.validation);
 
   // Derive swimlane status from spec state
+  // Gate authority = server verify (Factory Check). Export unlocks only on PASS.
   const swimlaneSteps = useMemo<SwimlaneStep[]>(() => {
     const designComplete = specState !== 'DRAFT';
-    const validationComplete = validation?.failCount === 0;
-    const gateComplete = specState === 'RELEASED';
+    const gateComplete = specState === 'RELEASED'; // PASS-only gate
 
     return [
       {
@@ -144,20 +143,12 @@ function ProjectHomePage() {
         icon: '✏️',
       },
       {
-        id: 'validation',
-        label: 'Validation',
-        labelThai: 'ตรวจสอบ',
-        status: !designComplete ? 'pending' : validationComplete ? 'complete' : 'in_progress',
+        id: 'factory_check',
+        label: 'Factory Check',
+        labelThai: 'ตรวจสอบ / อนุมัติ',
+        status: !designComplete ? 'pending' : gateComplete ? 'complete' : 'in_progress',
         route: '/projects/:projectId/validation',
         icon: '🛡️',
-      },
-      {
-        id: 'gate',
-        label: 'Gate',
-        labelThai: 'อนุมัติ',
-        status: !validationComplete ? 'pending' : gateComplete ? 'complete' : 'in_progress',
-        route: '/projects/:projectId/validation', // Server-authoritative gate
-        icon: '🚦',
       },
       {
         id: 'export',
@@ -168,7 +159,7 @@ function ProjectHomePage() {
         icon: '📦',
       },
     ];
-  }, [specState, validation]);
+  }, [specState]);
 
   const effectiveProjectId = projectId || 'current';
   const projectName = cabinet?.name || 'Untitled Project';
@@ -268,12 +259,12 @@ function ProjectHomePage() {
           transition: 'all 0.2s ease',
         }}>
           <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛡️</div>
-          <div style={{ fontWeight: 600 }}>Run Validation</div>
+          <div style={{ fontWeight: 600 }}>Factory Check</div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-            Factory check before export
+            Server-authoritative gate verification
           </div>
         </Link>
-        <Link to={`/projects/${effectiveProjectId}/validation`} style={{
+        <Link to={`/factory/jobs/${effectiveProjectId}`} style={{
           padding: '20px',
           background: '#111',
           border: '1px solid #222',
@@ -282,10 +273,10 @@ function ProjectHomePage() {
           color: 'white',
           transition: 'all 0.2s ease',
         }}>
-          <div style={{ fontSize: '20px', marginBottom: '8px' }}>🚦</div>
-          <div style={{ fontWeight: 600 }}>Gate Check</div>
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>📦</div>
+          <div style={{ fontWeight: 600 }}>Export to Factory</div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-            Server-authoritative verification
+            Generate CAM files for production
           </div>
         </Link>
       </div>
