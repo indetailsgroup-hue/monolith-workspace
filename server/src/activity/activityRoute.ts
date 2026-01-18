@@ -3,7 +3,7 @@
  *
  * Server-authoritative activity timeline endpoint.
  *
- * @version 0.12.8
+ * @version 0.12.9
  */
 
 import { Router } from "express";
@@ -13,9 +13,11 @@ export const activityRoute = Router();
 
 // ============================================================================
 // GET /factory/jobs/:jobId/activity
+// GET /api/factory/jobs/:jobId/activity (alias)
 // ============================================================================
 
-activityRoute.get("/factory/jobs/:jobId/activity", async (req, res) => {
+// Handler function for activity endpoint
+async function handleGetActivity(req: any, res: any) {
   try {
     const { jobId } = req.params;
     const limitParam = req.query.limit;
@@ -41,13 +43,19 @@ activityRoute.get("/factory/jobs/:jobId/activity", async (req, res) => {
       message,
     });
   }
-});
+}
+
+// Primary route
+activityRoute.get("/factory/jobs/:jobId/activity", handleGetActivity);
+
+// Alias route for /api/factory/... compatibility
+activityRoute.get("/api/factory/jobs/:jobId/activity", handleGetActivity);
 
 // ============================================================================
 // GET /factory/jobs/:jobId/activity/stats (optional debug endpoint)
 // ============================================================================
 
-activityRoute.get("/factory/jobs/:jobId/activity/stats", async (req, res) => {
+async function handleGetActivityStats(req: any, res: any) {
   try {
     const { jobId } = req.params;
     const stats = await getActivityStats(jobId);
@@ -74,4 +82,7 @@ activityRoute.get("/factory/jobs/:jobId/activity/stats", async (req, res) => {
       message,
     });
   }
-});
+}
+
+activityRoute.get("/factory/jobs/:jobId/activity/stats", handleGetActivityStats);
+activityRoute.get("/api/factory/jobs/:jobId/activity/stats", handleGetActivityStats);
