@@ -15,6 +15,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import { existsSync, mkdirSync } from 'fs';
 
 import type {
   ArtifactBundle,
@@ -36,6 +37,19 @@ import {
   getCachedBundle,
 } from './export/exportService.js';
 import { getJob, getAllJobs, getQueueStats, cleanupOldJobs } from './export/jobQueue.js';
+import { createFactoryPackage } from './export/zipBundle.js';
+import {
+  logExportSuccess,
+  logVerifyFail,
+  logPolicyDenied,
+  logExportError,
+  queryAudit,
+  getAuditStats,
+  getAuditEntry,
+} from './export/exportAudit.js';
+import { getExportOptionsResponse } from './export/exportOptions.js';
+import type { AuditStatus } from './export/exportTypes.js';
+import { activityRoute, appendActivity, extractActorFromHeaders } from './activity/index.js';
 
 // ============================================================================
 // Express App Setup
@@ -47,6 +61,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// P8: Activity Timeline Route
+app.use(activityRoute);
+
 // ============================================================================
 // Health Check
 // ============================================================================
@@ -57,7 +74,7 @@ app.get('/api/health', (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '0.9.0',
+    version: '2.0.0-p22a',
     uptime: process.uptime(),
     storage: casStatsData,
     queue: queueStatsData,
@@ -428,6 +445,277 @@ app.post('/api/keys/:keyId/revoke', (req, res) => {
 });
 
 // ============================================================================
+// ZIP Export with SHA-256 Header (P2.2a)
+// ============================================================================
+
+app.post('/api/export/zip', async (req, res) => {
+  const startTime = Date.now();
+  const requester = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+
+  try {
+    const { bundle, request } = req.body as {
+      bundle: ArtifactBundle;
+      request: ExportRequest;
+    };
+
+    if (!bundle || !request) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_REQUEST',
+        message: 'bundle and request are required',
+      });
+    }
+
+    const bundleId = getBundleId(bundle);
+    const jobId = request.jobName || bundleId.slice(0, 8);
+    const actor = extractActorFromHeaders(req.headers as Record<string, string | string[] | undefined>);
+
+    // P8: Log EXPORT_ATTEMPT at start
+    await appendActivity(jobId, {
+      type: 'EXPORT_ATTEMPT',
+      actor,
+      export: {
+        dialect: request.format as 'KDT' | 'BIESSE' | 'HOMAG' | undefined,
+        mode: 'PER_JOB',
+        target: 'BUNDLE',
+      },
+    });
+
+    // 1. Verify the bundle
+    const verify = await verifyBundle(bundle);
+    if (!verify.ok) {
+      // P8: Log VERIFY_RUN (FAIL)
+      await appendActivity(jobId, {
+        type: 'VERIFY_RUN',
+        actor,
+        verify: {
+          verdict: 'FAIL',
+          code: 'VERIFICATION_FAILED',
+          summary: verify.issues?.[0]?.message ?? 'Verification failed',
+        },
+      });
+
+      // Audit: verification failed
+      logVerifyFail({
+        bundleId,
+        format: request.format,
+        requester,
+        issueCount: verify.issues?.length ?? 0,
+        errorCount: verify.issues?.filter(i => i.severity === 'ERROR').length ?? 0,
+        error: verify.issues?.[0]?.message,
+      });
+
+      return res.status(400).json({
+        ok: false,
+        error: 'VERIFICATION_FAILED',
+        verify,
+      });
+    }
+
+    // P8: Log VERIFY_RUN (PASS)
+    const hasWarnings = (verify.issues?.filter(i => i.severity === 'WARNING').length ?? 0) > 0;
+    await appendActivity(jobId, {
+      type: 'VERIFY_RUN',
+      actor,
+      verify: {
+        verdict: hasWarnings ? 'PASS_WITH_WARN' : 'PASS',
+        code: 'VERIFICATION_OK',
+        summary: hasWarnings ? `Passed with ${verify.issues?.filter(i => i.severity === 'WARNING').length} warnings` : 'All checks passed',
+      },
+    });
+
+    // 2. Evaluate policy
+    const manifest = extractManifest(bundle);
+    const policyResult = evalExportPolicy({
+      policy: DEFAULT_EXPORT_POLICY,
+      request,
+      verify,
+      manifest,
+    });
+
+    if (!policyResult.ok) {
+      // P8: Log EXPORT_BLOCKED
+      const deniedDecision = policyResult.decisions?.find(d => d.effect === 'DENY');
+      await appendActivity(jobId, {
+        type: 'EXPORT_BLOCKED',
+        actor,
+        export: {
+          dialect: request.format as 'KDT' | 'BIESSE' | 'HOMAG' | undefined,
+          ok: false,
+          reason: deniedDecision?.reason ?? 'Policy check failed',
+        },
+      });
+
+      // Audit: policy denied
+      logPolicyDenied({
+        bundleId,
+        format: request.format,
+        requester,
+        deniedReason: deniedDecision?.reason ?? 'Policy check failed',
+      });
+
+      return res.status(403).json({
+        ok: false,
+        error: 'POLICY_DENIED',
+        policy: policyResult,
+      });
+    }
+
+    // 3. Get exporter and generate files
+    const result = await exportDirect(bundle, request);
+
+    if (!result.ok || !result.files) {
+      // Audit: export error
+      logExportError({
+        bundleId,
+        format: request.format,
+        requester,
+        error: result.error ?? 'Export failed',
+      });
+
+      return res.status(500).json({
+        ok: false,
+        error: result.error ?? 'EXPORT_FAILED',
+      });
+    }
+
+    // 4. Create deterministic ZIP bundle
+    const manifestFile = bundle.files.find(f => f.name === 'manifest.json');
+    const sigFile = bundle.files.find(f => f.name === 'manifest.sig.json');
+
+    const zipResult = await createFactoryPackage({
+      jobId: request.jobName || bundleId.slice(0, 8),
+      projectName: manifest?.bundleId ?? 'Unnamed', // Use bundleId as project identifier
+      format: request.format,
+      manifest: manifestFile?.content ?? '{}',
+      signature: sigFile?.content,
+      files: result.files.map(f => ({
+        name: f.name,
+        content: f.content,
+      })),
+      verifyReport: JSON.stringify(verify, null, 2),
+    });
+
+    const processingTimeMs = Date.now() - startTime;
+
+    // 5. Audit: success
+    logExportSuccess({
+      bundleId,
+      format: request.format,
+      requester,
+      zipHashHex: zipResult.sha256Hex,
+      fileCount: result.files.length,
+      processingTimeMs,
+    });
+
+    // P8: Log EXPORT_SUCCESS
+    await appendActivity(jobId, {
+      type: 'EXPORT_SUCCESS',
+      actor,
+      export: {
+        dialect: request.format as 'KDT' | 'BIESSE' | 'HOMAG' | undefined,
+        mode: 'PER_JOB',
+        target: 'BUNDLE',
+        ok: true,
+        artifactSha256: zipResult.sha256Hex,
+        artifactName: `factory-package-${jobId}.zip`,
+      },
+    });
+
+    // 6. Send ZIP with SHA-256 header
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="factory-package-${request.jobName || bundleId.slice(0, 8)}.zip"`);
+    res.setHeader('X-IIMOS-ZIP-SHA256', zipResult.sha256Hex);
+    res.setHeader('X-IIMOS-Entry-Count', zipResult.entryCount.toString());
+    res.setHeader('X-IIMOS-Processing-Ms', processingTimeMs.toString());
+
+    res.send(zipResult.buffer);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+
+    // Audit: error
+    logExportError({
+      bundleId: 'unknown',
+      format: req.body?.request?.format ?? 'unknown',
+      requester,
+      error: message,
+    });
+
+    res.status(500).json({
+      ok: false,
+      error: 'SERVER_ERROR',
+      message,
+    });
+  }
+});
+
+// ============================================================================
+// Audit Trail Endpoints (P2.2a)
+// ============================================================================
+
+// Query audit log
+app.get('/api/audit', (req, res) => {
+  const query = {
+    bundleId: req.query.bundleId as string | undefined,
+    jobId: req.query.jobId as string | undefined,
+    status: req.query.status as AuditStatus | undefined,
+    format: req.query.format as string | undefined,
+    fromIso: req.query.fromIso as string | undefined,
+    toIso: req.query.toIso as string | undefined,
+    limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+    offset: req.query.offset ? parseInt(req.query.offset as string, 10) : undefined,
+  };
+
+  const entries = queryAudit(query);
+
+  res.json({
+    ok: true,
+    count: entries.length,
+    entries,
+  });
+});
+
+// Get audit statistics
+app.get('/api/audit/stats', (_req, res) => {
+  const stats = getAuditStats();
+
+  res.json({
+    ok: true,
+    stats,
+  });
+});
+
+// Get single audit entry
+app.get('/api/audit/:id', (req, res) => {
+  const { id } = req.params;
+  const entry = getAuditEntry(id);
+
+  if (!entry) {
+    return res.status(404).json({
+      ok: false,
+      error: 'AUDIT_ENTRY_NOT_FOUND',
+    });
+  }
+
+  res.json({
+    ok: true,
+    entry,
+  });
+});
+
+// ============================================================================
+// Export Options Endpoint (P2.2a)
+// ============================================================================
+
+app.get('/api/export/options', (_req, res) => {
+  const options = getExportOptionsResponse();
+  res.json({
+    ok: true,
+    ...options,
+  });
+});
+
+// ============================================================================
 // Admin Endpoints
 // ============================================================================
 
@@ -455,18 +743,27 @@ app.get('/api/admin/stats', (req, res) => {
 // Start Server
 // ============================================================================
 
+// Ensure data directory exists for audit log
+const dataDir = process.env.AUDIT_DIR ?? './data';
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
+  console.log(`[INIT] Created data directory: ${dataDir}`);
+}
+
 app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   IIMOS Factory Server v0.9.0                            ║
+║   IIMOS Factory Server v2.0.0-p22a                       ║
 ║                                                           ║
-║   Step 9: Server-side verification & export              ║
+║   P2.2a: Gated Export with Deterministic ZIP             ║
 ║                                                           ║
 ║   Endpoints:                                             ║
 ║   - POST /api/bundle/upload    Upload & verify bundle    ║
-║   - POST /api/export/queue     Queue export job          ║
-║   - GET  /api/export/status    Get job status            ║
+║   - POST /api/export/zip       Gated export (ZIP+SHA)    ║
+║   - GET  /api/export/options   Available formats/opts    ║
+║   - GET  /api/audit            Query audit log           ║
+║   - GET  /api/audit/stats      Audit statistics          ║
 ║   - POST /api/keys/register    Register public key       ║
 ║   - GET  /api/health           Health check              ║
 ║                                                           ║
