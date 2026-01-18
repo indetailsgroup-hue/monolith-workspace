@@ -1,0 +1,743 @@
+/**
+ * routes/index.tsx - React Router v6 Route Configuration
+ *
+ * Priority 3: Full routing for IIMOS
+ *
+ * ROUTE MAP:
+ * /                            - Designer workspace (default)
+ * /projects                    - Project list / hub
+ * /projects/:projectId         - Project home (swimlane hub)
+ * /projects/:projectId/design  - Designer workspace for project
+ * /projects/:projectId/validation - Factory validation
+ * /validation                  - Standalone validation (legacy)
+ * /release                     - Release wizard
+ * /packet/:id                  - View released packet
+ * /factory                     - Factory dashboard (FACTORY role)
+ * /finance                     - Finance screen (FINANCE role)
+ * /safety                      - Safety & Gate page
+ *
+ * @version 0.12.0
+ */
+
+import { useState, useEffect, useMemo } from 'react';
+import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate } from 'react-router-dom';
+import { App } from '../App';
+import { SafetyGatePage } from '../components/pages/SafetyGatePage';
+import { ValidationScreen } from '../pages/ValidationScreen';
+import { RequireRole } from '../core/auth/guards';
+import { testConnection, USE_MOCK } from '../core/api/client';
+import { getExportOptions, type ExportOptionsResponse } from '../core/api/exportApi';
+import { useCabinetStore } from '../core/store/useCabinetStore';
+import { useSpecStore } from '../core/store/useSpecStore';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+type SwimlaneStatus = 'pending' | 'in_progress' | 'complete' | 'blocked';
+
+interface SwimlaneStep {
+  id: string;
+  label: string;
+  labelThai: string;
+  status: SwimlaneStatus;
+  route?: string;
+  icon: string;
+}
+
+// ============================================================================
+// Swimlane Hub - Project Home Page
+// ============================================================================
+
+function SwimlaneStep({ step, projectId }: { step: SwimlaneStep; projectId: string }) {
+  const navigate = useNavigate();
+
+  const getStatusColor = () => {
+    switch (step.status) {
+      case 'complete': return { bg: 'rgba(34, 197, 94, 0.1)', border: '#22c55e', text: '#86efac' };
+      case 'in_progress': return { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#93c5fd' };
+      case 'blocked': return { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', text: '#fca5a5' };
+      default: return { bg: 'rgba(107, 114, 128, 0.1)', border: '#374151', text: '#9ca3af' };
+    }
+  };
+
+  const colors = getStatusColor();
+  const isClickable = step.route && step.status !== 'blocked';
+
+  const handleClick = () => {
+    if (isClickable && step.route) {
+      // Replace :projectId in route
+      const fullRoute = step.route.replace(':projectId', projectId);
+      navigate(fullRoute);
+    }
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '16px 20px',
+        background: colors.bg,
+        border: `1px solid ${colors.border}`,
+        borderRadius: '12px',
+        cursor: isClickable ? 'pointer' : 'default',
+        opacity: step.status === 'pending' ? 0.6 : 1,
+        transition: 'all 0.2s ease',
+        minWidth: '120px',
+      }}
+    >
+      <span style={{ fontSize: '24px' }}>{step.icon}</span>
+      <span style={{ fontSize: '13px', fontWeight: 600, color: colors.text }}>{step.label}</span>
+      <span style={{ fontSize: '11px', color: '#6b7280' }}>{step.labelThai}</span>
+      <span style={{
+        fontSize: '10px',
+        padding: '2px 8px',
+        borderRadius: '999px',
+        background: colors.border,
+        color: 'white',
+        fontWeight: 500,
+        textTransform: 'uppercase',
+      }}>
+        {step.status.replace('_', ' ')}
+      </span>
+    </div>
+  );
+}
+
+function SwimlaneConnector({ status }: { status: SwimlaneStatus }) {
+  const color = status === 'complete' ? '#22c55e' : '#374151';
+  return (
+    <div style={{
+      width: '40px',
+      height: '2px',
+      background: color,
+      margin: '0 4px',
+      borderRadius: '1px',
+    }} />
+  );
+}
+
+function ProjectHomePage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const cabinet = useCabinetStore((s) => s.cabinet);
+  const specState = useSpecStore((s) => s.specState);
+  const validation = useSpecStore((s) => s.validation);
+
+  // Derive swimlane status from spec state
+  const swimlaneSteps = useMemo<SwimlaneStep[]>(() => {
+    const designComplete = specState !== 'DRAFT';
+    const validationComplete = validation?.failCount === 0;
+    const gateComplete = specState === 'RELEASED';
+
+    return [
+      {
+        id: 'design',
+        label: 'Design',
+        labelThai: 'ออกแบบ',
+        status: designComplete ? 'complete' : 'in_progress',
+        route: '/projects/:projectId/design',
+        icon: '✏️',
+      },
+      {
+        id: 'validation',
+        label: 'Validation',
+        labelThai: 'ตรวจสอบ',
+        status: !designComplete ? 'pending' : validationComplete ? 'complete' : 'in_progress',
+        route: '/projects/:projectId/validation',
+        icon: '🛡️',
+      },
+      {
+        id: 'gate',
+        label: 'Gate',
+        labelThai: 'อนุมัติ',
+        status: !validationComplete ? 'pending' : gateComplete ? 'complete' : 'in_progress',
+        route: '/safety',
+        icon: '🚦',
+      },
+      {
+        id: 'export',
+        label: 'Export',
+        labelThai: 'ส่งออก',
+        status: !gateComplete ? 'pending' : 'in_progress',
+        route: '/factory',
+        icon: '📦',
+      },
+    ];
+  }, [specState, validation]);
+
+  const effectiveProjectId = projectId || 'current';
+  const projectName = cabinet?.name || 'Untitled Project';
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#0a0a0a',
+      color: 'white',
+      padding: '32px',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: '32px',
+      }}>
+        <div>
+          <Link to="/" style={{ color: '#6b7280', fontSize: '12px', textDecoration: 'none' }}>
+            ← Back to Workspace
+          </Link>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, marginTop: '8px' }}>{projectName}</h1>
+          <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
+            Project ID: {effectiveProjectId} • Spec: {specState}
+          </p>
+        </div>
+        <div style={{
+          padding: '12px 20px',
+          background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+          border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
+          borderRadius: '8px',
+        }}>
+          <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600 }}>
+            {specState}
+          </span>
+        </div>
+      </div>
+
+      {/* Swimlane */}
+      <div style={{
+        background: '#111',
+        border: '1px solid #222',
+        borderRadius: '16px',
+        padding: '32px',
+        marginBottom: '32px',
+      }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#9ca3af', marginBottom: '24px' }}>
+          Project Workflow
+        </h2>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
+        }}>
+          {swimlaneSteps.map((step, idx) => (
+            <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <SwimlaneStep step={step} projectId={effectiveProjectId} />
+              {idx < swimlaneSteps.length - 1 && (
+                <SwimlaneConnector status={step.status} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '16px',
+      }}>
+        <Link to={`/projects/${effectiveProjectId}/design`} style={{
+          padding: '20px',
+          background: '#111',
+          border: '1px solid #222',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          color: 'white',
+          transition: 'all 0.2s ease',
+        }}>
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>✏️</div>
+          <div style={{ fontWeight: 600 }}>Continue Design</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            Open the 3D designer workspace
+          </div>
+        </Link>
+        <Link to={`/projects/${effectiveProjectId}/validation`} style={{
+          padding: '20px',
+          background: '#111',
+          border: '1px solid #222',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          color: 'white',
+          transition: 'all 0.2s ease',
+        }}>
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛡️</div>
+          <div style={{ fontWeight: 600 }}>Run Validation</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            Factory check before export
+          </div>
+        </Link>
+        <Link to="/safety" style={{
+          padding: '20px',
+          background: '#111',
+          border: '1px solid #222',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          color: 'white',
+          transition: 'all 0.2s ease',
+        }}>
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>🚦</div>
+          <div style={{ fontWeight: 600 }}>Gate & Safety</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            View gate status and controls
+          </div>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Project Validation Page Wrapper
+// ============================================================================
+
+function ProjectValidationPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+
+  // Use projectId as jobId for validation
+  const jobId = projectId || 'current';
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#0a0a0a',
+      color: 'white',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '16px 24px',
+        borderBottom: '1px solid #222',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => navigate(`/projects/${projectId}`)}
+            style={{
+              padding: '8px 16px',
+              background: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: '8px',
+              color: '#9ca3af',
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            ← Back to Project
+          </button>
+          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Factory Validation</h1>
+        </div>
+        <div style={{
+          padding: '6px 12px',
+          background: '#1f2937',
+          borderRadius: '6px',
+          fontSize: '12px',
+          color: '#6b7280',
+          fontFamily: 'monospace',
+        }}>
+          Project: {projectId}
+        </div>
+      </div>
+
+      {/* Validation Screen */}
+      <ValidationScreen jobId={jobId} />
+    </div>
+  );
+}
+
+// ============================================================================
+// Project List Page
+// ============================================================================
+
+function ProjectListPage() {
+  const cabinet = useCabinetStore((s) => s.cabinet);
+  const navigate = useNavigate();
+
+  // Mock project list (in real app, fetch from API)
+  const projects = [
+    {
+      id: 'current',
+      name: cabinet?.name || 'Current Project',
+      status: 'DRAFT',
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#0a0a0a',
+      color: 'white',
+      padding: '32px',
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '32px',
+        }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: 700 }}>Projects</h1>
+            <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
+              Manage your cabinet design projects
+            </p>
+          </div>
+          <Link to="/" style={{
+            padding: '12px 20px',
+            background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            fontWeight: 600,
+            textDecoration: 'none',
+            fontSize: '14px',
+          }}>
+            + New Project
+          </Link>
+        </div>
+
+        {/* Project Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: '16px',
+        }}>
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              onClick={() => navigate(`/projects/${project.id}`)}
+              style={{
+                padding: '20px',
+                background: '#111',
+                border: '1px solid #222',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <div style={{
+                width: '100%',
+                height: '120px',
+                background: '#1a1a1a',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#374151',
+                fontSize: '32px',
+              }}>
+                📦
+              </div>
+              <h3 style={{ fontWeight: 600, marginBottom: '4px' }}>{project.name}</h3>
+              <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                Status: {project.status} • Updated: {new Date(project.updatedAt).toLocaleDateString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ValidationPage() {
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [exportOptions, setExportOptions] = useState<ExportOptionsResponse | null>(null);
+  const specState = useSpecStore((s) => s.specState);
+  const validation = useSpecStore((s) => s.validation);
+  const cabinet = useCabinetStore((s) => s.cabinet);
+
+  useEffect(() => {
+    // Test backend connection
+    testConnection().then((connected) => {
+      setBackendStatus(connected ? 'online' : 'offline');
+    });
+
+    // Fetch export options from backend
+    getExportOptions().then(setExportOptions).catch(console.error);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">Validation Report</h1>
+            <p className="text-gray-400 mt-1">Factory check results for {cabinet?.name || 'Current Project'}</p>
+          </div>
+          <Link to="/" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+            ← Back to Designer
+          </Link>
+        </div>
+
+        {/* Backend Status */}
+        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-gray-400">Backend Status:</span>
+              {backendStatus === 'checking' && (
+                <span className="text-yellow-400">Checking...</span>
+              )}
+              {backendStatus === 'online' && (
+                <span className="text-green-400 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  Online
+                </span>
+              )}
+              {backendStatus === 'offline' && (
+                <span className="text-red-400 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-400 rounded-full" />
+                  Offline
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500">
+              {USE_MOCK ? 'Mock Mode' : 'Live API'}
+            </div>
+          </div>
+        </div>
+
+        {/* Spec State */}
+        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-400">Spec State:</span>
+            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+              specState === 'DRAFT' ? 'bg-gray-700 text-gray-300' :
+              specState === 'FROZEN' ? 'bg-blue-900/50 text-blue-400' :
+              specState === 'RELEASED' ? 'bg-green-900/50 text-green-400' :
+              'bg-gray-700 text-gray-300'
+            }`}>
+              {specState}
+            </span>
+          </div>
+        </div>
+
+        {/* Validation Results */}
+        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
+          <h2 className="text-lg font-bold mb-4">Validation Rules</h2>
+          {validation && validation.rules.length > 0 ? (
+            <div className="space-y-2">
+              {validation.rules.map((rule, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg ${
+                    rule.status === 'FAIL' ? 'bg-red-900/30 border border-red-700/50' :
+                    rule.status === 'WARN' ? 'bg-yellow-900/30 border border-yellow-700/50' :
+                    'bg-green-900/30 border border-green-700/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold ${
+                      rule.status === 'FAIL' ? 'text-red-400' :
+                      rule.status === 'WARN' ? 'text-yellow-400' :
+                      'text-green-400'
+                    }`}>
+                      {rule.status}
+                    </span>
+                    <span className="font-mono text-sm">{rule.id}</span>
+                    <span className="text-xs text-gray-500">[{rule.category}]</span>
+                  </div>
+                  <p className="text-gray-300 text-sm mt-1">{rule.message}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-green-400 flex items-center gap-2">
+              <span>✓</span>
+              <span>No validation rules defined</span>
+            </div>
+          )}
+          {validation && (
+            <div className="mt-4 flex gap-4 text-sm">
+              <span className="text-green-400">Pass: {validation.passCount}</span>
+              <span className="text-yellow-400">Warn: {validation.warnCount}</span>
+              <span className="text-red-400">Fail: {validation.failCount}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Export Options (from backend) */}
+        {exportOptions && (
+          <div className="p-4 bg-gray-900 rounded-xl border border-gray-800">
+            <h2 className="text-lg font-bold mb-4">Available Export Formats</h2>
+            <div className="flex flex-wrap gap-2">
+              {exportOptions.formats.map((format) => (
+                <span
+                  key={format}
+                  className="px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-gray-300"
+                >
+                  {format}
+                </span>
+              ))}
+            </div>
+            <div className="mt-4 text-xs text-gray-500">
+              Dialects: {exportOptions.dialects.csv.length} CSV, {exportOptions.dialects.dxf.length} DXF, {exportOptions.dialects.gcode.length} G-code
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReleasePage() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+      <h1 className="text-2xl font-bold mb-4">Release Wizard</h1>
+      <p className="text-gray-400">DRAFT → FROZEN → RELEASED workflow - Coming soon</p>
+      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+        ← Back to Designer
+      </a>
+    </div>
+  );
+}
+
+function PacketViewerPage() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+      <h1 className="text-2xl font-bold mb-4">Packet Viewer</h1>
+      <p className="text-gray-400">View released spec packet - Coming soon</p>
+      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+        ← Back to Designer
+      </a>
+    </div>
+  );
+}
+
+function FactoryDashboardPage() {
+  return (
+    <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Factory Dashboard</h1>
+        <p className="text-gray-400">Factory-specific view with export capabilities - Coming soon</p>
+        <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+          ← Back to Designer
+        </a>
+      </div>
+    </RequireRole>
+  );
+}
+
+function FinancePage() {
+  return (
+    <RequireRole allow={['FINANCE', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Finance</h1>
+        <p className="text-gray-400">Cost breakdowns and invoicing - Coming soon</p>
+        <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+          ← Back to Designer
+        </a>
+      </div>
+    </RequireRole>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-6xl font-bold text-gray-700 mb-4">404</h1>
+        <p className="text-gray-400 mb-6">Page not found</p>
+        <a href="/" className="px-4 py-2 bg-green-500 text-black rounded-lg hover:bg-green-400 transition-colors">
+          Go to Designer
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Router Configuration
+// ============================================================================
+
+export const router = createBrowserRouter([
+  // Designer Workspace (default)
+  {
+    path: '/',
+    element: <App />,
+  },
+  // Project List
+  {
+    path: '/projects',
+    element: <ProjectListPage />,
+  },
+  // Project Home (Swimlane Hub)
+  {
+    path: '/projects/:projectId',
+    element: <ProjectHomePage />,
+  },
+  // Project Designer
+  {
+    path: '/projects/:projectId/design',
+    element: <App />,
+  },
+  // Project Validation
+  {
+    path: '/projects/:projectId/validation',
+    element: <ProjectValidationPage />,
+  },
+  // Legacy project route (redirect)
+  {
+    path: '/project',
+    element: <Navigate to="/projects" replace />,
+  },
+  // Legacy validation route
+  {
+    path: '/validation',
+    element: <ValidationPage />,
+  },
+  // Release wizard
+  {
+    path: '/release',
+    element: <ReleasePage />,
+  },
+  // Packet viewer
+  {
+    path: '/packet/:id',
+    element: <PacketViewerPage />,
+  },
+  // Factory dashboard (role-protected)
+  {
+    path: '/factory',
+    element: <FactoryDashboardPage />,
+  },
+  // Finance page (role-protected)
+  {
+    path: '/finance',
+    element: <FinancePage />,
+  },
+  // Safety & Gate page
+  {
+    path: '/safety',
+    element: <SafetyGatePage />,
+  },
+  // 404
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
+]);
+
+// ============================================================================
+// Router Provider Component
+// ============================================================================
+
+export function AppRouter() {
+  return <RouterProvider router={router} />;
+}
+
+export default AppRouter;
