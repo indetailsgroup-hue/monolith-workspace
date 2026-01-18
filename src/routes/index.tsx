@@ -18,10 +18,10 @@
  * /safety                      - Redirect to /diagnostics/safety
  * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.2
+ * @version 0.12.3
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate } from 'react-router-dom';
 import { App } from '../App';
 import { SafetyGatePage } from '../components/pages/SafetyGatePage';
@@ -29,10 +29,12 @@ import { ValidationScreen } from '../pages/ValidationScreen';
 import { FactoryApp } from '../factory/FactoryApp';
 import { JobDetail } from '../factory/pages/JobDetail';
 import { RequireRole } from '../core/auth/guards';
+import { hasRole, type Role } from '../core/auth/roles';
 import { useCabinetStore } from '../core/store/useCabinetStore';
 import { useSpecStore } from '../core/store/useSpecStore';
 import { useVerifyStatusStore } from '../core/store/useVerifyStatusStore';
 import { VerifyVerdictPill } from '../components/ui/VerifyVerdictPill';
+import { RoleGateDialog } from '../components/ui/RoleGateDialog';
 
 // ============================================================================
 // Types
@@ -53,7 +55,13 @@ interface SwimlaneStep {
 // Swimlane Hub - Project Home Page
 // ============================================================================
 
-function SwimlaneStep({ step, projectId }: { step: SwimlaneStep; projectId: string }) {
+interface SwimlaneStepComponentProps {
+  step: SwimlaneStep;
+  projectId: string;
+  onRoleGatedClick?: (route: string, requiredRoles: Role[]) => void;
+}
+
+function SwimlaneStepComponent({ step, projectId, onRoleGatedClick }: SwimlaneStepComponentProps) {
   const navigate = useNavigate();
 
   const getStatusColor = () => {
@@ -70,8 +78,17 @@ function SwimlaneStep({ step, projectId }: { step: SwimlaneStep; projectId: stri
 
   const handleClick = () => {
     if (isClickable && step.route) {
-      // Replace :projectId in route
       const fullRoute = step.route.replace(':projectId', projectId);
+
+      // Check if this is a factory route that requires role check
+      if (step.id === 'export' && onRoleGatedClick) {
+        const requiredRoles: Role[] = ['FACTORY', 'ADMIN'];
+        if (!hasRole(requiredRoles)) {
+          onRoleGatedClick(fullRoute, requiredRoles);
+          return;
+        }
+      }
+
       navigate(fullRoute);
     }
   };
@@ -133,10 +150,43 @@ function ProjectHomePage() {
   const effectiveProjectId = projectId || 'current';
   const jobId = effectiveProjectId;
 
+  // Role gate dialog state
+  const [roleGateDialogOpen, setRoleGateDialogOpen] = useState(false);
+  const [roleGateTarget, setRoleGateTarget] = useState<{
+    route: string;
+    requiredRoles: Role[];
+  } | null>(null);
+
+  // Handler for role-gated navigation attempts
+  const handleRoleGatedClick = useCallback((route: string, requiredRoles: Role[]) => {
+    setRoleGateTarget({ route, requiredRoles });
+    setRoleGateDialogOpen(true);
+  }, []);
+
+  // Close dialog
+  const closeRoleGateDialog = useCallback(() => {
+    setRoleGateDialogOpen(false);
+    setRoleGateTarget(null);
+  }, []);
+
+  // Copy link to clipboard
+  const copyProjectLink = useCallback(async () => {
+    const url = `${window.location.origin}/projects/${effectiveProjectId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // Could add toast notification here
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  }, [effectiveProjectId]);
+
   // Server verify status (cached, TTL 60s)
   const verifyEntry = useVerifyStatusStore((s) => s.byJobId[jobId]);
   const ensureStatus = useVerifyStatusStore((s) => s.ensureStatus);
   const refreshStatus = useVerifyStatusStore((s) => s.refreshStatus);
+
+  // Check if current user can access factory routes
+  const canAccessFactory = hasRole(['FACTORY', 'ADMIN']);
 
   // Auto-fetch verify status on mount (with TTL cache)
   useEffect(() => {
@@ -273,7 +323,11 @@ function ProjectHomePage() {
         }}>
           {swimlaneSteps.map((step, idx) => (
             <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <SwimlaneStep step={step} projectId={effectiveProjectId} />
+              <SwimlaneStepComponent
+                step={step}
+                projectId={effectiveProjectId}
+                onRoleGatedClick={handleRoleGatedClick}
+              />
               {idx < swimlaneSteps.length - 1 && (
                 <SwimlaneConnector status={step.status} />
               )}
@@ -318,22 +372,77 @@ function ProjectHomePage() {
             Server-authoritative gate verification
           </div>
         </Link>
-        <Link to={`/factory/jobs/${effectiveProjectId}`} style={{
-          padding: '20px',
-          background: '#111',
-          border: '1px solid #222',
-          borderRadius: '12px',
-          textDecoration: 'none',
-          color: 'white',
-          transition: 'all 0.2s ease',
-        }}>
-          <div style={{ fontSize: '20px', marginBottom: '8px' }}>📦</div>
-          <div style={{ fontWeight: 600 }}>Export to Factory</div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-            Generate CAM files for production
+        {/* Export to Factory - Role-gated */}
+        {canAccessFactory ? (
+          <Link to={`/factory/jobs/${effectiveProjectId}`} style={{
+            padding: '20px',
+            background: '#111',
+            border: '1px solid #222',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            color: 'white',
+            transition: 'all 0.2s ease',
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '8px' }}>📦</div>
+            <div style={{ fontWeight: 600 }}>Export to Factory</div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+              Generate CAM files for production
+            </div>
+          </Link>
+        ) : (
+          <div
+            onClick={() => handleRoleGatedClick(
+              `/factory/jobs/${effectiveProjectId}`,
+              ['FACTORY', 'ADMIN']
+            )}
+            style={{
+              padding: '20px',
+              background: '#111',
+              border: '1px solid #222',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              color: 'white',
+              transition: 'all 0.2s ease',
+              opacity: 0.7,
+            }}
+          >
+            <div style={{ fontSize: '20px', marginBottom: '8px' }}>📦</div>
+            <div style={{ fontWeight: 600 }}>Export to Factory</div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+              Requires Factory role
+            </div>
           </div>
-        </Link>
+        )}
+        {/* Copy Link */}
+        <div
+          onClick={copyProjectLink}
+          style={{
+            padding: '20px',
+            background: '#111',
+            border: '1px solid #222',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            color: 'white',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔗</div>
+          <div style={{ fontWeight: 600 }}>Copy Link</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            Share project with team
+          </div>
+        </div>
       </div>
+
+      {/* Role Gate Dialog */}
+      <RoleGateDialog
+        isOpen={roleGateDialogOpen}
+        onClose={closeRoleGateDialog}
+        requiredRoles={roleGateTarget?.requiredRoles ?? ['FACTORY', 'ADMIN']}
+        title="Factory Access Required"
+        description="Export to Factory requires Factory or Admin role. Share this project link with your Factory team."
+        shareableUrl={`${window.location.origin}/projects/${effectiveProjectId}`}
+      />
     </div>
   );
 }
