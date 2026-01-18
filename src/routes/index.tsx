@@ -156,7 +156,7 @@ function ProjectHomePage() {
         label: 'Gate',
         labelThai: 'อนุมัติ',
         status: !validationComplete ? 'pending' : gateComplete ? 'complete' : 'in_progress',
-        route: '/safety',
+        route: '/projects/:projectId/validation', // Server-authoritative gate
         icon: '🚦',
       },
       {
@@ -273,7 +273,7 @@ function ProjectHomePage() {
             Factory check before export
           </div>
         </Link>
-        <Link to="/safety" style={{
+        <Link to={`/projects/${effectiveProjectId}/validation`} style={{
           padding: '20px',
           background: '#111',
           border: '1px solid #222',
@@ -283,9 +283,9 @@ function ProjectHomePage() {
           transition: 'all 0.2s ease',
         }}>
           <div style={{ fontSize: '20px', marginBottom: '8px' }}>🚦</div>
-          <div style={{ fontWeight: 600 }}>Gate & Safety</div>
+          <div style={{ fontWeight: 600 }}>Gate Check</div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-            View gate status and controls
+            Server-authoritative verification
           </div>
         </Link>
       </div>
