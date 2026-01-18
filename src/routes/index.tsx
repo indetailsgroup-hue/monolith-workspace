@@ -18,7 +18,7 @@
  * /safety                      - Redirect to /diagnostics/safety
  * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.4
+ * @version 0.12.5
  */
 
 import { useMemo, useEffect, useState, useCallback } from 'react';
@@ -604,6 +604,9 @@ function ProjectListPage() {
   const cabinet = useCabinetStore((s) => s.cabinet);
   const navigate = useNavigate();
 
+  // Cache-only verify status (no fetch from list - saves verifier calls)
+  const verifyCache = useVerifyStatusStore((s) => s.byJobId);
+
   // Mock project list (in real app, fetch from API)
   const projects = [
     {
@@ -613,6 +616,14 @@ function ProjectListPage() {
       updatedAt: new Date().toISOString(),
     },
   ];
+
+  // Get cached verdict for a project (returns UNKNOWN if not cached)
+  const getCachedVerdict = (projectId: string) => {
+    const entry = verifyCache[projectId];
+    if (entry?.loading) return 'LOADING';
+    if (entry?.status?.verdict) return entry.status.verdict;
+    return 'UNKNOWN';
+  };
 
   return (
     <div style={{
@@ -685,7 +696,10 @@ function ProjectListPage() {
               }}>
                 📦
               </div>
-              <h3 style={{ fontWeight: 600, marginBottom: '4px' }}>{project.name}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <h3 style={{ fontWeight: 600 }}>{project.name}</h3>
+                <VerifyVerdictPill verdict={getCachedVerdict(project.id)} size="sm" />
+              </div>
               <div style={{ fontSize: '12px', color: '#6b7280' }}>
                 Status: {project.status} • Updated: {new Date(project.updatedAt).toLocaleDateString()}
               </div>
