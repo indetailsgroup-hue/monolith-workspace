@@ -235,7 +235,7 @@ interface GenerateBundleResult {
   filename?: string;
   sheetCount?: number;
   fileCount?: number;
-  data?: Buffer | string;
+  data?: string | Uint8Array;
 }
 
 /**
@@ -253,7 +253,7 @@ async function generateExportBundle(
     // 3. Bundle outputs
 
     const sheetCount = getSheetCountForJob(jobId);
-    const bundle = createMockGcodeBundle(jobId, request.dialect, sheetCount);
+    const bundle = await createMockGcodeBundle(jobId, request.dialect, sheetCount);
 
     return {
       success: true,
@@ -288,12 +288,12 @@ function getSheetCountForJob(jobId: string): number {
 // ============================================================================
 
 /** In-memory export cache (for MVP) */
-const exportCache = new Map<string, { data: Buffer | string; filename: string }>();
+const exportCache = new Map<string, { data: string | Uint8Array; filename: string }>();
 
 /**
  * Store export data for later download.
  */
-export function storeExportData(exportId: string, data: Buffer | string, filename: string): void {
+export function storeExportData(exportId: string, data: string | Uint8Array, filename: string): void {
   exportCache.set(exportId, { data, filename });
 
   // Clean up old entries (keep last 100)
@@ -308,7 +308,7 @@ export function storeExportData(exportId: string, data: Buffer | string, filenam
 /**
  * Get export data for download.
  */
-export function getExportData(exportId: string): { data: Buffer | string; filename: string } | undefined {
+export function getExportData(exportId: string): { data: string | Uint8Array; filename: string } | undefined {
   return exportCache.get(exportId);
 }
 
@@ -325,7 +325,7 @@ export async function executeAndStoreExport(
   if (response.ok) {
     // Generate and store the actual bundle
     const sheetCount = getSheetCountForJob(jobId);
-    const bundle = createMockGcodeBundle(jobId, request.dialect, sheetCount);
+    const bundle = await createMockGcodeBundle(jobId, request.dialect, sheetCount);
     storeExportData(response.exportId, bundle.data, bundle.filename);
   }
 

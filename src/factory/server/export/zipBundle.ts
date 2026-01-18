@@ -2,10 +2,12 @@
  * Zip Bundle - Deterministic zip creation for exports
  * P2.2 Export UX (Gated)
  *
- * @version 0.12.0
+ * Uses browser-safe Web Crypto API (no Node.js crypto)
+ *
+ * @version 0.12.1
  */
 
-import { createHash } from "crypto";
+import { sha256Hex } from "../../../crypto/sha256";
 
 // ============================================================================
 // Types
@@ -15,7 +17,7 @@ export interface BundleFile {
   /** Path within the zip (e.g., "sheet_01.nc") */
   path: string;
   /** File content */
-  content: string | Buffer;
+  content: string | Uint8Array;
   /** Optional comment */
   comment?: string;
 }
@@ -30,8 +32,8 @@ export interface BundleOptions {
 }
 
 export interface BundleResult {
-  /** The zip buffer (or base64 for mock) */
-  data: Buffer | string;
+  /** The bundle content (string for browser compatibility) */
+  data: string | Uint8Array;
   /** SHA-256 hash of the bundle */
   sha256: string;
   /** Size in bytes */
@@ -56,7 +58,7 @@ export interface BundleResult {
  * Note: This is a simplified implementation for MVP.
  * In production, use a proper zip library with deterministic settings.
  */
-export function createBundle(options: BundleOptions): BundleResult {
+export async function createBundle(options: BundleOptions): Promise<BundleResult> {
   const { jobId, files, metadata } = options;
 
   // Sort files for determinism
@@ -69,10 +71,10 @@ export function createBundle(options: BundleOptions): BundleResult {
   for (const file of sortedFiles) {
     const content = typeof file.content === "string"
       ? file.content
-      : file.content.toString("utf-8");
+      : new TextDecoder().decode(file.content);
 
-    const fileHash = createHash("sha256").update(content).digest("hex");
-    const sizeBytes = Buffer.byteLength(content, "utf-8");
+    const fileHash = await sha256Hex(content);
+    const sizeBytes = new TextEncoder().encode(content).length;
 
     manifest.push({
       path: file.path,
@@ -96,15 +98,15 @@ export function createBundle(options: BundleOptions): BundleResult {
 
   // Create "bundle" (simplified - in production use real zip)
   const bundleContent = fileContents.join("\n\n");
-  const bundleBuffer = Buffer.from(bundleContent, "utf-8");
-  const bundleSha256 = createHash("sha256").update(bundleBuffer).digest("hex");
+  const bundleBytes = new TextEncoder().encode(bundleContent);
+  const bundleSha256 = await sha256Hex(bundleBytes);
 
   const filename = `${jobId}_export.zip`;
 
   return {
-    data: bundleBuffer,
+    data: bundleContent, // Return string instead of Buffer for browser
     sha256: bundleSha256,
-    sizeBytes: bundleBuffer.length,
+    sizeBytes: bundleBytes.length,
     filename,
     manifest,
   };
@@ -113,11 +115,11 @@ export function createBundle(options: BundleOptions): BundleResult {
 /**
  * Create a mock G-code bundle for testing.
  */
-export function createMockGcodeBundle(
+export async function createMockGcodeBundle(
   jobId: string,
   dialect: string,
   sheetCount: number
-): BundleResult {
+): Promise<BundleResult> {
   const files: BundleFile[] = [];
 
   // Add G-code files for each sheet
@@ -138,7 +140,7 @@ export function createMockGcodeBundle(
       dialect,
       sheetCount,
       generatedAt: new Date(0).toISOString(),
-      toolVersion: "IIMOS Export 0.12.0",
+      toolVersion: "IIMOS Export 0.12.1",
     }, null, 2),
   });
 
@@ -222,10 +224,10 @@ function getDialectHeader(dialect: string): string {
 // ============================================================================
 
 /**
- * Calculate SHA-256 hash of content.
+ * Calculate SHA-256 hash of content (async, browser-safe).
  */
-export function calculateSha256(content: string | Buffer): string {
-  return createHash("sha256").update(content).digest("hex");
+export async function calculateSha256(content: string | Uint8Array): Promise<string> {
+  return sha256Hex(content);
 }
 
 /**

@@ -68,7 +68,7 @@ export async function handleExport(
 export function handleDownload(
   jobId: string,
   exportId: string
-): { data: Buffer | string; filename: string; contentType: string } | { error: string; code: string } {
+): { data: string | Uint8Array; filename: string; contentType: string } | { error: string; code: string } {
   // Validate export ID belongs to this job
   const auditEntry = getAuditEntry(exportId);
   if (!auditEntry || auditEntry.jobId !== jobId) {
