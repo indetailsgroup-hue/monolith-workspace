@@ -1,11 +1,17 @@
 /**
  * ActivityTimeline - Server-authoritative audit trail display
  * P7A: Activity / Audit Timeline
+ * P7A.1: Hardening - Stable ordering + Defensive rendering
  *
  * Read-only timeline showing verify runs, export attempts, and downloads.
  * Groups by day, shows copy buttons for SHA256/links.
  *
- * @version 0.12.7
+ * Hardening:
+ * - Stable sort: at DESC, id ASC tiebreaker (prevents timeline jumping)
+ * - Defensive: unknown types render as "Unknown: {type}" with ❓ icon
+ * - Defensive: invalid timestamps render as "Invalid time"
+ *
+ * @version 0.12.8
  */
 
 import React, { useState, useCallback } from "react";
@@ -15,6 +21,8 @@ import {
   getActivityIcon,
   getActivityColor,
   groupActivitiesByDay,
+  isKnownActivityType,
+  isValidTimestamp,
 } from "../../types/activity";
 
 // ============================================================================
@@ -127,17 +135,23 @@ interface ActivityCardProps {
 function ActivityCard({ item }: ActivityCardProps): React.ReactElement {
   const [copiedSha, setCopiedSha] = useState(false);
 
-  const colors = getActivityColor(item.type);
-  const icon = getActivityIcon(item.type);
-  const label = getActivityLabel(item.type);
+  // Defensive: check if type is known
+  const isKnown = isKnownActivityType(item.type);
+  const colors = isKnown
+    ? getActivityColor(item.type)
+    : { bg: "rgba(107, 114, 128, 0.1)", border: "#4b5563", text: "#9ca3af" };
+  const icon = isKnown ? getActivityIcon(item.type) : "❓";
+  const label = isKnown ? getActivityLabel(item.type) : `Unknown: ${item.type}`;
 
-  // Format timestamp
-  const timestamp = new Date(item.at);
-  const timeStr = timestamp.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const isoStr = item.at;
+  // Defensive: check if timestamp is valid
+  const hasValidTimestamp = isValidTimestamp(item.at);
+  const timeStr = hasValidTimestamp
+    ? new Date(item.at).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Invalid time";
+  const isoStr = hasValidTimestamp ? item.at : "Invalid timestamp";
 
   // Copy SHA256
   const handleCopySha = useCallback(async () => {

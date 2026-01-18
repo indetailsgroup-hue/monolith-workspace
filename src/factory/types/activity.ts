@@ -1,8 +1,9 @@
 /**
  * Activity / Audit Timeline Types
  * P7A: Server-authoritative audit trail
+ * P7A.1: Hardening - Stable ordering + Defensive helpers
  *
- * @version 0.12.7
+ * @version 0.12.8
  */
 
 // ============================================================================
@@ -175,7 +176,58 @@ export function getActivityColor(type: ActivityType): { bg: string; border: stri
 }
 
 /**
- * Group activities by day
+ * Parse timestamp safely - returns 0 for invalid timestamps
+ */
+export function safeParseTimestamp(at: string | undefined | null): number {
+  if (!at) return 0;
+  const ts = Date.parse(at);
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+/**
+ * Check if timestamp is valid
+ */
+export function isValidTimestamp(at: string | undefined | null): boolean {
+  if (!at) return false;
+  const ts = Date.parse(at);
+  return Number.isFinite(ts) && ts > 0;
+}
+
+/**
+ * Sort activities by timestamp (DESC) with id tiebreaker (ASC)
+ * Ensures deterministic ordering even when timestamps are equal or invalid
+ */
+export function sortActivitiesStable(items: ActivityRecord[]): ActivityRecord[] {
+  return [...items].sort((a, b) => {
+    const ta = safeParseTimestamp(a.at);
+    const tb = safeParseTimestamp(b.at);
+
+    // Primary: timestamp DESC (newest first)
+    if (tb !== ta) return tb - ta;
+
+    // Tiebreaker: id ASC (deterministic)
+    const ia = a.id ?? "";
+    const ib = b.id ?? "";
+    return ia.localeCompare(ib);
+  });
+}
+
+/**
+ * Check if activity type is known
+ */
+export function isKnownActivityType(type: string): type is ActivityType {
+  return [
+    "VERIFY_RUN",
+    "EXPORT_ATTEMPT",
+    "EXPORT_SUCCESS",
+    "EXPORT_BLOCKED",
+    "EXPORT_DOWNLOAD",
+    "PACKET_VIEW",
+  ].includes(type);
+}
+
+/**
+ * Group activities by day (with stable sorting applied)
  */
 export function groupActivitiesByDay(items: ActivityRecord[]): Map<string, ActivityRecord[]> {
   const groups = new Map<string, ActivityRecord[]>();
@@ -187,7 +239,20 @@ export function groupActivitiesByDay(items: ActivityRecord[]): Map<string, Activ
   const todayStr = formatDate(today);
   const yesterdayStr = formatDate(yesterday);
 
-  for (const item of items) {
+  // Apply stable sorting before grouping
+  const sorted = sortActivitiesStable(items);
+
+  for (const item of sorted) {
+    // Handle invalid timestamps
+    if (!isValidTimestamp(item.at)) {
+      const unknownKey = "Unknown Date";
+      if (!groups.has(unknownKey)) {
+        groups.set(unknownKey, []);
+      }
+      groups.get(unknownKey)!.push(item);
+      continue;
+    }
+
     const itemDate = new Date(item.at);
     const dateStr = formatDate(itemDate);
 
