@@ -21,7 +21,7 @@
  * @version 0.12.2
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate } from 'react-router-dom';
 import { App } from '../App';
 import { SafetyGatePage } from '../components/pages/SafetyGatePage';
@@ -31,6 +31,8 @@ import { JobDetail } from '../factory/pages/JobDetail';
 import { RequireRole } from '../core/auth/guards';
 import { useCabinetStore } from '../core/store/useCabinetStore';
 import { useSpecStore } from '../core/store/useSpecStore';
+import { useVerifyStatusStore } from '../core/store/useVerifyStatusStore';
+import { VerifyVerdictPill } from '../components/ui/VerifyVerdictPill';
 
 // ============================================================================
 // Types
@@ -128,11 +130,37 @@ function ProjectHomePage() {
   const cabinet = useCabinetStore((s) => s.cabinet);
   const specState = useSpecStore((s) => s.specState);
 
-  // Derive swimlane status from spec state
+  const effectiveProjectId = projectId || 'current';
+  const jobId = effectiveProjectId;
+
+  // Server verify status (cached, TTL 60s)
+  const verifyEntry = useVerifyStatusStore((s) => s.byJobId[jobId]);
+  const ensureStatus = useVerifyStatusStore((s) => s.ensureStatus);
+  const refreshStatus = useVerifyStatusStore((s) => s.refreshStatus);
+
+  // Auto-fetch verify status on mount (with TTL cache)
+  useEffect(() => {
+    ensureStatus(jobId, { maxAgeMs: 60_000 }).catch(() => {});
+  }, [jobId, ensureStatus]);
+
+  // Derive verdict from server (PASS-only policy)
+  const verdict = verifyEntry?.status?.verdict;
+  const isLoading = verifyEntry?.loading;
+  const gateComplete = verdict === 'PASS'; // PASS-only gate
+
+  // Derive swimlane status from server verify result
   // Gate authority = server verify (Factory Check). Export unlocks only on PASS.
   const swimlaneSteps = useMemo<SwimlaneStep[]>(() => {
     const designComplete = specState !== 'DRAFT';
-    const gateComplete = specState === 'RELEASED'; // PASS-only gate
+
+    // Factory Check step status based on server verdict
+    const factoryCheckStatus: SwimlaneStatus = !designComplete
+      ? 'pending'
+      : verdict === 'PASS'
+        ? 'complete'
+        : verdict === 'FAIL' || verdict === 'PASS_WITH_WARN'
+          ? 'blocked'
+          : 'in_progress'; // UNKNOWN or loading
 
     return [
       {
@@ -147,7 +175,7 @@ function ProjectHomePage() {
         id: 'factory_check',
         label: 'Factory Check',
         labelThai: 'ตรวจสอบ / อนุมัติ',
-        status: !designComplete ? 'pending' : gateComplete ? 'complete' : 'in_progress',
+        status: factoryCheckStatus,
         route: '/projects/:projectId/validation',
         icon: '🛡️',
       },
@@ -160,10 +188,14 @@ function ProjectHomePage() {
         icon: '📦',
       },
     ];
-  }, [specState]);
+  }, [specState, verdict, gateComplete]);
 
-  const effectiveProjectId = projectId || 'current';
   const projectName = cabinet?.name || 'Untitled Project';
+
+  // Determine verdict display for pill
+  const verdictDisplay = isLoading
+    ? 'LOADING'
+    : verdict ?? 'UNKNOWN';
 
   return (
     <div style={{
@@ -188,15 +220,36 @@ function ProjectHomePage() {
             Project ID: {effectiveProjectId} • Spec: {specState}
           </p>
         </div>
-        <div style={{
-          padding: '12px 20px',
-          background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-          border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
-          borderRadius: '8px',
-        }}>
-          <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600 }}>
-            {specState}
-          </span>
+        {/* Server Verify Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <VerifyVerdictPill verdict={verdictDisplay} />
+          <button
+            onClick={() => refreshStatus(jobId)}
+            disabled={isLoading}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #374151',
+              background: isLoading ? '#1f2937' : '#111',
+              color: isLoading ? '#6b7280' : '#9ca3af',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {isLoading ? 'Checking...' : '↻ Refresh'}
+          </button>
+          <div style={{
+            padding: '8px 16px',
+            background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+            border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
+            borderRadius: '8px',
+          }}>
+            <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600, fontSize: '13px' }}>
+              {specState}
+            </span>
+          </div>
         </div>
       </div>
 
