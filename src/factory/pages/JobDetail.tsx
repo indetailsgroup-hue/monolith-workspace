@@ -2,7 +2,7 @@
  * JobDetail - Individual job view with verify & export
  * P1.1 Factory Ops UX + P2.1 Packet Viewer + P2.2 Gated Export
  *
- * Flow: Overview → Packet → Verify → Machine Select → Export
+ * Flow: Overview → Packet → Factory Check → Export
  * 100% read-only - no editing capabilities.
  *
  * @version 0.12.0
@@ -30,7 +30,7 @@ export interface JobDetailProps {
   onBack: () => void;
 }
 
-type Tab = "overview" | "packet" | "verify" | "export" | "activity";
+type Tab = "overview" | "packet" | "validation" | "verify" | "export" | "activity";
 
 export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement {
   const {
@@ -72,10 +72,9 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
   // Get gated export state for this job
   const gatedExportState = getExportCacheEntry(jobId);
 
-  // Check if export is allowed (verify must be PASS)
+  // Check if export is allowed (PASS only - WARN requires remediation)
   const isVerifyPassed =
     verifyResult?.verdict === "PASS" ||
-    verifyResult?.verdict === "PASS_WITH_WARN" ||
     selectedJob?.trust?.gate === "PASS";
 
   // Handle legacy export
@@ -128,7 +127,21 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
       {/* Tabs */}
       <TabBar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          // Verify tab redirects to Factory Check
+          if (tab === "verify") {
+            setActiveTab("validation");
+            return;
+          }
+
+          // Export requires verify PASS (Factory Check first)
+          if (tab === "export" && !isVerifyPassed) {
+            setActiveTab("validation");
+            return;
+          }
+
+          setActiveTab(tab);
+        }}
         showVerifyTab={showVerify}
         showExportTab={showExport}
       />
@@ -145,9 +158,11 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
 
         {activeTab === "packet" && <PacketTab jobId={jobId} />}
 
-        {activeTab === "verify" && (
-          <VerifyTab jobId={jobId} onVerified={() => setActiveTab("export")} />
+        {activeTab === "validation" && (
+          <FactoryCheckTab jobId={jobId} onPassed={() => setActiveTab("export")} />
         )}
+
+        {/* verify tab redirects to validation via onTabChange */}
 
         {activeTab === "export" && (
           <ExportTab
@@ -275,7 +290,9 @@ function TabBar({
   const tabs: { id: Tab; label: string; show: boolean }[] = [
     { id: "overview", label: "📋 Overview", show: true },
     { id: "packet", label: "📦 Packet", show: true },
-    { id: "verify", label: "✓ Verify", show: showVerifyTab },
+    { id: "validation", label: "🛡️ Factory Check", show: true },
+    // Legacy verify tab hidden - Factory Check is canonical
+    { id: "verify", label: "✓ Verify", show: false },
     { id: "export", label: "📤 Export", show: showExportTab },
     { id: "activity", label: "📜 Activity", show: true },
   ];
@@ -393,33 +410,45 @@ function OverviewTab({ job }: OverviewTabProps): React.ReactElement {
 }
 
 // ============================================================================
-// Verify Tab
+// Factory Check (Validation) Tab — canonical step before export
 // ============================================================================
 
-interface VerifyTabProps {
+interface FactoryCheckTabProps {
   jobId: string;
-  onVerified: () => void;
+  onPassed: () => void;
 }
 
-function VerifyTab({ jobId, onVerified }: VerifyTabProps): React.ReactElement {
+function FactoryCheckTab({ jobId, onPassed }: FactoryCheckTabProps): React.ReactElement {
   const handleComplete = useCallback(
     (result: { verdict: string }) => {
-      if (result.verdict === "PASS" || result.verdict === "PASS_WITH_WARN") {
-        // Small delay to show result before switching tabs
-        setTimeout(onVerified, 1500);
+      // PASS only - WARN does not unlock export
+      if (result.verdict === "PASS") {
+        // Keep the short delay: operator sees result, then we advance
+        setTimeout(onPassed, 800);
       }
     },
-    [onVerified]
+    [onPassed]
   );
 
   return (
     <div
       style={{
-        maxWidth: 600,
+        maxWidth: 700,
         margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
       }}
     >
+      <div style={{ color: "#888", fontSize: 13 }}>
+        Server-authoritative factory verification. Verbatim log. No frontend trust.
+      </div>
+
       <VerifyConsole jobId={jobId} onVerifyComplete={handleComplete} />
+
+      <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>
+        Policy: Export unlocks only on PASS. Warnings require remediation or re-run after fixes.
+      </div>
     </div>
   );
 }

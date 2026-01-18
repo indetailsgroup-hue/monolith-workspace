@@ -36,6 +36,10 @@ import type {
 } from "../components/export/exportTypes";
 import { isExportSuccess } from "../components/export/exportTypes";
 import { normalizeError } from "../utils/verifyNormalizer";
+import {
+  fetchExportOptionsApi,
+  runGatedExportApi,
+} from "../api/exportApi";
 
 // ============================================================================
 // Filter & Sort
@@ -716,18 +720,15 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       });
 
       try {
-        const response = await fetch("/api/factory/export/options");
-        if (!response.ok) {
-          throw new Error("Failed to fetch export options");
-        }
-        const options: ExportOptionsResponse = await response.json();
+        // Use real API client
+        const { data } = await fetchExportOptionsApi();
 
         set((state) => {
-          state.exportOptions = options;
+          state.exportOptions = data;
           state.exportOptionsLoading = false;
         });
 
-        return options;
+        return data;
       } catch (error) {
         console.error("Failed to fetch export options:", error);
         set((state) => {
@@ -758,19 +759,20 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       });
 
       try {
-        const response = await fetch(`/api/factory/jobs/${jobId}/export`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
-        });
-
-        const result: GatedExportResponse = await response.json();
+        // Use real API client with SHA256 header capture
+        const { response: result, sha256 } = await runGatedExportApi(jobId, request);
 
         if (isExportSuccess(result)) {
+          // Merge authoritative sha256 from header (overrides body if present)
+          const exportWithSha256 = {
+            ...result,
+            sha256: sha256 ?? result.sha256,
+          };
+
           set((state) => {
             state.gatedExportByJobId[jobId] = {
               status: "DONE",
-              lastExport: result,
+              lastExport: exportWithSha256,
               error: undefined,
               fetchedAt: new Date().toISOString(),
             };
@@ -784,7 +786,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
             details: {
               exportId: result.exportId,
               dialect: result.dialect,
-              sha256: result.sha256,
+              sha256: sha256 ?? result.sha256,
               filename: result.filename,
             },
           });

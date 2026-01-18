@@ -1068,23 +1068,43 @@ export async function mockFetch(
 }
 
 // ============================================================================
-// Enable Mock API
+// Enable / Disable Mock API (DEV ONLY)
 // ============================================================================
 
 let mockEnabled = false;
+let originalFetchRef: typeof window.fetch | null = null;
+
+/**
+ * Controlled by env flag only.
+ * - VITE_USE_FACTORY_MOCK=1 => enable
+ * - default => real backend
+ */
+export function shouldUseMockApi(): boolean {
+  // Vite style env
+  const v = (import.meta as any)?.env?.VITE_USE_FACTORY_MOCK;
+  return v === "1" || v === "true";
+}
 
 export function enableMockApi(): void {
   if (mockEnabled) return;
 
-  const originalFetch = window.fetch;
+  if (!shouldUseMockApi()) {
+    // Explicit: do nothing unless flag is enabled
+    console.log("[Factory Mock API] Not enabled (flag off)");
+    return;
+  }
+
+  if (!originalFetchRef) originalFetchRef = window.fetch;
+
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input.toString();
 
+    // Intercept ONLY factory namespace (do not hijack the whole app)
     if (url.startsWith("/api/factory")) {
       return mockFetch(url, init);
     }
 
-    return originalFetch(input, init);
+    return originalFetchRef!(input, init);
   };
 
   mockEnabled = true;
@@ -1092,7 +1112,12 @@ export function enableMockApi(): void {
 }
 
 export function disableMockApi(): void {
-  // Note: This doesn't actually restore fetch, would need to save reference
+  if (!mockEnabled) return;
+
+  if (originalFetchRef) {
+    window.fetch = originalFetchRef;
+  }
+
   mockEnabled = false;
   console.log("[Factory Mock API] Disabled");
 }
