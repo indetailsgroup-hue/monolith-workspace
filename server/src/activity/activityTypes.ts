@@ -55,6 +55,8 @@ export interface ActivityRecord {
 
   /** Export details (for EXPORT_* events) */
   export?: {
+    /** Export ID for correlation (first 12 chars of SHA-256 or full) */
+    exportId?: string;
     dialect?: "KDT" | "BIESSE" | "HOMAG";
     profileId?: string;
     mode?: "PER_SHEET" | "PER_JOB";

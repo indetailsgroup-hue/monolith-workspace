@@ -1,16 +1,21 @@
 /**
- * Activity Storage - P8 JSONL Append-Only Per-Job
+ * Activity Storage - P8.1 JSONL Append-Only Per-Job
  *
  * Storage contract:
- * - JOB_ACTIVITY_ROOT/<jobId>/activity.jsonl
+ * - JOB_STORAGE_ROOT/<jobId>/audit/activity.jsonl
  * - Append-only (immutable entries)
  * - 1 event = 1 line JSON
  * - Server time for timestamps
  *
- * @version 0.12.8
+ * P8.1 Hardening:
+ * - Path traversal guard with resolve check
+ * - Actor normalization (allowlist, trim, strip control chars)
+ * - Malformed line counter in stats
+ *
+ * @version 0.12.9
  */
 
-import { createHash, randomBytes } from "crypto";
+import { createHash } from "crypto";
 import fs from "node:fs/promises";
 import { existsSync, appendFileSync, readFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -20,7 +25,13 @@ import type { ActivityRecord, ActivityRecordPartial } from "./activityTypes.js";
 // Configuration
 // ============================================================================
 
-const ACTIVITY_ROOT = process.env.ACTIVITY_DIR ?? process.env.AUDIT_DIR ?? "./data/activity";
+/**
+ * Get job storage root from environment.
+ * Falls back to ./data/jobs for development.
+ */
+function getJobStorageRoot(): string {
+  return process.env.JOB_STORAGE_ROOT ?? process.env.JOB_DIR ?? "./data/jobs";
+}
 
 // ============================================================================
 // Path Helpers
@@ -28,24 +39,50 @@ const ACTIVITY_ROOT = process.env.ACTIVITY_DIR ?? process.env.AUDIT_DIR ?? "./da
 
 /**
  * Sanitize job ID to prevent path traversal.
+ * Strict allowlist: alphanumeric, dash, underscore, dot only.
  */
 function safeJobId(jobIdRaw: string): string {
-  // Allow alphanumeric, dash, underscore only
-  const sanitized = jobIdRaw.replace(/[^a-zA-Z0-9_-]/g, "");
-  if (sanitized.length === 0) {
-    throw new Error("Invalid jobId: empty after sanitization");
+  const trimmed = String(jobIdRaw || "").trim();
+
+  // Strict allowlist pattern
+  if (!/^[a-zA-Z0-9._-]{1,80}$/.test(trimmed)) {
+    throw new Error("Invalid jobId: must be 1-80 chars, alphanumeric/dash/underscore/dot only");
   }
-  if (sanitized.length > 128) {
-    return sanitized.slice(0, 128);
+
+  // Block traversal patterns
+  if (trimmed.includes("..") || trimmed.includes("/") || trimmed.includes("\\")) {
+    throw new Error("Invalid jobId: path traversal blocked");
   }
-  return sanitized;
+
+  return trimmed;
+}
+
+/**
+ * Get job root directory with path traversal protection.
+ */
+function getJobRoot(jobIdRaw: string): string {
+  const jobId = safeJobId(jobIdRaw);
+  const root = getJobStorageRoot();
+
+  // Join and normalize
+  const joined = path.join(root, jobId);
+  const normalizedRoot = path.resolve(root);
+  const normalizedPath = path.resolve(joined);
+
+  // Ensure path stays within root
+  if (!normalizedPath.startsWith(normalizedRoot + path.sep) && normalizedPath !== normalizedRoot) {
+    throw new Error("Path traversal blocked");
+  }
+
+  return normalizedPath;
 }
 
 /**
  * Get activity file path for a job.
+ * Path: JOB_STORAGE_ROOT/<jobId>/audit/activity.jsonl
  */
 function activityPath(jobId: string): string {
-  return path.join(ACTIVITY_ROOT, jobId, "activity.jsonl");
+  return path.join(getJobRoot(jobId), "audit", "activity.jsonl");
 }
 
 // ============================================================================
@@ -57,6 +94,39 @@ function activityPath(jobId: string): string {
  */
 function sha256Hex(data: string): string {
   return createHash("sha256").update(data).digest("hex");
+}
+
+// ============================================================================
+// Actor Normalization
+// ============================================================================
+
+const VALID_ROLES = ["FACTORY", "ADMIN", "DESIGNER", "SYSTEM"] as const;
+type ActorRole = typeof VALID_ROLES[number];
+
+/**
+ * Normalize actor role (allowlist check).
+ */
+function normalizeRole(roleRaw: string | undefined): ActorRole {
+  const role = String(roleRaw || "").trim().toUpperCase();
+  if (VALID_ROLES.includes(role as ActorRole)) {
+    return role as ActorRole;
+  }
+  return "SYSTEM";
+}
+
+/**
+ * Normalize actor name (trim, max 64, strip control chars).
+ */
+function normalizeName(nameRaw: string | undefined): string | undefined {
+  if (!nameRaw) return undefined;
+
+  // Trim and limit length
+  let name = String(nameRaw).trim().slice(0, 64);
+
+  // Strip control characters (keep printable ASCII and common unicode)
+  name = name.replace(/[\x00-\x1F\x7F]/g, "");
+
+  return name || undefined;
 }
 
 // ============================================================================
@@ -74,9 +144,16 @@ export async function appendActivity(
   const jobId = safeJobId(jobIdRaw);
   const at = new Date().toISOString();
 
+  // Normalize actor if present
+  const normalizedActor = partial.actor ? {
+    role: normalizeRole(partial.actor.role),
+    name: normalizeName(partial.actor.name),
+  } : undefined;
+
   // Build base record (without id)
   const base: Omit<ActivityRecord, "id"> = {
     ...partial,
+    actor: normalizedActor,
     at,
     jobId,
   };
@@ -123,6 +200,12 @@ export interface ReadActivityOptions {
   limit?: number;
 }
 
+export interface ReadActivityResult {
+  items: ActivityRecord[];
+  parsedLines: number;
+  malformedLines: number;
+}
+
 /**
  * Read activity records for a job.
  * Returns records sorted by timestamp DESC, id ASC (stable).
@@ -131,8 +214,19 @@ export async function readActivity(
   jobIdRaw: string,
   opts?: ReadActivityOptions
 ): Promise<ActivityRecord[]> {
+  const result = await readActivityWithStats(jobIdRaw, opts);
+  return result.items;
+}
+
+/**
+ * Read activity records with parse statistics.
+ */
+export async function readActivityWithStats(
+  jobIdRaw: string,
+  opts?: ReadActivityOptions
+): Promise<ReadActivityResult> {
   const jobId = safeJobId(jobIdRaw);
-  const limit = opts?.limit ?? 2000;
+  const limit = Math.min(5000, Math.max(50, opts?.limit ?? 2000));
   const filePath = activityPath(jobId);
 
   // Read file
@@ -143,7 +237,7 @@ export async function readActivity(
     const err = e as { code?: string };
     if (err.code === "ENOENT") {
       // File doesn't exist = no activity yet
-      return [];
+      return { items: [], parsedLines: 0, malformedLines: 0 };
     }
     throw e;
   }
@@ -153,14 +247,19 @@ export async function readActivity(
   const sliced = lines.slice(Math.max(0, lines.length - limit));
 
   const items: ActivityRecord[] = [];
+  let malformedLines = 0;
+
   for (const line of sliced) {
     try {
       const obj = JSON.parse(line);
       if (obj && typeof obj === "object") {
         items.push(obj as ActivityRecord);
+      } else {
+        malformedLines++;
       }
     } catch {
       // Skip malformed lines, keep reading
+      malformedLines++;
       console.warn("[ACTIVITY] Skipping malformed line:", line.slice(0, 50));
     }
   }
@@ -176,7 +275,11 @@ export async function readActivity(
     return String(a.id || "").localeCompare(String(b.id || ""));
   });
 
-  return items;
+  return {
+    items,
+    parsedLines: items.length,
+    malformedLines,
+  };
 }
 
 // ============================================================================
@@ -186,27 +289,23 @@ export async function readActivity(
 /**
  * Extract actor info from request headers.
  * Uses X-IIMOS-ACTOR-ROLE and X-IIMOS-ACTOR-NAME headers.
+ * P8.1: Normalized with allowlist and sanitization.
  */
 export function extractActorFromHeaders(headers: Record<string, string | string[] | undefined>): {
-  role?: "FACTORY" | "ADMIN" | "DESIGNER" | "SYSTEM";
+  role: ActorRole;
   name?: string;
 } {
-  const validRoles = ["FACTORY", "ADMIN", "DESIGNER", "SYSTEM"] as const;
-
   // Get role header
   let roleHeader = headers["x-iimos-actor-role"];
   if (Array.isArray(roleHeader)) roleHeader = roleHeader[0];
-  const role = validRoles.find((r) => r === roleHeader?.toUpperCase());
+  const role = normalizeRole(roleHeader);
 
-  // Get name header (limit to 64 chars)
+  // Get name header
   let nameHeader = headers["x-iimos-actor-name"];
   if (Array.isArray(nameHeader)) nameHeader = nameHeader[0];
-  const name = nameHeader ? nameHeader.slice(0, 64) : undefined;
+  const name = normalizeName(nameHeader);
 
-  return {
-    role: role ?? "SYSTEM",
-    name,
-  };
+  return { role, name };
 }
 
 // ============================================================================
@@ -223,11 +322,15 @@ export async function hasActivity(jobIdRaw: string): Promise<boolean> {
 
 /**
  * Get activity file stats for a job.
+ * P8.1: Includes malformedLines counter.
  */
 export async function getActivityStats(jobIdRaw: string): Promise<{
   exists: boolean;
   lineCount: number;
+  parsedLines: number;
+  malformedLines: number;
   sizeBytes: number;
+  path: string;
 } | null> {
   const jobId = safeJobId(jobIdRaw);
   const filePath = activityPath(jobId);
@@ -235,14 +338,40 @@ export async function getActivityStats(jobIdRaw: string): Promise<{
   try {
     const stat = await fs.stat(filePath);
     const txt = readFileSync(filePath, "utf8");
-    const lineCount = txt.split("\n").filter(Boolean).length;
+    const lines = txt.split("\n").filter(Boolean);
+
+    // Count malformed lines
+    let parsedLines = 0;
+    let malformedLines = 0;
+    for (const line of lines) {
+      try {
+        const obj = JSON.parse(line);
+        if (obj && typeof obj === "object") {
+          parsedLines++;
+        } else {
+          malformedLines++;
+        }
+      } catch {
+        malformedLines++;
+      }
+    }
 
     return {
       exists: true,
-      lineCount,
+      lineCount: lines.length,
+      parsedLines,
+      malformedLines,
       sizeBytes: stat.size,
+      path: filePath,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Get the activity file path for a job (for debugging).
+ */
+export function getActivityPath(jobIdRaw: string): string {
+  return activityPath(safeJobId(jobIdRaw));
 }

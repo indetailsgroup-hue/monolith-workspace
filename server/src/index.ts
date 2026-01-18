@@ -608,11 +608,13 @@ app.post('/api/export/zip', async (req, res) => {
       processingTimeMs,
     });
 
-    // P8: Log EXPORT_SUCCESS
+    // P8.1: Log EXPORT_SUCCESS with exportId for correlation
+    const exportId = zipResult.sha256Hex.slice(0, 12);
     await appendActivity(jobId, {
       type: 'EXPORT_SUCCESS',
       actor,
       export: {
+        exportId,
         dialect: request.format as 'KDT' | 'BIESSE' | 'HOMAG' | undefined,
         mode: 'PER_JOB',
         target: 'BUNDLE',
