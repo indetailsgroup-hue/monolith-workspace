@@ -8,25 +8,26 @@
  * /projects                    - Project list / hub
  * /projects/:projectId         - Project home (swimlane hub)
  * /projects/:projectId/design  - Designer workspace for project
- * /projects/:projectId/validation - Factory validation
- * /validation                  - Standalone validation (legacy)
+ * /projects/:projectId/validation - Factory validation (server-authoritative)
+ * /validation                  - Redirect to /projects/current/validation
  * /release                     - Release wizard
  * /packet/:id                  - View released packet
  * /factory                     - Factory dashboard (FACTORY role)
+ * /factory/jobs/:jobId         - Factory job detail (FACTORY role)
  * /finance                     - Finance screen (FINANCE role)
  * /safety                      - Safety & Gate page
  *
- * @version 0.12.0
+ * @version 0.12.1
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate } from 'react-router-dom';
 import { App } from '../App';
 import { SafetyGatePage } from '../components/pages/SafetyGatePage';
 import { ValidationScreen } from '../pages/ValidationScreen';
+import { FactoryApp } from '../factory/FactoryApp';
+import { JobDetail } from '../factory/pages/JobDetail';
 import { RequireRole } from '../core/auth/guards';
-import { testConnection, USE_MOCK } from '../core/api/client';
-import { getExportOptions, type ExportOptionsResponse } from '../core/api/exportApi';
 import { useCabinetStore } from '../core/store/useCabinetStore';
 import { useSpecStore } from '../core/store/useSpecStore';
 
@@ -163,7 +164,7 @@ function ProjectHomePage() {
         label: 'Export',
         labelThai: 'ส่งออก',
         status: !gateComplete ? 'pending' : 'in_progress',
-        route: '/factory',
+        route: '/factory/jobs/:projectId', // Direct to Factory JobDetail
         icon: '📦',
       },
     ];
@@ -353,6 +354,26 @@ function ProjectValidationPage() {
 }
 
 // ============================================================================
+// Factory Job Detail Page Wrapper (URL-based routing)
+// ============================================================================
+
+function FactoryJobDetailPage() {
+  const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
+
+  if (!jobId) {
+    return <Navigate to="/factory" replace />;
+  }
+
+  return (
+    <JobDetail
+      jobId={jobId}
+      onBack={() => navigate('/factory')}
+    />
+  );
+}
+
+// ============================================================================
 // Project List Page
 // ============================================================================
 
@@ -453,146 +474,7 @@ function ProjectListPage() {
   );
 }
 
-function ValidationPage() {
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-  const [exportOptions, setExportOptions] = useState<ExportOptionsResponse | null>(null);
-  const specState = useSpecStore((s) => s.specState);
-  const validation = useSpecStore((s) => s.validation);
-  const cabinet = useCabinetStore((s) => s.cabinet);
-
-  useEffect(() => {
-    // Test backend connection
-    testConnection().then((connected) => {
-      setBackendStatus(connected ? 'online' : 'offline');
-    });
-
-    // Fetch export options from backend
-    getExportOptions().then(setExportOptions).catch(console.error);
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Validation Report</h1>
-            <p className="text-gray-400 mt-1">Factory check results for {cabinet?.name || 'Current Project'}</p>
-          </div>
-          <Link to="/" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-            ← Back to Designer
-          </Link>
-        </div>
-
-        {/* Backend Status */}
-        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400">Backend Status:</span>
-              {backendStatus === 'checking' && (
-                <span className="text-yellow-400">Checking...</span>
-              )}
-              {backendStatus === 'online' && (
-                <span className="text-green-400 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  Online
-                </span>
-              )}
-              {backendStatus === 'offline' && (
-                <span className="text-red-400 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red-400 rounded-full" />
-                  Offline
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-500">
-              {USE_MOCK ? 'Mock Mode' : 'Live API'}
-            </div>
-          </div>
-        </div>
-
-        {/* Spec State */}
-        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
-          <div className="flex items-center gap-4">
-            <span className="text-gray-400">Spec State:</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-              specState === 'DRAFT' ? 'bg-gray-700 text-gray-300' :
-              specState === 'FROZEN' ? 'bg-blue-900/50 text-blue-400' :
-              specState === 'RELEASED' ? 'bg-green-900/50 text-green-400' :
-              'bg-gray-700 text-gray-300'
-            }`}>
-              {specState}
-            </span>
-          </div>
-        </div>
-
-        {/* Validation Results */}
-        <div className="mb-6 p-4 bg-gray-900 rounded-xl border border-gray-800">
-          <h2 className="text-lg font-bold mb-4">Validation Rules</h2>
-          {validation && validation.rules.length > 0 ? (
-            <div className="space-y-2">
-              {validation.rules.map((rule, idx) => (
-                <div
-                  key={idx}
-                  className={`p-3 rounded-lg ${
-                    rule.status === 'FAIL' ? 'bg-red-900/30 border border-red-700/50' :
-                    rule.status === 'WARN' ? 'bg-yellow-900/30 border border-yellow-700/50' :
-                    'bg-green-900/30 border border-green-700/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold ${
-                      rule.status === 'FAIL' ? 'text-red-400' :
-                      rule.status === 'WARN' ? 'text-yellow-400' :
-                      'text-green-400'
-                    }`}>
-                      {rule.status}
-                    </span>
-                    <span className="font-mono text-sm">{rule.id}</span>
-                    <span className="text-xs text-gray-500">[{rule.category}]</span>
-                  </div>
-                  <p className="text-gray-300 text-sm mt-1">{rule.message}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-green-400 flex items-center gap-2">
-              <span>✓</span>
-              <span>No validation rules defined</span>
-            </div>
-          )}
-          {validation && (
-            <div className="mt-4 flex gap-4 text-sm">
-              <span className="text-green-400">Pass: {validation.passCount}</span>
-              <span className="text-yellow-400">Warn: {validation.warnCount}</span>
-              <span className="text-red-400">Fail: {validation.failCount}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Export Options (from backend) */}
-        {exportOptions && (
-          <div className="p-4 bg-gray-900 rounded-xl border border-gray-800">
-            <h2 className="text-lg font-bold mb-4">Available Export Formats</h2>
-            <div className="flex flex-wrap gap-2">
-              {exportOptions.formats.map((format) => (
-                <span
-                  key={format}
-                  className="px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-gray-300"
-                >
-                  {format}
-                </span>
-              ))}
-            </div>
-            <div className="mt-4 text-xs text-gray-500">
-              Dialects: {exportOptions.dialects.csv.length} CSV, {exportOptions.dialects.dxf.length} DXF, {exportOptions.dialects.gcode.length} G-code
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// ValidationPage removed - /validation now redirects to /projects/current/validation
 
 function ReleasePage() {
   return (
@@ -618,19 +500,7 @@ function PacketViewerPage() {
   );
 }
 
-function FactoryDashboardPage() {
-  return (
-    <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
-      <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Factory Dashboard</h1>
-        <p className="text-gray-400">Factory-specific view with export capabilities - Coming soon</p>
-        <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
-          ← Back to Designer
-        </a>
-      </div>
-    </RequireRole>
-  );
-}
+// FactoryDashboardPage removed - /factory now mounts FactoryApp directly
 
 function FinancePage() {
   return (
@@ -695,10 +565,10 @@ export const router = createBrowserRouter([
     path: '/project',
     element: <Navigate to="/projects" replace />,
   },
-  // Legacy validation route
+  // Legacy validation route - redirect to server-authoritative validation
   {
     path: '/validation',
-    element: <ValidationPage />,
+    element: <Navigate to="/projects/current/validation" replace />,
   },
   // Release wizard
   {
@@ -713,7 +583,20 @@ export const router = createBrowserRouter([
   // Factory dashboard (role-protected)
   {
     path: '/factory',
-    element: <FactoryDashboardPage />,
+    element: (
+      <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+        <FactoryApp useMockApi={false} />
+      </RequireRole>
+    ),
+  },
+  // Factory job detail (role-protected, URL-based)
+  {
+    path: '/factory/jobs/:jobId',
+    element: (
+      <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+        <FactoryJobDetailPage />
+      </RequireRole>
+    ),
   },
   // Finance page (role-protected)
   {
