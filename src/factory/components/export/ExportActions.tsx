@@ -1,11 +1,12 @@
 /**
  * Export Actions - Export button, progress, and result display
  * P2.2 Export UX (Gated)
+ * P6A: Export UX hardening - Copy SHA256 + Copy Download Link
  *
- * @version 0.12.0
+ * @version 0.12.7
  */
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import type {
   ExportRequest,
   ExportResponseSuccess,
@@ -32,6 +33,8 @@ interface ExportActionsProps {
   onExport: () => void;
   /** Callback to download last export */
   onDownload?: () => void;
+  /** Download URL for copy (optional, derives from lastExport if not provided) */
+  downloadUrl?: string;
 }
 
 // ============================================================================
@@ -46,10 +49,42 @@ export function ExportActions({
   error,
   onExport,
   onDownload,
+  downloadUrl,
 }: ExportActionsProps) {
   const isExporting = status === "EXPORTING";
   const hasExport = status === "DONE" && lastExport;
   const hasError = status === "ERROR" && error;
+
+  // Copy feedback state
+  const [copiedSha, setCopiedSha] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Copy SHA256 to clipboard
+  const handleCopySha = useCallback(async () => {
+    if (!lastExport?.sha256) return;
+    try {
+      await navigator.clipboard.writeText(lastExport.sha256);
+      setCopiedSha(true);
+      setTimeout(() => setCopiedSha(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy SHA256:", err);
+    }
+  }, [lastExport?.sha256]);
+
+  // Copy download link to clipboard
+  const handleCopyLink = useCallback(async () => {
+    const url = downloadUrl || (lastExport ? `/api/export/${lastExport.exportId}/download` : null);
+    if (!url) return;
+    try {
+      // Build full URL if relative
+      const fullUrl = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy download link:", err);
+    }
+  }, [downloadUrl, lastExport]);
 
   return (
     <div style={styles.container}>
@@ -130,7 +165,29 @@ export function ExportActions({
 
           {/* SHA-256 Hash */}
           <div style={styles.hashSection}>
-            <div style={styles.hashLabel}>SHA-256</div>
+            <div style={styles.hashHeader}>
+              <div style={styles.hashLabel}>SHA-256</div>
+              <button
+                style={{
+                  ...styles.copyButton,
+                  ...(copiedSha ? styles.copyButtonCopied : {}),
+                }}
+                onClick={handleCopySha}
+                title="Copy SHA-256 hash"
+              >
+                {copiedSha ? (
+                  <>
+                    <CheckIcon size={12} />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <CopyIcon />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
             <div style={styles.hashValue}>{lastExport.sha256}</div>
           </div>
 
@@ -147,13 +204,35 @@ export function ExportActions({
             )}
           </div>
 
-          {/* Download Button */}
-          {onDownload && (
-            <button style={styles.downloadButton} onClick={onDownload}>
-              <DownloadIcon />
-              <span>Download Bundle</span>
+          {/* Download Actions */}
+          <div style={styles.downloadActions}>
+            {onDownload && (
+              <button style={styles.downloadButton} onClick={onDownload}>
+                <DownloadIcon />
+                <span>Download Bundle</span>
+              </button>
+            )}
+            <button
+              style={{
+                ...styles.copyLinkButton,
+                ...(copiedLink ? styles.copyButtonCopied : {}),
+              }}
+              onClick={handleCopyLink}
+              title="Copy download link"
+            >
+              {copiedLink ? (
+                <>
+                  <CheckIcon size={14} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <LinkIcon />
+                  <span>Copy Link</span>
+                </>
+              )}
             </button>
-          )}
+          </div>
 
           {/* Export Timestamp */}
           <div style={styles.timestamp}>
@@ -228,11 +307,11 @@ function DownloadIcon() {
   );
 }
 
-function CheckIcon() {
+function CheckIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
-      width="18"
-      height="18"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="#22c55e"
@@ -241,6 +320,42 @@ function CheckIcon() {
       strokeLinejoin="round"
     >
       <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </svg>
   );
 }
@@ -388,12 +503,36 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "6px",
     marginBottom: "12px",
   },
+  hashHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "4px",
+  },
   hashLabel: {
     fontSize: "10px",
     color: "#6b7280",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    marginBottom: "4px",
+  },
+  copyButton: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "3px 8px",
+    background: "rgba(255, 255, 255, 0.05)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    borderRadius: "4px",
+    color: "#9ca3af",
+    fontSize: "10px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+  },
+  copyButtonCopied: {
+    background: "rgba(34, 197, 94, 0.15)",
+    border: "1px solid rgba(34, 197, 94, 0.3)",
+    color: "#86efac",
   },
   hashValue: {
     fontSize: "11px",
@@ -421,6 +560,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "10px",
     fontWeight: 500,
   },
+  downloadActions: {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "4px",
+  },
   downloadButton: {
     display: "flex",
     alignItems: "center",
@@ -434,8 +578,24 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "13px",
     fontWeight: 500,
     cursor: "pointer",
-    width: "100%",
+    flex: 1,
     transition: "all 0.15s ease",
+  },
+  copyLinkButton: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    padding: "10px 14px",
+    background: "rgba(59, 130, 246, 0.1)",
+    border: "1px solid rgba(59, 130, 246, 0.3)",
+    borderRadius: "6px",
+    color: "#93c5fd",
+    fontSize: "12px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
   },
   timestamp: {
     fontSize: "11px",
