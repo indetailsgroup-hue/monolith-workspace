@@ -18,7 +18,7 @@
  * /safety                      - Redirect to /diagnostics/safety
  * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.3
+ * @version 0.12.4
  */
 
 import { useMemo, useEffect, useState, useCallback } from 'react';
@@ -169,16 +169,33 @@ function ProjectHomePage() {
     setRoleGateTarget(null);
   }, []);
 
-  // Copy link to clipboard
+  // Copy link to clipboard - separate Project and Factory links
   const copyProjectLink = useCallback(async () => {
     const url = `${window.location.origin}/projects/${effectiveProjectId}`;
     try {
       await navigator.clipboard.writeText(url);
-      // Could add toast notification here
     } catch (err) {
       console.error('Failed to copy link:', err);
     }
   }, [effectiveProjectId]);
+
+  const copyFactoryLink = useCallback(async () => {
+    const url = `${window.location.origin}/factory/jobs/${jobId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  }, [jobId]);
+
+  // Relative time helper
+  const getRelativeTime = useCallback((ms: number) => {
+    const diff = Date.now() - ms;
+    if (diff < 60_000) return 'just now';
+    if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ago`;
+    return `${Math.floor(diff / 86400_000)}d ago`;
+  }, []);
 
   // Server verify status (cached, TTL 60s)
   const verifyEntry = useVerifyStatusStore((s) => s.byJobId[jobId]);
@@ -196,7 +213,10 @@ function ProjectHomePage() {
   // Derive verdict from server (PASS-only policy)
   const verdict = verifyEntry?.status?.verdict;
   const isLoading = verifyEntry?.loading;
+  const verifyError = verifyEntry?.error;
+  const lastCheckedMs = verifyEntry?.status?.fetchedAtMs;
   const gateComplete = verdict === 'PASS'; // PASS-only gate
+  const isStatusKnown = verdict !== undefined && !isLoading;
 
   // Derive swimlane status from server verify result
   // Gate authority = server verify (Factory Check). Export unlocks only on PASS.
@@ -233,12 +253,13 @@ function ProjectHomePage() {
         id: 'export',
         label: 'Export',
         labelThai: 'ส่งออก',
-        status: !gateComplete ? 'pending' : 'in_progress',
+        // Block export when status unknown (not yet verified) or gate not passed
+        status: !isStatusKnown ? 'blocked' : (!gateComplete ? 'pending' : 'in_progress'),
         route: '/factory/jobs/:projectId', // Direct to Factory JobDetail
         icon: '📦',
       },
     ];
-  }, [specState, verdict, gateComplete]);
+  }, [specState, verdict, gateComplete, isStatusKnown]);
 
   const projectName = cabinet?.name || 'Untitled Project';
 
@@ -267,39 +288,68 @@ function ProjectHomePage() {
           </Link>
           <h1 style={{ fontSize: '28px', fontWeight: 700, marginTop: '8px' }}>{projectName}</h1>
           <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '4px' }}>
-            Project ID: {effectiveProjectId} • Spec: {specState}
+            Project ID: {effectiveProjectId} • Job ID: {jobId} • Spec: {specState}
           </p>
         </div>
         {/* Server Verify Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <VerifyVerdictPill verdict={verdictDisplay} />
-          <button
-            onClick={() => refreshStatus(jobId)}
-            disabled={isLoading}
-            style={{
-              padding: '8px 12px',
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <VerifyVerdictPill verdict={verdictDisplay} />
+            <button
+              onClick={() => refreshStatus(jobId)}
+              disabled={isLoading}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #374151',
+                background: isLoading ? '#1f2937' : '#111',
+                color: isLoading ? '#6b7280' : '#9ca3af',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontWeight: 500,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {isLoading ? 'Checking...' : '↻ Refresh'}
+            </button>
+            <div style={{
+              padding: '8px 16px',
+              background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+              border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
               borderRadius: '8px',
-              border: '1px solid #374151',
-              background: isLoading ? '#1f2937' : '#111',
-              color: isLoading ? '#6b7280' : '#9ca3af',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '12px',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {isLoading ? 'Checking...' : '↻ Refresh'}
-          </button>
-          <div style={{
-            padding: '8px 16px',
-            background: specState === 'RELEASED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-            border: `1px solid ${specState === 'RELEASED' ? '#22c55e' : '#3b82f6'}`,
-            borderRadius: '8px',
-          }}>
-            <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600, fontSize: '13px' }}>
-              {specState}
-            </span>
+            }}>
+              <span style={{ color: specState === 'RELEASED' ? '#86efac' : '#93c5fd', fontWeight: 600, fontSize: '13px' }}>
+                {specState}
+              </span>
+            </div>
           </div>
+          {/* Error or Last Checked Info */}
+          {verifyError ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#ef4444', fontSize: '12px' }}>
+                Error: {verifyError.slice(0, 50)}{verifyError.length > 50 ? '...' : ''}
+              </span>
+              <button
+                onClick={() => refreshStatus(jobId)}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ef4444',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#fca5a5',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : lastCheckedMs ? (
+            <span style={{ color: '#6b7280', fontSize: '11px' }}>
+              Last checked: {getRelativeTime(lastCheckedMs)}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -413,7 +463,7 @@ function ProjectHomePage() {
             </div>
           </div>
         )}
-        {/* Copy Link */}
+        {/* Copy Project Link */}
         <div
           onClick={copyProjectLink}
           style={{
@@ -427,9 +477,28 @@ function ProjectHomePage() {
           }}
         >
           <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔗</div>
-          <div style={{ fontWeight: 600 }}>Copy Link</div>
+          <div style={{ fontWeight: 600 }}>Copy Project Link</div>
           <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-            Share project with team
+            Share with designers
+          </div>
+        </div>
+        {/* Copy Factory Link */}
+        <div
+          onClick={copyFactoryLink}
+          style={{
+            padding: '20px',
+            background: '#111',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            color: 'white',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>🏭</div>
+          <div style={{ fontWeight: 600 }}>Copy Factory Link</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+            Share with factory team
           </div>
         </div>
       </div>
