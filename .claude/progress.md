@@ -221,8 +221,37 @@
 
 **Test Coverage:** 867 tests passing
 
+**Phase D6: Tool Wear & Cost Intelligence**
+- [x] D6-A: Wear Model (`src/factory/tooling/wearModel.ts`)
+  - Material hardness weights: MDF=1.0, HPL=2.0, MELAMINE=1.3, etc.
+  - `calculateWearUnits()` function with weighted depth
+- [x] D6-B: Observer (`src/factory/tooling/observer.ts`)
+  - `extractToolUsageEventsFromOpGraph()` - OpGraph → ToolUsageEvent[]
+  - Deterministic event extraction, machineId/dialect binding
+- [x] D6-C: Storage (`src/factory/tooling/storage/`)
+  - IndexedDB persistence: `monolith-factory-tooling (v1)`
+  - Stores: `toolUsageRecords`, `toolWearThresholds`
+  - `appendToolUsageEvents()`, `getToolUsageRecord()`, `setToolWearThreshold()`
+- [x] D6-D: Wiring (`src/factory/tooling/wireToolUsage.ts`)
+  - `wireToolUsageAfterCncBuild()` - Integration point after G-code generation
+  - Non-blocking, swallows errors by default (factory-safe)
+- [x] D6-E.1: Query Helpers (`src/factory/tooling/query/`)
+  - `getToolHealth()`, `listToolHealth()`, `listNearingLimitTools()`
+  - `summarizeWearByMaterial()` - Material breakdown for UI
+  - Health status: OK, NEARING_LIMIT (≥85%), OVER_LIMIT (≥100%)
+- [x] D6-E.2: UI Surface (`src/factory/components/tooling/`)
+  - `ToolHealthStrip.tsx` - CNC tab header strip
+  - `ToolHealthBadge.tsx` - Warning badge next to Generate button
+  - `ToolHealthModal.tsx` - Detail modal with material breakdown
+
+**Test Coverage:** 50 tests (D6-A: 4, D6-B: 9, D6-C: 8, D6-D: 8, D6-E: 21)
+
 ### Pending
 
+- [ ] **D6.1: Threshold & Maintenance UX**
+  - Set threshold per tool from UI
+  - Reset wear / Mark replaced button
+  - Audit note (local only)
 - [ ] **D4: Workpiece & Coordinate Mapping**
   - Panel origin, face selection (TOP/BOTTOM)
   - Flip/mirror/rotation transforms
@@ -234,4 +263,4 @@
 
 ---
 
-*Last updated: 2026-01-22 (v2.1.0 CNC Factory-Ready Release)*
+*Last updated: 2026-01-22 (v2.2.0 Tool Health Release)*
