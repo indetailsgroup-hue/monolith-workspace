@@ -3,7 +3,7 @@
  *
  * Deterministic drilling policy system for production-safe CNC operations.
  *
- * @version 1.0.0 - Phase D5-A
+ * @version 1.1.0 - Phase D5-C.0: Added drill tuning options
  * @module cnc/policy
  */
 
@@ -65,3 +65,26 @@ export {
   getConservativePolicyConfig,
   createCustomPolicy,
 } from './conservativePolicy';
+
+// ============================================
+// DRILL TUNING (D5-C.0)
+// ============================================
+
+export type {
+  RetractMode,
+  PeckMode,
+  DrillTuningOptions,
+  PeckEntry,
+} from './drillTuningTypes';
+
+export {
+  DEFAULT_RETRACT_MODE,
+  DEFAULT_PECK_MODE,
+  DEFAULT_DRILL_TUNING,
+  PARTIAL_RETRACT_CLEARANCE,
+  TAPER_PECK_RATIO,
+  TAPER_START_PERCENT,
+  calculatePeckSchedule,
+  getEffectivePeckDepth,
+  needsExplicitPeckSchedule,
+} from './drillTuningTypes';

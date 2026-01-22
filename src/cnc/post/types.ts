@@ -3,12 +3,12 @@
  *
  * Types for converting OperationGraph to machine-specific G-code.
  *
- * @version 1.1.0 - Phase D5-B: Added DrillPolicy integration
+ * @version 1.2.0 - Phase D5-C.0: Added drill tuning options
  */
 
 import type { MachineProfile } from '../machine/machineProfile';
 import type { OperationGraph } from '../operation/operationTypes';
-import type { DrillPolicy, MaterialClass, PanelMaterialContext } from '../policy';
+import type { DrillPolicy, MaterialClass, PanelMaterialContext, DrillTuningOptions } from '../policy';
 
 // ============================================================================
 // Post Process Options
@@ -85,6 +85,13 @@ export interface CncPolicyOptions {
    * Defaults to 'UNKNOWN' for conservative parameters.
    */
   defaultMaterialClass?: MaterialClass;
+
+  /**
+   * Tuning options for drill cycle execution.
+   * Controls retract behavior, peck scheduling, etc.
+   * @since D5-C.0
+   */
+  drillTuning?: DrillTuningOptions;
 }
 
 // ============================================================================

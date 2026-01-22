@@ -4,15 +4,20 @@
  * Centralized helper for deciding drill parameters using the policy engine.
  * Called by dialect emitters to get G81/G82/G83 selection and feed/speed.
  *
- * @version 1.0.0 - Phase D5-B
+ * @version 1.1.0 - Phase D5-C.0: Added drill tuning support
  */
 
-import { CONSERVATIVE_DRILL_POLICY } from '../policy';
+import {
+  CONSERVATIVE_DRILL_POLICY,
+  DEFAULT_DRILL_TUNING,
+  getEffectivePeckDepth,
+} from '../policy';
 import type {
   DrillPolicy,
   DrillParameters,
   HoleSpec,
   MaterialClass,
+  DrillTuningOptions,
 } from '../policy';
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getTool } from '../machine/machineProfile';
@@ -50,6 +55,10 @@ export interface DecideDrillParamsResult {
   materialClass: MaterialClass;
   /** Resolved tool info (if found) */
   tool?: ToolCapability;
+  /** Resolved tuning options @since D5-C.0 */
+  tuning: Required<DrillTuningOptions>;
+  /** Effective peck depth (adjusted for tuning) @since D5-C.0 */
+  effectivePeckDepth?: number;
   /** Warnings generated during resolution */
   warnings: string[];
 }
@@ -100,11 +109,25 @@ export function decideDrillParams(input: DecideDrillParamsInput): DecideDrillPar
   // Get parameters from policy
   const params = policy.getParameters(holeSpec, { class: materialClass });
 
+  // Resolve tuning options (D5-C.0)
+  const tuning: Required<DrillTuningOptions> = {
+    ...DEFAULT_DRILL_TUNING,
+    ...policyOptions?.drillTuning,
+  };
+
+  // Calculate effective peck depth if G83 cycle
+  let effectivePeckDepth: number | undefined;
+  if (params.cycle === 'G83' && params.peckDepth) {
+    effectivePeckDepth = getEffectivePeckDepth(depth, params.peckDepth, tuning);
+  }
+
   return {
     params,
     holeSpec,
     materialClass,
     tool,
+    tuning,
+    effectivePeckDepth,
     warnings,
   };
 }

@@ -4,7 +4,7 @@
  * Generates Biesse-compatible ISO G-code.
  * Baseline implementation - can be extended for specific Biesse post requirements.
  *
- * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
+ * @version 1.2.0 - Phase D5-C.0: Added drill tuning support
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -284,8 +284,8 @@ function generateDrillOperation(
       break;
     }
     case 'G83': {
-      // Prefer explicit op.peckDepth if set, otherwise use policy-calculated value
-      const peckDepth = op.peckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      // Priority: explicit op.peckDepth > tuning-adjusted effectivePeckDepth > policy peckDepth > default
+      const peckDepth = op.peckDepth ?? decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
       break;
     }
@@ -338,7 +338,8 @@ function generateBoreOperation(
       break;
     }
     case 'G83': {
-      const peckDepth = params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      // Use tuning-adjusted effectivePeckDepth if available
+      const peckDepth = decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
       break;
     }

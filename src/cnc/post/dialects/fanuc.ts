@@ -3,7 +3,7 @@
  *
  * Generates FANUC-compatible G-code for KDT and similar CNC machines.
  *
- * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
+ * @version 1.2.0 - Phase D5-C.0: Added drill tuning support
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -307,8 +307,8 @@ function generateDrillOperation(
     }
     case 'G83': {
       // Peck drill cycle - used for deep holes
-      // Prefer explicit op.peckDepth if set, otherwise use policy-calculated value
-      const peckDepth = op.peckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      // Priority: explicit op.peckDepth > tuning-adjusted effectivePeckDepth > policy peckDepth > default
+      const peckDepth = op.peckDepth ?? decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({
         x,
         y,
@@ -396,7 +396,8 @@ function generateBoreOperation(
     }
     case 'G83': {
       // Peck cycle - for very deep bores
-      const peckDepth = params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      // Use tuning-adjusted effectivePeckDepth if available
+      const peckDepth = decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({
         x,
         y,
