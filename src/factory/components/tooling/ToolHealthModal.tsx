@@ -3,19 +3,28 @@
  *
  * Shows detailed tool health information with material breakdown.
  * Opens when clicking on a tool in ToolHealthStrip.
+ * D6.1: Added threshold editing and wear reset actions.
  *
  * D6-E.2: Factory Intelligence UI
- * @version 1.0.0
+ * @version 1.1.0 - Phase D6.1
  */
 
-import React, { useEffect, useState } from 'react';
-import type { ToolHealth, ToolUsageRecord } from '../../tooling';
+import React, { useEffect, useState, useCallback } from 'react';
+import type { ToolHealth, ToolUsageRecord, ResetReason } from '../../tooling';
 import {
   getToolHealth,
   getToolUsageRecord,
   summarizeWearByMaterial,
+  resetToolWear,
   type WearSummary,
 } from '../../tooling';
+import {
+  getEffectiveThreshold,
+  updateThreshold,
+  hasCustomThreshold,
+} from '../../tooling/query/toolThresholdQuery';
+import { ToolThresholdEditor } from './ToolThresholdEditor';
+import { ToolResetButton } from './ToolResetButton';
 
 export interface ToolHealthModalProps {
   /** Tool ID to display */
@@ -54,6 +63,9 @@ function getStatusLabel(status: ToolHealth['status']): string {
   }
 }
 
+/** Current view mode in modal */
+type ViewMode = 'info' | 'threshold' | 'reset';
+
 export function ToolHealthModal({
   toolId,
   isOpen,
@@ -63,41 +75,85 @@ export function ToolHealthModal({
   const [record, setRecord] = useState<ToolUsageRecord | null>(null);
   const [summary, setSummary] = useState<WearSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('info');
+  const [currentThreshold, setCurrentThreshold] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [hasCustom, setHasCustom] = useState(false);
+
+  // Load tool data
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [h, r, threshold, custom] = await Promise.all([
+        getToolHealth(toolId),
+        getToolUsageRecord(toolId),
+        getEffectiveThreshold(toolId),
+        hasCustomThreshold(toolId),
+      ]);
+
+      setHealth(h);
+      setRecord(r);
+      setSummary(r ? summarizeWearByMaterial(r) : null);
+      setCurrentThreshold(threshold);
+      setHasCustom(custom);
+      setLoading(false);
+    } catch {
+      setHealth(null);
+      setRecord(null);
+      setSummary(null);
+      setLoading(false);
+    }
+  }, [toolId]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     let mounted = true;
 
-    async function load() {
-      setLoading(true);
-      try {
-        const [h, r] = await Promise.all([
-          getToolHealth(toolId),
-          getToolUsageRecord(toolId),
-        ]);
-
-        if (mounted) {
-          setHealth(h);
-          setRecord(r);
-          setSummary(r ? summarizeWearByMaterial(r) : null);
-          setLoading(false);
-        }
-      } catch {
-        if (mounted) {
-          setHealth(null);
-          setRecord(null);
-          setSummary(null);
-          setLoading(false);
-        }
+    loadData().then(() => {
+      if (!mounted) {
+        // Reset state if unmounted
+        setHealth(null);
+        setRecord(null);
+        setSummary(null);
       }
-    }
+    });
 
-    load();
     return () => {
       mounted = false;
     };
-  }, [toolId, isOpen]);
+  }, [toolId, isOpen, loadData]);
+
+  // Reset view mode when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setViewMode('info');
+    }
+  }, [isOpen]);
+
+  // Handle threshold save
+  const handleThresholdSave = useCallback(async (newThreshold: number) => {
+    setSaving(true);
+    try {
+      await updateThreshold(toolId, newThreshold);
+      await loadData();
+      setViewMode('info');
+    } finally {
+      setSaving(false);
+    }
+  }, [toolId, loadData]);
+
+  // Handle wear reset
+  const handleReset = useCallback(async (options: { reason: ResetReason; note?: string }) => {
+    setSaving(true);
+    try {
+      await resetToolWear(toolId, options);
+      await loadData();
+      setViewMode('info');
+    } finally {
+      setSaving(false);
+    }
+  }, [toolId, loadData]);
 
   if (!isOpen) return null;
 
@@ -164,6 +220,24 @@ export function ToolHealthModal({
         <div style={{ padding: '20px' }}>
           {loading ? (
             <div style={{ color: '#888', textAlign: 'center' }}>Loading...</div>
+          ) : viewMode === 'threshold' ? (
+            /* Threshold Editor View */
+            <ToolThresholdEditor
+              toolId={toolId}
+              currentThreshold={currentThreshold}
+              currentWearUnits={health?.wearUnits || 0}
+              onSave={handleThresholdSave}
+              onCancel={() => setViewMode('info')}
+              saving={saving}
+            />
+          ) : viewMode === 'reset' ? (
+            /* Reset Confirmation View */
+            <ToolResetButton
+              toolId={toolId}
+              onReset={handleReset}
+              onCancel={() => setViewMode('info')}
+              resetting={saving}
+            />
           ) : health ? (
             <>
               {/* Status Badge */}
@@ -191,6 +265,7 @@ export function ToolHealthModal({
                   <StatBox
                     label="Max Wear"
                     value={Math.round(health.maxWearUnits).toLocaleString()}
+                    suffix={hasCustom ? '(custom)' : undefined}
                   />
                 </div>
               )}
@@ -233,6 +308,60 @@ export function ToolHealthModal({
                   Last used in job: <span style={{ color: '#aaa' }}>{record.lastJobId}</span>
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  marginTop: 20,
+                  paddingTop: 16,
+                  borderTop: '1px solid #3a3a5a',
+                }}
+              >
+                <button
+                  onClick={() => setViewMode('threshold')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    backgroundColor: '#8b5cf620',
+                    border: '1px solid #8b5cf640',
+                    borderRadius: 6,
+                    color: '#8b5cf6',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>⚙</span>
+                  Set Threshold
+                </button>
+                <button
+                  onClick={() => setViewMode('reset')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    backgroundColor: '#f59e0b15',
+                    border: '1px solid #f59e0b40',
+                    borderRadius: 6,
+                    color: '#f59e0b',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>↻</span>
+                  Reset Wear
+                </button>
+              </div>
             </>
           ) : (
             <div style={{ color: '#888', textAlign: 'center' }}>Tool not found</div>
@@ -292,9 +421,10 @@ function HealthStatusBadge({ health }: HealthStatusBadgeProps): React.ReactEleme
 interface StatBoxProps {
   label: string;
   value: string;
+  suffix?: string;
 }
 
-function StatBox({ label, value }: StatBoxProps): React.ReactElement {
+function StatBox({ label, value, suffix }: StatBoxProps): React.ReactElement {
   return (
     <div
       style={{
@@ -304,7 +434,14 @@ function StatBox({ label, value }: StatBoxProps): React.ReactElement {
       }}
     >
       <div style={{ fontSize: 10, color: '#888', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>{value}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>
+        {value}
+        {suffix && (
+          <span style={{ fontSize: 10, color: '#8b5cf6', marginLeft: 4 }}>
+            {suffix}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

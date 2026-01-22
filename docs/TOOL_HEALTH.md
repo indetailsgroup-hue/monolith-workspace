@@ -1,6 +1,6 @@
 # Tool Health & Wear Tracking System
 
-> **Version:** 1.0.0 (D6 Release)
+> **Version:** 1.1.0 (D6.1 Release)
 > **Schema:** `monolith-factory-tooling (v1)`
 > **Status:** Production Ready
 
@@ -120,6 +120,36 @@ await listToolHealth(options?): Promise<ToolHealth[]>
 await listNearingLimitTools(options?): Promise<ToolHealth[]>
 ```
 
+### Threshold Functions (D6.1)
+
+```typescript
+// Get effective threshold (custom or default)
+await getEffectiveThreshold(toolId: string): Promise<number>
+
+// Check if tool has custom threshold
+await hasCustomThreshold(toolId: string): Promise<boolean>
+
+// Update/create custom threshold
+await updateThreshold(toolId: string, maxWearUnits: number): Promise<void>
+
+// Remove custom threshold (reverts to default)
+await removeThreshold(toolId: string): Promise<boolean>
+
+// Preset values: LIGHT (5000), STANDARD (10000), HEAVY (20000), EXTRA_HEAVY (50000)
+```
+
+### Maintenance Functions (D6.1)
+
+```typescript
+// Reset tool wear after replacement/resharpening
+await resetToolWear(toolId: string, options?: {
+  reason?: 'REPLACED' | 'RESHARPENED' | 'MANUAL';
+  note?: string;
+  occurredAt?: number;
+  deleteEventHistory?: boolean;
+}): Promise<void>
+```
+
 ### Wiring Function
 
 ```typescript
@@ -137,11 +167,13 @@ await wireToolUsageAfterCncBuild({
 
 ## UI Components
 
-| Component         | Location                   | Purpose                       |
-|-------------------|----------------------------|-------------------------------|
-| ToolHealthStrip   | CNC Generate panel header  | Shows tools needing attention |
-| ToolHealthBadge   | Next to Generate button    | Warning count                 |
-| ToolHealthModal   | Click on tool chip         | Detail view with breakdown    |
+| Component            | Location                   | Purpose                       |
+|----------------------|----------------------------|-------------------------------|
+| ToolHealthStrip      | CNC Generate panel header  | Shows tools needing attention |
+| ToolHealthBadge      | Next to Generate button    | Warning count                 |
+| ToolHealthModal      | Click on tool chip         | Detail view with breakdown    |
+| ToolThresholdEditor  | Inside modal (D6.1)        | Set custom wear threshold     |
+| ToolResetButton      | Inside modal (D6.1)        | Reset wear after maintenance  |
 
 ## Migration Guide
 
@@ -172,8 +204,9 @@ await resetToolingDb();
 
 1. **Generate G-code** - Tool usage is recorded automatically
 2. **Monitor health** - Check ToolHealthStrip for warnings
-3. **Replace tool** - When OVER_LIMIT, replace physical tool
-4. **Reset wear** - Clear wear data for replaced tool (UI coming in D6.1)
+3. **Set threshold** - Click tool chip → "Set Threshold" for custom limits
+4. **Replace tool** - When OVER_LIMIT, replace physical tool
+5. **Reset wear** - Click tool chip → "Reset Wear" → select reason
 
 ### Non-Blocking Design
 
@@ -196,9 +229,15 @@ await resetToolingDb();
 2. Check if custom thresholds are set
 3. Review material weight mapping
 
-## Future Enhancements (D6.1)
+## D6.1 Features (Complete)
 
-- [ ] UI for setting per-tool thresholds
-- [ ] "Reset wear" / "Mark replaced" button
+- [x] UI for setting per-tool thresholds (ToolThresholdEditor)
+- [x] "Reset wear" / "Mark replaced" button (ToolResetButton)
+- [x] Threshold presets (Light/Standard/Heavy/Extra Heavy)
+- [x] Audit trail for maintenance actions (localStorage)
+
+## Future Enhancements (D6.2)
+
 - [ ] Export wear report (CSV/JSON)
-- [ ] Audit trail for maintenance actions
+- [ ] Maintenance history view
+- [ ] Tool replacement scheduling

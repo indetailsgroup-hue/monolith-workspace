@@ -4,7 +4,7 @@
  * Persists tool usage events and aggregated records to IndexedDB.
  * Read-only observer pattern - does not affect G-code output.
  *
- * @version 1.0.0 - Phase D6-C
+ * @version 1.1.0 - Phase D6.1 (added resetToolWear, listToolWearThresholds)
  */
 
 import type { ToolUsageEvent, ToolUsageRecord, ToolWearThreshold } from '../types';
@@ -240,4 +240,218 @@ export async function getToolUsageEventsByTool(
   return rows
     .sort((a, b) => a.occurredAt - b.occurredAt)
     .map(({ id: _id, toolId: _t, ...rest }) => rest as unknown as ToolUsageEvent);
+}
+
+// ============================================================================
+// D6.1: Reset & Maintenance Functions
+// ============================================================================
+
+/**
+ * Reason for resetting tool wear.
+ */
+export type ResetReason = 'REPLACED' | 'RESHARPENED' | 'MANUAL';
+
+/**
+ * Options for resetToolWear function.
+ */
+export interface ResetToolWearOptions {
+  /** Reason for reset */
+  reason?: ResetReason;
+  /** Optional note (for audit/reference) */
+  note?: string;
+  /** Timestamp of reset (defaults to now) */
+  occurredAt?: number;
+  /** Whether to delete event history for this tool (default: false) */
+  deleteEventHistory?: boolean;
+}
+
+/**
+ * Reset tool wear data for a specific tool.
+ *
+ * This clears the aggregated wear data, allowing the tool to start fresh
+ * (e.g., after replacement or resharpening).
+ *
+ * Does NOT delete the threshold - only resets the usage record.
+ * Does NOT affect G-code generation.
+ *
+ * @param toolId - Tool identifier to reset
+ * @param opts - Reset options (reason, note, timestamp)
+ */
+export async function resetToolWear(
+  toolId: string,
+  opts?: ResetToolWearOptions
+): Promise<void> {
+  const db = await openDb();
+  const occurredAt = opts?.occurredAt ?? nowMs();
+
+  const tx = db.transaction([STORE_RECORDS, STORE_EVENTS], 'readwrite');
+  const recordsStore = tx.objectStore(STORE_RECORDS);
+
+  // Reset the record by creating a fresh one
+  const freshRecord: ToolUsageRecord = {
+    toolId,
+    totalHoles: 0,
+    totalDepthMm: 0,
+    wearUnits: 0,
+    byMaterial: {},
+    lastJobId: undefined,
+    lastOccurredAt: undefined,
+    updatedAt: occurredAt,
+  };
+
+  recordsStore.put(freshRecord);
+
+  // Optionally delete event history
+  if (opts?.deleteEventHistory) {
+    const eventsStore = tx.objectStore(STORE_EVENTS);
+    const idx = eventsStore.index('toolId');
+
+    // Delete all events for this tool
+    const deleteReq = idx.openCursor(IDBKeyRange.only(toolId));
+    deleteReq.onsuccess = () => {
+      const cursor = deleteReq.result;
+      if (cursor) {
+        cursor.delete();
+        cursor.continue();
+      }
+    };
+  }
+
+  await txDone(tx);
+  db.close();
+
+  // Log to localStorage for minimal audit trail (optional, non-critical)
+  try {
+    logMaintenanceAction(toolId, 'RESET', opts?.reason, opts?.note, occurredAt);
+  } catch {
+    // Non-critical - swallow errors
+  }
+}
+
+/**
+ * List all tool wear thresholds.
+ * Returns in stable order (sorted by toolId).
+ */
+export async function listToolWearThresholds(): Promise<ToolWearThreshold[]> {
+  const db = await openDb();
+  const tx = db.transaction([STORE_THRESHOLDS], 'readonly');
+  const store = tx.objectStore(STORE_THRESHOLDS);
+
+  const thresholds = await new Promise<ToolWearThreshold[]>((resolve, reject) => {
+    const out: ToolWearThreshold[] = [];
+    const cursorReq = store.openCursor();
+    cursorReq.onsuccess = () => {
+      const c = cursorReq.result;
+      if (!c) return resolve(out);
+      out.push(c.value as ToolWearThreshold);
+      c.continue();
+    };
+    cursorReq.onerror = () => reject(cursorReq.error ?? new Error('Cursor failed'));
+  });
+
+  await txDone(tx);
+  db.close();
+
+  // Stable ordering
+  return thresholds.sort((a, b) =>
+    a.toolId < b.toolId ? -1 : a.toolId > b.toolId ? 1 : 0
+  );
+}
+
+/**
+ * Delete a tool wear threshold.
+ * Returns true if deleted, false if not found.
+ */
+export async function deleteToolWearThreshold(toolId: string): Promise<boolean> {
+  const db = await openDb();
+  const tx = db.transaction([STORE_THRESHOLDS], 'readwrite');
+  const store = tx.objectStore(STORE_THRESHOLDS);
+
+  // Check if exists
+  const existing = await reqToPromise<ToolWearThreshold | undefined>(store.get(toolId));
+  if (!existing) {
+    await txDone(tx);
+    db.close();
+    return false;
+  }
+
+  store.delete(toolId);
+  await txDone(tx);
+  db.close();
+  return true;
+}
+
+// ============================================================================
+// Maintenance Audit Log (localStorage - minimal, non-critical)
+// ============================================================================
+
+const MAINTENANCE_LOG_KEY = 'monolith.tooling.maintenanceLog';
+const MAX_LOG_ENTRIES = 100;
+
+export interface MaintenanceLogEntry {
+  toolId: string;
+  action: 'RESET' | 'THRESHOLD_SET' | 'THRESHOLD_DELETE';
+  reason?: ResetReason;
+  note?: string;
+  timestamp: number;
+}
+
+/**
+ * Log a maintenance action to localStorage.
+ * Non-critical - errors are swallowed.
+ */
+function logMaintenanceAction(
+  toolId: string,
+  action: MaintenanceLogEntry['action'],
+  reason?: ResetReason,
+  note?: string,
+  timestamp?: number
+): void {
+  try {
+    const existing = localStorage.getItem(MAINTENANCE_LOG_KEY);
+    const log: MaintenanceLogEntry[] = existing ? JSON.parse(existing) : [];
+
+    log.push({
+      toolId,
+      action,
+      reason,
+      note,
+      timestamp: timestamp ?? Date.now(),
+    });
+
+    // Keep only recent entries
+    if (log.length > MAX_LOG_ENTRIES) {
+      log.splice(0, log.length - MAX_LOG_ENTRIES);
+    }
+
+    localStorage.setItem(MAINTENANCE_LOG_KEY, JSON.stringify(log));
+  } catch {
+    // Non-critical - swallow errors
+  }
+}
+
+/**
+ * Get maintenance log entries.
+ * Returns most recent entries first.
+ */
+export function getMaintenanceLog(): MaintenanceLogEntry[] {
+  try {
+    const existing = localStorage.getItem(MAINTENANCE_LOG_KEY);
+    if (!existing) return [];
+    const log: MaintenanceLogEntry[] = JSON.parse(existing);
+    return log.sort((a, b) => b.timestamp - a.timestamp);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Clear maintenance log.
+ */
+export function clearMaintenanceLog(): void {
+  try {
+    localStorage.removeItem(MAINTENANCE_LOG_KEY);
+  } catch {
+    // Non-critical
+  }
 }

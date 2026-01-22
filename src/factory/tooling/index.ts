@@ -4,7 +4,7 @@
  * D6 module for tracking tool usage and estimating wear/cost.
  * Observer pattern - reads but never writes to G-code path.
  *
- * @version 1.5.0 - Phase D6 Complete (D6-A through D6-E.2)
+ * @version 1.6.0 - Phase D6.1 (Threshold & Maintenance UX)
  */
 
 // D6-A: Types
