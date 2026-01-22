@@ -3,7 +3,7 @@
  *
  * Generates FANUC-compatible G-code for KDT and similar CNC machines.
  *
- * @version 1.2.0 - Phase D5-C.0: Added drill tuning support
+ * @version 1.3.0 - Phase D5-C.1A: Added through-hole dwell support
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -12,7 +12,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations, countToolChanges } from '../normalizeOperations';
-import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth } from '../decideDrillParams';
+import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
 
 // ============================================================================
 // FANUC Post Processor
@@ -256,6 +256,7 @@ function generateOperation(
 /**
  * Generate drill operation with policy-driven cycle selection.
  * Uses DrillPolicy to determine G81/G82/G83 and feed/speed.
+ * D5-C.1A: Supports through-hole dwell for breakout mitigation.
  */
 function generateDrillOperation(
   builder: GcodeBuilder,
@@ -278,29 +279,39 @@ function generateDrillOperation(
   // Collect any warnings from policy resolution
   warnings.push(...decision.warnings);
 
-  const { params, holeSpec } = decision;
+  const { params, holeSpec, throughHole } = decision;
   const feedRate = params.feedRate;
+
+  // Check if through-hole dwell should be applied (D5-C.1A)
+  const applyThroughHoleDwell = shouldApplyThroughHoleDwell(throughHole);
 
   // Calculate target Z (negative from surface)
   const startZ = z;
   const targetZ = startZ - depth;
 
-  // Add comment with cycle info
+  // Add comment with cycle info (include through-hole indicator)
   if (op.comment) {
-    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
+    const cycleInfo = applyThroughHoleDwell
+      ? `${params.cycle}+TH`
+      : params.cycle;
+    builder.addComment(sanitizeComment(`${op.comment} [${cycleInfo}]`));
   }
 
   // Emit cycle based on policy decision
   switch (params.cycle) {
     case 'G82': {
       // Dwell drill cycle - used for hinge cups
-      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      // D5-C.1A: Add through-hole dwell if applicable
+      const baseDwell = params.dwellTime ?? getDefaultDwellTime();
+      const totalDwell = applyThroughHoleDwell
+        ? baseDwell + throughHole.exitDwellSec
+        : baseDwell;
       builder.dwellDrillCycle({
         x,
         y,
         z: targetZ,
         r: safeZ,
-        p: dwellTime,
+        p: totalDwell,
         f: feedRate,
       });
       break;
@@ -317,33 +328,53 @@ function generateDrillOperation(
         q: peckDepth,
         f: feedRate,
       });
+
+      // D5-C.1A: Add through-hole dwell after G83 completes
+      if (applyThroughHoleDwell) {
+        builder.cancelCycle(); // G80 - exit canned cycle
+        builder.dwell(throughHole.exitDwellSec); // G4 P{sec}
+      }
       break;
     }
     case 'G81':
     default: {
-      // Simple drill cycle
-      builder.drillCycle({
-        x,
-        y,
-        z: targetZ,
-        r: safeZ,
-        f: feedRate,
-      });
+      // D5-C.1A: Promote G81 to G82 for through-hole dwell
+      if (applyThroughHoleDwell) {
+        builder.dwellDrillCycle({
+          x,
+          y,
+          z: targetZ,
+          r: safeZ,
+          p: throughHole.exitDwellSec,
+          f: feedRate,
+        });
+      } else {
+        // Simple drill cycle
+        builder.drillCycle({
+          x,
+          y,
+          z: targetZ,
+          r: safeZ,
+          f: feedRate,
+        });
+      }
       break;
     }
   }
 
-  // Estimate time: rapid to position + drilling + retract
+  // Estimate time: rapid to position + drilling + retract + dwell
   const rapidTime = 0.5; // seconds for XY move
   const drillTime = (depth / feedRate) * 60; // depth / mm/min * 60
   const retractTime = params.cycle === 'G83' ? 0.5 : 0.3; // Peck takes longer
+  const dwellTime = applyThroughHoleDwell ? throughHole.exitDwellSec : 0;
 
-  return rapidTime + drillTime + retractTime;
+  return rapidTime + drillTime + retractTime + dwellTime;
 }
 
 /**
  * Generate bore operation with policy-driven parameters.
  * Bore operations (35mm hinge cups) typically use G82 (dwell) via policy.
+ * D5-C.1A: Supports through-hole dwell for breakout mitigation.
  */
 function generateBoreOperation(
   builder: GcodeBuilder,
@@ -366,16 +397,22 @@ function generateBoreOperation(
   // Collect any warnings from policy resolution
   warnings.push(...decision.warnings);
 
-  const { params, holeSpec } = decision;
+  const { params, holeSpec, throughHole } = decision;
   const feedRate = params.feedRate;
+
+  // Check if through-hole dwell should be applied (D5-C.1A)
+  const applyThroughHoleDwell = shouldApplyThroughHoleDwell(throughHole);
 
   // Calculate target Z
   const startZ = z;
   const targetZ = startZ - depth;
 
-  // Add comment with cycle info
+  // Add comment with cycle info (include through-hole indicator)
   if (op.comment) {
-    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
+    const cycleInfo = applyThroughHoleDwell
+      ? `${params.cycle}+TH`
+      : params.cycle;
+    builder.addComment(sanitizeComment(`${op.comment} [${cycleInfo}]`));
   }
 
   // Emit cycle based on policy decision
@@ -383,13 +420,17 @@ function generateBoreOperation(
   switch (params.cycle) {
     case 'G82': {
       // Dwell cycle - standard for hinge cups
-      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      // D5-C.1A: Add through-hole dwell if applicable
+      const baseDwell = params.dwellTime ?? getDefaultDwellTime();
+      const totalDwell = applyThroughHoleDwell
+        ? baseDwell + throughHole.exitDwellSec
+        : baseDwell;
       builder.dwellDrillCycle({
         x,
         y,
         z: targetZ,
         r: safeZ,
-        p: dwellTime,
+        p: totalDwell,
         f: feedRate,
       });
       break;
@@ -406,11 +447,18 @@ function generateBoreOperation(
         q: peckDepth,
         f: feedRate,
       });
+
+      // D5-C.1A: Add through-hole dwell after G83 completes
+      if (applyThroughHoleDwell) {
+        builder.cancelCycle(); // G80 - exit canned cycle
+        builder.dwell(throughHole.exitDwellSec); // G4 P{sec}
+      }
       break;
     }
     case 'G81':
     default: {
       // For bore operations, use G85 (boring cycle) - standard for bores
+      // D5-C.1A: Add dwell after bore if through-hole
       builder.boreCycle({
         x,
         y,
@@ -418,6 +466,10 @@ function generateBoreOperation(
         r: safeZ,
         f: feedRate,
       });
+
+      if (applyThroughHoleDwell) {
+        builder.dwell(throughHole.exitDwellSec);
+      }
       break;
     }
   }
@@ -426,8 +478,9 @@ function generateBoreOperation(
   const rapidTime = 0.5;
   const boreTime = (depth / feedRate) * 60;
   const retractTime = params.cycle === 'G82' ? 0.5 : (depth / feedRate) * 60;
+  const dwellTime = applyThroughHoleDwell ? throughHole.exitDwellSec : 0;
 
-  return rapidTime + boreTime + retractTime;
+  return rapidTime + boreTime + retractTime + dwellTime;
 }
 
 // ============================================================================

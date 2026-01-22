@@ -4,7 +4,7 @@
  * Generates Biesse-compatible ISO G-code.
  * Baseline implementation - can be extended for specific Biesse post requirements.
  *
- * @version 1.2.0 - Phase D5-C.0: Added drill tuning support
+ * @version 1.3.0 - Phase D5-C.1A: Added through-hole dwell support
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -13,7 +13,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations } from '../normalizeOperations';
-import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth } from '../decideDrillParams';
+import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
 
 // ============================================================================
 // Biesse ISO Post Processor
@@ -247,6 +247,7 @@ function generateOperation(
 
 /**
  * Generate drill operation with policy-driven cycle selection.
+ * D5-C.1A: Supports through-hole dwell for breakout mitigation.
  */
 function generateDrillOperation(
   builder: GcodeBuilder,
@@ -268,39 +269,70 @@ function generateDrillOperation(
 
   warnings.push(...decision.warnings);
 
-  const { params, holeSpec } = decision;
+  const { params, holeSpec, throughHole } = decision;
   const feedRate = params.feedRate;
   const targetZ = z - depth;
 
+  // Check if through-hole dwell should be applied (D5-C.1A)
+  const applyThroughHoleDwell = shouldApplyThroughHoleDwell(throughHole);
+
+  // Add comment with cycle info (include through-hole indicator)
   if (op.comment) {
-    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
+    const cycleInfo = applyThroughHoleDwell
+      ? `${params.cycle}+TH`
+      : params.cycle;
+    builder.addComment(sanitizeComment(`${op.comment} [${cycleInfo}]`));
   }
 
   // Emit cycle based on policy decision
   switch (params.cycle) {
     case 'G82': {
-      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
-      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: dwellTime, f: feedRate });
+      // D5-C.1A: Add through-hole dwell if applicable
+      const baseDwell = params.dwellTime ?? getDefaultDwellTime();
+      const totalDwell = applyThroughHoleDwell
+        ? baseDwell + throughHole.exitDwellSec
+        : baseDwell;
+      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: totalDwell, f: feedRate });
       break;
     }
     case 'G83': {
       // Priority: explicit op.peckDepth > tuning-adjusted effectivePeckDepth > policy peckDepth > default
       const peckDepth = op.peckDepth ?? decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
+
+      // D5-C.1A: Add through-hole dwell after G83 completes
+      if (applyThroughHoleDwell) {
+        builder.cancelCycle(); // G80 - exit canned cycle
+        builder.dwell(throughHole.exitDwellSec); // G4 P{sec}
+      }
       break;
     }
     case 'G81':
     default: {
-      builder.drillCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+      // D5-C.1A: Promote G81 to G82 for through-hole dwell
+      if (applyThroughHoleDwell) {
+        builder.dwellDrillCycle({
+          x,
+          y,
+          z: targetZ,
+          r: safeZ,
+          p: throughHole.exitDwellSec,
+          f: feedRate,
+        });
+      } else {
+        builder.drillCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+      }
       break;
     }
   }
 
-  return 0.5 + (depth / feedRate) * 60 + (params.cycle === 'G83' ? 0.5 : 0.3);
+  const dwellTime = applyThroughHoleDwell ? throughHole.exitDwellSec : 0;
+  return 0.5 + (depth / feedRate) * 60 + (params.cycle === 'G83' ? 0.5 : 0.3) + dwellTime;
 }
 
 /**
  * Generate bore operation with policy-driven parameters.
+ * D5-C.1A: Supports through-hole dwell for breakout mitigation.
  */
 function generateBoreOperation(
   builder: GcodeBuilder,
@@ -322,36 +354,59 @@ function generateBoreOperation(
 
   warnings.push(...decision.warnings);
 
-  const { params, holeSpec } = decision;
+  const { params, holeSpec, throughHole } = decision;
   const feedRate = params.feedRate;
   const targetZ = z - depth;
 
+  // Check if through-hole dwell should be applied (D5-C.1A)
+  const applyThroughHoleDwell = shouldApplyThroughHoleDwell(throughHole);
+
+  // Add comment with cycle info (include through-hole indicator)
   if (op.comment) {
-    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
+    const cycleInfo = applyThroughHoleDwell
+      ? `${params.cycle}+TH`
+      : params.cycle;
+    builder.addComment(sanitizeComment(`${op.comment} [${cycleInfo}]`));
   }
 
   // Emit cycle based on policy decision
   switch (params.cycle) {
     case 'G82': {
-      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
-      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: dwellTime, f: feedRate });
+      // D5-C.1A: Add through-hole dwell if applicable
+      const baseDwell = params.dwellTime ?? getDefaultDwellTime();
+      const totalDwell = applyThroughHoleDwell
+        ? baseDwell + throughHole.exitDwellSec
+        : baseDwell;
+      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: totalDwell, f: feedRate });
       break;
     }
     case 'G83': {
       // Use tuning-adjusted effectivePeckDepth if available
       const peckDepth = decision.effectivePeckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
       builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
+
+      // D5-C.1A: Add through-hole dwell after G83 completes
+      if (applyThroughHoleDwell) {
+        builder.cancelCycle(); // G80 - exit canned cycle
+        builder.dwell(throughHole.exitDwellSec); // G4 P{sec}
+      }
       break;
     }
     case 'G81':
     default: {
       // For bore operations, use G85 (boring cycle) - standard for bores
       builder.boreCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+
+      // D5-C.1A: Add dwell after bore if through-hole
+      if (applyThroughHoleDwell) {
+        builder.dwell(throughHole.exitDwellSec);
+      }
       break;
     }
   }
 
-  return 0.5 + (depth / feedRate) * 120;
+  const dwellTime = applyThroughHoleDwell ? throughHole.exitDwellSec : 0;
+  return 0.5 + (depth / feedRate) * 120 + dwellTime;
 }
 
 // ============================================================================

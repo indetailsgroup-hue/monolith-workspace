@@ -4,7 +4,7 @@
  * Centralized helper for deciding drill parameters using the policy engine.
  * Called by dialect emitters to get G81/G82/G83 selection and feed/speed.
  *
- * @version 1.1.0 - Phase D5-C.0: Added drill tuning support
+ * @version 1.3.0 - Phase D5-C.1B: Added feed-down near exit
  */
 
 import {
@@ -23,7 +23,7 @@ import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getTool } from '../machine/machineProfile';
 import type { Operation, DrillOperation, BoreOperation } from '../operation/operationTypes';
 import { isDrillOperation, isBoreOperation } from '../operation/operationTypes';
-import type { CncPolicyOptions } from './types';
+import type { CncPolicyOptions, ThroughHoleSensitiveMaterial, ThroughHoleTuning } from './types';
 
 // ============================================
 // TYPES
@@ -44,6 +44,34 @@ export interface DecideDrillParamsInput {
 }
 
 /**
+ * Through-hole decision result.
+ * @since D5-C.1A
+ * @since D5-C.1B: Added feed-down near exit fields
+ */
+export interface ThroughHoleDecision {
+  /** Whether this is detected as a through-hole */
+  isThroughHole: boolean;
+  /** Resolved panel thickness (mm) */
+  panelThicknessMm: number;
+  /** Whether thickness came from panelFrames (true) or fallback (false) */
+  thicknessResolved: boolean;
+  /** Extra dwell time (seconds) for breakout mitigation, 0 if none */
+  exitDwellSec: number;
+  /** Whether material is sensitive to through-hole breakout */
+  isSensitiveMaterial: boolean;
+
+  // D5-C.1B: Feed-down near exit
+  /** Feed reduction percentage in exit zone (0-50), 0 if none */
+  exitFeedReductionPercent: number;
+  /** Depth of exit zone in mm (from panel bottom), 0 if none */
+  exitZoneDepthMm: number;
+  /** Depth where exit zone starts (from panel top), 0 if none */
+  exitZoneStartMm: number;
+  /** Calculated exit feed rate in mm/min, 0 if no reduction */
+  exitFeedRateMmMin: number;
+}
+
+/**
  * Result of drill parameter decision.
  */
 export interface DecideDrillParamsResult {
@@ -59,6 +87,8 @@ export interface DecideDrillParamsResult {
   tuning: Required<DrillTuningOptions>;
   /** Effective peck depth (adjusted for tuning) @since D5-C.0 */
   effectivePeckDepth?: number;
+  /** Through-hole decision for breakout mitigation @since D5-C.1A */
+  throughHole: ThroughHoleDecision;
   /** Warnings generated during resolution */
   warnings: string[];
 }
@@ -92,8 +122,12 @@ export function decideDrillParams(input: DecideDrillParamsInput): DecideDrillPar
   // Resolve depth
   const depth = resolveDepth(op);
 
-  // Resolve panel thickness (for through-hole detection)
-  const panelThickness = input.panelThickness ?? 18; // Default 18mm if unknown
+  // Resolve panel thickness (D5-C.1A: use panelFrames if available)
+  const panelId = op.workpieceContext?.panelId;
+  const { thicknessMm: panelThickness, resolved: thicknessResolved } = resolvePanelThickness(
+    panelId,
+    policyOptions
+  );
 
   // Resolve material class
   const materialClass = resolveMaterialClass(op, policyOptions, warnings);
@@ -121,6 +155,16 @@ export function decideDrillParams(input: DecideDrillParamsInput): DecideDrillPar
     effectivePeckDepth = getEffectivePeckDepth(depth, params.peckDepth, tuning);
   }
 
+  // Through-hole detection and dwell decision (D5-C.1A + D5-C.1B)
+  const throughHole = decideThroughHole(
+    depth,
+    panelThickness,
+    thicknessResolved,
+    materialClass,
+    params.feedRate, // D5-C.1B: Pass base feed for exit feed calculation
+    policyOptions?.throughHoleTuning
+  );
+
   return {
     params,
     holeSpec,
@@ -128,6 +172,7 @@ export function decideDrillParams(input: DecideDrillParamsInput): DecideDrillPar
     tool,
     tuning,
     effectivePeckDepth,
+    throughHole,
     warnings,
   };
 }
@@ -258,4 +303,191 @@ export function getDefaultDwellTime(): number {
  */
 export function getDefaultPeckDepth(diameter: number): number {
   return Math.round(diameter * 1.5 * 10) / 10; // 1.5 * diameter, rounded to 0.1mm
+}
+
+// ============================================
+// THROUGH-HOLE DETECTION (D5-C.1A)
+// ============================================
+
+/**
+ * Default through-hole tuning values.
+ * Conservative defaults for production safety.
+ * @since D5-C.1B: Added feed-down near exit defaults
+ */
+export const DEFAULT_THROUGH_HOLE_TUNING: Required<ThroughHoleTuning> = {
+  enabled: true,
+  breakthroughAllowanceMm: 0.5,
+  dwellSecByMaterial: {
+    HPL: 0.15,
+    PLYWOOD: 0.15,
+    MELAMINE: 0.10,
+  },
+  // D5-C.1B: Feed-down near exit
+  feedDownEnabled: true,
+  exitZoneDepthMm: 2,
+  exitFeedReductionByMaterial: {
+    HPL: 30,
+    PLYWOOD: 30,
+    MELAMINE: 25,
+  },
+};
+
+/**
+ * Default exit feed reduction settings.
+ * Exported for test verification.
+ * @since D5-C.1B
+ */
+export const DEFAULT_EXIT_FEED_REDUCTION = {
+  feedDownEnabled: true,
+  exitZoneDepthMm: 2,
+  exitFeedReductionByMaterial: {
+    HPL: 30,
+    PLYWOOD: 30,
+    MELAMINE: 25,
+  },
+};
+
+/**
+ * Default fallback panel thickness (mm).
+ */
+export const DEFAULT_FALLBACK_THICKNESS_MM = 18;
+
+/**
+ * Materials that are sensitive to through-hole breakout.
+ */
+const THROUGH_HOLE_SENSITIVE_MATERIALS: readonly ThroughHoleSensitiveMaterial[] = [
+  'HPL',
+  'PLYWOOD',
+  'MELAMINE',
+];
+
+/**
+ * Resolve panel thickness from panelFrames or fallback.
+ */
+function resolvePanelThickness(
+  panelId: string | undefined,
+  policyOptions: CncPolicyOptions | undefined
+): { thicknessMm: number; resolved: boolean } {
+  // Try to get from panelFrames
+  if (panelId && policyOptions?.panelFrames) {
+    const frame = policyOptions.panelFrames[panelId];
+    if (frame && typeof frame.thicknessMm === 'number' && frame.thicknessMm > 0) {
+      return { thicknessMm: frame.thicknessMm, resolved: true };
+    }
+  }
+
+  // Use explicit fallback if provided
+  if (typeof policyOptions?.fallbackThicknessMm === 'number' && policyOptions.fallbackThicknessMm > 0) {
+    return { thicknessMm: policyOptions.fallbackThicknessMm, resolved: false };
+  }
+
+  // Default fallback
+  return { thicknessMm: DEFAULT_FALLBACK_THICKNESS_MM, resolved: false };
+}
+
+/**
+ * Check if material class is sensitive to through-hole breakout.
+ */
+function isThroughHoleSensitiveMaterial(
+  materialClass: MaterialClass
+): materialClass is ThroughHoleSensitiveMaterial {
+  return (THROUGH_HOLE_SENSITIVE_MATERIALS as readonly string[]).includes(materialClass);
+}
+
+/**
+ * Detect through-hole and decide exit dwell + feed reduction.
+ * Pure function for deterministic decision.
+ * @since D5-C.1B: Added feed-down near exit calculation
+ */
+function decideThroughHole(
+  depthMm: number,
+  panelThicknessMm: number,
+  thicknessResolved: boolean,
+  materialClass: MaterialClass,
+  baseFeedRate: number,
+  tuning?: ThroughHoleTuning
+): ThroughHoleDecision {
+  // Merge with defaults
+  const effectiveTuning: Required<ThroughHoleTuning> = {
+    ...DEFAULT_THROUGH_HOLE_TUNING,
+    ...tuning,
+    dwellSecByMaterial: {
+      ...DEFAULT_THROUGH_HOLE_TUNING.dwellSecByMaterial,
+      ...tuning?.dwellSecByMaterial,
+    },
+    exitFeedReductionByMaterial: {
+      ...DEFAULT_THROUGH_HOLE_TUNING.exitFeedReductionByMaterial,
+      ...tuning?.exitFeedReductionByMaterial,
+    },
+  };
+
+  // Check if through-hole detection is enabled
+  if (!effectiveTuning.enabled) {
+    return {
+      isThroughHole: false,
+      panelThicknessMm,
+      thicknessResolved,
+      exitDwellSec: 0,
+      isSensitiveMaterial: false,
+      exitFeedReductionPercent: 0,
+      exitZoneDepthMm: 0,
+      exitZoneStartMm: 0,
+      exitFeedRateMmMin: 0,
+    };
+  }
+
+  // Detect through-hole: depth >= (thickness - allowance)
+  const isThroughHole = depthMm >= (panelThicknessMm - effectiveTuning.breakthroughAllowanceMm);
+
+  // Check if material is sensitive
+  const isSensitiveMaterial = isThroughHoleSensitiveMaterial(materialClass);
+
+  // Calculate exit dwell (D5-C.1A: only for through-hole + sensitive material)
+  let exitDwellSec = 0;
+  if (isThroughHole && isSensitiveMaterial) {
+    exitDwellSec = effectiveTuning.dwellSecByMaterial[materialClass] ?? 0;
+  }
+
+  // D5-C.1B: Calculate feed reduction near exit
+  let exitFeedReductionPercent = 0;
+  let exitZoneDepthMm = 0;
+  let exitZoneStartMm = 0;
+  let exitFeedRateMmMin = 0;
+
+  if (isThroughHole && isSensitiveMaterial && effectiveTuning.feedDownEnabled) {
+    // Get material-specific feed reduction
+    exitFeedReductionPercent = effectiveTuning.exitFeedReductionByMaterial[materialClass] ?? 0;
+
+    if (exitFeedReductionPercent > 0) {
+      // Calculate exit zone depth (clamp to max 50% of panel thickness)
+      const maxExitZone = panelThicknessMm * 0.5;
+      exitZoneDepthMm = Math.min(effectiveTuning.exitZoneDepthMm, maxExitZone);
+
+      // Calculate where exit zone starts (from panel top)
+      exitZoneStartMm = panelThicknessMm - exitZoneDepthMm;
+
+      // Calculate reduced feed rate
+      exitFeedRateMmMin = Math.round(baseFeedRate * (1 - exitFeedReductionPercent / 100));
+    }
+  }
+
+  return {
+    isThroughHole,
+    panelThicknessMm,
+    thicknessResolved,
+    exitDwellSec,
+    isSensitiveMaterial,
+    exitFeedReductionPercent,
+    exitZoneDepthMm,
+    exitZoneStartMm,
+    exitFeedRateMmMin,
+  };
+}
+
+/**
+ * Check if through-hole dwell should be applied.
+ * Convenience function for dialects.
+ */
+export function shouldApplyThroughHoleDwell(decision: ThroughHoleDecision): boolean {
+  return decision.isThroughHole && decision.isSensitiveMaterial && decision.exitDwellSec > 0;
 }

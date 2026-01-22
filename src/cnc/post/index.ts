@@ -1,7 +1,7 @@
 /**
  * post/index.ts - G-code Post Processing Module Exports
  *
- * @version 1.1.0 - Phase D5-B: Added policy decision helper
+ * @version 1.3.0 - Phase D5-C.1B: Added feed-down near exit
  */
 
 // Types
@@ -17,6 +17,9 @@ export type {
   ToolMap,
   ToolMapEntry,
   CncPolicyOptions,
+  PanelFrameInfo,
+  ThroughHoleSensitiveMaterial,
+  ThroughHoleTuning,
 } from './types';
 
 // Policy decision helper
@@ -25,8 +28,12 @@ export {
   isHoleOperation,
   getDefaultDwellTime,
   getDefaultPeckDepth,
+  shouldApplyThroughHoleDwell,
+  DEFAULT_THROUGH_HOLE_TUNING,
+  DEFAULT_FALLBACK_THICKNESS_MM,
+  DEFAULT_EXIT_FEED_REDUCTION, // D5-C.1B
 } from './decideDrillParams';
-export type { DecideDrillParamsInput, DecideDrillParamsResult } from './decideDrillParams';
+export type { DecideDrillParamsInput, DecideDrillParamsResult, ThroughHoleDecision } from './decideDrillParams';
 
 // Post processor selection
 export {

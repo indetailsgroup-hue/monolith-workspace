@@ -3,7 +3,7 @@
  *
  * Types for converting OperationGraph to machine-specific G-code.
  *
- * @version 1.2.0 - Phase D5-C.0: Added drill tuning options
+ * @version 1.4.0 - Phase D5-C.1B: Added feed-down near exit
  */
 
 import type { MachineProfile } from '../machine/machineProfile';
@@ -92,6 +92,99 @@ export interface CncPolicyOptions {
    * @since D5-C.0
    */
   drillTuning?: DrillTuningOptions;
+
+  /**
+   * Panel frame information for thickness lookup.
+   * Key is panelId from operation's workpieceContext.
+   * @since D5-C.1A
+   */
+  panelFrames?: Record<string, PanelFrameInfo>;
+
+  /**
+   * Fallback thickness when panel not found in panelFrames.
+   * Defaults to 18mm (standard cabinet panel).
+   * @since D5-C.1A
+   */
+  fallbackThicknessMm?: number;
+
+  /**
+   * Through-hole tuning for breakout mitigation.
+   * Controls dwell behavior near panel exit.
+   * @since D5-C.1A
+   */
+  throughHoleTuning?: ThroughHoleTuning;
+}
+
+// ============================================================================
+// Panel Frame Types (D5-C.1A)
+// ============================================================================
+
+/**
+ * Panel frame thickness information.
+ * Used for through-hole detection.
+ * @since D5-C.1A
+ */
+export interface PanelFrameInfo {
+  /** Panel thickness in mm */
+  thicknessMm: number;
+}
+
+/**
+ * Material classes that benefit from through-hole dwell.
+ * These materials have breakout/delamination risk at exit.
+ * @since D5-C.1A
+ */
+export type ThroughHoleSensitiveMaterial = 'HPL' | 'PLYWOOD' | 'MELAMINE';
+
+/**
+ * Through-hole tuning options for breakout mitigation.
+ * @since D5-C.1A
+ * @since D5-C.1B: Added feed-down near exit
+ */
+export interface ThroughHoleTuning {
+  /**
+   * Enable through-hole detection and mitigation.
+   * Defaults to true when panelFrames available.
+   */
+  enabled?: boolean;
+
+  /**
+   * Distance from panel bottom to consider as "through-hole".
+   * depth >= (thickness - allowance) → through-hole
+   * Defaults to 0.5mm (conservative).
+   */
+  breakthroughAllowanceMm?: number;
+
+  /**
+   * Dwell time (seconds) at bottom for each sensitive material.
+   * Material not in map → no extra dwell.
+   * Defaults: HPL=0.15, PLYWOOD=0.15, MELAMINE=0.10
+   */
+  dwellSecByMaterial?: Partial<Record<ThroughHoleSensitiveMaterial, number>>;
+
+  /**
+   * Enable feed rate reduction near exit (D5-C.1B).
+   * Defaults to true for additional breakout protection.
+   * @since D5-C.1B
+   */
+  feedDownEnabled?: boolean;
+
+  /**
+   * Depth of exit zone (mm from panel bottom) where feed reduction applies.
+   * The drill slows down when entering this zone.
+   * Defaults to 2mm (conservative).
+   * @since D5-C.1B
+   */
+  exitZoneDepthMm?: number;
+
+  /**
+   * Feed rate reduction percentage for each sensitive material in exit zone.
+   * 30 = reduce feed by 30% (i.e., use 70% of base feed).
+   * Material not in map → no feed reduction.
+   * Defaults: HPL=30, PLYWOOD=30, MELAMINE=25
+   * @since D5-C.1B
+   */
+  exitFeedReductionByMaterial?: Partial<Record<ThroughHoleSensitiveMaterial, number>>;
 }
 
 // ============================================================================
