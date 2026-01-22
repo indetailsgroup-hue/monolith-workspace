@@ -3,7 +3,7 @@
  *
  * Deterministic G-code line builder with formatting utilities.
  *
- * @version 1.0.0 - Phase D2
+ * @version 1.1.0 - Phase D5-B: Added G82 dwell drill cycle
  */
 
 // ============================================================================
@@ -206,6 +206,24 @@ export class GcodeBuilder {
     const { x, y, z, r, f } = params;
     return this.addLine(
       `G81 X${this.formatNumber(x)} Y${this.formatNumber(y)} Z${this.formatNumber(z)} R${this.formatNumber(r)} F${this.formatNumber(f)}`
+    );
+  }
+
+  /**
+   * Dwell drilling cycle (G82).
+   * Used for chip clearing in hinge cups and similar.
+   */
+  dwellDrillCycle(params: {
+    x: number;
+    y: number;
+    z: number;
+    r: number;
+    p: number; // dwell time in seconds
+    f: number;
+  }): this {
+    const { x, y, z, r, p, f } = params;
+    return this.addLine(
+      `G82 X${this.formatNumber(x)} Y${this.formatNumber(y)} Z${this.formatNumber(z)} R${this.formatNumber(r)} P${this.formatNumber(p)} F${this.formatNumber(f)}`
     );
   }
 

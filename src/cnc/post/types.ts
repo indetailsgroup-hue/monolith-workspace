@@ -3,11 +3,12 @@
  *
  * Types for converting OperationGraph to machine-specific G-code.
  *
- * @version 1.0.0 - Phase D2
+ * @version 1.1.0 - Phase D5-B: Added DrillPolicy integration
  */
 
 import type { MachineProfile } from '../machine/machineProfile';
 import type { OperationGraph } from '../operation/operationTypes';
+import type { DrillPolicy, MaterialClass, PanelMaterialContext } from '../policy';
 
 // ============================================================================
 // Post Process Options
@@ -43,6 +44,47 @@ export interface PostProcessOptions {
 
   /** Preserve original operation order (skip normalization) */
   preserveOrder?: boolean;
+
+  /**
+   * Drilling policy options for cycle selection and feed/speed.
+   * If not provided, uses CONSERVATIVE_DRILL_POLICY with UNKNOWN material.
+   * @since D5-B
+   */
+  policy?: CncPolicyOptions;
+}
+
+// ============================================================================
+// CNC Policy Options
+// ============================================================================
+
+/**
+ * Options for drill policy integration.
+ * @since D5-B
+ */
+export interface CncPolicyOptions {
+  /**
+   * Drill policy to use for cycle selection.
+   * Defaults to CONSERVATIVE_DRILL_POLICY if not specified.
+   */
+  drillPolicy?: DrillPolicy;
+
+  /**
+   * Panel material contexts for material-aware feed/speed.
+   * Key is panelId from operation's workpieceContext.
+   */
+  panelMaterials?: Map<string, PanelMaterialContext>;
+
+  /**
+   * Material ID to MaterialClass mapping.
+   * Used to resolve materialClass from materialId.
+   */
+  materialClassMap?: Record<string, MaterialClass>;
+
+  /**
+   * Default material class when panel material is unknown.
+   * Defaults to 'UNKNOWN' for conservative parameters.
+   */
+  defaultMaterialClass?: MaterialClass;
 }
 
 // ============================================================================

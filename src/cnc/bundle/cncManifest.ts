@@ -4,7 +4,7 @@
  * Defines the contract for factory-verifiable CNC output bundles.
  * Factories can verify bundles independently using these schemas.
  *
- * @version 1.0.0 - Phase D3.1
+ * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
  */
 
 // ============================================================================
@@ -14,8 +14,11 @@
 /** Manifest schema version */
 export const CNC_MANIFEST_SCHEMA = 'monolith.cnc.manifest@1.0' as const;
 
-/** Post processor version - bump when dialect logic changes */
-export const CNC_POST_VERSION = '1.0.0' as const;
+/**
+ * Post processor version - bump when dialect logic changes.
+ * D5-B: 1.0.0 → 1.1.0 (policy-driven G81/G82/G83 cycle selection)
+ */
+export const CNC_POST_VERSION = '1.1.0' as const;
 
 /** Fixed ZIP entry timestamp for determinism (Unix epoch) */
 export const CNC_ZIP_FIXED_DATE = new Date(0);

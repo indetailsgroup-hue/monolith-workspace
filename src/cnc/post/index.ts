@@ -1,7 +1,7 @@
 /**
  * post/index.ts - G-code Post Processing Module Exports
  *
- * @version 1.0.0 - Phase D2
+ * @version 1.1.0 - Phase D5-B: Added policy decision helper
  */
 
 // Types
@@ -16,7 +16,17 @@ export type {
   BuildBundleResult,
   ToolMap,
   ToolMapEntry,
+  CncPolicyOptions,
 } from './types';
+
+// Policy decision helper
+export {
+  decideDrillParams,
+  isHoleOperation,
+  getDefaultDwellTime,
+  getDefaultPeckDepth,
+} from './decideDrillParams';
+export type { DecideDrillParamsInput, DecideDrillParamsResult } from './decideDrillParams';
 
 // Post processor selection
 export {

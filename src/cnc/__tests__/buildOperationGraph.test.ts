@@ -256,13 +256,19 @@ describe('buildOperationGraph - Statistics', () => {
   it('should track unmapped points', () => {
     const packet = createMockPacket({
       drillMap: {
+        version: 'drillmap.v1',
         panels: [
           {
             panelId: 'panel-001',
+            cabinetId: 'cabinet-001',
+            role: 'LEFT_SIDE',
+            dimensions: [600, 800, 18],
             points: [
               {
                 id: 'point-bad',
+                panelId: 'panel-001',
                 position: [100, 100, 0],
+                normal: [0, 0, 1],
                 diameter: 99, // No tool for this
                 depth: 13,
                 face: 'A',
@@ -272,6 +278,8 @@ describe('buildOperationGraph - Statistics', () => {
             ],
           },
         ],
+        summary: { totalDrills: 1, totalBores: 0, byPurpose: {}, byDiameter: {} },
+        tools: [],
       },
     });
     const result = buildOperationGraph(packet, KDT_MACHINE);
@@ -324,13 +332,19 @@ describe('buildOperationGraph - Time Estimation', () => {
   it('should increase time with more operations', () => {
     const smallPacket = createMockPacket({
       drillMap: {
+        version: 'drillmap.v1',
         panels: [
           {
             panelId: 'panel-001',
+            cabinetId: 'cabinet-001',
+            role: 'LEFT_SIDE',
+            dimensions: [600, 800, 18],
             points: [
               {
                 id: 'point-001',
+                panelId: 'panel-001',
                 position: [100, 100, 0],
+                normal: [0, 0, 1],
                 diameter: 5,
                 depth: 13,
                 face: 'A',
@@ -340,18 +354,26 @@ describe('buildOperationGraph - Time Estimation', () => {
             ],
           },
         ],
+        summary: { totalDrills: 1, totalBores: 0, byPurpose: {}, byDiameter: {} },
+        tools: [],
       },
-      connectors: { minifix: [] },
+      connectors: { minifix: [], version: 'connectors.v1', summary: { totalPairs: 0, validPairs: 0, warningPairs: 0, errorPairs: 0 } },
     });
 
     const largePacket = createMockPacket({
       drillMap: {
+        version: 'drillmap.v1',
         panels: [
           {
             panelId: 'panel-001',
+            cabinetId: 'cabinet-001',
+            role: 'LEFT_SIDE',
+            dimensions: [600, 800, 18],
             points: Array.from({ length: 50 }, (_, i) => ({
               id: `point-${i}`,
-              position: [100 + i * 10, 100, 0],
+              panelId: 'panel-001',
+              position: [100 + i * 10, 100, 0] as [number, number, number],
+              normal: [0, 0, 1] as [number, number, number],
               diameter: 5,
               depth: 13,
               face: 'A' as const,
@@ -360,8 +382,10 @@ describe('buildOperationGraph - Time Estimation', () => {
             })),
           },
         ],
+        summary: { totalDrills: 50, totalBores: 0, byPurpose: {}, byDiameter: {} },
+        tools: [],
       },
-      connectors: { minifix: [] },
+      connectors: { minifix: [], version: 'connectors.v1', summary: { totalPairs: 0, validPairs: 0, warningPairs: 0, errorPairs: 0 } },
     });
 
     const smallResult = buildOperationGraph(smallPacket, KDT_MACHINE);
@@ -430,13 +454,19 @@ describe('hasUnmappedItems', () => {
   it('should return true when drill points unmapped', () => {
     const packet = createMockPacket({
       drillMap: {
+        version: 'drillmap.v1',
         panels: [
           {
             panelId: 'panel-001',
+            cabinetId: 'cabinet-001',
+            role: 'LEFT_SIDE',
+            dimensions: [600, 800, 18],
             points: [
               {
                 id: 'point-bad',
+                panelId: 'panel-001',
                 position: [100, 100, 0],
+                normal: [0, 0, 1],
                 diameter: 99,
                 depth: 13,
                 face: 'A',
@@ -446,6 +476,8 @@ describe('hasUnmappedItems', () => {
             ],
           },
         ],
+        summary: { totalDrills: 1, totalBores: 0, byPurpose: {}, byDiameter: {} },
+        tools: [],
       },
     });
     const result = buildOperationGraph(packet, KDT_MACHINE);
@@ -512,13 +544,19 @@ describe('formatBuildResult', () => {
   it('should include warnings when present', () => {
     const packet = createMockPacket({
       drillMap: {
+        version: 'drillmap.v1',
         panels: [
           {
             panelId: 'panel-001',
+            cabinetId: 'cabinet-001',
+            role: 'LEFT_SIDE',
+            dimensions: [600, 800, 18],
             points: [
               {
                 id: 'point-deep',
+                panelId: 'panel-001',
                 position: [100, 100, 0],
+                normal: [0, 0, 1],
                 diameter: 5,
                 depth: 100, // Very deep - triggers warning
                 face: 'A',
@@ -528,6 +566,8 @@ describe('formatBuildResult', () => {
             ],
           },
         ],
+        summary: { totalDrills: 1, totalBores: 0, byPurpose: {}, byDiameter: {} },
+        tools: [],
       },
     });
     const result = buildOperationGraph(packet, KDT_MACHINE);

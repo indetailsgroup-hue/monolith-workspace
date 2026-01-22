@@ -3,13 +3,22 @@
  *
  * Converts factory packet drill map to machine-specific drill operations.
  *
- * @version 1.0.0 - Phase D1
+ * @version 1.1.0 - Phase D4.1: Added workpiece transform support
  */
 
-import type { PacketDrillMap, PacketDrillPoint } from '../../factory/packet/types';
+import type { PacketDrillMap, PacketDrillPoint, PacketDrillPanel } from '../../factory/packet/types';
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getToolByDiameter } from '../machine/machineProfile';
-import type { DrillOperation, BoreOperation, Operation } from '../operation/operationTypes';
+import type { DrillOperation, BoreOperation, Operation, Position3D } from '../operation/operationTypes';
+import type {
+  WorkpieceTransformContext,
+  OperationWorkpieceContext,
+  PanelFace,
+} from '../transform/workpieceTypes';
+import {
+  transformToMachine,
+  createIdentityContext,
+} from '../transform';
 
 // ============================================
 // TYPES
@@ -31,13 +40,35 @@ export interface MapDrillOptions {
   peckDepthRatio?: number;
   /** Allow tool diameter substitution within tolerance (mm) */
   diameterTolerance?: number;
+  /**
+   * Workpiece transform contexts per panel.
+   * Key is panelId, value is the transform context.
+   * If not provided, positions are used as-is (identity transform).
+   * @since D4.1
+   */
+  workpieceTransforms?: Map<string, WorkpieceTransformContext>;
+  /**
+   * Whether to attach workpiece context to operations.
+   * Default: true if workpieceTransforms is provided, false otherwise.
+   * @since D4.1
+   */
+  attachWorkpieceContext?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<MapDrillOptions> = {
+const DEFAULT_OPTIONS: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'> = {
   usePeckDrilling: true,
   peckDepthRatio: 1.5,
   diameterTolerance: 0.5,
 };
+
+/**
+ * Internal point with panel context attached
+ */
+interface PointWithPanelContext {
+  point: PacketDrillPoint;
+  panelId: string;
+  panelDimensions: [number, number, number];
+}
 
 // ============================================
 // MAPPER
@@ -57,19 +88,40 @@ export function mapDrillMapToOps(
   options: MapDrillOptions = {}
 ): MapDrillResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
+  const { workpieceTransforms } = options;
+  const attachContext = options.attachWorkpieceContext ?? (workpieceTransforms !== undefined);
+
   const operations: Operation[] = [];
   const unmappedPoints: PacketDrillPoint[] = [];
   const warnings: string[] = [];
 
-  // Flatten all drill points from all panels
-  const allPoints: PacketDrillPoint[] = drillMap.panels.flatMap((panel) => panel.points);
+  // Process each panel with its context
+  for (const panel of drillMap.panels) {
+    // Get transform context for this panel (or create identity)
+    const transformContext = workpieceTransforms?.get(panel.panelId)
+      ?? createIdentityContextForPanel(panel);
 
-  for (const point of allPoints) {
-    const result = mapSinglePoint(point, machine, opts, warnings);
-    if (result) {
-      operations.push(result);
-    } else {
-      unmappedPoints.push(point);
+    for (const point of panel.points) {
+      const pointWithContext: PointWithPanelContext = {
+        point,
+        panelId: panel.panelId,
+        panelDimensions: panel.dimensions,
+      };
+
+      const result = mapSinglePoint(
+        pointWithContext,
+        machine,
+        opts,
+        warnings,
+        transformContext,
+        attachContext
+      );
+
+      if (result) {
+        operations.push(result);
+      } else {
+        unmappedPoints.push(point);
+      }
     }
   }
 
@@ -77,14 +129,40 @@ export function mapDrillMapToOps(
 }
 
 /**
+ * Create identity transform context for a panel (no transformation).
+ */
+function createIdentityContextForPanel(panel: PacketDrillPanel): WorkpieceTransformContext {
+  return {
+    panelId: panel.panelId,
+    frame: {
+      datum: 'FRONT_LEFT',
+      face: 'TOP',
+      dimensions: {
+        length: panel.dimensions[0],
+        width: panel.dimensions[1],
+        thickness: panel.dimensions[2],
+      },
+    },
+    placement: {
+      offset: { x: 0, y: 0, z: 0 },
+      rotationZ: 0,
+    },
+  };
+}
+
+/**
  * Map a single drill point to an operation
  */
 function mapSinglePoint(
-  point: PacketDrillPoint,
+  pointCtx: PointWithPanelContext,
   machine: MachineProfile,
-  opts: Required<MapDrillOptions>,
-  warnings: string[]
+  opts: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'>,
+  warnings: string[],
+  transformContext: WorkpieceTransformContext,
+  attachContext: boolean
 ): Operation | null {
+  const { point, panelId } = pointCtx;
+
   // Determine if this is a bore (large diameter) or drill
   const isBore = point.diameter >= 15;
   const toolType = isBore ? 'BORE' : 'DRILL';
@@ -117,11 +195,30 @@ function mapSinglePoint(
     // Still create the operation but flag it
   }
 
+  // Transform position from workpiece to machine coordinates
+  const workpiecePos: Position3D = {
+    x: point.position[0],
+    y: point.position[1],
+    z: point.position[2],
+  };
+
+  const transformResult = transformToMachine(workpiecePos, transformContext);
+  const machinePos = transformResult.machinePosition;
+
+  // Build workpiece context for operation (if attaching)
+  const workpieceContext: OperationWorkpieceContext | undefined = attachContext
+    ? {
+        panelId,
+        face: transformContext.frame.face,
+        appliedOffset: transformContext.placement.offset,
+      }
+    : undefined;
+
   // Create operation
   if (isBore) {
-    return createBoreOperation(point, tool);
+    return createBoreOperation(point, tool, machinePos, workpieceContext);
   } else {
-    return createDrillOperation(point, tool, opts);
+    return createDrillOperation(point, tool, opts, machinePos, workpieceContext);
   }
 }
 
@@ -133,14 +230,14 @@ function findToolWithinTolerance(
   diameter: number,
   type: 'DRILL' | 'BORE',
   tolerance: number
-): ToolCapability | null {
+): ToolCapability | undefined {
   const candidates = machine.tools.filter(
     (t) =>
       t.type === type &&
       Math.abs(t.diameter - diameter) <= tolerance
   );
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return undefined;
 
   // Prefer larger tool if within tolerance (safer)
   candidates.sort((a, b) => {
@@ -161,7 +258,9 @@ function findToolWithinTolerance(
 function createDrillOperation(
   point: PacketDrillPoint,
   tool: ToolCapability,
-  opts: Required<MapDrillOptions>
+  opts: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'>,
+  machinePos: Position3D,
+  workpieceContext?: OperationWorkpieceContext
 ): DrillOperation {
   // Calculate peck depth for deep holes
   const needsPeck = opts.usePeckDrilling &&
@@ -177,16 +276,13 @@ function createDrillOperation(
     id: `drill-${point.id}`,
     sourceId: point.id,
     toolId: tool.toolId,
-    position: {
-      x: point.position[0],
-      y: point.position[1],
-      z: point.position[2],
-    },
+    position: machinePos,
     depth: point.depth,
     peckDepth,
     throughHole: point.throughHole,
     feedRate: tool.defaultFeedRate,
     comment: `${point.purpose} - ${point.face}`,
+    workpieceContext,
   };
 }
 
@@ -195,23 +291,22 @@ function createDrillOperation(
  */
 function createBoreOperation(
   point: PacketDrillPoint,
-  tool: ToolCapability
+  tool: ToolCapability,
+  machinePos: Position3D,
+  workpieceContext?: OperationWorkpieceContext
 ): BoreOperation {
   return {
     type: 'BORE',
     id: `bore-${point.id}`,
     sourceId: point.id,
     toolId: tool.toolId,
-    position: {
-      x: point.position[0],
-      y: point.position[1],
-      z: point.position[2],
-    },
+    position: machinePos,
     diameter: point.diameter,
     depth: point.depth,
     flatBottom: true, // Minifix cam housing needs flat bottom
     feedRate: tool.defaultFeedRate,
     comment: `${point.purpose} - ${point.face}`,
+    workpieceContext,
   };
 }
 

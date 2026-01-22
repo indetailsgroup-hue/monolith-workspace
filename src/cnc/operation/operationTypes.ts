@@ -4,8 +4,10 @@
  * Defines normalized CNC operations that are machine-agnostic.
  * These represent "what to do" not "how to write G-code".
  *
- * @version 1.0.0 - Phase D1: Machine Profile + Operation Mapping
+ * @version 1.1.0 - Phase D4.1: Added workpiece context support
  */
+
+import type { OperationWorkpieceContext } from '../transform/workpieceTypes';
 
 // ============================================
 // POSITION
@@ -36,6 +38,12 @@ export interface BaseOperation {
   spindleRpm?: number;
   /** Comment/note for this operation */
   comment?: string;
+  /**
+   * Workpiece context for this operation.
+   * Contains panel ID, face, and applied offset for traceability.
+   * @since D4.1
+   */
+  workpieceContext?: OperationWorkpieceContext;
 }
 
 // ============================================

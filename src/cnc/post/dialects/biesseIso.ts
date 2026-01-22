@@ -4,7 +4,7 @@
  * Generates Biesse-compatible ISO G-code.
  * Baseline implementation - can be extended for specific Biesse post requirements.
  *
- * @version 1.0.0 - Phase D2
+ * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -13,6 +13,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations } from '../normalizeOperations';
+import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth } from '../decideDrillParams';
 
 // ============================================================================
 // Biesse ISO Post Processor
@@ -131,8 +132,8 @@ function generateBiesseGcode(
       toolChanges++;
     }
 
-    // Generate operation
-    const opTime = generateOperation(builder, op, safeZ, warnings);
+    // Generate operation with policy-driven parameters
+    const opTime = generateOperation(builder, op, safeZ, machine, opts, warnings);
     estimatedTime += opTime;
     operationCount++;
   }
@@ -229,58 +230,125 @@ function generateOperation(
   builder: GcodeBuilder,
   op: Operation,
   safeZ: number,
+  machine: MachineProfile,
+  opts: PostProcessOptions,
   warnings: string[]
 ): number {
   switch (op.type) {
     case 'DRILL':
-      return generateDrillOperation(builder, op as DrillOperation, safeZ);
+      return generateDrillOperation(builder, op as DrillOperation, safeZ, machine, opts, warnings);
     case 'BORE':
-      return generateBoreOperation(builder, op as BoreOperation, safeZ);
+      return generateBoreOperation(builder, op as BoreOperation, safeZ, machine, opts, warnings);
     default:
       warnings.push(`Unsupported operation type: ${op.type}`);
       return 0;
   }
 }
 
+/**
+ * Generate drill operation with policy-driven cycle selection.
+ */
 function generateDrillOperation(
   builder: GcodeBuilder,
   op: DrillOperation,
-  safeZ: number
+  safeZ: number,
+  machine: MachineProfile,
+  opts: PostProcessOptions,
+  warnings: string[]
 ): number {
   const { x, y, z } = op.position;
   const depth = op.depth;
-  const feedRate = op.feedRate ?? 500;
+
+  // Get policy-derived parameters
+  const decision = decideDrillParams({
+    op,
+    machine,
+    policyOptions: opts.policy,
+  });
+
+  warnings.push(...decision.warnings);
+
+  const { params, holeSpec } = decision;
+  const feedRate = params.feedRate;
   const targetZ = z - depth;
 
   if (op.comment) {
-    builder.addComment(sanitizeComment(op.comment));
+    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
   }
 
-  // Use canned cycle
-  if (op.peckDepth && op.peckDepth > 0 && op.peckDepth < depth) {
-    builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: op.peckDepth, f: feedRate });
-  } else {
-    builder.drillCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+  // Emit cycle based on policy decision
+  switch (params.cycle) {
+    case 'G82': {
+      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: dwellTime, f: feedRate });
+      break;
+    }
+    case 'G83': {
+      // Prefer explicit op.peckDepth if set, otherwise use policy-calculated value
+      const peckDepth = op.peckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
+      break;
+    }
+    case 'G81':
+    default: {
+      builder.drillCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+      break;
+    }
   }
 
-  return 0.5 + (depth / feedRate) * 60 + 0.3;
+  return 0.5 + (depth / feedRate) * 60 + (params.cycle === 'G83' ? 0.5 : 0.3);
 }
 
+/**
+ * Generate bore operation with policy-driven parameters.
+ */
 function generateBoreOperation(
   builder: GcodeBuilder,
   op: BoreOperation,
-  safeZ: number
+  safeZ: number,
+  machine: MachineProfile,
+  opts: PostProcessOptions,
+  warnings: string[]
 ): number {
   const { x, y, z } = op.position;
   const depth = op.depth;
-  const feedRate = op.feedRate ?? 300;
+
+  // Get policy-derived parameters
+  const decision = decideDrillParams({
+    op,
+    machine,
+    policyOptions: opts.policy,
+  });
+
+  warnings.push(...decision.warnings);
+
+  const { params, holeSpec } = decision;
+  const feedRate = params.feedRate;
   const targetZ = z - depth;
 
   if (op.comment) {
-    builder.addComment(sanitizeComment(op.comment));
+    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
   }
 
-  builder.boreCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+  // Emit cycle based on policy decision
+  switch (params.cycle) {
+    case 'G82': {
+      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      builder.dwellDrillCycle({ x, y, z: targetZ, r: safeZ, p: dwellTime, f: feedRate });
+      break;
+    }
+    case 'G83': {
+      const peckDepth = params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      builder.peckDrillCycle({ x, y, z: targetZ, r: safeZ, q: peckDepth, f: feedRate });
+      break;
+    }
+    case 'G81':
+    default: {
+      // For bore operations, use G85 (boring cycle) - standard for bores
+      builder.boreCycle({ x, y, z: targetZ, r: safeZ, f: feedRate });
+      break;
+    }
+  }
 
   return 0.5 + (depth / feedRate) * 120;
 }

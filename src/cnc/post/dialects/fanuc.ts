@@ -3,7 +3,7 @@
  *
  * Generates FANUC-compatible G-code for KDT and similar CNC machines.
  *
- * @version 1.0.0 - Phase D2
+ * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -12,6 +12,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations, countToolChanges } from '../normalizeOperations';
+import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth } from '../decideDrillParams';
 
 // ============================================================================
 // FANUC Post Processor
@@ -131,8 +132,8 @@ function generateFanucGcode(
       toolChanges++;
     }
 
-    // Generate operation
-    const opTime = generateOperation(builder, op, safeZ, opts, warnings);
+    // Generate operation with policy-driven parameters
+    const opTime = generateOperation(builder, op, safeZ, machine, opts, warnings);
     estimatedTime += opTime;
     operationCount++;
   }
@@ -232,6 +233,7 @@ function generateOperation(
   builder: GcodeBuilder,
   op: Operation,
   safeZ: number,
+  machine: MachineProfile,
   opts: PostProcessOptions,
   warnings: string[]
 ): number {
@@ -239,10 +241,10 @@ function generateOperation(
 
   switch (op.type) {
     case 'DRILL':
-      estimatedTime = generateDrillOperation(builder, op as DrillOperation, safeZ, warnings);
+      estimatedTime = generateDrillOperation(builder, op as DrillOperation, safeZ, machine, opts, warnings);
       break;
     case 'BORE':
-      estimatedTime = generateBoreOperation(builder, op as BoreOperation, safeZ, warnings);
+      estimatedTime = generateBoreOperation(builder, op as BoreOperation, safeZ, machine, opts, warnings);
       break;
     default:
       warnings.push(`Unsupported operation type: ${op.type}`);
@@ -251,87 +253,178 @@ function generateOperation(
   return estimatedTime;
 }
 
+/**
+ * Generate drill operation with policy-driven cycle selection.
+ * Uses DrillPolicy to determine G81/G82/G83 and feed/speed.
+ */
 function generateDrillOperation(
   builder: GcodeBuilder,
   op: DrillOperation,
   safeZ: number,
+  machine: MachineProfile,
+  opts: PostProcessOptions,
   warnings: string[]
 ): number {
   const { x, y, z } = op.position;
   const depth = op.depth;
-  const feedRate = op.feedRate ?? 500;
+
+  // Get policy-derived parameters
+  const decision = decideDrillParams({
+    op,
+    machine,
+    policyOptions: opts.policy,
+  });
+
+  // Collect any warnings from policy resolution
+  warnings.push(...decision.warnings);
+
+  const { params, holeSpec } = decision;
+  const feedRate = params.feedRate;
 
   // Calculate target Z (negative from surface)
   const startZ = z;
   const targetZ = startZ - depth;
 
-  // Add comment
+  // Add comment with cycle info
   if (op.comment) {
-    builder.addComment(sanitizeComment(op.comment));
+    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
   }
 
-  // Check for peck drilling
-  if (op.peckDepth && op.peckDepth > 0 && op.peckDepth < depth) {
-    // Use peck drilling cycle (G83)
-    builder.peckDrillCycle({
-      x,
-      y,
-      z: targetZ,
-      r: safeZ,
-      q: op.peckDepth,
-      f: feedRate,
-    });
-  } else {
-    // Use simple drilling cycle (G81)
-    builder.drillCycle({
-      x,
-      y,
-      z: targetZ,
-      r: safeZ,
-      f: feedRate,
-    });
+  // Emit cycle based on policy decision
+  switch (params.cycle) {
+    case 'G82': {
+      // Dwell drill cycle - used for hinge cups
+      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      builder.dwellDrillCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        p: dwellTime,
+        f: feedRate,
+      });
+      break;
+    }
+    case 'G83': {
+      // Peck drill cycle - used for deep holes
+      // Prefer explicit op.peckDepth if set, otherwise use policy-calculated value
+      const peckDepth = op.peckDepth ?? params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      builder.peckDrillCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        q: peckDepth,
+        f: feedRate,
+      });
+      break;
+    }
+    case 'G81':
+    default: {
+      // Simple drill cycle
+      builder.drillCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        f: feedRate,
+      });
+      break;
+    }
   }
 
   // Estimate time: rapid to position + drilling + retract
   const rapidTime = 0.5; // seconds for XY move
   const drillTime = (depth / feedRate) * 60; // depth / mm/min * 60
-  const retractTime = 0.3;
+  const retractTime = params.cycle === 'G83' ? 0.5 : 0.3; // Peck takes longer
 
   return rapidTime + drillTime + retractTime;
 }
 
+/**
+ * Generate bore operation with policy-driven parameters.
+ * Bore operations (35mm hinge cups) typically use G82 (dwell) via policy.
+ */
 function generateBoreOperation(
   builder: GcodeBuilder,
   op: BoreOperation,
   safeZ: number,
+  machine: MachineProfile,
+  opts: PostProcessOptions,
   warnings: string[]
 ): number {
   const { x, y, z } = op.position;
   const depth = op.depth;
-  const feedRate = op.feedRate ?? 300;
+
+  // Get policy-derived parameters
+  const decision = decideDrillParams({
+    op,
+    machine,
+    policyOptions: opts.policy,
+  });
+
+  // Collect any warnings from policy resolution
+  warnings.push(...decision.warnings);
+
+  const { params, holeSpec } = decision;
+  const feedRate = params.feedRate;
 
   // Calculate target Z
   const startZ = z;
   const targetZ = startZ - depth;
 
-  // Add comment
+  // Add comment with cycle info
   if (op.comment) {
-    builder.addComment(sanitizeComment(op.comment));
+    builder.addComment(sanitizeComment(`${op.comment} [${params.cycle}]`));
   }
 
-  // Use boring cycle (G85)
-  builder.boreCycle({
-    x,
-    y,
-    z: targetZ,
-    r: safeZ,
-    f: feedRate,
-  });
+  // Emit cycle based on policy decision
+  // For bore operations (hinge cups), policy typically returns G82
+  switch (params.cycle) {
+    case 'G82': {
+      // Dwell cycle - standard for hinge cups
+      const dwellTime = params.dwellTime ?? getDefaultDwellTime();
+      builder.dwellDrillCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        p: dwellTime,
+        f: feedRate,
+      });
+      break;
+    }
+    case 'G83': {
+      // Peck cycle - for very deep bores
+      const peckDepth = params.peckDepth ?? getDefaultPeckDepth(holeSpec.diameter);
+      builder.peckDrillCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        q: peckDepth,
+        f: feedRate,
+      });
+      break;
+    }
+    case 'G81':
+    default: {
+      // For bore operations, use G85 (boring cycle) - standard for bores
+      builder.boreCycle({
+        x,
+        y,
+        z: targetZ,
+        r: safeZ,
+        f: feedRate,
+      });
+      break;
+    }
+  }
 
   // Estimate time
   const rapidTime = 0.5;
   const boreTime = (depth / feedRate) * 60;
-  const retractTime = (depth / feedRate) * 60; // G85 feeds out
+  const retractTime = params.cycle === 'G82' ? 0.5 : (depth / feedRate) * 60;
 
   return rapidTime + boreTime + retractTime;
 }

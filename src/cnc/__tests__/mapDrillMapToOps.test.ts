@@ -253,19 +253,33 @@ describe('mapDrillMapToOps - Warnings', () => {
 describe('mapDrillMapToOps - Multi-Panel', () => {
   it('should flatten points from multiple panels', () => {
     const drillMap: PacketDrillMap = {
+      version: 'drillmap.v1',
       panels: [
         {
           panelId: 'panel-001',
+          cabinetId: 'cabinet-001',
+          role: 'LEFT_SIDE',
+          dimensions: [600, 800, 18],
           points: [createDrillPoint({ id: 'p1-point1' })],
         },
         {
           panelId: 'panel-002',
+          cabinetId: 'cabinet-001',
+          role: 'RIGHT_SIDE',
+          dimensions: [600, 800, 18],
           points: [
             createDrillPoint({ id: 'p2-point1' }),
             createDrillPoint({ id: 'p2-point2' }),
           ],
         },
       ],
+      summary: {
+        totalDrills: 3,
+        totalBores: 0,
+        byPurpose: {},
+        byDiameter: {},
+      },
+      tools: [],
     };
     const result = mapDrillMapToOps(drillMap, KDT_MACHINE);
 
