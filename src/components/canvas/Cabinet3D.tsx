@@ -7,50 +7,570 @@
  * - All dimensions in millimeters (mm)
  */
 
-import { useRef, useMemo, useState, useEffect } from 'react';
-import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping } from 'three';
+import { useRef, useMemo, useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import * as THREE from 'three';
+import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping, Group, EdgesGeometry, LineSegments, Texture } from 'three';
 import { ThreeEvent, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 // NO ALIAS IMPORTS - Use relative paths only (North Star Rule #3)
-import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+import { useCabinetStore, useCabinet, useActiveCabinetFromArray, useCabinetById } from '../../core/store/useCabinetStore';
+import { useViewStore } from '../../core/store/useViewStore';
+import { useToolStore } from '../../core/store/useToolStore';
+import { useGlueStore } from '../../core/store/useGlueStore';
+import { useSelectionStore } from '../../core/store/useSelectionStore';
 import { CabinetPanel, DEFAULT_POSITION_OVERRIDES } from '../../core/types/Cabinet';
 import { SpringAnimatedNumber } from '../ui/AnimatedNumber';
+import { CabinetTransformControls } from './CabinetTransformControls';
+import { FloorDragControls } from './FloorDragControls';
+import { GizmoTranslate } from './GizmoTranslate';
+import { GlueFaceHighlights } from './GlueFaceHighlights';
+import { SnapPreview } from './SnapPreview';
+import { useProjectStore } from '../../core/store/useProjectStore';
+import { useSnapStore } from '../../core/store/useSnapStore';
+import { SceneObjectRef } from './scene';
+import type { Vec3 } from '../../core/types/SnapTypes';
+import { calculateSnap, type SnapTarget } from '../../core/utils/snapSystem';
+import { DrillMapOverlay } from './DrillMapOverlay';
+import { CSGDrillOverlay } from './CSGDrillOverlay';
+import { CADDrillIndicators } from './CADDrillIndicators';
+import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapStore';
+import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../../core/manufacturing/drillMap/types';
+import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
+import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
+import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+import { HardwareContextMenu } from '../ui/HardwareContextMenu';
+import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
+import { useXrayRaycastPolicy } from './useXrayRaycastPolicy';
+import { degToRad, type JointMode } from '../../core/manufacturing/hardware/boltOrientationPolicy';
+import {
+  computeBoltQuatWithTwist,
+  selectBoltPanelNormalWorld,
+  getDrillingAxis,
+  formatVec,
+  assertOrientation,
+  type MountType,
+  type Corner,
+} from '../../core/manufacturing/hardware/boltOrientationUtils';
+import { HardwareSmartDimensions } from './HardwareSmartDimensions';
+import { useMaterialStore } from '../../core/materials/useMaterialStore';
+import { useObjectUrlTexture } from '../../core/materials/useObjectUrlTexture';
 
-// Custom hook to load texture from data URL
+// ============================================
+// SCENE RAYCAST POLICY - Configures raycaster for X-Ray mode
+// ============================================
+
+/**
+ * Component to configure raycaster layer filtering based on X-Ray mode.
+ * Must be placed inside the Canvas.
+ */
+export function SceneRaycastPolicy() {
+  const xRayMode = useViewStore((s) => s.xRayMode);
+  useXrayRaycastPolicy(xRayMode);
+  return null; // No visual output
+}
+
+// ============================================
+// HARDWARE HIT SPHERE - Clickable sphere for hardware interaction
+// ============================================
+
+interface HardwareHitSphereProps {
+  position: [number, number, number];
+  onRightClick: (e: ThreeEvent<PointerEvent>) => void;
+  onClick?: (e: ThreeEvent<PointerEvent>) => void;
+}
+
+/**
+ * Invisible hit sphere for hardware interaction.
+ * Uses HARDWARE layer for raycast priority in X-Ray mode.
+ */
+function HardwareHitSphere({ position, onRightClick, onClick }: HardwareHitSphereProps) {
+  const meshRef = useRef<THREE.Mesh>(null!);
+
+  // Set HARDWARE layer on mount
+  useEffect(() => {
+    if (meshRef.current) {
+      setObjectLayer(meshRef.current, RAY_LAYERS.HARDWARE);
+    }
+  }, []);
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={position}
+      onPointerDown={(e) => {
+        if (e.button === 2) {
+          // Right-click: Stop propagation (but not preventDefault - passive listener)
+          e.stopPropagation();
+          // stopImmediatePropagation works on passive listeners
+          e.nativeEvent.stopPropagation();
+          e.nativeEvent.stopImmediatePropagation();
+          onRightClick(e);
+        } else if (e.button === 0 && onClick) {
+          e.stopPropagation();
+          onClick(e);
+        }
+      }}
+      onContextMenu={(e) => {
+        // Stop Three.js event propagation
+        e.stopPropagation();
+        // CRITICAL: Stop native DOM event from reaching RadialMenu's window listener
+        // Only preventDefault if event is cancelable (not passive)
+        if (e.nativeEvent.cancelable) {
+          e.nativeEvent.preventDefault();
+        }
+        e.nativeEvent.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+        onRightClick(e as unknown as ThreeEvent<PointerEvent>);
+      }}
+    >
+      {/* Radius 70mm to ensure coverage of scaled hardware (cam + bolt) after rotation */}
+      <sphereGeometry args={[70, 16, 16]} />
+      {/* Invisible in production - set opacity > 0 for debugging */}
+      <meshBasicMaterial
+        transparent
+        opacity={0}
+        depthWrite={false}
+        side={2}
+      />
+    </mesh>
+  );
+}
+
+// ============================================
+// HARDWARE 3D OVERLAY - Renders Minifix hardware at drill points
+// Uses the SAME Preview3D component as Sidebar and Modal
+// ============================================
+
+interface Hardware3DOverlayProps {
+  drillMap: DrillMap | null;
+  visible: boolean;
+  opacity?: number;
+  minifixConfig?: MinifixFullConfig | null;
+  cabinetWidth?: number;   // For accurate left/right side determination
+  cabinetHeight?: number;  // For accurate top/bottom panel determination
+  cabinetDepth?: number;   // For dimension lines (Z-axis)
+  topJoint?: 'INSET' | 'OVERLAY';     // Joint style for top panel
+  bottomJoint?: 'INSET' | 'OVERLAY';  // Joint style for bottom panel
+  showDimensions?: boolean;  // Show CAD-style dimension lines
+  currentView?: 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
+}
+
+/**
+ * Renders Preview3D component (same as Sidebar/Modal) at each CAM_LOCK drill point.
+ * This ensures visual consistency across all 3 views.
+ *
+ * NOTE: Preview3D uses scale=0.01 internally (1mm = 0.01 units).
+ * Cabinet3D uses mm units directly, so we wrap with scale=[100,100,100].
+ *
+ * ROTATION OVERRIDE SYSTEM:
+ * - Right-click on hardware to open context menu
+ * - User can flip, rotate, and save defaults
+ * - Priority: pointOverride > cornerDefault > calculated
+ */
+/**
+ * Wrapper component to handle conditional rendering without violating hook rules.
+ * Splitting this fixes the "Rendered fewer hooks" error caused by early return
+ * before useMemo calls.
+ */
+function Hardware3DOverlay(props: Hardware3DOverlayProps) {
+  if (!props.visible || !props.drillMap) return null;
+  return <Hardware3DOverlayInner {...props} drillMap={props.drillMap} />;
+}
+
+function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth = 600, cabinetHeight = 720, cabinetDepth = 560, topJoint = 'INSET', bottomJoint = 'INSET', showDimensions = false, currentView = 'Perspective' }: Hardware3DOverlayProps & { drillMap: DrillMap }) {
+  // No-op handler since we don't need editing in cabinet view
+  const handleUpdateConfig = useCallback(() => {}, []);
+
+  // Store hooks for rotation/position overrides and context menu
+  const rotationDefaults = useDrillMapStore((s) => s.rotationDefaults);
+  const openContextMenu = useDrillMapStore((s) => s.openHardwareContextMenu);
+  const getRotationForPoint = useDrillMapStore((s) => s.getRotationForPoint);
+  const getPositionForPoint = useDrillMapStore((s) => s.getPositionForPoint);
+
+  // Early return removed - wrapper handles visibility check
+
+  // Find all BOLT points on SIDE panels - these are where the visible Minifix hardware goes
+  // CAM_LOCK is drilled INTO TOP/BOTTOM panels (hidden inside)
+  // BOLT is drilled INTO LEFT_SIDE/RIGHT_SIDE panels (visible hardware)
+  //
+  // IMPORTANT: Limit to first N System32 positions per corner to avoid "row of clones"
+  // PDF pattern: typically 1-2 connectors per corner depending on depth
+  const MAX_HARDWARE_PER_CORNER = 2;  // Limit: first 2 System32 positions (37mm, 69mm)
+  const ALLOWED_SYS32_POSITIONS = [37, 69];  // System32 first two positions
+
+  const allBoltPoints: DrillMapPoint[] = [];
+  const allCamPoints: DrillMapPoint[] = [];
+  drillMap.panels.forEach(panel => {
+    panel.points.forEach(point => {
+      if (point.purpose === 'BOLT') {
+        allBoltPoints.push(point);
+      } else if (point.purpose === 'CAM_LOCK') {
+        allCamPoints.push(point);
+      }
+    });
+  });
+
+  // Filter to keep only first N positions per corner
+  // Group by cornerType, then keep only allowed positions
+  const cornerCounts = new Map<string, number>();
+  const boltPoints = allBoltPoints.filter(point => {
+    const corner = point.cornerType || 'UNKNOWN';
+    const depthPos = Math.round(point.depthPosition ?? -1);
+
+    // Only allow specific System32 positions
+    if (!ALLOWED_SYS32_POSITIONS.includes(depthPos)) {
+      return false;
+    }
+
+    // Count per corner
+    const currentCount = cornerCounts.get(corner) || 0;
+    if (currentCount >= MAX_HARDWARE_PER_CORNER) {
+      return false;
+    }
+
+    cornerCounts.set(corner, currentCount + 1);
+    return true;
+  });
+
+  // Filter CAM points with same logic as bolts
+  const camCornerCounts = new Map<string, number>();
+  const camPoints = allCamPoints.filter(point => {
+    const corner = point.cornerType || 'UNKNOWN';
+    const depthPos = Math.round(point.depthPosition ?? -1);
+
+    // Only allow specific System32 positions
+    if (!ALLOWED_SYS32_POSITIONS.includes(depthPos)) {
+      return false;
+    }
+
+    // Count per corner
+    const currentCount = camCornerCounts.get(corner) || 0;
+    if (currentCount >= MAX_HARDWARE_PER_CORNER) {
+      return false;
+    }
+
+    camCornerCounts.set(corner, currentCount + 1);
+    return true;
+  });
+
+  // Use provided config or defaults
+  const config = minifixConfig || DEFAULT_MINIFIX_CONFIG;
+
+  /**
+   * Convert quaternion to Euler angles for compatibility with existing override system
+   * (Moved here so it can be used in boltRotations useMemo below)
+   */
+  const quaternionToRotationOverride = (quat: THREE.Quaternion): RotationOverride => {
+    const euler = new THREE.Euler().setFromQuaternion(quat, 'XYZ');
+    return {
+      rotX: euler.x,
+      rotY: euler.y,
+      rotZ: euler.z,
+    };
+  };
+
+  // Calculate bolt rotations for HardwareSmartDimensions (same logic as render loop)
+  const boltRotations = useMemo(() => {
+    return boltPoints.map((boltPoint) => {
+      const [x, y] = boltPoint.position;
+      const cornerType: CornerType = boltPoint.cornerType || getCornerType([x, y, 0], cabinetWidth, cabinetHeight);
+      const isTopPanel = cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT';
+
+      const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
+      const mountType: MountType = jointMode;
+      const boltDirWorld = getDrillingAxis(cornerType as Corner, mountType);
+      const boltPanelNormalWorld = selectBoltPanelNormalWorld(cornerType as Corner);
+
+      const orientationResult = computeBoltQuatWithTwist({
+        boltDirWorld,
+        boltPanelNormalWorld,
+        mountType,
+      });
+
+      let finalQuat = orientationResult.boltQuat.clone();
+      if (cornerType === 'TOP_LEFT' && mountType === 'INSET') {
+        const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
+        finalQuat = flipQuat.multiply(finalQuat);
+      }
+
+      const calculatedRotation = quaternionToRotationOverride(finalQuat);
+      const finalRotation = getRotationForPoint(boltPoint.id, cornerType, calculatedRotation);
+
+      return {
+        boltId: boltPoint.id,
+        rotX: finalRotation.rotX,
+        rotY: finalRotation.rotY,
+        rotZ: finalRotation.rotZ,
+      };
+    });
+  }, [boltPoints, cabinetWidth, cabinetHeight, topJoint, bottomJoint, getRotationForPoint]);
+
+  // IMPORTANT: Drill map uses CENTER-BASED coordinates
+  // x < 0 is LEFT, x > 0 is RIGHT
+  // y < 0 is BOTTOM, y > 0 is TOP
+  // centerX/centerY kept for reference but not used for comparison
+  const _centerX = cabinetWidth / 2;  // Unused
+  const _centerY = cabinetHeight / 2; // Unused
+
+  /**
+   * Handle right-click on hardware to open context menu
+   */
+  const handleContextMenu = (
+    event: ThreeEvent<PointerEvent>,
+    point: DrillMapPoint,
+    cornerType: CornerType,
+    currentRotation: RotationOverride,
+    currentPosition: { dx: number; dy: number; dz: number }
+  ) => {
+    event.stopPropagation();
+    // Get native event for screen coordinates
+    const nativeEvent = event.nativeEvent;
+    openContextMenu(
+      { x: nativeEvent.clientX, y: nativeEvent.clientY },
+      point.id,
+      cornerType,
+      currentRotation,
+      currentPosition,
+      point.position  // Pass base world position for dynamic clamp ranges
+    );
+  };
+
+  return (
+    <group name="hardware-3d-overlay-preview3d">
+      {boltPoints.map((boltPoint, index) => {
+        const [x, y, z] = boltPoint.position;
+
+        // Use stored cornerType from drill map generation (most reliable)
+        // Falls back to position-based calculation only if cornerType not stored
+        const cornerType: CornerType = boltPoint.cornerType || getCornerType([x, y, z], cabinetWidth, cabinetHeight);
+
+        // Derive isLeftSide and isTopPanel from cornerType (avoids coordinate system issues)
+        const isLeftSide = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
+        const isTopPanel = cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT';
+
+        // ✅ UNIFIED BOLT ORIENTATION (v2.1)
+        // Uses single source of truth: drilling axis + panel normal
+        //
+        // KEY INSIGHT:
+        // - boltDir = drilling axis ONLY (NOT bolt→cam vector!)
+        // - boltPanelNormal = SIDE panel normal (±X), NOT TOP/BOTTOM (±Y)
+        // - seamDir = cross(boltPanelNormal, boltDir) → joint edge direction
+        //
+        // DRILLING AXES (depends on joint type):
+        // - INSET: X-axis drilling into FACE of side panel (±X)
+        // - OVERLAY: Y-axis drilling into EDGE of side panel (±Y)
+
+        // Determine mount type from joint mode
+        const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
+        const mountType: MountType = jointMode;
+
+        // ✅ FIX: Use getDrillingAxis with jointMode to get correct drilling direction
+        // INSET: horizontal X-axis drilling into face
+        // OVERLAY: vertical Y-axis drilling into edge
+        const boltDirWorld = getDrillingAxis(cornerType as Corner, mountType);
+
+        // Get panel normal from utility (uses consistent ±X convention)
+        const boltPanelNormalWorld = selectBoltPanelNormalWorld(cornerType as Corner);
+
+        // ✅ SINGLE COMPUTATION: base alignment + twist in one call
+        // This eliminates the old split between resolveSeamDrivenTwist + calculateBoltRotationWithTwist
+        const orientationResult = computeBoltQuatWithTwist({
+          boltDirWorld,
+          boltPanelNormalWorld,
+          mountType,
+        });
+
+        // Validate orientation (throws on error - disable in production)
+        // assertOrientation(orientationResult, boltDirWorld);
+
+        // ✅ VERTICAL FLIP FIX: TOP_LEFT INSET needs 180° rotation around drilling axis
+        // User validation confirmed: TOP_LEFT wrong, TOP_RIGHT/BOTTOM_LEFT/BOTTOM_RIGHT correct
+        let finalQuat = orientationResult.boltQuat.clone();
+        if (cornerType === 'TOP_LEFT' && mountType === 'INSET') {
+          const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
+          finalQuat = flipQuat.multiply(finalQuat);
+        }
+
+        // Convert quaternion to Euler for existing override system
+        const calculatedRotation = quaternionToRotationOverride(finalQuat);
+
+        // Get final rotation (considers user overrides and defaults)
+        const finalRotation = getRotationForPoint(boltPoint.id, cornerType, calculatedRotation);
+        const rotX = finalRotation.rotX;
+        const rotY = finalRotation.rotY;
+        const rotZ = finalRotation.rotZ;
+
+        const currentRotation: RotationOverride = { rotX, rotY, rotZ };
+
+        // Get position override (considers point override > corner default > zero)
+        const positionOffset = getPositionForPoint(boltPoint.id, cornerType);
+        const currentPosition = { dx: positionOffset.dx, dy: positionOffset.dy, dz: positionOffset.dz };
+
+        // ✅ POSITION CENTERING FIX (v4.1): Align bolt with CAM pocket center
+        //
+        // CRITICAL: Drill map now positions bolt at:
+        // - X = SIDE panel inner face (not center)
+        // - Y = maxY - camDepth/2 (CAM pocket center, not Distance B)
+        //
+        // Visualization offset should position the 3D bolt model so that:
+        // - Ball head center aligns with CAM pocket center
+        // - Bolt protrudes Distance B (24mm) from SIDE inner face
+        //
+        let yCenteringOffset = 0;
+        let xCenteringOffset = 0;
+
+        if (mountType === 'INSET') {
+          // Y offset: NOT NEEDED!
+          // Drill map already positions bolt Y at CAM pocket center (camDepth/2 from edge)
+          // Adding extra Y offset would misalign the bolt with CAM center
+          yCenteringOffset = 0;
+
+          // X offset: Position THREAD-SLEEVE JUNCTION flush with SIDE panel inner face
+          //
+          // ENGINEERING STANDARD (Häfele S200):
+          // - THREAD-SLEEVE JUNCTION (รอยต่อเกลียว/ปลอกแดง) = Mechanical Stop
+          // - Thread (11mm) goes INTO the side panel wood
+          // - Red Sleeve (14.25mm) stays OUTSIDE (enters horizontal panel's Ø10mm hole)
+          // - Protrusion = sleeve + neck + ballRadius = 14.25 + 6.5 + 3.25 = 24mm = Distance B
+          //
+          // MODEL GEOMETRY (Preview3D):
+          // - Origin at sleeve CENTER
+          // - Thread-Sleeve junction at -sleeveLength/2 from origin (toward thread)
+          // - After rotation for LEFT panel: -Y → -X, so junction is at origin - sleeveLength/2 in X
+          //
+          // To put Thread-Sleeve junction at inner face:
+          // - LEFT panel: origin - sleeveLength/2 = drillPos → offset = +sleeveLength/2
+          // - RIGHT panel: origin + sleeveLength/2 = drillPos → offset = -sleeveLength/2
+          //
+          const HALF_SLEEVE = config.sleeveLength / 2;  // 7.125mm
+          const isLeftPanel = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
+          if (isLeftPanel) {
+            // Left panels: move RIGHT (+X) to put thread-sleeve junction at inner face
+            xCenteringOffset = +HALF_SLEEVE;
+          } else {
+            // Right panels: move LEFT (-X) to put thread-sleeve junction at inner face
+            xCenteringOffset = -HALF_SLEEVE;
+          }
+        }
+
+        // Apply position offset to hardware position
+        const finalX = x + positionOffset.dx + xCenteringOffset;
+        const finalY = y + positionOffset.dy + yCenteringOffset;
+        const finalZ = z + positionOffset.dz;
+
+        return (
+          <group
+            key={`minifix-preview-${index}-${boltPoint.id}`}
+            position={[finalX, finalY, finalZ]}
+            rotation={[rotX, rotY, rotZ]}
+          >
+            {/* Hit sphere for hardware interaction - uses HARDWARE layer for priority */}
+            {/* Centered at origin with large radius to cover both cam and bolt after any rotation */}
+            <HardwareHitSphere
+              position={[0, 25, 0]}
+              onRightClick={(e) => handleContextMenu(e, boltPoint, cornerType, currentRotation, currentPosition)}
+            />
+
+            {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (×100) */}
+            {/* NOTE: Pass xRayMode={false} to show proper colors (red sleeve, gray cam) */}
+            <group scale={[100, 100, 100]}>
+              <Preview3D
+                config={config}
+                showCam={true}
+                showDowel={config.includeDowel}
+                xRayMode={false}
+                isAttached={true}
+                showDimensions={false}
+                onUpdateConfig={handleUpdateConfig}
+              />
+            </group>
+          </group>
+        );
+      })}
+
+      {/* CAD-style dimension lines - shows different dims based on view */}
+      <HardwareSmartDimensions
+        boltPoints={boltPoints}
+        camPoints={camPoints}
+        cabinetWidth={cabinetWidth}
+        cabinetHeight={cabinetHeight}
+        cabinetDepth={cabinetDepth}
+        topJoint={topJoint}
+        bottomJoint={bottomJoint}
+        visible={showDimensions}
+        currentView={currentView}
+        distanceB={config.drillingDistanceB}
+        boltRotations={boltRotations}
+      />
+    </group>
+  );
+}
+
+// ============================================
+// T016: Shared Texture Loading with LRU Cache
+// ============================================
+
+/**
+ * Hook to load material texture via materialId
+ * Uses shared LRU cache and objectURL system
+ */
+function useMaterialTexture(materialId: string | null): Texture | null {
+  const loadTexture = useMaterialStore((s) => s.loadTexture);
+
+  // FIX: Subscribe to actual state values, not functions
+  // This ensures component re-renders when texture finishes loading
+  const loadedTexture = useMaterialStore((s) =>
+    materialId ? s.loadedTextures[materialId] : null
+  );
+
+  const isLoaded = loadedTexture?.fullLoaded ?? false;
+  const objectUrl = isLoaded ? (loadedTexture?.fullObjectUrl ?? null) : null;
+
+  // Trigger load on mount or materialId change
+  useEffect(() => {
+    if (materialId) {
+      loadTexture(materialId, 'full');
+    }
+  }, [materialId, loadTexture]);
+
+  // Use shared texture loader
+  return useObjectUrlTexture(objectUrl);
+}
+
+/**
+ * @deprecated Use useMaterialTexture instead
+ * Legacy hook for loading texture from data URL
+ */
 function useDataTexture(dataUrl: string | null) {
   const [texture, setTexture] = useState<CanvasTexture | null>(null);
   const { invalidate } = useThree();
-  
+
   useEffect(() => {
     // Track current texture for cleanup
     let currentTexture: CanvasTexture | null = null;
     let cancelled = false;
-    
+
     if (!dataUrl) {
       setTexture(null);
       return;
     }
-    
-    console.log('[useDataTexture] Loading texture from data URL...', dataUrl.substring(0, 50));
-    
+
     // Create image and load data URL
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       if (cancelled) return;
-      
-      console.log('[useDataTexture] Image loaded:', img.width, 'x', img.height);
-      
+
       // Create canvas and draw image
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
-      
+
       if (ctx) {
         ctx.drawImage(img, 0, 0);
-        
+
         // Create texture from canvas
         const tex = new CanvasTexture(canvas);
         // IMPORTANT: Enable repeat wrapping for world-scale UV
@@ -58,112 +578,668 @@ function useDataTexture(dataUrl: string | null) {
         tex.wrapT = RepeatWrapping;
         tex.colorSpace = SRGBColorSpace;
         tex.needsUpdate = true;
-        
+
         currentTexture = tex;
         setTexture(tex);
         invalidate();
-        
-        console.log('[useDataTexture] ✅ Texture created with RepeatWrapping');
       }
     };
-    
-    img.onerror = (err) => {
-      console.error('[useDataTexture] ❌ Failed to load texture image:', err);
-      setTexture(null);
-    };
-    
+
+    img.onerror = () => setTexture(null);
+
     img.src = dataUrl;
-    
+
     // Cleanup function
     return () => {
       cancelled = true;
       if (currentTexture) {
-        console.log('[useDataTexture] Disposing texture');
         currentTexture.dispose();
       }
     };
   }, [dataUrl, invalidate]);
-  
+
   return texture;
 }
 
 interface Cabinet3DProps {
   showDimensions?: boolean;
   hideTooltip?: boolean;
+  onDoubleClickPanel?: () => void;
 }
 
-export function Cabinet3D({ showDimensions = false, hideTooltip = false }: Cabinet3DProps) {
-  const cabinet = useCabinet();
+// Single cabinet renderer component
+interface SingleCabinetProps {
+  cabinet: ReturnType<typeof useCabinet>;
+  cabinetId: string;
+  isActive: boolean;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  showDimensions: boolean;
+  hideTooltip: boolean;
+  onDoubleClickPanel?: () => void;
+  onSelect: () => void;
+  /** X-Ray mode - render panels as wireframe */
+  xRayMode?: boolean;
+  /** Render mode from Indetails Smart patterns */
+  renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
+  /** Hide panels for CSG holes rendering (CSGDrillOverlay will render them instead) */
+  hideForCSGHoles?: boolean;
+}
+
+function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showDimensions, hideTooltip, onDoubleClickPanel, onSelect, xRayMode = false, renderMode = 'NORMAL', hideForCSGHoles = false }: SingleCabinetProps) {
+  const groupRef = useRef<Group>(null);
+  const hasInitializedPosition = useRef(false);
   const selectedPanelId = useCabinetStore((s) => s.selectedPanelId);
   const selectPanel = useCabinetStore((s) => s.selectPanel);
   const surfaceMaterials = useCabinetStore((s) => s.surfaceMaterials);
   const edgeMaterialsOnly = useCabinetStore((s) => s.edgeMaterials);
+  const updateCabinetPosition = useCabinetStore((s) => s.updateCabinetPosition);
+  const activeTool = useToolStore((s) => s.activeTool);
+  const draggingCabinetId = useToolStore((s) => s.draggingCabinetId);
+  const setDraggingCabinetId = useToolStore((s) => s.setDraggingCabinetId);
+  const snapEnabled = useToolStore((s) => s.options.snap.enabled);
+  const gridSize = useToolStore((s) => s.options.snap.gridSize);
+  const showSnapPoints = useToolStore((s) => s.showSnapPoints);
+  const glueMode = useGlueStore((s) => s.mode);
+  const markDirty = useProjectStore((s) => s.markDirty);
+  const allCabinets = useCabinetStore((s) => s.cabinets);
+  const clearActiveSnap = useSnapStore((s) => s.clearActiveSnap);
 
-  if (!cabinet) return null;
+  // State to trigger re-render when group ref is ready
+  // This is needed because CabinetTransformControls checks targetRef.current
+  const [isGroupReady, setIsGroupReady] = useState(false);
 
-  // Get default surface material
-  const defaultSurface = surfaceMaterials[cabinet.materials.defaultSurface as keyof typeof surfaceMaterials];
+  // Check if glue mode is active - use both tool store AND glue store mode
+  // activeTool === 'glue' AND glueMode !== 'idle' should both be true
+  const isGlueMode = activeTool === 'glue' && glueMode !== 'idle';
+
+  // For rendering GlueFaceHighlights, only check activeTool - let the component handle its own lifecycle
+  // This allows the delayed unmount in GlueFaceHighlights to work properly
+  const shouldShowGlueFaces = activeTool === 'glue';
+
+  // Validate position helper
+  const MAX_POSITION = 10000;
+  const getValidPosition = (pos: [number, number, number]): [number, number, number] => [
+    Math.abs(pos[0]) <= MAX_POSITION ? pos[0] : 0,
+    Math.abs(pos[1]) <= MAX_POSITION ? pos[1] : 0,
+    Math.abs(pos[2]) <= MAX_POSITION ? pos[2] : 0,
+  ];
+
+  // CRITICAL: Set initial position synchronously using useLayoutEffect
+  // This runs BEFORE TransformControls can read the position
+  // NOTE: Scene uses mm units throughout (camera, grid, panels)
+  useLayoutEffect(() => {
+    if (!groupRef.current) return;
+
+    const validPosition = getValidPosition(position);
+    groupRef.current.position.set(
+      validPosition[0],
+      validPosition[1],
+      validPosition[2]
+    );
+    hasInitializedPosition.current = true;
+
+    // Signal that the group ref is ready for TransformControls
+    setIsGroupReady(true);
+  }, []); // Only on mount
+
+  // Update position when it changes from store
+  // Only sync when position prop actually changes - NOT when tool changes
+  // CRITICAL: Skip sync when this cabinet is being dragged (TransformControls manages position)
+  useEffect(() => {
+    if (!groupRef.current) return;
+
+    // Skip initial mount (handled by the mount effect above)
+    if (!hasInitializedPosition.current) return;
+
+    // CRITICAL: Skip sync if this cabinet is being dragged
+    // TransformControls manages the mesh position during drag
+    // This prevents fighting between store sync and TransformControls
+    if (draggingCabinetId === cabinetId) return;
+
+    const validPosition = getValidPosition(position);
+
+    // Only update if position actually changed from current Three.js position
+    // This prevents unnecessary updates when switching tools
+    // NOTE: Scene uses mm units, so no conversion needed
+    const currentPos = groupRef.current.position;
+    const dx = Math.abs(currentPos.x - validPosition[0]);
+    const dz = Math.abs(currentPos.z - validPosition[2]);
+
+    // Only sync if position changed by more than 1mm
+    if (dx > 1 || dz > 1) {
+      groupRef.current.position.set(
+        validPosition[0],
+        validPosition[1],
+        validPosition[2]
+      );
+    }
+  }, [position, cabinetId, draggingCabinetId]); // Include dragging state
+
+  if (!cabinet || !cabinet.dimensions) return null;
+
+  // Get default surface material (with fallback for cabinets without materials)
+  const cabinetMaterials = cabinet.materials || { defaultSurface: 'melamine-white', defaultEdge: 'pvc-white-1mm' };
+  const cabinetPanels = cabinet.panels || [];
+  const defaultSurface = surfaceMaterials[cabinetMaterials.defaultSurface as keyof typeof surfaceMaterials];
   const baseColor = defaultSurface?.color || '#888888';
-  const textureUrl = defaultSurface?.textureUrl || null;
+  // T016: Pass materialId for shared texture loading
+  const surfaceMaterialId = cabinetMaterials.defaultSurface || null;
 
   // Edge materials: Combine surface materials + edge-specific materials
-  // This matches what DesignerIntentPanel does for the material selector
   const edgeMaterials = { ...surfaceMaterials, ...edgeMaterialsOnly };
 
   // Get default edge material - look in combined materials
-  const defaultEdge = edgeMaterials[cabinet.materials.defaultEdge as keyof typeof edgeMaterials];
+  const defaultEdge = edgeMaterials[cabinetMaterials.defaultEdge as keyof typeof edgeMaterials];
   const edgeColor = defaultEdge?.color || '#FFFFFF';
   const edgeThickness = defaultEdge?.thickness || 1.0;
-  const edgeTextureUrl = defaultEdge?.textureUrl || null;
-  
+  // T016: Pass materialId for shared texture loading
+  const edgeMaterialId = cabinetMaterials.defaultEdge || null;
+
+  // Gizmo callbacks
+  const handleGizmoDragStart = () => {
+    setDraggingCabinetId(cabinetId);
+  };
+
+  const handleGizmoDrag = (pos: Vec3) => {
+    // NOTE: Scene uses mm units, pos is already in mm
+    let finalX = pos.x;
+    let finalZ = pos.z;
+
+    // Apply snap calculation if snap is enabled
+    if (snapEnabled && cabinet) {
+      // Build snap targets from all other cabinets
+      const snapTargets: SnapTarget[] = allCabinets
+        .filter(c => c.id !== cabinetId)
+        .map(c => ({
+          id: c.id,
+          position: (c as any).scenePosition || [0, 0, 0],
+          dimensions: c.dimensions,
+          rotation: (c as any).sceneRotation?.[1] || 0,
+        }));
+
+      // Create moving cabinet target
+      const movingTarget: SnapTarget = {
+        id: cabinetId,
+        position: [pos.x, 0, pos.z],
+        dimensions: cabinet.dimensions,
+        rotation: rotation[1],
+      };
+
+      // Calculate snap with vertex snap enabled when showSnapPoints is on
+      const snapResult = calculateSnap(movingTarget, snapTargets, {
+        gridSize,
+        enableVertexSnap: showSnapPoints,  // Vertex snap when P is pressed
+        enableEdgeSnap: true,
+        enableCenterSnap: true,
+        enableGridSnap: true,
+        enableWallSnap: true,
+      });
+
+      // Apply snapped position
+      finalX = snapResult.position[0];
+      finalZ = snapResult.position[2];
+    }
+
+    const positionMm: [number, number, number] = [
+      Math.round(finalX),
+      0, // Keep Y at 0 for floor cabinets
+      Math.round(finalZ),
+    ];
+    updateCabinetPosition(cabinetId, positionMm);
+
+    // Also update mesh position directly for smooth visual (mm units)
+    if (groupRef.current) {
+      groupRef.current.position.set(finalX, 0, finalZ);
+    }
+  };
+
+  const handleGizmoDragEnd = (finalPos: Vec3, delta: Vec3) => {
+    setDraggingCabinetId(null);
+    clearActiveSnap();  // Clear snap state
+
+    // Apply final snap if enabled
+    let finalX = finalPos.x;
+    let finalZ = finalPos.z;
+
+    if (snapEnabled && cabinet) {
+      const snapTargets: SnapTarget[] = allCabinets
+        .filter(c => c.id !== cabinetId)
+        .map(c => ({
+          id: c.id,
+          position: (c as any).scenePosition || [0, 0, 0],
+          dimensions: c.dimensions,
+          rotation: (c as any).sceneRotation?.[1] || 0,
+        }));
+
+      const movingTarget: SnapTarget = {
+        id: cabinetId,
+        position: [finalPos.x, 0, finalPos.z],
+        dimensions: cabinet.dimensions,
+        rotation: rotation[1],
+      };
+
+      const snapResult = calculateSnap(movingTarget, snapTargets, {
+        gridSize,
+        enableVertexSnap: showSnapPoints,
+        enableEdgeSnap: true,
+        enableCenterSnap: true,
+        enableGridSnap: true,
+        enableWallSnap: true,
+      });
+
+      finalX = snapResult.position[0];
+      finalZ = snapResult.position[2];
+    }
+
+    const positionMm: [number, number, number] = [
+      Math.round(finalX),
+      0,
+      Math.round(finalZ),
+    ];
+    updateCabinetPosition(cabinetId, positionMm);
+    markDirty();
+
+  };
+
   return (
-    <group name="cabinet-3d">
+    <>
+      {/* GizmoTranslate for move mode - axis-constrained World/Local movement */}
+      {isActive && isGroupReady && activeTool === 'move' && (
+        <GizmoTranslate
+          position={position}
+          rotation={rotation}
+          onDragStart={handleGizmoDragStart}
+          onDrag={handleGizmoDrag}
+          onDragEnd={handleGizmoDragEnd}
+          enabled={isActive}
+        />
+      )}
+
+      {/* TransformControls for rotate/scale modes - only render when NOT in move mode */}
+      {isActive && isGroupReady && activeTool !== 'move' && (activeTool === 'rotate' || activeTool === 'scale') && (
+        <CabinetTransformControls
+          cabinetId={cabinetId}
+          targetRef={groupRef}
+          enabled={isActive}
+        />
+      )}
+
+      {/* SceneObjectRef registers this cabinet for world bounding box calculations */}
+      <SceneObjectRef id={cabinetId}>
+        <group
+          ref={groupRef}
+          name={`cabinet-${cabinet.id}`}
+          position={position}
+          rotation={rotation}
+          onClick={(e) => {
+            // In glue mode, let clicks pass through to face planes
+            if (isGlueMode) return;
+            e.stopPropagation();
+            onSelect();
+          }}
+        >
+      {/* Selection indicator for active cabinet - scene uses mm units */}
+      {/* Selection wireframe - disabled for now
+      {isActive && (
+        <mesh position={[cabinet.dimensions.width / 2, cabinet.dimensions.height / 2, cabinet.dimensions.depth / 2]}>
+          <boxGeometry args={[
+            cabinet.dimensions.width + 20,
+            cabinet.dimensions.height + 20,
+            cabinet.dimensions.depth + 20
+          ]} />
+          <meshBasicMaterial color="#22c55e" transparent opacity={0.1} wireframe />
+        </mesh>
+      )}
+      */}
+
       {/* Render panels with shared texture */}
-      <PanelsWithTexture
-        panels={cabinet.panels}
-        baseColor={baseColor}
-        textureUrl={textureUrl}
-        edgeColor={edgeColor}
-        edgeThickness={edgeThickness}
-        edgeTextureUrl={edgeTextureUrl}
-        selectedPanelId={selectedPanelId}
-        onSelectPanel={selectPanel}
-        hideTooltip={hideTooltip}
-        showPanelDimensions={showDimensions}
-      />
+      {/* Skip panel rendering if CSG holes mode is active - CSGDrillOverlay renders them */}
+      {!hideForCSGHoles && (
+        <PanelsWithTexture
+          panels={cabinetPanels}
+          baseColor={baseColor}
+          cabinetDefaultSurface={surfaceMaterialId}
+          edgeColor={edgeColor}
+          edgeThickness={edgeThickness}
+          cabinetDefaultEdge={edgeMaterialId}
+          edgeMaterials={edgeMaterials}
+          selectedPanelId={isActive ? selectedPanelId : null}
+          onSelectPanel={isActive ? selectPanel : () => {}}
+          hideTooltip={hideTooltip}
+          onDoubleClickPanel={isActive ? onDoubleClickPanel : undefined}
+          isParentCabinetActive={isActive}
+          xRayMode={xRayMode}
+          renderMode={renderMode}
+        />
+      )}
 
-      {/* Dimension labels - controlled by prop */}
-      {showDimensions && <DimensionLabels cabinet={cabinet} />}
+      {/* Glue Face Highlights - inside group for correct positioning */}
+      {/* Use shouldShowGlueFaces (not isGlueMode) to let GlueFaceHighlights handle delayed unmount */}
+      {shouldShowGlueFaces && cabinet.dimensions && (
+        <GlueFaceHighlights
+          cabinetId={cabinetId}
+          dimensions={{
+            width: cabinet.dimensions.width,
+            height: cabinet.dimensions.height,
+            depth: cabinet.dimensions.depth,
+          }}
+          position={[0, 0, 0]}
+          insideGroup={true}
+        />
+      )}
 
-      {/* Compartment dimension labels - cleaner layout */}
-      {showDimensions && <CompartmentDimensionLabels />}
+      {/* Dimension labels - only for active cabinet */}
+      {showDimensions && isActive && <DimensionLabels cabinet={cabinet} />}
 
-      {/* Partial divider position labels - editable X position */}
-      {showDimensions && <PartialDividerPositionLabels />}
+      {/* Cabinet name label - scene uses mm units */}
+      {!isActive && (
+        <Html
+          position={[cabinet.dimensions.width / 2, cabinet.dimensions.height + 50, cabinet.dimensions.depth / 2]}
+          center
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="px-2 py-1 bg-surface-2/90 border border-[#333] rounded text-xs text-gray-400 whitespace-nowrap">
+            {cabinet.name}
+          </div>
+        </Html>
+      )}
+        </group>
+      </SceneObjectRef>
+    </>
+  );
+}
 
-      {/* Compartment interaction - right click to add shelf/divider */}
-      <CompartmentInteraction />
+export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubleClickPanel }: Cabinet3DProps) {
+  // T017: Keep cabinets for render loop only - DON'T use in useEffect dependencies
+  const cabinets = useCabinetStore((s) => s.cabinets);
+  const activeCabinetId = useCabinetStore((s) => s.activeCabinetId);
+  const selectCabinet = useCabinetStore((s) => s.selectCabinet);
+  const hiddenCabinetIds = useCabinetStore((s) => s.hiddenCabinetIds);
+  const drillingParams = useCabinetStore((s) => s.drillingParams);
+  const cabinet = useCabinet(); // Active cabinet for compartment interactions
+
+  // T017: OPTIMIZED - Use direct selector instead of array.find() in useMemo
+  // This prevents re-renders when OTHER cabinets change
+  const activeCabinetFromArray = useActiveCabinetFromArray();
+
+  const activeTool = useToolStore((s) => s.activeTool);
+  const glueMode = useGlueStore((s) => s.mode);
+  const draggingCabinetId = useToolStore((s) => s.draggingCabinetId);
+  const isSnapping = useSnapStore((s) => s.isSnapping);
+
+  // Plasticity-style view state
+  const isolatedCabinetId = useViewStore((s) => s.isolatedCabinetId);
+  const xRayMode = useViewStore((s) => s.xRayMode);
+  const ghostCabinetIds = useViewStore((s) => s.ghostCabinetIds);
+  const previewCabinetIds = useViewStore((s) => s.previewCabinetIds);
+  const currentView = useViewStore((s) => s.currentView);
+
+  // Drill map visualization - FIXED: Use correct selector names from useDrillMapStore
+  const drillMapVisible = useDrillMapStore((s) => s.showDrillMap);
+  const drillMapData = useDrillMapStore((s) => s.drillMap);
+  const drillMapPurpose = useDrillMapStore((s) => s.drillMapPurpose);
+  const drillMapScale = useDrillMapStore((s) => s.drillMapScale);
+  const show3DHardware = useDrillMapStore((s) => s.show3DHardware);
+  const showDrillDimensions = useDrillMapStore((s) => s.showDrillDimensions);
+  const showHardwareDimensions = useDrillMapStore((s) => s.showDimensions);
+  const selectedPoint = useDrillMapStore((s) => s.selectedPoint);
+  const setSelectedPoint = useDrillMapStore((s) => s.setSelectedPoint);
+
+  // X-Ray mode controls drill map visibility
+  // When X-Ray is ON, show drill holes regardless of drillMapVisible
+  const showDrillMap = xRayMode || drillMapVisible;
+
+  // Get drill map actions for auto-generation
+  const setDrillMap = useDrillMapStore((s) => s.setDrillMap);
+  const setCabinetBounds = useDrillMapStore((s) => s.setCabinetBounds);
+  const drillMapVersion = useDrillMapStore((s) => s.drillMapVersion);
+
+  // Force regenerate drill map on mount to apply any config fixes
+  const regenerateDrillMap = useDrillMapStore((s) => s.regenerateDrillMap);
+  useEffect(() => {
+    // One-time regeneration on mount to ensure correct Distance B = 24mm
+    regenerateDrillMap();
+  }, []); // Empty deps = run once on mount
+
+  // Auto-generate Minifix drill map when X-Ray mode OR 3D Hardware is enabled AND a hardware preset is selected
+  // Also regenerate when drillingParams change (editable Z and A values)
+  // Also regenerate when drillMapVersion changes (triggered by regenerateDrillMap())
+  // ALSO: Compute cabinet bounds from drill map for accurate position clamping
+  //
+  // FIX: Synchronous update - Dimension lines must update in sync with cabinet resize
+  // No debounce, no requestAnimationFrame - immediate update for real-time sync
+  // T017: Use activeCabinetFromArray instead of cabinets.find() to prevent re-renders
+  useEffect(() => {
+    if (!activeCabinetFromArray) {
+      // Clear drill map when no active cabinet
+      setDrillMap(null);
+      return;
+    }
+
+    // Only generate drill map if a hardware preset/config is selected
+    const hasHardwareConfig = (activeCabinetFromArray as any).hardware?.minifixPresetId ||
+                               (activeCabinetFromArray as any).hardware?.minifixConfig;
+
+    if (!hasHardwareConfig) {
+      // Clear drill map when no hardware is configured
+      // This prevents stale drill indicators from showing
+      setDrillMap(null);
+      return;
+    }
+
+    // Only generate if X-Ray or 3D Hardware view is enabled
+    if (!(xRayMode || show3DHardware)) return;
+
+    // Synchronous update - no debounce, no RAF
+    // Get minifixConfig from cabinet's hardware settings (if set via HardwareLibrary)
+    const minifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
+    // Pass config as second arg, drillingParams as third arg
+    // CRITICAL: Limit connectorCount to 2 per corner to match Hardware3DOverlay visualization
+    // This ensures drill indicators (Ø10, Ø15) match the actual hardware shown
+    const drillMap = generateMinifixDrillMap(
+      activeCabinetFromArray,
+      minifixConfig || {},
+      drillingParams,
+      { connectorCount: 2 }  // Match MAX_HARDWARE_PER_CORNER in Hardware3DOverlay
+    );
+    setDrillMap(drillMap);
+
+    // Compute bounds from drill map (uses same coordinate system as hardware positions)
+    const bounds = computeBoundsFromDrillMap(drillMap, 50);
+    setCabinetBounds(bounds);
+  }, [xRayMode, show3DHardware, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion]);
+
+  // Check if glue mode is active at parent level
+  const isGlueModeActive = activeTool === 'glue' && glueMode !== 'idle';
+
+  // Get dragging cabinet for snap preview
+  const draggingCabinet = draggingCabinetId
+    ? cabinets.find(c => c.id === draggingCabinetId)
+    : null;
+  const draggingPosition = draggingCabinet
+    ? (draggingCabinet as any).scenePosition || [0, 0, 0]
+    : [0, 0, 0];
+
+  // If no cabinets, render nothing
+  if (cabinets.length === 0) return null;
+
+  return (
+    <group name="cabinet-scene">
+      {/* Render all cabinets (respects Plasticity-style visibility) */}
+      {cabinets.map((cab) => {
+        // Plasticity-style visibility: H (hide), Shift+H (hide unselected), Alt+H (show all)
+        if (hiddenCabinetIds.includes(cab.id)) return null;
+
+        // Plasticity-style isolate: . (period) key
+        if (isolatedCabinetId && isolatedCabinetId !== cab.id) return null;
+
+        const scenePos = (cab as any).scenePosition || [0, 0, 0];
+        const sceneRot = (cab as any).sceneRotation || [0, 0, 0];
+        const isActive = cab.id === activeCabinetId;
+
+        // Determine render mode for this cabinet (Indetails Smart patterns)
+        // Ghost = original before change, Preview = proposed change
+        const cabinetRenderMode: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY' =
+          ghostCabinetIds.includes(cab.id) ? 'GHOST' :
+          previewCabinetIds.includes(cab.id) ? 'PREVIEW' :
+          'NORMAL';
+
+        // CSG Holes mode - DISABLED: CSGDrillOverlay only renders holes, not panels
+        // Setting this to true would hide panels with nothing to replace them
+        // Instead, we keep panels visible and render drill holes as overlay
+        const useCSGHoles = false;
+
+        return (
+          <SingleCabinet
+            key={cab.id}
+            cabinet={cab}
+            cabinetId={cab.id}
+            isActive={isActive}
+            position={scenePos}
+            rotation={sceneRot}
+            showDimensions={showDimensions}
+            hideTooltip={hideTooltip}
+            onDoubleClickPanel={onDoubleClickPanel}
+            onSelect={() => selectCabinet(cab.id)}
+            xRayMode={xRayMode}
+            renderMode={cabinetRenderMode}
+            hideForCSGHoles={useCSGHoles}
+          />
+        );
+      })}
+
+      {/* Snap preview ghost cabinet */}
+      {isSnapping && draggingCabinet && (
+        <SnapPreview
+          dimensions={draggingCabinet.dimensions}
+          currentPosition={draggingPosition as [number, number, number]}
+        />
+      )}
+
+      {/* Compartment dimension labels - only for active cabinet */}
+      {showDimensions && cabinet && <CompartmentDimensionLabels />}
+
+      {/* Partial divider position labels - only for active cabinet */}
+      {showDimensions && cabinet && <PartialDividerPositionLabels />}
+
+      {/* Compartment interaction - only for active cabinet */}
+      {cabinet && <CompartmentInteraction />}
+
+      {/* CAD-Style Drill Indicators - Shows drill points as 2D CAD annotations */}
+      {/* Wrapped in group with cabinet position/rotation for correct placement */}
+      <group
+        position={(activeCabinetFromArray as any)?.scenePosition || [0, 0, 0]}
+        rotation={(activeCabinetFromArray as any)?.sceneRotation || [0, 0, 0]}
+      >
+        <CADDrillIndicators
+          drillMap={drillMapData}
+          visible={xRayMode && showDrillMap}
+          showDiameter={true}
+          showDepth={showHardwareDimensions}
+          showCrosshairs={true}
+          lineWidth={2}
+        />
+      </group>
+
+      {/* Hardware3DOverlay - Shows S200 Bolt + Cam Housing (same as Minifix Config Editor) */}
+      {/* Wrapped in group with cabinet position/rotation to fix "floating hardware" issue */}
+      <group
+        position={(activeCabinetFromArray as any)?.scenePosition || [0, 0, 0]}
+        rotation={(activeCabinetFromArray as any)?.sceneRotation || [0, 0, 0]}
+      >
+        <Hardware3DOverlay
+          drillMap={drillMapData}
+          visible={xRayMode}
+          opacity={0.95}
+          minifixConfig={(activeCabinetFromArray as any)?.hardware?.minifixConfig}
+          cabinetWidth={activeCabinetFromArray?.dimensions?.width || cabinet?.dimensions?.width || 600}
+          cabinetHeight={activeCabinetFromArray?.dimensions?.height || cabinet?.dimensions?.height || 720}
+          cabinetDepth={activeCabinetFromArray?.dimensions?.depth || cabinet?.dimensions?.depth || 560}
+          topJoint={activeCabinetFromArray?.structure?.topJoint || cabinet?.structure?.topJoint || 'INSET'}
+          bottomJoint={activeCabinetFromArray?.structure?.bottomJoint || cabinet?.structure?.bottomJoint || 'INSET'}
+          showDimensions={showHardwareDimensions}
+          currentView={currentView}
+        />
+
+        {/* CSG Drill Holes Overlay - shows drill holes as cylinders in X-Ray mode */}
+        <CSGDrillOverlay
+          drillMap={drillMapData}
+          visible={xRayMode && showDrillMap}
+          colorByPurpose={true}
+          opacity={0.8}
+        />
+      </group>
     </group>
   );
 }
 
-// Separate component to load texture once for all panels
+// Edge material type for lookup
+type EdgeMaterialMap = Record<string, { id: string; name: string; color: string; thickness: number; textureUrl?: string }>;
+
+// ============================================
+// C) Per-Panel Material Resolver
+// ============================================
+
+/**
+ * Resolve surface material ID for a panel with fallback chain:
+ * 1. panel.faces.faceA (per-panel assignment)
+ * 2. cabinetDefaultSurface (cabinet default)
+ * 3. panel.coreMaterialId (core material as last resort)
+ */
+function resolvePanelSurfaceMaterialId(
+  panel: CabinetPanel,
+  cabinetDefaultSurface: string | null
+): string | null {
+  return (
+    panel.faces?.faceA ??
+    cabinetDefaultSurface ??
+    panel.coreMaterialId ??
+    null
+  );
+}
+
+/**
+ * Resolve edge material ID for a panel edge with fallback
+ */
+function resolvePanelEdgeMaterialId(
+  panel: CabinetPanel,
+  edgeSide: 'top' | 'bottom' | 'left' | 'right',
+  cabinetDefaultEdge: string | null
+): string | null {
+  return (
+    panel.edges?.[edgeSide] ??
+    cabinetDefaultEdge ??
+    null
+  );
+}
+
+// Separate component to render panels - now passes per-panel material resolution
 interface PanelsWithTextureProps {
   panels: CabinetPanel[];
   baseColor: string;
-  textureUrl: string | null;
+  /** C) Cabinet default surface for fallback */
+  cabinetDefaultSurface: string | null;
   edgeColor: string;
   edgeThickness: number;
-  edgeTextureUrl: string | null;
+  /** C) Cabinet default edge for fallback */
+  cabinetDefaultEdge: string | null;
+  edgeMaterials: EdgeMaterialMap;
   selectedPanelId: string | null;
   onSelectPanel: (id: string) => void;
   hideTooltip?: boolean;
-  showPanelDimensions?: boolean;
+  onDoubleClickPanel?: () => void;
+  /** Whether this cabinet is active - affects click propagation */
+  isParentCabinetActive?: boolean;
+  /** X-Ray mode - render panels as wireframe for hardware visibility */
+  xRayMode?: boolean;
+  /** Render mode from Indetails Smart patterns */
+  renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
 }
 
-function PanelsWithTexture({ panels, baseColor, textureUrl, edgeColor, edgeThickness, edgeTextureUrl, selectedPanelId, onSelectPanel, hideTooltip, showPanelDimensions }: PanelsWithTextureProps) {
-  const texture = useDataTexture(textureUrl);
-  const edgeTexture = useDataTexture(edgeTextureUrl);
+function PanelsWithTexture({ panels, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, selectedPanelId, onSelectPanel, hideTooltip, onDoubleClickPanel, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL' }: PanelsWithTextureProps) {
+  // Guard against undefined panels
+  if (!panels || panels.length === 0) return null;
 
   return (
     <>
@@ -172,44 +1248,194 @@ function PanelsWithTexture({ panels, baseColor, textureUrl, edgeColor, edgeThick
           key={panel.id}
           panel={panel}
           baseColor={baseColor}
-          texture={texture}
+          cabinetDefaultSurface={cabinetDefaultSurface}
           edgeColor={edgeColor}
           edgeThickness={edgeThickness}
-          edgeTexture={edgeTexture}
+          cabinetDefaultEdge={cabinetDefaultEdge}
+          edgeMaterials={edgeMaterials}
           isSelected={selectedPanelId === panel.id}
           onSelect={() => onSelectPanel(panel.id)}
           hideTooltip={hideTooltip}
-          showPanelDimensions={showPanelDimensions}
+          onDoubleClick={onDoubleClickPanel}
+          isParentCabinetActive={isParentCabinetActive}
+          xRayMode={xRayMode}
+          renderMode={renderMode}
         />
       ))}
     </>
   );
 }
 
+// ============================================
+// T017: Hoisted Render Constants (module-level for performance)
+// ============================================
+
+// X-Ray mode colors - white/cyan wireframe for professional CAD look
+const XRAY_WIRE_COLOR = '#66ccff';  // Cyan wireframe
+const XRAY_FILL_COLOR = '#1a2a3a';  // Dark fill for contrast
+const XRAY_OPACITY = 0.35;          // Semi-transparent
+
+// Ghost mode colors - semi-transparent dimmed (Indetails Smart pattern)
+const GHOST_COLOR = '#d6d3d1';      // Light gray ghost
+const GHOST_OPACITY = 0.15;         // Very transparent
+
+// Preview mode colors - highlighted with outline (Indetails Smart pattern)
+const PREVIEW_COLOR = '#22d3ee';    // Cyan preview highlight
+const PREVIEW_OPACITY = 0.7;        // Semi-transparent
+
+// World-scale texture dimensions
+const TEXTURE_WIDTH_MM = 1523;
+const TEXTURE_HEIGHT_MM = 3070;
+
+// ============================================
+// C) EdgeBandStripMesh - Per-edge texture loading
+// ============================================
+
+interface EdgeBandStripProps {
+  panel: CabinetPanel;
+  edge: 'top' | 'bottom' | 'left' | 'right';
+  position: [number, number, number];
+  size: [number, number, number];
+  color: string;
+  cabinetDefaultEdge: string | null;
+  isSelected: boolean;
+}
+
+/**
+ * C) Edge band strip with per-edge material resolution
+ * Uses useMaterialTexture hook per strip (avoids hook-in-loop rule)
+ */
+function EdgeBandStripMesh({
+  panel,
+  edge,
+  position,
+  size,
+  color,
+  cabinetDefaultEdge,
+  isSelected,
+}: EdgeBandStripProps) {
+  // C) Resolve material for THIS specific edge
+  const edgeMaterialId = resolvePanelEdgeMaterialId(panel, edge, cabinetDefaultEdge);
+  const edgeTexture = useMaterialTexture(edgeMaterialId);
+
+  return (
+    <mesh position={position}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial
+        map={edgeTexture}
+        color={isSelected ? '#00aaff' : (edgeTexture ? '#ffffff' : color)}
+        roughness={0.3}
+        metalness={0.02}
+        polygonOffset={true}
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
+      />
+    </mesh>
+  );
+}
+
+// ============================================
+// Panel3D Component
+// ============================================
+
 interface Panel3DProps {
   panel: CabinetPanel;
   baseColor: string;
-  texture: CanvasTexture | null;
+  /** C) Cabinet default surface for per-panel material resolution */
+  cabinetDefaultSurface: string | null;
   edgeColor: string;
   edgeThickness: number;
-  edgeTexture: CanvasTexture | null;
+  /** C) Cabinet default edge for per-panel edge resolution */
+  cabinetDefaultEdge: string | null;
+  edgeMaterials: EdgeMaterialMap;
   isSelected: boolean;
   onSelect: () => void;
   hideTooltip?: boolean;
-  showPanelDimensions?: boolean;
+  onDoubleClick?: () => void;
+  /** When false, clicks bubble to parent group for cabinet selection */
+  isParentCabinetActive?: boolean;
+  /** X-Ray mode - render as wireframe */
+  xRayMode?: boolean;
+  /** Render mode from Indetails Smart patterns */
+  renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
 }
 
-function Panel3DComponent({ panel, baseColor, texture, edgeColor, edgeThickness, edgeTexture, isSelected, onSelect, hideTooltip, showPanelDimensions }: Panel3DProps) {
+function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, isSelected, onSelect, hideTooltip, onDoubleClick, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL' }: Panel3DProps) {
   const meshRef = useRef<Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const [panelTexture, setPanelTexture] = useState<CanvasTexture | null>(null);
-  const [edgeBandTexture, setEdgeBandTexture] = useState<CanvasTexture | null>(null);
-  
-  // World-scale texture: Texture represents real material size
-  // Texture image: 1523 × 3070 px = 1523 × 3070 mm real-world
-  const TEXTURE_WIDTH_MM = 1523;
-  const TEXTURE_HEIGHT_MM = 3070;
-  
+  const edgesRef = useRef<LineSegments>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const { invalidate } = useThree();
+  // T016: Use generic Texture type for shared loader compatibility
+  const [panelTexture, setPanelTexture] = useState<Texture | null>(null);
+
+  // C) Per-panel material resolution: resolve materialId for THIS panel's surface
+  const surfaceMaterialId = resolvePanelSurfaceMaterialId(panel, cabinetDefaultSurface);
+
+  // C) Load surface texture via T016 shared loader (per-panel)
+  // Note: Edge textures are loaded per-strip in EdgeBandStripMesh component
+  const texture = useMaterialTexture(surfaceMaterialId);
+
+  // T015: Use global hover state from store for bidirectional sync
+  const hoveredPanelId = useSelectionStore((s) => s.hoveredPanelId);
+  const setHoveredPanel = useSelectionStore((s) => s.setHoveredPanel);
+  const hovered = hoveredPanelId === panel.id;
+
+  // Set raycast layers for X-Ray mode:
+  // - Panel face: PANEL_FACE layer (disabled in X-Ray mode)
+  // - Panel edge: PANEL_EDGE layer (always active for selection)
+  useEffect(() => {
+    if (meshRef.current) {
+      setObjectLayer(meshRef.current, RAY_LAYERS.PANEL_FACE);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (edgesRef.current) {
+      setObjectLayer(edgesRef.current, RAY_LAYERS.PANEL_EDGE);
+    }
+  }, [xRayMode]); // Re-run when edges are conditionally rendered
+
+  // Check if in glue mode - panel clicks should pass through
+  const activeTool = useToolStore((s) => s.activeTool);
+  const isPanelGlueMode = activeTool === 'glue';
+
+  // T017: RAF-gated hover handlers to prevent pointer jitter spam
+  const hoverRaf = useRef<number | null>(null);
+  const pendingHoverId = useRef<string | null>(null);
+
+  const flushHover = useCallback(() => {
+    hoverRaf.current = null;
+    setHoveredPanel(pendingHoverId.current);
+  }, [setHoveredPanel]);
+
+  const scheduleHover = useCallback((id: string | null) => {
+    pendingHoverId.current = id;
+    if (hoverRaf.current != null) return; // Already scheduled
+    hoverRaf.current = requestAnimationFrame(flushHover);
+  }, [flushHover]);
+
+  // Cleanup RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverRaf.current != null) cancelAnimationFrame(hoverRaf.current);
+    };
+  }, []);
+
+  const handlePointerOver = useCallback((e: ThreeEvent<PointerEvent>) => {
+    if (isPanelGlueMode) return;
+    e.stopPropagation();
+    scheduleHover(panel.id);
+    document.body.style.cursor = 'pointer';
+  }, [isPanelGlueMode, panel.id, scheduleHover]);
+
+  const handlePointerOut = useCallback(() => {
+    if (isPanelGlueMode) return;
+    scheduleHover(null);
+    document.body.style.cursor = 'default';
+  }, [isPanelGlueMode, scheduleHover]);
+
+  // T017: TEXTURE_WIDTH_MM and TEXTURE_HEIGHT_MM hoisted to module level
+
   // Calculate geometry size based on panel role
   const [sizeX, sizeY, sizeZ] = useMemo(() => {
     const t = panel.computed.realThickness;
@@ -232,263 +1458,390 @@ function Panel3DComponent({ panel, baseColor, texture, edgeColor, edgeThickness,
     }
   }, [panel]);
   
+  // Helper to get edge material properties
+  const getEdgeMaterial = (edgeId: string | null | undefined) => {
+    if (!edgeId) return null;
+    const mat = edgeMaterials[edgeId];
+    return mat ? { color: mat.color, thickness: mat.thickness || 1 } : null;
+  };
+
   // Edge band strips - thin colored strips at the OUTER EDGE of the panel
   // Panel size is ALREADY reduced by edge thickness
   // So edge band sits AT THE OUTER EDGE making: Panel + Edge = Full Dimension
+  // Now each strip has its own color from per-panel edge material selection
+  // C) Edge band strips with per-edge material support
   const edgeBandStrips = useMemo(() => {
     const t = panel.computed.realThickness;
-    const et = Math.max(edgeThickness, 1); // Minimum 1mm for visibility
     const OFFSET = 0.2; // Tiny offset to prevent z-fighting
-    
+
     const strips: Array<{
+      edge: 'top' | 'bottom' | 'left' | 'right';  // C) Track which edge
       position: [number, number, number];
       size: [number, number, number];
+      color: string;
     }> = [];
-    
+
     // Skip back panel - no edge banding
     if (panel.role === 'BACK') return strips;
-    
-    // Get edge assignments from panel
-    const hasTop = panel.edges?.top != null && panel.edges.top !== '';
-    // const _hasBottom = panel.edges?.bottom != null && panel.edges.bottom !== '';
-    const hasLeft = panel.edges?.left != null && panel.edges.left !== '';
-    const hasRight = panel.edges?.right != null && panel.edges.right !== '';
-    
-    // Panel finishWidth/Height is ALREADY reduced by edge thickness
-    // Edge band sits at the OUTER edge of the panel
-    
+
+    // Get edge materials for all 4 sides
+    const topEdge = getEdgeMaterial(panel.edges?.top);       // Front edge
+    const bottomEdge = getEdgeMaterial(panel.edges?.bottom); // Back edge
+    const leftEdge = getEdgeMaterial(panel.edges?.left);     // Left/Top edge
+    const rightEdge = getEdgeMaterial(panel.edges?.right);   // Right/Bottom edge
+
+    // Use default edge thickness for layout calculation, but each strip gets its own color
+    const et = Math.max(edgeThickness, 1); // Minimum 1mm for visibility
+
     switch (panel.role) {
       case 'LEFT_SIDE':
       case 'RIGHT_SIDE':
         // Side panels: sizeX=t, sizeY=height, sizeZ=depth (finishWidth)
-        // hasTop = front edge, hasLeft = top edge, hasRight = bottom edge
-        
-        // Front edge - at Z = panel.finishWidth/2 + et/2 (OUTER edge)
-        if (hasTop) strips.push({
-          position: [0, 0, panel.finishWidth/2 + et/2],
-          size: [t + OFFSET, panel.finishHeight + (hasLeft ? et : 0) + (hasRight ? et : 0), et],
+        // Edge bands sit AT the panel edge (flush with cabinet), not outside
+
+        // Front edge - at Z = panel.finishWidth/2 - et/2 (flush with panel front)
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, 0, panel.finishWidth/2 - et/2],
+          size: [t + OFFSET, panel.finishHeight, et],
+          color: topEdge.color,
         });
-        // Top edge - at Y = panel.finishHeight/2 + et/2 (OUTER edge)
-        if (hasLeft) strips.push({
-          position: [0, panel.finishHeight/2 + et/2, hasTop ? 0 : 0],
-          size: [t + OFFSET, et, panel.finishWidth + (hasTop ? et : 0)],
+        // Back edge - at Z = -panel.finishWidth/2 + et/2 (flush with panel back)
+        if (bottomEdge) strips.push({
+          edge: 'bottom',
+          position: [0, 0, -panel.finishWidth/2 + et/2],
+          size: [t + OFFSET, panel.finishHeight, et],
+          color: bottomEdge.color,
         });
-        // Bottom edge - at Y = -panel.finishHeight/2 - et/2 (OUTER edge)
-        if (hasRight) strips.push({
-          position: [0, -panel.finishHeight/2 - et/2, hasTop ? 0 : 0],
-          size: [t + OFFSET, et, panel.finishWidth + (hasTop ? et : 0)],
+        // Top edge - at Y = panel.finishHeight/2 - et/2 (flush with panel top)
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [0, panel.finishHeight/2 - et/2, 0],
+          size: [t + OFFSET, et, panel.finishWidth],
+          color: leftEdge.color,
+        });
+        // Bottom edge - at Y = -panel.finishHeight/2 + et/2 (flush with panel bottom)
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [0, -panel.finishHeight/2 + et/2, 0],
+          size: [t + OFFSET, et, panel.finishWidth],
+          color: rightEdge.color,
         });
         break;
-        
+
       case 'TOP':
       case 'BOTTOM':
       case 'SHELF':
         // Horizontal panels: sizeX=width (finishWidth), sizeY=t, sizeZ=depth (finishHeight)
-        // hasTop = front edge, hasLeft = left edge, hasRight = right edge
-        
-        // Front edge - at Z = panel.finishHeight/2 + et/2 (OUTER edge)
-        if (hasTop) strips.push({
-          position: [0, 0, panel.finishHeight/2 + et/2],
-          size: [panel.finishWidth + (hasLeft ? et : 0) + (hasRight ? et : 0), t + OFFSET, et],
+        // Edge bands sit AT the panel edge (flush with cabinet), not outside
+
+        // Front edge - at Z = panel.finishHeight/2 - et/2 (flush with panel front)
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, 0, panel.finishHeight/2 - et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: topEdge.color,
         });
-        // Left edge - at X = -panel.finishWidth/2 - et/2 (OUTER edge)
-        if (hasLeft) strips.push({
-          position: [-panel.finishWidth/2 - et/2, 0, hasTop ? 0 : 0],
-          size: [et, t + OFFSET, panel.finishHeight + (hasTop ? et : 0)],
+        // Back edge - at Z = -panel.finishHeight/2 + et/2 (flush with panel back)
+        if (bottomEdge) strips.push({
+          edge: 'bottom',
+          position: [0, 0, -panel.finishHeight/2 + et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: bottomEdge.color,
         });
-        // Right edge - at X = panel.finishWidth/2 + et/2 (OUTER edge)
-        if (hasRight) strips.push({
-          position: [panel.finishWidth/2 + et/2, 0, hasTop ? 0 : 0],
-          size: [et, t + OFFSET, panel.finishHeight + (hasTop ? et : 0)],
+        // Left edge - at X = -panel.finishWidth/2 + et/2 (flush with panel left)
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [-panel.finishWidth/2 + et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: leftEdge.color,
+        });
+        // Right edge - at X = panel.finishWidth/2 - et/2 (flush with panel right)
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [panel.finishWidth/2 - et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: rightEdge.color,
         });
         break;
-        
+
       case 'DIVIDER':
         // Divider: vertical panel, sizeX=t, sizeY=height, sizeZ=depth (finishWidth)
-        // hasTop = front edge
-        
-        // Front edge - at Z = panel.finishWidth/2 + et/2 (OUTER edge)
-        if (hasTop) strips.push({
-          position: [0, 0, panel.finishWidth/2 + et/2],
+        // Only render FRONT edge - top/bottom edges are hidden by Top/Bottom/Shelf panels
+        // Back edge is against the back panel, usually not visible
+
+        // Front edge only - at Z = panel.finishWidth/2 - et/2 (flush with panel front)
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, 0, panel.finishWidth/2 - et/2],
           size: [t + OFFSET, panel.finishHeight, et],
+          color: topEdge.color,
         });
+        // Skip top/bottom/back edges for dividers - they are hidden by other panels
         break;
     }
-    
+
     return strips;
-  }, [panel, edgeThickness]);
+  }, [
+    // T017: Narrowed deps to specific fields to avoid rebuilds when unrelated panel props change
+    panel.finishWidth,
+    panel.finishHeight,
+    panel.computed.realThickness,
+    panel.role,
+    panel.edges?.top,
+    panel.edges?.bottom,
+    panel.edges?.left,
+    panel.edges?.right,
+    edgeThickness,
+    edgeMaterials,
+  ]);
   
   // Color based on state
+  // Note: BACK panel now uses baseColor like other panels (has 2-side finish)
   const displayColor = useMemo(() => {
     if (isSelected) return '#4488ff';
     if (hovered) return '#6699ff';
-    switch (panel.role) {
-      case 'BACK': return '#3a3a3a';
-      default: return baseColor;
-    }
-  }, [isSelected, hovered, baseColor, panel.role]);
+    // All panels (including BACK) use baseColor as fallback
+    return baseColor;
+  }, [isSelected, hovered, baseColor]);
   
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
+    // In glue mode, let clicks pass through to face planes
+    if (isPanelGlueMode) {
+      return;
+    }
+    // When parent cabinet is NOT active, let click bubble to parent group for cabinet selection
+    // Only stop propagation when the cabinet is already active (for panel selection)
+    if (isParentCabinetActive) {
+      e.stopPropagation();
+    }
     onSelect();
+  };
+
+  const handleDoubleClick = (e: ThreeEvent<MouseEvent>) => {
+    // In glue mode, let events pass through
+    if (isPanelGlueMode) {
+      return;
+    }
+    // Same logic as handleClick - only stopPropagation when parent is active
+    if (isParentCabinetActive) {
+      e.stopPropagation();
+    }
+    onSelect();
+    if (onDoubleClick) {
+      onDoubleClick();
+    }
   };
   
   if (!panel.visible) return null;
   
-  // Show texture only when not selected/hovered and not back panel
-  const showTexture = texture && !isSelected && !hovered && panel.role !== 'BACK';
-  
+  // Show texture only when not selected/hovered
+  // Note: BACK panel now shows texture (has 2-side surface finish)
+  const showTexture = texture && !isSelected && !hovered;
+
   // Create geometry
   const geometry = useMemo(() => {
     return new BoxGeometry(sizeX, sizeY, sizeZ);
   }, [sizeX, sizeY, sizeZ]);
+
+  // Create edges geometry for X-Ray mode (no diagonals, only box edges)
+  const edgesGeometry = useMemo(() => {
+    return new EdgesGeometry(geometry);
+  }, [geometry]);
   
-  // Create NEW texture for this panel (not clone - clone shares source!)
-  // Each panel needs completely independent texture with its own repeat
+  // T016: Create per-panel texture with unique repeat settings
+  // FIX: Use new Texture() with shared source instead of clone() which doesn't work reliably in r3f
   useEffect(() => {
     if (!texture || !showTexture) {
       setPanelTexture(null);
       return;
     }
-    
-    // Get source canvas from original texture
-    const sourceCanvas = texture.image as HTMLCanvasElement;
-    if (!sourceCanvas) {
-      setPanelTexture(null);
-      return;
-    }
-    
-    // Create NEW canvas and copy image data
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = sourceCanvas.width;
-    newCanvas.height = sourceCanvas.height;
-    const ctx = newCanvas.getContext('2d');
-    
-    if (!ctx) {
-      setPanelTexture(null);
-      return;
-    }
-    
-    ctx.drawImage(sourceCanvas, 0, 0);
-    
-    // Create NEW texture from NEW canvas
-    const newTex = new CanvasTexture(newCanvas);
-    newTex.wrapS = RepeatWrapping;
-    newTex.wrapT = RepeatWrapping;
-    newTex.colorSpace = SRGBColorSpace;
-    
+
+    // FIX: Create a new Texture sharing the same source, not using clone()
+    // This ensures GPU upload works correctly in r3f
+    const panelTex = new Texture();
+
+    // Share the same source/image (memory efficient)
+    panelTex.source = texture.source;
+    panelTex.image = texture.image;
+
+    // Set per-panel settings
+    panelTex.wrapS = RepeatWrapping;
+    panelTex.wrapT = RepeatWrapping;
+    panelTex.colorSpace = SRGBColorSpace;
+
     // Calculate repeat based on panel dimensions (World-Scale UV)
-    // RepeatX = panel width / texture width
-    // RepeatY = panel height / texture height
     const repeatX = panel.finishWidth / TEXTURE_WIDTH_MM;
     const repeatY = panel.finishHeight / TEXTURE_HEIGHT_MM;
-    
-    newTex.repeat.set(repeatX, repeatY);
-    newTex.needsUpdate = true;
-    
-    setPanelTexture(newTex);
-    
-    // Cleanup
+    panelTex.repeat.set(repeatX, repeatY);
+
+    // Critical: Mark for GPU upload
+    panelTex.needsUpdate = true;
+
+    setPanelTexture(panelTex);
+
+    // Cleanup: dispose GPU resources (not the shared source)
     return () => {
-      newTex.dispose();
+      panelTex.dispose();
     };
   }, [texture, showTexture, panel.finishWidth, panel.finishHeight]);
-  
-  // Clone edge texture for this panel's edge bands
+
+  // Force material update when panelTexture changes (r3f texture binding fix)
   useEffect(() => {
-    if (!edgeTexture) {
-      setEdgeBandTexture(null);
-      return;
+    if (materialRef.current && panelTexture) {
+      materialRef.current.map = panelTexture;
+      materialRef.current.needsUpdate = true;
+      // Force r3f to re-render and upload texture to GPU
+      invalidate();
     }
-    
-    // Get source canvas from the edge texture
-    const sourceCanvas = edgeTexture.image as HTMLCanvasElement;
-    if (!sourceCanvas) {
-      setEdgeBandTexture(null);
-      return;
-    }
-    
-    // Create NEW canvas and copy image data for edge band
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = sourceCanvas.width;
-    newCanvas.height = sourceCanvas.height;
-    const ctx = newCanvas.getContext('2d');
-    
-    if (!ctx) {
-      setEdgeBandTexture(null);
-      return;
-    }
-    
-    ctx.drawImage(sourceCanvas, 0, 0);
-    
-    // Create NEW texture from NEW canvas
-    const newTex = new CanvasTexture(newCanvas);
-    newTex.wrapS = RepeatWrapping;
-    newTex.wrapT = RepeatWrapping;
-    newTex.colorSpace = SRGBColorSpace;
-    
-    // For edge band: texture wraps around the edge
-    // Edge band is thin, so we use a small repeat
-    const edgeRepeatX = Math.max(panel.finishWidth, panel.finishHeight) / TEXTURE_WIDTH_MM;
-    const edgeRepeatY = edgeThickness / 50; // Small repeat for thin edge
-    
-    newTex.repeat.set(edgeRepeatX, edgeRepeatY);
-    newTex.needsUpdate = true;
-    
-    setEdgeBandTexture(newTex);
-    
-    // Cleanup
-    return () => {
-      newTex.dispose();
-    };
-  }, [edgeTexture, panel.finishWidth, panel.finishHeight, edgeThickness]);
-  
+  }, [panelTexture, invalidate]);
+
+  // Note: Edge textures are now loaded per-strip in EdgeBandStripMesh component
+
+  // No-op raycast function to disable raycasting in glue mode
+  // This allows face boxes to receive events instead of panel meshes
+  const noopRaycast = () => {};
+
+  // T017: X-Ray, Ghost, Preview constants hoisted to module level
+
+  // Determine effective render mode (X-Ray takes precedence)
+  const effectiveMode = xRayMode ? 'XRAY' : renderMode;
+
   return (
     <group position={panel.position} rotation={panel.rotation}>
-      {/* Main panel mesh */}
+      {/* Main panel mesh - raycast disabled in glue mode to let face boxes receive events */}
       <mesh
         ref={meshRef}
         onClick={handleClick}
-        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
-        onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
-        castShadow
-        receiveShadow
+        onDoubleClick={handleDoubleClick}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+        raycast={isPanelGlueMode ? noopRaycast : undefined}
+        castShadow={effectiveMode === 'NORMAL'}
+        receiveShadow={effectiveMode === 'NORMAL'}
         geometry={geometry}
       >
-        <meshStandardMaterial
-          map={panelTexture}
-          color={panelTexture ? '#ffffff' : displayColor}
-          roughness={0.5}
-          metalness={0.1}
-          emissive={isSelected ? '#2244aa' : hovered ? '#223366' : '#000000'}
-          emissiveIntensity={isSelected ? 0.3 : hovered ? 0.15 : 0}
-        />
-      </mesh>
-      
-      {/* Edge Band Strips - thin colored strips on edge faces, INSIDE panel bounds */}
-      {edgeBandStrips.map((strip, idx) => (
-        <mesh
-          key={`edge-${idx}`}
-          position={strip.position}
-        >
-          <boxGeometry args={strip.size} />
-          <meshStandardMaterial
-            map={edgeBandTexture}
-            color={isSelected ? '#00aaff' : (edgeBandTexture ? '#ffffff' : edgeColor)}
-            roughness={0.3}
-            metalness={0.02}
+        {effectiveMode === 'XRAY' ? (
+          // X-Ray mode: transparent dark fill
+          <meshBasicMaterial
+            color={XRAY_FILL_COLOR}
+            transparent
+            opacity={XRAY_OPACITY}
+            depthWrite={false}
           />
-        </mesh>
-      ))}
-      
-      {/* Selection outline */}
-      {isSelected && (
-        <mesh geometry={geometry}>
-          <meshBasicMaterial color="#00aaff" wireframe />
-        </mesh>
+        ) : effectiveMode === 'GHOST' ? (
+          // Ghost mode: semi-transparent, dimmed (Indetails Smart pattern)
+          <meshStandardMaterial
+            color={GHOST_COLOR}
+            transparent
+            opacity={GHOST_OPACITY}
+            depthWrite={false}
+            roughness={1}
+            metalness={0}
+          />
+        ) : effectiveMode === 'PREVIEW' ? (
+          // Preview mode: highlighted with glow (Indetails Smart pattern)
+          <meshStandardMaterial
+            color={displayColor}
+            transparent
+            opacity={PREVIEW_OPACITY}
+            roughness={0.3}
+            metalness={0.2}
+            emissive={PREVIEW_COLOR}
+            emissiveIntensity={0.4}
+          />
+        ) : (
+          // Normal mode: textured/colored material
+          <meshStandardMaterial
+            ref={materialRef}
+            map={panelTexture}
+            color={panelTexture ? '#ffffff' : displayColor}
+            roughness={0.5}
+            metalness={0.1}
+            emissive={isSelected ? '#2244aa' : hovered ? '#223366' : '#000000'}
+            emissiveIntensity={isSelected ? 0.3 : hovered ? 0.15 : 0}
+          />
+        )}
+      </mesh>
+
+      {/* X-Ray edge outline (clean box edges, no triangulation diagonals) */}
+      {/* These edges are interactive in X-Ray mode for panel selection */}
+      {effectiveMode === 'XRAY' && (
+        <lineSegments
+          ref={edgesRef}
+          geometry={edgesGeometry}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick(e as unknown as ThreeEvent<MouseEvent>);
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            handleDoubleClick(e as unknown as ThreeEvent<MouseEvent>);
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            // T017: Only update if not already hovered
+            if (hoveredPanelId !== panel.id) {
+              setHoveredPanel(panel.id);
+            }
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            // T017: Only clear if this panel was hovered
+            if (hoveredPanelId === panel.id) {
+              setHoveredPanel(null);
+            }
+            document.body.style.cursor = 'default';
+          }}
+          onContextMenu={(e) => {
+            e.stopPropagation();
+            // Pass through to default context menu handling
+          }}
+        >
+          <lineBasicMaterial
+            color={hovered ? '#aaddff' : XRAY_WIRE_COLOR}
+            transparent
+            opacity={hovered ? 0.9 : 0.6}
+            depthTest={true}
+            depthWrite={false}
+          />
+        </lineSegments>
       )}
-      
-      {!hideTooltip && (hovered || isSelected) && (
+
+      {/* Preview mode outline (Indetails Smart pattern) */}
+      {effectiveMode === 'PREVIEW' && (
+        <lineSegments geometry={edgesGeometry}>
+          <lineBasicMaterial
+            color={PREVIEW_COLOR}
+            transparent
+            opacity={0.8}
+          />
+        </lineSegments>
+      )}
+
+      {/* C) Edge Band Strips - per-edge texture via EdgeBandStripMesh */}
+      {effectiveMode === 'NORMAL' && edgeBandStrips.map((strip, idx) => (
+        <EdgeBandStripMesh
+          key={`edge-${panel.id}-${strip.edge}-${idx}`}
+          panel={panel}
+          edge={strip.edge}
+          position={strip.position}
+          size={strip.size}
+          color={strip.color}
+          cabinetDefaultEdge={cabinetDefaultEdge}
+          isSelected={isSelected}
+        />
+      ))}
+
+      {/* Selection outline - only in normal mode */}
+      {isSelected && effectiveMode === 'NORMAL' && (
+        <lineSegments geometry={edgesGeometry}>
+          <lineBasicMaterial color="#00aaff" />
+        </lineSegments>
+      )}
+
+      {/* Tooltip - hidden in X-Ray/Ghost modes for cleaner view */}
+      {effectiveMode === 'NORMAL' && !hideTooltip && (hovered || isSelected) && (
         <Html
           position={[0, sizeY/2 + 30, 0]}
           center
@@ -507,123 +1860,7 @@ function Panel3DComponent({ panel, baseColor, texture, edgeColor, edgeThickness,
           </div>
         </Html>
       )}
-
-      {/* Per-panel dimension labels for Shelf and Divider */}
-      {showPanelDimensions && (panel.role === 'SHELF' || panel.role === 'DIVIDER') && (
-        <PanelDimensionLabel panel={panel} sizeY={sizeY} />
-      )}
     </group>
-  );
-}
-
-// Per-panel dimension label component for shelves and dividers
-interface PanelDimensionLabelProps {
-  panel: CabinetPanel;
-  sizeY: number;
-}
-
-function PanelDimensionLabel({ panel, sizeY }: PanelDimensionLabelProps) {
-  const updatePanelPositionOverride = useCabinetStore((s) => s.updatePanelPositionOverride);
-  const [editingField, setEditingField] = useState<'width' | 'depth' | null>(null);
-  const [inputValue, setInputValue] = useState('');
-
-  const handleClick = (field: 'width' | 'depth', value: number) => (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setInputValue(value.toString());
-    setEditingField(field);
-  };
-
-  const handleSubmit = (field: 'width' | 'depth') => {
-    const newValue = parseInt(inputValue, 10);
-    if (!isNaN(newValue) && newValue > 0) {
-      // For depth changes, calculate the corresponding setback changes
-      if (field === 'depth') {
-        const currentDepth = panel.finishHeight; // For shelf, finishHeight is depth
-        const depthChange = newValue - currentDepth;
-        // Adjust front setback (reduce it to increase depth)
-        const currentFrontSetback = panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback;
-        const newFrontSetback = Math.max(0, currentFrontSetback - depthChange);
-        updatePanelPositionOverride(panel.id, 'frontSetback', newFrontSetback);
-      }
-    }
-    setEditingField(null);
-  };
-
-  const handleKeyDown = (field: 'width' | 'depth') => (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit(field);
-    } else if (e.key === 'Escape') {
-      setEditingField(null);
-    }
-  };
-
-  // Position label on top of the panel
-  const labelY = sizeY / 2 + 15;
-
-  // Round dimensions for display (fix floating point precision)
-  const displayWidth = Math.round(panel.finishWidth * 10) / 10;
-  const displayDepth = Math.round(panel.finishHeight * 10) / 10;
-
-  return (
-    <Html position={[0, labelY, 0]} center style={{ pointerEvents: 'auto' }}>
-      <div
-        className="flex items-center gap-1 bg-emerald-900/90 border border-emerald-500/50 rounded px-2 py-1 text-[10px]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Width */}
-        {editingField === 'width' ? (
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown('width')}
-            onBlur={() => handleSubmit('width')}
-            autoFocus
-            className="w-12 bg-zinc-800 border border-emerald-400 rounded px-1 py-0 text-white text-center text-[10px] focus:outline-none"
-            min={1}
-          />
-        ) : (
-          <button
-            onClick={handleClick('width', displayWidth)}
-            className="text-emerald-300 hover:text-white font-mono cursor-pointer"
-            title="Width (read-only)"
-          >
-            {displayWidth}
-          </button>
-        )}
-
-        <span className="text-emerald-500/70">×</span>
-
-        {/* Depth */}
-        {editingField === 'depth' ? (
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown('depth')}
-            onBlur={() => handleSubmit('depth')}
-            autoFocus
-            className="w-12 bg-zinc-800 border border-emerald-400 rounded px-1 py-0 text-white text-center text-[10px] focus:outline-none"
-            min={1}
-          />
-        ) : (
-          <button
-            onClick={handleClick('depth', displayDepth)}
-            className="text-emerald-300 hover:text-white font-mono cursor-pointer"
-            title="Click to adjust depth"
-          >
-            {displayDepth}
-          </button>
-        )}
-
-        <span className="text-emerald-500/50 ml-0.5">mm</span>
-
-        {/* Custom position indicator */}
-        {panel.useCustomPosition && (
-          <span className="text-yellow-400 ml-1" title="Custom position">*</span>
-        )}
-      </div>
-    </Html>
   );
 }
 
@@ -1327,7 +2564,7 @@ function CompartmentInteraction() {
   if (!cabinet) return null;
 
   const { width: W, height: H, depth: D, toeKickHeight: Leg } = cabinet.dimensions;
-  const { panels } = cabinet;
+  const panels = cabinet.panels || [];
   const T = 18;
   const bodyH = H;
 
