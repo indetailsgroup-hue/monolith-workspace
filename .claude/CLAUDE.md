@@ -1,11 +1,11 @@
-# IIMOS Project Memory
+# Monolith Project Memory
 
 > This file is automatically read by Claude Code at the start of each session.
 > It contains project DNA, architecture decisions, and conventions.
 
 ## Project Overview
 
-**IIMOS** (Intelligent Industrial Manufacturing Operations System) - A cabinet design and factory manufacturing system with cryptographic trust chain for factory safety.
+**Monolith** - A built-in furniture design and factory manufacturing system with cryptographic trust chain for factory safety. Supports cabinets, wardrobes, shelving systems, and custom millwork.
 
 ## Tech Stack
 
@@ -106,3 +106,170 @@ error: '#ef4444'          // Red
 
 See `.claude/progress.md` for implementation status.
 See `.claude/decisions.md` for architectural decisions.
+
+---
+
+# PRPs (Personalized Response Prompts) for AI Agent
+
+> คำแนะนำสำหรับ Claude Code ในการเขียนโค้ดให้ตรงตาม standards ของ project
+
+## 🎯 Code Quality Standards
+
+### TypeScript Rules
+```typescript
+// ✅ ALWAYS use explicit types
+function calculateDistance(p1: Vec3, p2: Vec3): number { ... }
+
+// ❌ NEVER use 'any' without justification
+function process(data: any) { ... } // BAD
+
+// ✅ Use strict null checks
+const value = obj?.property ?? defaultValue;
+```
+
+### React Component Pattern
+```typescript
+// ✅ Preferred: Named exports with explicit props interface
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+export function Button({ label, onClick, disabled = false }: ButtonProps) {
+  return <button onClick={onClick} disabled={disabled}>{label}</button>;
+}
+
+// ❌ Avoid: Default exports, inline types
+export default function({ label, onClick }) { ... }
+```
+
+### Zustand Store Pattern
+```typescript
+// ✅ Standard store pattern
+interface FooState {
+  value: number;
+  setValue: (v: number) => void;
+}
+
+export const useFooStore = create<FooState>()((set) => ({
+  value: 0,
+  setValue: (v) => set({ value: v }),
+}));
+```
+
+## 🔧 Manufacturing/Hardware Rules
+
+### Minifix S200 Specifications (Häfele Standard)
+```typescript
+// CRITICAL: Distance B = 24mm per CAD spec (NOT 34mm)
+const DRILLING_DISTANCE_B = 24;  // mm - ขอบไม้ → แกนกลาง Bolt
+
+// Cam Housing (Häfele FF 3.10 catalog)
+const CAM_DIA = 15;              // mm - Ø15
+const CAM_DEPTH = 13.5;          // mm - for 18mm wood (project default)
+// Note: 12.5mm for 16mm wood, 14.0mm for 19mm wood
+
+// Bolt Sleeve
+const SLEEVE_DIA = 10;           // mm - Ø10
+const SLEEVE_LENGTH = 17.5;      // mm
+
+// System 32
+const FIRST_HOLE_Z = 37;         // mm - from front edge
+const PITCH = 32;                // mm - hole spacing
+```
+
+### Drill Map Generation Rules
+```typescript
+// ALWAYS use center-based coordinates
+// x < 0 = LEFT, x > 0 = RIGHT
+// y < 0 = BOTTOM, y > 0 = TOP
+// z < 0 = FRONT, z > 0 = BACK
+
+// NEVER use console.log in render paths
+// ALWAYS memoize geometry with useMemo
+// ALWAYS dispose textures in useEffect cleanup
+```
+
+## 🧪 Testing Requirements
+
+### Before Committing Code
+1. Run `npm run test:run` - Unit tests must pass
+2. Run `npm run typecheck:all` - No TypeScript errors
+3. Run `npx playwright test` - E2E tests must pass (when applicable)
+
+### Test File Naming
+```
+src/
+├── core/utils/snap.ts
+├── core/utils/__tests__/snap.test.ts  ✅ Correct
+├── core/utils/snap.test.ts            ❌ Wrong location
+```
+
+## 🚫 Anti-Patterns to Avoid
+
+### Performance Killers
+```typescript
+// ❌ console.log in render path
+function Component() {
+  console.log('render');  // NEVER - causes performance issues
+  return <div />;
+}
+
+// ❌ Creating objects in render without memoization
+function Component() {
+  const geometry = new BoxGeometry(1, 1, 1);  // Memory leak!
+  return <mesh geometry={geometry} />;
+}
+
+// ✅ Correct pattern
+function Component() {
+  const geometry = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  return <mesh geometry={geometry} />;
+}
+```
+
+### WebGL Context Lost Prevention
+```typescript
+// ✅ Use InstancedMesh for many similar objects
+<Instances limit={1000}>
+  <boxGeometry />
+  <meshBasicMaterial />
+  {items.map(item => <Instance key={item.id} position={item.pos} />)}
+</Instances>
+
+// ❌ Individual meshes for each item
+{items.map(item => (
+  <mesh key={item.id} position={item.pos}>
+    <boxGeometry />
+    <meshBasicMaterial />
+  </mesh>
+))}
+```
+
+## 📋 Commit Message Format
+```
+<type>(<scope>): <description>
+
+Types: feat, fix, refactor, test, docs, chore
+Scope: cabinet, drillmap, hardware, store, ui
+
+Examples:
+feat(drillmap): add System 32 auto-spacing
+fix(hardware): correct Distance B to 24mm per CAD spec
+refactor(store): remove console.log from render paths
+```
+
+## 🤖 Agent Automation Hooks
+
+### Pre-commit Verification
+```bash
+# Run before every commit
+npm run test:run && npm run typecheck:all
+```
+
+### Post-fix Verification
+```bash
+# After fixing bugs, verify with E2E
+npx playwright test --grep "@smoke"
+```

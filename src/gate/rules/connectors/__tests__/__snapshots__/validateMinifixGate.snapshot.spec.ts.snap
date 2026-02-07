@@ -1,0 +1,456 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch in multi-panel setup (patch path correctness) 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_BOLT_AXIS_NOT_POINTING",
+      "entityIds": [
+        "bolt-cross",
+        "cam-cross",
+      ],
+      "measured": {
+        "angle_deg": 18.00416160591337,
+        "axis_angle_to_C_A": 18.00416160591337,
+      },
+      "message": "Bolt axis does not point to cam pocket center (ball cannot enter pocket radially).",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": {
+        "angle_deg": 3,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_NOT_COAXIAL",
+      "entityIds": [
+        "cam-cross",
+        "bolt-cross",
+      ],
+      "measured": {
+        "radial_offset_mm": 3.25,
+      },
+      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position",
+        "strategy": "MOVE_BOLT_ALONG_PANEL",
+      },
+      "tolerance": {
+        "radial_mm": 0.2,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_Y_MISMATCH",
+      "entityIds": [
+        "cam-cross",
+        "bolt-cross",
+      ],
+      "measured": {
+        "delta_y_mm": 3.25,
+      },
+      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position/1",
+        "strategy": "SET_BOLT_Y_FROM_CAM",
+      },
+      "tolerance": {
+        "abs_mm": 0.2,
+      },
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch with deterministic patch path 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_BOLT_AXIS_NOT_POINTING",
+      "entityIds": [
+        "bolt-1",
+        "cam-1",
+      ],
+      "measured": {
+        "angle_deg": 11.309932474020195,
+        "axis_angle_to_C_A": 11.309932474020195,
+      },
+      "message": "Bolt axis does not point to cam pocket center (ball cannot enter pocket radially).",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": {
+        "angle_deg": 3,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_NOT_COAXIAL",
+      "entityIds": [
+        "cam-1",
+        "bolt-1",
+      ],
+      "measured": {
+        "radial_offset_mm": 2,
+      },
+      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position",
+        "strategy": "MOVE_BOLT_ALONG_PANEL",
+      },
+      "tolerance": {
+        "radial_mm": 0.2,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_Y_MISMATCH",
+      "entityIds": [
+        "cam-1",
+        "bolt-1",
+      ],
+      "measured": {
+        "delta_y_mm": 2,
+      },
+      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position/1",
+        "strategy": "SET_BOLT_Y_FROM_CAM",
+      },
+      "tolerance": {
+        "abs_mm": 0.2,
+      },
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: coaxial) > radial offset (coaxial failure) 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_BOLT_AXIS_NOT_POINTING",
+      "entityIds": [
+        "bolt-rad",
+        "cam-rad",
+      ],
+      "measured": {
+        "angle_deg": 26.679243620980575,
+        "axis_angle_to_C_A": 26.679243620980575,
+      },
+      "message": "Bolt axis does not point to cam pocket center (ball cannot enter pocket radially).",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": {
+        "angle_deg": 3,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_NOT_COAXIAL",
+      "entityIds": [
+        "cam-rad",
+        "bolt-rad",
+      ],
+      "measured": {
+        "radial_offset_mm": 5.024937810560445,
+      },
+      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position",
+        "strategy": "MOVE_BOLT_ALONG_PANEL",
+      },
+      "tolerance": {
+        "radial_mm": 0.2,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_Y_MISMATCH",
+      "entityIds": [
+        "cam-rad",
+        "bolt-rad",
+      ],
+      "measured": {
+        "delta_y_mm": 0.5,
+      },
+      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position/1",
+        "strategy": "SET_BOLT_Y_FROM_CAM",
+      },
+      "tolerance": {
+        "abs_mm": 0.2,
+      },
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: combined errors) > full validation pass (valid multi-pair Y alignment) 1`] = `
+{
+  "findings": [],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "PASS",
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: combined errors) > multiple errors: missing pairedHoleId + Y mismatch on another pair 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_MISSING_PAIRED_HOLE_ID",
+      "entityIds": [
+        "cam-1",
+      ],
+      "measured": undefined,
+      "message": "Cam HOUSING drill point is missing pairedHoleId; cannot form deterministic cam↔bolt pair.",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": undefined,
+    },
+    {
+      "code": "MONO_MINIFIX_BOLT_AXIS_NOT_POINTING",
+      "entityIds": [
+        "bolt-2",
+        "cam-2",
+      ],
+      "measured": {
+        "angle_deg": 16.699244233993618,
+        "axis_angle_to_C_A": 16.699244233993618,
+      },
+      "message": "Bolt axis does not point to cam pocket center (ball cannot enter pocket radially).",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": {
+        "angle_deg": 3,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_NOT_COAXIAL",
+      "entityIds": [
+        "cam-2",
+        "bolt-2",
+      ],
+      "measured": {
+        "radial_offset_mm": 3,
+      },
+      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position",
+        "strategy": "MOVE_BOLT_ALONG_PANEL",
+      },
+      "tolerance": {
+        "radial_mm": 0.2,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_Y_MISMATCH",
+      "entityIds": [
+        "cam-2",
+        "bolt-2",
+      ],
+      "measured": {
+        "delta_y_mm": 3,
+      },
+      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position/1",
+        "strategy": "SET_BOLT_Y_FROM_CAM",
+      },
+      "tolerance": {
+        "abs_mm": 0.2,
+      },
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 4,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: edge cases) > empty drillMap 1`] = `
+{
+  "findings": [],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "PASS",
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: edge cases) > no Minifix points (only shelf pins) 1`] = `
+{
+  "findings": [],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "PASS",
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: edge cases) > orphan bolt (no cam references it) 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_BOLT_AXIS_NOT_POINTING",
+      "entityIds": [
+        "bolt-1",
+        "cam-1",
+      ],
+      "measured": {
+        "angle_deg": 34.01934998982646,
+        "axis_angle_to_C_A": 34.01934998982646,
+      },
+      "message": "Bolt axis does not point to cam pocket center (ball cannot enter pocket radially).",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": {
+        "angle_deg": 3,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_NOT_COAXIAL",
+      "entityIds": [
+        "cam-1",
+        "bolt-1",
+      ],
+      "measured": {
+        "radial_offset_mm": 6.75,
+      },
+      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position",
+        "strategy": "MOVE_BOLT_ALONG_PANEL",
+      },
+      "tolerance": {
+        "radial_mm": 0.2,
+      },
+    },
+    {
+      "code": "MONO_MINIFIX_Y_MISMATCH",
+      "entityIds": [
+        "cam-1",
+        "bolt-1",
+      ],
+      "measured": {
+        "delta_y_mm": 6.75,
+      },
+      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "severity": "ERROR",
+      "suggestedFix": {
+        "hasPatch": true,
+        "patchOp": "replace",
+        "patchPathPattern": "/useDrillMapStore/drillMap/panels/[N]/points/[M]/position/1",
+        "strategy": "SET_BOLT_Y_FROM_CAM",
+      },
+      "tolerance": {
+        "abs_mm": 0.2,
+      },
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: pair integrity) > PAIR-001: missing pairedHoleId 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_MISSING_PAIRED_HOLE_ID",
+      "entityIds": [
+        "cam-1",
+      ],
+      "measured": undefined,
+      "message": "Cam HOUSING drill point is missing pairedHoleId; cannot form deterministic cam↔bolt pair.",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": undefined,
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 1,
+    "warnings": 0,
+  },
+}
+`;
+
+exports[`validateMinifixGate (snapshot: pair integrity) > PAIR-002: pairedHoleId not found 1`] = `
+{
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_PAIRED_HOLE_NOT_FOUND",
+      "entityIds": [
+        "cam-1",
+      ],
+      "measured": undefined,
+      "message": "pairedHoleId "nonexistent-bolt" does not match any bolt DrillMapPoint.id.",
+      "severity": "ERROR",
+      "suggestedFix": undefined,
+      "tolerance": undefined,
+    },
+  ],
+  "gate": "HARDWARE_CONNECTOR_VALIDATION",
+  "status": "FAIL",
+  "summary": {
+    "errors": 1,
+    "warnings": 0,
+  },
+}
+`;
