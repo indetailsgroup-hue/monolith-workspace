@@ -167,7 +167,7 @@ describe('compileConnectorOps', () => {
   // ──────────────────────────────────────────────────────────────────────
   // BOLT diameter and depth match catalog (Red Flag Guard)
   // ──────────────────────────────────────────────────────────────────────
-  it('BOLT dia=8mm, depth=34mm per Häfele S200 CNC spec', () => {
+  it('BOLT dia=7.5mm, depth=24mm per Häfele S200 catalog (Ø7.5 sleeve, B=24)', () => {
     const ops = compileConnectorOps(
       TEST_CONTEXT,
       HAFELE_MINIFIX_15_B24,
@@ -177,8 +177,8 @@ describe('compileConnectorOps', () => {
     );
 
     const boltOp = ops.find((op) => op.meta.featureId === 'BOLT')!;
-    expect(boltOp.params.dia).toBe(8);
-    expect(boltOp.params.depth).toBe(34);
+    expect(boltOp.params.dia).toBe(7.5);
+    expect(boltOp.params.depth).toBe(24);
   });
 
   // ──────────────────────────────────────────────────────────────────────

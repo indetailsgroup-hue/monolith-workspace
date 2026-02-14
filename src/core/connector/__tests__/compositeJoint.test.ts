@@ -133,14 +133,14 @@ describe('Composite Joint: Minifix + Wood Dowel', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────
-  // Minifix BOLT depth (34mm) ≠ Dowel depth (15mm)
+  // Minifix BOLT depth (24mm) ≠ Dowel depth (15mm)
   // ──────────────────────────────────────────────────────────────────────
-  it('Minifix BOLT depth=34mm, Dowel depth=15mm', () => {
+  it('Minifix BOLT depth=24mm, Dowel depth=15mm', () => {
     const { minifixOps, dowelOps } = compileCompositeJoint();
 
     const boltOps = minifixOps.filter((op) => op.meta.featureId === 'BOLT');
     for (const op of boltOps) {
-      expect(op.params.depth).toBe(34);
+      expect(op.params.depth).toBe(24);
     }
 
     for (const op of dowelOps) {

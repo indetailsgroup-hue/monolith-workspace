@@ -84,8 +84,8 @@ export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
       id: 'BOLT',
       kind: 'EDGE_BORE',
       role: 'STRUCTURAL',
-      diaMm: 8,
-      depthMm: 34,
+      diaMm: 7.5, // Ø7.5mm sleeve per Häfele S200 catalog
+      depthMm: 24, // Distance B = edge bore depth for B=24 variant
       refFrame: 'CORE',
       refSurface: 'INNER_FACE',
       refEdgePrimary: 'JOIN_EDGE',

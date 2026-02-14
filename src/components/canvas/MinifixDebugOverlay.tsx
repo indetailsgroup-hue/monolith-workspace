@@ -221,7 +221,7 @@ function BoltVisualization({
               whiteSpace: 'nowrap',
             }}
           >
-            BOLT Ø8
+            BOLT Ø7.5
           </div>
         </Html>
       )}

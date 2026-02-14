@@ -44,15 +44,15 @@ const CAD_COLORS: Record<DrillPurpose, string> = {
 // but 3D labels should show CNC catalog spec values per HAFELE_MINIFIX_15_B24.
 // ============================================
 
-/** CNC bolt bore diameter — Ø8mm (not assembly sleeve Ø10mm) */
-const CNC_BOLT_BORE_DIA = 8;
+/** CNC bolt bore diameter — Ø7.5mm sleeve per Häfele S200 catalog */
+const CNC_BOLT_BORE_DIA = 7.5;
 
-/** CNC bolt bore depth — 34mm per HAFELE_MINIFIX_15_B24.BOLT.depthMm */
-const CNC_BOLT_BORE_DEPTH = 34;
+/** CNC bolt bore depth — 24mm (Distance B) per Häfele S200 B=24 variant */
+const CNC_BOLT_BORE_DEPTH = 24;
 
 /**
  * Get CNC spec display values for a drill point.
- * BOLT purpose: overrides with CNC catalog values (Ø8, 34mm).
+ * BOLT purpose: overrides with CNC catalog values (Ø7.5, 24mm).
  * All other purposes: uses the drill map point values as-is.
  */
 function getCncDisplayValues(point: DrillMapPoint): { diameter: number; depth: number } {

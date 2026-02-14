@@ -5,12 +5,12 @@
  * catalog and compiler output. They exist because three bugs were found
  * where 3D preview labels showed wrong values:
  *
- *   BUG 1: Bolt bore dia showed Ø10 (assembly sleeve) instead of Ø8 (CNC spec)
- *   BUG 2: Bolt bore depth showed 17.5mm (drillMap domain) instead of 34mm (catalog)
+ *   BUG 1: Bolt bore dia showed Ø10 (assembly sleeve) instead of Ø7.5 (S200 sleeve)
+ *   BUG 2: Bolt bore depth showed 17.5mm (drillMap domain) instead of 24mm (Distance B)
  *   BUG 3: CAM depth showed 12.5mm (16mm wood) instead of 13.5mm (18mm default)
  *
  * ARCHITECTURE NOTE — Two Domains:
- *   Connector OS catalog (catalog.ts) → CNC drilling truth (Ø8, 34mm)
+ *   Connector OS catalog (catalog.ts) → CNC drilling truth (Ø7.5, 24mm)
  *   DrillMap manufacturing (minifixDefaults.ts) → panel bore depth (17.5mm)
  *   These are DIFFERENT domains with different correct values.
  *
@@ -73,9 +73,9 @@ describe('Catalog Spec Pinning: HAFELE_MINIFIX_15_B24', () => {
   });
 
   // --- BOLT feature pinning ---
-  it('BOLT: dia=8mm — NOT 10mm (Ø10 is assembly sleeve, Ø8 is CNC bore)', () => {
+  it('BOLT: dia=7.5mm — Ø7.5 sleeve per Häfele S200 catalog', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.diaMm).toBe(8);
+    expect(bolt.diaMm).toBe(7.5);
   });
 
   it('BOLT: dia must NOT be 10 (assembly sleeve diameter confusion)', () => {
@@ -83,9 +83,9 @@ describe('Catalog Spec Pinning: HAFELE_MINIFIX_15_B24', () => {
     expect(bolt.diaMm).not.toBe(10);
   });
 
-  it('BOLT: depth=34mm — NOT 17.5mm (17.5 is drillMap manufacturing domain)', () => {
+  it('BOLT: depth=24mm — Distance B for B=24 variant per Häfele S200', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.depthMm).toBe(34);
+    expect(bolt.depthMm).toBe(24);
   });
 
   it('BOLT: depth must NOT be 17.5 (drillMap domain confusion)', () => {
@@ -149,14 +149,14 @@ describe('Catalog Spec Pinning: HAFELE_WOOD_DOWEL_8x30', () => {
 // ──────────────────────────────────────────────────────────────────────────────
 
 describe('Compiler Output: BOLT diameter and depth validation', () => {
-  it('BOLT output dia=8mm after compilation (CNC bore, not assembly sleeve)', () => {
+  it('BOLT output dia=7.5mm after compilation (S200 sleeve, not assembly sleeve)', () => {
     const ops = compileConnectorOps(
       TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
       HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
     );
     const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
     expect(boltOp).toBeDefined();
-    expect(boltOp.params.dia).toBe(8);
+    expect(boltOp.params.dia).toBe(7.5);
   });
 
   it('BOLT output dia must NOT be 10 (regression: assembly sleeve contamination)', () => {
@@ -168,13 +168,13 @@ describe('Compiler Output: BOLT diameter and depth validation', () => {
     expect(boltOp.params.dia).not.toBe(10);
   });
 
-  it('BOLT output depth=34mm after compilation (catalog depth)', () => {
+  it('BOLT output depth=24mm after compilation (Distance B)', () => {
     const ops = compileConnectorOps(
       TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
       HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
     );
     const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
-    expect(boltOp.params.depth).toBe(34);
+    expect(boltOp.params.depth).toBe(24);
   });
 
   it('BOLT output depth must NOT be 17.5 (regression: drillMap domain leak)', () => {
@@ -279,16 +279,16 @@ describe('Cross-Domain Consistency: Catalog vs Assembly vs DrillMap', () => {
   /** Wrong CAM depth for 16mm wood (not 18mm default) */
   const WRONG_CAM_DEPTH_16MM = 12.5;
 
-  it('Catalog BOLT dia (8mm) differs from assembly sleeve dia (10mm)', () => {
+  it('Catalog BOLT dia (7.5mm) differs from assembly sleeve dia (10mm)', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     expect(bolt.diaMm).not.toBe(ASSEMBLY_SLEEVE_DIA);
-    expect(bolt.diaMm).toBe(8);
+    expect(bolt.diaMm).toBe(7.5);
   });
 
-  it('Catalog BOLT depth (34mm) differs from drillMap boltBoreDepth (17.5mm)', () => {
+  it('Catalog BOLT depth (24mm) differs from drillMap boltBoreDepth (17.5mm)', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     expect(bolt.depthMm).not.toBe(DRILLMAP_BOLT_BORE_DEPTH);
-    expect(bolt.depthMm).toBe(34);
+    expect(bolt.depthMm).toBe(24);
   });
 
   it('Catalog CAM depth (13.5mm) is for 18mm wood — NOT 12.5mm (16mm wood)', () => {
@@ -297,19 +297,21 @@ describe('Cross-Domain Consistency: Catalog vs Assembly vs DrillMap', () => {
     expect(cam.depthMm).toBe(13.5);
   });
 
-  it('Catalog BOLT dia (8) < CAM dia (15) — bolt is always smaller bore', () => {
+  it('Catalog BOLT dia (7.5) < CAM dia (15) — bolt is always smaller bore', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const cam = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'CAM')!;
     expect(bolt.diaMm).toBeLessThan(cam.diaMm);
   });
 
-  it('Wood Dowel dia (8mm) equals BOLT dia (8mm) — same drill bit', () => {
+  it('Wood Dowel dia (8mm) differs from BOLT dia (7.5mm) — different drill bits', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const dowelEdge = HAFELE_WOOD_DOWEL_8x30.features.find(f => f.id === 'DOWEL_EDGE')!;
-    expect(bolt.diaMm).toBe(dowelEdge.diaMm);
+    expect(bolt.diaMm).not.toBe(dowelEdge.diaMm);
+    expect(bolt.diaMm).toBe(7.5);
+    expect(dowelEdge.diaMm).toBe(8);
   });
 
-  it('BOLT depth (34mm) > Wood Dowel depth (15mm) — bolt bores deeper', () => {
+  it('BOLT depth (24mm) > Wood Dowel depth (15mm) — bolt bores deeper', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const dowelEdge = HAFELE_WOOD_DOWEL_8x30.features.find(f => f.id === 'DOWEL_EDGE')!;
     expect(bolt.depthMm).toBeGreaterThan(dowelEdge.depthMm);
@@ -340,12 +342,12 @@ describe('Full Compilation Round-Trip: Minifix at 3 S-positions', () => {
     }
   });
 
-  it('every BOLT op has dia=8, depth=34, U=0', () => {
+  it('every BOLT op has dia=7.5, depth=24, U=0', () => {
     const boltOps = ops.filter(op => op.meta.featureId === 'BOLT');
     expect(boltOps.length).toBe(3);
     for (const op of boltOps) {
-      expect(op.params.dia).toBe(8);
-      expect(op.params.depth).toBe(34);
+      expect(op.params.dia).toBe(7.5);
+      expect(op.params.depth).toBe(24);
       expect(op.params.u).toBe(0);
     }
   });

@@ -136,14 +136,14 @@ export const CAM_SPECS_BY_WOOD_THICKNESS: Record<number, { drillingDepth: number
 // CNC DRILLING SPEC LABELS (from Connector OS catalog)
 // These differ from assembly physical dimensions:
 //   Assembly: Ø10 sleeve, 14.25mm sleeve length, 17.5mm bore
-//   CNC Spec: Ø8 bolt bore, 34mm bore depth (per HAFELE_MINIFIX_15_B24)
+//   CNC Spec: Ø7.5 bolt bore, 24mm bore depth (per Häfele S200 B=24)
 // ============================================
 
-/** CNC bolt bore diameter — Ø8mm (not assembly sleeve Ø10mm) */
-const CNC_BOLT_BORE_DIA = 8;
+/** CNC bolt bore diameter — Ø7.5mm sleeve per Häfele S200 catalog */
+const CNC_BOLT_BORE_DIA = 7.5;
 
-/** CNC bolt bore depth — 34mm per HAFELE_MINIFIX_15_B24.BOLT.depthMm */
-const CNC_BOLT_BORE_DEPTH = 34;
+/** CNC bolt bore depth — 24mm (Distance B) per Häfele S200 B=24 variant */
+const CNC_BOLT_BORE_DEPTH = 24;
 
 export const DEFAULT_MINIFIX_CONFIG: MinifixFullConfig = {
   minifixType: '15',
