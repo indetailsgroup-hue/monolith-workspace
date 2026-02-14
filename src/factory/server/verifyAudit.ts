@@ -163,28 +163,75 @@ function writeStructuredLog(entry: VerifyAuditEntry): void {
 // ============================================================================
 
 /**
+ * Alert severity levels for verification failures
+ */
+type AlertSeverity = "low" | "medium" | "high" | "critical";
+
+/**
+ * Determine alert severity based on entry characteristics
+ */
+function determineAlertSeverity(entry: VerifyAuditEntry): AlertSeverity {
+  if (entry.securityAlert) return "critical";
+  if (entry.error?.includes("timeout")) return "medium";
+  if (entry.verdict === "FAIL") return "high";
+  if (entry.truncated) return "low";
+  return "medium";
+}
+
+/**
  * Handle security alert entries.
  * These require immediate attention.
+ *
+ * Current implementation uses console-based alerting with structured output.
+ * Production integration points are documented for future enhancement.
  */
 async function handleSecurityAlert(entry: VerifyAuditEntry): Promise<void> {
+  const severity = determineAlertSeverity(entry);
+
   const alertEntry = {
     level: "SECURITY_ALERT",
+    severity,
     event: "verify_security_alert",
     data: {
       auditId: entry.id,
       jobId: entry.jobId,
+      verdict: entry.verdict,
+      code: entry.code,
       error: entry.error,
       timestamp: entry.timestamp,
+      durationMs: entry.durationMs,
     },
+    // Action recommendations based on severity
+    recommendations:
+      severity === "critical"
+        ? ["Investigate immediately", "Consider blocking operations", "Check for data integrity"]
+        : severity === "high"
+        ? ["Review verification logs", "Check job configuration"]
+        : ["Monitor for recurring issues"],
   };
 
-  // In production: send to security monitoring system
+  // Primary alert: Structured JSON to stderr for log aggregation
   console.error(JSON.stringify(alertEntry));
 
-  // TODO: Implement actual alerting
-  // - Send to Slack/PagerDuty
-  // - Create incident ticket
-  // - Block further operations
+  // Secondary alert: Human-readable warning for development
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      `\n⚠️  VERIFICATION ALERT [${severity.toUpperCase()}]\n` +
+        `   Job: ${entry.jobId}\n` +
+        `   Audit ID: ${entry.id}\n` +
+        `   Error: ${entry.error || "Unknown"}\n` +
+        `   Time: ${entry.timestamp}\n`
+    );
+  }
+
+  // Production Integration Points (implement when infrastructure ready):
+  // 1. Slack/PagerDuty: POST to webhook URL with alertEntry payload
+  //    - Critical/High: Immediate notification channel
+  //    - Medium/Low: Monitoring channel
+  // 2. Incident Ticketing: POST to JIRA/ServiceNow API
+  //    - Auto-create ticket for critical alerts
+  // 3. Circuit Breaker: Track failure rate in Redis/memory
+  //    - Block operations if failure rate exceeds threshold
 }
 
 // ============================================================================

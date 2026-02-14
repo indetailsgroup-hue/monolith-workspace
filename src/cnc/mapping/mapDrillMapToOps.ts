@@ -1,337 +1,426 @@
 /**
- * mapDrillMapToOps.ts - Map DrillMap to CNC Operations
+ * mapDrillMapToOps - v2.0 (Clean Rebuild)
  *
- * Converts factory packet drill map to machine-specific drill operations.
+ * Converts DrillMap to CNC operations.
+ * Maps DrillMapPoints to appropriate DrillOperation or BoreOperation based on:
+ * - Diameter: small (<=8mm) -> DRILL, large (>8mm) -> BORE
+ * - Purpose: HINGE, SHELF_PIN, DOWEL -> DRILL; CAM_LOCK, MINIFIX -> BORE
  *
- * @version 1.1.0 - Phase D4.1: Added workpiece transform support
+ * @version 2.0.0 - Phase D1: Full implementation
  */
 
-import type { PacketDrillMap, PacketDrillPoint, PacketDrillPanel } from '../../factory/packet/types';
+import type {
+  DrillMap,
+  DrillMapPanel,
+  DrillMapPoint,
+  DrillPurpose,
+} from '../../core/manufacturing/drillMap/types';
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getToolByDiameter } from '../machine/machineProfile';
-import type { DrillOperation, BoreOperation, Operation, Position3D } from '../operation/operationTypes';
 import type {
-  WorkpieceTransformContext,
-  OperationWorkpieceContext,
-  PanelFace,
-} from '../transform/workpieceTypes';
-import {
-  transformToMachine,
-  createIdentityContext,
-} from '../transform';
+  Operation,
+  DrillOperation,
+  BoreOperation,
+  Position3D,
+} from '../operation/operationTypes';
+import type { WorkpieceTransformContext, OperationWorkpieceContext } from '../transform/workpieceTypes';
+import { transformToMachine } from '../transform/transformPrimitives';
 
 // ============================================
 // TYPES
 // ============================================
 
-export interface MapDrillResult {
-  /** Successfully mapped operations */
-  operations: Operation[];
-  /** Points that couldn't be mapped (no suitable tool) */
-  unmappedPoints: PacketDrillPoint[];
-  /** Warnings (e.g., tool substitution) */
-  warnings: string[];
-}
-
 export interface MapDrillOptions {
-  /** Use peck drilling for deep holes */
-  usePeckDrilling?: boolean;
-  /** Peck depth as fraction of tool diameter (default: 1.5) */
-  peckDepthRatio?: number;
-  /** Allow tool diameter substitution within tolerance (mm) */
-  diameterTolerance?: number;
-  /**
-   * Workpiece transform contexts per panel.
-   * Key is panelId, value is the transform context.
-   * If not provided, positions are used as-is (identity transform).
-   * @since D4.1
-   */
+  toolDiameter?: number;
+  feedRate?: number;
+  spindleSpeed?: number;
+  /** Optional workpiece transform contexts keyed by panel ID */
   workpieceTransforms?: Map<string, WorkpieceTransformContext>;
-  /**
-   * Whether to attach workpiece context to operations.
-   * Default: true if workpieceTransforms is provided, false otherwise.
-   * @since D4.1
-   */
+  /** Whether to attach workpiece context to operations */
   attachWorkpieceContext?: boolean;
+  /** Skip points with ERROR status */
+  skipErrorPoints?: boolean;
+  /** Skip points with WARNING status */
+  skipWarningPoints?: boolean;
+  /** Default peck depth for deep holes (mm) */
+  defaultPeckDepth?: number;
 }
 
-const DEFAULT_OPTIONS: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'> = {
-  usePeckDrilling: true,
-  peckDepthRatio: 1.5,
-  diameterTolerance: 0.5,
-};
-
-/**
- * Internal point with panel context attached
- */
-interface PointWithPanelContext {
-  point: PacketDrillPoint;
-  panelId: string;
-  panelDimensions: [number, number, number];
+export interface MapDrillResult {
+  operations: Operation[];
+  stats: {
+    totalOps: number;
+    drillOps: number;
+    boreOps: number;
+  };
+  warnings?: string[];
+  unmappedPoints?: DrillMapPoint[];
 }
 
 // ============================================
-// MAPPER
+// CONSTANTS
+// ============================================
+
+/** Diameter threshold: <=8mm = DRILL, >8mm = BORE */
+const DIAMETER_THRESHOLD = 8;
+
+/** Standard hinge cup diameter (mm) */
+const HINGE_CUP_DIAMETER = 35;
+
+/** Standard cam lock diameter (mm) */
+const CAM_LOCK_DIAMETER = 15;
+
+/** Default peck depth for deep holes (mm) */
+const DEFAULT_PECK_DEPTH = 10;
+
+/** Depth threshold for peck drilling (mm) */
+const PECK_DEPTH_THRESHOLD = 15;
+
+// ============================================
+// MAIN FUNCTION
 // ============================================
 
 /**
- * Map drill map points to CNC drill/bore operations
+ * Map DrillMap to CNC operations
  *
- * @param drillMap - Drill map from verified packet
- * @param machine - Target machine profile
+ * @param drillMap - DrillMap containing panels with drill points
+ * @param machine - Optional machine profile for tool selection
  * @param options - Mapping options
- * @returns Mapped operations with any unmapped points
+ * @returns MapDrillResult with operations, stats, warnings, and unmapped points
  */
 export function mapDrillMapToOps(
-  drillMap: PacketDrillMap,
-  machine: MachineProfile,
-  options: MapDrillOptions = {}
+  drillMap: DrillMap,
+  machine?: MachineProfile,
+  options?: MapDrillOptions
 ): MapDrillResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const { workpieceTransforms } = options;
-  const attachContext = options.attachWorkpieceContext ?? (workpieceTransforms !== undefined);
-
   const operations: Operation[] = [];
-  const unmappedPoints: PacketDrillPoint[] = [];
   const warnings: string[] = [];
+  const unmappedPoints: DrillMapPoint[] = [];
 
-  // Process each panel with its context
+  const opts: Required<MapDrillOptions> = {
+    toolDiameter: options?.toolDiameter ?? 0,
+    feedRate: options?.feedRate ?? 0,
+    spindleSpeed: options?.spindleSpeed ?? 0,
+    workpieceTransforms: options?.workpieceTransforms ?? new Map(),
+    attachWorkpieceContext: options?.attachWorkpieceContext ?? false,
+    skipErrorPoints: options?.skipErrorPoints ?? true,
+    skipWarningPoints: options?.skipWarningPoints ?? false,
+    defaultPeckDepth: options?.defaultPeckDepth ?? DEFAULT_PECK_DEPTH,
+  };
+
+  // Process each panel
   for (const panel of drillMap.panels) {
-    // Get transform context for this panel (or create identity)
-    const transformContext = workpieceTransforms?.get(panel.panelId)
-      ?? createIdentityContextForPanel(panel);
+    const workpieceContext = opts.workpieceTransforms.get(panel.panelId);
 
     for (const point of panel.points) {
-      const pointWithContext: PointWithPanelContext = {
-        point,
-        panelId: panel.panelId,
-        panelDimensions: panel.dimensions,
-      };
+      // Skip based on status
+      if (opts.skipErrorPoints && point.status === 'ERROR') {
+        warnings.push(`Skipping error point ${point.id}: ${point.statusMessage ?? point.issues?.join(', ') ?? 'unknown error'}`);
+        unmappedPoints.push(point);
+        continue;
+      }
+      if (opts.skipWarningPoints && point.status === 'WARNING') {
+        warnings.push(`Skipping warning point ${point.id}: ${point.statusMessage ?? point.issues?.join(', ') ?? 'unknown warning'}`);
+        unmappedPoints.push(point);
+        continue;
+      }
 
-      const result = mapSinglePoint(
-        pointWithContext,
-        machine,
-        opts,
-        warnings,
-        transformContext,
-        attachContext
-      );
+      // Validate blind hole depth vs panel thickness
+      if (!point.throughHole && panel.dimensions?.thickness && point.depth > panel.dimensions.thickness) {
+        warnings.push(
+          `Point ${point.id}: blind hole depth ${point.depth}mm exceeds panel thickness ${panel.dimensions.thickness}mm (panel: ${panel.panelId})`
+        );
+      }
 
-      if (result) {
-        operations.push(result);
+      // Map point to operation
+      const op = mapPointToOperation(point, panel, machine, opts, warnings);
+      if (op) {
+        // D4: Apply workpiece transform if context provided
+        if (opts.attachWorkpieceContext && workpieceContext) {
+          // Store original workpiece position
+          const originalPosition = { ...op.position };
+
+          // Transform from workpiece coordinates to machine coordinates
+          const transformResult = transformToMachine(op.position, workpieceContext);
+
+          // Apply transformed position
+          op.position = transformResult.machinePosition;
+
+          // Attach context with original position for audit trail
+          op.workpieceContext = {
+            ...transformResult.context,
+            workpiecePosition: originalPosition,
+          };
+        }
+        operations.push(op);
       } else {
         unmappedPoints.push(point);
+        warnings.push(`Could not map point ${point.id} (purpose: ${point.purpose}, diameter: ${point.diameter}mm)`);
       }
     }
   }
 
-  return { operations, unmappedPoints, warnings };
-}
+  // Compute stats
+  const stats = computeStats(operations);
 
-/**
- * Create identity transform context for a panel (no transformation).
- */
-function createIdentityContextForPanel(panel: PacketDrillPanel): WorkpieceTransformContext {
   return {
-    panelId: panel.panelId,
-    frame: {
-      datum: 'FRONT_LEFT',
-      face: 'TOP',
-      dimensions: {
-        length: panel.dimensions[0],
-        width: panel.dimensions[1],
-        thickness: panel.dimensions[2],
-      },
-    },
-    placement: {
-      offset: { x: 0, y: 0, z: 0 },
-      rotationZ: 0,
-    },
+    operations,
+    stats,
+    warnings: warnings.length > 0 ? warnings : undefined,
+    unmappedPoints: unmappedPoints.length > 0 ? unmappedPoints : undefined,
   };
 }
 
+// ============================================
+// POINT TO OPERATION MAPPING
+// ============================================
+
 /**
- * Map a single drill point to an operation
+ * Map a single DrillMapPoint to an Operation
  */
-function mapSinglePoint(
-  pointCtx: PointWithPanelContext,
-  machine: MachineProfile,
-  opts: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'>,
-  warnings: string[],
-  transformContext: WorkpieceTransformContext,
-  attachContext: boolean
+function mapPointToOperation(
+  point: DrillMapPoint,
+  panel: DrillMapPanel,
+  machine: MachineProfile | undefined,
+  opts: Required<MapDrillOptions>,
+  warnings: string[]
 ): Operation | null {
-  const { point, panelId } = pointCtx;
+  // Determine operation type based on purpose and diameter
+  switch (point.purpose) {
+    case 'HINGE':
+      return createHingeCupOp(point, panel, machine, opts, warnings);
 
-  // Determine if this is a bore (large diameter) or drill
-  const isBore = point.diameter >= 15;
-  const toolType = isBore ? 'BORE' : 'DRILL';
+    case 'SHELF_PIN':
+    case 'DOWEL':
+      return createDrillOp(point, panel, machine, opts, warnings);
 
-  // Find matching tool
-  let tool = getToolByDiameter(machine, point.diameter, toolType);
+    case 'CAM_LOCK':
+    case 'MINIFIX':
+      return createBoreOp(point, panel, machine, opts, warnings);
 
-  // If no exact match, try within tolerance
-  if (!tool && opts.diameterTolerance > 0) {
-    tool = findToolWithinTolerance(machine, point.diameter, toolType, opts.diameterTolerance);
-    if (tool) {
-      warnings.push(
-        `Point ${point.id}: Using ${tool.toolId} (${tool.diameter}mm) for requested ${point.diameter}mm`
-      );
-    }
+    case 'BOLT':
+      // Bolt holes can be either drill or bore depending on diameter
+      if (point.diameter > DIAMETER_THRESHOLD) {
+        return createBoreOp(point, panel, machine, opts, warnings);
+      } else {
+        return createDrillOp(point, panel, machine, opts, warnings);
+      }
+
+    case 'OTHER':
+    default:
+      // Default: use diameter to determine operation type
+      if (point.diameter > DIAMETER_THRESHOLD) {
+        return createBoreOp(point, panel, machine, opts, warnings);
+      } else {
+        return createDrillOp(point, panel, machine, opts, warnings);
+      }
   }
+}
+
+// ============================================
+// OPERATION CREATORS
+// ============================================
+
+/**
+ * Create a hinge cup boring operation (typically 35mm)
+ */
+function createHingeCupOp(
+  point: DrillMapPoint,
+  panel: DrillMapPanel,
+  machine: MachineProfile | undefined,
+  opts: Required<MapDrillOptions>,
+  warnings: string[]
+): BoreOperation | null {
+  const diameter = point.diameter || HINGE_CUP_DIAMETER;
+  const tool = findTool(machine, diameter, 'BORE', opts);
 
   if (!tool) {
-    warnings.push(
-      `Point ${point.id}: No suitable ${toolType} tool for diameter ${point.diameter}mm`
-    );
-    return null;
+    warnings.push(`No ${diameter}mm bore tool available for hinge cup at point ${point.id}`);
+    // Still create operation with placeholder tool
   }
 
-  // Check depth
-  if (point.depth > tool.maxDepth) {
-    warnings.push(
-      `Point ${point.id}: Depth ${point.depth}mm exceeds tool max depth ${tool.maxDepth}mm`
-    );
-    // Still create the operation but flag it
-  }
+  const position = convertPosition(point.position);
+  validateDepth(point, tool, warnings);
 
-  // Transform position from workpiece to machine coordinates
-  const workpiecePos: Position3D = {
-    x: point.position[0],
-    y: point.position[1],
-    z: point.position[2],
+  return {
+    type: 'BORE',
+    id: `hinge-${point.id}`,
+    sourceId: point.id,
+    toolId: tool?.toolId ?? `bore-${diameter}mm`,
+    position,
+    diameter,
+    depth: point.depth,
+    flatBottom: true, // Hinge cups need flat bottom
+    feedRate: opts.feedRate || tool?.defaultFeedRate,
+    comment: `Hinge cup (panel: ${panel.panelId})`,
   };
+}
 
-  const transformResult = transformToMachine(workpiecePos, transformContext);
-  const machinePos = transformResult.machinePosition;
+/**
+ * Create a drill operation for small holes
+ */
+function createDrillOp(
+  point: DrillMapPoint,
+  panel: DrillMapPanel,
+  machine: MachineProfile | undefined,
+  opts: Required<MapDrillOptions>,
+  warnings: string[]
+): DrillOperation | null {
+  const diameter = opts.toolDiameter || point.diameter;
+  const tool = findTool(machine, diameter, 'DRILL', opts);
 
-  // Build workpiece context for operation (if attaching)
-  const workpieceContext: OperationWorkpieceContext | undefined = attachContext
-    ? {
-        panelId,
-        face: transformContext.frame.face,
-        appliedOffset: transformContext.placement.offset,
-      }
-    : undefined;
-
-  // Create operation
-  if (isBore) {
-    return createBoreOperation(point, tool, machinePos, workpieceContext);
-  } else {
-    return createDrillOperation(point, tool, opts, machinePos, workpieceContext);
+  if (!tool) {
+    warnings.push(`No ${diameter}mm drill tool available for point ${point.id}`);
   }
-}
 
-/**
- * Find a tool within diameter tolerance
- */
-function findToolWithinTolerance(
-  machine: MachineProfile,
-  diameter: number,
-  type: 'DRILL' | 'BORE',
-  tolerance: number
-): ToolCapability | undefined {
-  const candidates = machine.tools.filter(
-    (t) =>
-      t.type === type &&
-      Math.abs(t.diameter - diameter) <= tolerance
-  );
+  const position = convertPosition(point.position);
+  validateDepth(point, tool, warnings);
 
-  if (candidates.length === 0) return undefined;
-
-  // Prefer larger tool if within tolerance (safer)
-  candidates.sort((a, b) => {
-    const aDiff = a.diameter - diameter;
-    const bDiff = b.diameter - diameter;
-    // Prefer positive difference (larger), then smaller absolute difference
-    if (aDiff >= 0 && bDiff < 0) return -1;
-    if (aDiff < 0 && bDiff >= 0) return 1;
-    return Math.abs(aDiff) - Math.abs(bDiff);
-  });
-
-  return candidates[0];
-}
-
-/**
- * Create a drill operation from a drill point
- */
-function createDrillOperation(
-  point: PacketDrillPoint,
-  tool: ToolCapability,
-  opts: Omit<Required<MapDrillOptions>, 'workpieceTransforms' | 'attachWorkpieceContext'>,
-  machinePos: Position3D,
-  workpieceContext?: OperationWorkpieceContext
-): DrillOperation {
-  // Calculate peck depth for deep holes
-  const needsPeck = opts.usePeckDrilling &&
-    tool.supportsPeck &&
-    point.depth > tool.diameter * opts.peckDepthRatio;
-
-  const peckDepth = needsPeck
-    ? Math.round(tool.diameter * opts.peckDepthRatio * 10) / 10
-    : undefined;
+  // Determine if peck drilling is needed for deep holes
+  const needsPeck = point.depth > PECK_DEPTH_THRESHOLD && (tool?.supportsPeck ?? true);
 
   return {
     type: 'DRILL',
     id: `drill-${point.id}`,
     sourceId: point.id,
-    toolId: tool.toolId,
-    position: machinePos,
+    toolId: tool?.toolId ?? `drill-${diameter}mm`,
+    position,
     depth: point.depth,
-    peckDepth,
-    throughHole: point.throughHole,
-    feedRate: tool.defaultFeedRate,
-    comment: `${point.purpose} - ${point.face}`,
-    workpieceContext,
+    throughHole: point.throughHole ?? false,
+    peckDepth: needsPeck ? opts.defaultPeckDepth : undefined,
+    feedRate: opts.feedRate || tool?.defaultFeedRate,
+    comment: `${formatPurpose(point.purpose)} drill (panel: ${panel.panelId})`,
   };
 }
 
 /**
- * Create a bore operation from a drill point
+ * Create a bore operation for large holes
  */
-function createBoreOperation(
-  point: PacketDrillPoint,
-  tool: ToolCapability,
-  machinePos: Position3D,
-  workpieceContext?: OperationWorkpieceContext
-): BoreOperation {
+function createBoreOp(
+  point: DrillMapPoint,
+  panel: DrillMapPanel,
+  machine: MachineProfile | undefined,
+  opts: Required<MapDrillOptions>,
+  warnings: string[]
+): BoreOperation | null {
+  const diameter = point.diameter || CAM_LOCK_DIAMETER;
+  const tool = findTool(machine, diameter, 'BORE', opts);
+
+  if (!tool) {
+    warnings.push(`No ${diameter}mm bore tool available for point ${point.id}`);
+  }
+
+  const position = convertPosition(point.position);
+  validateDepth(point, tool, warnings);
+
   return {
     type: 'BORE',
     id: `bore-${point.id}`,
     sourceId: point.id,
-    toolId: tool.toolId,
-    position: machinePos,
-    diameter: point.diameter,
+    toolId: tool?.toolId ?? `bore-${diameter}mm`,
+    position,
+    diameter,
     depth: point.depth,
-    flatBottom: true, // Minifix cam housing needs flat bottom
-    feedRate: tool.defaultFeedRate,
-    comment: `${point.purpose} - ${point.face}`,
-    workpieceContext,
+    flatBottom: point.purpose === 'CAM_LOCK' || point.purpose === 'MINIFIX' || point.purpose === 'BOLT',
+    feedRate: opts.feedRate || tool?.defaultFeedRate,
+    comment: `${formatPurpose(point.purpose)} bore (panel: ${panel.panelId})`,
   };
 }
 
 // ============================================
-// HELPERS
+// HELPER FUNCTIONS
 // ============================================
 
 /**
- * Get statistics about mapped operations
+ * Find appropriate tool from machine profile
  */
-export function getDrillMapStats(result: MapDrillResult): {
-  totalPoints: number;
-  drillOps: number;
-  boreOps: number;
-  unmapped: number;
-  warningCount: number;
-} {
-  const drillOps = result.operations.filter((op) => op.type === 'DRILL').length;
-  const boreOps = result.operations.filter((op) => op.type === 'BORE').length;
+function findTool(
+  machine: MachineProfile | undefined,
+  diameter: number,
+  type: 'DRILL' | 'BORE',
+  opts: Required<MapDrillOptions>
+): ToolCapability | undefined {
+  if (!machine) return undefined;
+
+  // First try exact match
+  let tool = getToolByDiameter(machine, diameter, type);
+
+  // If no exact match for BORE, try with just the diameter
+  if (!tool && type === 'BORE') {
+    tool = getToolByDiameter(machine, diameter);
+  }
+
+  return tool;
+}
+
+/**
+ * Convert Vec3Tuple position to Position3D
+ */
+function convertPosition(position: [number, number, number]): Position3D {
+  return {
+    x: position[0],
+    y: position[1],
+    z: position[2],
+  };
+}
+
+/**
+ * Validate depth against tool capability
+ */
+function validateDepth(
+  point: DrillMapPoint,
+  tool: ToolCapability | undefined,
+  warnings: string[]
+): void {
+  if (tool && point.depth > tool.maxDepth) {
+    warnings.push(
+      `Point ${point.id}: depth ${point.depth}mm exceeds tool max ${tool.maxDepth}mm`
+    );
+  }
+}
+
+/**
+ * Format purpose for human-readable comments
+ */
+function formatPurpose(purpose: DrillPurpose): string {
+  const map: Record<DrillPurpose, string> = {
+    CAM_LOCK: 'Cam lock',
+    BOLT: 'Bolt',
+    DOWEL: 'Dowel',
+    SHELF_PIN: 'Shelf pin',
+    HINGE: 'Hinge',
+    MINIFIX: 'Minifix',
+    DRAWER_SLIDE: 'Drawer slide',
+    OTHER: 'General',
+  };
+  return map[purpose] ?? 'Unknown';
+}
+
+/**
+ * Compute statistics for mapped operations
+ */
+function computeStats(operations: Operation[]): MapDrillResult['stats'] {
+  let drillOps = 0;
+  let boreOps = 0;
+
+  for (const op of operations) {
+    if (op.type === 'DRILL') {
+      drillOps++;
+    } else if (op.type === 'BORE') {
+      boreOps++;
+    }
+  }
 
   return {
-    totalPoints: drillOps + boreOps + result.unmappedPoints.length,
+    totalOps: operations.length,
     drillOps,
     boreOps,
-    unmapped: result.unmappedPoints.length,
-    warningCount: result.warnings.length,
   };
+}
+
+/**
+ * Get drill map statistics (convenience export)
+ */
+export function getDrillMapStats(drillMap: DrillMap) {
+  return drillMap.stats;
 }

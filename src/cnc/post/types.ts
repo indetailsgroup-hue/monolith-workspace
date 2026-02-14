@@ -3,7 +3,7 @@
  *
  * Types for converting OperationGraph to machine-specific G-code.
  *
- * @version 1.4.0 - Phase D5-C.1B: Added feed-down near exit
+ * @version 1.5.0 - Phase D5-D.1: Added useCoolant option
  */
 
 import type { MachineProfile } from '../machine/machineProfile';
@@ -44,6 +44,14 @@ export interface PostProcessOptions {
 
   /** Preserve original operation order (skip normalization) */
   preserveOrder?: boolean;
+
+  /**
+   * Enable automatic coolant control (M8/M9).
+   * When true, emits M8 (coolant on) at program start and M9 (coolant off) at end.
+   * Defaults to false for dry-run safety.
+   * @since D5-D.1
+   */
+  useCoolant?: boolean;
 
   /**
    * Drilling policy options for cycle selection and feed/speed.
@@ -140,6 +148,7 @@ export type ThroughHoleSensitiveMaterial = 'HPL' | 'PLYWOOD' | 'MELAMINE';
  * Through-hole tuning options for breakout mitigation.
  * @since D5-C.1A
  * @since D5-C.1B: Added feed-down near exit
+ * @since D5-D.2: Added emitExitFeed option
  */
 export interface ThroughHoleTuning {
   /**
@@ -185,6 +194,21 @@ export interface ThroughHoleTuning {
    * @since D5-C.1B
    */
   exitFeedReductionByMaterial?: Partial<Record<ThroughHoleSensitiveMaterial, number>>;
+
+  /**
+   * Emit multi-line drill with reduced exit feed in G-code.
+   * When true, through-holes with sensitive materials use multi-line approach
+   * instead of canned cycles to apply different feed rates:
+   *   G0 X_ Y_ (rapid to position)
+   *   G0 Z{safeZ} (rapid to clearance)
+   *   G1 Z-{exitZoneStart} F{normalFeed} (drill at normal speed)
+   *   G1 Z-{depth} F{exitFeed} (slow down for exit zone)
+   *   G4 P{dwell} (optional dwell)
+   *   G0 Z{safeZ} (retract)
+   * When false (default), uses canned cycles with single feed rate.
+   * @since D5-D.2
+   */
+  emitExitFeed?: boolean;
 }
 
 // ============================================================================
@@ -230,7 +254,7 @@ export interface PostProcessStats {
 /**
  * Supported G-code dialects.
  */
-export type GcodeDialect = 'FANUC' | 'BIESSE_ISO';
+export type GcodeDialect = 'FANUC' | 'BIESSE_ISO' | 'BIESSE' | 'HEIDENHAIN' | 'WEEKE';
 
 /**
  * Post processor interface - converts OperationGraph to machine-specific G-code.

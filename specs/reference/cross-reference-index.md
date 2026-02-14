@@ -10,7 +10,7 @@
 
 ## บทนำ (Introduction)
 
-เอกสารนี้เป็น **แผนที่นำทาง** สำหรับค้นหาข้อมูลในระบบเอกสาร IIMOS Designer เพื่อแก้ปัญหา:
+เอกสารนี้เป็น **แผนที่นำทาง** สำหรับค้นหาข้อมูลในระบบเอกสาร MONOLITH Designer เพื่อแก้ปัญหา:
 - ไม่มี Cross-reference ระหว่างเอกสาร
 - ค้นหาข้อมูลที่ต้องการได้ยาก
 - ไม่รู้ว่าเอกสารไหนเป็น authoritative source
@@ -21,7 +21,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         IIMOS SPEC DOCUMENT MAP                              │
+│                         MONOLITH SPEC DOCUMENT MAP                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   specs/reference/ (Single Source of Truth)                                 │
@@ -36,7 +36,9 @@
 │   └── kerf-bending-algorithms.md           ◄── Curved panels                │
 │                                                                              │
 │   specs/technical/                                                           │
-│   └── parametric-cabinet-calculations.md   ◄── Cabinet dimensions           │
+│   ├── parametric-cabinet-calculations.md   ◄── Cabinet dimensions           │
+│   ├── cabinet-snap-system.md               ◄── Snap algorithm, history      │
+│   └── collision-clearance-system.md        ◄── OBB collision, Gate          │
 │                                                                              │
 │   specs/export/                                                              │
 │   └── dxf-export-specs.md                  ◄── CAD export formats            │
@@ -131,6 +133,31 @@
 | **Kerf spacing** | [kerf-bending-algorithms.md](../manufacturing/kerf-bending-algorithms.md) | §3 | Density |
 | **Material selection** | [kerf-bending-algorithms.md](../manufacturing/kerf-bending-algorithms.md) | §5 | MDF, plywood |
 | **Pre-flight checks** | [kerf-bending-algorithms.md](../manufacturing/kerf-bending-algorithms.md) | §6.4 | Validation |
+
+### 2.8 Cabinet Snap System
+
+| Topic | Primary Document | Section | Notes |
+|-------|------------------|---------|-------|
+| **Snap types** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §2 | SIDE_JOIN, STACK, etc. |
+| **Anchor planes** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §1.2 | FACE_LEFT/RIGHT/etc. |
+| **Snap algorithm** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §3 | Candidate, Score, Solve |
+| **Snap constants** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §Overview | 50mm threshold, 1mm gap |
+| **Feature history** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §4 | CABINET_SNAP feature |
+| **Validation** | [cabinet-snap-system.md](../technical/cabinet-snap-system.md) | §3.4 | Collision, gap check |
+
+### 2.9 Collision & Clearance System
+
+| Topic | Primary Document | Section | Notes |
+|-------|------------------|---------|-------|
+| **OBB collision** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §4 | SAT algorithm |
+| **Spatial hash** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §3 | Broad-phase 500mm cells |
+| **SpatialHashV3** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §10.1 | AABB cache, reverse index |
+| **Quaternion transform** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §10.2 | No gimbal lock |
+| **Overlap scoring** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §10.3 | Face overlap for snap |
+| **Door swing envelope** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §5.1 | 110°, 8 samples |
+| **Drawer pull envelope** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §5.2 | 6 samples |
+| **Gate validation** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §6 | ERROR/WARNING policy |
+| **Constants** | [collision-clearance-system.md](../technical/collision-clearance-system.md) | §Overview | cell=500mm, padding=150mm |
 
 ---
 

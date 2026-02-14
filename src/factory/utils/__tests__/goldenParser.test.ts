@@ -44,9 +44,9 @@ describe("parseGoldenOutput", () => {
     expect(result!.kv["VERDICT"]).toBe("PASS");
     expect(result!.kv["CODE"]).toBe("OK");
     expect(result!.kv["EXIT_CODE"]).toBe("0");
-    expect(result!.kv["TOOL"]).toBe("iimos-verify");
+    expect(result!.kv["TOOL"]).toBe("monolith-verify");
     expect(result!.kv["JOB_ID"]).toBe("JOB-2024-001");
-    expect(result!.log).toContain("[iimos-verify] Starting verification");
+    expect(result!.log).toContain("[monolith-verify] Starting verification");
   });
 
   it("should parse valid FAIL (signature) output", () => {
@@ -112,7 +112,7 @@ describe("parseGoldenOutput", () => {
   it("should preserve verbatim log content", () => {
     const result = parseGoldenOutput(GOLDEN_PASS);
     expect(result).not.toBeNull();
-    expect(result!.log).toContain("[iimos-verify] All checks passed");
+    expect(result!.log).toContain("[monolith-verify] All checks passed");
   });
 });
 
@@ -205,7 +205,7 @@ describe("isGoldenFormat", () => {
   });
 
   it("should handle whitespace around header", () => {
-    expect(isGoldenFormat("  IIMOS_VERIFY_V1  \nVERDICT=PASS")).toBe(true);
+    expect(isGoldenFormat("  MONOLITH_VERIFY_V1  \nVERDICT=PASS")).toBe(true);
   });
 });
 
@@ -219,7 +219,7 @@ describe("extractGoldenDetails", () => {
     const details = extractGoldenDetails(result!.kv);
 
     expect(details.exitCode).toBe(0);
-    expect(details.tool).toBe("iimos-verify");
+    expect(details.tool).toBe("monolith-verify");
     expect(details.toolVersion).toBe("1.2.0");
   });
 
@@ -263,7 +263,7 @@ describe("buildGoldenOutput", () => {
       verdict: "PASS",
       code: "OK",
       exitCode: 0,
-      tool: "iimos-verify",
+      tool: "monolith-verify",
       toolVersion: "1.2.0",
       summaryTh: "ผ่านการตรวจ (ผลิตได้)",
     });
@@ -272,7 +272,7 @@ describe("buildGoldenOutput", () => {
     expect(output).toContain("VERDICT=PASS");
     expect(output).toContain("CODE=OK");
     expect(output).toContain("EXIT_CODE=0");
-    expect(output).toContain("TOOL=iimos-verify");
+    expect(output).toContain("TOOL=monolith-verify");
     expect(output).toContain("TOOL_VERSION=1.2.0");
     expect(output).toContain("SUMMARY_TH=ผ่านการตรวจ (ผลิตได้)");
     expect(output).toContain(LOG_SEPARATOR);
@@ -283,7 +283,7 @@ describe("buildGoldenOutput", () => {
       verdict: "FAIL",
       code: "E_GATE_FAIL",
       exitCode: 50,
-      tool: "iimos-verify",
+      tool: "monolith-verify",
       toolVersion: "1.2.0",
       summaryTh: "ไม่ผ่านกฎโรงงาน (Gate Fail)",
       details: {
@@ -301,7 +301,7 @@ describe("buildGoldenOutput", () => {
       verdict: "PASS",
       code: "OK",
       exitCode: 0,
-      tool: "iimos-verify",
+      tool: "monolith-verify",
       toolVersion: "1.2.0",
       summaryTh: "ผ่านการตรวจ (ผลิตได้)",
       logLines: ["[verify] Starting...", "[verify] Done"],
@@ -316,7 +316,7 @@ describe("buildGoldenOutput", () => {
       verdict: "PASS",
       code: "OK",
       exitCode: 0,
-      tool: "iimos-verify",
+      tool: "monolith-verify",
       toolVersion: "1.2.0",
       summaryTh: "ผ่านการตรวจ (ผลิตได้)",
     });
@@ -336,7 +336,7 @@ describe("buildGoldenOutput", () => {
 
 describe("buildTimeoutGolden", () => {
   it("should build timeout golden output", () => {
-    const output = buildTimeoutGolden("JOB-001", 30000, "iimos-verify", "1.2.0");
+    const output = buildTimeoutGolden("JOB-001", 30000, "monolith-verify", "1.2.0");
 
     expect(output).toContain(GOLDEN_HEADER);
     expect(output).toContain("VERDICT=FAIL");
@@ -347,7 +347,7 @@ describe("buildTimeoutGolden", () => {
   });
 
   it("should handle missing jobId", () => {
-    const output = buildTimeoutGolden("", 60000, "iimos-verify", "1.2.0");
+    const output = buildTimeoutGolden("", 60000, "monolith-verify", "1.2.0");
 
     expect(output).toContain("VERDICT=FAIL");
     expect(output).toContain("60s timeout");
@@ -355,7 +355,7 @@ describe("buildTimeoutGolden", () => {
   });
 
   it("should be parseable and valid", () => {
-    const output = buildTimeoutGolden("JOB-002", 45000, "iimos-verify", "1.2.0");
+    const output = buildTimeoutGolden("JOB-002", 45000, "monolith-verify", "1.2.0");
 
     const parsed = parseGoldenOutput(output);
     expect(parsed).not.toBeNull();
@@ -371,7 +371,7 @@ describe("buildTimeoutGolden", () => {
 
 describe("Constants", () => {
   it("should have correct GOLDEN_HEADER", () => {
-    expect(GOLDEN_HEADER).toBe("IIMOS_VERIFY_V1");
+    expect(GOLDEN_HEADER).toBe("MONOLITH_VERIFY_V1");
   });
 
   it("should have correct LOG_SEPARATOR", () => {

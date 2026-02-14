@@ -8,15 +8,19 @@
  * - Export dropdown with gate enforcement
  */
 
-import React, { useState } from 'react';
-import { 
-  useSpecStore, 
-  useSpecState, 
-  useGateStatus, 
+import React, { useState, useCallback } from 'react';
+import {
+  useSpecStore,
+  useSpecState,
+  useGateStatus,
   useValidation,
   useMachineProfile,
-  SpecState 
+  SpecState
 } from '../../core/store/useSpecStore';
+import { useCabinetStore } from '../../core/store/useCabinetStore';
+import { quickDxfExport, quickDxfExportAll } from '../../core/export/exportPipeline';
+import { exportAndDownload, type ExportFormat } from '../../core/api/exportApi';
+import { generateFactoryPacketFromStores } from '../../factory/packet';
 
 const STATE_COLORS: Record<SpecState, string> = {
   DRAFT: 'bg-amber-500',
@@ -44,7 +48,13 @@ export function GateToolbar() {
   
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
-  
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Get cabinets for export
+  const cabinets = useCabinetStore((s) => s.cabinets);
+  const activeCabinet = useCabinetStore((s) => s.cabinet);
+
   const handleStateAction = () => {
     if (specState === 'DRAFT') {
       freezeSpec();
@@ -52,17 +62,83 @@ export function GateToolbar() {
       releaseSpec();
     }
   };
-  
-  const handleExport = (format: 'CUT_LIST' | 'DXF' | 'CNC') => {
-    if (canExport(format)) {
-      console.log(`[Export] Exporting ${format}...`);
-      // TODO: Implement actual export
-      alert(`Exporting ${format}... (Not implemented yet)`);
-    } else {
-      alert(`Cannot export ${format}. Check gate status.`);
+
+  const handleExport = useCallback(async (format: 'CUT_LIST' | 'DXF' | 'CNC') => {
+    if (!canExport(format)) {
+      setExportError(`Cannot export ${format}. Check gate status.`);
+      setShowExportMenu(false);
+      return;
     }
+
+    setIsExporting(true);
+    setExportError(null);
     setShowExportMenu(false);
-  };
+
+    try {
+      console.log(`[GateToolbar] Starting ${format} export...`);
+
+      switch (format) {
+        case 'CUT_LIST': {
+          // Export cut list CSV using the core export API
+          const bundleId = activeCabinet?.id || 'default-bundle';
+          const jobName = activeCabinet?.name || 'cabinet';
+          await exportAndDownload(bundleId, 'CUTLIST_CSV', jobName);
+          console.log('[GateToolbar] Cut list export completed');
+          break;
+        }
+
+        case 'DXF': {
+          // Export DXF files for all cabinets or active cabinet
+          if (cabinets.length > 1) {
+            await quickDxfExportAll(cabinets, {
+              includeSystem32: true,
+              includeBackGroove: true,
+              includeHingeCups: true,
+              includeConfirmat: true,
+              includeDimensions: true,
+              includePartInfo: true,
+              machineProfile: machine,
+            });
+          } else if (activeCabinet) {
+            await quickDxfExport(activeCabinet, {
+              includeSystem32: true,
+              includeBackGroove: true,
+              includeHingeCups: true,
+              includeConfirmat: true,
+              includeDimensions: true,
+              includePartInfo: true,
+              machineProfile: machine,
+            });
+          }
+          console.log('[GateToolbar] DXF export completed');
+          break;
+        }
+
+        case 'CNC': {
+          // CNC export requires RELEASED state - use full factory packet
+          if (specState !== 'RELEASED') {
+            setExportError('CNC export requires RELEASED spec state');
+            break;
+          }
+
+          // Generate full factory packet (includes G-code, drill maps, etc.)
+          const result = await generateFactoryPacketFromStores();
+          console.log('[GateToolbar] CNC factory packet export completed:', {
+            filename: result.filename,
+            compressedSize: `${(result.compressedSize / 1024).toFixed(1)} KB`,
+            uncompressedSize: `${(result.uncompressedSize / 1024).toFixed(1)} KB`,
+          });
+          break;
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Export failed';
+      console.error(`[GateToolbar] Export error:`, error);
+      setExportError(errorMessage);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [canExport, activeCabinet, cabinets, machine, specState]);
   
   return (
     <div className="flex items-center gap-2">
@@ -141,22 +217,33 @@ export function GateToolbar() {
       {/* Export Button */}
       <div className="relative">
         <button
-          onClick={() => setShowExportMenu(!showExportMenu)}
-          disabled={!gateStatus.canExport}
+          onClick={() => !isExporting && setShowExportMenu(!showExportMenu)}
+          disabled={!gateStatus.canExport || isExporting}
           className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1
-            ${gateStatus.canExport 
-              ? 'bg-zinc-700 text-white hover:bg-zinc-600' 
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            ${isExporting
+              ? 'bg-emerald-500/20 text-emerald-400'
+              : gateStatus.canExport
+                ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
             }`}
-          title={gateStatus.canExport ? 'Export options' : `Cannot export: ${gateStatus.blockers.join(', ')}`}
+          title={isExporting ? 'Exporting...' : gateStatus.canExport ? 'Export options' : `Cannot export: ${gateStatus.blockers.join(', ')}`}
         >
-          📤 Export
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          {isExporting ? (
+            <>
+              <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              📤 Export
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </>
+          )}
         </button>
-        
-        {showExportMenu && gateStatus.canExport && (
+
+        {showExportMenu && gateStatus.canExport && !isExporting && (
           <div className="absolute top-full right-0 mt-1 w-48 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50">
             <button
               onClick={() => handleExport('CUT_LIST')}
@@ -182,6 +269,22 @@ export function GateToolbar() {
                 <span className="ml-2 text-xs text-amber-500">(RELEASED only)</span>
               )}
             </button>
+          </div>
+        )}
+
+        {/* Export Error Tooltip */}
+        {exportError && (
+          <div className="absolute top-full right-0 mt-1 w-64 p-2 bg-red-900/90 border border-red-700 rounded-lg shadow-xl z-50 text-xs text-red-200">
+            <div className="flex items-start gap-2">
+              <span className="text-red-400">⚠</span>
+              <span>{exportError}</span>
+              <button
+                onClick={() => setExportError(null)}
+                className="ml-auto text-red-400 hover:text-red-200"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
       </div>

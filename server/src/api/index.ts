@@ -1,5 +1,5 @@
 /**
- * IIMOS Factory Server - API Process
+ * MONOLITH Factory Server - API Process
  *
  * Step 10: Multi-process architecture (API separate from Worker)
  *
@@ -20,6 +20,7 @@ import { CAS } from '../storage/cas.js';
 import { bundlesRouter } from './routes/bundles.js';
 import { exportsRouter } from './routes/exports.js';
 import { artifactsRouter } from './routes/artifacts.js';
+import { factoryRouter } from './routes/factory.js';
 import { getQueueStats } from '../queue/queue.js';
 
 // ============================================================================
@@ -86,6 +87,9 @@ async function main() {
   // Export routes
   app.use('/exports', exportsRouter({ cas }));
 
+  // Factory routes
+  app.use('/factory', factoryRouter({ cas }));
+
   // Artifact/download routes
   app.use('/', artifactsRouter({ cas }));
 
@@ -116,20 +120,22 @@ async function main() {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   IIMOS Factory Server v0.10.0 (API Process)             ║
+║   MONOLITH Factory Server v0.10.0 (API Process)           ║
 ║                                                           ║
 ║   Step 10: Multi-process + Signed URLs + DXF R12         ║
 ║                                                           ║
-║   Endpoints:                                             ║
-║   - POST /bundles           Upload & verify bundle       ║
-║   - POST /exports           Queue export job             ║
-║   - GET  /exports/:id       Get job status               ║
-║   - GET  /exports/:id/result  Get result w/ signed URLs  ║
-║   - GET  /download          Download via signed URL      ║
-║   - GET  /health            Health check                 ║
+║   Endpoints:                                              ║
+║   - POST /bundles           Upload & verify bundle        ║
+║   - POST /exports           Queue export job              ║
+║   - GET  /exports/:id       Get job status                ║
+║   - GET  /exports/:id/result  Get result w/ signed URLs   ║
+║   - GET  /download          Download via signed URL       ║
+║   - GET  /factory/export/options  Get export options      ║
+║   - POST /factory/jobs/:id/export  Trigger job export     ║
+║   - GET  /health            Health check                  ║
 ║                                                           ║
-║   Listening on port ${PORT}                               ║
-║   Data directory: ${DATA_DIR}                            ║
+║   Listening on port ${PORT}                                ║
+║   Data directory: ${DATA_DIR}                             ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
     `);

@@ -1,4 +1,4 @@
-# IIMOS Designer Workspace v2.0 - Task List
+# MONOLITH Designer Workspace v2.0 - Task List
 
 ## Task Organization
 

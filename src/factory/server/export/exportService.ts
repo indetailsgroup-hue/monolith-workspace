@@ -17,6 +17,7 @@ import { isValidDialect, isValidProfileId } from "./exportTypes";
 import { validateDialectProfile, getProfileById } from "./exportOptions";
 import { createAuditBuilder } from "./exportAudit";
 import { createMockGcodeBundle, calculateSha256 } from "./zipBundle";
+import { verifyJob } from "../verifyService";
 
 // ============================================================================
 // Configuration
@@ -192,11 +193,18 @@ async function runVerifyOnExport(jobId: string): Promise<VerifyOnExportResult> {
     return runMockVerify(jobId);
   }
 
-  // TODO: Call actual verifier
-  // const result = await verifyJob(jobId);
-  // return { passed: result.verdict === "PASS", verdict: result.verdict, code: result.code };
+  // Call actual verifier service
+  const result = await verifyJob(jobId);
 
-  return { passed: false, verdict: "UNKNOWN", code: "E_VERIFY_NOT_IMPLEMENTED" };
+  // Map VerifyApiResponse to VerifyOnExportResult
+  // PASS and PASS_WITH_WARN both allow export; only FAIL blocks
+  const passed = result.verdict === "PASS" || result.verdict === "PASS_WITH_WARN";
+
+  return {
+    passed,
+    verdict: result.verdict,
+    code: result.code,
+  };
 }
 
 /**

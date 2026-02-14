@@ -5,18 +5,22 @@
  * Shows OVER_LIMIT and NEARING_LIMIT tools prominently.
  *
  * D6-E.2: Factory Intelligence UI
- * @version 1.0.0
+ * D6.2: Added wear trend sparklines
+ * @version 1.1.0
  */
 
 import React, { useEffect, useState } from 'react';
-import type { ToolHealth } from '../../tooling';
-import { listNearingLimitTools, listToolHealth } from '../../tooling';
+import type { ToolHealth, ToolHealthTrend } from '../../tooling';
+import { listNearingLimitTools, listToolHealth, listToolHealthTrend } from '../../tooling';
+import { WearTrendIndicator } from './WearTrendIndicator';
 
 export interface ToolHealthStripProps {
   /** Maximum number of tools to show (default: 4) */
   maxTools?: number;
   /** Show all tools or only those needing attention (default: false) */
   showAllTools?: boolean;
+  /** Show wear trend sparklines (default: false) */
+  showTrend?: boolean;
   /** Callback when a tool is clicked */
   onToolClick?: (tool: ToolHealth) => void;
   /** Size variant */
@@ -63,10 +67,11 @@ function formatWearPct(healthPct: number): string {
 export function ToolHealthStrip({
   maxTools = 4,
   showAllTools = false,
+  showTrend = false,
   onToolClick,
   size = 'md',
 }: ToolHealthStripProps): React.ReactElement | null {
-  const [tools, setTools] = useState<ToolHealth[]>([]);
+  const [tools, setTools] = useState<(ToolHealth | ToolHealthTrend)[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,9 +79,20 @@ export function ToolHealthStrip({
 
     async function load() {
       try {
-        const data = showAllTools
-          ? await listToolHealth()
-          : await listNearingLimitTools();
+        let data: (ToolHealth | ToolHealthTrend)[];
+
+        if (showTrend) {
+          // Fetch with trend data for sparklines
+          const trendData = await listToolHealthTrend();
+          data = showAllTools
+            ? trendData
+            : trendData.filter((t) => t.status !== 'OK');
+        } else {
+          // Regular health data (no trend)
+          data = showAllTools
+            ? await listToolHealth()
+            : await listNearingLimitTools();
+        }
 
         if (mounted) {
           setTools(data.slice(0, maxTools));
@@ -94,7 +110,7 @@ export function ToolHealthStrip({
     return () => {
       mounted = false;
     };
-  }, [maxTools, showAllTools]);
+  }, [maxTools, showAllTools, showTrend]);
 
   const sizeStyle = sizeStyles[size];
 
@@ -133,6 +149,7 @@ export function ToolHealthStrip({
           key={tool.toolId}
           tool={tool}
           size={size}
+          showTrend={showTrend}
           onClick={onToolClick ? () => onToolClick(tool) : undefined}
         />
       ))}
@@ -152,14 +169,23 @@ export function ToolHealthStrip({
 // ============================================================================
 
 interface ToolChipProps {
-  tool: ToolHealth;
+  tool: ToolHealth | ToolHealthTrend;
   size: 'sm' | 'md';
+  showTrend?: boolean;
   onClick?: () => void;
 }
 
-function ToolChip({ tool, size, onClick }: ToolChipProps): React.ReactElement {
+/**
+ * Type guard to check if tool has trend data.
+ */
+function hasTrendData(tool: ToolHealth | ToolHealthTrend): tool is ToolHealthTrend {
+  return 'wearHistory' in tool && Array.isArray((tool as ToolHealthTrend).wearHistory);
+}
+
+function ToolChip({ tool, size, showTrend, onClick }: ToolChipProps): React.ReactElement {
   const sizeStyle = sizeStyles[size];
   const color = getStatusColor(tool.status);
+  const trendData = showTrend && hasTrendData(tool) ? tool : null;
 
   return (
     <button
@@ -179,7 +205,7 @@ function ToolChip({ tool, size, onClick }: ToolChipProps): React.ReactElement {
         cursor: onClick ? 'pointer' : 'default',
         transition: 'background-color 0.15s',
       }}
-      title={`${tool.toolId}: ${formatWearPct(tool.healthPct)} worn`}
+      title={`${tool.toolId}: ${formatWearPct(tool.healthPct)} worn${trendData ? ` (${trendData.trend.toLowerCase()})` : ''}`}
     >
       {/* Status dot */}
       <span
@@ -197,6 +223,18 @@ function ToolChip({ tool, size, onClick }: ToolChipProps): React.ReactElement {
 
       {/* Wear percentage */}
       <span style={{ opacity: 0.8 }}>{formatWearPct(tool.healthPct)}</span>
+
+      {/* Wear trend sparkline (D6.2) */}
+      {trendData && trendData.wearHistory.length >= 2 && (
+        <WearTrendIndicator
+          wearHistory={trendData.wearHistory}
+          maxWearUnits={trendData.maxWearUnits}
+          healthPct={trendData.healthPct}
+          trend={trendData.trend}
+          size={size}
+          showArrow={true}
+        />
+      )}
 
       {/* Pulse animation */}
       <style>{`

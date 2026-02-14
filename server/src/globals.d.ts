@@ -1,5 +1,5 @@
 /**
- * Global type declarations for IIMOS Server
+ * Global type declarations for MONOLITH Server
  */
 
 // JsonWebKey type (compatible with Node.js crypto module)

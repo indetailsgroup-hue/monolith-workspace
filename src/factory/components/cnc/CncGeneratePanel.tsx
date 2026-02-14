@@ -148,7 +148,7 @@ export function CncGeneratePanel({
     if (!bundle || bundle.files.length === 0) return;
 
     const file = bundle.files[0];
-    const blob = new Blob([file.bytes], { type: 'text/plain' });
+    const blob = new Blob([new Uint8Array(file.bytes)], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const filename = file.path.split('/').pop() || 'program.nc';
 

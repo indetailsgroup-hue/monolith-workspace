@@ -94,7 +94,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       const storeInput: CacheStoreInput = {
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         postVersion: bundleInput.postVersion,
@@ -107,7 +107,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       expect(cacheKey).toMatch(/^[a-f0-9]{64}$/);
 
       const lookupInput: CacheLookupInput = {
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         postVersion: bundleInput.postVersion,
@@ -141,7 +141,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: bundle.zipBytes,
@@ -150,7 +150,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       });
 
       const exists = await hasCachedBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
       });
@@ -175,7 +175,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       const bundleInput1 = createTestBundleInput({ machineId: 'KDT' });
       const bundle1 = await buildCncBundleZip(bundleInput1);
       await cacheBundle({
-        packetContentHash: bundleInput1.packetContentHash,
+        packetContentHash: bundleInput1.packetContentHash!,
         machineId: 'KDT',
         dialect: 'FANUC',
         zipBytes: bundle1.zipBytes,
@@ -186,7 +186,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       const bundleInput2 = createTestBundleInput({ machineId: 'BIESSE', dialect: 'BIESSE_ISO' });
       const bundle2 = await buildCncBundleZip(bundleInput2);
       await cacheBundle({
-        packetContentHash: bundleInput2.packetContentHash,
+        packetContentHash: bundleInput2.packetContentHash!,
         machineId: 'BIESSE',
         dialect: 'BIESSE_ISO',
         zipBytes: bundle2.zipBytes,
@@ -207,7 +207,7 @@ describe('cncCacheHelpers - Basic Operations', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: bundle.zipBytes,
@@ -247,7 +247,7 @@ describe('getVerifiedCachedBundle', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         postVersion: bundleInput.postVersion,
@@ -258,7 +258,7 @@ describe('getVerifiedCachedBundle', () => {
 
       const result = await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
           postVersion: bundleInput.postVersion,
@@ -293,7 +293,7 @@ describe('getVerifiedCachedBundle', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: bundle.zipBytes,
@@ -304,7 +304,7 @@ describe('getVerifiedCachedBundle', () => {
       // Verify with different expected hash
       const result = await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
         },
@@ -327,7 +327,7 @@ describe('getVerifiedCachedBundle', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         postVersion: '0.9.0', // Cache key includes this version
@@ -339,7 +339,7 @@ describe('getVerifiedCachedBundle', () => {
       // Look up with SAME version (to find the entry) but verify against DIFFERENT current version
       const result = await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
           postVersion: '0.9.0', // Same as stored, so we find the entry
@@ -368,7 +368,7 @@ describe('getVerifiedCachedBundle', () => {
       corrupted[3] = 0x04;
 
       const cacheKey = await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: corrupted, // Corrupted!
@@ -379,7 +379,7 @@ describe('getVerifiedCachedBundle', () => {
       // Verify - should fail and auto-invalidate
       const result = await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
         },
@@ -403,7 +403,7 @@ describe('getVerifiedCachedBundle', () => {
       const bundle = await buildCncBundleZip(bundleInput);
 
       const cacheKey = await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: bundle.zipBytes,
@@ -414,7 +414,7 @@ describe('getVerifiedCachedBundle', () => {
       // Verify with different hash (stale, not corrupted)
       const result = await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
         },
@@ -445,7 +445,7 @@ describe('getVerifiedCachedBundle', () => {
       corrupted[3] = 0x04;
 
       const cacheKey = await cacheBundle({
-        packetContentHash: bundleInput.packetContentHash,
+        packetContentHash: bundleInput.packetContentHash!,
         machineId: bundleInput.machineId,
         dialect: bundleInput.dialect,
         zipBytes: corrupted,
@@ -456,7 +456,7 @@ describe('getVerifiedCachedBundle', () => {
       // Verify with auto-invalidate disabled
       await getVerifiedCachedBundle(
         {
-          packetContentHash: bundleInput.packetContentHash,
+          packetContentHash: bundleInput.packetContentHash!,
           machineId: bundleInput.machineId,
           dialect: bundleInput.dialect,
         },

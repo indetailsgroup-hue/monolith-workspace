@@ -95,8 +95,6 @@ interface ExpandableScreenContentProps {
 export function ExpandableScreenContent({ children }: ExpandableScreenContentProps) {
   const { isExpanded, setIsExpanded, layoutId, contentRadius } = useExpandableScreen()
 
-  console.log('ExpandableScreenContent render, isExpanded:', isExpanded, 'children is function:', typeof children === 'function')
-
   React.useEffect(() => {
     if (isExpanded) {
       document.body.style.overflow = 'hidden'
@@ -109,16 +107,11 @@ export function ExpandableScreenContent({ children }: ExpandableScreenContentPro
     }
   }, [isExpanded])
 
-  const close = () => {
-    console.log('close() called from ExpandableScreenContent, setting isExpanded to false')
-    setIsExpanded(false)
-  }
+  const close = () => setIsExpanded(false)
 
-  console.log('Creating content...')
   const content = typeof children === 'function'
     ? children({ close })
     : children
-  console.log('Content created, is function result:', typeof content !== 'object' || React.isValidElement(content))
 
   return (
     <>
@@ -146,7 +139,6 @@ export function ExpandableScreenContent({ children }: ExpandableScreenContentPro
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={(e) => {
-              console.log('Backdrop clicked, closing...')
               e.stopPropagation()
               setIsExpanded(false)
             }}

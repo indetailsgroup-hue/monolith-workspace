@@ -133,6 +133,8 @@ export interface OperationWorkpieceContext {
   face: PanelFace;
   /** Offset applied during transform (for audit/debug) */
   appliedOffset: Position3D;
+  /** Original position in workpiece coordinates (D4: for audit trail) */
+  workpiecePosition?: Position3D;
 }
 
 // ============================================================================

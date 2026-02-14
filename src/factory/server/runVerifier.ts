@@ -2,7 +2,7 @@
  * Run Verifier - Spawn & Capture Process Output
  * PR-P1.1-B.3 Real Verifier Integration
  *
- * Handles spawning iimos-verify process with:
+ * Handles spawning monolith-verify process with:
  * - Timeout enforcement
  * - Log truncation (deterministic, from end)
  * - Cross-platform support (Windows/Linux)
@@ -134,7 +134,7 @@ function killProcessTree(child: ChildProcess): void {
 // ============================================================================
 
 /**
- * Run the iimos-verify process with the given arguments.
+ * Run the monolith-verify process with the given arguments.
  *
  * Command: verifierBin verify packetPath --keys prodKeysPath
  *

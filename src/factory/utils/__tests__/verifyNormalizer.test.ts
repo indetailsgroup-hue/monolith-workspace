@@ -60,7 +60,7 @@ describe("normalizeVerifyResult - Golden Format", () => {
       expect(result.verdict).toBe(EXPECTED_GOLDEN_PASS.verdict);
       expect(result.code).toBe(EXPECTED_GOLDEN_PASS.code);
       expect(result.summary).toBe(EXPECTED_GOLDEN_PASS.summary);
-      expect(result.log).toContain("[iimos-verify] Starting verification");
+      expect(result.log).toContain("[monolith-verify] Starting verification");
       expect(result.details?.exitCode).toBe(0);
       expect(result.details?.jobId).toBe("JOB-2024-001");
       expect(result.timestamp).toBeDefined();
@@ -133,8 +133,8 @@ describe("normalizeVerifyResult - Golden Format", () => {
       const result = normalizeVerifyResult(raw);
 
       // Log should be the verbatim content after ---LOG---
-      expect(result.log).toContain("[iimos-verify] All checks passed");
-      expect(result.log).not.toContain("IIMOS_VERIFY_V1");
+      expect(result.log).toContain("[monolith-verify] All checks passed");
+      expect(result.log).not.toContain("MONOLITH_VERIFY_V1");
       expect(result.log).not.toContain("VERDICT=");
     });
   });
@@ -268,7 +268,7 @@ describe("normalizeError", () => {
   });
 
   it("should normalize ENOENT error", () => {
-    const error = new Error("spawn iimos-verify ENOENT");
+    const error = new Error("spawn monolith-verify ENOENT");
     const result = normalizeError(error);
 
     expect(result.verdict).toBe("FAIL");
@@ -454,11 +454,11 @@ describe("PATTERN_RULES", () => {
 describe("Integration", () => {
   it("should prefer golden format over exit code", () => {
     // Golden says FAIL, but exit code is 0
-    const mixedGolden = `IIMOS_VERIFY_V1
+    const mixedGolden = `MONOLITH_VERIFY_V1
 VERDICT=FAIL
 CODE=E_GATE_FAIL
 EXIT_CODE=50
-TOOL=iimos-verify
+TOOL=monolith-verify
 TOOL_VERSION=1.2.0
 SUMMARY_TH=ไม่ผ่านกฎโรงงาน (Gate Fail)
 ---LOG---

@@ -1,5 +1,5 @@
 /**
- * IIMOS Server Types
+ * MONOLITH Server Types
  *
  * Step 9: Server-side types for bundle verification and export
  */
@@ -102,7 +102,7 @@ export interface PolicyReport {
 // Export Types
 // ============================================================================
 
-export type ExportFormat = 'CUTLIST_CSV' | 'DXF_R12' | 'GCODE' | 'STEP' | 'PDF';
+export type ExportFormat = 'CUTLIST_CSV' | 'DXF_R12' | 'DXF_R12_PER_PART' | 'GCODE' | 'STEP' | 'PDF';
 
 export interface ExportRequest {
   format: ExportFormat;

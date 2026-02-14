@@ -3,7 +3,7 @@
  * PR-P1.1-B.3 Real Verifier Integration
  *
  * This module provides server-side verification functionality:
- * - Spawn iimos-verify binary
+ * - Spawn monolith-verify binary
  * - Handle timeouts and errors
  * - Normalize output to VerifyApiResponse
  * - Audit logging

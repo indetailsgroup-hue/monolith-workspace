@@ -1,4 +1,4 @@
-# IIMOS Designer Workspace v2.0 - Implementation Plan
+# MONOLITH Designer Workspace v2.0 - Implementation Plan
 
 ## Architecture Overview
 
@@ -1044,8 +1044,8 @@ Compatible with:
 
 **Environment Variables (future):**
 ```env
-VITE_API_URL=https://api.iimos.com  # Future backend
-VITE_TEXTURE_CDN=https://cdn.iimos.com/textures
+VITE_API_URL=https://api.monolith.com  # Future backend
+VITE_TEXTURE_CDN=https://cdn.monolith.com/textures
 ```
 
 ### Deployment Steps
@@ -1091,7 +1091,7 @@ VITE_TEXTURE_CDN=https://cdn.iimos.com/textures
 
 ## Conclusion
 
-This implementation plan provides a comprehensive blueprint for the IIMOS Designer Workspace v2.0. The architecture prioritizes:
+This implementation plan provides a comprehensive blueprint for the MONOLITH Designer Workspace v2.0. The architecture prioritizes:
 
 1. **Separation of Concerns**: Visual (magic) vs Manufacturing (truth)
 2. **Type Safety**: TypeScript throughout critical paths

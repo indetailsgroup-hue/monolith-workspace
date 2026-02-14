@@ -29,7 +29,10 @@ import type {
 // Import exporters
 import { exportCutlistCsv } from './exporters/cutlistCsv.js';
 import { exportDxfR12 } from './exporters/dxfR12.js';
+import { exportDxfPerPart } from './exporters/dxfPerPart.js';
 import { exportGcode } from './exporters/gcode.js';
+import { exportStep } from './exporters/step.js';
+import { exportPdf } from './exporters/pdf.js';
 
 // ============================================================================
 // Exporter Registry
@@ -44,15 +47,10 @@ export type ExporterFn = (
 const exporters: Record<ExportFormat, ExporterFn> = {
   CUTLIST_CSV: exportCutlistCsv,
   DXF_R12: exportDxfR12,
+  DXF_R12_PER_PART: exportDxfPerPart,
   GCODE: exportGcode,
-  STEP: (bundle, jobName) => {
-    // STEP export not implemented yet
-    throw new Error('STEP export not implemented');
-  },
-  PDF: (bundle, jobName) => {
-    // PDF export not implemented yet
-    throw new Error('PDF export not implemented');
-  },
+  STEP: exportStep,
+  PDF: exportPdf,
 };
 
 // ============================================================================

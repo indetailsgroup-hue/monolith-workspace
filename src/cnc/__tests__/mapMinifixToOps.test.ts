@@ -105,6 +105,7 @@ describe('mapMinifixToOps - Cam Housing', () => {
       createMinifixPair({
         cam: {
           pointId: 'cam-001',
+          panelId: 'panel-001',
           position: [250, 150, 5],
           diameter: 15,
           depth: 12,
@@ -122,6 +123,7 @@ describe('mapMinifixToOps - Cam Housing', () => {
       createMinifixPair({
         cam: {
           pointId: 'cam-001',
+          panelId: 'panel-001',
           position: [100, 100, 0],
           diameter: 15,
           depth: 13,
@@ -162,7 +164,9 @@ describe('mapMinifixToOps - Bolt Hole', () => {
       createMinifixPair({
         bolt: {
           pointId: 'bolt-001',
+          panelId: 'panel-002',
           position: [300, 200, 10],
+          diameter: 5,
           depth: 25,
         },
       }),
@@ -178,7 +182,9 @@ describe('mapMinifixToOps - Bolt Hole', () => {
       createMinifixPair({
         bolt: {
           pointId: 'bolt-001',
+          panelId: 'panel-002',
           position: [100, 100, 0],
+          diameter: 5,
           depth: 28,
         },
       }),
@@ -260,6 +266,7 @@ describe('mapMinifixToOps - Warnings', () => {
       createMinifixPair({
         cam: {
           pointId: 'cam-001',
+          panelId: 'panel-001',
           position: [100, 100, 0],
           diameter: 15,
           depth: 50, // Very deep
@@ -276,7 +283,9 @@ describe('mapMinifixToOps - Warnings', () => {
       createMinifixPair({
         bolt: {
           pointId: 'bolt-001',
+          panelId: 'panel-002',
           position: [100, 100, 0],
+          diameter: 5,
           depth: 100, // Very deep
         },
       }),
@@ -340,6 +349,7 @@ describe('getMinifixMapStats', () => {
       createMinifixPair({
         cam: {
           pointId: 'cam-001',
+          panelId: 'panel-001',
           position: [100, 100, 0],
           diameter: 15,
           depth: 50, // Triggers warning
@@ -393,13 +403,16 @@ describe('mapMinifixToOps - Operation IDs and Comments', () => {
       createMinifixPair({
         cam: {
           pointId: 'cam-source-abc',
+          panelId: 'panel-001',
           position: [100, 100, 0],
           diameter: 15,
           depth: 12,
         },
         bolt: {
           pointId: 'bolt-source-xyz',
+          panelId: 'panel-002',
           position: [100, 130, 0],
+          diameter: 5,
           depth: 30,
         },
       }),

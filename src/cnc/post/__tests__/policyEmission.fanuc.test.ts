@@ -335,7 +335,10 @@ describe('FANUC Safety Invariants', () => {
     if (result.status === 'OK') {
       const lines = result.gcode.split('\n');
       const endIndex = lines.findIndex((l) => l.includes('M30'));
-      const lastG80Index = lines.slice(0, endIndex).findLastIndex((l) => l.includes('G80'));
+      const linesBeforeEnd = lines.slice(0, endIndex);
+      // findLastIndex polyfill: reverse the array and find first match, then convert index
+      const reversedIndex = [...linesBeforeEnd].reverse().findIndex((l) => l.includes('G80'));
+      const lastG80Index = reversedIndex === -1 ? -1 : linesBeforeEnd.length - 1 - reversedIndex;
 
       // G80 should appear before M30
       expect(lastG80Index).toBeGreaterThan(-1);

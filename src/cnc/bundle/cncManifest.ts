@@ -52,6 +52,8 @@ export interface CncPostIdentity {
   dialect: CncDialect;
   /** Post processor version */
   postVersion: string;
+  /** Version alias (for compatibility) */
+  version?: string;
 }
 
 /**

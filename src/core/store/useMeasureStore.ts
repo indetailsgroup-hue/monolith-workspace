@@ -123,7 +123,6 @@ export const useMeasureStore = create<MeasureState>()(
       state.activeMode = 'idle';
       state.previewFrom = null;
       state.previewTo = null;
-      console.log('[Measure] Tool activated');
     }),
     
     // Deactivate Measure Tool
@@ -132,7 +131,6 @@ export const useMeasureStore = create<MeasureState>()(
       state.activeMode = 'idle';
       state.previewFrom = null;
       state.previewTo = null;
-      console.log('[Measure] Tool deactivated');
     }),
     
     // Add point - either first or second (Seq-B Step 2-3)
@@ -147,7 +145,6 @@ export const useMeasureStore = create<MeasureState>()(
         // First point - start measurement
         state.previewFrom = point;
         state.activeMode = 'awaiting-second-point';
-        console.log('[Measure] First point set:', world);
       } else {
         // Second point - complete measurement
         const from = state.previewFrom!;
@@ -165,8 +162,6 @@ export const useMeasureStore = create<MeasureState>()(
         state.previewFrom = null;
         state.previewTo = null;
         state.activeMode = 'idle';
-        
-        console.log('[Measure] Segment created:', formatDistance(lengthMm, state.labelUnit));
       }
     }),
     
@@ -182,19 +177,16 @@ export const useMeasureStore = create<MeasureState>()(
       state.previewFrom = null;
       state.previewTo = null;
       state.activeMode = 'idle';
-      console.log('[Measure] Measurement cancelled');
     }),
     
     // Delete a specific segment
     deleteSegment: (id) => set((state) => {
       state.segments = state.segments.filter(s => s.id !== id);
-      console.log('[Measure] Segment deleted:', id);
     }),
     
     // Clear all measurements
     clearAllSegments: () => set((state) => {
       state.segments = [];
-      console.log('[Measure] All segments cleared');
     }),
     
     // Settings

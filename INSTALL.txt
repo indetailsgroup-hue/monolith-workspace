@@ -1,4 +1,40 @@
-# Install framer-motion first:
-npm install framer-motion
+============================================
+IIMOS MATERIAL SELECTOR - INSTALLATION
+============================================
 
-# Then copy files to your project
+STEP 1: COPY FILES
+------------------
+Copy ALL files from this folder to:
+C:\Projects\iimos-workspace\
+
+Replace files when asked!
+
+STEP 2: INSTALL DEPENDENCIES
+----------------------------
+Open terminal in project folder:
+
+npm install framer-motion lucide-react @types/node
+
+STEP 3: ADD THUMBNAILS
+---------------------
+Open: src\core\store\useCabinetStore.ts
+
+Add to each material:
+thumbnail: '/textures/wood/grey-oak.jpg',
+
+(See useCabinetStore-thumbnails-update.ts for examples)
+
+STEP 4: START SERVER
+-------------------
+npm run dev
+
+DONE! Go to Materials tab and click a card!
+
+============================================
+
+TROUBLESHOOTING:
+- Restart VS Code if TypeScript errors
+- Run: npm install if modules missing
+- Check README.md for details
+
+============================================

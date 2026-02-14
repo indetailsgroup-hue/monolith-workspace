@@ -135,7 +135,17 @@ export async function guardedExport(
     };
   }
 
-  // 3. Assert gate OK
+  // 3. Assert spec state is RELEASED
+  const specState = head.signedTrust?.trust?.spec?.state;
+  if (specState !== 'RELEASED') {
+    return {
+      ok: false,
+      reason: 'Spec state must be RELEASED for export',
+      details: [`Current state: ${specState ?? 'unknown'}`],
+    };
+  }
+
+  // 4. Assert gate OK
   if (!head.signedTrust?.trust?.gate?.ok) {
     const errorCount = head.signedTrust?.trust?.gate?.errorCount ?? 0;
     return {
@@ -145,7 +155,7 @@ export async function guardedExport(
     };
   }
 
-  // 4. Generate artifacts
+  // 5. Generate artifacts
   let artifacts: ExportArtifact[];
   try {
     artifacts = await generate();
@@ -161,7 +171,7 @@ export async function guardedExport(
     return { ok: false, reason: 'No artifacts generated' };
   }
 
-  // 5. Hash artifacts
+  // 6. Hash artifacts
   const records: ExportArtifactRecord[] = [];
   for (const artifact of artifacts) {
     const hash =
@@ -183,7 +193,7 @@ export async function guardedExport(
     });
   }
 
-  // 6. Build new manifest (export manifest references same trust state)
+  // 7. Build new manifest (export manifest references same trust state)
   const newManifest: SignedJobManifest = await buildSignedManifest({
     jobId,
     prevManifestHashHex: head.manifestHashHex,
@@ -194,11 +204,11 @@ export async function guardedExport(
     createdBy,
   });
 
-  // 7. Save manifest + set HEAD
+  // 8. Save manifest + set HEAD
   await store.put(newManifest);
   await store.setHead(jobId, newManifest.manifestHashHex);
 
-  // 8. Persist artifacts (only after manifest saved)
+  // 9. Persist artifacts (only after manifest saved)
   try {
     await persist(artifacts);
   } catch (e) {
@@ -211,7 +221,7 @@ export async function guardedExport(
     };
   }
 
-  // 9. Optional: Re-verify new HEAD (defensive)
+  // 10. Optional: Re-verify new HEAD (defensive)
   const newHead = await store.loadByHash(newManifest.manifestHashHex);
   if (!newHead) {
     return { ok: false, reason: 'Post-save HEAD missing' };
@@ -269,6 +279,12 @@ export async function canExportJob(args: {
     return { ok: false, reason: chainResult.reason ?? 'Chain verify failed' };
   }
 
+  // Check spec state is RELEASED
+  const specState = head.signedTrust?.trust?.spec?.state;
+  if (specState !== 'RELEASED') {
+    return { ok: false, reason: `Spec state must be RELEASED (current: ${specState ?? 'unknown'})` };
+  }
+
   if (!head.signedTrust?.trust?.gate?.ok) {
     return { ok: false, reason: 'Gate not OK' };
   }
@@ -312,4 +328,106 @@ export function createBrowserDownloader(): (
       await new Promise((r) => setTimeout(r, 100));
     }
   };
+}
+
+// ============================================
+// DXF EXPORT HELPER
+// ============================================
+
+import type { Cabinet } from '../types/Cabinet';
+import {
+  generateCabinetDXFBundle,
+  downloadCabinetDXFZip,
+  type CabinetDxfOptions,
+} from './cabinetToDxf';
+
+/**
+ * Create DXF export artifacts for a cabinet
+ * For use with guarded export pipeline
+ */
+export function createDxfExportGenerator(
+  cabinet: Cabinet,
+  options?: CabinetDxfOptions
+): () => Promise<ExportArtifact[]> {
+  return async (): Promise<ExportArtifact[]> => {
+    const dxfBundle = generateCabinetDXFBundle(cabinet, options);
+    const artifacts: ExportArtifact[] = [];
+
+    dxfBundle.forEach((content, filename) => {
+      artifacts.push({
+        kind: 'DXF',
+        filename,
+        content,
+      });
+    });
+
+    return artifacts;
+  };
+}
+
+/**
+ * Quick DXF export (bypasses manifest chain)
+ * Use for development/preview - NOT for production factory output
+ *
+ * @param cabinet - Cabinet to export
+ * @param options - DXF generation options
+ * @param asZip - Download as ZIP file (default: true)
+ */
+export async function quickDxfExport(
+  cabinet: Cabinet,
+  options?: CabinetDxfOptions,
+  asZip: boolean = true
+): Promise<void> {
+  if (asZip) {
+    await downloadCabinetDXFZip(cabinet, options);
+  } else {
+    // Download individual files
+    const dxfBundle = generateCabinetDXFBundle(cabinet, options);
+    const downloader = createBrowserDownloader();
+    const artifacts: ExportArtifact[] = [];
+
+    dxfBundle.forEach((content, filename) => {
+      artifacts.push({
+        kind: 'DXF',
+        filename,
+        content,
+      });
+    });
+
+    await downloader(artifacts);
+  }
+}
+
+/**
+ * Export all cabinets to DXF
+ */
+export async function quickDxfExportAll(
+  cabinets: Cabinet[],
+  options?: CabinetDxfOptions
+): Promise<void> {
+  // Dynamic import for JSZip
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+
+  for (const cabinet of cabinets) {
+    const folder = zip.folder(cabinet.name);
+    if (!folder) continue;
+
+    const dxfBundle = generateCabinetDXFBundle(cabinet, options);
+    dxfBundle.forEach((content, filename) => {
+      folder.file(filename, content);
+    });
+  }
+
+  // Generate and download ZIP
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'All_Cabinets_DXF.zip';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

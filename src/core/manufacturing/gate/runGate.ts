@@ -4,16 +4,20 @@
  * Runs the complete gate check:
  * 1. Preflight validation (from modeling layer)
  * 2. OperationGraph generation
- * 3. Combined status determination
+ * 3. Minifix placement validation (SPEC-MINIFIX-JOINT-LOGIC v1.0)
+ * 4. Combined status determination
  *
  * v1.0: Initial gate runner
+ * v1.1: Added Minifix gate integration
  */
 
-import type { GateReport, CabinetGateReport, GateStatus } from './types';
+import type { GateReport, CabinetGateReport, GateStatus, GateBlocker } from './types';
 import type { DesignIntent, ProfileAsset } from '../../modeling/types';
 import type { PanelContext, ToolContext } from '../../modeling/preflight';
+import type { Cabinet } from '../../types/Cabinet';
 import { validateAllIntents } from '../../modeling/preflight';
 import { buildOpGraphFromIntents } from '../opgraph/buildOpGraph';
+import { runMinifixGate, minifixErrorsToBlockers, type MinifixGateResult } from './minifixGate';
 
 // Simple profile lookup using built-in profiles
 const defaultProfileLookup = (profileId: string): ProfileAsset | undefined => {
@@ -116,4 +120,98 @@ export function getGateSummary(report: GateReport): string {
     const errorCount = report.preflight.errors.filter((e) => e.severity === 'error').length;
     return `Gate BLOCKED: ${errorCount} error(s) must be fixed`;
   }
+}
+
+// ============================================
+// MINIFIX GATE INTEGRATION (v1.1)
+// ============================================
+
+/**
+ * Extended cabinet gate report with Minifix validation
+ */
+export interface CabinetGateReportWithMinifix extends CabinetGateReport {
+  /** Minifix-specific gate result */
+  minifix: MinifixGateResult;
+  /** Combined blockers from all gates */
+  allBlockers: GateBlocker[];
+}
+
+/**
+ * Run complete gate check including Minifix validation.
+ *
+ * POLICY: Export is BLOCKED if either:
+ * - Panel preflight validation fails
+ * - Minifix placement validation fails
+ *
+ * Use this for export/G-code/packet generation.
+ */
+export function runFullCabinetGate(
+  cabinet: Cabinet,
+  panels: Map<string, PanelContext>,
+  intents: DesignIntent[],
+  toolContext?: ToolContext
+): CabinetGateReportWithMinifix {
+  // Run standard cabinet gate
+  const cabinetGate = runCabinetGate(panels, intents, toolContext);
+
+  // Run Minifix gate
+  const minifixGate = runMinifixGate(cabinet);
+  const minifixBlockers = minifixErrorsToBlockers(minifixGate.errors);
+
+  // Collect all blockers
+  const panelBlockers: GateBlocker[] = [];
+  for (const [panelId, report] of cabinetGate.panels) {
+    for (const error of report.preflight.errors) {
+      if (error.severity === 'error') {
+        panelBlockers.push({
+          code: error.code,
+          message: error.message,
+          severity: 'error',
+          panelId,
+          intentId: error.targetId,
+        });
+      }
+    }
+  }
+
+  const allBlockers = [...panelBlockers, ...minifixBlockers];
+
+  // Combined status
+  const isOk = cabinetGate.ok && minifixGate.ok;
+  const status: GateStatus = isOk ? 'PASS' : 'BLOCKED';
+
+  return {
+    ...cabinetGate,
+    status,
+    ok: isOk,
+    errorCount: cabinetGate.errorCount + minifixGate.errors.length,
+    minifix: minifixGate,
+    allBlockers,
+  };
+}
+
+/**
+ * Check if cabinet can be exported (all gates pass)
+ */
+export function canExport(report: CabinetGateReportWithMinifix): boolean {
+  return report.ok && report.minifix.ok;
+}
+
+/**
+ * Get combined gate summary including Minifix status
+ */
+export function getFullGateSummary(report: CabinetGateReportWithMinifix): string {
+  const parts: string[] = [];
+
+  if (!report.ok) {
+    if (report.errorCount > 0) {
+      parts.push(`${report.errorCount - report.minifix.errors.length} panel error(s)`);
+    }
+    if (!report.minifix.ok) {
+      parts.push(`${report.minifix.errors.length} Minifix error(s)`);
+    }
+    return `Gate BLOCKED: ${parts.join(', ')}`;
+  }
+
+  return `Gate PASS: ${report.totalOps} ops, ${report.minifix.placements.length} Minifix placements`;
 }

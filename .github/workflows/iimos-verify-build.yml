@@ -1,0 +1,196 @@
+name: iimos-verify Build
+
+on:
+  push:
+    paths:
+      - "tools/iimos-verify/**"
+      - ".github/workflows/iimos-verify-build.yml"
+  pull_request:
+    paths:
+      - "tools/iimos-verify/**"
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/iimos-verify/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/iimos-verify
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: tools/iimos-verify
+        run: npm run build
+
+      - name: Build Windows EXE
+        working-directory: tools/iimos-verify
+        run: npm run pkg:win
+
+      - name: Test EXE (help)
+        working-directory: tools/iimos-verify
+        run: ./dist/iimos-verify.exe --help
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iimos-verify-win-x64
+          path: tools/iimos-verify/dist/iimos-verify.exe
+          retention-days: 30
+
+  build-linux:
+    name: Build Linux Binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/iimos-verify/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/iimos-verify
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: tools/iimos-verify
+        run: npm run build
+
+      - name: Build Linux binary
+        working-directory: tools/iimos-verify
+        run: npm run pkg:linux
+
+      - name: Test binary (help)
+        working-directory: tools/iimos-verify
+        run: chmod +x ./dist/iimos-verify-linux && ./dist/iimos-verify-linux --help
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iimos-verify-linux-x64
+          path: tools/iimos-verify/dist/iimos-verify-linux
+          retention-days: 30
+
+  test:
+    name: Test Node.js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/iimos-verify/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/iimos-verify
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: tools/iimos-verify
+        run: npm run build
+
+      - name: Test CLI (help)
+        working-directory: tools/iimos-verify
+        run: node dist/cli.js --help
+
+      - name: Create test packet
+        working-directory: tools/iimos-verify
+        run: |
+          # Install Python dependencies for test packet creation
+          pip install pynacl
+          python scripts/create_test_packet.py test_packet.zip
+
+      - name: Test verification (PASS)
+        working-directory: tools/iimos-verify
+        run: |
+          node dist/cli.js verify test_packet.zip --keys keys/dev.pubkeys.v1.json --verbose
+          echo "Exit code: $?"
+
+      - name: Test JSON output
+        working-directory: tools/iimos-verify
+        run: |
+          node dist/cli.js verify test_packet.zip --keys keys/dev.pubkeys.v1.json --json
+
+      - name: Test report output
+        working-directory: tools/iimos-verify
+        run: |
+          node dist/cli.js verify test_packet.zip --keys keys/dev.pubkeys.v1.json --json --out report.json
+          cat report.json
+
+  release:
+    name: Create Release
+    needs: [build-windows, build-linux, test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: iimos-verify-win-x64
+          path: release/
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: iimos-verify-linux-x64
+          path: release/
+
+      - name: Create release package
+        run: |
+          cd release
+          # Copy keys template
+          cp ../tools/iimos-verify/keys/production.pubkeys.v1.json.template production.pubkeys.v1.json.template
+          # Create README
+          cat > README_FACTORY.txt << 'EOF'
+          IIMOS Factory Packet Verifier
+          =============================
+
+          Usage (Windows):
+            iimos-verify.exe verify PACKET.zip --keys production.pubkeys.v1.json
+
+          Usage (Linux):
+            ./iimos-verify-linux verify PACKET.zip --keys production.pubkeys.v1.json
+
+          Exit Codes:
+            0  = PASS (safe to use)
+            10 = MANIFEST_HASH_MISMATCH (content modified)
+            11 = SIGNATURE_INVALID (signature doesn't match)
+            12 = KEY_NOT_ALLOWED (unknown signing key)
+            13 = FILE_HASH_MISMATCH (file content modified)
+            14 = MISSING_REQUIRED_FILE (file missing from packet)
+            15 = SCHEMA_INVALID (invalid manifest format)
+
+          JSON Output (for MES/ERP):
+            iimos-verify.exe verify PACKET.zip --keys keys.json --json
+
+          Write Report to File:
+            iimos-verify.exe verify PACKET.zip --keys keys.json --json --out report.json
+
+          IMPORTANT:
+            - Only use packets that return exit code 0 (PASS)
+            - Contact IT if verification fails
+          EOF
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: iimos-verify-release-package
+          path: release/
+          retention-days: 90

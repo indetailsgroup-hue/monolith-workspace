@@ -330,6 +330,8 @@ export const DEFAULT_THROUGH_HOLE_TUNING: Required<ThroughHoleTuning> = {
     PLYWOOD: 30,
     MELAMINE: 25,
   },
+  // D5-D.2: Exit feed emission (disabled by default for canned cycle compatibility)
+  emitExitFeed: false,
 };
 
 /**
@@ -490,4 +492,21 @@ function decideThroughHole(
  */
 export function shouldApplyThroughHoleDwell(decision: ThroughHoleDecision): boolean {
   return decision.isThroughHole && decision.isSensitiveMaterial && decision.exitDwellSec > 0;
+}
+
+/**
+ * Check if exit feed emission should be used (D5-D.2).
+ * Returns true when through-hole + sensitive material + exit feed reduction > 0 + emitExitFeed enabled.
+ */
+export function shouldEmitExitFeed(
+  decision: ThroughHoleDecision,
+  emitExitFeed?: boolean
+): boolean {
+  return (
+    emitExitFeed === true &&
+    decision.isThroughHole &&
+    decision.isSensitiveMaterial &&
+    decision.exitFeedReductionPercent > 0 &&
+    decision.exitFeedRateMmMin > 0
+  );
 }

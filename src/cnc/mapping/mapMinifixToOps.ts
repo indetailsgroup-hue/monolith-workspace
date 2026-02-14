@@ -7,6 +7,35 @@
  * - Bolt hole (5mm or 8mm drill)
  *
  * @version 1.0.0 - Phase D1
+ *
+ * ══════════════════════════════════════════════════════════════════════════════
+ * ⚠️ CRITICAL: This is the CNC MANUFACTURING DOMAIN (O_panel)
+ * ══════════════════════════════════════════════════════════════════════════════
+ *
+ * This mapper operates EXCLUSIVELY in the CNC manufacturing domain.
+ * It reads validated packet data (PacketMinifixPair) containing:
+ *
+ * - pair.cam.diameter  → Actual bore diameter (15mm standard)
+ * - pair.cam.depth     → Actual bore depth (per wood thickness)
+ * - pair.bolt.diameter → Implicit from drillTool selection
+ * - pair.bolt.depth    → Actual pilot hole depth
+ *
+ * ⚠️ THIS MAPPER DOES NOT USE ASSEMBLY PREVIEW DATA!
+ * ─────────────────────────────────────────────────────────────────────────────
+ * The MinifixConfigPanel.tsx shows visual assembly preview (ball head, sleeve,
+ * shaft dimensions) for designer verification. Those dimensions are IRRELEVANT
+ * to CNC operations.
+ *
+ * CNC operations use ONLY:
+ * 1. Validated PacketMinifixPair from factory packet
+ * 2. Machine profile tool capabilities
+ * 3. Standard Minifix catalog drilling specs
+ *
+ * The distinction matters because:
+ * - Assembly preview shows "how it looks assembled"
+ * - CNC spec defines "what holes to drill"
+ * - A designer might adjust preview visuals without affecting manufacturing
+ * ══════════════════════════════════════════════════════════════════════════════
  */
 
 import type { PacketConnectors, PacketMinifixPair } from '../../factory/packet/types';

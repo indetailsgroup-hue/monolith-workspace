@@ -29,6 +29,7 @@ import {
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
 import { CabinetType, JointType } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
+import { DrawerConfigPanel } from './DrawerConfigPanel';
 
 interface ConfiguratorPanelProps {
   onOpenRegistry?: () => void;
@@ -358,7 +359,10 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
             />
           </div>
         </MonolithSection>
-        
+
+        {/* Drawer Configuration */}
+        <DrawerConfigPanel />
+
         {/* Live Engineering Data */}
         <div className="p-4 bg-[#0d1117] border-t border-white/5">
           <div className="text-[10px] text-white/40 uppercase tracking-widest mb-2">

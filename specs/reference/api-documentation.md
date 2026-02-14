@@ -1,6 +1,6 @@
 # API Documentation & Interface Reference
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -24,7 +24,7 @@
 
 ## 1. Overview
 
-This document provides a comprehensive reference for all public APIs, interfaces, and type definitions in the IIMOS Designer Workspace application.
+This document provides a comprehensive reference for all public APIs, interfaces, and type definitions in the MONOLITH Designer Workspace application.
 
 ### 1.1 Architecture Overview
 
@@ -1183,5 +1183,5 @@ export function createMockCabinet(overrides?: Partial<Cabinet>): Cabinet {
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Technical Team
+- **Owner:** MONOLITH Technical Team
 - **Status:** ✅ Active

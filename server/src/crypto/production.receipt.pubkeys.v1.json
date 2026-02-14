@@ -1,0 +1,11 @@
+[
+  {
+    "keyId": "receipt-key-v1",
+    "publicKeyBase64": "",
+    "algorithm": "ed25519",
+    "validFrom": "2025-01-01T00:00:00.000Z",
+    "validUntil": null,
+    "revoked": false,
+    "_comment": "PLACEHOLDER: Replace with actual Ed25519 public key (SPKI DER format, base64-encoded)"
+  }
+]

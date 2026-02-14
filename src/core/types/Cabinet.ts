@@ -19,19 +19,22 @@ export type CabinetType = 'BASE' | 'WALL' | 'TALL' | 'DRAWER' | 'CORNER';
 
 export type JointType = 'INSET' | 'OVERLAY';
 
-export type PanelRole = 
-  | 'LEFT_SIDE' 
-  | 'RIGHT_SIDE' 
-  | 'TOP' 
-  | 'BOTTOM' 
-  | 'BACK' 
-  | 'SHELF' 
+export type PanelRole =
+  | 'LEFT_SIDE'
+  | 'RIGHT_SIDE'
+  | 'TOP'
+  | 'BOTTOM'
+  | 'BACK'
+  | 'SHELF'
   | 'DIVIDER'
   | 'FRONT'
   | 'DRAWER_FRONT'
   | 'DRAWER_SIDE'
   | 'DRAWER_BACK'
-  | 'DRAWER_BOTTOM';
+  | 'DRAWER_BOTTOM'
+  | 'DOOR'
+  | 'DOOR_LEFT'
+  | 'DOOR_RIGHT';
 
 export type GrainDirection = 'HORIZONTAL' | 'VERTICAL';
 
@@ -102,7 +105,7 @@ export interface PanelFaces {
 }
 
 export interface PanelComputed {
-  realThickness: number;  // T_real = core + surfA + surfB + glue
+  realThickness: number;  // T_real = core + surfA + surfB (no glue in display)
   cutWidth: number;       // Cut size = Finish - edges + preMill
   cutHeight: number;
   surfaceArea: number;    // m²
@@ -141,6 +144,198 @@ export interface CabinetPanel {
 }
 
 // ============================================
+// DRAWER CONFIGURATION
+// ============================================
+
+export type DrawerSlideType = 'undermount' | 'side_mount';
+
+export type DrawerHandleType = 'pull' | 'knob' | 'j-pull' | 'none';
+
+export type DrawerHandlePosition = 'center' | 'top' | 'bottom';
+
+/**
+ * Configuration for a single drawer row.
+ * Multiple rows stack vertically from cabinet bottom.
+ */
+export interface DrawerRowConfig {
+  /** Unique identifier for this drawer row */
+  id: string;
+  /** Front panel height (visible face) in mm - typically 80-300mm */
+  frontHeight: number;
+  /** Internal box height in mm - auto-calculated if not specified */
+  boxHeight?: number;
+  /** Gap between this drawer and the row below in mm - typically 3-5mm */
+  gapAbove: number;
+  /** Slide system ID (e.g., 'metropush', 'blum_tandem') */
+  slideSystemId: string;
+  /** Handle configuration */
+  handleConfig?: {
+    type: DrawerHandleType;
+    position: DrawerHandlePosition;
+    offsetY?: number;
+  };
+}
+
+/**
+ * Materials for drawer box construction.
+ * Typically thinner than cabinet structure panels.
+ */
+export interface DrawerBoxMaterials {
+  /** Side panel thickness (mm) - typically 12mm */
+  sideThickness: number;
+  /** Back panel thickness (mm) - typically 12mm */
+  backThickness: number;
+  /** Bottom panel thickness (mm) - typically 6-9mm */
+  bottomThickness: number;
+  /** Core material ID for side/back panels */
+  sideCore: string;
+  /** Core material ID for bottom panel */
+  bottomCore: string;
+}
+
+/**
+ * Main drawer configuration for a cabinet.
+ * Supports multiple drawer rows with different heights.
+ */
+export interface DrawerConfig {
+  /** Whether drawer system is enabled */
+  hasDrawers: boolean;
+  /** Array of drawer rows from bottom to top */
+  rows: DrawerRowConfig[];
+  /** Slide mounting type - affects clearances */
+  slideType: DrawerSlideType;
+  /** Materials for drawer box construction */
+  boxMaterials: DrawerBoxMaterials;
+  /** Front panel overlay beyond cabinet opening (mm) */
+  frontOverlay?: number;
+}
+
+/**
+ * Default drawer box materials.
+ */
+export const DEFAULT_DRAWER_BOX_MATERIALS: DrawerBoxMaterials = {
+  sideThickness: 12,
+  backThickness: 12,
+  bottomThickness: 6,
+  sideCore: 'core-ply-18',  // Using available plywood
+  bottomCore: 'core-mdf-6',
+};
+
+/**
+ * Default drawer configuration.
+ */
+export const DEFAULT_DRAWER_CONFIG: DrawerConfig = {
+  hasDrawers: false,
+  rows: [],
+  slideType: 'undermount',
+  boxMaterials: DEFAULT_DRAWER_BOX_MATERIALS,
+  frontOverlay: 18,
+};
+
+/**
+ * Default drawer row configuration.
+ */
+export const DEFAULT_DRAWER_ROW: Omit<DrawerRowConfig, 'id'> = {
+  frontHeight: 140,
+  gapAbove: 3,
+  slideSystemId: 'metropush',
+  handleConfig: {
+    type: 'pull',
+    position: 'center',
+  },
+};
+
+// ============================================
+// DOOR CONFIGURATION
+// ============================================
+
+/** Door overlay type - how much door overlaps cabinet opening */
+export type DoorOverlayType = 'full' | 'half' | 'inset';
+
+/** Door opening direction */
+export type DoorOpeningDirection = 'left' | 'right';
+
+/** Door style profile (for CNC routing) */
+export type DoorStyleType = 'slab' | 'shaker' | 'shaker_modern' | 'j_pull';
+
+/** Handle type for doors */
+export type DoorHandleType = 'pull' | 'knob' | 'j_pull' | 'push_latch' | 'none';
+
+/**
+ * Configuration for a single door panel.
+ */
+export interface DoorPanelConfig {
+  /** Unique identifier */
+  id: string;
+  /** Opening direction (hinge side) */
+  openingDirection: DoorOpeningDirection;
+  /** Door style profile */
+  style: DoorStyleType;
+  /** Overlay type */
+  overlayType: DoorOverlayType;
+  /** Handle configuration */
+  handleConfig?: {
+    type: DoorHandleType;
+    height: number; // mm from bottom
+    offset?: number; // mm from edge
+  };
+  /** Hinge ID from HingeCatalog */
+  hingeId: string;
+  /** Number of hinges (auto-calculated based on height) */
+  hingeCount?: number;
+  /** Custom hinge positions (overrides auto-calculation) */
+  hingePositions?: number[];
+}
+
+/**
+ * Main door configuration for a cabinet.
+ */
+export interface DoorConfig {
+  /** Whether cabinet has doors */
+  hasDoors: boolean;
+  /** Number of door panels (1 = single door, 2 = double doors) */
+  doorCount: 1 | 2;
+  /** Configuration for each door panel */
+  doors: DoorPanelConfig[];
+  /** Door panel thickness (typically same as cabinet panels) */
+  doorThickness: number;
+  /** Overlay amount in mm (how much door overlaps opening) */
+  overlayAmount: number;
+  /** Gap between double doors (mm) */
+  doorGap: number;
+  /** Reveal gap around door perimeter (mm) */
+  revealGap: number;
+}
+
+/**
+ * Default door panel configuration.
+ */
+export const DEFAULT_DOOR_PANEL: Omit<DoorPanelConfig, 'id'> = {
+  openingDirection: 'left',
+  style: 'slab',
+  overlayType: 'full',
+  hingeId: 'blum-clip-top-full',
+  handleConfig: {
+    type: 'pull',
+    height: 1000,
+    offset: 40,
+  },
+};
+
+/**
+ * Default door configuration.
+ */
+export const DEFAULT_DOOR_CONFIG: DoorConfig = {
+  hasDoors: false,
+  doorCount: 1,
+  doors: [],
+  doorThickness: 18,
+  overlayAmount: 18,
+  doorGap: 3,
+  revealGap: 2,
+};
+
+// ============================================
 // CABINET STRUCTURE
 // ============================================
 
@@ -155,9 +350,30 @@ export interface CabinetStructure {
   topJoint: JointType;
   bottomJoint: JointType;
   hasBackPanel: boolean;
+  backPanelConstruction: 'inset' | 'overlay'; // inset = เซาะร่อง, overlay = วางทับ
   backPanelInset: number; // Distance from back edge (mm)
   shelfCount: number;
   dividerCount: number;
+  /** Drawer system configuration (optional) */
+  drawerConfig?: DrawerConfig;
+  /** Door system configuration (optional) */
+  doorConfig?: DoorConfig;
+
+  /**
+   * Corner angles for angled cabinet joints (optional).
+   * Values in degrees (30-150). Default is 90° for all corners.
+   *
+   * Use cases:
+   * - Corner cabinets with 45° angles
+   * - Trapezoid cabinets
+   * - Angled wall installations
+   */
+  cornerAngles?: {
+    topLeft?: number;      // degrees (30-150), default 90
+    topRight?: number;     // degrees (30-150), default 90
+    bottomLeft?: number;   // degrees (30-150), default 90
+    bottomRight?: number;  // degrees (30-150), default 90
+  };
 }
 
 export interface CabinetManufacturing {
@@ -188,6 +404,104 @@ export interface CabinetComputed {
 }
 
 // ============================================
+// CABINET HARDWARE CONFIGURATION
+// ============================================
+
+export interface CabinetHardware {
+  /** Selected Minifix preset ID (from saved presets) */
+  minifixPresetId?: string;
+  /** Inline Minifix config (if not using preset) */
+  minifixConfig?: {
+    camDia: number;
+    camDepth: number;
+    camOffset: number;
+    sleeveDia: number;
+    sleeveLength: number;
+    sleeveOffset: number;
+    shaftDia: number;
+    shaftLength: number;
+    shaftOffset: number;
+    ballHeadDia: number;
+    ballHeadOffset: number;
+    dowelDia: number;
+    dowelLength: number;
+    dowelOffset: number;
+    woodThickness: number;
+  };
+  /** Selected hinge preset ID */
+  hingePresetId?: string;
+  /** Hinge configuration overrides */
+  hingeConfig?: {
+    cupDia: number;
+    cupDepth: number;
+    openingAngle: number;
+    softClose: boolean;
+  };
+  /** Drawer slide preset ID */
+  drawerSlidePresetId?: string;
+  /** Shelf pin configuration */
+  shelfPinConfig?: {
+    diameter: number;
+    depth: number;
+    rowCount: number;
+    columnCount: number;
+  };
+}
+
+export const DEFAULT_HARDWARE: CabinetHardware = {
+  minifixPresetId: undefined,
+  minifixConfig: undefined,
+  hingePresetId: undefined,
+  hingeConfig: undefined,
+  drawerSlidePresetId: undefined,
+  shelfPinConfig: {
+    diameter: 5,
+    depth: 12,
+    rowCount: 4,
+    columnCount: 2,
+  },
+};
+
+// ============================================
+// HARDWARE POINT OVERRIDES (Per-Connector Config)
+// ============================================
+
+/**
+ * Rotation override for hardware visualization.
+ * Values in radians.
+ */
+export interface HardwareRotationOverride {
+  rotX: number;
+  rotY: number;
+  rotZ: number;
+}
+
+/**
+ * Position offset for hardware visualization.
+ * Values in mm.
+ */
+export interface HardwarePositionOverride {
+  dx: number;
+  dy: number;
+  dz: number;
+}
+
+/**
+ * Per-point hardware override settings.
+ * Keyed by drillMap pointId (e.g., "CAM-TOP-LEFT-0").
+ */
+export interface HardwarePointOverride {
+  rotation?: HardwareRotationOverride;
+  position?: HardwarePositionOverride;
+}
+
+/**
+ * All hardware point overrides for a cabinet.
+ * Map: pointId → override settings
+ */
+export type HardwarePointOverrides = Record<string, HardwarePointOverride>;
+
+// ============================================
 // MAIN CABINET TYPE
 // ============================================
 
@@ -195,19 +509,27 @@ export interface Cabinet {
   id: string;
   name: string;
   type: CabinetType;
-  
+
   // Configuration
   dimensions: CabinetDimensions;
   structure: CabinetStructure;
   materials: CabinetMaterials;
   manufacturing: CabinetManufacturing;
-  
+  hardware?: CabinetHardware;
+
+  // Hardware point overrides (persisted rotation/position per connector)
+  hardwareOverrides?: HardwarePointOverrides;
+
   // Generated panels
   panels: CabinetPanel[];
-  
+
   // Computed totals
   computed: CabinetComputed;
-  
+
+  // NOTE: Outer dimensions (outerWidth, outerHeight) were removed as dead code.
+  // Use getInnerWidth/getInnerHeight from intentToHardware.ts for derived dimensions,
+  // or compute from dimensions + materials.carcassThickness if needed.
+
   // Metadata
   createdAt: number;
   updatedAt: number;
@@ -228,6 +550,7 @@ export const DEFAULT_STRUCTURE: CabinetStructure = {
   topJoint: 'INSET',
   bottomJoint: 'INSET',
   hasBackPanel: true,
+  backPanelConstruction: 'inset', // inset = เซาะร่อง (default), overlay = วางทับ
   backPanelInset: 6,
   shelfCount: 1,
   dividerCount: 0,
@@ -307,16 +630,12 @@ export function calculateCutSize(
   finishSize: number,
   edge1: number,
   edge2: number,
-  preMillPerSide: number = 0.5
+  _preMillPerSide: number = 0.5  // Kept for API compatibility but not used
 ): number {
-  // Subtract edge thicknesses
-  let cutSize = finishSize - (edge1 + edge2);
-  
-  // Add pre-milling ONLY for sides that have edge banding
-  if (edge1 > 0) cutSize += preMillPerSide;
-  if (edge2 > 0) cutSize += preMillPerSide;
-  
-  return cutSize;
+  // Cut Size = Finish Size - Edge Thicknesses
+  // This is the panel size AFTER pre-milling, ready for edge banding
+  // Pre-milling is a machine operation, not added to cut dimensions
+  return finishSize - (edge1 + edge2);
 }
 
 /**

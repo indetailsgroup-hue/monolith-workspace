@@ -1,0 +1,47 @@
+name: keyset-validate
+
+# Validate pinned keyset on PRs that touch key files
+on:
+  pull_request:
+    paths:
+      - "tools/iimos-verify/keys/**.json"
+      - "tools/iimos-verify/scripts/validate_keyset.ts"
+      - "tools/iimos-verify/src/keys/types.ts"
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/iimos-verify/keys/**.json"
+
+jobs:
+  validate:
+    name: Validate Pinned Keyset
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/iimos-verify/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/iimos-verify
+        run: npm ci
+
+      - name: Validate production keyset
+        working-directory: tools/iimos-verify
+        run: npx ts-node scripts/validate_keyset.ts keys/production.pubkeys.v1.json
+
+      - name: Validate development keyset (if exists)
+        working-directory: tools/iimos-verify
+        run: |
+          if [ -f keys/dev.pubkeys.v1.json ]; then
+            npx ts-node scripts/validate_keyset.ts keys/dev.pubkeys.v1.json
+          else
+            echo "No dev keyset found, skipping"
+          fi

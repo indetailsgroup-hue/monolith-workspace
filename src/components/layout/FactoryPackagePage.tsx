@@ -16,18 +16,23 @@
  * After appending a receipt, the timeline automatically refreshes.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, lazy, Suspense } from 'react';
 import type { StoreApi, UseBoundStore } from 'zustand';
 import type { ReceiptViewerState } from '../../core/receiptViewer/receiptViewerStore';
 import type { ReceiptIngestState } from '../../core/receiptIngest/receiptIngestStore';
 import type { PreflightState } from '../../core/preflight/preflightStore';
 import type { FixPlanState } from '../../core/fixPlan/fixPlanStore';
 import type { ExportViewerState } from '../exportViewer/exportViewerStore';
-import { ReceiptViewer } from '../ui/ReceiptViewer';
 import { ReceiptIngestPanel } from '../ui/ReceiptIngestPanel';
 import { ReleasePreflightPanel } from '../ui/ReleasePreflightPanel';
 import { FixPlanPanel } from '../ui/FixPlanPanel';
 import { ExportViewerPanel } from '../exportViewer/ExportViewerPanel';
+import { ModalLoadingFallback } from '../ui/LoadingFallback';
+
+// Lazy load heavy component (T018 code splitting)
+const ReceiptViewer = lazy(() =>
+  import('../ui/ReceiptViewer').then(m => ({ default: m.ReceiptViewer }))
+);
 
 // ============================================
 // PROPS
@@ -164,7 +169,9 @@ export function FactoryPackagePage({
 
         {/* Right Panel: Receipt Viewer / Timeline */}
         <div className="w-1/2 overflow-hidden">
-          <ReceiptViewer store={viewerStore} />
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <ReceiptViewer store={viewerStore} />
+          </Suspense>
         </div>
       </div>
     </div>
@@ -314,7 +321,9 @@ export function FactoryPackageCompact({
         store={ingestStore}
         onAppended={handleReceiptAppended}
       />
-      <ReceiptViewer store={viewerStore} />
+      <Suspense fallback={<ModalLoadingFallback />}>
+        <ReceiptViewer store={viewerStore} />
+      </Suspense>
     </div>
   );
 }

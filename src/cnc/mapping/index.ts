@@ -39,3 +39,16 @@ export type {
   ValidationIssue,
   ValidationSeverity,
 } from './validateOperationGraph';
+
+// G9 Persistence Gate
+export {
+  assertValidatedPacket,
+  assertValidatedPacketSafe,
+  markPacketAsValidated,
+  isG9ViolationError,
+  hasG9ViolationCode,
+  G9ViolationError,
+  G9_ERROR_CODE,
+  TRUSTED_MODULES_ALLOWLIST,
+} from './g9AssertValidPacket';
+export type { TrustedPacketSource } from './g9AssertValidPacket';

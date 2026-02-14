@@ -21,7 +21,7 @@ import { openDb, reqToPromise } from './idb';
 // CONSTANTS
 // ============================================
 
-const DB_NAME = 'iimos-manifests';
+const DB_NAME = 'monolith-manifests';
 const DB_VERSION = 1;
 
 const STORE_MANIFESTS = 'manifests';

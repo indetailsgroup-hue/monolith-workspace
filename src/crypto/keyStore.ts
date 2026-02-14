@@ -18,7 +18,7 @@ export interface JwkPair {
   createdAtIso: string;
 }
 
-const LS_PREFIX = 'iimos.keys.';
+const LS_PREFIX = 'monolith.keys.';
 
 /**
  * Load key pair from localStorage.

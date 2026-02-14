@@ -1,6 +1,6 @@
 /**
- * IIMOS Designer Workspace - Main App
- * 
+ * Monolith Designer Workspace - Main App
+ *
  * SPEC-08 Compliant Architecture:
  * - Left Panel: Designer Intent (Catalog, Materials, Hardware, Versions)
  * - Viewport: R3F Canvas with Cabinet3D + View System
@@ -15,32 +15,82 @@
  * - Save/Load Project System
  */
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense, useEffect, useRef, lazy } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { AppShell } from './components/layout/AppShell';
 import { DesignerIntentPanel } from './components/layout/DesignerIntentPanel';
 import { ParametricContractPanel } from './components/layout/ParametricContractPanel';
-import { Cabinet3D } from './components/canvas/Cabinet3D';
+import { Cabinet3D, SceneRaycastPolicy } from './components/canvas/Cabinet3D';
 import { InfiniteGrid } from './components/canvas/InfiniteGrid';
 import { CameraController, ViewType, VIEW_PRESETS } from './components/canvas/ViewportController';
-import { PanelConfigModal } from './components/ui/PanelOverrideModal';
 import { ProjectToolbar } from './components/ui/ProjectToolbar';
 import { GateToolbar } from './components/ui/GateToolbar';
 import { SceneToolbar } from './components/ui/SceneToolbar';
-import { SafetyGatePage } from './components/pages/SafetyGatePage';
 import { useCabinetStore } from './core/store/useCabinetStore';
 import { useProjectStore } from './core/store/useProjectStore';
 import { useSpecStore, useSpecState, useGateStatus } from './core/store/useSpecStore';
 import { useToolStore, handleToolHotkey, useToolHotkeys } from './core/store/useToolStore';
+import { useSketchStore } from './core/sketch/useSketchStore';
 import { GlueModeOverlay } from './components/canvas/GlueFaceHighlights';
 import { useGlueStore } from './core/store/useGlueStore';
 import { calculateGlueAlignment, CabinetBounds } from './core/utils/glueSystem';
 import { GizmoHUD } from './components/ui/GizmoHUD';
 import { useGizmoStore } from './core/store/useGizmoStore';
-import { CommandPalette } from './components/ui/CommandPalette';
+import { useSnapStore } from './core/store/useSnapStore';
 import { ContextToolbar } from './components/ui/ContextToolbar';
+import { useGlobalHotkeys, useRadialMenuTrigger } from './core/ui/useGlobalHotkeys';
 import { useModelingStore } from './core/modeling';
+import { SceneRegistryProvider } from './components/canvas/scene';
+import { SketchInputLayer } from './components/canvas/SketchInputLayer';
+import { SketchPreview, SketchEntitiesRenderer } from './components/canvas/SketchPreview';
+import { SketchSnapGlyphs } from './components/canvas/SketchSnapGlyphs';
+import { SketchToolbar, SketchHUD, CPlaneSelector } from './components/ui/SketchOverlay';
+import { ConstructionPlane } from './components/canvas/ConstructionPlane';
+import { SnapGuides } from './components/canvas/SnapGuides';
+import { MeasureLayer } from './components/tools/MeasureLayer';
+import { ToastContainer } from './components/ui/ToastContainer';
+import { useDrillMapStore } from './core/store/useDrillMapStore';
+import { useViewStore } from './core/store/useViewStore';
+import { usePreloadTextures } from './core/materials/useMaterialStore';
+import { readTheme, writeTheme, type AppTheme } from './core/persistence/appPrefs';
+
+// ============================================
+// T018: LAZY-LOADED COMPONENTS (Code Splitting)
+// These components are conditionally rendered, so we lazy-load them
+// to reduce initial bundle size. Each gets its own chunk.
+// ============================================
+
+// Heavy modal - only shown when editing panel
+const PanelConfigModal = lazy(() =>
+  import('./components/ui/PanelOverrideModal').then(m => ({ default: m.PanelConfigModal }))
+);
+
+// Heavy view - only shown when CAD view enabled
+const CADDrillMapView = lazy(() =>
+  import('./components/canvas/CADDrillMapView').then(m => ({ default: m.CADDrillMapView }))
+);
+
+// Command palette - only shown on Space/Cmd+K
+const CommandPalette = lazy(() =>
+  import('./components/ui/CommandPalette').then(m => ({ default: m.CommandPalette }))
+);
+
+// Radial menu - only shown on right-click
+const RadialMenu = lazy(() =>
+  import('./components/ui/RadialMenu').then(m => ({ default: m.RadialMenu }))
+);
+
+// Hardware context menu - only shown on hardware right-click
+const HardwareContextMenu = lazy(() =>
+  import('./components/ui/HardwareContextMenu').then(m => ({ default: m.HardwareContextMenu }))
+);
+
+// P001: Shortcut help overlay - shown on ? or Ctrl+/
+const ShortcutOverlay = lazy(() =>
+  import('./components/ui/ShortcutOverlay').then(m => ({ default: m.ShortcutOverlay }))
+);
 
 // ============================================
 // GLOBAL ERROR SUPPRESSION FOR R3F RAYCAST
@@ -73,9 +123,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// App modes
-type AppMode = 'designer' | 'safety-gate';
-
 // View Toolbar Component
 function ViewToolbar({
   currentView,
@@ -84,26 +131,47 @@ function ViewToolbar({
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
 }) {
-  const views: ViewType[] = ['Front', 'Left', 'Perspective', 'Install', 'Factory', 'CNC'];
+  const views: ViewType[] = ['Front', 'Left', 'Top', 'Perspective', 'Install', 'Factory', 'CNC'];
 
   return (
     <div className="flex items-center gap-1">
-      {views.map((view) => (
-        <button
-          key={view}
-          onClick={() => onViewChange(view)}
-          className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md
-            ${view === currentView
-              ? 'bg-green-500/10 text-green-400 border border-green-500/30'
-              : 'text-gray-500 hover:text-white hover:bg-surface-3'
-            }`}
-          title={VIEW_PRESETS[view].description}
-        >
-          {view}
-        </button>
-      ))}
+      {views.map((view) => {
+        const preset = VIEW_PRESETS[view];
+        const isOrtho = preset.isOrtho ?? false;
+
+        return (
+          <button
+            key={view}
+            onClick={() => onViewChange(view)}
+            className={`relative px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md
+              ${view === currentView
+                ? isOrtho
+                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30' // 2D views: cyan
+                  : 'bg-green-500/10 text-green-400 border border-green-500/30' // 3D views: green
+                : 'text-gray-500 hover:text-white hover:bg-surface-3'
+              }`}
+            title={preset.description}
+          >
+            {view}
+            {/* Show 2D badge for orthographic views */}
+            {isOrtho && (
+              <span className="absolute -top-1 -right-1 text-[8px] bg-cyan-500/30 text-cyan-300 px-1 rounded font-mono">
+                2D
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
+}
+
+/**
+ * Get user's preferred theme (G9 compliant via appPrefs boundary)
+ */
+function getPreferredTheme(): AppTheme {
+  // Always respect stored preference; default is 'dark'
+  return readTheme();
 }
 
 // R3F Viewport Component with View System
@@ -131,6 +199,13 @@ function GizmoHUDContainer() {
     freeDeltaWorld: s.session.freeDeltaWorld,
     planeDelta2D: s.session.planeDelta2D,
     planeLock: s.session.planeDragState?.locked ?? null,
+  }));
+
+  // Get snap state from useSnapStore
+  const snapState = useSnapStore((s) => ({
+    enabled: s.enabled,
+    isSnapping: s.isSnapping,
+    activeCandidate: s.activeCandidate,
   }));
 
   // Only show HUD in move mode
@@ -163,77 +238,212 @@ function GizmoHUDContainer() {
       stepMm={gizmoState.stepMmOverride}
       isFine={gizmoState.isFine}
       isAlt={gizmoState.isAlt}
-      snapEnabled={false}  // TODO: Connect to snap system
-      engaged={false}
-      candidates={0}
+      snapEnabled={snapState.enabled}
+      engaged={snapState.isSnapping}
+      candidates={snapState.activeCandidate ? 1 : 0}
     />
   );
 }
 
 function Viewport({ currentView, showDimensions = false, hideTooltip = false, onDoubleClickPanel }: ViewportProps) {
+  const preset = VIEW_PRESETS[currentView];
+  const isOrtho = preset.isOrtho ?? false;
+  const orthoZoom = preset.orthoZoom ?? 0.4;
+
+  // WebGL context loss recovery - increment key to force Canvas remount
+  const [contextLossCount, setContextLossCount] = useState(0);
+  const lastRecoveryTime = useRef(0);
+
+  // Handle WebGL context loss with cooldown to prevent rapid recoveries
+  useEffect(() => {
+    let mounted = true;
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+
+      // Cooldown: Don't recover more than once per 2 seconds
+      const now = Date.now();
+      if (now - lastRecoveryTime.current < 2000) {
+        console.warn('[WebGL] Context lost, but recovery cooldown active');
+        return;
+      }
+
+      console.warn('[WebGL] Context lost, attempting recovery in 500ms...');
+      lastRecoveryTime.current = now;
+
+      // Wait longer before remounting to let GPU resources settle
+      setTimeout(() => {
+        if (mounted) {
+          setContextLossCount(c => c + 1);
+        }
+      }, 500);
+    };
+
+    const handleContextRestored = () => {
+      console.log('[WebGL] Context restored');
+    };
+
+    // Use MutationObserver to handle canvas element changes after remount
+    const attachListeners = () => {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        canvas.addEventListener('webglcontextlost', handleContextLost);
+        canvas.addEventListener('webglcontextrestored', handleContextRestored);
+        return canvas;
+      }
+      return null;
+    };
+
+    // Initial attachment
+    let canvas = attachListeners();
+
+    // If canvas not found yet, wait for it
+    if (!canvas) {
+      const timer = setTimeout(() => {
+        canvas = attachListeners();
+      }, 100);
+      return () => {
+        mounted = false;
+        clearTimeout(timer);
+      };
+    }
+
+    return () => {
+      mounted = false;
+      if (canvas) {
+        canvas.removeEventListener('webglcontextlost', handleContextLost);
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      }
+    };
+  }, [contextLossCount]);
+
+  // Key forces Canvas re-mount when switching between ortho/perspective OR on context loss
+  const cameraKey = `${isOrtho ? 'ortho' : 'persp'}-${contextLossCount}`;
+
   return (
     <Canvas
+      key={cameraKey}
       shadows
-      camera={{ 
-        position: VIEW_PRESETS[currentView].position, 
-        fov: VIEW_PRESETS[currentView].fov, 
-        near: 1, 
-        far: 100000 
+      orthographic={isOrtho}
+      camera={isOrtho ? {
+        position: preset.position,
+        zoom: orthoZoom,
+        near: 1,
+        far: 100000,
+      } : {
+        position: preset.position,
+        fov: preset.fov,
+        near: 1,
+        far: 100000
       }}
-      gl={{ antialias: true, alpha: false }}
-      style={{ background: '#0a0a0a' }}
+      gl={{
+        antialias: true,
+        alpha: false,
+        powerPreference: 'high-performance',  // Use dedicated GPU
+        failIfMajorPerformanceCaveat: false,  // Don't fail on low-end GPUs
+      }}
+      style={{ background: 'rgb(var(--surface-0))' }}
     >
-      <Suspense fallback={null}>
-        {/* Camera Controller */}
-        <CameraController viewType={currentView} />
-        
-        {/* Lighting */}
-        <ambientLight intensity={0.4} />
-        <directionalLight 
-          position={[2000, 3000, 2000]} 
-          intensity={1.2} 
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-        />
-        <directionalLight 
-          position={[-1500, 1000, -1000]} 
-          intensity={0.3} 
-        />
-        
-        {/* Environment for reflections */}
-        <Environment preset="studio" />
-        
-        {/* Cabinet */}
-        <Cabinet3D showDimensions={showDimensions} hideTooltip={hideTooltip} onDoubleClickPanel={onDoubleClickPanel} />
-        
-        {/* Infinite Grid */}
-        <InfiniteGrid />
-        
-        {/* Controls */}
-        <OrbitControls 
-          makeDefault
-          enableDamping
-          dampingFactor={0.05}
-          minDistance={500}
-          maxDistance={10000}
-          target={VIEW_PRESETS[currentView].target}
-        />
-      </Suspense>
+      <SceneRegistryProvider>
+        <Suspense fallback={null}>
+          {/* Camera Controller - handles view transitions */}
+          <CameraController viewType={currentView} />
+
+          {/* Raycast Policy - configures layer filtering for X-Ray mode */}
+          <SceneRaycastPolicy />
+
+          {/* Lighting */}
+          <ambientLight intensity={0.4} />
+          <directionalLight
+            position={[2000, 3000, 2000]}
+            intensity={1.2}
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+          />
+          <directionalLight
+            position={[-1500, 1000, -1000]}
+            intensity={0.3}
+          />
+
+          {/* Environment removed - was causing WebGL Context Lost
+              Simple lighting is sufficient for cabinet visualization */}
+
+          {/* Construction Plane for sketching */}
+          <ConstructionPlane />
+
+          {/* Sketch input layer (handles mouse events for sketching) */}
+          <SketchInputLayer />
+
+          {/* Sketch preview (shows line/rect preview while drawing) */}
+          <SketchPreview showDimensions={showDimensions} />
+
+          {/* Sketch committed entities (shows drawn shapes) */}
+          <SketchEntitiesRenderer showDimensions={showDimensions} />
+
+          {/* Sketch snap glyphs (endpoint/midpoint indicators) */}
+          <SketchSnapGlyphs />
+
+          {/* Cabinet */}
+          <Cabinet3D showDimensions={showDimensions} hideTooltip={hideTooltip} onDoubleClickPanel={onDoubleClickPanel} />
+
+          {/* Snap guides and point glyphs */}
+          <SnapGuides />
+
+          {/* Measure Tool Layer */}
+          <MeasureLayer />
+
+          {/* Infinite Grid - hide in Left view (grid appears as horizontal lines when viewed edge-on) */}
+          {currentView !== 'Left' && <InfiniteGrid />}
+
+          {/* Controls - disable rotation for 2D ortho views */}
+          <OrbitControls
+            makeDefault
+            enableDamping
+            dampingFactor={0.05}
+            minDistance={isOrtho ? 100 : 500}
+            maxDistance={isOrtho ? 50000 : 10000}
+            enableRotate={!isOrtho}
+            target={preset.target}
+          />
+        </Suspense>
+      </SceneRegistryProvider>
     </Canvas>
   );
 }
 
 export function App() {
-  const [currentView, setCurrentView] = useState<ViewType>('Perspective');
+  const navigate = useNavigate();
+  // Use Zustand store for view state (syncs with Cabinet3D dimensions filtering)
+  const currentView = useViewStore((s) => s.currentView);
+  const setCurrentView = useViewStore((s) => s.setView);
   const [showPanelModal, setShowPanelModal] = useState(false);
   const [showDimensions, setShowDimensions] = useState(false);
-  const [appMode, setAppMode] = useState<AppMode>('designer');
+  const [theme, setTheme] = useState<AppTheme>(() => getPreferredTheme());
 
   const cabinet = useCabinetStore((s) => s.cabinet);
   const selectedPanelId = useCabinetStore((s) => s.selectedPanelId);
 
+  // CAD View state
+  const showCADView = useDrillMapStore((s) => s.showCADView);
+  const drillMap = useDrillMapStore((s) => s.drillMap);
+  const toggleShowCADView = useDrillMapStore((s) => s.toggleShowCADView);
+
+  // T016: Preload only active material's texture (not all)
+  usePreloadTextures();
+
   // Enable tool hotkeys (including glue mode shortcuts)
   useToolHotkeys();
+
+  // Enable global hotkeys (F for Command Palette, G/R, Q/W/E, etc.)
+  useGlobalHotkeys();
+
+  // Enable radial menu on right-click
+  useRadialMenuTrigger();
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    writeTheme(theme); // G9 compliant via appPrefs boundary
+  }, [theme]);
 
   // Glue confirmation effect - moves target cabinet when glue is confirmed
   // Subscribe to glue confirmation - when mode goes to 'idle' after 'preview', move cabinet
@@ -384,7 +594,7 @@ export function App() {
       }
 
       // Press 'E' to edit selected panel
-      if (e.key === 'e' && selectedPanelId && appMode === 'designer') {
+      if (e.key === 'e' && selectedPanelId) {
         setShowPanelModal(true);
         return;
       }
@@ -402,22 +612,30 @@ export function App() {
       }
 
       // Tool hotkeys (V=Select, G=Move, R=Rotate, S=Scale, M=Measure, U=UV)
-      // Only in designer mode
-      if (appMode === 'designer' && !e.ctrlKey && !e.metaKey) {
+      if (!e.ctrlKey && !e.metaKey) {
         if (handleToolHotkey(e.key)) {
           e.preventDefault();
           return;
         }
       }
 
-      // Press 'T' to toggle Safety & Gate page (changed from G)
-      if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
-        setAppMode(prev => prev === 'designer' ? 'safety-gate' : 'designer');
+      // T014: Press Shift+G to toggle Safety & Gate page
+      // Note: Plain G is Move tool in useGlobalHotkeys, so we use Shift+G
+      // Also keep T for backwards compatibility (but not in sketch mode where T is rect tool)
+      if ((e.key === 'G' && e.shiftKey) || (e.key === 't' && !e.shiftKey)) {
+        if (e.key === 't') {
+          const sketchEnabled = useSketchStore.getState().enabled;
+          if (sketchEnabled) {
+            // Skip navigation - T is rect tool in sketch mode
+            return;
+          }
+        }
+        navigate('/safety');
         return;
       }
 
       // Press 'D' to toggle dimensions
-      if (e.key === 'd' && !e.ctrlKey && !e.metaKey && appMode === 'designer') {
+      if (e.key === 'd' && !e.ctrlKey && !e.metaKey) {
         setShowDimensions(prev => !prev);
         return;
       }
@@ -430,21 +648,21 @@ export function App() {
       }
 
       // Delete key to remove selected cabinet
-      if ((e.key === 'Delete' || e.key === 'Backspace') && activeCabinetId && appMode === 'designer') {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && activeCabinetId) {
         e.preventDefault();
         removeCabinet(activeCabinetId);
         return;
       }
 
       // Ctrl+D to duplicate selected cabinet
-      if (e.key === 'd' && (e.ctrlKey || e.metaKey) && activeCabinetId && appMode === 'designer') {
+      if (e.key === 'd' && (e.ctrlKey || e.metaKey) && activeCabinetId) {
         e.preventDefault();
         duplicateCabinet(activeCabinetId);
         return;
       }
 
       // Space or Cmd+K to open Command Palette (Plasticity-style)
-      if ((e.key === ' ' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && appMode === 'designer') {
+      if (e.key === ' ' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
         useModelingStore.getState().openCommandPalette();
         return;
@@ -453,77 +671,92 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPanelId, activeCabinetId, appMode, saveProject, showPanelModal, removeCabinet, duplicateCabinet]);
-  
-  // If in Safety & Gate mode, show that page
-  if (appMode === 'safety-gate') {
-    return (
-      <div>
-        <SafetyGatePage />
-        {/* Floating button to go back */}
-        <button
-          onClick={() => setAppMode('designer')}
-          className="fixed bottom-6 right-6 px-4 py-2 bg-green-500 text-black font-medium rounded-lg shadow-lg hover:bg-green-400 hover:shadow-glow-green transition-all duration-200 z-50"
-        >
-          ← Back to Designer (T)
-        </button>
-      </div>
-    );
-  }
+  }, [selectedPanelId, activeCabinetId, navigate, saveProject, showPanelModal, removeCabinet, duplicateCabinet]);
 
-  const handleExport = () => {
-    console.log('Exporting to CNC...');
-    // TODO: Implement export logic
+  const handleExport = async () => {
+    console.log('[Export] Starting factory packet export...');
+
+    try {
+      // Use the non-React utility to generate and download factory packet
+      const { generateFactoryPacketFromStores } = await import('./factory/packet');
+
+      const result = await generateFactoryPacketFromStores();
+
+      console.log('[Export] Factory packet generated successfully:', {
+        filename: result.filename,
+        compressedSize: `${(result.compressedSize / 1024).toFixed(1)} KB`,
+        uncompressedSize: `${(result.uncompressedSize / 1024).toFixed(1)} KB`,
+      });
+    } catch (error) {
+      console.error('[Export] Failed to export factory packet:', error);
+      // Show error to user - in production, this would use a toast notification
+      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
   
-  // Viewport with view toolbar overlay
+  // Header Toolbar - consolidated in top bar
+  const headerToolbar = (
+    <div className="flex items-center gap-2">
+      {/* Project Toolbar */}
+      <ProjectToolbar />
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* View Toolbar */}
+      <ViewToolbar currentView={currentView} onViewChange={setCurrentView} />
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* Dims Toggle */}
+      <button
+        onClick={() => setShowDimensions(!showDimensions)}
+        className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md
+          ${showDimensions
+            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+            : 'text-gray-500 hover:text-white hover:bg-surface-3'
+          }`}
+        title="Toggle Dimensions (D)"
+      >
+        📏 Dims
+      </button>
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* Theme Toggle */}
+      <button
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        className="px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md text-gray-500 hover:text-white hover:bg-surface-3"
+        title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+        aria-pressed={theme === 'light'}
+      >
+        {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+      </button>
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* Gate Toolbar */}
+      <GateToolbar />
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* Details Button */}
+      <button
+        onClick={() => navigate('/safety')}
+        className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-surface-3 rounded-md transition-all duration-200"
+        title="Open Safety & Gate Page (T)"
+      >
+        🛡️ Details
+      </button>
+    </div>
+  );
+
+  // Viewport with overlays (only bottom items now)
   const viewportWithToolbar = (
     <div className="relative w-full h-full">
-      {/* Project Toolbar - Top Left */}
-      <div className="absolute top-4 left-4 z-10">
-        <div className="bg-surface-2/80 backdrop-blur-sm border border-[#333] rounded-xl px-3 py-2">
-          <ProjectToolbar />
-        </div>
-      </div>
-
-      {/* View Toolbar - Top Center */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="bg-surface-2/80 backdrop-blur-sm border border-[#333] rounded-xl p-1 flex items-center gap-1">
-          <ViewToolbar currentView={currentView} onViewChange={setCurrentView} />
-          <div className="w-px h-6 bg-[#333] mx-1" />
-          <button
-            onClick={() => setShowDimensions(!showDimensions)}
-            className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md
-              ${showDimensions
-                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-                : 'text-gray-500 hover:text-white hover:bg-surface-3'
-              }`}
-            title="Toggle Dimensions (D)"
-          >
-            📏 Dims
-          </button>
-        </div>
-      </div>
-
-      {/* Gate Toolbar - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="bg-surface-2/80 backdrop-blur-sm border border-[#333] rounded-xl px-3 py-2 flex items-center gap-2">
-          <GateToolbar />
-          <div className="w-px h-6 bg-[#333]" />
-          <button
-            onClick={() => setAppMode('safety-gate')}
-            className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-surface-3 rounded-md transition-all duration-200"
-            title="Open Safety & Gate Page (T)"
-          >
-            🛡️ Details
-          </button>
-        </div>
-      </div>
-
       {/* Selected Panel Info */}
       {selectedPanelId && (
         <div className="absolute bottom-4 left-4 z-10">
-          <div className="bg-surface-2/80 backdrop-blur-sm border border-[#333] rounded-xl px-4 py-3">
+          <div className="bg-surface-2/80 backdrop-blur-sm border border-oi-border rounded-xl px-4 py-3">
             <div className="flex items-center justify-between mb-1">
               <div className="text-xs text-gray-500">Selected Panel</div>
               <button
@@ -536,7 +769,7 @@ export function App() {
                 </svg>
               </button>
             </div>
-            <div className="text-sm text-white font-medium">
+            <div className="text-sm text-textc-primary font-medium">
               {cabinet?.panels.find(p => p.id === selectedPanelId)?.name || 'Unknown'}
             </div>
             <div className="text-xs text-green-400 mt-1 font-mono">Double-click to edit • Esc to deselect</div>
@@ -547,6 +780,21 @@ export function App() {
       {/* Scene Toolbar - Bottom Center */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
         <SceneToolbar />
+      </div>
+
+      {/* Sketch Toolbar - Left Side (when sketch mode enabled) */}
+      <div className="absolute top-4 left-4 z-20">
+        <SketchToolbar />
+      </div>
+
+      {/* Sketch HUD - Top Center (shows coordinates/tool info) */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+        <SketchHUD />
+      </div>
+
+      {/* CPlane Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <CPlaneSelector />
       </div>
 
       {/* Gizmo HUD - Bottom Left (only shows in move mode) */}
@@ -571,22 +819,78 @@ export function App() {
         leftPanel={<DesignerIntentPanel />}
         viewport={viewportWithToolbar}
         rightPanel={<ParametricContractPanel />}
+        headerToolbar={headerToolbar}
         onExport={handleExport}
       />
       
-      {/* Panel Config Modal */}
-      <PanelConfigModal
-        panelId={selectedPanelId}
-        isOpen={showPanelModal}
-        onClose={() => setShowPanelModal(false)}
-      />
+      {/* T018: Panel Config Modal - Lazy loaded */}
+      <Suspense fallback={null}>
+        <PanelConfigModal
+          panelId={selectedPanelId}
+          isOpen={showPanelModal}
+          onClose={() => setShowPanelModal(false)}
+        />
+      </Suspense>
 
       {/* Glue Mode Status Overlay */}
       <GlueModeOverlay />
 
-      {/* Plasticity-Style Modeling Layer */}
-      <CommandPalette />
+      {/* T018: CAD Drill Map View Overlay - Lazy loaded */}
+      {showCADView && drillMap && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden max-w-[95vw] max-h-[95vh]">
+            {/* Close button */}
+            <button
+              onClick={toggleShowCADView}
+              className="absolute top-2 right-2 z-10 p-2 rounded-full bg-gray-800/80 text-white hover:bg-gray-700 transition-colors"
+              title="Close CAD View (Esc)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <Suspense fallback={
+              <div className="w-[900px] h-[700px] flex items-center justify-center bg-surface-2">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-3 mx-auto" />
+                  <div className="text-sm text-gray-400">Loading CAD View...</div>
+                </div>
+              </div>
+            }>
+              <CADDrillMapView
+                drillMap={drillMap}
+                width={900}
+                height={700}
+                showCoordinates={true}
+                showLabels={true}
+                showDimensions={true}
+                projectName="Cabinet Project"
+                drawingNumber="DM-01"
+                scaleText="1:10"
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* T018: Plasticity-Style Modeling Layer - Lazy loaded overlays */}
+      <Suspense fallback={null}>
+        <CommandPalette />
+      </Suspense>
+      <Suspense fallback={null}>
+        <RadialMenu />
+      </Suspense>
+      <Suspense fallback={null}>
+        <HardwareContextMenu />
+      </Suspense>
+      {/* P001: Shortcut Help Overlay */}
+      <Suspense fallback={null}>
+        <ShortcutOverlay />
+      </Suspense>
       <ContextToolbar position="right" />
+
+      {/* T014: Toast notifications for keyboard shortcuts */}
+      <ToastContainer />
     </>
   );
 }

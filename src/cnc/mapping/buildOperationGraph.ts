@@ -4,10 +4,18 @@
  * Combines all mappers to create a complete OperationGraph
  * from a verified factory packet.
  *
- * @version 1.0.0 - Phase D1
+ * GATE RULE (G9): No unvalidated external state enters OperationGraph.
+ *
+ * This function requires a ValidatedFactoryPacket - a branded type that
+ * can only be created by:
+ * - assertValidatedPacket() - For external/untrusted packets
+ * - markPacketAsValidated() - For internally-built packets
+ *
+ * @version 1.1.0 - G9 Persistence Boundary
  */
 
 import type { FactoryPacket } from '../../factory/packet/types';
+import type { ValidatedFactoryPacket } from '../../core/gate/brandTypes';
 import type { MachineProfile } from '../machine/machineProfile';
 import type {
   Operation,
@@ -40,6 +48,8 @@ export interface BuildStats {
   unmappedDrillPoints: number;
   unmappedMinifixPairs: number;
   toolsUsed: string[];
+  /** D4: Number of operations with positions outside machine axis limits */
+  outOfBoundsCount: number;
 }
 
 export interface BuildOperationGraphOptions {
@@ -58,18 +68,43 @@ const DEFAULT_TOOL_VERSION = 'monolith-cnc@1.0.0';
 // ============================================
 
 /**
- * Build an OperationGraph from a verified factory packet
+ * Build an OperationGraph from a validated factory packet.
  *
- * @param packet - Verified factory packet
+ * GATE RULE (G9): This function requires ValidatedFactoryPacket.
+ *
+ * To obtain a ValidatedFactoryPacket:
+ * - External source: `assertValidatedPacket(packet, 'source')`
+ * - Internal build: `markPacketAsValidated(packet)`
+ *
+ * @param packet - G9-validated factory packet (branded type)
  * @param machine - Target machine profile
  * @param options - Build options
  * @returns Build result with graph, warnings, and stats
+ *
+ * @throws G9ViolationError if packet structure is invalid at runtime
+ *
+ * @example
+ * ```typescript
+ * // External packet - must validate
+ * const validated = assertValidatedPacket(rawPacket, 'import');
+ * const result = buildOperationGraph(validated, machine);
+ *
+ * // Internal build - mark as validated
+ * const { packet } = await buildFactoryPacket(input, context);
+ * const validated = markPacketAsValidated(packet);
+ * const result = buildOperationGraph(validated, machine);
+ * ```
  */
 export function buildOperationGraph(
-  packet: FactoryPacket,
+  packet: ValidatedFactoryPacket,
   machine: MachineProfile,
   options: BuildOperationGraphOptions = {}
 ): BuildOperationGraphResult {
+  // G9 RUNTIME ASSERTION: Defense in depth
+  // Even with compile-time branded type, verify at runtime
+  if (!packet || typeof packet !== 'object' || !packet.manifest) {
+    throw new Error('[MONO_G9_UNVALIDATED_INPUT_TO_OPGRAPH] Invalid packet structure at runtime');
+  }
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -82,10 +117,11 @@ export function buildOperationGraph(
   }
 
   // Map drill points
+  // Note: PacketDrillMap is compatible with DrillMap for operation mapping purposes
   const drillResult = packet.drillMap
-    ? mapDrillMapToOps(packet.drillMap, machine, options.drillMapOptions)
+    ? mapDrillMapToOps(packet.drillMap as unknown as import('../../core/manufacturing/drillMap/types').DrillMap, machine, options.drillMapOptions)
     : { operations: [], unmappedPoints: [], warnings: [] };
-  warnings.push(...drillResult.warnings);
+  warnings.push(...(drillResult.warnings ?? []));
 
   // Map minifix connectors
   const minifixResult = packet.connectors
@@ -98,6 +134,10 @@ export function buildOperationGraph(
 
   // Sort operations for efficient toolpath
   const sortedOperations = sortOperationsForEfficiency(allOperations, machine);
+
+  // D4: Validate operation positions against machine axis limits
+  const boundsResult = validateOperationBounds(sortedOperations, machine);
+  warnings.push(...boundsResult.warnings);
 
   // Build metadata
   const metadata: OperationGraphMetadata = {
@@ -124,12 +164,62 @@ export function buildOperationGraph(
     drillOperations: drillResult.operations.filter((op) => op.type === 'DRILL').length,
     boreOperations: drillResult.operations.filter((op) => op.type === 'BORE').length +
       minifixResult.operations.filter((op) => op.type === 'BORE').length,
-    unmappedDrillPoints: drillResult.unmappedPoints.length,
+    unmappedDrillPoints: (drillResult.unmappedPoints ?? []).length,
     unmappedMinifixPairs: minifixResult.unmappedPairs.length,
     toolsUsed: graph.toolsUsed,
+    outOfBoundsCount: boundsResult.outOfBoundsCount,
   };
 
   return { graph, warnings, errors, stats };
+}
+
+// ============================================
+// BOUNDS VALIDATION (D4)
+// ============================================
+
+interface BoundsValidationResult {
+  warnings: string[];
+  outOfBoundsCount: number;
+}
+
+/**
+ * D4: Validate all operation positions are within machine axis limits.
+ * Returns warnings for out-of-bounds positions.
+ */
+function validateOperationBounds(
+  operations: Operation[],
+  machine: MachineProfile
+): BoundsValidationResult {
+  const warnings: string[] = [];
+  let outOfBoundsCount = 0;
+
+  for (const op of operations) {
+    const { x, y, z } = op.position;
+    const { axis } = machine;
+    const violations: string[] = [];
+
+    // Check X axis
+    if (x < axis.x.min || x > axis.x.max) {
+      violations.push(`X=${x.toFixed(1)} outside [${axis.x.min}, ${axis.x.max}]`);
+    }
+
+    // Check Y axis
+    if (y < axis.y.min || y > axis.y.max) {
+      violations.push(`Y=${y.toFixed(1)} outside [${axis.y.min}, ${axis.y.max}]`);
+    }
+
+    // Check Z axis
+    if (z < axis.z.min || z > axis.z.max) {
+      violations.push(`Z=${z.toFixed(1)} outside [${axis.z.min}, ${axis.z.max}]`);
+    }
+
+    if (violations.length > 0) {
+      outOfBoundsCount++;
+      warnings.push(`Op ${op.id}: position out of bounds - ${violations.join(', ')}`);
+    }
+  }
+
+  return { warnings, outOfBoundsCount };
 }
 
 // ============================================

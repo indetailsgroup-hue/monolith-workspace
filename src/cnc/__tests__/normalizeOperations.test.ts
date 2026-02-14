@@ -26,7 +26,6 @@ const createDrillOp = (overrides?: Partial<DrillOperation>): DrillOperation => (
   toolId: 'DRILL_5',
   position: { x: 100, y: 100, z: 0 },
   depth: 13,
-  diameter: 5,
   feedRate: 500,
   throughHole: false,
   sourceId: 'point-001',

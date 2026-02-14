@@ -1,0 +1,157 @@
+{
+  "version": "1.0",
+  "notes": "Golden vectors for stable JSON + SHA-256 across TS/Python. CRITICAL: Both implementations MUST produce identical output.",
+  "rules": {
+    "1": "Object keys: sort lexicographically (Unicode codepoint order)",
+    "2": "Arrays: preserve order (caller must ensure determinism)",
+    "3": "Omit: undefined (TS only) - Python has no undefined",
+    "4": "Keep: null (both TS/Py)",
+    "5": "Numbers: JSON standard - throw on NaN/Infinity",
+    "6": "Strings: UTF-8 encoding",
+    "7": "JSON: no spaces (separators=(',',':') in Py)"
+  },
+  "cases": [
+    {
+      "id": "case-01-basic-ordering",
+      "input": {
+        "b": 2,
+        "a": 1,
+        "c": {
+          "d": 4,
+          "b": 2,
+          "a": 1
+        }
+      },
+      "expectStableJson": "{\"a\":1,\"b\":2,\"c\":{\"a\":1,\"b\":2,\"d\":4}}",
+      "expectSha256Hex": "522b9a8479e15521028b8928d164b1ee7100bc207035e9a666cd3efaafe36672"
+    },
+    {
+      "id": "case-02-null-preserved",
+      "input": {
+        "a": null,
+        "b": 1,
+        "c": {
+          "x": null
+        }
+      },
+      "expectStableJson": "{\"a\":null,\"b\":1,\"c\":{\"x\":null}}",
+      "expectSha256Hex": "69e329140e573055094bd811e04a236fe97cb1cfa806106609e1f7ffd452519c"
+    },
+    {
+      "id": "case-03-arrays-preserve-order",
+      "input": {
+        "arr": [
+          {
+            "b": 2,
+            "a": 1
+          },
+          {
+            "z": 0,
+            "y": 1
+          }
+        ]
+      },
+      "expectStableJson": "{\"arr\":[{\"a\":1,\"b\":2},{\"y\":1,\"z\":0}]}",
+      "expectSha256Hex": "ea7667da963da8321f7963ae39e900ad4cb654c1785cbe6bc35fd2ac6f51b8de"
+    },
+    {
+      "id": "case-04-unicode-thai",
+      "input": {
+        "thai": "สวัสดี",
+        "emoji": "🧱",
+        "mix": {
+          "a": "A",
+          "ไทย": "TH"
+        }
+      },
+      "expectStableJson": "{\"emoji\":\"🧱\",\"mix\":{\"a\":\"A\",\"ไทย\":\"TH\"},\"thai\":\"สวัสดี\"}",
+      "expectSha256Hex": "3427d9777265249a814491638eacfb54f9989032e890bb59e35b25289f8a5b98"
+    },
+    {
+      "id": "case-05-empty-object",
+      "input": {},
+      "expectStableJson": "{}",
+      "expectSha256Hex": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "case-06-empty-array",
+      "input": {
+        "items": []
+      },
+      "expectStableJson": "{\"items\":[]}",
+      "expectSha256Hex": "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
+    },
+    {
+      "id": "case-07-nested-arrays",
+      "input": {
+        "matrix": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "meta": {
+          "rows": 2
+        }
+      },
+      "expectStableJson": "{\"matrix\":[[1,2],[3,4]],\"meta\":{\"rows\":2}}",
+      "expectSha256Hex": "0ec11296ced13dc9b1f2c8e87931fae59372796aef35719117f968f2e9b86fc1"
+    },
+    {
+      "id": "case-08-booleans",
+      "input": {
+        "yes": true,
+        "no": false,
+        "nested": {
+          "active": true
+        }
+      },
+      "expectStableJson": "{\"nested\":{\"active\":true},\"no\":false,\"yes\":true}",
+      "expectSha256Hex": "96881b7af27ca00560e5891baa5b23802981177048594c80ff9ee831a78b8bd7"
+    },
+    {
+      "id": "case-09-numbers",
+      "input": {
+        "int": 42,
+        "float": 3.14159,
+        "neg": -100,
+        "zero": 0
+      },
+      "expectStableJson": "{\"float\":3.14159,\"int\":42,\"neg\":-100,\"zero\":0}",
+      "expectSha256Hex": "1542bca92f772646470d448f375f12c387e1c03aeed4500f549ef077f12a803e"
+    },
+    {
+      "id": "case-10-manifest-like",
+      "description": "Simulates manifest unsigned content structure",
+      "input": {
+        "version": "1.0",
+        "createdAtIso": "2025-01-17T00:00:00.000Z",
+        "job": {
+          "jobId": "job_001",
+          "specState": "RELEASED"
+        },
+        "manufacturingTruth": {
+          "opGraph": {
+            "hash": "abc123"
+          }
+        },
+        "toolpath": {
+          "ncFiles": [
+            {
+              "id": "sheet_01.nc"
+            }
+          ]
+        },
+        "gate": {
+          "status": "PASS"
+        }
+      },
+      "expectStableJson": "{\"createdAtIso\":\"2025-01-17T00:00:00.000Z\",\"gate\":{\"status\":\"PASS\"},\"job\":{\"jobId\":\"job_001\",\"specState\":\"RELEASED\"},\"manufacturingTruth\":{\"opGraph\":{\"hash\":\"abc123\"}},\"toolpath\":{\"ncFiles\":[{\"id\":\"sheet_01.nc\"}]},\"version\":\"1.0\"}",
+      "expectSha256Hex": "91b7b29b143df1d70ceb8108fd595921c05a8499018ea32c4c96dbf644cdb6d1"
+    }
+  ]
+}

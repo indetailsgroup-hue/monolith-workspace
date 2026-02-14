@@ -66,7 +66,7 @@ export interface MaterialSpec {
  * Base path for textures
  * In production, this would be a CDN URL
  */
-const TEXTURE_BASE_PATH = '/textures/materials';
+const TEXTURE_BASE_PATH = '/textures/wood';
 
 // ============================================
 // DEFAULT MATERIALS CATALOG

@@ -23,6 +23,69 @@ export type Units = 'MM' | 'INCH';
 
 export type ToolType = 'ENDMILL' | 'DRILL' | 'VBIT';
 
+export type LeadMode = 'NONE' | 'LINE' | 'ARC';
+
+export type CutDirection = 'CLIMB' | 'CONVENTIONAL';
+
+export interface RampConfig {
+  enabled: boolean;
+  angleDeg: number;       // Ramp angle (e.g., 3-5° for gentle entry)
+  minLengthMm: number;    // Minimum segment length to allow ramp
+}
+
+export interface FinishingConfig {
+  enabled: boolean;
+  radialMm: number;       // Radial offset for finish pass (0.2-0.5mm typical)
+  stepdownMm: number;     // Stepdown for finish passes
+}
+
+export interface SmoothingConfig {
+  enabled: boolean;
+  cornerRadiusMm: number;   // Tiny arc radius for corners (1.0-2.0mm typical)
+  minSegmentMm: number;     // Minimum segment length to allow smoothing
+}
+
+export interface HoldDownConfig {
+  onionSkinEnabled: boolean;
+  onionSkinMm: number;      // Leave this thickness uncut until final pass (e.g. 0.5)
+  finalPassMm: number;      // Last pass depth increment (e.g. 0.8)
+  microTabsEnabled: boolean;
+  microTabDepthMm: number;  // Extra depth left uncut at tabs only (advanced)
+}
+
+export type LaminateTag = 'HPL' | 'MELAMINE' | 'PLYWOOD' | 'HMR' | 'MDF';
+
+export interface ToolingPolicyConfig {
+  preferCompressionForLaminates: boolean;
+  laminateTags: LaminateTag[];
+}
+
+export interface CutTuning {
+  direction: CutDirection;
+  profileLead: {
+    mode: LeadMode;
+    lengthMm: number;
+    arcRadiusMm: number;
+    angleDeg: number;
+  };
+  grooveLead: {
+    mode: LeadMode;
+    lengthMm: number;
+    angleDeg: number;
+  };
+  drilling: {
+    peckEnabled: boolean;
+    peckStepMm: number;
+    retractMm: number;
+    dwellMs: number;
+  };
+  ramp: RampConfig;
+  finishing: FinishingConfig;
+  smoothing: SmoothingConfig;
+  holdDown: HoldDownConfig;
+  toolingPolicy: ToolingPolicyConfig;
+}
+
 export interface Tool {
   toolNo: number;
   diaMm: number;
@@ -50,6 +113,7 @@ export interface MachineProfile {
   lineNumbering: boolean;   // Whether to use N-codes
   decimalPlaces: number;    // Coordinate precision
   commentStyle: 'PAREN' | 'SEMICOLON';  // (comment) vs ; comment
+  tuning?: CutTuning;
 }
 
 // ============================================================================
@@ -70,7 +134,7 @@ export const KDT_MVP_PROFILE: MachineProfile = {
   programStart: [
     '%',
     'O0001',
-    '(IIMOS EXPORT)',
+    '(MONOLITH EXPORT)',
     'G21 (Units: mm)',
     'G90 (Absolute positioning)',
     'G17 (XY plane)',
@@ -88,6 +152,26 @@ export const KDT_MVP_PROFILE: MachineProfile = {
   lineNumbering: true,
   decimalPlaces: 3,
   commentStyle: 'PAREN',
+  tuning: {
+    direction: 'CLIMB',
+    profileLead: { mode: 'LINE', lengthMm: 8, arcRadiusMm: 6, angleDeg: 30 },
+    grooveLead: { mode: 'LINE', lengthMm: 6, angleDeg: 20 },
+    drilling: { peckEnabled: true, peckStepMm: 4, retractMm: 1, dwellMs: 0 },
+    ramp: { enabled: true, angleDeg: 4, minLengthMm: 20 },
+    finishing: { enabled: true, radialMm: 0.3, stepdownMm: 3 },
+    smoothing: { enabled: true, cornerRadiusMm: 1.5, minSegmentMm: 8 },
+    holdDown: {
+      onionSkinEnabled: true,
+      onionSkinMm: 0.5,
+      finalPassMm: 0.8,
+      microTabsEnabled: false,
+      microTabDepthMm: 0.0,
+    },
+    toolingPolicy: {
+      preferCompressionForLaminates: true,
+      laminateTags: ['HPL', 'MELAMINE'],
+    },
+  },
 };
 
 // ============================================================================
@@ -108,7 +192,7 @@ export const HOMAG_MVP_PROFILE: MachineProfile = {
   programStart: [
     '%',
     'O0001',
-    '(IIMOS HOMAG EXPORT)',
+    '(MONOLITH HOMAG EXPORT)',
     'G21',
     'G90',
     'G17',
@@ -127,6 +211,26 @@ export const HOMAG_MVP_PROFILE: MachineProfile = {
   lineNumbering: true,
   decimalPlaces: 3,
   commentStyle: 'PAREN',
+  tuning: {
+    direction: 'CLIMB',
+    profileLead: { mode: 'ARC', lengthMm: 10, arcRadiusMm: 8, angleDeg: 45 },
+    grooveLead: { mode: 'LINE', lengthMm: 8, angleDeg: 25 },
+    drilling: { peckEnabled: true, peckStepMm: 5, retractMm: 2, dwellMs: 100 },
+    ramp: { enabled: true, angleDeg: 5, minLengthMm: 25 },
+    finishing: { enabled: true, radialMm: 0.4, stepdownMm: 4 },
+    smoothing: { enabled: true, cornerRadiusMm: 2.0, minSegmentMm: 10 },
+    holdDown: {
+      onionSkinEnabled: true,
+      onionSkinMm: 0.4,
+      finalPassMm: 0.6,
+      microTabsEnabled: false,
+      microTabDepthMm: 0.0,
+    },
+    toolingPolicy: {
+      preferCompressionForLaminates: true,
+      laminateTags: ['HPL', 'MELAMINE', 'PLYWOOD'],
+    },
+  },
 };
 
 // ============================================================================

@@ -9,6 +9,9 @@
 
 import type { MaterialClass, MaterialHint } from './materialTypes';
 
+// Re-export MaterialHint for convenience
+export type { MaterialHint } from './materialTypes';
+
 // ============================================
 // HOLE CLASSIFICATION
 // ============================================

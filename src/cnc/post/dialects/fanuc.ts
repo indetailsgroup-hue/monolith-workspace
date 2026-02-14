@@ -3,7 +3,7 @@
  *
  * Generates FANUC-compatible G-code for KDT and similar CNC machines.
  *
- * @version 1.3.0 - Phase D5-C.1A: Added through-hole dwell support
+ * @version 1.5.0 - Phase D5-D.2: Added exit feed emission with multiLineDrill
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -12,7 +12,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations, countToolChanges } from '../normalizeOperations';
-import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
+import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell, shouldEmitExitFeed } from '../decideDrillParams';
 
 // ============================================================================
 // FANUC Post Processor
@@ -90,7 +90,8 @@ function generateFanucGcode(
   generateHeader(builder, opts, machine, opGraph);
 
   // Generate setup codes
-  generateSetup(builder, machine, safeZ);
+  const useCoolant = opts.useCoolant ?? false;
+  generateSetup(builder, machine, safeZ, useCoolant);
 
   // Track current state
   let currentToolId: string | null = null;
@@ -184,15 +185,50 @@ function generateHeader(
     builder.addComment(`Job ID: ${sanitizeComment(opGraph.metadata.jobId)}`);
   }
 
+  // D4: Add workpiece configuration info
+  const workpieceInfo = extractWorkpieceInfo(opGraph.operations);
+  if (workpieceInfo.length > 0) {
+    builder.addBlank();
+    builder.addComment('Workpiece Configuration');
+    for (const info of workpieceInfo) {
+      builder.addComment(info);
+    }
+  }
+
   builder.addBlank();
 }
 
-function generateSetup(builder: GcodeBuilder, machine: MachineProfile, safeZ: number): void {
+/**
+ * D4: Extract unique workpiece configurations from operations.
+ * Returns human-readable strings for G-code comments.
+ */
+function extractWorkpieceInfo(operations: Operation[]): string[] {
+  const seen = new Set<string>();
+  const infos: string[] = [];
+
+  for (const op of operations) {
+    if (op.workpieceContext && !seen.has(op.workpieceContext.panelId)) {
+      const { panelId, face, appliedOffset } = op.workpieceContext;
+      seen.add(panelId);
+      const offsetStr = `X${appliedOffset.x.toFixed(1)} Y${appliedOffset.y.toFixed(1)} Z${appliedOffset.z.toFixed(1)}`;
+      infos.push(`PANEL: ${sanitizeComment(panelId)}, FACE=${face}, OFFSET=(${offsetStr})`);
+    }
+  }
+
+  return infos;
+}
+
+function generateSetup(builder: GcodeBuilder, machine: MachineProfile, safeZ: number, useCoolant: boolean): void {
   builder.addComment('Setup');
   builder.setMillimeters(); // G21
   builder.setAbsolute(); // G90
   builder.setXYPlane(); // G17
   builder.cancelCycle(); // G80
+
+  // D5-D.1: Enable coolant if requested
+  if (useCoolant) {
+    builder.coolantOn(); // M8
+  }
 
   // Move to safe Z
   builder.rapid({ z: safeZ });
@@ -257,6 +293,7 @@ function generateOperation(
  * Generate drill operation with policy-driven cycle selection.
  * Uses DrillPolicy to determine G81/G82/G83 and feed/speed.
  * D5-C.1A: Supports through-hole dwell for breakout mitigation.
+ * D5-D.2: Supports exit feed emission with multiLineDrill.
  */
 function generateDrillOperation(
   builder: GcodeBuilder,
@@ -285,19 +322,50 @@ function generateDrillOperation(
   // Check if through-hole dwell should be applied (D5-C.1A)
   const applyThroughHoleDwell = shouldApplyThroughHoleDwell(throughHole);
 
+  // D5-D.2: Check if exit feed emission should be used
+  const emitExitFeed = opts.policy?.throughHoleTuning?.emitExitFeed;
+  const useExitFeed = shouldEmitExitFeed(throughHole, emitExitFeed);
+
   // Calculate target Z (negative from surface)
   const startZ = z;
   const targetZ = startZ - depth;
 
-  // Add comment with cycle info (include through-hole indicator)
+  // Add comment with cycle info (include through-hole and exit feed indicators)
   if (op.comment) {
-    const cycleInfo = applyThroughHoleDwell
-      ? `${params.cycle}+TH`
-      : params.cycle;
+    let cycleInfo: string = params.cycle;
+    if (useExitFeed) {
+      cycleInfo = 'MULTI+EF'; // Multi-line with exit feed
+    } else if (applyThroughHoleDwell) {
+      cycleInfo = `${params.cycle}+TH`;
+    }
     builder.addComment(sanitizeComment(`${op.comment} [${cycleInfo}]`));
   }
 
-  // Emit cycle based on policy decision
+  // D5-D.2: Use multi-line drill when exit feed emission is enabled
+  if (useExitFeed) {
+    builder.multiLineDrill({
+      x,
+      y,
+      surfaceZ: startZ,
+      finalZ: targetZ,
+      clearanceZ: safeZ,
+      normalFeed: feedRate,
+      exitFeed: throughHole.exitFeedRateMmMin,
+      exitZoneStartDepth: throughHole.exitZoneStartMm,
+      dwellSec: throughHole.exitDwellSec,
+    });
+
+    // Estimate time for multi-line drill
+    const rapidTime = 0.5;
+    const mainDrillTime = (throughHole.exitZoneStartMm / feedRate) * 60;
+    const exitZoneTime = (throughHole.exitZoneDepthMm / throughHole.exitFeedRateMmMin) * 60;
+    const dwellTime = throughHole.exitDwellSec;
+    const retractTime = 0.3;
+
+    return rapidTime + mainDrillTime + exitZoneTime + dwellTime + retractTime;
+  }
+
+  // Emit canned cycle based on policy decision
   switch (params.cycle) {
     case 'G82': {
       // Dwell drill cycle - used for hinge cups

@@ -1,5 +1,5 @@
 /**
- * IIMOS Factory Server
+ * MONOLITH Factory Server
  *
  * Step 9: Express API for bundle verification and export
  *
@@ -50,6 +50,9 @@ import {
 import { getExportOptionsResponse } from './export/exportOptions.js';
 import type { AuditStatus } from './export/exportTypes.js';
 import { activityRoute, appendActivity, extractActorFromHeaders } from './activity/index.js';
+import { lineageRouter } from './lineage/lineageRoute.js';
+import { stateRoute, canExport } from './state/index.js';
+import { proofRoute } from './proof/index.js';
 
 // ============================================================================
 // Express App Setup
@@ -63,6 +66,15 @@ app.use(express.json({ limit: '50mb' }));
 
 // P8: Activity Timeline Route
 app.use(activityRoute);
+
+// P9.1: Server-Anchored Lineage Route
+app.use(lineageRouter);
+
+// P10: Server State Transitions Route
+app.use(stateRoute);
+
+// P12: Authority Proof Bundle Route
+app.use(proofRoute);
 
 // ============================================================================
 // Health Check
@@ -481,6 +493,27 @@ app.post('/api/export/zip', async (req, res) => {
       },
     });
 
+    // P10: Check server state (must be RELEASED)
+    const stateCheck = await canExport(jobId);
+    if (!stateCheck.canExport) {
+      await appendActivity(jobId, {
+        type: 'EXPORT_BLOCKED',
+        actor,
+        export: {
+          dialect: request.format as 'KDT' | 'BIESSE' | 'HOMAG' | undefined,
+          ok: false,
+          reason: stateCheck.reason ?? `Job is ${stateCheck.specState}, must be RELEASED`,
+        },
+      });
+
+      return res.status(403).json({
+        ok: false,
+        error: 'NOT_RELEASED',
+        specState: stateCheck.specState,
+        message: stateCheck.reason ?? `Job must be RELEASED for export (current: ${stateCheck.specState})`,
+      });
+    }
+
     // 1. Verify the bundle
     const verify = await verifyBundle(bundle);
     if (!verify.ok) {
@@ -627,9 +660,9 @@ app.post('/api/export/zip', async (req, res) => {
     // 6. Send ZIP with SHA-256 header
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="factory-package-${request.jobName || bundleId.slice(0, 8)}.zip"`);
-    res.setHeader('X-IIMOS-ZIP-SHA256', zipResult.sha256Hex);
-    res.setHeader('X-IIMOS-Entry-Count', zipResult.entryCount.toString());
-    res.setHeader('X-IIMOS-Processing-Ms', processingTimeMs.toString());
+    res.setHeader('X-MONOLITH-ZIP-SHA256', zipResult.sha256Hex);
+    res.setHeader('X-MONOLITH-Entry-Count', zipResult.entryCount.toString());
+    res.setHeader('X-MONOLITH-Processing-Ms', processingTimeMs.toString());
 
     res.send(zipResult.buffer);
   } catch (err) {
@@ -756,7 +789,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   IIMOS Factory Server v2.0.0-p22a                       ║
+║   MONOLITH Factory Server v2.0.0-p22a                       ║
 ║                                                           ║
 ║   P2.2a: Gated Export with Deterministic ZIP             ║
 ║                                                           ║

@@ -17,14 +17,14 @@ The Trust Chain & Export Pipeline system provides:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         IIMOS Runtime                                │
+│                         MONOLITH Runtime                                │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                 │
 │  │   Cabinets  │  │  Materials  │  │   Nesting   │                 │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘                 │
 │         └────────────────┼────────────────┘                        │
 │                          ▼                                          │
 │              ┌───────────────────────┐                              │
-│              │ IIMOSExportContext    │                              │
+│              │ MONOLITHExportContext    │                              │
 │              │ Provider              │                              │
 │              └───────────┬───────────┘                              │
 └──────────────────────────┼──────────────────────────────────────────┘
@@ -33,7 +33,7 @@ The Trust Chain & Export Pipeline system provides:
 │                    Export Pipeline                                    │
 │                                                                       │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
-│  │ Factory Profile │───▶│ Plan Factory    │───▶│ IIMOS Exporter  │  │
+│  │ Factory Profile │───▶│ Plan Factory    │───▶│ MONOLITH Exporter  │  │
 │  │ (KDT/HOMAG/etc) │    │ Package         │    │                 │  │
 │  └─────────────────┘    └─────────────────┘    └────────┬────────┘  │
 │                                                          │           │
@@ -186,7 +186,7 @@ canReExport = gateOk
 
 ```
 1. Get HEAD manifest
-2. Extract IIMOSExportContext from runtime
+2. Extract MONOLITHExportContext from runtime
 3. Plan export (planFactoryPackage)
 4. Build DXF sheets (one per nesting sheet)
 5. Build CSV cut list (SPEC-08 columns)
@@ -352,7 +352,7 @@ verifyExportBundle(jobId: string, exportId: string): Promise<{ ok: true; verifie
 
 ```typescript
 import {
-  createIIMOSFactoryPackageExporter,
+  createMONOLITHFactoryPackageExporter,
   createStubContextProvider,
   createMemoryArtifactStore,
   createExportViewerStore,
@@ -360,7 +360,7 @@ import {
 
 // Setup
 const artifactStore = createMemoryArtifactStore();
-const exporter = createIIMOSFactoryPackageExporter({
+const exporter = createMONOLITHFactoryPackageExporter({
   contextProvider: createStubContextProvider(),
   profileId: 'KDT',
 });
@@ -395,10 +395,10 @@ src/core/export/
 ├── factoryPackageExporter.ts      # Exporter interface
 ├── factoryPackageProfiles.ts      # DEFAULT, KDT profiles
 ├── planFactoryPackage.ts          # Deterministic planning
-└── iimos/
-    ├── index.ts                   # IIMOS exports
+└── monolith/
+    ├── index.ts                   # MONOLITH exports
     ├── iimoExportContext.ts       # Context types + stub provider
-    ├── iimosFactoryPackageExporter.ts  # Main exporter
+    ├── monolithFactoryPackageExporter.ts  # Main exporter
     └── builders/
         ├── index.ts               # Builder exports
         ├── buildDxfSheets.ts      # DXF R12 generation
@@ -423,7 +423,7 @@ src/components/exportViewer/
 
 | Version | Date       | Changes                                    |
 |---------|------------|--------------------------------------------|
-| 1.0     | 2025-01-14 | Initial release with IIMOS Exporter        |
+| 1.0     | 2025-01-14 | Initial release with MONOLITH Exporter        |
 |         |            | - Factory Package Profiles (DEFAULT, KDT)  |
 |         |            | - DXF/CSV/JSON builders                    |
 |         |            | - Export Viewer UI                         |

@@ -33,9 +33,16 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
   const coreMaterials = useCabinetStore((s) => s.coreMaterials);
   const surfaceMaterials = useCabinetStore((s) => s.surfaceMaterials);
   const edgeMaterials = useCabinetStore((s) => s.edgeMaterials);
-  
-  // Panel-specific state (would connect to store in production)
-  const [faceASynced, setFaceASynced] = useState(true);
+
+  // Store actions for material updates
+  const updatePanelMaterial = useCabinetStore((s) => s.updatePanelMaterial);
+  const updatePanelEdge = useCabinetStore((s) => s.updatePanelEdge);
+
+  // Face B sync state
+  const [faceBSynced, setFaceBSynced] = useState(true);
+  // Legacy alias for backwards compatibility
+  const faceASynced = faceBSynced;
+  const setFaceASynced = setFaceBSynced;
   
   const panel = useMemo(() => {
     return cabinet?.panels.find(p => p.id === panelId);
@@ -157,6 +164,7 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
             {Object.values(coreMaterials).map((mat) => (
               <button
                 key={mat.id}
+                onClick={() => updatePanelMaterial(panelId, 'core', mat.id)}
                 className={clsx(
                   "w-full flex items-center justify-between px-3 py-2 border transition-colors text-left",
                   panel.coreMaterialId === mat.id
@@ -180,6 +188,13 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
             {Object.values(surfaceMaterials).map((mat) => (
               <button
                 key={mat.id}
+                onClick={() => {
+                  updatePanelMaterial(panelId, 'faceA', mat.id);
+                  // Sync Face B if enabled
+                  if (faceBSynced) {
+                    updatePanelMaterial(panelId, 'faceB', mat.id);
+                  }
+                }}
                 className={clsx(
                   "aspect-[3/2] border transition-all relative overflow-hidden group",
                   currentFaceA?.id === mat.id
@@ -188,13 +203,13 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
                 )}
               >
                 {mat.textureUrl ? (
-                  <img 
-                    src={mat.textureUrl} 
+                  <img
+                    src={mat.textureUrl}
                     alt={mat.name}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
-                  <div 
+                  <div
                     className="absolute inset-0"
                     style={{ backgroundColor: mat.color }}
                   />
@@ -216,23 +231,24 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
               Face B (Outer)
             </span>
             <button
-              onClick={() => setFaceASynced(!faceASynced)}
+              onClick={() => setFaceBSynced(!faceBSynced)}
               className={clsx(
                 "text-[10px] px-2 py-0.5 rounded transition-colors",
-                faceASynced 
+                faceBSynced
                   ? "bg-emerald-500/20 text-emerald-400"
                   : "bg-white/10 text-white/60 hover:bg-white/20"
               )}
             >
-              {faceASynced ? 'Synced' : 'Custom'}
+              {faceBSynced ? 'Synced' : 'Custom'}
             </button>
           </div>
-          
-          {!faceASynced && (
+
+          {!faceBSynced && (
             <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
               {Object.values(surfaceMaterials).map((mat) => (
                 <button
                   key={mat.id}
+                  onClick={() => updatePanelMaterial(panelId, 'faceB', mat.id)}
                   className={clsx(
                     "aspect-[3/2] border transition-all relative overflow-hidden",
                     currentFaceB?.id === mat.id
@@ -261,32 +277,36 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
           </div>
           
           <div className="grid grid-cols-2 gap-3">
-            {/* TOP */}
-            <EdgeDropdown 
-              label="TOP" 
-              value={edgeTop?.name || 'None'} 
+            {/* TOP (Front edge) */}
+            <EdgeDropdown
+              label="TOP"
+              value={edgeTop?.name || 'None'}
               edgeMaterials={edgeMaterials}
+              onChange={(id) => updatePanelEdge(panelId, 'top', id)}
             />
-            
+
             {/* RIGHT */}
-            <EdgeDropdown 
-              label="RIGHT" 
-              value={edgeRight?.name || 'None'} 
+            <EdgeDropdown
+              label="RIGHT"
+              value={edgeRight?.name || 'None'}
               edgeMaterials={edgeMaterials}
+              onChange={(id) => updatePanelEdge(panelId, 'right', id)}
             />
-            
-            {/* BOTTOM */}
-            <EdgeDropdown 
-              label="BOTTOM" 
-              value={edgeBottom?.name || 'None'} 
+
+            {/* BOTTOM (Back edge) */}
+            <EdgeDropdown
+              label="BOTTOM"
+              value={edgeBottom?.name || 'None'}
               edgeMaterials={edgeMaterials}
+              onChange={(id) => updatePanelEdge(panelId, 'bottom', id)}
             />
-            
+
             {/* LEFT */}
-            <EdgeDropdown 
-              label="LEFT" 
-              value={edgeLeft?.name || 'None'} 
+            <EdgeDropdown
+              label="LEFT"
+              value={edgeLeft?.name || 'None'}
               edgeMaterials={edgeMaterials}
+              onChange={(id) => updatePanelEdge(panelId, 'left', id)}
             />
           </div>
         </div>
@@ -348,11 +368,17 @@ interface EdgeDropdownProps {
   label: string;
   value: string;
   edgeMaterials: Record<string, any>;
+  onChange?: (edgeId: string | null) => void;
 }
 
-function EdgeDropdown({ label, value, edgeMaterials }: EdgeDropdownProps) {
+function EdgeDropdown({ label, value, edgeMaterials, onChange }: EdgeDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
+  const handleSelect = (edgeId: string | null) => {
+    setIsOpen(false);
+    onChange?.(edgeId);
+  };
+
   return (
     <div className="relative">
       <div className="text-[9px] text-white/40 uppercase mb-1">{label}</div>
@@ -366,11 +392,11 @@ function EdgeDropdown({ label, value, edgeMaterials }: EdgeDropdownProps) {
           isOpen && "rotate-180"
         )} />
       </button>
-      
+
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-white/20 rounded shadow-xl z-10 max-h-48 overflow-y-auto">
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => handleSelect(null)}
             className="w-full px-2 py-1.5 text-left text-xs text-white/60 hover:bg-white/10 transition-colors"
           >
             None
@@ -378,10 +404,10 @@ function EdgeDropdown({ label, value, edgeMaterials }: EdgeDropdownProps) {
           {Object.values(edgeMaterials).map((mat: any) => (
             <button
               key={mat.id}
-              onClick={() => setIsOpen(false)}
+              onClick={() => handleSelect(mat.id)}
               className="w-full px-2 py-1.5 text-left text-xs text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2"
             >
-              <div 
+              <div
                 className="w-4 h-4 rounded-sm border border-white/20 flex-shrink-0"
                 style={{ backgroundColor: mat.color }}
               />

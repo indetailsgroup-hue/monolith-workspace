@@ -4,48 +4,99 @@
 
 /* ============================================
    OPERATIONAL INTELLIGENCE DESIGN SYSTEM
-   IIMOS Designer Workspace v2.0
+   Monolith Designer Workspace v2.0
    ============================================ */
 
 :root {
   color-scheme: dark;
 
   /* Surface Colors */
-  --surface-0: #000000;
-  --surface-1: #050505;
-  --surface-2: #0A0A0A;
-  --surface-3: #111111;
-  --surface-4: #1A1A1A;
+  --surface-0: 0 0 0;
+  --surface-1: 5 5 5;
+  --surface-2: 10 10 10;
+  --surface-3: 17 17 17;
+  --surface-4: 26 26 26;
+
+  /* Deep Space Background Colors */
+  --bg-primary: 26 26 46;
+  --bg-secondary: 22 33 62;
+  --bg-tertiary: 15 15 35;
 
   /* Border Colors */
-  --border-default: #333333;
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --border-hover: #555555;
+  --border-default: 51 51 51;
+  --border-subtle: 58 58 90;
+  --border-hover: 85 85 85;
+  --border-active: 139 92 246;
 
   /* Text Colors */
-  --text-primary: #FFFFFF;
-  --text-secondary: #888888;
-  --text-muted: #666666;
+  --text-primary: 255 255 255;
+  --text-secondary: 160 160 192;
+  --text-muted: 107 107 138;
+  --text-inverse: 10 10 10;
+  --selection-orange: 255 179 71;
 
   /* Accent Colors */
-  --accent-green: #22C55E;
-  --accent-red: #EF4444;
-  --accent-blue: #3B82F6;
-  --accent-amber: #F59E0B;
+  --accent-green: 34 197 94;
+  --accent-red: 239 68 68;
+  --accent-blue: 59 130 246;
+  --accent-amber: 245 158 11;
+  --accent-purple: 139 92 246;
+  --accent-purple-hover: 167 139 250;
+  --accent-purple-muted: 124 58 237;
+  --accent-cyan: 6 182 212;
+  --accent-orange: 249 115 22;
 
   /* Accent with alpha */
-  --accent-green-10: rgba(34, 197, 94, 0.1);
-  --accent-green-20: rgba(34, 197, 94, 0.2);
-  --accent-green-30: rgba(34, 197, 94, 0.3);
-  --accent-red-10: rgba(239, 68, 68, 0.1);
-  --accent-red-20: rgba(239, 68, 68, 0.2);
-  --accent-red-30: rgba(239, 68, 68, 0.3);
-  --accent-blue-10: rgba(59, 130, 246, 0.1);
-  --accent-blue-20: rgba(59, 130, 246, 0.2);
-  --accent-blue-30: rgba(59, 130, 246, 0.3);
-  --accent-amber-10: rgba(245, 158, 11, 0.1);
-  --accent-amber-20: rgba(245, 158, 11, 0.2);
-  --accent-amber-30: rgba(245, 158, 11, 0.3);
+  --accent-green-10: rgb(var(--accent-green) / 0.1);
+  --accent-green-20: rgb(var(--accent-green) / 0.2);
+  --accent-green-30: rgb(var(--accent-green) / 0.3);
+  --accent-red-10: rgb(var(--accent-red) / 0.1);
+  --accent-red-20: rgb(var(--accent-red) / 0.2);
+  --accent-red-30: rgb(var(--accent-red) / 0.3);
+  --accent-blue-10: rgb(var(--accent-blue) / 0.1);
+  --accent-blue-20: rgb(var(--accent-blue) / 0.2);
+  --accent-blue-30: rgb(var(--accent-blue) / 0.3);
+  --accent-amber-10: rgb(var(--accent-amber) / 0.1);
+  --accent-amber-20: rgb(var(--accent-amber) / 0.2);
+  --accent-amber-30: rgb(var(--accent-amber) / 0.3);
+  --accent-purple-10: rgb(var(--accent-purple) / 0.1);
+  --accent-purple-20: rgb(var(--accent-purple) / 0.2);
+  --accent-purple-30: rgb(var(--accent-purple) / 0.3);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --surface-0: 248 250 252;
+  --surface-1: 241 245 249;
+  --surface-2: 226 232 240;
+  --surface-3: 210 218 228;
+  --surface-4: 195 205 218;
+
+  --bg-primary: 248 250 252;
+  --bg-secondary: 241 245 249;
+  --bg-tertiary: 226 232 240;
+
+  --border-default: 203 213 225;
+  --border-subtle: 226 232 240;
+  --border-hover: 148 163 184;
+  --border-active: 37 99 235;
+
+  --text-primary: 15 23 42;
+  --text-secondary: 71 85 105;
+  --text-muted: 100 116 139;
+  --text-inverse: 255 255 255;
+  --selection-orange: 234 179 8;
+
+  --accent-green: 22 163 74;
+  --accent-red: 220 38 38;
+  --accent-blue: 37 99 235;
+  --accent-amber: 217 119 6;
+  --accent-purple: 79 70 229;
+  --accent-purple-hover: 99 102 241;
+  --accent-purple-muted: 67 56 202;
+  --accent-cyan: 8 145 178;
+  --accent-orange: 234 88 12;
 }
 
 *,
@@ -65,8 +116,8 @@ body,
 
 body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: var(--surface-0);
-  color: var(--text-primary);
+  background-color: rgb(var(--surface-0));
+  color: rgb(var(--text-primary));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -81,16 +132,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--surface-3);
+  background: rgb(var(--surface-3));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-default);
+  background: rgb(var(--border-default));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: rgb(var(--border-hover));
 }
 
 /* ============================================
@@ -117,7 +168,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .oi-card:hover {
-  border-color: var(--border-hover);
+  border-color: rgb(var(--border-hover));
   transform: translateY(-1px);
 }
 
@@ -168,7 +219,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .oi-section:hover {
-  background-color: var(--surface-3);
+  background-color: rgb(var(--surface-3));
 }
 
 /* Badge styles */
@@ -182,46 +233,46 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .oi-badge-green {
-  color: var(--accent-green);
+  color: rgb(var(--accent-green));
   border-color: var(--accent-green-30);
   background-color: var(--accent-green-10);
 }
 
 .oi-badge-red {
-  color: var(--accent-red);
+  color: rgb(var(--accent-red));
   border-color: var(--accent-red-30);
   background-color: var(--accent-red-10);
 }
 
 .oi-badge-blue {
-  color: var(--accent-blue);
+  color: rgb(var(--accent-blue));
   border-color: var(--accent-blue-30);
   background-color: var(--accent-blue-10);
 }
 
 .oi-badge-amber {
-  color: var(--accent-amber);
+  color: rgb(var(--accent-amber));
   border-color: var(--accent-amber-30);
   background-color: var(--accent-amber-10);
 }
 
 /* Flow connector lines */
 .oi-flow-line {
-  background: linear-gradient(90deg, transparent 0%, var(--border-default) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgb(var(--border-default)) 50%, transparent 100%);
   height: 1px;
 }
 
 /* Code block styling */
 .oi-code-block {
-  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(135deg, rgb(var(--surface-2)) 0%, rgb(var(--surface-3)) 100%);
+  border: 1px solid rgb(var(--border-default));
   border-radius: 0.75rem;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* Button hover glow */
 .oi-btn-primary {
-  background-color: var(--accent-green);
+  background-color: rgb(var(--accent-green));
   transition: all 0.2s ease-in-out;
 }
 
@@ -238,16 +289,16 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .oi-status-dot.active {
-  background-color: var(--accent-green);
+  background-color: rgb(var(--accent-green));
   animation: oi-pulse 2s ease-in-out infinite;
 }
 
 .oi-status-dot.warning {
-  background-color: var(--accent-amber);
+  background-color: rgb(var(--accent-amber));
 }
 
 .oi-status-dot.error {
-  background-color: var(--accent-red);
+  background-color: rgb(var(--accent-red));
 }
 
 /* Panel header styling */
@@ -256,36 +307,214 @@ input[type="number"]::-webkit-inner-spin-button {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
 }
 
 /* Input field styling */
 .oi-input {
-  background-color: var(--surface-2);
-  border: 1px solid var(--border-default);
+  background-color: rgb(var(--surface-2));
+  border: 1px solid rgb(var(--border-default));
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
-  color: var(--text-primary);
+  color: rgb(var(--text-primary));
   transition: all 0.15s ease-in-out;
 }
 
 .oi-input:hover {
-  border-color: var(--border-hover);
+  border-color: rgb(var(--border-hover));
 }
 
 .oi-input:focus {
   outline: none;
-  border-color: var(--accent-green);
+  border-color: rgb(var(--accent-green));
   box-shadow: 0 0 0 3px var(--accent-green-20);
 }
 
 /* Divider styling */
 .oi-divider {
   height: 1px;
-  background-color: var(--border-subtle);
+  background-color: rgb(var(--border-subtle));
 }
 
 .oi-divider-vertical {
   width: 1px;
-  background-color: var(--border-subtle);
+  background-color: rgb(var(--border-subtle));
+}
+
+/* ============================================
+   GLASS PANEL SYSTEM (Deep Space Theme)
+   ============================================ */
+
+.glass-panel {
+  background: rgba(22, 33, 62, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgb(var(--border-subtle));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   TOOL BUTTON SYSTEM
+   ============================================ */
+
+.tool-icon {
+  color: rgb(var(--text-secondary));
+  transition: color 0.15s ease;
+}
+
+.tool-icon.active {
+  color: rgb(var(--accent-purple));
+}
+
+.tool-btn {
+  transition: all 0.15s ease;
+}
+
+.tool-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tool-btn.active {
+  background-color: var(--accent-purple-20);
+  outline: 1px solid rgb(var(--accent-purple));
+}
+
+/* ============================================
+   GHOST INPUT SCRUBBING
+   ============================================ */
+
+.ghost-input-label {
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.ghost-input-value {
+  transition: all 0.15s ease;
+}
+
+.ghost-input-value:focus {
+  background-color: rgb(var(--bg-primary));
+  outline: 1px solid rgb(var(--border-active));
+}
+
+/* ============================================
+   RIGHT INSPECTOR PANEL
+   ============================================ */
+
+.inspector-panel {
+  position: fixed;
+  right: 0;
+  top: 48px;
+  width: 300px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  z-index: 20;
+}
+
+/* ============================================
+   MOTION SYSTEM (Deep Space & Laser Focus)
+   Timing: 80ms buttons, 120ms overlays, 240ms accordion
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes radialPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ============================================
+   COMMAND PALETTE ANIMATIONS
+   ============================================ */
+
+.command-palette {
+  animation: slideDown 150ms ease-out;
+}
+
+.command-palette-backdrop {
+  animation: fadeIn 120ms ease-out;
+}
+
+/* ============================================
+   RADIAL MENU STYLES
+   ============================================ */
+
+.radial-menu {
+  animation: radialPop 120ms ease-out;
+}
+
+.radial-menu-wedge {
+  transition: all 80ms ease;
+}
+
+.radial-menu-wedge:hover {
+  fill: var(--accent-purple-20);
+}
+
+.radial-menu-wedge.active {
+  fill: var(--accent-purple-30);
+}
+
+.radial-menu-icon {
+  transition: all 80ms ease;
+  color: rgb(var(--text-secondary));
+}
+
+.radial-menu-icon:hover,
+.radial-menu-icon.active {
+  color: rgb(var(--accent-purple));
 }

@@ -2,10 +2,10 @@
  * Verify Result Normalizer
  * P1.1 Factory Ops UX - PR-P1.1-B.1
  *
- * Golden-first normalization from iimos-verify output to VerifyApiResponse.
+ * Golden-first normalization from monolith-verify output to VerifyApiResponse.
  *
  * Algorithm:
- * 1. Try golden format (IIMOS_VERIFY_V1 header) first
+ * 1. Try golden format (MONOLITH_VERIFY_V1 header) first
  * 2. If golden but invalid keys → E_VERIFY_UNKNOWN (safe fallback)
  * 3. If not golden → legacy normalization (exit code + pattern match)
  *
@@ -345,7 +345,7 @@ function generateChecks(code: VerifyErrorCode, verdict: VerifyVerdict): VerifyCh
  * Normalize verifier raw output to structured VerifyApiResponse
  *
  * Algorithm (Golden-First):
- * 1. Try golden format (IIMOS_VERIFY_V1 header) first
+ * 1. Try golden format (MONOLITH_VERIFY_V1 header) first
  * 2. If golden and valid → use golden KV directly
  * 3. If golden but invalid → E_VERIFY_UNKNOWN (safe fallback)
  * 4. If not golden → legacy normalization (exit code + pattern match)

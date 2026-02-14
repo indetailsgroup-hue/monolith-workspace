@@ -1,6 +1,6 @@
 /**
  * Layout Components Index
- * IIMOS Designer Workspace
+ * MONOLITH Designer Workspace
  */
 
 export { AppShell } from './AppShell';

@@ -1,5 +1,5 @@
 /**
- * IIMOS Factory Server - Worker Process
+ * MONOLITH Factory Server - Worker Process
  *
  * Step 10: Multi-process architecture (Worker separate from API)
  *
@@ -62,11 +62,11 @@ async function main() {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   IIMOS Factory Server v0.10.5 (Worker Process)          ║
+║   MONOLITH Factory Server v0.10.5 (Worker Process)          ║
 ║                                                           ║
 ║   Step 10.5: G-Code Compilation from Toolpath Plans      ║
 ║                                                           ║
-║   Processing jobs from queue: iimos_export_jobs          ║
+║   Processing jobs from queue: monolith_export_jobs          ║
 ║   Concurrency: ${CONCURRENCY}                                         ║
 ║   Data directory: ${DATA_DIR}                            ║
 ║                                                           ║

@@ -282,20 +282,180 @@ export function exportPanelDxf(panel: PanelData, options?: { origin?: DxfPoint }
 }
 
 // ============================================================================
-// Multi-Panel Sheet Export (Future)
+// Multi-Panel Sheet Export with Nesting
 // ============================================================================
 
 /**
- * Export multiple panels on a sheet (for nesting).
- * Placeholder for future implementation.
+ * Nesting configuration
+ */
+export interface NestingConfig {
+  /** Gap between panels (mm) */
+  panelGap: number;
+  /** Margin from sheet edges (mm) */
+  sheetMargin: number;
+  /** Allow 90-degree rotation for better fit */
+  allowRotation: boolean;
+}
+
+const DEFAULT_NESTING_CONFIG: NestingConfig = {
+  panelGap: 5,
+  sheetMargin: 10,
+  allowRotation: true,
+};
+
+/**
+ * Represents a placed panel in the nesting layout
+ */
+interface PlacedPanel {
+  panel: PanelData;
+  x: number;
+  y: number;
+  rotated: boolean;  // true if rotated 90 degrees
+  width: number;     // actual width after rotation
+  height: number;    // actual height after rotation
+}
+
+/**
+ * Bottom-Left Fill (BLF) nesting algorithm
+ * Places panels from bottom-left, scanning for first available position
+ *
+ * This is a simple but effective algorithm for rectangular bin packing.
+ * For production use with complex shapes, consider:
+ * - NFP (No-Fit Polygon) based algorithms
+ * - Genetic algorithm optimization
+ * - Commercial nesting libraries
+ */
+function nestPanelsBLF(
+  panels: PanelData[],
+  sheetWidth: number,
+  sheetHeight: number,
+  config: NestingConfig
+): { placed: PlacedPanel[]; unplaced: PanelData[]; efficiency: number } {
+  const { panelGap, sheetMargin, allowRotation } = config;
+
+  // Usable area after margins
+  const usableWidth = sheetWidth - 2 * sheetMargin;
+  const usableHeight = sheetHeight - 2 * sheetMargin;
+
+  // Sort panels by area (largest first) for better packing
+  const sortedPanels = [...panels].sort((a, b) => {
+    const areaA = a.width * a.height;
+    const areaB = b.width * b.height;
+    return areaB - areaA;
+  });
+
+  const placed: PlacedPanel[] = [];
+  const unplaced: PanelData[] = [];
+
+  // Track occupied rectangles for collision detection
+  const occupied: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+  /**
+   * Check if a rectangle can be placed at position without collision
+   */
+  function canPlace(x: number, y: number, w: number, h: number): boolean {
+    // Check sheet boundaries
+    if (x + w > usableWidth || y + h > usableHeight) {
+      return false;
+    }
+
+    // Check collision with placed panels
+    for (const rect of occupied) {
+      const noOverlap =
+        x + w + panelGap <= rect.x ||
+        rect.x + rect.w + panelGap <= x ||
+        y + h + panelGap <= rect.y ||
+        rect.y + rect.h + panelGap <= y;
+
+      if (!noOverlap) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Find first available position using bottom-left scanning
+   */
+  function findPosition(w: number, h: number): { x: number; y: number } | null {
+    // Scan Y positions (bottom to top)
+    for (let y = 0; y <= usableHeight - h; y += 1) {
+      // Scan X positions (left to right)
+      for (let x = 0; x <= usableWidth - w; x += 1) {
+        if (canPlace(x, y, w, h)) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Place each panel
+  for (const panel of sortedPanels) {
+    let position: { x: number; y: number } | null = null;
+    let rotated = false;
+    let finalWidth = panel.width;
+    let finalHeight = panel.height;
+
+    // Try original orientation
+    position = findPosition(panel.width, panel.height);
+
+    // Try rotated if allowed and original didn't fit
+    if (!position && allowRotation && panel.width !== panel.height) {
+      position = findPosition(panel.height, panel.width);
+      if (position) {
+        rotated = true;
+        finalWidth = panel.height;
+        finalHeight = panel.width;
+      }
+    }
+
+    if (position) {
+      placed.push({
+        panel,
+        x: position.x + sheetMargin,
+        y: position.y + sheetMargin,
+        rotated,
+        width: finalWidth,
+        height: finalHeight,
+      });
+
+      occupied.push({
+        x: position.x,
+        y: position.y,
+        w: finalWidth,
+        h: finalHeight,
+      });
+    } else {
+      unplaced.push(panel);
+    }
+  }
+
+  // Calculate nesting efficiency
+  const totalPanelArea = placed.reduce((sum, p) => sum + p.width * p.height, 0);
+  const sheetArea = usableWidth * usableHeight;
+  const efficiency = sheetArea > 0 ? (totalPanelArea / sheetArea) * 100 : 0;
+
+  return { placed, unplaced, efficiency };
+}
+
+/**
+ * Export multiple panels on a sheet with nesting layout.
+ * Uses Bottom-Left Fill algorithm to minimize waste.
+ *
+ * @param panels - Array of panels to nest
+ * @param sheetWidth - Sheet width in mm
+ * @param sheetHeight - Sheet height in mm
+ * @param config - Optional nesting configuration
+ * @returns DXF export result with nested panels
  */
 export function exportSheetDxf(
   panels: PanelData[],
   sheetWidth: number,
-  sheetHeight: number
+  sheetHeight: number,
+  config: NestingConfig = DEFAULT_NESTING_CONFIG
 ): DxfExportResult {
-  // TODO: Implement nesting layout
-  // For now, just export the first panel
   if (panels.length === 0) {
     return exportPanelOutlineDxf({
       jobName: 'empty_sheet',
@@ -304,5 +464,99 @@ export function exportSheetDxf(
     });
   }
 
-  return exportPanelDxf(panels[0]);
+  // Run nesting algorithm
+  const { placed, unplaced, efficiency } = nestPanelsBLF(
+    panels,
+    sheetWidth,
+    sheetHeight,
+    config
+  );
+
+  // Log nesting results
+  console.log(
+    `[DXF Nesting] Placed ${placed.length}/${panels.length} panels, ` +
+    `efficiency: ${efficiency.toFixed(1)}%, ` +
+    `unplaced: ${unplaced.length}`
+  );
+
+  // Build entities for all placed panels
+  const entities: DxfEntity[] = [];
+
+  // Sheet outline (for reference)
+  entities.push(
+    { type: 'LINE', layer: 'CUT', p1: { x: 0, y: 0 }, p2: { x: sheetWidth, y: 0 } },
+    { type: 'LINE', layer: 'CUT', p1: { x: sheetWidth, y: 0 }, p2: { x: sheetWidth, y: sheetHeight } },
+    { type: 'LINE', layer: 'CUT', p1: { x: sheetWidth, y: sheetHeight }, p2: { x: 0, y: sheetHeight } },
+    { type: 'LINE', layer: 'CUT', p1: { x: 0, y: sheetHeight }, p2: { x: 0, y: 0 } }
+  );
+
+  // Add each placed panel
+  for (const placedPanel of placed) {
+    const { panel, x, y, width, height, rotated } = placedPanel;
+
+    // Panel outline
+    entities.push(
+      { type: 'LINE', layer: 'CUT', p1: { x, y }, p2: { x: x + width, y } },
+      { type: 'LINE', layer: 'CUT', p1: { x: x + width, y }, p2: { x: x + width, y: y + height } },
+      { type: 'LINE', layer: 'CUT', p1: { x: x + width, y: y + height }, p2: { x, y: y + height } },
+      { type: 'LINE', layer: 'CUT', p1: { x, y: y + height }, p2: { x, y } }
+    );
+
+    // Drill holes (if any) - adjust for rotation
+    if (panel.drillHoles) {
+      for (const hole of panel.drillHoles) {
+        const holeX = rotated ? x + hole.y : x + hole.x;
+        const holeY = rotated ? y + (width - hole.x) : y + hole.y;
+
+        entities.push({
+          type: 'CIRCLE',
+          layer: 'DRILL',
+          center: { x: holeX, y: holeY },
+          radius: hole.diameter / 2,
+        });
+        entities.push({
+          type: 'POINT',
+          layer: 'DRILL',
+          position: { x: holeX, y: holeY },
+        });
+      }
+    }
+
+    // Panel label
+    const rotationNote = rotated ? ' [R]' : '';
+    entities.push({
+      type: 'TEXT',
+      layer: 'TEXT',
+      position: { x: x + 10, y: y + 10 },
+      height: 5,
+      text: `${panel.label} (${panel.width}x${panel.height})${rotationNote}`,
+    });
+  }
+
+  // Add sheet info text
+  entities.push({
+    type: 'TEXT',
+    layer: 'TEXT',
+    position: { x: 10, y: sheetHeight - 10 },
+    height: 8,
+    text: `Sheet: ${sheetWidth}x${sheetHeight}mm | Panels: ${placed.length} | Efficiency: ${efficiency.toFixed(1)}%`,
+  });
+
+  // Build document
+  const doc: DxfDocument = {
+    units: 'MM',
+    layers: STANDARD_LAYERS,
+    entities,
+  };
+
+  const content = writeDxfR12(doc);
+  const sha256 = sha256Hex(content);
+
+  return {
+    filename: `nested_sheet_${sheetWidth}x${sheetHeight}.dxf`,
+    content,
+    sha256,
+    mime: 'application/dxf',
+    sizeBytes: Buffer.byteLength(content, 'utf-8'),
+  };
 }

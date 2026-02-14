@@ -1,6 +1,6 @@
 # DXF Export Specifications
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -681,7 +681,7 @@ OUTLINE
  21
 720.0
 1001
-IIMOS
+MONOLITH
 1000
 EDGE
 1070
@@ -691,7 +691,7 @@ PVC_WHITE_1MM
 ```
 
 **XDATA Structure:**
-- `1001`: Application name (`IIMOS`)
+- `1001`: Application name (`MONOLITH`)
 - `1000`: String value (`EDGE`)
 - `1070`: Integer (1 = apply edge banding)
 - `1000`: Material code
@@ -1079,5 +1079,5 @@ PURGE
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Manufacturing Team
+- **Owner:** MONOLITH Manufacturing Team
 - **Status:** ✅ Active

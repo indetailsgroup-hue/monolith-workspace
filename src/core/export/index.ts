@@ -107,5 +107,34 @@ export {
   getSheetById,
 } from './planFactoryPackage';
 
-// IIMOS Export Module (complete exporter with context provider)
-export * from './iimos';
+// MONOLITH Export Module (complete exporter with context provider)
+export * from './monolith';
+
+// OperationGraph to DXF (AGENT-T008: source of truth for DXF export)
+export type {
+  OperationGraphDxfOptions,
+  OperationGraphDxfStats,
+  DxfValidationResult,
+} from './operationGraphToDxf';
+
+export {
+  operationGraphToDxf,
+  getOperationGraphDxfStats,
+  validateOperationGraphForDxf,
+  operationGraphBatchToDxf,
+} from './operationGraphToDxf';
+
+// DXF Export from OperationGraph (AGENT-T008: FactoryPacket → OperationGraph → DXF)
+export type {
+  PanelDxfResult,
+  DxfExportResult,
+  DxfExportError,
+  DxfExportFromPacketResult,
+  DxfExportOptions,
+} from './dxfExportFromOperationGraph';
+
+export {
+  exportDxfFromPacket,
+  downloadDxfZipFromPacket,
+  canExportDxfFromOperationGraph,
+} from './dxfExportFromOperationGraph';
