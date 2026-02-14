@@ -165,6 +165,39 @@ describe('compileConnectorOps', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────
+  // BOLT diameter and depth match catalog (Red Flag Guard)
+  // ──────────────────────────────────────────────────────────────────────
+  it('BOLT dia=8mm, depth=34mm per Häfele S200 CNC spec', () => {
+    const ops = compileConnectorOps(
+      TEST_CONTEXT,
+      HAFELE_MINIFIX_15_B24,
+      [37],
+      HMR18_HPL08x2_PVC1,
+      'DRILL_ON_FINISHED',
+    );
+
+    const boltOp = ops.find((op) => op.meta.featureId === 'BOLT')!;
+    expect(boltOp.params.dia).toBe(8);
+    expect(boltOp.params.depth).toBe(34);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // BOLT N-center: N=9.0 (same as CAM for flush joint)
+  // ──────────────────────────────────────────────────────────────────────
+  it('BOLT N=9.0 (core center, same as CAM for flush joint)', () => {
+    const ops = compileConnectorOps(
+      TEST_CONTEXT,
+      HAFELE_MINIFIX_15_B24,
+      [37],
+      HMR18_HPL08x2_PVC1,
+      'DRILL_ON_FINISHED',
+    );
+
+    const boltOp = ops.find((op) => op.meta.featureId === 'BOLT')!;
+    expect(boltOp.params.n).toBe(9.0);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
   // BOLT U-coordinate = 0 (edge bore, no offset)
   // ──────────────────────────────────────────────────────────────────────
   it('BOLT U=0 (edge bore at join edge)', () => {

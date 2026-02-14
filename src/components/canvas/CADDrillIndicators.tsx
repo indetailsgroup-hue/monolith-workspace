@@ -29,7 +29,7 @@ import type {
 /** CAD line colors by drill purpose */
 const CAD_COLORS: Record<DrillPurpose, string> = {
   CAM_LOCK: '#fbbf24',     // Amber - cam housing (Ø15)
-  BOLT: '#60a5fa',         // Blue - bolt/sleeve (Ø10)
+  BOLT: '#60a5fa',         // Blue - bolt bore (Ø8 CNC spec)
   DOWEL: '#a78bfa',        // Purple - dowel (Ø8)
   SHELF_PIN: '#4ade80',    // Green - shelf pin (Ø5)
   HINGE: '#f87171',        // Red - hinge cup (Ø35)
@@ -37,6 +37,30 @@ const CAD_COLORS: Record<DrillPurpose, string> = {
   DRAWER_SLIDE: '#22d3ee', // Cyan - drawer slide (Ø5)
   OTHER: '#9ca3af',        // Gray - other
 };
+
+// ============================================
+// CNC SPEC DISPLAY OVERRIDES
+// DrillMapPoint stores manufacturing/assembly domain values (sleeveDia, boltBoreDepth)
+// but 3D labels should show CNC catalog spec values per HAFELE_MINIFIX_15_B24.
+// ============================================
+
+/** CNC bolt bore diameter — Ø8mm (not assembly sleeve Ø10mm) */
+const CNC_BOLT_BORE_DIA = 8;
+
+/** CNC bolt bore depth — 34mm per HAFELE_MINIFIX_15_B24.BOLT.depthMm */
+const CNC_BOLT_BORE_DEPTH = 34;
+
+/**
+ * Get CNC spec display values for a drill point.
+ * BOLT purpose: overrides with CNC catalog values (Ø8, 34mm).
+ * All other purposes: uses the drill map point values as-is.
+ */
+function getCncDisplayValues(point: DrillMapPoint): { diameter: number; depth: number } {
+  if (point.purpose === 'BOLT') {
+    return { diameter: CNC_BOLT_BORE_DIA, depth: CNC_BOLT_BORE_DEPTH };
+  }
+  return { diameter: point.diameter, depth: point.depth };
+}
 
 /** Crosshair arm length as ratio of diameter */
 const CROSSHAIR_RATIO = 0.7;
@@ -135,6 +159,9 @@ function DrillIndicator({
   const selectedColor = '#ffffff';
   const activeColor = isSelected ? selectedColor : color;
 
+  // CNC display values (may override drill map values for BOLT purpose)
+  const cncDisplay = useMemo(() => getCncDisplayValues(point), [point]);
+
   // Get indicator orientation from drill normal
   const rotation = useMemo(
     () => getOrientationFromNormal(point.normal),
@@ -147,8 +174,8 @@ function DrillIndicator({
     [point.position, point.normal]
   );
 
-  // Scale factor for mm to world units
-  const radius = point.diameter / 2;
+  // Scale factor for mm to world units — use CNC display diameter for visual circle
+  const radius = cncDisplay.diameter / 2;
   const crosshairArm = radius * CROSSHAIR_RATIO;
 
   // Generate circle points
@@ -232,7 +259,7 @@ function DrillIndicator({
             border: `1px solid ${activeColor}`,
             whiteSpace: 'nowrap',
           }}>
-            Ø{point.diameter}
+            Ø{cncDisplay.diameter}
           </div>
         </Html>
       )}
@@ -252,7 +279,7 @@ function DrillIndicator({
             borderRadius: '2px',
             whiteSpace: 'nowrap',
           }}>
-            ↓{point.depth}mm
+            ↓{cncDisplay.depth}mm
           </div>
         </Html>
       )}
@@ -335,7 +362,7 @@ export function CADDrillLegend({ visible }: CADDrillLegendProps) {
 
   const legendItems: { purpose: DrillPurpose; label: string; diameter: number }[] = [
     { purpose: 'CAM_LOCK', label: 'Cam Housing', diameter: 15 },
-    { purpose: 'BOLT', label: 'Bolt Hole', diameter: 10 },
+    { purpose: 'BOLT', label: 'Bolt Bore', diameter: CNC_BOLT_BORE_DIA },
     { purpose: 'DOWEL', label: 'Dowel', diameter: 8 },
     { purpose: 'SHELF_PIN', label: 'Shelf Pin', diameter: 5 },
     { purpose: 'DRAWER_SLIDE', label: 'Drawer Slide', diameter: 5 },

@@ -159,9 +159,13 @@ describe('validatePairIntegrity', () => {
 
     const findings = validatePairIntegrity(points);
 
-    // Only cam-2 should fail
-    expect(findings.length).toBe(1);
-    expect(findings[0].entityIds).toContain('cam-2');
+    // cam-2 should fail (missing pairedHoleId) + bolt-2 is orphan (no CAM targets it)
+    const missingPairFindings = findings.filter(f => f.code === 'MONO_MINIFIX_MISSING_PAIRED_HOLE_ID');
+    const orphanFindings = findings.filter(f => f.code === 'MONO_MINIFIX_ORPHAN_BOLT');
+    expect(missingPairFindings.length).toBe(1);
+    expect(missingPairFindings[0].entityIds).toContain('cam-2');
+    expect(orphanFindings.length).toBe(1);
+    expect(orphanFindings[0].entityIds).toContain('bolt-2');
   });
 });
 

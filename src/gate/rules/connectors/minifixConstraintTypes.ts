@@ -13,6 +13,7 @@
  *
  * v1.0: Initial implementation
  * v1.1: Rebranded to Monolith naming convention
+ * v1.3: Hardware-derived field cross-checks (bolt edge, boltDirection, targetPocketCenter, Distance B by thickness)
  */
 
 // ============================================
@@ -106,7 +107,19 @@ export type MinifixConstraintCode =
   | 'MONO_MINIFIX_NOT_COAXIAL'
   | 'MONO_MINIFIX_Y_MISMATCH'
   | 'MONO_MINIFIX_ARROW_NOT_FACING_BOLT'
-  | 'MONO_MINIFIX_COLLISION_ON_ENTRY';
+  | 'MONO_MINIFIX_COLLISION_ON_ENTRY'
+  // v1.2: Depth & edge safety rules
+  | 'MONO_MINIFIX_CAM_DEPTH_EXCEEDS_PANEL'
+  | 'MONO_MINIFIX_BOLT_DEPTH_EXCEEDS_PANEL'
+  | 'MONO_MINIFIX_CAM_EDGE_CLEARANCE'
+  | 'MONO_MINIFIX_DISTANCE_B_OUT_OF_RANGE'
+  | 'MONO_MINIFIX_DUPLICATE_BOLT_TARGET'
+  | 'MONO_MINIFIX_ORPHAN_BOLT'
+  // v1.3: Hardware-derived field cross-checks
+  | 'MONO_MINIFIX_BOLT_EDGE_CLEARANCE'
+  | 'MONO_MINIFIX_BOLT_DIRECTION_MISMATCH'
+  | 'MONO_MINIFIX_POCKET_CENTER_MISMATCH'
+  | 'MONO_MINIFIX_POINT_STATUS_PROPAGATED';
 
 // ============================================
 // CONSTRAINT DEFINITIONS
@@ -115,7 +128,7 @@ export type MinifixConstraintCode =
 export interface MinifixConstraint {
   id: string;
   name: string;
-  type: 'required_field' | 'reference_exists' | 'axis_alignment' | 'axis_pointing' | 'coaxial' | 'equal_scalar' | 'direction_match' | 'clearance_check';
+  type: 'required_field' | 'reference_exists' | 'axis_alignment' | 'axis_pointing' | 'coaxial' | 'equal_scalar' | 'direction_match' | 'clearance_check' | 'depth_check' | 'edge_clearance' | 'distance_check' | 'uniqueness_check' | 'cross_check' | 'status_propagation';
   severity: ConstraintSeverity;
   tolerance?: Record<string, number>;
   field?: string;
@@ -180,7 +193,44 @@ export const MINIFIX_TOLERANCES = {
   COAXIAL_RADIAL_MM: 0.20,
   Y_MISMATCH_MM: 0.20,  // Height match tolerance (Y-up)
   CLEARANCE_MIN_MM: 0.10,
+
+  // v1.2: Depth & edge safety tolerances
+  /** Minimum panel material remaining after CAM bore (mm) */
+  CAM_MIN_REMAINING_DEPTH_MM: 2.0,
+  /** Minimum panel material remaining after BOLT bore (mm) */
+  BOLT_MIN_REMAINING_DEPTH_MM: 2.0,
+  /** Minimum clearance from CAM edge to panel edge (mm). CAM Ø15 → radius 7.5 */
+  CAM_EDGE_CLEARANCE_MM: 7.5,
+  /** Distance B tolerance for connector-level check (mm) */
+  DISTANCE_B_TOLERANCE_MM: 1.0,
+  /** Standard Distance B per Häfele spec (mm) */
+  DISTANCE_B_STANDARD_MM: 24.0,
+
+  // v1.3: Hardware-derived field cross-check tolerances
+  /** Minimum clearance from BOLT edge to panel edge (mm). Bolt Ø10 → radius 5 */
+  BOLT_EDGE_CLEARANCE_MM: 5.0,
+  /** Maximum allowed angle between declared boltDirection and computed axis (degrees) */
+  BOLT_DIRECTION_ANGLE_TOLERANCE_DEG: 5.0,
+  /** Maximum allowed distance between declared targetPocketCenter and computed pocket center (mm) */
+  POCKET_CENTER_TOLERANCE_MM: 1.0,
 } as const;
+
+// ============================================
+// DISTANCE B LOOKUP TABLE (Häfele spec per wood thickness)
+// ============================================
+
+/**
+ * Häfele Distance B by panel thickness (mm → mm).
+ * Distance B = distance from panel edge to bolt axis center.
+ */
+export const DISTANCE_B_BY_THICKNESS: Record<number, number> = {
+  16: 22,   // 16mm wood → B = 22mm
+  18: 24,   // 18mm wood → B = 24mm (default)
+  19: 25,   // 19mm wood → B = 25mm
+};
+
+/** Default Distance B when panel thickness not in lookup table */
+export const DISTANCE_B_DEFAULT_MM = 24;
 
 // ============================================
 // CONSTRAINT RULE DEFINITIONS
@@ -286,6 +336,135 @@ export const MINIFIX_CONSTRAINTS: MinifixConstraint[] = [
       message: 'Ball collides with cam pocket boundary; entry is blocked.',
     },
   },
+  // ---- v1.2: Depth & Edge Safety Constraints ----
+  {
+    id: 'MONO-MINIFIX-DEPTH-001',
+    name: 'CAM depth must not exceed panel thickness',
+    type: 'depth_check',
+    severity: 'ERROR',
+    tolerance: { min_remaining_mm: MINIFIX_TOLERANCES.CAM_MIN_REMAINING_DEPTH_MM },
+    failure: {
+      code: 'MONO_MINIFIX_CAM_DEPTH_EXCEEDS_PANEL',
+      message: 'CAM bore depth exceeds panel thickness; drill will punch through panel.',
+    },
+    fix: {
+      strategy: 'REDUCE_CAM_DEPTH',
+      suggestion: 'Reduce cam depth or increase panel thickness.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-DEPTH-002',
+    name: 'Bolt depth must not exceed panel width at drill point',
+    type: 'depth_check',
+    severity: 'ERROR',
+    tolerance: { min_remaining_mm: MINIFIX_TOLERANCES.BOLT_MIN_REMAINING_DEPTH_MM },
+    failure: {
+      code: 'MONO_MINIFIX_BOLT_DEPTH_EXCEEDS_PANEL',
+      message: 'Bolt bore depth exceeds panel edge dimension; drill will punch through.',
+    },
+    fix: {
+      strategy: 'REDUCE_BOLT_DEPTH',
+      suggestion: 'Reduce bolt depth or increase panel dimension.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-EDGE-001',
+    name: 'CAM housing must have sufficient edge clearance',
+    type: 'edge_clearance',
+    severity: 'ERROR',
+    tolerance: { min_clearance_mm: MINIFIX_TOLERANCES.CAM_EDGE_CLEARANCE_MM },
+    failure: {
+      code: 'MONO_MINIFIX_CAM_EDGE_CLEARANCE',
+      message: 'CAM housing too close to panel edge; partial hole or blowout risk.',
+    },
+    fix: {
+      strategy: 'MOVE_CAM_INWARD',
+      suggestion: 'Move CAM position inward to maintain minimum edge clearance.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-DIST-001',
+    name: 'Distance B must match Häfele standard (24mm)',
+    type: 'distance_check',
+    severity: 'WARNING',
+    tolerance: { tolerance_mm: MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM },
+    failure: {
+      code: 'MONO_MINIFIX_DISTANCE_B_OUT_OF_RANGE',
+      message: 'Distance B deviates from Häfele standard 24mm specification.',
+    },
+    fix: {
+      strategy: 'SET_DISTANCE_B',
+      suggestion: 'Set drilling distance B to 24mm per Häfele spec.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-PAIR-003',
+    name: 'Each bolt must be targeted by exactly one CAM',
+    type: 'uniqueness_check',
+    severity: 'ERROR',
+    failure: {
+      code: 'MONO_MINIFIX_DUPLICATE_BOLT_TARGET',
+      message: 'Multiple CAM housings target the same bolt; only one CAM per bolt is allowed.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-PAIR-004',
+    name: 'Every bolt should have a corresponding CAM',
+    type: 'uniqueness_check',
+    severity: 'WARNING',
+    failure: {
+      code: 'MONO_MINIFIX_ORPHAN_BOLT',
+      message: 'Bolt drill point has no CAM housing paired to it; bolt will be unused.',
+    },
+  },
+  // ---- v1.3: Hardware-derived field cross-checks ----
+  {
+    id: 'MONO-MINIFIX-EDGE-002',
+    name: 'Bolt hole must have sufficient edge clearance',
+    type: 'edge_clearance',
+    severity: 'ERROR',
+    tolerance: { min_clearance_mm: MINIFIX_TOLERANCES.BOLT_EDGE_CLEARANCE_MM },
+    failure: {
+      code: 'MONO_MINIFIX_BOLT_EDGE_CLEARANCE',
+      message: 'Bolt hole too close to panel edge; blowout risk on vertical panel.',
+    },
+    fix: {
+      strategy: 'MOVE_BOLT_INWARD',
+      suggestion: 'Move bolt position inward to maintain minimum edge clearance.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-DIAG-001',
+    name: 'Declared boltDirection must match computed A→C axis',
+    type: 'cross_check',
+    severity: 'WARNING',
+    tolerance: { angle_deg: MINIFIX_TOLERANCES.BOLT_DIRECTION_ANGLE_TOLERANCE_DEG },
+    failure: {
+      code: 'MONO_MINIFIX_BOLT_DIRECTION_MISMATCH',
+      message: 'Declared boltDirection differs from computed bolt axis; possible drill map generation issue.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-DIAG-002',
+    name: 'Declared targetPocketCenter must match computed cam pocket center',
+    type: 'cross_check',
+    severity: 'WARNING',
+    tolerance: { distance_mm: MINIFIX_TOLERANCES.POCKET_CENTER_TOLERANCE_MM },
+    failure: {
+      code: 'MONO_MINIFIX_POCKET_CENTER_MISMATCH',
+      message: 'Declared targetPocketCenter differs from computed pocket center; possible consistency issue.',
+    },
+  },
+  {
+    id: 'MONO-MINIFIX-STATUS-001',
+    name: 'Propagate pre-existing DrillMapPoint status',
+    type: 'status_propagation',
+    severity: 'INFO',
+    failure: {
+      code: 'MONO_MINIFIX_POINT_STATUS_PROPAGATED',
+      message: 'DrillMapPoint has pre-existing validation issue from upstream.',
+    },
+  },
 ];
 
 // ============================================
@@ -308,7 +487,7 @@ export const MINIFIX_DERIVED_RULES = [
 // ============================================
 
 export const MINIFIX_GATE_RULESET = {
-  schema: 'monolith.gate.ruleset@1.1',
+  schema: 'monolith.gate.ruleset@1.3',
   id: 'gate.ruleset.hardware.minifix',
   appliesTo: ['DrillMapPoint', 'AssemblyGraph', 'HardwarePlacement', 'OperationGraph'],
   when: ['DESIGNER_LIVE_DRC', 'EXPORT_PACKET', 'RELEASE', 'FACTORY_PACKET_BUILD'],

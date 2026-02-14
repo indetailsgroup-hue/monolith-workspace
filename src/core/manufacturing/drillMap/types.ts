@@ -366,8 +366,21 @@ export interface MinifixConfig {
 
   // Sleeve (Bolt hole)
   sleeveDia: number;          // 10mm
-  sleeveLength: number;       // 17.5mm
+  sleeveLength: number;       // 14.25mm — physical sleeve cylinder length (assembly visual)
   sleeveOffset: number;
+
+  /**
+   * Bolt hole drilling depth in mm (manufacturing domain).
+   * Per Häfele Minifix S200: 17.5mm.
+   *
+   * IMPORTANT: This is NOT the same as `sleeveLength` (14.25mm).
+   * - `sleeveLength` = physical sleeve cylinder length used for assembly/3D preview
+   *   (B = ballHead/2 (3.25) + neck (6.5) + sleeve (14.25) = 24mm)
+   * - `boltBoreDepth` = actual drilling depth for the bolt hole in the panel
+   *
+   * If not set, the drill map generator falls back to 17.5mm (Häfele constant).
+   */
+  boltBoreDepth?: number;     // 17.5mm — bolt hole drilling depth (manufacturing)
 
   // Shaft (Threaded)
   shaftDia: number;           // 5mm

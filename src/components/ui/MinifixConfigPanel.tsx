@@ -76,8 +76,10 @@ export interface MinifixFullConfig {
 
   // Sleeve (ปลอก)
   sleeveDia: number;
-  sleeveLength: number;
+  sleeveLength: number;       // 14.25mm — assembly visual sleeve length
   sleeveOffset: number;
+  /** Bolt drilling depth (17.5mm). Separate from sleeveLength (14.25mm assembly). */
+  boltBoreDepth?: number;     // 17.5mm — manufacturing bolt bore depth
 
   // Threaded Shaft (ก้านเกลียว)
   shaftDia: number;
@@ -130,6 +132,19 @@ export const CAM_SPECS_BY_WOOD_THICKNESS: Record<number, { drillingDepth: number
   29: { drillingDepth: 19.5, dimA: 14.5 },
 };
 
+// ============================================
+// CNC DRILLING SPEC LABELS (from Connector OS catalog)
+// These differ from assembly physical dimensions:
+//   Assembly: Ø10 sleeve, 14.25mm sleeve length, 17.5mm bore
+//   CNC Spec: Ø8 bolt bore, 34mm bore depth (per HAFELE_MINIFIX_15_B24)
+// ============================================
+
+/** CNC bolt bore diameter — Ø8mm (not assembly sleeve Ø10mm) */
+const CNC_BOLT_BORE_DIA = 8;
+
+/** CNC bolt bore depth — 34mm per HAFELE_MINIFIX_15_B24.BOLT.depthMm */
+const CNC_BOLT_BORE_DEPTH = 34;
+
 export const DEFAULT_MINIFIX_CONFIG: MinifixFullConfig = {
   minifixType: '15',
   drillingDistanceB: 24,  // 24mm per CAD spec (Indetails standard)
@@ -142,10 +157,11 @@ export const DEFAULT_MINIFIX_CONFIG: MinifixFullConfig = {
   neckShaftDia: 6.5,
   neckShaftLength: 6.5,
   neckShaftOffset: 0,
-  // Sleeve (ปลอก) - Ø10mm × 14.25mm
+  // Sleeve (ปลอก) - Ø10mm × 14.25mm (assembly length, NOT drilling depth)
   sleeveDia: 10,
   sleeveLength: 14.25,
   sleeveOffset: 0, // Default 0, user can adjust
+  boltBoreDepth: 17.5, // Häfele S200 bolt drilling depth (separate from sleeveLength)
   // Shaft (ก้านเกลียว) - from CAD: Ø5mm × 11mm
   shaftDia: 5, // CAD shows 5mm
   shaftLength: 11, // CAD shows 11mm for lower section
@@ -1051,25 +1067,25 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
             step={0.5}
           />
 
-          {/* Sleeve length - editable */}
+          {/* Bolt bore depth — shows CNC drilling depth (34mm for Minifix B24) */}
           <EditableDimensionLabel
             start={[0, positions.sleeve[1] + sleeveLength / 2, 0]}
             end={[0, positions.sleeve[1] - sleeveLength / 2, 0]}
-            value={config.sleeveLength}
+            value={CNC_BOLT_BORE_DEPTH}
             color="#ff6060"
             offset={0.12}
             side="right"
-            configKey="sleeveLength"
+            configKey="boltBoreDepth"
             onEdit={onUpdateConfig}
             min={10}
-            max={25}
+            max={40}
             step={0.5}
           />
 
-          {/* Sleeve diameter - editable */}
+          {/* Sleeve diameter — shows CNC bore Ø8 (not assembly sleeve Ø10) */}
           <EditableDiameterLabel
             position={[sleeveDia / 2 + 0.04, positions.sleeve[1], 0]}
-            value={config.sleeveDia}
+            value={CNC_BOLT_BORE_DIA}
             color="#ff6060"
             configKey="sleeveDia"
             onEdit={onUpdateConfig}
@@ -1745,7 +1761,7 @@ export function MinifixConfigPanel({
                   <span className="w-2 h-2 rounded-full bg-red-400" />
                   <span className="text-gray-400 text-[9px]">Sleeve</span>
                 </div>
-                <div className="text-red-400 font-mono font-medium text-[10px]">Ø{config.sleeveDia}×{config.sleeveLength}</div>
+                <div className="text-red-400 font-mono font-medium text-[10px]">Bore Ø{CNC_BOLT_BORE_DIA}×{CNC_BOLT_BORE_DEPTH}</div>
               </div>
               <div className="text-center p-2 bg-blue-500/10 rounded border border-blue-500/30 hover:bg-blue-500/20 cursor-pointer transition-all" onClick={() => setActiveTab('bolt')}>
                 <div className="flex items-center justify-center gap-1 mb-1">

@@ -169,11 +169,6 @@ export function buildBoltEntityFromDrillPoint(
     ballCenter = vec3Add(A, vec3Scale(axis, ballHeadOffset));
   }
 
-  // DEBUG: Verify B=C is actually happening
-  const d = vec3Length(vec3Sub(ballCenter, targetCamCenter));
-  const dy = Math.abs(ballCenter.y - targetCamCenter.y);
-  console.debug(`[minifix] B-C debug | d=${d.toFixed(4)} dy=${dy.toFixed(4)} mode=${effectiveMode} hasBoltDir=${hasBoltDirection} id=${point.id}`);
-
   return {
     id: point.id,
     kind: 'connecting_bolt',

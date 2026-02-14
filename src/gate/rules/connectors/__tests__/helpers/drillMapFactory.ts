@@ -133,11 +133,15 @@ export function makeBolt(opts: {
   y?: number;
   position?: Vec3Tuple;
   normal?: Vec3Tuple;
+  boltDirection?: Vec3Tuple;
+  targetPocketCenter?: Vec3Tuple;
+  edgeDistance?: number;
+  panelThickness?: number;
 } = {}): DrillMapPoint {
   const id = opts.id ?? uid('bolt');
   const y = opts.y ?? 100;
 
-  return makePoint({
+  const point = makePoint({
     id,
     componentType: 'BOLT',
     purpose: 'MINIFIX',
@@ -147,6 +151,14 @@ export function makeBolt(opts: {
     depth: 34, // Standard bolt hole depth
     face: 'LEFT', // Bolt drills into edge of vertical panel
   });
+
+  // v1.3: Set hardware-derived fields when provided
+  if (opts.boltDirection) point.boltDirection = opts.boltDirection;
+  if (opts.targetPocketCenter) point.targetPocketCenter = opts.targetPocketCenter;
+  if (opts.edgeDistance !== undefined) point.edgeDistance = opts.edgeDistance;
+  if (opts.panelThickness !== undefined) point.panelThickness = opts.panelThickness;
+
+  return point;
 }
 
 // ============================================
@@ -313,4 +325,63 @@ export function generateMixedPairs(
   });
 
   return { pairs, expectedFailures };
+}
+
+// ============================================
+// v1.3: THICKNESS-VARIANT FACTORIES
+// ============================================
+
+/**
+ * Create a DrillMap with a single panel and custom thickness.
+ */
+export function onePanelWithThickness(
+  points: DrillMapPoint[],
+  thickness: number,
+  panelId = 'panel-A'
+): DrillMap {
+  const dm = onePanel(points, panelId);
+  dm.panels[0].dimensions.thickness = thickness;
+  return dm;
+}
+
+/**
+ * Create a DrillMap with two panels having different thicknesses.
+ * Useful for testing mixed-thickness cabinets.
+ */
+export function twoPanelsWithThickness(
+  pointsA: DrillMapPoint[], thicknessA: number,
+  pointsB: DrillMapPoint[], thicknessB: number,
+  panelIdA = 'panel-A',
+  panelIdB = 'panel-B'
+): DrillMap {
+  const dm = twoPanels(pointsA, pointsB, panelIdA, panelIdB);
+  dm.panels[0].dimensions.thickness = thicknessA;
+  dm.panels[1].dimensions.thickness = thicknessB;
+  return dm;
+}
+
+/**
+ * Create a valid cam-bolt pair with ALL hardware-derived fields populated.
+ * For v1.3+ tests that need full field coverage.
+ */
+export function makeValidPairWithFields(suffix = '1'): { cam: DrillMapPoint; bolt: DrillMapPoint } {
+  const { cam, bolt } = makeValidPair(suffix);
+
+  // CAM hardware fields
+  cam.edgeDistance = 24;
+  cam.drillingDistanceB = 24;
+
+  // Bolt hardware fields
+  bolt.edgeDistance = 12;
+  bolt.depth = 12; // Realistic bolt depth for 18mm panel (leaves 6mm > 2mm min)
+  bolt.boltDirection = [-1, 0, 0];
+  // Compute targetPocketCenter from cam: position + normal * (camDepth/2)
+  const camDepthHalf = 13.5 / 2;
+  bolt.targetPocketCenter = [
+    cam.position[0] + cam.normal[0] * camDepthHalf,
+    cam.position[1] + cam.normal[1] * camDepthHalf,
+    cam.position[2] + cam.normal[2] * camDepthHalf,
+  ];
+
+  return { cam, bolt };
 }

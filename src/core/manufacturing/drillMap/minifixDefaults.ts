@@ -39,8 +39,9 @@ export const DEFAULT_MINIFIX_S200_CONFIG: MinifixConfig = {
 
   // Sleeve (ปลอก) - BOLT HOLE
   sleeveDia: 10,                // Ø10mm - รู Bolt
-  sleeveLength: 17.5,           // 17.5mm - ความลึก Bolt
+  sleeveLength: 17.5,           // 17.5mm - ความลึก Bolt (kept for backward compat)
   sleeveOffset: 0,
+  boltBoreDepth: 17.5,          // 17.5mm - authoritative bolt drilling depth (Häfele S200)
 
   // Shaft (ก้านเกลียว)
   shaftDia: 5,                  // Ø5mm

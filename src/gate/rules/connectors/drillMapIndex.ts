@@ -203,6 +203,8 @@ export interface ValidationContext {
   pointsFlat: DrillMapPoint[];
   /** Index for O(1) lookups */
   index: DrillMapIndex;
+  /** Map from panelId to panel thickness in mm (v1.3) */
+  panelThicknessMap: Map<string, number>;
 }
 
 /**
@@ -212,15 +214,36 @@ export function buildValidationContext(drillMap: DrillMap | null): ValidationCon
   if (!drillMap) return null;
 
   const pointsFlat: DrillMapPoint[] = [];
+  const panelThicknessMap = new Map<string, number>();
+
   for (const panel of drillMap.panels) {
     pointsFlat.push(...panel.points);
+    panelThicknessMap.set(panel.panelId, panel.dimensions.thickness);
   }
 
   return {
     drillMap,
     pointsFlat,
     index: buildDrillMapIndex(drillMap),
+    panelThicknessMap,
   };
+}
+
+/**
+ * Get panel thickness for a drill point from the validation context.
+ * Falls back to provided default if panel not found.
+ *
+ * @param ctx - Validation context with panelThicknessMap
+ * @param point - The drill map point
+ * @param fallback - Default thickness (typically 18mm)
+ * @returns Panel thickness in mm
+ */
+export function getPanelThicknessForPoint(
+  ctx: ValidationContext,
+  point: DrillMapPoint,
+  fallback: number
+): number {
+  return ctx.panelThicknessMap.get(point.panelId) ?? point.panelThickness ?? fallback;
 }
 
 // ============================================

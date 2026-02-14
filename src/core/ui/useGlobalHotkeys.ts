@@ -18,7 +18,7 @@
  * @version 1.0.0
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useUiStore } from '../store/useUiStore';
 import { useSelectionStore, selectionKeyToKind } from '../store/useSelectionStore';
 import { useCabinetStore } from '../store/useCabinetStore';
@@ -451,13 +451,17 @@ export function useHotkey(
 // ============================================================================
 
 /**
- * Hook to open RadialMenu on right-click in canvas area
+ * Hook to open RadialMenu on double middle-click (scroll wheel) in canvas area
  */
 export function useRadialMenuTrigger(): void {
   const openRadialMenu = useUiStore((s) => s.openRadialMenu);
+  const lastMiddleClickRef = useRef<number>(0);
 
   useEffect(() => {
-    function handleContextMenu(e: MouseEvent): void {
+    function handleMouseDown(e: MouseEvent): void {
+      // Only middle button (scroll wheel click)
+      if (e.button !== 1) return;
+
       const target = e.target as HTMLElement;
 
       // Only trigger on canvas or elements marked for radial menu
@@ -466,11 +470,17 @@ export function useRadialMenuTrigger(): void {
         target.closest('[data-radial-menu-area]')
       ) {
         e.preventDefault();
-        openRadialMenu(e.clientX, e.clientY);
+        const now = Date.now();
+        if (now - lastMiddleClickRef.current < 400) {
+          openRadialMenu(e.clientX, e.clientY);
+          lastMiddleClickRef.current = 0; // reset after opening
+        } else {
+          lastMiddleClickRef.current = now;
+        }
       }
     }
 
-    window.addEventListener('contextmenu', handleContextMenu);
-    return () => window.removeEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('mousedown', handleMouseDown);
+    return () => window.removeEventListener('mousedown', handleMouseDown);
   }, [openRadialMenu]);
 }

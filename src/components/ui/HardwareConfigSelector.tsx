@@ -502,21 +502,21 @@ export function HardwareConfigSelector({ cabinetId }: HardwareConfigSelectorProp
                   </div>
                   <span className="text-[7px] text-gray-500 mt-1">Ø{displayConfig.shaftDia}</span>
                 </div>
-                {/* Sleeve visualization */}
+                {/* Bore visualization (CNC spec: Ø8mm bolt bore, not assembly sleeve) */}
                 <div className="flex flex-col items-center">
                   <div className="w-5 h-6 rounded border-2 border-red-400 bg-red-400/20 flex items-center justify-center">
-                    <span className="text-[6px] text-red-400">SLV</span>
+                    <span className="text-[6px] text-red-400">BORE</span>
                   </div>
-                  <span className="text-[7px] text-gray-500 mt-1">Ø{displayConfig.sleeveDia}</span>
+                  <span className="text-[7px] text-gray-500 mt-1">Ø8</span>
                 </div>
               </div>
             </div>
-            {/* Config Details - from displayConfig */}
+            {/* Config Details - CNC spec values for bore, assembly values for others */}
             <div className="text-[9px] text-purple-400 font-medium mb-1">Configuration {liveConfig ? '(Live)' : ''}</div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[8px]">
               <div className="text-gray-500">Cam: <span className="text-gray-300">Ø{displayConfig.camDia}×{displayConfig.camDepth}mm</span></div>
               <div className="text-gray-500">Bolt: <span className="text-gray-300">Ø{displayConfig.shaftDia}×{displayConfig.shaftLength}mm</span></div>
-              <div className="text-gray-500">Sleeve: <span className="text-gray-300">Ø{displayConfig.sleeveDia}×{displayConfig.sleeveLength}mm</span></div>
+              <div className="text-gray-500">Bore: <span className="text-gray-300">Ø8×34mm</span></div>
               <div className="text-gray-500">Dowel: <span className="text-gray-300">Ø{displayConfig.dowelDia}×{displayConfig.dowelLength}mm</span></div>
             </div>
           </div>
@@ -545,7 +545,7 @@ export function HardwareConfigSelector({ cabinetId }: HardwareConfigSelectorProp
             <div className="text-[9px] text-gray-400 font-medium mb-1">Custom Configuration {liveConfig ? '(Live)' : ''}</div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[8px]">
               <div className="text-gray-500">Cam: <span className="text-gray-300">Ø{displayConfig.camDia}×{displayConfig.camDepth}mm</span></div>
-              <div className="text-gray-500">Bolt: <span className="text-gray-300">Ø{displayConfig.shaftDia}×{displayConfig.shaftLength}mm</span></div>
+              <div className="text-gray-500">Bore: <span className="text-gray-300">Ø8×34mm</span></div>
             </div>
           </div>
         )}

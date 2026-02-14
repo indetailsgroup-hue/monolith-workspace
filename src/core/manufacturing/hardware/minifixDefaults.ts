@@ -20,7 +20,9 @@ export interface MinifixHardwareConfig {
   camHeight: number;
   // Sleeve (for bolt hole)
   sleeveDia: number;
-  sleeveLength: number;
+  sleeveLength: number;       // 14.25mm — assembly sleeve cylinder length
+  /** Bolt hole drilling depth (17.5mm). Separate from sleeveLength (14.25mm assembly). */
+  boltBoreDepth?: number;     // 17.5mm — manufacturing bolt bore depth
   // Bolt shaft
   shaftDia: number;
   shaftLength: number;
@@ -56,7 +58,8 @@ export const CAM_DRILLING_SPECS: Record<number, { drillingDepth: number; dimA: n
 
 const S200_BOLT_DEFAULTS = {
   sleeveDia: 10,         // Sleeve Ø10mm
-  sleeveLength: 14.25,   // Sleeve length 14.25mm (B = 3.25 + 6.5 + 14.25 = 24mm)
+  sleeveLength: 14.25,   // Sleeve ASSEMBLY length 14.25mm (B = 3.25 + 6.5 + 14.25 = 24mm)
+  boltBoreDepth: 17.5,   // Bolt DRILLING depth 17.5mm (Häfele S200 — NOT same as sleeveLength!)
   shaftDia: 5,           // Shaft Ø5mm
   shaftLength: 11,       // Shaft length 11mm
   dowelDia: 8,           // Dowel Ø8mm
@@ -118,10 +121,11 @@ export function getMinifixFullConfigForThickness(woodThickness: number) {
     neckShaftDia: 6.5,
     neckShaftLength: 6.5,
     neckShaftOffset: 0,
-    // Sleeve
+    // Sleeve (assembly visual = 14.25mm, drilling = 17.5mm)
     sleeveDia: config.sleeveDia,
     sleeveLength: config.sleeveLength,
     sleeveOffset: 0,
+    boltBoreDepth: 17.5,  // Häfele S200 bolt drilling depth (NOT sleeveLength)
     // Shaft
     shaftDia: config.shaftDia,
     shaftLength: config.shaftLength,

@@ -124,6 +124,7 @@ const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
   sleeveDia: 10,
   sleeveLength: 17.5,
   sleeveOffset: 0,
+  boltBoreDepth: 17.5,  // Häfele S200 bolt drilling depth (authoritative for BOLT point depth)
   // Shaft
   shaftDia: 5,
   shaftLength: 11,
@@ -460,7 +461,7 @@ function generateCornerJointPoints(
     position: facePoint.position,
     normal: facePoint.normal,
     diameter: config.sleeveDia,
-    depth: config.sleeveLength,
+    depth: config.boltBoreDepth ?? 17.5,  // Häfele S200: 17.5mm bolt bore depth (NOT sleeveLength 14.25mm)
     purpose: 'BOLT',
     pairId,
     edgeDistance: effectiveDistanceB, // Distance B from mating edge

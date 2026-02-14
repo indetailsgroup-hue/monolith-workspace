@@ -14,6 +14,8 @@
  *
  * v1.0: Initial implementation
  * v1.1: Rebranded to Monolith naming convention
+ * v1.2: Added depth/edge safety, Distance B, duplicate/orphan detection
+ * v1.3: Hardware-derived field alignment (per-panel thickness, bolt edge, boltDirection/targetPocketCenter cross-checks)
  */
 
 import type {
@@ -26,7 +28,7 @@ import type {
   MinifixConstraintCode,
   ConstraintSeverity,
 } from './minifixConstraintTypes';
-import { MINIFIX_TOLERANCES, MINIFIX_CONSTRAINTS } from './minifixConstraintTypes';
+import { MINIFIX_TOLERANCES, MINIFIX_CONSTRAINTS, DISTANCE_B_BY_THICKNESS, DISTANCE_B_DEFAULT_MM } from './minifixConstraintTypes';
 import type { DrillMapPoint, DrillMap } from '../../../core/manufacturing/drillMap/types';
 import { findMinifixPairs, buildConnectorPairFromDrillPoints, type MinifixSolveMode } from './drillMapToMinifixPair';
 import {
@@ -35,6 +37,7 @@ import {
   patchPathForBoltPosition,
   buildValidationContext,
   flattenDrillMapPoints,
+  getPanelThicknessForPoint,
   type DrillMapIndex,
   type ValidationContext,
 } from './drillMapIndex';
@@ -67,6 +70,14 @@ function vec3Cross(a: Vec3, b: Vec3): Vec3 {
     y: a.z * b.x - a.x * b.z,
     z: a.x * b.y - a.y * b.x,
   };
+}
+
+function vec3Add(a: Vec3, b: Vec3): Vec3 {
+  return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+}
+
+function vec3Scale(v: Vec3, s: number): Vec3 {
+  return { x: v.x * s, y: v.y * s, z: v.z * s };
 }
 
 function angleBetweenVectors(a: Vec3, b: Vec3): number {
@@ -288,6 +299,219 @@ function validateClearance(
 }
 
 // ============================================
+// v1.2: DEPTH & EDGE SAFETY VALIDATORS
+// ============================================
+
+/**
+ * MONO-MINIFIX-DEPTH-001: CAM depth must not exceed panel thickness.
+ * Drilling deeper than panel thickness punches through the visible face.
+ */
+function validateCamDepthVsPanel(
+  cam: MinifixCamEntity,
+  panelThickness: number,
+  findings: MinifixGateFinding[]
+): void {
+  const remaining = panelThickness - cam.geometry.housingDepth;
+
+  if (remaining < MINIFIX_TOLERANCES.CAM_MIN_REMAINING_DEPTH_MM) {
+    findings.push({
+      severity: 'ERROR',
+      code: 'MONO_MINIFIX_CAM_DEPTH_EXCEEDS_PANEL',
+      entityIds: [cam.id],
+      message: `CAM bore depth (${cam.geometry.housingDepth}mm) leaves only ${remaining.toFixed(1)}mm in ${panelThickness}mm panel. Min remaining: ${MINIFIX_TOLERANCES.CAM_MIN_REMAINING_DEPTH_MM}mm.`,
+      measured: { cam_depth_mm: cam.geometry.housingDepth, panel_thickness_mm: panelThickness, remaining_mm: remaining },
+      tolerance: { min_remaining_mm: MINIFIX_TOLERANCES.CAM_MIN_REMAINING_DEPTH_MM },
+    });
+  }
+}
+
+/**
+ * MONO-MINIFIX-DEPTH-002: Bolt depth must not exceed panel edge dimension.
+ * Bolt drills into the edge (short dimension); exceeding it punches through.
+ */
+function validateBoltDepthVsPanel(
+  bolt: MinifixBoltEntity,
+  panelThickness: number,
+  findings: MinifixGateFinding[]
+): void {
+  const remaining = panelThickness - bolt.params.drillDepth;
+
+  if (remaining < MINIFIX_TOLERANCES.BOLT_MIN_REMAINING_DEPTH_MM) {
+    findings.push({
+      severity: 'ERROR',
+      code: 'MONO_MINIFIX_BOLT_DEPTH_EXCEEDS_PANEL',
+      entityIds: [bolt.id],
+      message: `Bolt bore depth (${bolt.params.drillDepth}mm) leaves only ${remaining.toFixed(1)}mm in ${panelThickness}mm panel edge. Min remaining: ${MINIFIX_TOLERANCES.BOLT_MIN_REMAINING_DEPTH_MM}mm.`,
+      measured: { bolt_depth_mm: bolt.params.drillDepth, panel_thickness_mm: panelThickness, remaining_mm: remaining },
+      tolerance: { min_remaining_mm: MINIFIX_TOLERANCES.BOLT_MIN_REMAINING_DEPTH_MM },
+    });
+  }
+}
+
+/**
+ * MONO-MINIFIX-EDGE-001: CAM housing must have sufficient clearance from panel edge.
+ * A Ø15mm CAM needs at least 7.5mm (radius) from its center to any panel edge.
+ *
+ * v1.3: Changed threshold from `clearance < 0` to `clearance < CAM_EDGE_CLEARANCE_MM`
+ * to catch insufficient margin, not just outright overlap.
+ */
+function validateCamEdgeClearance(
+  camPoint: DrillMapPoint,
+  findings: MinifixGateFinding[]
+): void {
+  if (camPoint.edgeDistance === undefined) return;
+
+  const camRadius = camPoint.diameter / 2;
+  const clearance = camPoint.edgeDistance - camRadius;
+
+  if (clearance < MINIFIX_TOLERANCES.CAM_EDGE_CLEARANCE_MM) {
+    const isOverlap = clearance < 0;
+    findings.push({
+      severity: 'ERROR',
+      code: 'MONO_MINIFIX_CAM_EDGE_CLEARANCE',
+      entityIds: [camPoint.id],
+      message: isOverlap
+        ? `CAM housing (Ø${camPoint.diameter}mm) at edge distance ${camPoint.edgeDistance.toFixed(1)}mm overlaps panel edge by ${Math.abs(clearance).toFixed(1)}mm. Blowout risk.`
+        : `CAM housing (Ø${camPoint.diameter}mm) at edge distance ${camPoint.edgeDistance.toFixed(1)}mm has only ${clearance.toFixed(1)}mm clearance. Min: ${MINIFIX_TOLERANCES.CAM_EDGE_CLEARANCE_MM}mm.`,
+      measured: { edge_distance_mm: camPoint.edgeDistance, cam_radius_mm: camRadius, clearance_mm: clearance },
+      tolerance: { min_clearance_mm: MINIFIX_TOLERANCES.CAM_EDGE_CLEARANCE_MM },
+    });
+  }
+}
+
+/**
+ * MONO-MINIFIX-DIST-001: Distance B must match Häfele standard.
+ * This is a WARNING since some configurations use alternate B values.
+ *
+ * v1.3: Now looks up expected Distance B from panel thickness (Häfele spec per wood type).
+ * 16mm → B=22, 18mm → B=24 (default), 19mm → B=25.
+ *
+ * @param camPoint - The CAM drill point
+ * @param panelThickness - Panel thickness for this point (mm)
+ * @param findings - Findings array to push to
+ */
+function validateDistanceB(
+  camPoint: DrillMapPoint,
+  panelThickness: number,
+  findings: MinifixGateFinding[]
+): void {
+  if (camPoint.drillingDistanceB === undefined) return;
+
+  const expectedB = DISTANCE_B_BY_THICKNESS[panelThickness] ?? DISTANCE_B_DEFAULT_MM;
+  const delta = Math.abs(camPoint.drillingDistanceB - expectedB);
+
+  if (delta > MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM) {
+    findings.push({
+      severity: 'WARNING',
+      code: 'MONO_MINIFIX_DISTANCE_B_OUT_OF_RANGE',
+      entityIds: [camPoint.id],
+      message: `Distance B (${camPoint.drillingDistanceB}mm) deviates ${delta.toFixed(1)}mm from expected ${expectedB}mm (for ${panelThickness}mm panel).`,
+      measured: { distance_b_mm: camPoint.drillingDistanceB, expected_b_mm: expectedB, delta_mm: delta, panel_thickness_mm: panelThickness },
+      tolerance: { expected_mm: expectedB, tolerance_mm: MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM },
+      suggestedFix: {
+        strategy: 'SET_DISTANCE_B',
+      },
+    });
+  }
+}
+
+// ============================================
+// v1.3: HARDWARE-DERIVED FIELD CROSS-CHECKS
+// ============================================
+
+/**
+ * MONO-MINIFIX-EDGE-002: Bolt hole must have sufficient edge clearance.
+ * Bolt (Ø10mm) drills into vertical panel edge; needs clearance from panel edge.
+ */
+function validateBoltEdgeClearance(
+  boltPoint: DrillMapPoint,
+  findings: MinifixGateFinding[]
+): void {
+  if (boltPoint.edgeDistance === undefined) return;
+
+  const boltRadius = boltPoint.diameter / 2;
+  const clearance = boltPoint.edgeDistance - boltRadius;
+
+  if (clearance < MINIFIX_TOLERANCES.BOLT_EDGE_CLEARANCE_MM) {
+    const isOverlap = clearance < 0;
+    findings.push({
+      severity: 'ERROR',
+      code: 'MONO_MINIFIX_BOLT_EDGE_CLEARANCE',
+      entityIds: [boltPoint.id],
+      message: isOverlap
+        ? `Bolt hole (Ø${boltPoint.diameter}mm) at edge distance ${boltPoint.edgeDistance.toFixed(1)}mm overlaps panel edge by ${Math.abs(clearance).toFixed(1)}mm. Blowout risk.`
+        : `Bolt hole (Ø${boltPoint.diameter}mm) at edge distance ${boltPoint.edgeDistance.toFixed(1)}mm has only ${clearance.toFixed(1)}mm clearance. Min: ${MINIFIX_TOLERANCES.BOLT_EDGE_CLEARANCE_MM}mm.`,
+      measured: { edge_distance_mm: boltPoint.edgeDistance, bolt_radius_mm: boltRadius, clearance_mm: clearance },
+      tolerance: { min_clearance_mm: MINIFIX_TOLERANCES.BOLT_EDGE_CLEARANCE_MM },
+    });
+  }
+}
+
+/**
+ * MONO-MINIFIX-DIAG-001: Declared boltDirection must match computed A→C axis.
+ * Catches drill map generation inconsistencies.
+ */
+function validateBoltDirectionAlignment(
+  boltPoint: DrillMapPoint,
+  computedAxis: Vec3,
+  findings: MinifixGateFinding[]
+): void {
+  if (!boltPoint.boltDirection) return;
+
+  const declared: Vec3 = {
+    x: boltPoint.boltDirection[0],
+    y: boltPoint.boltDirection[1],
+    z: boltPoint.boltDirection[2],
+  };
+  const angle = angleBetweenVectors(declared, computedAxis);
+  const minAngle = Math.min(angle, 180 - angle);
+
+  if (minAngle > MINIFIX_TOLERANCES.BOLT_DIRECTION_ANGLE_TOLERANCE_DEG) {
+    findings.push({
+      severity: 'WARNING',
+      code: 'MONO_MINIFIX_BOLT_DIRECTION_MISMATCH',
+      entityIds: [boltPoint.id],
+      message: `Declared boltDirection differs from computed A→C axis by ${minAngle.toFixed(1)}°. Possible drill map generation issue.`,
+      measured: { angle_deg: minAngle },
+      tolerance: { max_angle_deg: MINIFIX_TOLERANCES.BOLT_DIRECTION_ANGLE_TOLERANCE_DEG },
+    });
+  }
+}
+
+/**
+ * MONO-MINIFIX-DIAG-002: Declared targetPocketCenter must match computed cam pocket center.
+ * Catches consistency issues between drill map generator and validator.
+ */
+function validateTargetPocketCenter(
+  boltPoint: DrillMapPoint,
+  computedPocketCenter: Vec3,
+  findings: MinifixGateFinding[]
+): void {
+  if (!boltPoint.targetPocketCenter) return;
+
+  const declared: Vec3 = {
+    x: boltPoint.targetPocketCenter[0],
+    y: boltPoint.targetPocketCenter[1],
+    z: boltPoint.targetPocketCenter[2],
+  };
+  const dx = declared.x - computedPocketCenter.x;
+  const dy = declared.y - computedPocketCenter.y;
+  const dz = declared.z - computedPocketCenter.z;
+  const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  if (distance > MINIFIX_TOLERANCES.POCKET_CENTER_TOLERANCE_MM) {
+    findings.push({
+      severity: 'WARNING',
+      code: 'MONO_MINIFIX_POCKET_CENTER_MISMATCH',
+      entityIds: [boltPoint.id],
+      message: `Declared targetPocketCenter differs from computed cam pocket center by ${distance.toFixed(2)}mm. Possible consistency issue.`,
+      measured: { distance_mm: distance },
+      tolerance: { max_distance_mm: MINIFIX_TOLERANCES.POCKET_CENTER_TOLERANCE_MM },
+    });
+  }
+}
+
+// ============================================
 // MAIN VALIDATION FUNCTION
 // ============================================
 
@@ -297,7 +521,7 @@ function validateClearance(
 export function validateMinifixConnectorPair(pair: MinifixConnectorPair): MinifixGateFinding[] {
   const findings: MinifixGateFinding[] = [];
 
-  const { cam, bolt, panelHorizontal } = pair;
+  const { cam, bolt, panelHorizontal, panelVertical } = pair;
 
   // MONO-MINIFIX-AXIS-001: Cam axis perpendicular to panel
   validateCamAxisNormal(cam, panelHorizontal.plane.normal, findings);
@@ -316,6 +540,12 @@ export function validateMinifixConnectorPair(pair: MinifixConnectorPair): Minifi
 
   // MONO-MINIFIX-CLEAR-001: Entry clearance
   validateClearance(cam, bolt, findings);
+
+  // v1.2: MONO-MINIFIX-DEPTH-001: CAM depth vs panel thickness
+  validateCamDepthVsPanel(cam, panelHorizontal.thickness, findings);
+
+  // v1.2: MONO-MINIFIX-DEPTH-002: Bolt depth vs panel edge
+  validateBoltDepthVsPanel(bolt, panelVertical.thickness, findings);
 
   return findings;
 }
@@ -430,7 +660,7 @@ export function buildMinifixDiagnosticPayload(
 
 /**
  * Validate pair integrity for DrillMapPoints.
- * Checks MONO-MINIFIX-PAIR-001 and MONO-MINIFIX-PAIR-002 constraints.
+ * Checks MONO-MINIFIX-PAIR-001 through PAIR-004 constraints.
  */
 export function validatePairIntegrity(
   drillMapPoints: DrillMapPoint[]
@@ -448,6 +678,9 @@ export function validatePairIntegrity(
     p => p.componentType === 'BOLT' && (p.purpose === 'MINIFIX' || p.purpose === 'CAM_LOCK' || p.purpose === 'BOLT')
   );
   const boltIdSet = new Set(boltPoints.map(b => b.id));
+
+  // Track which bolt IDs are targeted by CAMs (for duplicate/orphan detection)
+  const boltTargetCount = new Map<string, string[]>();
 
   // MONO-MINIFIX-PAIR-001: Check each cam has pairedHoleId
   for (const cam of housingPoints) {
@@ -469,7 +702,44 @@ export function validatePairIntegrity(
         entityIds: [cam.id],
         message: `pairedHoleId "${cam.pairedHoleId}" does not match any bolt DrillMapPoint.id.`,
       });
+    } else {
+      // Track bolt targets for duplicate detection
+      const camIds = boltTargetCount.get(cam.pairedHoleId) || [];
+      camIds.push(cam.id);
+      boltTargetCount.set(cam.pairedHoleId, camIds);
     }
+  }
+
+  // MONO-MINIFIX-PAIR-003: Check no bolt is targeted by multiple CAMs
+  for (const [boltId, camIds] of boltTargetCount) {
+    if (camIds.length > 1) {
+      findings.push({
+        severity: 'ERROR',
+        code: 'MONO_MINIFIX_DUPLICATE_BOLT_TARGET',
+        entityIds: [boltId, ...camIds],
+        message: `Bolt "${boltId}" is targeted by ${camIds.length} CAM housings (${camIds.join(', ')}). Only one CAM per bolt is allowed.`,
+        measured: { cam_count: camIds.length },
+      });
+    }
+  }
+
+  // MONO-MINIFIX-PAIR-004: Check every bolt has at least one CAM pointing to it
+  const targetedBoltIds = new Set(boltTargetCount.keys());
+  for (const bolt of boltPoints) {
+    // Only check bolts with minifix-related purposes
+    if (bolt.purpose !== 'BOLT' && bolt.purpose !== 'MINIFIX' && bolt.purpose !== 'CAM_LOCK') continue;
+    // Skip bolts that also have a pairId (reverse-paired, checked elsewhere)
+    if (targetedBoltIds.has(bolt.id)) continue;
+    // Check if any CAM targets this bolt via reverse pairing (bolt.pairedHoleId → cam)
+    const hasReversePairing = bolt.pairedHoleId && housingPoints.some(c => c.id === bolt.pairedHoleId);
+    if (hasReversePairing) continue;
+
+    findings.push({
+      severity: 'WARNING',
+      code: 'MONO_MINIFIX_ORPHAN_BOLT',
+      entityIds: [bolt.id],
+      message: `Bolt "${bolt.id}" has no CAM housing paired to it. This bolt will be unused.`,
+    });
   }
 
   return findings;
@@ -610,39 +880,53 @@ export function validateMinifixGate(
   const integrityFindings = validatePairIntegrity(ctx.pointsFlat);
   allFindings.push(...integrityFindings);
 
-  // 2) Find cam-bolt pairs using deterministic pairedHoleId matching
+  // 2) v1.2+v1.3: Per-point checks (edge clearance, Distance B, bolt edge, status propagation)
+  for (const point of ctx.pointsFlat) {
+    const ptThickness = getPanelThicknessForPoint(ctx, point, panelThickness);
+
+    if (point.componentType === 'HOUSING' && (point.purpose === 'MINIFIX' || point.purpose === 'CAM_LOCK')) {
+      validateCamEdgeClearance(point, allFindings);
+      validateDistanceB(point, ptThickness, allFindings);
+    }
+
+    // v1.3: Bolt edge clearance check
+    if (point.componentType === 'BOLT' && (point.purpose === 'MINIFIX' || point.purpose === 'CAM_LOCK' || point.purpose === 'BOLT')) {
+      validateBoltEdgeClearance(point, allFindings);
+    }
+
+    // v1.3: Propagate pre-existing DrillMapPoint status
+    if (point.status === 'ERROR' || point.status === 'WARNING') {
+      allFindings.push({
+        severity: 'INFO',
+        code: 'MONO_MINIFIX_POINT_STATUS_PROPAGATED',
+        entityIds: [point.id],
+        message: `DrillMapPoint "${point.id}" has pre-existing status ${point.status}${point.statusMessage ? ': ' + point.statusMessage : ''}.`,
+        measured: { original_status: point.status === 'ERROR' ? 1 : 0 },
+      });
+    }
+  }
+
+  // 3) Find cam-bolt pairs using deterministic pairedHoleId matching
   const drillPairs = findMinifixPairs(ctx.pointsFlat);
 
-  // DEBUG: Log pair count for diagnosis
-  console.log(`[Minifix Gate] Found ${drillPairs.length} cam-bolt pairs to validate`);
-
-  // 3) Validate each pair geometrically with index-aware patch paths
+  // 4) Validate each pair geometrically with index-aware patch paths
   for (let pairIndex = 0; pairIndex < drillPairs.length; pairIndex++) {
     const { cam, bolt } = drillPairs[pairIndex];
+
+    // v1.3: Use per-panel thickness instead of global default
+    const camPanelThickness = getPanelThicknessForPoint(ctx, cam, panelThickness);
+    const boltPanelThickness = getPanelThicknessForPoint(ctx, bolt, panelThickness);
+
     const pair = buildConnectorPairFromDrillPoints({
       camPoint: cam,
       boltPoint: bolt,
       camDepth,
       boltBallOffset: ballHeadOffset,
       boltBallDiameter: ballDiameter,
-      panelHThickness: panelThickness,
-      panelVThickness: panelThickness,
+      panelHThickness: camPanelThickness,
+      panelVThickness: boltPanelThickness,
       solveMode,
     });
-
-    // DEBUG: Log first 3 pairs' geometry for diagnosis
-    if (pairIndex < 3) {
-      const C = pair.cam.geometry.pocketCenter;
-      const B = pair.bolt.geometry.ballCenter;
-      const boltAxis = pair.bolt.frame.axis;
-      console.log(`[Minifix Pair ${pairIndex}] cam=${cam.id} bolt=${bolt.id}`);
-      console.log(`  camDrillPos: [${cam.position.join(', ')}] normal: [${cam.normal.join(', ')}]`);
-      console.log(`  boltDrillPos: [${bolt.position.join(', ')}] normal: [${bolt.normal.join(', ')}]`);
-      console.log(`  boltDirection: [${bolt.boltDirection?.join(', ') ?? 'N/A'}]`);
-      console.log(`  computed camPocketCenter: (${C.x.toFixed(2)}, ${C.y.toFixed(2)}, ${C.z.toFixed(2)})`);
-      console.log(`  computed ballCenter:      (${B.x.toFixed(2)}, ${B.y.toFixed(2)}, ${B.z.toFixed(2)})`);
-      console.log(`  computed boltAxis:        (${boltAxis.x.toFixed(3)}, ${boltAxis.y.toFixed(3)}, ${boltAxis.z.toFixed(3)})`);
-    }
 
     // Validate and enhance findings with deterministic patch paths
     const pairFindings = validateMinifixConnectorPair(pair);
@@ -655,6 +939,32 @@ export function validateMinifixGate(
     }
 
     allFindings.push(...pairFindings);
+
+    // v1.3: Cross-check hardware-derived fields against computed values
+    validateBoltDirectionAlignment(bolt, pair.bolt.frame.axis, allFindings);
+    validateTargetPocketCenter(bolt, pair.cam.geometry.pocketCenter, allFindings);
+
+    // v1.3: BALL_TO_POCKET diagnostic - compute what FIXED_BALL_OFFSET B would be
+    if (!solveMode || solveMode === 'BALL_TO_POCKET') {
+      const diagAxis: Vec3 = bolt.boltDirection
+        ? vec3Normalize({ x: bolt.boltDirection[0], y: bolt.boltDirection[1], z: bolt.boltDirection[2] })
+        : vec3Normalize({ x: bolt.normal[0], y: bolt.normal[1], z: bolt.normal[2] });
+      const diagA: Vec3 = { x: bolt.position[0], y: bolt.position[1], z: bolt.position[2] };
+      const diagB = vec3Add(diagA, vec3Scale(diagAxis, ballHeadOffset));
+      const C = pair.cam.geometry.pocketCenter;
+      const diagDistance = vec3Length(vec3Subtract(diagB, C));
+
+      // Only report if gap is significant (> 1mm suggests real misalignment)
+      if (diagDistance > 1.0) {
+        allFindings.push({
+          severity: 'INFO',
+          code: 'MONO_MINIFIX_POCKET_CENTER_MISMATCH',
+          entityIds: [bolt.id, cam.id],
+          message: `BALL_TO_POCKET auto-correction moved ball center ${diagDistance.toFixed(2)}mm. Fixed-offset B would differ from C.`,
+          measured: { auto_correction_distance_mm: diagDistance },
+        });
+      }
+    }
   }
 
   const errors = allFindings.filter(f => f.severity === 'ERROR').length;

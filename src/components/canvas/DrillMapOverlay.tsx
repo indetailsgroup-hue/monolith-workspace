@@ -178,7 +178,7 @@ function DrillDimensionLabel({ point, drillingParams, onParamChange }: DrillDime
         }}>
           {point.purpose === 'CAM_LOCK' ? 'CAM' : point.purpose === 'BOLT' ? 'BOLT' : point.purpose}
           <span style={{ color: '#9ca3af', fontWeight: 'normal', marginLeft: '4px' }}>
-            Ø{point.diameter}×{point.depth}
+            Ø{point.purpose === 'BOLT' ? 8 : point.diameter}×{point.purpose === 'BOLT' ? 34 : point.depth}
           </span>
         </div>
         <div style={{ marginBottom: '2px' }}>
