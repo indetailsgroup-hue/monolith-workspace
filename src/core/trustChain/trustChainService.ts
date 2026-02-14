@@ -58,7 +58,7 @@ import type { ArtifactStore } from '../infra/artifacts/artifactStoreTypes';
 import type { FactoryPackageExporter } from '../export/factoryPackageExporter';
 import type { ExportRecord, ExportArtifactRef, ExportBundleCore } from '../export/exportBundleTypes';
 import { makeExportId } from '../export/exportBundleTypes';
-import { sha256CanonicalHex } from '../crypto/sha256';
+import { sha256CanonicalHex } from '../../crypto/sha256';
 
 // ============================================
 // SERVICE CONFIG

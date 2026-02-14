@@ -27,7 +27,7 @@ export interface BaseOperation {
   /** Unique operation ID */
   id: string;
   /** Source entity ID (e.g., drill point ID, panel ID) */
-  sourceId: string;
+  sourceId?: string;
   /** Tool ID to use */
   toolId: string;
   /** Position in machine coordinates (mm) */
@@ -54,12 +54,14 @@ export interface DrillOperation extends BaseOperation {
   type: 'DRILL';
   /** Drill depth in mm */
   depth: number;
+  /** Drill diameter in mm (optional, when carried through from source) */
+  diameter?: number;
   /** Peck depth for deep holes (mm per peck) */
   peckDepth?: number;
   /** Dwell time at bottom (ms) */
   dwellTime?: number;
   /** Through hole flag */
-  throughHole: boolean;
+  throughHole?: boolean;
 }
 
 // ============================================

@@ -158,6 +158,12 @@ export interface CabinetStructure {
   backPanelInset: number; // Distance from back edge (mm)
   shelfCount: number;
   dividerCount: number;
+  cornerAngles?: {
+    topLeft?: number;
+    topRight?: number;
+    bottomLeft?: number;
+    bottomRight?: number;
+  };
 }
 
 export interface CabinetManufacturing {
@@ -207,7 +213,13 @@ export interface Cabinet {
   
   // Computed totals
   computed: CabinetComputed;
-  
+
+  // Hardware configuration
+  hardware?: {
+    minifixConfig?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+
   // Metadata
   createdAt: number;
   updatedAt: number;

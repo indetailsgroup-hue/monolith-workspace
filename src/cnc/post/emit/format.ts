@@ -112,7 +112,7 @@ export function buildMoveCommand(
   },
   decimals = 3
 ): string {
-  const parts = [gCode];
+  const parts: string[] = [gCode];
 
   if (params.x !== undefined) {
     parts.push(`X${formatNumber(params.x, decimals)}`);

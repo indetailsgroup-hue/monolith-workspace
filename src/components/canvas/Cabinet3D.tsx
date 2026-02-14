@@ -152,7 +152,7 @@ interface Hardware3DOverlayProps {
   topJoint?: 'INSET' | 'OVERLAY';     // Joint style for top panel
   bottomJoint?: 'INSET' | 'OVERLAY';  // Joint style for bottom panel
   showDimensions?: boolean;  // Show CAD-style dimension lines
-  currentView?: 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
+  currentView?: string;  // Controls which dimensions to show
 }
 
 /**
@@ -338,7 +338,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   return (
     <group name="hardware-3d-overlay-preview3d">
       {boltPoints.map((boltPoint, index) => {
-        const [x, y, z] = boltPoint.position;
+        const [x, y, z = 0] = boltPoint.position;
 
         // Use stored cornerType from drill map generation (most reliable)
         // Falls back to position-based calculation only if cornerType not stored
@@ -442,7 +442,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           // - LEFT panel: origin - sleeveLength/2 = drillPos → offset = +sleeveLength/2
           // - RIGHT panel: origin + sleeveLength/2 = drillPos → offset = -sleeveLength/2
           //
-          const HALF_SLEEVE = config.sleeveLength / 2;  // 7.125mm
+          const HALF_SLEEVE = (config.sleeveLength ?? 14.25) / 2;  // 7.125mm
           const isLeftPanel = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
           if (isLeftPanel) {
             // Left panels: move RIGHT (+X) to put thread-sleeve junction at inner face
@@ -1048,7 +1048,8 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     // Compute bounds from drill map (uses same coordinate system as hardware positions)
     const bounds = computeBoundsFromDrillMap(drillMap, 50);
     setCabinetBounds(bounds);
-  }, [xRayMode, show3DHardware, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xRayMode, show3DHardware, activeCabinetFromArray, drillingParams, drillMapVersion]);
 
   // Check if glue mode is active at parent level
   const isGlueModeActive = activeTool === 'glue' && glueMode !== 'idle';

@@ -7,7 +7,7 @@
  * - For production, use IndexedDB implementation
  */
 
-import { sha256Hex } from '../../crypto/sha256';
+import { sha256Hex } from '../../../crypto/sha256';
 import { makeArtifactId } from '../../export/exportBundleTypes';
 import type {
   ArtifactStore,

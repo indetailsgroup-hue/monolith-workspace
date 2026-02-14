@@ -23,13 +23,14 @@ import { useMeasureStore } from './useMeasureStore';
 // TYPES
 // ============================================
 
-export type ToolId = 
-  | 'select' 
-  | 'move' 
-  | 'rotate' 
-  | 'scale' 
-  | 'uv' 
-  | 'measure';
+export type ToolId =
+  | 'select'
+  | 'move'
+  | 'rotate'
+  | 'scale'
+  | 'uv'
+  | 'measure'
+  | 'glue';
 
 export interface ToolInfo {
   id: ToolId;
@@ -82,6 +83,13 @@ export const TOOL_INFO: Record<ToolId, ToolInfo> = {
     icon: '📏',
     description: 'Measure 3D distances',
   },
+  glue: {
+    id: 'glue',
+    name: 'Glue',
+    hotkey: 'J',
+    icon: '🔗',
+    description: 'Join cabinets with glue faces',
+  },
 };
 
 export interface SnapOptions {
@@ -100,15 +108,22 @@ export interface ToolOptions {
 export interface ToolState {
   activeTool: ToolId;
   previousTool: ToolId;
-  
+
   // Tool options (Grid, Snap, etc.)
   options: ToolOptions;
-  
+
+  // Drag state (used by Cabinet3D for move tool)
+  draggingCabinetId: string | null;
+  setDraggingCabinetId: (id: string | null) => void;
+
+  // Snap point visibility (toggled by P key)
+  showSnapPoints: boolean;
+
   // Actions
   setTool: (tool: ToolId) => void;
   toggleTool: (tool: ToolId) => void;
   restorePreviousTool: () => void;
-  
+
   // Snap actions
   setSnapEnabled: (enabled: boolean) => void;
   setGridSize: (size: number) => void;
@@ -123,7 +138,14 @@ export const useToolStore = create<ToolState>()(
   immer((set, get) => ({
     activeTool: 'select',
     previousTool: 'select',
-    
+
+    // Drag state
+    draggingCabinetId: null,
+    setDraggingCabinetId: (id) => set({ draggingCabinetId: id }),
+
+    // Snap point visibility
+    showSnapPoints: false,
+
     // Default options
     options: {
       snap: {

@@ -1702,7 +1702,17 @@ function calculateTotals(panels: CabinetPanel[]) {
 interface CabinetState {
   cabinet: Cabinet | null;
   selectedPanelId: string | null;
-  
+
+  // Multi-cabinet support
+  cabinets: Cabinet[];
+  activeCabinetId: string | null;
+
+  // Visibility (hide specific cabinets)
+  hiddenCabinetIds: string[];
+
+  // Drilling parameters (for drill map generation)
+  drillingParams: Record<string, unknown>;
+
   // Materials library (temporary)
   coreMaterials: typeof CORE_MATERIALS;
   surfaceMaterials: typeof SURFACE_MATERIALS;
@@ -1761,8 +1771,17 @@ interface CabinetActions {
   addShelfInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerY?: number }) => void;
   addDividerInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerX?: number }) => void;
 
+  // Hardware configuration
+  updateHardware: (cabinetId: string, hardware: Record<string, unknown>) => void;
+
   // Recalculation
   recalculate: () => void;
+
+  // Multi-cabinet actions
+  selectCabinet: (id: string | null) => void;
+  removeCabinet: (id: string) => void;
+  duplicateCabinet: (id: string) => void;
+  updateCabinetPosition: (id: string, position: [number, number, number]) => void;
 }
 
 type CabinetStore = CabinetState & CabinetActions;
@@ -1772,6 +1791,10 @@ export const useCabinetStore = create<CabinetStore>()(
     // Initial state
     cabinet: null,
     selectedPanelId: null,
+    cabinets: [],
+    activeCabinetId: null,
+    hiddenCabinetIds: [],
+    drillingParams: {},
     coreMaterials: CORE_MATERIALS,
     surfaceMaterials: SURFACE_MATERIALS,
     edgeMaterials: EDGE_MATERIALS,
@@ -1809,9 +1832,13 @@ export const useCabinetStore = create<CabinetStore>()(
         updatedAt: Date.now(),
       };
       
-      set({ cabinet });
+      set((state) => {
+        state.cabinet = cabinet;
+        state.cabinets.push(cabinet);
+        state.activeCabinetId = cabinet.id;
+      });
     },
-    
+
     // ========== DIMENSION ACTIONS ==========
     setDimension: (key, value) => {
       set((state) => {
@@ -2540,6 +2567,64 @@ export const useCabinetStore = create<CabinetStore>()(
         state.cabinet.computed = calculateTotals(newPanels);
       });
     },
+
+    // ========== MULTI-CABINET ACTIONS ==========
+    selectCabinet: (id) => {
+      set((state) => {
+        state.activeCabinetId = id;
+        state.cabinet = id ? (state.cabinets.find(c => c.id === id) ?? null) : null;
+        state.selectedPanelId = null;
+      });
+    },
+
+    removeCabinet: (id) => {
+      set((state) => {
+        const index = state.cabinets.findIndex(c => c.id === id);
+        if (index === -1) return;
+        state.cabinets.splice(index, 1);
+        if (state.activeCabinetId === id) {
+          const next = state.cabinets[0] ?? null;
+          state.activeCabinetId = next?.id ?? null;
+          state.cabinet = next;
+        }
+        state.selectedPanelId = null;
+      });
+    },
+
+    duplicateCabinet: (id) => {
+      set((state) => {
+        const source = state.cabinets.find(c => c.id === id);
+        if (!source) return;
+        const newId = createId();
+        const clone = JSON.parse(JSON.stringify(source));
+        clone.id = newId;
+        clone.name = `${source.name} (Copy)`;
+        clone.createdAt = Date.now();
+        clone.updatedAt = Date.now();
+        // Restore Map for overrides (JSON.stringify loses Map)
+        clone.materials.overrides = new Map();
+        state.cabinets.push(clone);
+        state.activeCabinetId = newId;
+        state.cabinet = clone;
+        state.selectedPanelId = null;
+      });
+    },
+
+    updateCabinetPosition: (id, position) => {
+      set((state) => {
+        const cab = state.cabinets.find(c => c.id === id);
+        if (!cab) return;
+        (cab as any).scenePosition = position;
+      });
+    },
+
+    updateHardware: (cabinetId, hardware) => {
+      set((state) => {
+        const cab = state.cabinets.find(c => c.id === cabinetId);
+        if (!cab) return;
+        cab.hardware = { ...cab.hardware, ...hardware };
+      });
+    },
   }))
 );
 
@@ -2549,4 +2634,17 @@ export const useSelectedPanel = () => {
   const cabinet = useCabinetStore((s) => s.cabinet);
   const selectedId = useCabinetStore((s) => s.selectedPanelId);
   return cabinet?.panels.find(p => p.id === selectedId) || null;
+};
+
+// Multi-cabinet selector hooks
+export const useActiveCabinetFromArray = () => {
+  const cabinets = useCabinetStore((s) => s.cabinets);
+  const activeId = useCabinetStore((s) => s.activeCabinetId);
+  return cabinets.find(c => c.id === activeId) ?? null;
+};
+
+export const useCabinetById = (id: string | null) => {
+  const cabinets = useCabinetStore((s) => s.cabinets);
+  if (!id) return null;
+  return cabinets.find(c => c.id === id) ?? null;
 };

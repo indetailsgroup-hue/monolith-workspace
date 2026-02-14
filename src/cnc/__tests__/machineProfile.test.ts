@@ -182,12 +182,12 @@ describe('isWithinToolDepth', () => {
 
   it('should return true for depth at limit', () => {
     const tool = getTool(KDT_MACHINE, 'DRILL_5')!;
-    expect(isWithinToolDepth(tool, tool.maxDepth)).toBe(true);
+    expect(isWithinToolDepth(tool, tool.maxDepth!)).toBe(true);
   });
 
   it('should return false for depth exceeding limit', () => {
     const tool = getTool(KDT_MACHINE, 'DRILL_5')!;
-    expect(isWithinToolDepth(tool, tool.maxDepth + 1)).toBe(false);
+    expect(isWithinToolDepth(tool, tool.maxDepth! + 1)).toBe(false);
     expect(isWithinToolDepth(tool, 999)).toBe(false);
   });
 });

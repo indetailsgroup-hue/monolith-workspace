@@ -28,7 +28,7 @@ import { CNC_POST_VERSION } from '../bundle/cncManifest';
  */
 export interface CacheLookupInput {
   /** Packet content hash */
-  packetContentHash: string;
+  packetContentHash: string | undefined;
   /** Target machine ID */
   machineId: string;
   /** G-code dialect */
@@ -42,7 +42,7 @@ export interface CacheLookupInput {
  */
 export interface CacheStoreInput {
   /** Packet content hash (for key generation) */
-  packetContentHash: string;
+  packetContentHash: string | undefined;
   /** Machine ID (for key generation) */
   machineId: string;
   /** G-code dialect (for key generation) */

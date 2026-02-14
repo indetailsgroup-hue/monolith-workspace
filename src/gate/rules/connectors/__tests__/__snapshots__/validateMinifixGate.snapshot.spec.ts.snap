@@ -17,7 +17,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch in multi-panel 
       "severity": "ERROR",
       "suggestedFix": undefined,
       "tolerance": {
-        "angle_deg": 3,
+        "angle_deg": 5,
       },
     },
     {
@@ -29,7 +29,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch in multi-panel 
       "measured": {
         "radial_offset_mm": 3.25,
       },
-      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "message": "Ball center is not coaxial with cam pocket center; connector will not engage.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -50,7 +50,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch in multi-panel 
       "measured": {
         "delta_y_mm": 3.25,
       },
-      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "message": "Ball center Y does not match cam pocket center Y; height misalignment.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -89,7 +89,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch with determinis
       "severity": "ERROR",
       "suggestedFix": undefined,
       "tolerance": {
-        "angle_deg": 3,
+        "angle_deg": 5,
       },
     },
     {
@@ -101,7 +101,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch with determinis
       "measured": {
         "radial_offset_mm": 2,
       },
-      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "message": "Ball center is not coaxial with cam pocket center; connector will not engage.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -122,7 +122,7 @@ exports[`validateMinifixGate (snapshot: Y mismatch) > Y mismatch with determinis
       "measured": {
         "delta_y_mm": 2,
       },
-      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "message": "Ball center Y does not match cam pocket center Y; height misalignment.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -161,7 +161,7 @@ exports[`validateMinifixGate (snapshot: coaxial) > radial offset (coaxial failur
       "severity": "ERROR",
       "suggestedFix": undefined,
       "tolerance": {
-        "angle_deg": 3,
+        "angle_deg": 5,
       },
     },
     {
@@ -173,7 +173,7 @@ exports[`validateMinifixGate (snapshot: coaxial) > radial offset (coaxial failur
       "measured": {
         "radial_offset_mm": 5.024937810560445,
       },
-      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "message": "Ball center is not coaxial with cam pocket center; connector will not engage.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -194,7 +194,7 @@ exports[`validateMinifixGate (snapshot: coaxial) > radial offset (coaxial failur
       "measured": {
         "delta_y_mm": 0.5,
       },
-      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "message": "Ball center Y does not match cam pocket center Y; height misalignment.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -256,7 +256,7 @@ exports[`validateMinifixGate (snapshot: combined errors) > multiple errors: miss
       "severity": "ERROR",
       "suggestedFix": undefined,
       "tolerance": {
-        "angle_deg": 3,
+        "angle_deg": 5,
       },
     },
     {
@@ -268,7 +268,7 @@ exports[`validateMinifixGate (snapshot: combined errors) > multiple errors: miss
       "measured": {
         "radial_offset_mm": 3,
       },
-      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "message": "Ball center is not coaxial with cam pocket center; connector will not engage.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -289,7 +289,7 @@ exports[`validateMinifixGate (snapshot: combined errors) > multiple errors: miss
       "measured": {
         "delta_y_mm": 3,
       },
-      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "message": "Ball center Y does not match cam pocket center Y; height misalignment.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -352,7 +352,7 @@ exports[`validateMinifixGate (snapshot: edge cases) > orphan bolt (no cam refere
       "severity": "ERROR",
       "suggestedFix": undefined,
       "tolerance": {
-        "angle_deg": 3,
+        "angle_deg": 5,
       },
     },
     {
@@ -364,7 +364,7 @@ exports[`validateMinifixGate (snapshot: edge cases) > orphan bolt (no cam refere
       "measured": {
         "radial_offset_mm": 6.75,
       },
-      "message": "Ball center is radially offset from cam pocket center beyond tolerance.",
+      "message": "Ball center is not coaxial with cam pocket center; connector will not engage.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,
@@ -385,7 +385,7 @@ exports[`validateMinifixGate (snapshot: edge cases) > orphan bolt (no cam refere
       "measured": {
         "delta_y_mm": 6.75,
       },
-      "message": "Ball center Y is not on the same level as cam pocket center Y (Y-up coordinate system).",
+      "message": "Ball center Y does not match cam pocket center Y; height misalignment.",
       "severity": "ERROR",
       "suggestedFix": {
         "hasPatch": true,

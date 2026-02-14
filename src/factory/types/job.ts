@@ -76,7 +76,7 @@ export interface JobDetailData extends JobSummary {
  * - FAIL: DO NOT produce
  * - PASS_WITH_WARN: Can produce but with warning (e.g., audit unknown)
  */
-export type VerifyVerdict = "PASS" | "FAIL" | "PASS_WITH_WARN";
+export type VerifyVerdict = "PASS" | "FAIL" | "PASS_WITH_WARN" | "ERROR";
 
 /** @deprecated Use VerifyVerdict instead */
 export type VerifyResult = VerifyVerdict;
@@ -150,6 +150,8 @@ export interface VerifyApiResponse {
   code: VerifyErrorCode;
   /** Short operator-facing message (Thai) */
   summary: string;
+  /** Human-readable error/status message */
+  message?: string;
   /** Verifier stdout/stderr (VERBATIM - never rewrite) */
   log: string;
   /** Timestamp of verification */

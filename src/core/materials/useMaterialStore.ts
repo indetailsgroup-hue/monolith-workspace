@@ -28,6 +28,10 @@ export interface LoadedTexture {
   height: number;
   loaded: boolean;
   error?: string;
+  /** Full-resolution texture loaded */
+  fullLoaded?: boolean;
+  /** Object URL for full-resolution texture */
+  fullObjectUrl?: string | null;
 }
 
 export interface MaterialState {
@@ -42,7 +46,7 @@ export interface MaterialState {
   
   // Actions
   setActiveMaterial: (id: string) => void;
-  loadTexture: (materialId: string) => Promise<void>;
+  loadTexture: (materialId: string, quality?: 'thumbnail' | 'full') => Promise<void>;
   preloadAllTextures: () => Promise<void>;
   
   // Getters

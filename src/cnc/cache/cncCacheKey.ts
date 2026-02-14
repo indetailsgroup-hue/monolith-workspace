@@ -25,7 +25,7 @@ import { CNC_POST_VERSION } from '../bundle/cncManifest';
  */
 export interface CncCacheKeyInput {
   /** Content hash of source packet (from manifest.contentHash) */
-  packetContentHash: string;
+  packetContentHash: string | undefined;
 
   /** Target machine ID (e.g., 'KDT', 'BIESSE') */
   machineId: string;
@@ -46,7 +46,7 @@ export interface CncCacheKey {
 
   /** Input components (for debugging/display) */
   components: {
-    packetContentHash: string;
+    packetContentHash: string | undefined;
     machineId: string;
     post: CncPostIdentity;
   };

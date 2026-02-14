@@ -6,9 +6,9 @@
  * @version 1.0.0 - Phase D1
  */
 
-import type { MachineProfile } from '../machineProfile';
+import type { StrictMachineProfile } from '../machineProfile';
 
-export const BIESSE_MACHINE: MachineProfile = {
+export const BIESSE_MACHINE: StrictMachineProfile = {
   id: 'BIESSE',
   name: 'Biesse Rover B FT',
   manufacturer: 'Biesse Group',

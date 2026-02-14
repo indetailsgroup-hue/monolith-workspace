@@ -54,6 +54,11 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
           background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
           color: "white",
         };
+      default:
+        return {
+          background: "#374151",
+          color: "white",
+        };
     }
   };
 
@@ -65,6 +70,8 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
         return "\u26A0"; // warning
       case "FAIL":
         return "\u2717"; // X
+      default:
+        return "\u2717";
     }
   };
 
@@ -76,6 +83,8 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
         return "PASS WITH WARNING";
       case "FAIL":
         return "FAIL - DO NOT PRODUCE";
+      default:
+        return String(verdict);
     }
   };
 

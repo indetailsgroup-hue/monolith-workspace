@@ -67,6 +67,34 @@ export interface StoredArtifact {
 }
 
 // ============================================
+// BUNDLE REFERENCE TYPES (for extended API)
+// ============================================
+
+/**
+ * Reference to an artifact bundle (returned by getBundle)
+ */
+export interface ArtifactBundleRef {
+  /** Bundle identifier */
+  bundleId: string;
+  /** Items in the bundle */
+  items: Array<{ path: string; content?: string; hash?: string; bytes?: Uint8Array }>;
+}
+
+/**
+ * Reference to a single artifact within a bundle (returned by getArtifact)
+ */
+export interface ArtifactItemRef {
+  /** Raw bytes */
+  bytes: Uint8Array;
+  /** Content hash */
+  hash: string;
+  /** Text content (decoded from bytes) */
+  content?: string;
+  /** MIME type */
+  mime?: string;
+}
+
+// ============================================
 // ARTIFACT STORE INTERFACE
 // ============================================
 
@@ -121,4 +149,14 @@ export interface ArtifactStore {
    * Clear all artifacts
    */
   clear(): Promise<void>;
+
+  /**
+   * Get an artifact bundle by ID (extended API)
+   */
+  getBundle?(bundleId: string): ArtifactBundleRef | undefined;
+
+  /**
+   * Get a single artifact by path within a bundle (extended API)
+   */
+  getArtifact?(bundleId: string, path: string): ArtifactItemRef | undefined;
 }

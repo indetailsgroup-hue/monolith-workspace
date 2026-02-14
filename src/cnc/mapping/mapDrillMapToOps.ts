@@ -188,7 +188,7 @@ function mapSinglePoint(
   }
 
   // Check depth
-  if (point.depth > tool.maxDepth) {
+  if (tool.maxDepth != null && point.depth > tool.maxDepth) {
     warnings.push(
       `Point ${point.id}: Depth ${point.depth}mm exceeds tool max depth ${tool.maxDepth}mm`
     );

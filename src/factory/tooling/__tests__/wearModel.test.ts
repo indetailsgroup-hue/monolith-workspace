@@ -27,7 +27,6 @@ describe('D6-A wearModel', () => {
     expect(computeWearUnits({ count: -1, depthMm: 18, material: 'MDF' })).toBe(0);
     expect(computeWearUnits({ count: 1, depthMm: -18, material: 'MDF' })).toBe(0);
 
-    // @ts-expect-error deliberate
     expect(computeWearUnits({ count: Number.NaN, depthMm: 18, material: 'MDF' })).toBe(0);
   });
 

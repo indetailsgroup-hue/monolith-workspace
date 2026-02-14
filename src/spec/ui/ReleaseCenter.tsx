@@ -21,9 +21,9 @@ import { PolicyStatusBanner, isPolicyBlocked } from '@/components/ui/PolicyStatu
 export function ReleaseCenter() {
   const doc = useSpecStore((s) => s.doc);
   const createRevision = useSpecStore((s) => s.createRevisionToEdit);
-  const busy = useSpecStore((s) => s.async.busy);
+  const busy = useSpecStore((s) => s.async?.busy);
 
-  if (doc.state !== 'RELEASED') {
+  if (!doc || doc.state !== 'RELEASED') {
     return (
       <div style={{ padding: 24, color: 'rgba(255,255,255,0.6)' }}>
         <h3 style={{ color: '#fff', marginBottom: 12 }}>Release Center</h3>
@@ -32,7 +32,7 @@ export function ReleaseCenter() {
     );
   }
 
-  const { release, snapshot, gate } = doc;
+  const { release, snapshot, gate } = doc as Record<string, any>;
   const { manifest, signedManifest, artifactBundleId } = release;
 
   // State for manifest modal
@@ -47,7 +47,7 @@ export function ReleaseCenter() {
 
   // Get bundle from artifact store
   const bundle = artifactBundleId
-    ? artifactStore.getBundle(artifactBundleId)
+    ? artifactStore.getBundle?.(artifactBundleId)
     : undefined;
 
   // v0.10: Check if bundle contains policy
@@ -76,7 +76,7 @@ export function ReleaseCenter() {
 
     setVerifyState({ status: 'checking', message: 'Verifying artifacts...' });
 
-    const result = await verifyBundleAgainstManifest(bundle, signedManifest);
+    const result = await verifyBundleAgainstManifest(bundle as any, signedManifest);
 
     if (result.ok) {
       setVerifyState({
@@ -107,14 +107,17 @@ export function ReleaseCenter() {
       return;
     }
 
-    const item = artifactStore.getArtifact(bundle.bundleId, path);
+    const bundleRef = bundle as { bundleId?: string };
+    const item = artifactStore.getArtifact?.(bundleRef.bundleId ?? artifactBundleId, path);
     if (!item) {
       alert(`Artifact "${path}" not found in bundle.`);
       return;
     }
 
     const filename = `${release.releaseId}_${path}`;
-    downloadTextFile(filename, item.content, item.mime);
+    const content = item.content ?? new TextDecoder().decode(item.bytes);
+    const mime = item.mime ?? 'application/octet-stream';
+    downloadTextFile(filename, content, mime);
   };
 
   /** Download manifest.json from store */
@@ -343,7 +346,7 @@ export function ReleaseCenter() {
         </div>
 
         <div style={{ padding: 16 }}>
-          {manifest.files.map((file, i) => (
+          {manifest.files.map((file: any, i: number) => (
             <div
               key={i}
               style={{
@@ -407,7 +410,7 @@ export function ReleaseCenter() {
         </div>
 
         <div style={{ padding: 16 }}>
-          {release.signatures.map((sig, i) => (
+          {release.signatures.map((sig: any, i: number) => (
             <div
               key={i}
               style={{

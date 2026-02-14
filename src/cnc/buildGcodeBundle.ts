@@ -198,7 +198,7 @@ export function extractGcodeText(bundle: GcodeBundle, index = 0): string | undef
 export function createGcodeBlob(bundle: GcodeBundle, index = 0): Blob | undefined {
   const file = bundle.files[index];
   if (!file) return undefined;
-  return new Blob([file.bytes], { type: 'text/plain' });
+  return new Blob([file.bytes as BlobPart], { type: 'text/plain' });
 }
 
 /**

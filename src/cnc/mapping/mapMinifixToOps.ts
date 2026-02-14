@@ -132,7 +132,7 @@ function mapSinglePair(
     ops.push(camOp);
 
     // Check depth
-    if (pair.cam.depth > boreTool.maxDepth) {
+    if (boreTool.maxDepth != null && pair.cam.depth > boreTool.maxDepth) {
       warnings.push(
         `Pair ${pair.id}: Cam depth ${pair.cam.depth}mm exceeds tool max ${boreTool.maxDepth}mm`
       );
@@ -147,7 +147,7 @@ function mapSinglePair(
     ops.push(boltOp);
 
     // Check depth
-    if (pair.bolt.depth > drillTool.maxDepth) {
+    if (drillTool.maxDepth != null && pair.bolt.depth > drillTool.maxDepth) {
       warnings.push(
         `Pair ${pair.id}: Bolt depth ${pair.bolt.depth}mm exceeds tool max ${drillTool.maxDepth}mm`
       );
@@ -176,7 +176,7 @@ function createCamBoreOperation(
       y: pair.cam.position[1],
       z: pair.cam.position[2],
     },
-    diameter: pair.cam.diameter,
+    diameter: pair.cam.diameter ?? MINIFIX_CAM_DIAMETER,
     depth: pair.cam.depth,
     flatBottom: true, // Minifix cam needs flat bottom
     feedRate: tool.defaultFeedRate,

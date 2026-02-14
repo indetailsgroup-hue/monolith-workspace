@@ -7,7 +7,7 @@
  * - Uses single database with artifacts store
  */
 
-import { sha256Hex } from '../../crypto/sha256';
+import { sha256Hex } from '../../../crypto/sha256';
 import { makeArtifactId } from '../../export/exportBundleTypes';
 import { openDb, tx } from '../idb/idb';
 import type {

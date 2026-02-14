@@ -122,11 +122,6 @@ function MaterialSelectorContent({
   const materialArray = Object.values(materials).filter(Boolean) // Filter out undefined/null values
   const materialCount = materialArray.length // Use filtered array length
 
-  // Debug: Log material counts
-  console.log(`[${title}] Total materials:`, Object.keys(materials).length)
-  console.log(`[${title}] Filtered materials:`, materialArray.length)
-  console.log(`[${title}] Materials object:`, materials)
-
   // Group materials by type
   const getMaterialGroups = () => {
     const groups: Record<string, typeof materialArray> = {}
@@ -135,12 +130,6 @@ function MaterialSelectorContent({
       const type = material.type || 'OTHER'
       if (!groups[type]) groups[type] = []
       groups[type].push(material)
-    })
-
-    // Debug: Log all groups found
-    console.log(`[${title}] All material types found:`, Object.keys(groups))
-    Object.entries(groups).forEach(([type, mats]) => {
-      console.log(`[${title}] Type "${type}": ${mats.length} materials`)
     })
 
     // Order: MELAMINE → HPL → FENIX_NTM → FENIX_NTA → (then any others)
@@ -161,8 +150,6 @@ function MaterialSelectorContent({
       }
     })
 
-    console.log(`[${title}] Sorted groups:`, Object.keys(sortedGroups))
-
     return sortedGroups
   }
 
@@ -177,12 +164,8 @@ function MaterialSelectorContent({
   }, {} as Record<string, typeof materialArray>)
 
   const handleApply = () => {
-    console.log('Apply button clicked, selectedMaterial:', selectedMaterial)
     if (!selectedMaterial) return
-    console.log(`Applied ${selectedMaterial.name} to ${applyMode} panels`)
-    console.log('Calling onClose()...')
     onClose()
-    console.log('onClose() returned')
   }
 
   return (
@@ -198,7 +181,6 @@ function MaterialSelectorContent({
             <button
               className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
               onClick={() => {
-                console.log('Back button clicked')
                 onClose()
               }}
             >
@@ -222,7 +204,6 @@ function MaterialSelectorContent({
           <button
             className="p-2 hover:bg-white/5 rounded-lg transition-colors group"
             onClick={() => {
-              console.log('X button clicked')
               onClose()
             }}
           >
@@ -507,7 +488,6 @@ function MaterialSelectorContent({
                   </button>
                   <button
                     onClick={() => {
-                      console.log('Cancel button clicked')
                       onClose()
                     }}
                     className="

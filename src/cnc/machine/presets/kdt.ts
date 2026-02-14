@@ -6,9 +6,9 @@
  * @version 1.0.0 - Phase D1
  */
 
-import type { MachineProfile } from '../machineProfile';
+import type { StrictMachineProfile } from '../machineProfile';
 
-export const KDT_MACHINE: MachineProfile = {
+export const KDT_MACHINE: StrictMachineProfile = {
   id: 'KDT',
   name: 'KDT NC Router',
   manufacturer: 'KDT Machinery',

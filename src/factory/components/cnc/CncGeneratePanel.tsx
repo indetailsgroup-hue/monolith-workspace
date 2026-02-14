@@ -126,7 +126,7 @@ export function CncGeneratePanel({
       setStatus('DONE');
       onGenerateComplete?.(response.bundle);
     } else {
-      setError(response.message);
+      setError(response.message ?? 'Generation failed');
       setStatus('ERROR');
     }
   }, [jobId, packet, selectedMachineId, includeComments, lineNumbers, workpieceConfig, onGenerateComplete]);
@@ -148,7 +148,7 @@ export function CncGeneratePanel({
     if (!bundle || bundle.files.length === 0) return;
 
     const file = bundle.files[0];
-    const blob = new Blob([file.bytes], { type: 'text/plain' });
+    const blob = new Blob([file.bytes as BlobPart], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const filename = file.path.split('/').pop() || 'program.nc';
 
@@ -693,7 +693,7 @@ function GenerationResult({
       setBundleStatus('idle');
     } else {
       setBundleStatus('error');
-      setBundleError(result.message);
+      setBundleError(result.message ?? 'Bundle download failed');
     }
   }, [packet, jobId, machineId, includeComments, lineNumbers]);
 

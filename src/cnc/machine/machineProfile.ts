@@ -39,7 +39,7 @@ export interface SpindleConfig {
 // TOOL CONFIGURATION
 // ============================================
 
-export type ToolType = 'DRILL' | 'BORE' | 'ROUTER' | 'SAW';
+export type ToolType = 'DRILL' | 'BORE' | 'ROUTER' | 'SAW' | 'drill' | 'bore' | 'boring' | 'router' | 'saw';
 
 export interface ToolCapability {
   /** Unique tool identifier */
@@ -49,15 +49,15 @@ export interface ToolCapability {
   /** Tool diameter in mm */
   diameter: number;
   /** Maximum cutting depth in mm */
-  maxDepth: number;
+  maxDepth?: number;
   /** Supports peck drilling */
-  supportsPeck: boolean;
+  supportsPeck?: boolean;
   /** Supports boring operations */
-  supportsBore: boolean;
+  supportsBore?: boolean;
   /** Default feed rate mm/min */
-  defaultFeedRate: number;
+  defaultFeedRate?: number;
   /** Default plunge rate mm/min */
-  defaultPlungeRate: number;
+  defaultPlungeRate?: number;
 }
 
 // ============================================
@@ -75,7 +75,7 @@ export type CoordinateSystem = 'Y_UP' | 'Z_UP';
 // MACHINE PROFILE
 // ============================================
 
-export type MachineId = 'KDT' | 'BIESSE' | 'HOMAG' | 'SCM' | 'GENERIC';
+export type MachineId = 'KDT' | 'BIESSE' | 'HOMAG' | 'SCM' | 'GENERIC' | (string & {});
 
 export interface MachineProfile {
   /** Machine identifier */
@@ -83,11 +83,13 @@ export interface MachineProfile {
   /** Machine display name */
   name: string;
   /** Manufacturer */
-  manufacturer: string;
+  manufacturer?: string;
   /** Unit system (always mm for now) */
-  units: 'mm';
+  units?: 'mm';
   /** Axis travel limits */
-  axis: AxisConfig;
+  axis?: AxisConfig;
+  /** Simplified limits (alternative to axis) */
+  limits?: { x: number; y: number; z: number };
   /** Spindle configuration */
   spindle: SpindleConfig;
   /** Available tools */
@@ -95,12 +97,27 @@ export interface MachineProfile {
   /** Safe Z height for rapid moves */
   defaultSafeZ: number;
   /** Coordinate system orientation */
-  coordinateSystem: CoordinateSystem;
+  coordinateSystem?: CoordinateSystem;
   /** G-code dialect */
-  dialect: 'FANUC' | 'HEIDENHAIN' | 'BIESSE' | 'WEEKE';
+  dialect?: 'FANUC' | 'HEIDENHAIN' | 'BIESSE' | 'WEEKE';
   /** Supports tool change */
-  supportsToolChange: boolean;
+  supportsToolChange?: boolean;
   /** Maximum number of tools in magazine */
+  toolMagazineSize?: number;
+  /** Controller type (from simplified profiles) */
+  controller?: string;
+}
+
+/**
+ * Strict machine profile with all fields required (for presets/production use).
+ */
+export interface StrictMachineProfile extends MachineProfile {
+  manufacturer: string;
+  units: 'mm';
+  axis: AxisConfig;
+  coordinateSystem: CoordinateSystem;
+  dialect: 'FANUC' | 'HEIDENHAIN' | 'BIESSE' | 'WEEKE';
+  supportsToolChange: boolean;
   toolMagazineSize: number;
 }
 
@@ -144,6 +161,7 @@ export function isWithinAxisLimits(
   position: { x: number; y: number; z: number }
 ): boolean {
   const { axis } = machine;
+  if (!axis) return true; // No axis limits defined
   return (
     position.x >= axis.x.min &&
     position.x <= axis.x.max &&
@@ -158,7 +176,7 @@ export function isWithinAxisLimits(
  * Check if depth is within tool capability
  */
 export function isWithinToolDepth(tool: ToolCapability, depth: number): boolean {
-  return depth <= tool.maxDepth;
+  return tool.maxDepth == null || depth <= tool.maxDepth;
 }
 
 /**
@@ -169,6 +187,7 @@ export function getAxisViolation(
   position: { x: number; y: number; z: number }
 ): string | null {
   const { axis } = machine;
+  if (!axis) return null; // No axis limits defined
 
   if (position.x < axis.x.min || position.x > axis.x.max) {
     return `X axis out of range: ${position.x} (limits: ${axis.x.min}-${axis.x.max})`;

@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-export type VerdictDisplay = 'PASS' | 'PASS_WITH_WARN' | 'FAIL' | 'UNKNOWN' | 'LOADING';
+export type VerdictDisplay = 'PASS' | 'PASS_WITH_WARN' | 'FAIL' | 'ERROR' | 'UNKNOWN' | 'LOADING';
 
 interface VerifyVerdictPillProps {
   verdict: VerdictDisplay;

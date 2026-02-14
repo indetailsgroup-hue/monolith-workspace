@@ -352,7 +352,26 @@ interface SpecStoreActions {
   canExport: (format: 'CUT_LIST' | 'DXF' | 'CNC') => boolean;
 }
 
-type SpecStore = SpecStoreState & SpecStoreActions;
+/** Extended state for ReleaseCenter (future API) */
+interface SpecStoreExtended {
+  /** Document state (future - when spec becomes doc-based) */
+  doc?: {
+    state: string;
+    release?: unknown;
+    snapshot?: unknown;
+    gate?: unknown;
+    [key: string]: unknown;
+  };
+  /** Create revision for editing (future) */
+  createRevisionToEdit?: () => void;
+  /** Async operation state (future) */
+  async?: {
+    busy: boolean;
+    [key: string]: unknown;
+  };
+}
+
+type SpecStore = SpecStoreState & SpecStoreActions & SpecStoreExtended;
 
 export const useSpecStore = create<SpecStore>()((set, get) => ({
   // Initial state
