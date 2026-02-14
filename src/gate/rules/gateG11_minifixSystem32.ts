@@ -2,16 +2,21 @@
  * Gate G11: Minifix/System32/Dowel Validation
  *
  * @module gate/rules/gateG11_minifixSystem32
- * @version 1.0.0
+ * @version 1.1.0
  *
  * Validates Minifix connector placement against Häfele engineering standards.
- * Based on the Canonical Engineering Specification (CANONICAL_SPEC.md).
+ * Based on the Canonical Engineering Specification (CANONICAL_SPEC.md)
+ * and Master Specification v1.1.
  *
  * ## Rule Set
  * - G11.1: Distance B - measured from mate edge (LEFT/RIGHT), not FRONT
  * - G11.2: Dowel Depth - SIDE=18mm (EDGE_BORE), TOP/BOTTOM=12mm (FACE_BORE)
  * - G11.3: Drill Type - enforcement based on panel role
  * - G11.4: Mating Alignment - world-space dowel alignment ≤0.1mm
+ * - G11.5: Bolt Tip ↔ CAM Center Alignment
+ * - G11.6: N-Center Policy & Mode Consistency (v1.1)
+ * - G11.7: Double PVC Compensation Prevention (v1.1)
+ * - G11.8: Edge Banding on Join Edge Forbidden (v1.1)
  *
  * ## Philosophy
  * "โรงงานก่อน ความสวยทีหลัง" (Factory first, aesthetics second)
@@ -19,6 +24,7 @@
 
 import type { Severity } from '../../spec';
 import type { DrillMapPoint, DrillMap } from '../../core/manufacturing/drillMap/types';
+import type { NCenterPolicy, ManufacturingMode, EdgeBandMap } from '../../core/connector/types';
 import {
   G11_CONSTANTS,
   type G11Issue,
@@ -657,8 +663,216 @@ export function ruleG11_BoltCamAlignment(
 }
 
 // ============================================
+// G11.6: N-CENTER POLICY MODE CONSISTENCY (v1.1)
+// ============================================
+
+/** Extended drill point with v1.1 metadata */
+export interface G11DrillPointV11 extends G11DrillPoint {
+  nCenterPolicy?: NCenterPolicy;
+  mode?: ManufacturingMode;
+  vCoordinate?: number;
+}
+
+/** Panel with edge banding info for G11.8 */
+export interface G11PanelWithEdgeBanding extends G11Panel {
+  edgeBanding?: EdgeBandMap;
+}
+
+/**
+ * G11.6: Validate manufacturing mode matches N-center policy.
+ *
+ * FATAL if:
+ * - FINISHED_CENTER base used with DRILL_ON_CORE mode
+ * - CORE_CENTER base used with DRILL_ON_FINISHED mode
+ *
+ * @param drillPoints - Drill points with optional nCenterPolicy
+ * @param globalMode - Global manufacturing mode
+ * @param policy - Validation policy
+ * @returns Array of validation issues
+ *
+ * @see Master Specification v1.1 §7 (G11:N_POLICY_MATCH_MODE)
+ */
+export function ruleG11_NCenterPolicyMode(
+  drillPoints: G11DrillPointV11[],
+  globalMode?: ManufacturingMode,
+  policy: G11Policy = {},
+): G11Issue[] {
+  const issues: G11Issue[] = [];
+
+  for (const point of drillPoints) {
+    const ncPolicy = point.nCenterPolicy;
+    if (!ncPolicy) continue;
+
+    const mode = point.mode ?? globalMode;
+    if (!mode) continue;
+
+    const expectedMode: ManufacturingMode =
+      ncPolicy.base === 'CORE_CENTER' ? 'DRILL_ON_CORE' : 'DRILL_ON_FINISHED';
+
+    if (mode !== expectedMode) {
+      issues.push({
+        id: issueId('B_G11_N_POLICY_MODE_MISMATCH', point.id),
+        severity: 'BLOCKER',
+        code: 'B_G11_N_POLICY_MODE_MISMATCH',
+        message: `Drill at ${point.id}: N-center policy base '${ncPolicy.base}' requires '${expectedMode}', but current mode is '${mode}'.`,
+        drillPointIds: [point.id],
+        panelIds: [point.panelId],
+        context: {
+          policyBase: ncPolicy.base,
+          currentMode: mode,
+          expectedMode,
+          offsetMm: ncPolicy.offsetMm,
+        },
+      });
+    }
+  }
+
+  return issues;
+}
+
+// ============================================
+// G11.7: DOUBLE PVC COMPENSATION PREVENTION (v1.1)
+// ============================================
+
+/**
+ * G11.7: Prevent double PVC deduction in FINISHED mode.
+ *
+ * FATAL if V-coordinate looks like system32S minus PVC in DRILL_ON_FINISHED mode.
+ * In FINISHED mode, CNC zero is at finished surface — no manual PVC adjustment needed.
+ *
+ * @param drillPoints - Drill points with V-coordinate
+ * @param globalMode - Global manufacturing mode
+ * @param system32S - Expected System 32 backset (default 37mm)
+ * @param pvcThickness - PVC thickness (default 1.0mm)
+ * @param policy - Validation policy
+ * @returns Array of validation issues
+ *
+ * @see Master Specification v1.1 §7 (G11:DOUBLE_COMPENSATION)
+ */
+export function ruleG11_DoublePvcCompensation(
+  drillPoints: G11DrillPointV11[],
+  globalMode?: ManufacturingMode,
+  system32S: number = 37,
+  pvcThickness: number = 1.0,
+  policy: G11Policy = {},
+): G11Issue[] {
+  const issues: G11Issue[] = [];
+
+  for (const point of drillPoints) {
+    const mode = point.mode ?? globalMode;
+    if (mode !== 'DRILL_ON_FINISHED') continue;
+
+    const vCoord = point.vCoordinate;
+    if (vCoord === undefined) continue;
+
+    const expectedV = system32S;
+    const suspectV = system32S - pvcThickness;
+
+    // V matches suspect (double-compensated) value but not expected
+    if (Math.abs(vCoord - suspectV) < 0.1 && Math.abs(vCoord - expectedV) > 0.1) {
+      issues.push({
+        id: issueId('B_G11_DOUBLE_PVC_COMPENSATION', point.id),
+        severity: 'BLOCKER',
+        code: 'B_G11_DOUBLE_PVC_COMPENSATION',
+        message: `Drill at ${point.id}: V=${vCoord}mm suggests double PVC compensation. In DRILL_ON_FINISHED mode, V should be ${expectedV}mm (no manual PVC adjustment).`,
+        drillPointIds: [point.id],
+        panelIds: [point.panelId],
+        context: {
+          measured: vCoord,
+          expected: expectedV,
+          pvcThickness,
+        },
+      });
+    }
+  }
+
+  return issues;
+}
+
+// ============================================
+// G11.8: EDGE BANDING ON JOIN EDGE FORBIDDEN (v1.1)
+// ============================================
+
+/**
+ * G11.8: Prevent edge banding on join edges.
+ *
+ * FATAL if edge banding is applied to edges where panels mate:
+ * - Horizontal panels (TOP/BOTTOM): LEFT/RIGHT edges are join edges
+ * - Side panels (LEFT_SIDE/RIGHT_SIDE): TOP/BOTTOM edges are join edges
+ *
+ * Edge banding on join edges creates a gap (0.4-2.0mm) that prevents
+ * flush wood-to-wood contact required for Minifix and dowel engagement.
+ *
+ * @param panels - Panels with edge banding information
+ * @param policy - Validation policy
+ * @returns Array of validation issues
+ *
+ * @see Master Specification v1.1 §7 (G11:EDGE_BAND_JOIN_FORBIDDEN)
+ */
+export function ruleG11_EdgeBandJoinForbidden(
+  panels: G11PanelWithEdgeBanding[],
+  policy: G11Policy = {},
+): G11Issue[] {
+  const issues: G11Issue[] = [];
+
+  for (const panel of panels) {
+    if (!panel.edgeBanding) continue;
+
+    const role = panel.role;
+    const isSide = isSidePanel(role);
+    const isHoriz = isHorizontalPanel(role);
+
+    if (!isSide && !isHoriz) continue;
+
+    // Determine join edges based on panel role
+    const joinEdges: Array<'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT'> = [];
+    if (isHoriz) {
+      joinEdges.push('LEFT', 'RIGHT');
+    }
+    if (isSide) {
+      joinEdges.push('TOP', 'BOTTOM');
+    }
+
+    // Check which join edges have banding
+    const banded = panel.edgeBanding.banded;
+    const violating = joinEdges.filter(edge => banded[edge]);
+
+    if (violating.length > 0) {
+      issues.push({
+        id: issueId('B_G11_EDGE_BAND_JOIN_FORBIDDEN', panel.id),
+        severity: 'BLOCKER',
+        code: 'B_G11_EDGE_BAND_JOIN_FORBIDDEN',
+        message: `Panel ${panel.id} (${role}): Edge banding on join edge(s) [${violating.join(', ')}] prevents flush assembly. Join edges must be bare wood.`,
+        panelIds: [panel.id],
+        context: {
+          panelRole: role,
+          joinEdges: joinEdges.join(', '),
+          violatingEdges: violating.join(', '),
+          bandThkMm: panel.edgeBanding.bandThkMm,
+        },
+      });
+    }
+  }
+
+  return issues;
+}
+
+// ============================================
 // MAIN GATE FUNCTION
 // ============================================
+
+/**
+ * Additional context for v1.1 rules.
+ * Optional to maintain backward compatibility.
+ */
+export interface G11V11Context {
+  /** Global manufacturing mode */
+  mode?: ManufacturingMode;
+  /** System 32 backset (default 37mm) */
+  system32S?: number;
+  /** PVC thickness from stack (default 1.0mm) */
+  pvcThickness?: number;
+}
 
 /**
  * Run all G11 validation rules.
@@ -666,12 +880,14 @@ export function ruleG11_BoltCamAlignment(
  * @param drillPoints - All drill points to validate
  * @param panels - Panel information (optional)
  * @param policy - Validation policy (optional)
+ * @param v11Context - Additional context for v1.1 rules (optional)
  * @returns G11 validation result
  */
 export function runG11Rules(
   drillPoints: G11DrillPoint[],
   panels: G11Panel[] = [],
-  policy: G11Policy = {}
+  policy: G11Policy = {},
+  v11Context?: G11V11Context,
 ): G11Result {
   const allIssues: G11Issue[] = [];
 
@@ -689,6 +905,35 @@ export function runG11Rules(
 
   // G11.5: Bolt Tip ↔ CAM Center Alignment
   allIssues.push(...ruleG11_BoltCamAlignment(drillPoints, policy));
+
+  // v1.1 Rules (only when context is provided)
+  if (v11Context) {
+    // G11.6: N-Center Policy & Mode Consistency
+    if (v11Context.mode) {
+      allIssues.push(...ruleG11_NCenterPolicyMode(
+        drillPoints as G11DrillPointV11[],
+        v11Context.mode,
+        policy,
+      ));
+    }
+
+    // G11.7: Double PVC Compensation Prevention
+    if (v11Context.mode) {
+      allIssues.push(...ruleG11_DoublePvcCompensation(
+        drillPoints as G11DrillPointV11[],
+        v11Context.mode,
+        v11Context.system32S,
+        v11Context.pvcThickness,
+        policy,
+      ));
+    }
+
+    // G11.8: Edge Banding on Join Edge Forbidden
+    allIssues.push(...ruleG11_EdgeBandJoinForbidden(
+      panels as G11PanelWithEdgeBanding[],
+      policy,
+    ));
+  }
 
   // Count by severity
   const blockers = allIssues.filter(i => i.severity === 'BLOCKER').length;

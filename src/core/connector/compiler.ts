@@ -63,7 +63,7 @@ export function compileConnectorOps(
     spec.features.forEach((feature) => {
       const finalB = resolveFeatureB(feature);
 
-      const coord = calculateCncCoordinate(sPos, finalB, stack, mode);
+      const coord = calculateCncCoordinate(sPos, finalB, stack, mode, feature.nCenterPolicy);
 
       ops.push({
         type: 'DRILL',

@@ -5,7 +5,10 @@
  * based on material stack and manufacturing mode.
  *
  * @see docs/connector-os/material-stack.md
+ * @see Master Specification v1.1 §4
  */
+
+import type { NCenterPolicy } from './types';
 
 export interface Stack {
   core: number;      // Core board thickness (e.g. 18.0mm HMR)
@@ -24,25 +27,43 @@ export interface CncCoordinate {
 /**
  * Calculate CNC drill coordinates for a structural connector bore.
  *
- * N-axis (center): ALWAYS uses core thickness / 2 for structural integrity.
- * V-axis (depth):  Mode-dependent - compensates for PVC only in DRILL_ON_CORE mode.
- * U-axis (width):  Direct pass-through of drilling distance B.
+ * N-axis (center):
+ * - **Legacy** (no policy): core thickness / 2
+ * - **Policy** (v1.1): (base / 2) + offsetMm
+ *   - CORE_CENTER: base = stack.core
+ *   - FINISHED_CENTER: base = stack.finished
+ *
+ * V-axis (depth): Mode-dependent - compensates for PVC only in DRILL_ON_CORE mode.
+ * U-axis (width): Direct pass-through of drilling distance B.
  *
  * @param system32S - System 32 backset distance (typically 37mm from finished front)
  * @param distanceB - Drilling distance B from join edge
  * @param stack     - Material stack definition
  * @param mode      - Manufacturing mode (before or after edge banding)
+ * @param nCenterPolicy - Optional N-axis centering policy (v1.1)
  */
 export function calculateCncCoordinate(
   system32S: number,
   distanceB: number,
   stack: Stack,
   mode: ManufacturingMode,
+  nCenterPolicy?: NCenterPolicy,
 ): CncCoordinate {
+  // N-axis calculation
+  let n: number;
+  if (nCenterPolicy) {
+    // v1.1 policy-based: semantic base + intent offset
+    const base = nCenterPolicy.base === 'CORE_CENTER' ? stack.core : stack.finished;
+    n = (base / 2) + nCenterPolicy.offsetMm;
+  } else {
+    // Legacy: core center for structural integrity
+    n = stack.core / 2;
+  }
+
   return {
     u: distanceB,
     v: mode === 'DRILL_ON_CORE' ? system32S - stack.pvc : system32S,
-    n: stack.core / 2,
+    n,
   };
 }
 

@@ -59,14 +59,16 @@ export const G11_CONSTANTS = {
   // Minifix S200 specifications
   CAM_DIAMETER: 15,             // mm - Ø15
   BOLT_SLEEVE_DIAMETER: 10,     // mm - Ø10
-  BOLT_SLEEVE_DEPTH: 17.5,      // mm - sleeve depth
+  /** Bolt hole DRILLING depth (manufacturing domain). NOT the same as BOLT_SLEEVE_LENGTH. */
+  BOLT_SLEEVE_DEPTH: 17.5,      // mm - bolt bore drilling depth (Häfele S200)
 
   // Bolt protrusion (G11.5: Bolt Tip must reach CAM center)
   // B = ballHeadRadius + neckLength + sleeveLength = 3.25 + 6.5 + 14.25 = 24mm
   BOLT_BALL_HEAD_DIAMETER: 6.5, // mm - Häfele S200 ball head Ø6.5
   BOLT_BALL_HEAD_RADIUS: 3.25,  // mm - half of diameter
   BOLT_NECK_LENGTH: 6.5,        // mm - neck shaft length
-  BOLT_SLEEVE_LENGTH: 14.25,    // mm - sleeve portion
+  /** Physical sleeve cylinder length (assembly domain). NOT the same as BOLT_SLEEVE_DEPTH. */
+  BOLT_SLEEVE_LENGTH: 14.25,    // mm - sleeve assembly length (part of B=24mm chain)
   BOLT_PROTRUSION_TOTAL: 24,    // mm - total protrusion (must equal Distance B!)
 
   // Tolerances
@@ -136,6 +138,14 @@ export type G11IssueCode =
   | 'B_G11_BOLT_CAM_CORNER_MISMATCH'
   | 'B_G11_BOLT_CAM_MISALIGNMENT'
   | 'W_G11_BOLT_CAM_NEAR_TOLERANCE'
+  // G11.6 N-Center Policy & Mode Consistency (v1.1)
+  | 'B_G11_N_POLICY_MODE_MISMATCH'
+  | 'W_G11_N_POLICY_MISSING'
+  // G11.7 Double PVC Compensation Prevention (v1.1)
+  | 'B_G11_DOUBLE_PVC_COMPENSATION'
+  // G11.8 Edge Banding on Join Edge (v1.1)
+  | 'B_G11_EDGE_BAND_JOIN_FORBIDDEN'
+  | 'W_G11_EDGE_BAND_JOIN_WARNING'
   // General
   | 'I_G11_CONNECTOR_COUNT_SUBOPTIMAL';
 

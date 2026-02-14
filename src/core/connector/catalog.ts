@@ -15,6 +15,36 @@ import type {
 } from './types';
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Gems Part Numbers (International Hardware Catalogs)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Häfele Minifix S200 Part Numbers.
+ * Source: Häfele FF 3.10 Catalog.
+ *
+ * @see Master Specification v1.1 §6
+ */
+export const HAFELE_PART_NUMBERS = {
+  /** Minifix 15 Housing, Ø15mm, for 16mm+ wood (262.25.533) */
+  MINIFIX_15_HOUSING_16MM_PLUS: '262.25.533',
+  /** Connecting Bolt S200, Distance B=24mm (262.27.462) */
+  CONNECTING_BOLT_S200_B24: '262.27.462',
+} as const;
+
+/**
+ * Italiana Ferramenta Part Numbers.
+ * Source: Italiana Ferramenta Hardware Catalog.
+ *
+ * @see Master Specification v1.1 §6
+ */
+export const ITALIANA_PART_NUMBERS = {
+  /** Target J10 Housing P10.18, for 18mm wood (21821320YA) */
+  TARGET_J10_HOUSING_P10_18MM: '21821320YA',
+  /** Insert Nut M6×13 (20102020GR) */
+  INSERT_NUT_M6X13: '20102020GR',
+} as const;
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Connector Specs
 // ──────────────────────────────────────────────────────────────────────────────
 
