@@ -224,7 +224,7 @@ export function CamHousing3D({
   position,
   rotation = [0, 0, 0],
   diameter = 15,
-  depth = 12.5,
+  depth = 13.5,
   color,
   xRayMode = false,
   hovered = false,

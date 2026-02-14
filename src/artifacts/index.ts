@@ -1,18 +1,27 @@
 /**
- * Artifacts Module Index
+ * MONOLITH Artifact Store Module
  *
- * Re-exports artifact types, verification, and store access.
- *
- * @version 1.0.0
+ * Immutable artifact storage for released factory packages.
  */
 
-export type { ArtifactBundle, ArtifactBundleItem } from './types';
-export type { VerifyResult, VerifyError, VerifyOptions } from './verify';
-export { verifyBundleAgainstManifest, verifyArtifactContent, formatVerifyErrors } from './verify';
+// Types
+export type {
+  ArtifactPath,
+  ArtifactRecord,
+  ArtifactBundle,
+  ArtifactStore,
+} from './types';
 
-// Re-export artifact store from core infrastructure
-import { createMemoryArtifactStore } from '../core/infra/artifacts/memoryArtifactStore';
-export type { ArtifactStore } from '../core/infra/artifacts/artifactStoreTypes';
+// Store
+export { artifactStore, getArtifactStoreForTesting } from './store';
 
-/** Singleton artifact store instance */
-export const artifactStore = createMemoryArtifactStore();
+// Verification
+export type { VerifyError, VerifyResult } from './verify';
+export {
+  verifyBundleAgainstManifest,
+  verifyArtifactContent,
+  formatVerifyErrors,
+} from './verify';
+
+// Strict Enforcement
+export { requireVerifiedRelease, getVerifiedArtifact } from './requireVerified';

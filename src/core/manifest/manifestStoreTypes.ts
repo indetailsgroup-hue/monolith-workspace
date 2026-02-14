@@ -1,42 +1,90 @@
 /**
- * manifestStoreTypes.ts - Manifest Store Interface
+ * manifestStoreTypes.ts - Manifest Store Contract
  *
- * Abstract storage interface for the manifest chain.
- * Implemented by IndexedDB store for browser persistence.
+ * APPEND-ONLY STORAGE for signed manifests.
+ * Each manifest is immutable once stored.
+ * HEAD pointer tracks the current verified state.
  *
- * @version 1.0.0
+ * SERVER-FIRST: This interface works for both IndexedDB and REST API.
+ * Swap implementations without changing verifier logic.
  */
 
 import type { SignedJobManifest } from '../trust/manifestChainTypes';
 
+// ============================================
+// MANIFEST STORE INTERFACE
+// ============================================
+
 /**
- * Manifest store interface
+ * Append-only manifest store contract
  *
- * Provides content-addressed storage for signed manifests
- * and HEAD pointer management per job.
+ * INVARIANTS:
+ * - put() never overwrites (append-only)
+ * - loadByHash() returns exact match or null
+ * - setHead() only after manifest is stored
+ * - HEAD always points to a valid manifest
  */
 export interface ManifestStore {
-  /** Store a manifest (keyed by manifestHashHex) */
+  /**
+   * Store a manifest (append-only)
+   * If manifest with same hash exists, this is a no-op
+   */
   put(manifest: SignedJobManifest): Promise<void>;
 
-  /** Load a manifest by its hash */
+  /**
+   * Load manifest by its hash
+   * @param hashHex - Manifest hash (64 char hex)
+   * @returns Manifest or null if not found
+   */
   loadByHash(hashHex: string): Promise<SignedJobManifest | null>;
 
-  /** Set HEAD pointer for a job */
-  setHead(jobId: string, hashHex: string): Promise<void>;
+  /**
+   * Set HEAD pointer for a job
+   * @param jobId - Job identifier
+   * @param headHashHex - Hash of manifest to set as HEAD
+   */
+  setHead(jobId: string, headHashHex: string): Promise<void>;
 
-  /** Get HEAD pointer for a job */
+  /**
+   * Get current HEAD hash for a job
+   * @param jobId - Job identifier
+   * @returns HEAD hash or null if no manifests for job
+   */
   getHead(jobId: string): Promise<string | null>;
 
-  /** List recent manifests for a job */
-  listRecent(jobId: string, limit?: number): Promise<SignedJobManifest[]>;
+  /**
+   * List recent manifests for a job (newest first)
+   * @param jobId - Job identifier
+   * @param limit - Maximum number to return
+   */
+  listRecent(jobId: string, limit: number): Promise<SignedJobManifest[]>;
+}
 
-  /** Check if a manifest exists by hash */
-  exists(hashHex: string): Promise<boolean>;
+// ============================================
+// STORE RESULT TYPES
+// ============================================
 
-  /** Count manifests for a job */
-  countForJob(jobId: string): Promise<number>;
+export interface StoreResult<T> {
+  ok: true;
+  data: T;
+}
 
-  /** Clear all manifests (for testing) */
-  clear(): Promise<void>;
+export interface StoreError {
+  ok: false;
+  reason: string;
+  code?: string;
+}
+
+export type StoreOutcome<T> = StoreResult<T> | StoreError;
+
+// ============================================
+// STORE EVENTS (for sync/notification)
+// ============================================
+
+export type ManifestStoreEvent =
+  | { type: 'manifest-added'; hashHex: string; jobId: string }
+  | { type: 'head-changed'; jobId: string; oldHeadHex: string | null; newHeadHex: string };
+
+export interface ObservableManifestStore extends ManifestStore {
+  subscribe(listener: (event: ManifestStoreEvent) => void): () => void;
 }

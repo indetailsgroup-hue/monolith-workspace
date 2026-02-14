@@ -1,20 +1,48 @@
 /**
  * jobRegistryStore.ts - Job Registry Store Interface
  *
- * Tracks all known job IDs in the system.
- * Used by the trust chain service to manage revision forks.
+ * ARCHITECTURE:
+ * - Tracks all job IDs in the system
+ * - Used for:
+ *   - Listing all jobs
+ *   - Checking if job exists
+ *   - Deriving next revision ID (JOB__R2, JOB__R3, etc.)
  *
- * @version 1.0.0
+ * IMPLEMENTATIONS:
+ * - localStorage (MVP, single-user)
+ * - IndexedDB (multi-user, larger datasets)
+ * - Server API (production, multi-device sync)
  */
 
+// ============================================
+// INTERFACE
+// ============================================
+
 /**
- * Job registry store for tracking job identifiers
+ * Job registry store contract
  */
 export interface JobRegistryStore {
-  /** List all known job IDs */
-  listJobIds(): Promise<string[]>;
-  /** Register a new job ID */
-  addJobId(jobId: string): Promise<void>;
-  /** Check if a job ID exists */
-  getJobId(jobId: string): Promise<string | null>;
+  /**
+   * Add a job ID to the registry
+   * @param jobId - Job ID to register
+   */
+  addJobId: (jobId: string) => Promise<void>;
+
+  /**
+   * List all registered job IDs
+   * @returns Array of job IDs (sorted)
+   */
+  listJobIds: () => Promise<string[]>;
+
+  /**
+   * Check if a job ID exists in registry
+   * @param jobId - Job ID to check
+   */
+  hasJobId: (jobId: string) => Promise<boolean>;
+
+  /**
+   * Remove a job ID from registry (optional)
+   * @param jobId - Job ID to remove
+   */
+  removeJobId?: (jobId: string) => Promise<void>;
 }

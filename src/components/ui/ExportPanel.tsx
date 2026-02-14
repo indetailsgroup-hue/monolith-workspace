@@ -1,14 +1,28 @@
 /**
- * ExportPanel - Gate & Export System
- * 
+ * ExportPanel - Gate & Export System (P2.2 + Phase B1)
+ *
  * SPEC-08 Compliant export workflow:
  * - Validation checks (dimensional, structural, machine compatibility)
  * - Gate status management (DRAFT → FROZEN → RELEASED)
  * - Export formats (DXF, Cut List, BOM, CNC)
+ * - Safety Gate enforcement (Phase B1)
+ *
+ * WIRED TO:
+ * - useSpecStore for gate state (DRAFT/FROZEN/RELEASED)
+ * - useExportGate for Safety Gate enforcement
+ * - Real export generators (buildCutListCsv, etc.)
+ *
+ * @version 1.1.0 - Phase B1: Gate Enforcement
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useCabinet } from '../../core/store/useCabinetStore';
+import { useSpecStore, useSpecState, MACHINE_PROFILES, useMachineProfile } from '../../core/store/useSpecStore';
+import { quickDxfExport } from '../../core/export/exportPipeline';
+import { downloadDxfZipFromPacket, canExportDxfFromOperationGraph } from '../../core/export/dxfExportFromOperationGraph';
+import type { CabinetPanel } from '../../core/types/Cabinet';
+import { useExportGate, GateBlockerModal } from '../../gate/ui';
+import { useFactoryPacket, PacketPreviewModal } from '../../factory/packet';
 
 // Validation types
 interface ValidationResult {
@@ -44,9 +58,9 @@ const EXPORT_OPTIONS: ExportOption[] = [
 // Validation rules
 function runValidation(cabinet: any): ValidationResult[] {
   const results: ValidationResult[] = [];
-  
+
   if (!cabinet) return results;
-  
+
   // Dimensional checks
   if (cabinet.dimensions.width < 300) {
     results.push({
@@ -75,7 +89,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: `Machine limit is 2400mm, current: ${cabinet.dimensions.height}mm`
     });
   }
-  
+
   // Structural checks
   if (cabinet.structure.shelfCount > 6) {
     results.push({
@@ -86,7 +100,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: `Consider adding vertical dividers for ${cabinet.structure.shelfCount} shelves`
     });
   }
-  
+
   const shelfSpacing = cabinet.dimensions.height / (cabinet.structure.shelfCount + 1);
   if (shelfSpacing < 150) {
     results.push({
@@ -97,7 +111,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: `Current spacing: ${shelfSpacing.toFixed(0)}mm, minimum recommended: 150mm`
     });
   }
-  
+
   // Material checks
   if (!cabinet.materials.defaultCore) {
     results.push({
@@ -108,7 +122,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: 'Select a core material before export'
     });
   }
-  
+
   // Machine compatibility
   const panelCount = cabinet.panels?.length || 0;
   if (panelCount > 20) {
@@ -120,7 +134,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: `${panelCount} panels - consider batch processing`
     });
   }
-  
+
   // Safety checks
   if (!cabinet.structure.hasBackPanel) {
     results.push({
@@ -131,7 +145,7 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: 'Cabinet may lack structural rigidity'
     });
   }
-  
+
   // Add success if no errors
   if (results.filter(r => r.severity === 'error').length === 0) {
     results.push({
@@ -142,23 +156,23 @@ function runValidation(cabinet: any): ValidationResult[] {
       details: 'Cabinet is ready for export'
     });
   }
-  
+
   return results;
 }
 
 // Section Component
 function Section({ title, children, status }: { title: string; children: React.ReactNode; status?: 'ok' | 'warning' | 'error' }) {
   const [isOpen, setIsOpen] = useState(true);
-  
+
   const statusColors = {
     ok: 'bg-emerald-500',
     warning: 'bg-amber-500',
     error: 'bg-red-500',
   };
-  
+
   return (
     <div className="border-b border-zinc-800">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-800/50 transition-colors"
       >
@@ -166,7 +180,7 @@ function Section({ title, children, status }: { title: string; children: React.R
           <span className="text-sm font-medium text-zinc-300">{title}</span>
           {status && <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />}
         </div>
-        <svg 
+        <svg
           className={`w-4 h-4 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"
         >
@@ -189,9 +203,9 @@ function ValidationItem({ result }: { result: ValidationResult }) {
     warning: { bg: 'bg-amber-500/10', text: 'text-amber-400', icon: '⚠' },
     info: { bg: 'bg-blue-500/10', text: 'text-blue-400', icon: 'ℹ' },
   };
-  
+
   const style = severityStyles[result.severity];
-  
+
   return (
     <div className={`p-3 rounded-lg ${style.bg}`}>
       <div className="flex items-start gap-2">
@@ -208,27 +222,27 @@ function ValidationItem({ result }: { result: ValidationResult }) {
 }
 
 // Export Button
-function ExportButton({ 
-  option, 
-  gateStatus, 
-  onExport 
-}: { 
-  option: ExportOption; 
-  gateStatus: GateStatus; 
+function ExportButton({
+  option,
+  gateStatus,
+  onExport
+}: {
+  option: ExportOption;
+  gateStatus: GateStatus;
   onExport: (format: ExportFormat) => void;
 }) {
   const gateOrder: GateStatus[] = ['DRAFT', 'FROZEN', 'RELEASED'];
   const currentGateIndex = gateOrder.indexOf(gateStatus);
   const requiredGateIndex = gateOrder.indexOf(option.requiresGate);
   const isEnabled = currentGateIndex >= requiredGateIndex;
-  
+
   return (
     <button
       onClick={() => isEnabled && onExport(option.id)}
       disabled={!isEnabled}
       className={`w-full p-4 rounded-lg border transition-colors text-left
-        ${isEnabled 
-          ? 'bg-zinc-800/50 border-zinc-700 hover:border-emerald-500/50 hover:bg-zinc-800 cursor-pointer' 
+        ${isEnabled
+          ? 'bg-zinc-800/50 border-zinc-700 hover:border-emerald-500/50 hover:bg-zinc-800 cursor-pointer'
           : 'bg-zinc-900/50 border-zinc-800 cursor-not-allowed opacity-50'
         }`}
     >
@@ -250,51 +264,712 @@ function ExportButton({
   );
 }
 
-interface ExportPanelProps {
-  gateStatus: GateStatus;
-  onGateChange: (status: GateStatus) => void;
+// Machine Profile Selector Component
+function MachineProfileSelector({
+  selectedId,
+  onChange,
+  disabled
+}: {
+  selectedId: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}) {
+  const profiles = Object.values(MACHINE_PROFILES);
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs text-zinc-400 font-medium">Target Machine</label>
+      <select
+        value={selectedId}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={`w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-200
+          focus:outline-none focus:border-emerald-500/50 transition-colors
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        {profiles.map((profile) => (
+          <option key={profile.id} value={profile.id}>
+            {profile.name} ({profile.maxWidth}×{profile.maxHeight}mm)
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
-export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
+// Panel Selection Component for DXF Export
+interface PanelExportState {
+  panelId: string;
+  selected: boolean;
+  status: 'pending' | 'exporting' | 'done' | 'error';
+}
+
+// Panel role icons and colors
+const PANEL_ROLE_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
+  'left-side': { icon: '◧', color: 'text-blue-400', label: 'Side' },
+  'right-side': { icon: '◨', color: 'text-blue-400', label: 'Side' },
+  'side': { icon: '▯', color: 'text-blue-400', label: 'Side' },
+  'top': { icon: '⬓', color: 'text-purple-400', label: 'Top' },
+  'bottom': { icon: '⬒', color: 'text-purple-400', label: 'Bottom' },
+  'shelf': { icon: '═', color: 'text-amber-400', label: 'Shelf' },
+  'back': { icon: '▢', color: 'text-zinc-400', label: 'Back' },
+  'divider': { icon: '│', color: 'text-cyan-400', label: 'Divider' },
+  'door': { icon: '▣', color: 'text-emerald-400', label: 'Door' },
+  'drawer-front': { icon: '▤', color: 'text-emerald-400', label: 'Drawer' },
+  'drawer-side': { icon: '▥', color: 'text-emerald-400', label: 'Drawer' },
+  'drawer-bottom': { icon: '▦', color: 'text-emerald-400', label: 'Drawer' },
+  'stretcher': { icon: '―', color: 'text-zinc-500', label: 'Stretcher' },
+  'default': { icon: '◻', color: 'text-zinc-400', label: 'Panel' },
+};
+
+function getPanelRoleConfig(role?: string) {
+  if (!role) return PANEL_ROLE_CONFIG['default'];
+  const normalized = role.toLowerCase().replace(/[_\s]+/g, '-');
+  return PANEL_ROLE_CONFIG[normalized] || PANEL_ROLE_CONFIG['default'];
+}
+
+// Group panels by role category
+function groupPanelsByRole(panels: CabinetPanel[]): Map<string, CabinetPanel[]> {
+  const groups = new Map<string, CabinetPanel[]>();
+  for (const panel of panels) {
+    const config = getPanelRoleConfig(panel.role);
+    const groupKey = config.label;
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+    }
+    groups.get(groupKey)!.push(panel);
+  }
+  return groups;
+}
+
+// Calculate total area of selected panels
+function calculateSelectedArea(panels: CabinetPanel[], panelStates: Map<string, PanelExportState>): number {
+  let area = 0;
+  for (const panel of panels) {
+    const state = panelStates.get(panel.id);
+    if (state?.selected ?? true) {
+      const w = panel.finishWidth || 0;
+      const h = panel.finishHeight || 0;
+      area += w * h;
+    }
+  }
+  return area;
+}
+
+type RoleFilter = 'all' | 'structural' | 'drawer' | 'door' | 'back';
+
+function PanelSelectionList({
+  panels,
+  panelStates,
+  onToggle,
+  onToggleAll,
+  disabled,
+}: {
+  panels: CabinetPanel[];
+  panelStates: Map<string, PanelExportState>;
+  onToggle: (panelId: string) => void;
+  onToggleAll: (selected: boolean) => void;
+  disabled?: boolean;
+}) {
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [showGrouped, setShowGrouped] = useState(true);
+
+  // Filter panels by role
+  const filteredPanels = useMemo(() => {
+    if (roleFilter === 'all') return panels;
+    return panels.filter((panel) => {
+      const role = panel.role?.toLowerCase() || '';
+      switch (roleFilter) {
+        case 'structural':
+          return ['side', 'left-side', 'right-side', 'top', 'bottom', 'shelf', 'divider'].some(r => role.includes(r.replace('-', '')));
+        case 'drawer':
+          return role.includes('drawer');
+        case 'door':
+          return role.includes('door');
+        case 'back':
+          return role.includes('back');
+        default:
+          return true;
+      }
+    });
+  }, [panels, roleFilter]);
+
+  const selectedCount = Array.from(panelStates.values()).filter(s => s.selected).length;
+  const allSelected = selectedCount === panels.length;
+  const selectedArea = calculateSelectedArea(panels, panelStates);
+  const formattedArea = selectedArea >= 1000000
+    ? `${(selectedArea / 1000000).toFixed(2)} m²`
+    : `${(selectedArea / 1000).toFixed(1)} cm²`;
+
+  // Group panels for display
+  const groupedPanels = useMemo(() => groupPanelsByRole(filteredPanels), [filteredPanels]);
+
+  // Handle role-based selection
+  const handleSelectByRole = useCallback((groupLabel: string, selected: boolean) => {
+    const panelsInGroup = groupedPanels.get(groupLabel) || [];
+    for (const panel of panelsInGroup) {
+      const state = panelStates.get(panel.id);
+      if (state && state.selected !== selected) {
+        onToggle(panel.id);
+      }
+    }
+  }, [groupedPanels, panelStates, onToggle]);
+
+  return (
+    <div className="space-y-2">
+      {/* Header with filter and controls */}
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-xs text-zinc-400 font-medium">Panels to Export</label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGrouped(!showGrouped)}
+            disabled={disabled}
+            className="text-xs text-zinc-500 hover:text-zinc-300 disabled:opacity-50 px-1"
+            title={showGrouped ? 'Show flat list' : 'Group by role'}
+          >
+            {showGrouped ? '≡' : '☰'}
+          </button>
+          <button
+            onClick={() => onToggleAll(!allSelected)}
+            disabled={disabled}
+            className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+          >
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </button>
+        </div>
+      </div>
+
+      {/* Role filter pills */}
+      <div className="flex flex-wrap gap-1">
+        {(['all', 'structural', 'drawer', 'door', 'back'] as RoleFilter[]).map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setRoleFilter(filter)}
+            disabled={disabled}
+            className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors ${roleFilter === filter
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+              : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:border-zinc-600'
+              } ${disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+          >
+            {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Panel list */}
+      <div className="max-h-56 overflow-y-auto border border-zinc-700 rounded-lg">
+        {showGrouped ? (
+          // Grouped view
+          Array.from(groupedPanels.entries()).map(([groupLabel, groupPanels]) => {
+            const groupSelectedCount = groupPanels.filter(p => panelStates.get(p.id)?.selected ?? true).length;
+            const allGroupSelected = groupSelectedCount === groupPanels.length;
+
+            return (
+              <div key={groupLabel} className="border-b border-zinc-800 last:border-b-0">
+                {/* Group header */}
+                <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-800/50 sticky top-0">
+                  <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+                    {groupLabel} ({groupPanels.length})
+                  </span>
+                  <button
+                    onClick={() => handleSelectByRole(groupLabel, !allGroupSelected)}
+                    disabled={disabled}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-50"
+                  >
+                    {allGroupSelected ? 'None' : 'All'}
+                  </button>
+                </div>
+
+                {/* Group panels */}
+                {groupPanels.map((panel) => (
+                  <PanelRow
+                    key={panel.id}
+                    panel={panel}
+                    state={panelStates.get(panel.id)}
+                    onToggle={onToggle}
+                    disabled={disabled}
+                  />
+                ))}
+              </div>
+            );
+          })
+        ) : (
+          // Flat view
+          filteredPanels.map((panel) => (
+            <PanelRow
+              key={panel.id}
+              panel={panel}
+              state={panelStates.get(panel.id)}
+              onToggle={onToggle}
+              disabled={disabled}
+            />
+          ))
+        )}
+
+        {filteredPanels.length === 0 && (
+          <div className="p-4 text-center text-xs text-zinc-500">
+            No panels match filter
+          </div>
+        )}
+      </div>
+
+      {/* Statistics footer */}
+      <div className="flex items-center justify-between text-xs text-zinc-500">
+        <span>{selectedCount} of {panels.length} panels</span>
+        <span className="text-zinc-400">{formattedArea}</span>
+      </div>
+    </div>
+  );
+}
+
+// Individual panel row component
+function PanelRow({
+  panel,
+  state,
+  onToggle,
+  disabled,
+}: {
+  panel: CabinetPanel;
+  state?: PanelExportState;
+  onToggle: (panelId: string) => void;
+  disabled?: boolean;
+}) {
+  const isSelected = state?.selected ?? true;
+  const status = state?.status ?? 'pending';
+  const config = getPanelRoleConfig(panel.role);
+
+  return (
+    <label
+      className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors
+        hover:bg-zinc-800/50 border-b border-zinc-800/50 last:border-b-0
+        ${isSelected ? 'bg-zinc-800/20' : ''}
+        ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+    >
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => onToggle(panel.id)}
+        disabled={disabled}
+        className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/30"
+      />
+      <span className={`text-base ${config.color}`} title={config.label}>
+        {config.icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm text-zinc-200 truncate">
+          {panel.name || panel.role || 'Panel'}
+        </div>
+        <div className="text-[10px] text-zinc-500 flex items-center gap-2">
+          <span>{panel.finishWidth?.toFixed(0)}×{panel.finishHeight?.toFixed(0)}mm</span>
+          {panel.computed?.realThickness && (
+            <span className="text-zinc-600">T{panel.computed.realThickness}</span>
+          )}
+        </div>
+      </div>
+      {/* Status indicator */}
+      {status === 'exporting' && (
+        <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      )}
+      {status === 'done' && (
+        <span className="text-emerald-400 text-sm">✓</span>
+      )}
+      {status === 'error' && (
+        <span className="text-red-400 text-sm">✕</span>
+      )}
+    </label>
+  );
+}
+
+// DXF Export Progress Component
+function DxfExportProgress({
+  currentPanel,
+  totalPanels,
+  currentName,
+  isExporting,
+}: {
+  currentPanel: number;
+  totalPanels: number;
+  currentName: string;
+  isExporting: boolean;
+}) {
+  if (!isExporting) return null;
+
+  const progress = totalPanels > 0 ? (currentPanel / totalPanels) * 100 : 0;
+
+  return (
+    <div className="p-4 bg-emerald-500/10 border-t border-emerald-500/30 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-emerald-400">Generating DXF...</span>
+        <span className="text-xs text-zinc-400">
+          {currentPanel}/{totalPanels}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-emerald-500 transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Current panel name */}
+      <div className="text-xs text-zinc-400 truncate">
+        {currentName}
+      </div>
+    </div>
+  );
+}
+
+interface ExportPanelProps {
+  /** @deprecated - now uses useSpecStore directly */
+  gateStatus?: GateStatus;
+  /** @deprecated - now uses useSpecStore directly */
+  onGateChange?: (status: GateStatus) => void;
+}
+
+/**
+ * Generate Cut List CSV from cabinet panels
+ */
+function generateCutListCsv(cabinet: any): string {
+  if (!cabinet?.panels) return '';
+
+  const headers = [
+    'ROW_NO', 'PART_ID', 'NAME', 'MATERIAL', 'QTY',
+    'FINISH_W', 'FINISH_H', 'CUT_W', 'CUT_H',
+    'EDGE_L', 'EDGE_R', 'EDGE_T', 'EDGE_B', 'GRAIN'
+  ];
+
+  const rows = cabinet.panels.map((panel: any, idx: number) => {
+    const computed = panel.computed || {};
+    return [
+      idx + 1,
+      panel.id?.slice(0, 8) || `P${idx + 1}`,
+      panel.name || panel.role,
+      panel.coreMaterialId || 'MDF_18',
+      1,
+      panel.finishWidth?.toFixed(1) || 0,
+      panel.finishHeight?.toFixed(1) || 0,
+      computed.cutWidth?.toFixed(1) || panel.finishWidth?.toFixed(1) || 0,
+      computed.cutHeight?.toFixed(1) || panel.finishHeight?.toFixed(1) || 0,
+      panel.edges?.left || '',
+      panel.edges?.right || '',
+      panel.edges?.top || '',
+      panel.edges?.bottom || '',
+      panel.grainDirection || 'NONE'
+    ].join(',');
+  });
+
+  return [headers.join(','), ...rows].join('\n');
+}
+
+/**
+ * Download content as file
+ */
+function downloadFile(content: string, filename: string, mimeType: string = 'text/csv') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChange }: ExportPanelProps) {
   const cabinet = useCabinet();
+
+  // Use store for gate state (P2.2 - wired to real state machine)
+  const specState = useSpecState();
+  const gateStatus = specState as GateStatus; // Map spec state to gate status
+
+  // Store actions
+  const freezeSpec = useSpecStore((s) => s.freezeSpec);
+  const releaseSpec = useSpecStore((s) => s.releaseSpec);
+  const unfreezeSpec = useSpecStore((s) => s.unfreezeSpec);
+
   const [_isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<string | null>(null);
-  
+
+  // DXF Export state (T008 enhancement)
+  const [machineProfileId, setMachineProfileId] = useState<string>('homag-centateq');
+  const [panelStates, setPanelStates] = useState<Map<string, PanelExportState>>(new Map());
+  const [dxfProgress, setDxfProgress] = useState<{ current: number; total: number; name: string }>({
+    current: 0,
+    total: 0,
+    name: '',
+  });
+  const [isDxfExporting, setIsDxfExporting] = useState(false);
+
+  // Safety Gate enforcement (Phase B1)
+  const exportGate = useExportGate();
+  const [blockerModalOpen, setBlockerModalOpen] = useState(false);
+  const [blockerModalAction, setBlockerModalAction] = useState<'freeze' | 'release' | 'export'>('freeze');
+
+  // Factory Packet Preview (Phase B3)
+  const factoryPacket = useFactoryPacket();
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+
+  // Initialize panel states when cabinet changes
+  React.useEffect(() => {
+    if (!cabinet?.panels) return;
+
+    const newStates = new Map<string, PanelExportState>();
+    cabinet.panels.forEach((panel: CabinetPanel) => {
+      newStates.set(panel.id, {
+        panelId: panel.id,
+        selected: true,
+        status: 'pending',
+      });
+    });
+    setPanelStates(newStates);
+  }, [cabinet?.id, cabinet?.panels?.length]);
+
+  // Panel selection handlers
+  const handlePanelToggle = useCallback((panelId: string) => {
+    setPanelStates((prev) => {
+      const newMap = new Map(prev);
+      const state = newMap.get(panelId);
+      if (state) {
+        newMap.set(panelId, { ...state, selected: !state.selected });
+      }
+      return newMap;
+    });
+  }, []);
+
+  const handlePanelToggleAll = useCallback((selected: boolean) => {
+    setPanelStates((prev) => {
+      const newMap = new Map(prev);
+      for (const [id, state] of newMap) {
+        newMap.set(id, { ...state, selected });
+      }
+      return newMap;
+    });
+  }, []);
+
   // Run validation
   const validationResults = useMemo(() => runValidation(cabinet), [cabinet]);
-  
+
   const errorCount = validationResults.filter(r => r.severity === 'error').length;
   const warningCount = validationResults.filter(r => r.severity === 'warning').length;
-  
-  const canFreeze = errorCount === 0;
-  const canRelease = errorCount === 0 && gateStatus === 'FROZEN';
-  
-  const overallStatus = errorCount > 0 ? 'error' : warningCount > 0 ? 'warning' : 'ok';
-  
-  const handleExport = async (format: ExportFormat) => {
+
+  // Combined gate check: Local validation + Safety Gate (Phase B1)
+  const localValidationPass = errorCount === 0;
+  const safetyGatePass = exportGate.hasRun && exportGate.canFreeze;
+
+  // canFreeze requires both local validation and Safety Gate pass
+  const canFreeze = localValidationPass && safetyGatePass;
+  const canRelease = localValidationPass && safetyGatePass && gateStatus === 'FROZEN';
+
+  const overallStatus = errorCount > 0 ? 'error' :
+    (exportGate.hasRun && exportGate.blockerCount > 0) ? 'error' :
+      warningCount > 0 ? 'warning' : 'ok';
+
+  // Real export handler (P2.2)
+  const handleExport = useCallback(async (format: ExportFormat) => {
+    if (!cabinet) return;
+
     setIsExporting(true);
     setExportProgress(`Generating ${format.toUpperCase()}...`);
-    
-    // Simulate export
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setExportProgress(`${format.toUpperCase()} exported successfully!`);
+
+    try {
+      switch (format) {
+        case 'cutlist': {
+          const csv = generateCutListCsv(cabinet);
+          const timestamp = new Date().toISOString().slice(0, 10);
+          downloadFile(csv, `cutlist_${cabinet.id?.slice(0, 8) || 'cabinet'}_${timestamp}.csv`);
+          break;
+        }
+        case 'bom': {
+          // Generate BOM (simplified)
+          const bom = JSON.stringify({
+            cabinetId: cabinet.id,
+            dimensions: cabinet.dimensions,
+            materials: cabinet.materials,
+            panelCount: cabinet.panels?.length || 0,
+            computed: cabinet.computed,
+            generatedAt: new Date().toISOString()
+          }, null, 2);
+          downloadFile(bom, `bom_${cabinet.id?.slice(0, 8) || 'cabinet'}.json`, 'application/json');
+          break;
+        }
+        case 'dxf': {
+          // AGENT-T008: DXF export via OperationGraph (manufacturing intent, NOT cabinet geometry)
+          const selectedPanels = cabinet.panels?.filter((p: CabinetPanel) =>
+            panelStates.get(p.id)?.selected ?? true
+          ) || [];
+
+          if (selectedPanels.length === 0) {
+            alert('No panels selected for export');
+            break;
+          }
+
+          setIsDxfExporting(true);
+          setDxfProgress({ current: 0, total: selectedPanels.length, name: 'Generating packet...' });
+
+          // Update panel states to exporting
+          setPanelStates((prev) => {
+            const newMap = new Map(prev);
+            for (const panel of selectedPanels) {
+              const state = newMap.get(panel.id);
+              if (state) {
+                newMap.set(panel.id, { ...state, status: 'exporting' });
+              }
+            }
+            return newMap;
+          });
+
+          try {
+            // Step 1: Generate factory packet preview (builds OperationGraph internally)
+            const preview = await factoryPacket.generatePreview();
+            if (!preview) {
+              throw new Error(factoryPacket.error || 'Failed to generate factory packet');
+            }
+
+            setDxfProgress({ current: 0, total: selectedPanels.length, name: 'Building DXF from operations...' });
+
+            // Step 2: Check if OperationGraph DXF export is available
+            const availability = canExportDxfFromOperationGraph(preview.parsed.drillmap ? {
+              manifest: preview.manifest,
+              drillMap: preview.parsed.drillmap,
+              connectors: preview.parsed.connectorsMinifix!,
+              cutList: preview.parsed.cutlist!,
+              gateResult: preview.parsed.gateResult!,
+            } : null);
+
+            if (!availability.available) {
+              // Fallback to legacy export if OperationGraph not available
+              console.warn('[DXF Export] OperationGraph not available, using legacy Cabinet export:', availability.reason);
+              await quickDxfExport(cabinet, {
+                includeSystem32: true,
+                includeBackGroove: true,
+                includeHingeCups: true,
+                includeConfirmat: true,
+                includeDimensions: true,
+                includePartInfo: true,
+                machineProfile: MACHINE_PROFILES[machineProfileId],
+                selectedPanelIds: selectedPanels.map((p: CabinetPanel) => p.id),
+                onPanelProgress: (panelId: string, panelName: string, index: number, total: number) => {
+                  setDxfProgress({ current: index + 1, total, name: panelName });
+                  setPanelStates((prev) => {
+                    const newMap = new Map(prev);
+                    const state = newMap.get(panelId);
+                    if (state) {
+                      newMap.set(panelId, { ...state, status: 'done' });
+                    }
+                    return newMap;
+                  });
+                },
+              });
+            } else {
+              // Step 3: Export DXF via OperationGraph (source of truth - T008 compliant)
+              const packet = {
+                manifest: preview.manifest,
+                drillMap: preview.parsed.drillmap!,
+                connectors: preview.parsed.connectorsMinifix!,
+                cutList: preview.parsed.cutlist!,
+                gateResult: preview.parsed.gateResult!,
+              };
+
+              await downloadDxfZipFromPacket(packet, {
+                machineId: machineProfileId,
+                selectedPanelIds: selectedPanels.map((p: CabinetPanel) => p.id),
+                includeMetadata: true,
+                onPanelProgress: (panelId: string, panelName: string, index: number, total: number) => {
+                  setDxfProgress({ current: index, total, name: panelName });
+
+                  // Update individual panel status
+                  setPanelStates((prev) => {
+                    const newMap = new Map(prev);
+                    const state = newMap.get(panelId);
+                    if (state) {
+                      newMap.set(panelId, { ...state, status: 'done' });
+                    }
+                    return newMap;
+                  });
+                },
+              });
+            }
+
+            // Mark all selected panels as done
+            setPanelStates((prev) => {
+              const newMap = new Map(prev);
+              for (const panel of selectedPanels) {
+                const state = newMap.get(panel.id);
+                if (state) {
+                  newMap.set(panel.id, { ...state, status: 'done' });
+                }
+              }
+              return newMap;
+            });
+          } catch (err) {
+            console.error('[DXF Export] Error:', err);
+            // Mark failed panels
+            setPanelStates((prev) => {
+              const newMap = new Map(prev);
+              for (const panel of selectedPanels) {
+                const state = newMap.get(panel.id);
+                if (state && state.status === 'exporting') {
+                  newMap.set(panel.id, { ...state, status: 'error' });
+                }
+              }
+              return newMap;
+            });
+            throw err;
+          } finally {
+            setIsDxfExporting(false);
+          }
+          break;
+        }
+        case 'cnc':
+        case 'pdf':
+          // These require RELEASED state - show message
+          await new Promise(resolve => setTimeout(resolve, 500));
+          alert(`${format.toUpperCase()} export requires full pipeline integration (coming soon)`);
+          break;
+      }
+
+      setExportProgress(`${format.toUpperCase()} exported successfully!`);
+    } catch (error) {
+      setExportProgress(`Export failed: ${error}`);
+    }
+
     setTimeout(() => {
       setIsExporting(false);
       setExportProgress(null);
     }, 2000);
-  };
-  
-  const handleGateAction = () => {
-    if (gateStatus === 'DRAFT' && canFreeze) {
-      onGateChange('FROZEN');
-    } else if (gateStatus === 'FROZEN' && canRelease) {
-      onGateChange('RELEASED');
+  }, [cabinet]);
+
+  // Gate action handler (P2.2 + Phase B1 - wired to store with Safety Gate enforcement)
+  const handleGateAction = useCallback(() => {
+    // Check Safety Gate blockers first (Phase B1)
+    if (gateStatus === 'DRAFT') {
+      if (exportGate.hasRun && exportGate.blockerCount > 0) {
+        // Safety Gate has blockers - show modal
+        setBlockerModalAction('freeze');
+        setBlockerModalOpen(true);
+        return;
+      }
+      if (canFreeze) {
+        freezeSpec();
+      }
     } else if (gateStatus === 'FROZEN') {
-      onGateChange('DRAFT'); // Unfreeze
+      if (exportGate.hasRun && exportGate.blockerCount > 0) {
+        // Safety Gate has blockers - show modal
+        setBlockerModalAction('release');
+        setBlockerModalOpen(true);
+        return;
+      }
+      if (canRelease) {
+        releaseSpec();
+      } else {
+        unfreezeSpec(); // Back to DRAFT
+      }
     }
-  };
-  
+  }, [gateStatus, canFreeze, canRelease, freezeSpec, releaseSpec, unfreezeSpec, exportGate]);
+
   return (
     <div className="h-full flex flex-col">
       {/* Gate Status */}
@@ -309,21 +984,21 @@ export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
             {gateStatus}
           </span>
         </div>
-        
+
         {/* Gate Progress */}
         <div className="flex items-center gap-2 mb-4">
           {(['DRAFT', 'FROZEN', 'RELEASED'] as GateStatus[]).map((status, i) => (
             <React.Fragment key={status}>
               <div className={`flex-1 h-2 rounded-full transition-colors
-                ${gateStatus === status ? 'bg-emerald-500' : 
+                ${gateStatus === status ? 'bg-emerald-500' :
                   (['DRAFT', 'FROZEN', 'RELEASED'].indexOf(gateStatus) > i ? 'bg-emerald-500/50' : 'bg-zinc-700')
-                }`} 
+                }`}
               />
               {i < 2 && <div className="w-4" />}
             </React.Fragment>
           ))}
         </div>
-        
+
         {/* Gate Action Button */}
         <button
           onClick={handleGateAction}
@@ -339,8 +1014,38 @@ export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
           {gateStatus === 'FROZEN' && 'Release for Production'}
           {gateStatus === 'RELEASED' && 'Spec Released ✓'}
         </button>
+
+        {/* Safety Gate Status (Phase B1) */}
+        {exportGate.hasRun && (
+          <div className={`mt-3 p-2 rounded-lg text-xs flex items-center justify-between
+            ${exportGate.blockerCount > 0
+              ? 'bg-red-500/10 border border-red-500/30'
+              : 'bg-emerald-500/10 border border-emerald-500/30'
+            }`}
+          >
+            <span className={exportGate.blockerCount > 0 ? 'text-red-400' : 'text-emerald-400'}>
+              {exportGate.blockerCount > 0
+                ? `⚠ Safety Gate: ${exportGate.blockerCount} blocker(s)`
+                : '✓ Safety Gate: Passed'
+              }
+            </span>
+            {exportGate.blockerCount > 0 && (
+              <button
+                onClick={exportGate.openFirstBlocker}
+                className="text-red-300 hover:text-red-200 underline"
+              >
+                View Issues
+              </button>
+            )}
+          </div>
+        )}
+        {!exportGate.hasRun && (
+          <div className="mt-3 p-2 rounded-lg text-xs bg-zinc-800 border border-zinc-700 text-zinc-500">
+            Safety Gate not run yet
+          </div>
+        )}
       </div>
-      
+
       {/* Validation Results */}
       <Section title="Validation" status={overallStatus}>
         <div className="space-y-2">
@@ -349,11 +1054,137 @@ export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
           ))}
         </div>
       </Section>
-      
+
+      {/* DXF Export Options (T008 enhanced) */}
+      <Section title="DXF Export" status={gateStatus === 'FROZEN' || gateStatus === 'RELEASED' ? 'ok' : 'warning'}>
+        <div className="space-y-4">
+          {/* Machine Profile Selector */}
+          <MachineProfileSelector
+            selectedId={machineProfileId}
+            onChange={setMachineProfileId}
+            disabled={isDxfExporting || gateStatus === 'DRAFT'}
+          />
+
+          {/* Panel Selection */}
+          {cabinet?.panels && cabinet.panels.length > 0 && (
+            <PanelSelectionList
+              panels={cabinet.panels}
+              panelStates={panelStates}
+              onToggle={handlePanelToggle}
+              onToggleAll={handlePanelToggleAll}
+              disabled={isDxfExporting || gateStatus === 'DRAFT'}
+            />
+          )}
+
+          {/* DXF Export Button */}
+          <button
+            onClick={() => handleExport('dxf')}
+            disabled={isDxfExporting || gateStatus === 'DRAFT'}
+            className={`w-full py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
+              ${gateStatus !== 'DRAFT' && !isDxfExporting
+                ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer'
+                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              }`}
+          >
+            <span className="text-lg">📐</span>
+            {isDxfExporting ? 'Exporting...' : 'Generate DXF Files'}
+          </button>
+
+          {gateStatus === 'DRAFT' && (
+            <p className="text-xs text-amber-400 text-center">
+              ⚠️ Freeze spec to enable DXF export
+            </p>
+          )}
+        </div>
+      </Section>
+
+      {/* DXF Export Progress */}
+      <DxfExportProgress
+        currentPanel={dxfProgress.current}
+        totalPanels={dxfProgress.total}
+        currentName={dxfProgress.name}
+        isExporting={isDxfExporting}
+      />
+
+      {/* Factory Packet (Phase B3) */}
+      <Section title="Factory Packet" status={exportGate.canFreeze ? 'ok' : 'warning'}>
+        <div className="space-y-3">
+          <p className="text-xs text-zinc-400">
+            Complete manufacturing package with drill maps, cut list, connectors, and gate results.
+          </p>
+
+          {/* Preview Button */}
+          <button
+            onClick={async () => {
+              const preview = await factoryPacket.generatePreview();
+              if (preview) {
+                setPreviewModalOpen(true);
+              }
+            }}
+            disabled={factoryPacket.isPreviewing || !cabinet?.panels?.length}
+            className={`w-full py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
+              ${!factoryPacket.isPreviewing && cabinet?.panels?.length
+                ? 'bg-purple-500 hover:bg-purple-600 text-white cursor-pointer'
+                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              }`}
+          >
+            {factoryPacket.isPreviewing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Generating Preview...
+              </>
+            ) : (
+              <>
+                <span>📦</span>
+                Preview Factory Packet
+              </>
+            )}
+          </button>
+
+          {/* Direct Download Button */}
+          <button
+            onClick={() => factoryPacket.generateAndDownload()}
+            disabled={factoryPacket.isGenerating || !cabinet?.panels?.length}
+            className={`w-full py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2
+              ${!factoryPacket.isGenerating && cabinet?.panels?.length
+                ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300 cursor-pointer border border-zinc-600'
+                : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
+              }`}
+          >
+            {factoryPacket.isGenerating ? (
+              <>
+                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <span>⬇</span>
+                Download ZIP Directly
+              </>
+            )}
+          </button>
+
+          {/* Error Display */}
+          {factoryPacket.error && (
+            <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+              {factoryPacket.error}
+            </div>
+          )}
+
+          {/* Last Result Info */}
+          {factoryPacket.lastResult && (
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex justify-between">
+              <span>✓ Last export: {factoryPacket.lastResult.filename}</span>
+              <span>{(factoryPacket.lastResult.compressedSize / 1024).toFixed(1)} KB</span>
+            </div>
+          )}
+        </div>
+      </Section>
+
       {/* Export Options */}
-      <Section title="Export">
+      <Section title="Other Exports">
         <div className="space-y-2">
-          {EXPORT_OPTIONS.map((option) => (
+          {EXPORT_OPTIONS.filter(o => o.id !== 'dxf').map((option) => (
             <ExportButton
               key={option.id}
               option={option}
@@ -363,7 +1194,7 @@ export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
           ))}
         </div>
       </Section>
-      
+
       {/* Export Progress */}
       {exportProgress && (
         <div className="p-4 bg-emerald-500/10 border-t border-emerald-500/30">
@@ -373,6 +1204,28 @@ export function ExportPanel({ gateStatus, onGateChange }: ExportPanelProps) {
           </div>
         </div>
       )}
+
+      {/* Safety Gate Blocker Modal (Phase B1) */}
+      <GateBlockerModal
+        isOpen={blockerModalOpen}
+        onClose={() => setBlockerModalOpen(false)}
+        attemptedAction={blockerModalAction}
+      />
+
+      {/* Factory Packet Preview Modal (Phase B3) */}
+      <PacketPreviewModal
+        open={previewModalOpen}
+        onClose={() => {
+          setPreviewModalOpen(false);
+          factoryPacket.clearPreview();
+        }}
+        preview={factoryPacket.lastPreview}
+        onDownload={async () => {
+          await factoryPacket.downloadPreview();
+          setPreviewModalOpen(false);
+        }}
+        isDownloading={factoryPacket.isGenerating}
+      />
     </div>
   );
 }

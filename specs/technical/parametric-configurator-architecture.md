@@ -1,6 +1,6 @@
 # รายงานการวิจัยฉบับสมบูรณ์: สถาปัตยกรรมระบบ 3D Configurator แบบ Parametric สำหรับงานเฟอร์นิเจอร์ใน React Three Fiber
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -738,7 +738,7 @@ void main() {
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Technical Team
+- **Owner:** MONOLITH Technical Team
 - **Status:** ✅ Active
 - **Classification:** Advanced Engineering Research
 - **Prerequisites:** Strong understanding of 3D graphics, WebGL, GLSL, Linear Algebra

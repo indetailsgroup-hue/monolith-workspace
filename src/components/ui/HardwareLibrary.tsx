@@ -19,6 +19,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { z } from 'zod';
 import { MinifixConfigPanel, MinifixFullConfig, DEFAULT_MINIFIX_CONFIG, CAM_SPECS_BY_WOOD_THICKNESS } from './MinifixConfigPanel';
+import { TargetJ10ConfigPanel, TargetJ10FullConfig, DEFAULT_TARGET_J10_CONFIG } from './TargetJ10ConfigPanel';
 import {
   HardwareLibrary as HardwareLibraryType,
   HardwareKind,
@@ -812,7 +813,7 @@ interface ConnectorPreset {
   name: string;
   nameTh: string;
   brand: string;
-  kind: 'MINIFIX' | 'DOWEL' | 'CONFIRMAT';
+  kind: 'MINIFIX' | 'TARGET_J' | 'DOWEL' | 'CONFIRMAT';
   specs: {
     diameter: number;
     depth?: number;
@@ -897,6 +898,27 @@ const CONNECTOR_PRESETS: ConnectorPreset[] = [
     specs: { diameter: 7, length: 70 },
     description: 'Long Confirmat for thick panels',
     price: 7,
+  },
+  // Target J (Italiana Ferramenta)
+  {
+    id: 'if-target-j10',
+    name: 'Target J10',
+    nameTh: 'ทาร์เก็ต เจ10',
+    brand: 'Italiana Ferramenta',
+    kind: 'TARGET_J',
+    specs: { diameter: 10, depth: 13, camDia: 10, camDepth: 13 },
+    description: 'Pinion connector with B=A-25 transform (18mm wood)',
+    price: 35,
+  },
+  {
+    id: 'if-target-j10-b34',
+    name: 'Target J10 (B34)',
+    nameTh: 'ทาร์เก็ต เจ10 (B34)',
+    brand: 'Italiana Ferramenta',
+    kind: 'TARGET_J',
+    specs: { diameter: 10, depth: 13, camDia: 10, camDepth: 13 },
+    description: 'Target J10 with 34mm distance B',
+    price: 35,
   },
 ];
 
@@ -1187,6 +1209,7 @@ function SavedPresetCard({ preset, isSelected, onSelect, onEdit, onDelete, onApp
 
 interface ConnectorsSectionProps {
   onOpenMinifixConfig: (editingPreset?: MinifixConfigPreset) => void;
+  onOpenTargetJ10Config: () => void;
   selectedConnectors: string[];
   onSelectConnector: (id: string) => void;
   savedMinifixPresets: MinifixConfigPreset[];
@@ -1197,6 +1220,7 @@ interface ConnectorsSectionProps {
 
 function ConnectorsSection({
   onOpenMinifixConfig,
+  onOpenTargetJ10Config,
   selectedConnectors,
   onSelectConnector,
   savedMinifixPresets,
@@ -1205,6 +1229,7 @@ function ConnectorsSection({
   onResetPresetToFactory,
 }: ConnectorsSectionProps) {
   const minifixPresets = CONNECTOR_PRESETS.filter((p) => p.kind === 'MINIFIX');
+  const targetJPresets = CONNECTOR_PRESETS.filter((p) => p.kind === 'TARGET_J');
   const dowelPresets = CONNECTOR_PRESETS.filter((p) => p.kind === 'DOWEL');
   const confirmatPresets = CONNECTOR_PRESETS.filter((p) => p.kind === 'CONFIRMAT');
 
@@ -1258,6 +1283,35 @@ function ConnectorsSection({
               isSelected={selectedConnectors.includes(preset.id)}
               onSelect={() => onSelectConnector(preset.id)}
               onConfigure={preset.kind === 'MINIFIX' ? () => onOpenMinifixConfig() : undefined}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Target J */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] text-emerald-400 font-medium">Target J Connectors</span>
+          <button
+            onClick={() => onOpenTargetJ10Config()}
+            className="text-[9px] text-gray-500 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/5"
+          >
+            <Settings size={10} />
+            Configure J10
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {targetJPresets.map((preset) => (
+            <PresetCard
+              key={preset.id}
+              name={preset.name}
+              nameTh={preset.nameTh}
+              brand={preset.brand}
+              specs={`Pinion: ${preset.specs.camDia}mm × ${preset.specs.camDepth}mm`}
+              price={preset.price}
+              isSelected={selectedConnectors.includes(preset.id)}
+              onSelect={() => onSelectConnector(preset.id)}
+              onConfigure={() => onOpenTargetJ10Config()}
             />
           ))}
         </div>
@@ -1350,6 +1404,8 @@ interface HardwareLibraryProps {
 export function HardwareLibraryPanel({ onSelectionChange }: HardwareLibraryProps) {
   const [openSections, setOpenSections] = useState<string[]>(['connectors']);
   const [showMinifixConfig, setShowMinifixConfig] = useState(false);
+  const [showTargetJ10Config, setShowTargetJ10Config] = useState(false);
+  const [currentTargetJ10Config, setCurrentTargetJ10Config] = useState<TargetJ10FullConfig>(DEFAULT_TARGET_J10_CONFIG);
   const [editingPreset, setEditingPreset] = useState<MinifixConfigPreset | null>(null);
 
   // Cabinet store for hardware config persistence
@@ -1694,6 +1750,31 @@ export function HardwareLibraryPanel({ onSelectionChange }: HardwareLibraryProps
         </div>
       </FullscreenModal>
 
+      {/* Fullscreen Target J10 Config Modal */}
+      <FullscreenModal
+        isOpen={showTargetJ10Config}
+        onClose={() => setShowTargetJ10Config(false)}
+        title="Target J10 Configuration"
+      >
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-hidden">
+            <TargetJ10ConfigPanel
+              onClose={() => setShowTargetJ10Config(false)}
+              onConfigChange={setCurrentTargetJ10Config}
+              initialConfig={currentTargetJ10Config}
+            />
+          </div>
+          <div className="px-4 py-2 border-t border-[#3a4a5a] bg-[#152030] flex items-center justify-end">
+            <button
+              onClick={() => setShowTargetJ10Config(false)}
+              className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-[#3a4a5a] rounded hover:bg-white/5"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </FullscreenModal>
+
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-2 border-b border-[#333]">
@@ -1720,6 +1801,7 @@ export function HardwareLibraryPanel({ onSelectionChange }: HardwareLibraryProps
           >
             <ConnectorsSection
               onOpenMinifixConfig={handleOpenMinifixConfig}
+              onOpenTargetJ10Config={() => setShowTargetJ10Config(true)}
               selectedConnectors={selectedConnectors}
               onSelectConnector={toggleConnector}
               savedMinifixPresets={savedMinifixPresets}

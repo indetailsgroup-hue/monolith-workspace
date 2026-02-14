@@ -1,6 +1,6 @@
 # รายงานเชิงกลยุทธ์: การปฏิวัติสู่ยุค Web-First และความจำเป็นในการลงทุนกับ React Three Fiber (R3F)
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -427,5 +427,5 @@ Web-First + R3F + WebGPU = Future-Proof Platform
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Strategy Team
+- **Owner:** MONOLITH Strategy Team
 - **Status:** ✅ Active

@@ -10,7 +10,7 @@
 
 ## บทนำ (Introduction)
 
-เอกสารนี้เป็น **Single Source of Truth** สำหรับข้อมูลอุปกรณ์ทั้งหมดในระบบ IIMOS Designer เพื่อแก้ปัญหา:
+เอกสารนี้เป็น **Single Source of Truth** สำหรับข้อมูลอุปกรณ์ทั้งหมดในระบบ MONOLITH Designer เพื่อแก้ปัญหา:
 - Hardware Database ซ้ำซ้อนในหลายเอกสาร
 - ข้อมูลไม่ sync กัน
 - ไม่มี Häfele cross-reference

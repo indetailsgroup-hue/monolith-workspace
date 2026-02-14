@@ -3,7 +3,7 @@
  * 
  * ARCHITECTURE (North Star v4.0):
  * - Part of SmartPanel Module (Module A)
- * - Implements "True-Grain™" concept from IIMOS documentation
+ * - Implements "True-Grain™" concept from MONOLITH documentation
  * - All dimensions in millimeters (mm)
  * 
  * FEATURES:

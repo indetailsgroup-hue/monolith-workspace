@@ -7,10 +7,21 @@
  * Precedence: Bundle policy > Installed policy > None
  *
  * Admin session required for install/clear operations (enforced in UI).
+ *
+ * G9 COMPLIANCE: Uses unsafeStorage boundary for localStorage access.
  */
 
-const LS_INSTALLED_POLICY = 'iimos.installed.revocationPolicy.json.v1';
-const LS_INSTALLED_META = 'iimos.installed.revocationPolicy.meta.v1';
+import {
+  readString,
+  readValidatedSafe,
+  writeRaw,
+  writeJson,
+  remove,
+} from '../../core/persistence/unsafeStorage';
+import { z } from 'zod';
+
+const LS_INSTALLED_POLICY = 'monolith.installed.revocationPolicy.json.v1';
+const LS_INSTALLED_META = 'monolith.installed.revocationPolicy.meta.v1';
 
 /**
  * Metadata about installed policy
@@ -27,6 +38,16 @@ export type InstalledPolicyMeta = {
 };
 
 /**
+ * Zod schema for InstalledPolicyMeta validation
+ */
+const InstalledPolicyMetaSchema = z.object({
+  installedAtIso: z.string().refine(s => !isNaN(Date.parse(s)), { message: 'Invalid ISO timestamp' }),
+  installedBy: z.string(),
+  source: z.enum(['IMPORT', 'BUNDLE_INSTALL']),
+  note: z.string().optional(),
+});
+
+/**
  * Get current ISO timestamp
  */
 function nowIso(): string {
@@ -39,7 +60,7 @@ function nowIso(): string {
  * @returns Policy JSON string or null if not installed
  */
 export function getInstalledPolicyJson(): string | null {
-  return localStorage.getItem(LS_INSTALLED_POLICY);
+  return readString(LS_INSTALLED_POLICY);
 }
 
 /**
@@ -48,20 +69,16 @@ export function getInstalledPolicyJson(): string | null {
  * @returns Metadata or null if not installed
  */
 export function getInstalledPolicyMeta(): InstalledPolicyMeta | null {
-  const raw = localStorage.getItem(LS_INSTALLED_META);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as InstalledPolicyMeta;
-  } catch {
-    return null;
-  }
+  const result = readValidatedSafe(LS_INSTALLED_META, InstalledPolicyMetaSchema);
+  if (!result.ok) return null;
+  return result.data;
 }
 
 /**
  * Check if a policy is installed
  */
 export function hasInstalledPolicy(): boolean {
-  return !!localStorage.getItem(LS_INSTALLED_POLICY);
+  return !!readString(LS_INSTALLED_POLICY);
 }
 
 /**
@@ -80,7 +97,7 @@ export function installPolicyJson(
     note?: string;
   }
 ): void {
-  localStorage.setItem(LS_INSTALLED_POLICY, policyJson);
+  writeRaw(LS_INSTALLED_POLICY, policyJson);
 
   const meta: InstalledPolicyMeta = {
     installedAtIso: nowIso(),
@@ -89,7 +106,7 @@ export function installPolicyJson(
     note: input.note,
   };
 
-  localStorage.setItem(LS_INSTALLED_META, JSON.stringify(meta, null, 2));
+  writeJson(LS_INSTALLED_META, meta);
 }
 
 /**
@@ -98,7 +115,7 @@ export function installPolicyJson(
  * @param by - Who cleared the policy
  */
 export function clearInstalledPolicy(by: string): void {
-  localStorage.removeItem(LS_INSTALLED_POLICY);
+  remove(LS_INSTALLED_POLICY);
 
   // Keep metadata to track who cleared it
   const meta: InstalledPolicyMeta = {
@@ -108,7 +125,7 @@ export function clearInstalledPolicy(by: string): void {
     note: 'cleared',
   };
 
-  localStorage.setItem(LS_INSTALLED_META, JSON.stringify(meta, null, 2));
+  writeJson(LS_INSTALLED_META, meta);
 }
 
 /**

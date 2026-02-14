@@ -1,0 +1,108 @@
+name: Monolith Gate Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "src/gate/**"
+      - "src/core/manufacturing/drillMap/**"
+      - "vitest.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/gate-tests.yml"
+  pull_request:
+    paths:
+      - "src/gate/**"
+      - "src/core/manufacturing/drillMap/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Gate Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeCheck Gate Module
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Run Gate Tests
+        run: npm run test:gate
+
+      - name: Run Gate Tests with Coverage
+        run: npm run test:gate:coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-coverage-report
+          path: coverage/
+          retention-days: 14
+
+  minifix-connector-tests:
+    name: Minifix Connector Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Minifix Tests
+        run: npm run test:minifix
+
+      - name: Run Property Tests (Extended)
+        run: npx vitest run src/gate/rules/connectors/__tests__/validateMinifixGate.property.spec.ts --reporter=verbose
+
+      - name: Run Multi-Pair Stress Test
+        run: npx vitest run src/gate/rules/connectors/__tests__/validateMinifixGate.multipair.spec.ts --reporter=verbose
+
+  snapshot-check:
+    name: Snapshot Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snapshot Tests
+        run: npx vitest run src/gate/rules/connectors/__tests__/validateMinifixGate.snapshot.spec.ts --reporter=verbose
+
+      - name: Verify No Snapshot Changes
+        run: |
+          if git diff --name-only | grep -q "__snapshots__"; then
+            echo "::error::Snapshot files changed - commit the updated snapshots or review test changes"
+            git diff --stat
+            exit 1
+          fi
+          echo "✓ No snapshot changes detected"

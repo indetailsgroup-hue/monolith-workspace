@@ -85,7 +85,7 @@ export function IncidentBanner({
 
       {/* Action */}
       <a
-        href="mailto:security@iimos.com"
+        href="mailto:security@monolith.com"
         style={{
           padding: "8px 16px",
           backgroundColor: "#ef4444",

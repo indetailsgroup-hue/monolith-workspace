@@ -1,7 +1,7 @@
 /**
  * Plasticity-Style Modeling Types
  *
- * Core types for the "Plasticity UX on IIMOS Core" approach.
+ * Core types for the "Plasticity UX on MONOLITH Core" approach.
  * Designer thinks in shapes → System records as Manufacturing Intent
  *
  * v1.0: Initial modeling layer types

@@ -1,90 +1,141 @@
 /**
- * buildTimeline.ts - Build Acceptance Timeline
+ * buildTimeline.ts - Build Acceptance Timeline from Chain
  *
- * Converts a manifest chain into a human-readable timeline
- * of events (approvals, freezes, releases, exports, receipts).
+ * ARCHITECTURE:
+ * - Load manifest chain
+ * - Classify each manifest into ChainEvent
+ * - Build timeline with diff information
+ * - Calculate acceptance status
  *
- * @version 1.0.0
+ * TIMELINE FEATURES:
+ * - Events in chronological order (oldest to newest for display)
+ * - Diff between consecutive manifests
+ * - Summary statistics
+ * - Milestone markers
  */
 
 import type { SignedJobManifest } from '../trust/manifestChainTypes';
+import type { ChainEvent, ChainEventKind } from './chainEventTypes';
+import { classifyChain, isAuditableEvent } from './classifyManifest';
+import { deriveAcceptanceStatus, type AcceptanceInfo } from './acceptanceStatus';
 
 // ============================================
-// TYPES
+// TIMELINE TYPES
 // ============================================
 
 /**
- * Timeline event type
+ * Diff between two chain states
  */
-export type TimelineEventType =
-  | 'GENESIS'
-  | 'APPROVAL'
-  | 'FREEZE'
-  | 'RELEASE'
-  | 'UNFREEZE'
-  | 'EXPORT'
-  | 'FACTORY_RECEIPT'
-  | 'REVISION_FORK'
-  | 'ISSUE_UPDATE';
+export interface ChainDiff {
+  /** Spec state changed */
+  specStateChanged: boolean;
+  prevSpecState?: string;
 
-/**
- * Single timeline event
- */
-export interface TimelineEvent {
-  /** Event type */
-  type: TimelineEventType;
-  /** Event timestamp */
-  timestamp: string;
-  /** Manifest hash that produced this event */
-  manifestHashHex: string;
-  /** Human-readable summary */
-  summary: string;
-  /** Additional data */
-  details?: Record<string, unknown>;
+  /** Exports count changed */
+  exportsChanged: boolean;
+  exportsDelta: number;
+
+  /** Receipts count changed */
+  receiptsChanged: boolean;
+  receiptsDelta: number;
+
+  /** Gate status changed */
+  gateChanged: boolean;
+
+  /** Collision status changed */
+  collisionChanged: boolean;
+
+  /** Snapshot hash changed (geometry/params) */
+  snapshotChanged: boolean;
 }
 
 /**
- * Acceptance status derived from timeline
+ * Timeline entry with event and diff
  */
-export interface AcceptanceStatus {
-  /** Current spec state */
-  specState: 'DRAFT' | 'FROZEN' | 'RELEASED';
-  /** Last factory verdict */
-  lastVerdict?: 'ACCEPTED' | 'REJECTED';
-  /** Whether there are unresolved issues */
-  hasBlockingIssues: boolean;
+export interface TimelineEntry {
+  /** Chain event */
+  event: ChainEvent;
+
+  /** Index in timeline (0 = oldest) */
+  index: number;
+
+  /** Is HEAD (newest) */
+  isHead: boolean;
+
+  /** Is genesis (oldest) */
+  isGenesis: boolean;
+
+  /** Diff from previous manifest */
+  diff: ChainDiff | null;
+
+  /** Formatted timestamp */
+  formattedTime: string;
+
+  /** Relative time (e.g., "2 hours ago") */
+  relativeTime: string;
 }
 
 /**
- * Timeline milestone
- */
-export interface Milestone {
-  /** Milestone name */
-  name: string;
-  /** Whether reached */
-  reached: boolean;
-  /** When reached */
-  timestamp?: string;
-}
-
-/**
- * Complete acceptance timeline
+ * Complete timeline with entries and summary
  */
 export interface AcceptanceTimeline {
   /** Job ID */
   jobId: string;
-  /** All events in chronological order */
-  events: TimelineEvent[];
-  /** Current acceptance status */
-  acceptance: AcceptanceStatus;
-  /** Key milestones */
-  milestones: Milestone[];
+
+  /** Timeline entries (oldest to newest) */
+  entries: TimelineEntry[];
+
+  /** Acceptance status */
+  acceptance: AcceptanceInfo;
+
   /** Summary statistics */
-  summary?: {
-    totalManifests: number;
-    totalReceipts: number;
-    totalExports: number;
-  };
+  summary: TimelineSummary;
+
+  /** Milestone events */
+  milestones: TimelineMilestone[];
+}
+
+/**
+ * Timeline summary statistics
+ */
+export interface TimelineSummary {
+  /** Total manifest count */
+  totalManifests: number;
+
+  /** Event counts by kind */
+  eventCounts: Record<ChainEventKind, number>;
+
+  /** Total exports */
+  totalExports: number;
+
+  /** Total receipts */
+  totalReceipts: number;
+
+  /** Chain start time */
+  startedIso: string | null;
+
+  /** Chain end time (HEAD) */
+  latestIso: string | null;
+
+  /** Duration in milliseconds */
+  durationMs: number | null;
+}
+
+/**
+ * Timeline milestone (significant event)
+ */
+export interface TimelineMilestone {
+  /** Milestone type */
+  type: 'genesis' | 'first_export' | 'freeze' | 'release' | 'first_receipt' | 'accepted' | 'rejected';
+
+  /** Event reference */
+  event: ChainEvent;
+
+  /** Milestone label */
+  label: string;
+
+  /** Timestamp */
+  timestampIso: string;
 }
 
 // ============================================
@@ -92,173 +143,295 @@ export interface AcceptanceTimeline {
 // ============================================
 
 /**
- * Build an acceptance timeline from a manifest chain
+ * Build acceptance timeline from manifest chain
  *
- * @param chain - Manifests in chronological order (genesis first)
- * @param jobId - Job ID
+ * @param chain - Manifest chain (newest first)
+ * @param jobId - Job identifier
+ * @returns Complete timeline
  */
 export function buildTimeline(
   chain: SignedJobManifest[],
   jobId: string
 ): AcceptanceTimeline {
-  const events: TimelineEvent[] = [];
-  let prevSpecState: string | undefined;
+  // Classify chain into events (newest first)
+  const events = classifyChain(chain);
 
-  for (let i = 0; i < chain.length; i++) {
-    const manifest = chain[i];
-    const timestamp = manifest.createdIso;
+  // Reverse for chronological order (oldest first)
+  const chronological = [...events].reverse();
 
-    // Genesis event
-    if (i === 0 && manifest.prevManifestHashHex === null) {
-      events.push({
-        type: 'GENESIS',
-        timestamp,
-        manifestHashHex: manifest.manifestHashHex,
-        summary: 'Job created',
-      });
-    }
+  // Build entries with diffs
+  const entries: TimelineEntry[] = chronological.map((event, index) => {
+    const prevEvent = index > 0 ? chronological[index - 1] : null;
 
-    // Spec state changes
-    const specState = manifest.signedTrust?.trust?.spec?.state;
-    if (specState && specState !== prevSpecState) {
-      if (specState === 'FROZEN') {
-        events.push({
-          type: 'FREEZE',
-          timestamp,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: 'Spec frozen for review',
-        });
-      } else if (specState === 'RELEASED') {
-        events.push({
-          type: 'RELEASE',
-          timestamp,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: 'Spec released for factory',
-        });
-      } else if (specState === 'DRAFT' && prevSpecState === 'FROZEN') {
-        events.push({
-          type: 'UNFREEZE',
-          timestamp,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: 'Spec unfrozen for edits',
-        });
-      }
-      prevSpecState = specState;
-    }
+    return {
+      event,
+      index,
+      isHead: index === chronological.length - 1,
+      isGenesis: index === 0,
+      diff: prevEvent ? computeDiff(prevEvent, event) : null,
+      formattedTime: formatTimestamp(event.timestampIso),
+      relativeTime: getRelativeTime(event.timestampIso),
+    };
+  });
 
-    // Approval events (non-genesis commits)
-    if (i > 0 && manifest.signedTrust && !manifest.revision) {
-      const trust = manifest.signedTrust.trust;
-      if (trust.selectionIds.length > 0) {
-        events.push({
-          type: 'APPROVAL',
-          timestamp: manifest.signedTrust.timestampIso,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: `State approved: ${trust.selectionIds.length} cabinet(s)`,
-        });
-      }
-    }
+  // Derive acceptance status
+  const acceptance = deriveAcceptanceStatus(events);
 
-    // Export events
-    if (manifest.exports && manifest.exports.length > 0) {
-      const prevExports = i > 0 ? (chain[i - 1].exports?.length ?? 0) : 0;
-      if (manifest.exports.length > prevExports) {
-        events.push({
-          type: 'EXPORT',
-          timestamp,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: `Export bundle created (${manifest.exports.length} artifact(s))`,
-        });
-      }
-    }
+  // Build summary
+  const summary = buildSummary(events);
 
-    // Receipt events
-    if (manifest.receipts && manifest.receipts.length > 0) {
-      const prevReceipts = i > 0 ? (chain[i - 1].receipts?.length ?? 0) : 0;
-      for (let r = prevReceipts; r < manifest.receipts.length; r++) {
-        const receipt = manifest.receipts[r];
-        events.push({
-          type: 'FACTORY_RECEIPT',
-          timestamp: receipt.receipt.acceptedAtIso ?? timestamp,
-          manifestHashHex: manifest.manifestHashHex,
-          summary: `Factory ${receipt.receipt.verdict}: ${receipt.receipt.stationId ?? 'unknown station'}`,
-          details: {
-            verdict: receipt.receipt.verdict,
-            stationId: receipt.receipt.stationId,
-            receiptHash: receipt.receiptHashHex,
-          },
-        });
-      }
-    }
-
-    // Revision fork events
-    if (manifest.revision) {
-      events.push({
-        type: 'REVISION_FORK',
-        timestamp,
-        manifestHashHex: manifest.manifestHashHex,
-        summary: `Revision ${manifest.revision.revisionNumber}: ${manifest.revision.reason}`,
-        details: {
-          revisionNumber: manifest.revision.revisionNumber,
-          forkedFromJobId: manifest.revision.forkedFromJobId,
-        },
-      });
-    }
-  }
-
-  // Derive acceptance status from last manifest
-  const last = chain[chain.length - 1];
-  const specState = (last?.signedTrust?.trust?.spec?.state ?? 'DRAFT') as 'DRAFT' | 'FROZEN' | 'RELEASED';
-
-  const lastReceipt = last?.receipts?.[last.receipts.length - 1];
-  const lastVerdict = lastReceipt?.receipt?.verdict as 'ACCEPTED' | 'REJECTED' | undefined;
-
-  const allIssues = (last?.issuePacks ?? []).flatMap((p) => p.items);
-  const hasBlockingIssues = allIssues.some(
-    (i) => i.severity === 'ERROR' && (i.status === 'OPEN' || i.status === 'IN_PROGRESS')
-  );
-
-  // Build milestones
-  const milestones: Milestone[] = [
-    {
-      name: 'Created',
-      reached: chain.length > 0,
-      timestamp: chain[0]?.createdIso,
-    },
-    {
-      name: 'Frozen',
-      reached: events.some((e) => e.type === 'FREEZE'),
-      timestamp: events.find((e) => e.type === 'FREEZE')?.timestamp,
-    },
-    {
-      name: 'Released',
-      reached: events.some((e) => e.type === 'RELEASE'),
-      timestamp: events.find((e) => e.type === 'RELEASE')?.timestamp,
-    },
-    {
-      name: 'Exported',
-      reached: events.some((e) => e.type === 'EXPORT'),
-      timestamp: events.find((e) => e.type === 'EXPORT')?.timestamp,
-    },
-    {
-      name: 'Factory Accepted',
-      reached: events.some(
-        (e) => e.type === 'FACTORY_RECEIPT' && (e.details as { verdict?: string })?.verdict === 'ACCEPTED'
-      ),
-      timestamp: events.find(
-        (e) => e.type === 'FACTORY_RECEIPT' && (e.details as { verdict?: string })?.verdict === 'ACCEPTED'
-      )?.timestamp,
-    },
-  ];
+  // Extract milestones
+  const milestones = extractMilestones(events);
 
   return {
     jobId,
-    events,
-    acceptance: {
-      specState,
-      lastVerdict,
-      hasBlockingIssues,
-    },
+    entries,
+    acceptance,
+    summary,
     milestones,
   };
+}
+
+// ============================================
+// DIFF COMPUTATION
+// ============================================
+
+/**
+ * Compute diff between two events
+ */
+function computeDiff(prev: ChainEvent, current: ChainEvent): ChainDiff {
+  return {
+    specStateChanged: prev.specState !== current.specState,
+    prevSpecState: prev.specState !== current.specState ? prev.specState : undefined,
+
+    exportsChanged: prev.exportsCount !== current.exportsCount,
+    exportsDelta: current.exportsCount - prev.exportsCount,
+
+    receiptsChanged: prev.receiptsCount !== current.receiptsCount,
+    receiptsDelta: current.receiptsCount - prev.receiptsCount,
+
+    gateChanged: prev.gateOk !== current.gateOk,
+    collisionChanged: prev.collisionBlocked !== current.collisionBlocked,
+
+    snapshotChanged: prev.snapshotHashHex !== current.snapshotHashHex,
+  };
+}
+
+// ============================================
+// SUMMARY BUILDER
+// ============================================
+
+/**
+ * Build timeline summary
+ */
+function buildSummary(events: ChainEvent[]): TimelineSummary {
+  const eventCounts: Record<ChainEventKind, number> = {
+    GENESIS: 0,
+    APPROVAL_COMMIT: 0,
+    FREEZE: 0,
+    UNFREEZE: 0,
+    RELEASE: 0,
+    EXPORT: 0,
+    FACTORY_RECEIPT: 0,
+    UNKNOWN: 0,
+  };
+
+  for (const event of events) {
+    eventCounts[event.kind]++;
+  }
+
+  const head = events[0];
+  const genesis = events[events.length - 1];
+
+  let durationMs: number | null = null;
+  if (head && genesis) {
+    const headTime = new Date(head.timestampIso).getTime();
+    const genesisTime = new Date(genesis.timestampIso).getTime();
+    durationMs = headTime - genesisTime;
+  }
+
+  return {
+    totalManifests: events.length,
+    eventCounts,
+    totalExports: head?.exportsCount ?? 0,
+    totalReceipts: head?.receiptsCount ?? 0,
+    startedIso: genesis?.timestampIso ?? null,
+    latestIso: head?.timestampIso ?? null,
+    durationMs,
+  };
+}
+
+// ============================================
+// MILESTONE EXTRACTION
+// ============================================
+
+/**
+ * Extract milestone events from chain
+ */
+function extractMilestones(events: ChainEvent[]): TimelineMilestone[] {
+  const milestones: TimelineMilestone[] = [];
+
+  // Track first occurrences
+  let firstExport: ChainEvent | null = null;
+  let firstReceipt: ChainEvent | null = null;
+  let firstFreeze: ChainEvent | null = null;
+  let firstRelease: ChainEvent | null = null;
+  let firstAccepted: ChainEvent | null = null;
+  let firstRejected: ChainEvent | null = null;
+
+  // Scan from oldest to newest
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+
+    if (event.kind === 'GENESIS') {
+      milestones.push({
+        type: 'genesis',
+        event,
+        label: 'Job Created',
+        timestampIso: event.timestampIso,
+      });
+    }
+
+    if (event.kind === 'EXPORT' && !firstExport) {
+      firstExport = event;
+      milestones.push({
+        type: 'first_export',
+        event,
+        label: 'First Export',
+        timestampIso: event.timestampIso,
+      });
+    }
+
+    if (event.kind === 'FREEZE' && !firstFreeze) {
+      firstFreeze = event;
+      milestones.push({
+        type: 'freeze',
+        event,
+        label: 'First Freeze',
+        timestampIso: event.timestampIso,
+      });
+    }
+
+    if (event.kind === 'RELEASE' && !firstRelease) {
+      firstRelease = event;
+      milestones.push({
+        type: 'release',
+        event,
+        label: 'Released',
+        timestampIso: event.timestampIso,
+      });
+    }
+
+    if (event.kind === 'FACTORY_RECEIPT') {
+      if (!firstReceipt) {
+        firstReceipt = event;
+        milestones.push({
+          type: 'first_receipt',
+          event,
+          label: 'Factory Receipt',
+          timestampIso: event.timestampIso,
+        });
+      }
+
+      if (event.receipt?.receipt.verdict === 'ACCEPTED' && !firstAccepted) {
+        firstAccepted = event;
+        milestones.push({
+          type: 'accepted',
+          event,
+          label: 'Factory Accepted',
+          timestampIso: event.timestampIso,
+        });
+      }
+
+      if (event.receipt?.receipt.verdict === 'REJECTED' && !firstRejected) {
+        firstRejected = event;
+        milestones.push({
+          type: 'rejected',
+          event,
+          label: 'Factory Rejected',
+          timestampIso: event.timestampIso,
+        });
+      }
+    }
+  }
+
+  // Sort by timestamp
+  milestones.sort(
+    (a, b) => new Date(a.timestampIso).getTime() - new Date(b.timestampIso).getTime()
+  );
+
+  return milestones;
+}
+
+// ============================================
+// FORMATTING HELPERS
+// ============================================
+
+/**
+ * Format timestamp for display
+ */
+function formatTimestamp(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return isoString;
+  }
+}
+
+/**
+ * Get relative time string
+ */
+function getRelativeTime(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    const seconds = Math.floor(diffMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'just now';
+  } catch {
+    return '';
+  }
+}
+
+// ============================================
+// TIMELINE FILTERS
+// ============================================
+
+/**
+ * Filter timeline to auditable events only
+ */
+export function filterAuditableEvents(timeline: AcceptanceTimeline): TimelineEntry[] {
+  return timeline.entries.filter((entry) => isAuditableEvent(entry.event.kind));
+}
+
+/**
+ * Filter timeline by event kind
+ */
+export function filterByKind(
+  timeline: AcceptanceTimeline,
+  kinds: ChainEventKind[]
+): TimelineEntry[] {
+  const kindSet = new Set(kinds);
+  return timeline.entries.filter((entry) => kindSet.has(entry.event.kind));
+}
+
+/**
+ * Get entries with state changes
+ */
+export function getStateChangeEntries(timeline: AcceptanceTimeline): TimelineEntry[] {
+  return timeline.entries.filter((entry) => entry.diff?.specStateChanged);
 }

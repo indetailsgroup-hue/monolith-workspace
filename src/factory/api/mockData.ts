@@ -23,7 +23,58 @@ import type {
   ExportRequest,
   ExportResponse as GatedExportResponse,
 } from "../components/export/exportTypes";
-import { getMockExportResponse as getMockGatedExportResponse } from "../server/export/exportRoute";
+
+// ============================================================================
+// Mock Gated Export Response (inlined to avoid server module import)
+// ============================================================================
+
+/**
+ * Mock export response for development.
+ * Note: This is inlined here to avoid importing from server module which
+ * uses Node.js APIs (child_process, fs, path) that don't work in browser.
+ */
+function getMockGatedExportResponse(
+  jobId: string,
+  request: Partial<ExportRequest>
+): GatedExportResponse {
+  const dialect = request.dialect || "KDT";
+  const profileId = request.profileId || "kdt_mvp_v1";
+
+  // Simulate blocked job
+  if (jobId.includes("0015") || jobId.includes("BLOCKED")) {
+    return {
+      ok: false,
+      code: "E_EXPORT_LOCKED",
+      message: "Export blocked: verification did not pass",
+      details: {
+        verifyVerdict: "FAIL",
+        verifyCode: "E_GATE_TOOL",
+      },
+    };
+  }
+
+  // Success response
+  const exportId = `EXP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const sha256 = "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678";
+
+  return {
+    ok: true,
+    exportId,
+    sha256,
+    sizeBytes: 12345,
+    filename: `${jobId}_${dialect.toLowerCase()}_export.zip`,
+    downloadPath: `/api/factory/jobs/${jobId}/export/${exportId}/download`,
+    exportedAt: new Date().toISOString(),
+    dialect,
+    profileId: profileId as any,
+    contents: {
+      sheets: jobId.includes("0012") ? 6 : jobId.includes("0013") ? 4 : 2,
+      files: 8,
+      hasManifest: true,
+      hasPacket: false,
+    },
+  };
+}
 
 // ============================================================================
 // Sample Jobs
@@ -170,7 +221,7 @@ export function getMockJobDetail(jobId: string): JobDetailData | null {
 function getMockVerifyLog(pass: boolean): string {
   if (pass) {
     return `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Packet: JOB-2026-0012.zip
@@ -202,7 +253,7 @@ Exit code: 0`;
   }
 
   return `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Packet: JOB-2026-0015.zip
@@ -301,7 +352,7 @@ function getMockErrorResponse(jobId: string, code: VerifyErrorCode): VerifyApiRe
     E_VERIFY_TIMEOUT: {
       summary: "ตรวจนานเกินกำหนด (timeout)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Starting verification for ${jobId}...
@@ -318,12 +369,12 @@ Exit code: 71`,
     E_VERIFY_EXEC: {
       summary: "เรียก verifier ไม่ได้ (ต้องซ่อมระบบ)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 ERROR: Cannot execute verifier
-spawn iimos-verify ENOENT
-Command not found: iimos-verify
+spawn monolith-verify ENOENT
+Command not found: monolith-verify
 
 Please ensure the verifier is installed and in PATH.
 
@@ -333,7 +384,7 @@ Exit code: 70`,
     E_VERIFY_CRASH: {
       summary: "โปรแกรม Verifier หยุดทำงาน",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Starting verification...
@@ -345,7 +396,7 @@ Exit code: 139`,
     E_VERIFY_UNKNOWN: {
       summary: "ตรวจไม่สำเร็จ (unknown)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Starting verification for ${jobId}...
@@ -362,7 +413,7 @@ Exit code: 90`,
     E_PACKET_PARSE: {
       summary: "ไฟล์งานเสีย/อ่านไม่ได้ (JSON ผิด)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Loading packet...
@@ -376,7 +427,7 @@ Exit code: 61`,
     E_PACKET_SCHEMA: {
       summary: "ไฟล์งานรูปแบบไม่ถูกต้อง/ฟิลด์หาย",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Validating packet schema...
@@ -390,7 +441,7 @@ Exit code: 60`,
     E_PACKET_CHECKSUM: {
       summary: "Checksum ไม่ตรง",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying checksums...
@@ -404,7 +455,7 @@ Exit code: 60`,
     E_PACKET_MISSING: {
       summary: "ไฟล์ใน Packet ไม่ครบ",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Checking packet contents...
@@ -421,7 +472,7 @@ Exit code: 60`,
     E_KEY_NOT_ALLOWED: {
       summary: "คีย์ไม่อยู่ในรายการอนุญาต (ต้องอัปเดต keyset)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying signature...
@@ -435,7 +486,7 @@ Exit code: 31`,
     E_SIGNATURE_INVALID: {
       summary: "ลายเซ็นไม่ถูกต้อง (ห้ามผลิต)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying signature...
@@ -452,7 +503,7 @@ Exit code: 32`,
     E_ROOT_HASH_MISMATCH: {
       summary: "ข้อมูลถูกแก้ไขหลังเซ็น (ห้ามผลิต)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying manifest integrity...
@@ -468,7 +519,7 @@ Exit code: 33`,
     E_COUNT_MISMATCH: {
       summary: "แพ็กเกจไม่ครบ/จำนวนไม่ตรง (ห้ามผลิต)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying panel count...
@@ -483,7 +534,7 @@ Exit code: 34`,
     E_KEY_REVOKED: {
       summary: "Key ถูกเพิกถอนแล้ว",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying signature...
@@ -498,7 +549,7 @@ Exit code: 31`,
     E_KEY_EXPIRED: {
       summary: "Key หมดอายุแล้ว",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying signature...
@@ -516,7 +567,7 @@ Exit code: 31`,
     E_PROOF_SCHEMA_INVALID: {
       summary: "หลักฐาน audit รูปแบบผิด (ตรวจไม่ได้)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying audit proof...
@@ -530,7 +581,7 @@ Exit code: 40`,
     E_PROOF_ROOT_MISMATCH: {
       summary: "หลักฐาน audit ไม่ตรงกับ root (ห้ามผลิต)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying audit proof...
@@ -544,7 +595,7 @@ Exit code: 41`,
     E_PROOF_SIGNATURE_INVALID: {
       summary: "ลายเซ็น audit ไม่ถูกต้อง (ห้ามผลิต)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying audit proof signature...
@@ -557,7 +608,7 @@ Exit code: 42`,
     E_PROOF_KEY_NOT_ALLOWED: {
       summary: "คีย์ audit ไม่อนุญาต",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Verifying audit proof...
@@ -580,7 +631,7 @@ Exit code: 43`,
     E_GATE_DEPTH: {
       summary: "ความลึกเกินความหนาวัสดุ",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Checking gate rules...
@@ -596,7 +647,7 @@ Exit code: 50`,
     E_GATE_TOOL: {
       summary: "ไม่มี tool ที่ต้องใช้",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Checking gate rules...
@@ -611,7 +662,7 @@ Exit code: 50`,
     E_GATE_CLEARANCE: {
       summary: "ระยะห่างไม่เพียงพอ",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] Checking gate rules...
@@ -630,7 +681,7 @@ Exit code: 50`,
     W_AUDIT_UNKNOWN: {
       summary: "ผ่าน แต่ตรวจ audit ไม่สำเร็จ (ยังผลิตได้)",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] All core checks passed
@@ -651,7 +702,7 @@ Exit code: 80`,
     W_AUDIT_PENDING: {
       summary: "Audit กำลังประมวลผล",
       log: `================================================================================
-IIMOS PACKET VERIFICATION
+MONOLITH PACKET VERIFICATION
 ================================================================================
 
 [verify] All core checks passed
@@ -726,7 +777,7 @@ export function getMockPacketResponse(jobId: string): PacketResponseSuccess {
       jobId,
       createdAt: job?.createdAt || new Date().toISOString(),
       signedAt: job?.updatedAt || new Date().toISOString(),
-      toolVersion: "IIMOS Designer 0.12.0",
+      toolVersion: "MONOLITH Designer 0.12.0",
       manifest: {
         hash: "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd",
         publicKeyId: "key_prod_001",

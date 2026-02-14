@@ -130,9 +130,11 @@ export interface OperationWorkpieceContext {
   /** Source panel ID */
   panelId: string;
   /** Which face the operation is on */
-  face?: PanelFace;
+  face: PanelFace;
   /** Offset applied during transform (for audit/debug) */
-  appliedOffset?: Position3D;
+  appliedOffset: Position3D;
+  /** Original position in workpiece coordinates (D4: for audit trail) */
+  workpiecePosition?: Position3D;
 }
 
 // ============================================================================

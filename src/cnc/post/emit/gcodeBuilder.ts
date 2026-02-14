@@ -3,7 +3,7 @@
  *
  * Deterministic G-code line builder with formatting utilities.
  *
- * @version 1.1.0 - Phase D5-B: Added G82 dwell drill cycle
+ * @version 1.2.0 - Phase D5-D.2: Added multiLineDrill for exit feed emission
  */
 
 // ============================================================================
@@ -258,6 +258,78 @@ export class GcodeBuilder {
     return this.addLine(
       `G85 X${this.formatNumber(x)} Y${this.formatNumber(y)} Z${this.formatNumber(z)} R${this.formatNumber(r)} F${this.formatNumber(f)}`
     );
+  }
+
+  /**
+   * Multi-line drill with exit feed reduction (D5-D.2).
+   * Uses separate G1 moves instead of canned cycle to allow different feed rates.
+   *
+   * Sequence:
+   *   G0 X_ Y_              (rapid to XY position)
+   *   G0 Z{clearance}       (rapid to clearance plane)
+   *   G1 Z-{exitZoneStart} F{normalFeed}  (drill at normal speed)
+   *   G1 Z-{depth} F{exitFeed}            (slow down for exit zone)
+   *   G4 P{dwell}           (optional dwell at bottom)
+   *   G0 Z{clearance}       (retract)
+   *
+   * @param params - Multi-line drill parameters
+   */
+  multiLineDrill(params: {
+    /** Target X position */
+    x: number;
+    /** Target Y position */
+    y: number;
+    /** Surface Z (start of drilling) */
+    surfaceZ: number;
+    /** Final depth Z (negative from surface) */
+    finalZ: number;
+    /** Clearance plane Z (for rapid moves) */
+    clearanceZ: number;
+    /** Normal feed rate (mm/min) for main drilling */
+    normalFeed: number;
+    /** Exit feed rate (mm/min) for exit zone */
+    exitFeed: number;
+    /** Depth where exit zone starts (from surface, positive value) */
+    exitZoneStartDepth: number;
+    /** Optional dwell time at bottom (seconds), 0 to skip */
+    dwellSec?: number;
+  }): this {
+    const {
+      x, y, surfaceZ, finalZ, clearanceZ,
+      normalFeed, exitFeed, exitZoneStartDepth,
+      dwellSec = 0
+    } = params;
+
+    // Calculate exit zone start Z position
+    const exitZoneStartZ = surfaceZ - exitZoneStartDepth;
+
+    // Rapid to XY position
+    this.rapid({ x, y });
+
+    // Rapid to clearance plane
+    this.rapid({ z: clearanceZ });
+
+    // Check if exit zone actually exists (depth > exitZoneStartDepth)
+    if (exitZoneStartZ > finalZ) {
+      // Drill at normal feed until exit zone
+      this.feed({ z: exitZoneStartZ, f: normalFeed });
+
+      // Slow down for exit zone
+      this.feed({ z: finalZ, f: exitFeed });
+    } else {
+      // No exit zone (shallow hole or misconfigured) - use exit feed for safety
+      this.feed({ z: finalZ, f: exitFeed });
+    }
+
+    // Optional dwell at bottom
+    if (dwellSec > 0) {
+      this.dwell(dwellSec);
+    }
+
+    // Retract
+    this.rapid({ z: clearanceZ });
+
+    return this;
   }
 
   // --------------------------------------------------------------------------

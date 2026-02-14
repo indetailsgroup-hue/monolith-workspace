@@ -183,7 +183,7 @@ export function getMockPacket(jobId: string): PacketRouteResponseSuccess {
       jobId,
       createdAt: new Date().toISOString(),
       signedAt: new Date().toISOString(),
-      toolVersion: "IIMOS Designer 0.12.0",
+      toolVersion: "MONOLITH Designer 0.12.0",
       manifest: {
         hash: "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd",
         publicKeyId: "key_prod_001",

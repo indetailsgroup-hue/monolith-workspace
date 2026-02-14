@@ -1,0 +1,331 @@
+name: keyset-dual-approval
+
+# PR-S4.3: Key Rotation Ceremony + Dual Approval (2-Man Rule)
+#
+# This workflow enforces:
+# 1. Dual approval (2+ approvals from different people)
+# 2. No self-approval
+# 3. Ceremony evidence completeness (if key rotation)
+#
+# v0.10.8.5 - PR-S4.3: Key Rotation Ceremony
+
+on:
+  pull_request:
+    paths:
+      - "tools/iimos-verify/keys/**.json"
+      - "security/key-ceremonies/**"
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+
+# Permissions needed to check PR reviews
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  # ==========================================================================
+  # JOB 1: Dual Approval Check
+  # ==========================================================================
+  dual-approval:
+    name: Dual Approval Check
+    runs-on: ubuntu-latest
+
+    # Only run on PRs that modify keyset files
+    if: |
+      github.event_name == 'pull_request_review' ||
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+
+    steps:
+      - name: Check PR approvals
+        id: check-approvals
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request?.number || context.payload.review?.pull_request?.number;
+
+            if (!prNumber) {
+              core.setFailed('Could not determine PR number');
+              return;
+            }
+
+            console.log(`Checking approvals for PR #${prNumber}`);
+
+            // Get PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            const prAuthor = pr.user.login;
+            console.log(`PR author: ${prAuthor}`);
+
+            // Get changed files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            const keysetFiles = files.filter(f =>
+              f.filename.startsWith('tools/iimos-verify/keys/') &&
+              f.filename.endsWith('.json')
+            );
+
+            console.log(`Keyset files changed: ${keysetFiles.length}`);
+
+            if (keysetFiles.length === 0) {
+              console.log('No keyset files changed, skipping dual approval check');
+              core.setOutput('required', 'false');
+              return;
+            }
+
+            // Check for production keyset changes
+            const prodKeysetChanged = keysetFiles.some(f =>
+              f.filename.includes('production.pubkeys') ||
+              f.filename.includes('prod.pubkeys')
+            );
+
+            console.log(`Production keyset changed: ${prodKeysetChanged}`);
+
+            // Get reviews
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            // Get unique approvers (excluding PR author)
+            const approvers = new Set();
+            for (const review of reviews) {
+              if (review.state === 'APPROVED' && review.user.login !== prAuthor) {
+                approvers.add(review.user.login);
+              }
+            }
+
+            const approverList = Array.from(approvers);
+            console.log(`Approvers (excluding author): ${approverList.join(', ') || 'none'}`);
+
+            // Determine required approvals
+            const requiredApprovals = prodKeysetChanged ? 2 : 1;
+            const actualApprovals = approverList.length;
+
+            console.log(`Required approvals: ${requiredApprovals}`);
+            console.log(`Actual approvals: ${actualApprovals}`);
+
+            core.setOutput('required', 'true');
+            core.setOutput('required_count', requiredApprovals.toString());
+            core.setOutput('actual_count', actualApprovals.toString());
+            core.setOutput('approvers', approverList.join(','));
+            core.setOutput('prod_keyset', prodKeysetChanged.toString());
+
+            if (actualApprovals < requiredApprovals) {
+              core.setFailed(
+                `Dual approval required: Need ${requiredApprovals} approvals, got ${actualApprovals}. ` +
+                `Approvers must not include PR author (${prAuthor}).`
+              );
+            } else {
+              console.log('Dual approval check PASSED');
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Dual Approval Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Required Approvals | ${{ steps.check-approvals.outputs.required_count || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actual Approvals | ${{ steps.check-approvals.outputs.actual_count || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Approvers | ${{ steps.check-approvals.outputs.approvers || 'none' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Production Keyset | ${{ steps.check-approvals.outputs.prod_keyset || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # JOB 2: Ceremony Evidence Check (for key rotation PRs)
+  # ==========================================================================
+  ceremony-evidence:
+    name: Ceremony Evidence Check
+    runs-on: ubuntu-latest
+
+    # Only run on PRs that include ceremony docs
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for ceremony evidence
+        id: check-ceremony
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            // Get changed files
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            // Check if this is a key rotation (keyset + ceremony docs)
+            const keysetFiles = files.filter(f =>
+              f.filename.startsWith('tools/iimos-verify/keys/') &&
+              f.filename.endsWith('.json')
+            );
+
+            const ceremonyFiles = files.filter(f =>
+              f.filename.startsWith('security/key-ceremonies/')
+            );
+
+            console.log(`Keyset files: ${keysetFiles.length}`);
+            console.log(`Ceremony files: ${ceremonyFiles.length}`);
+
+            // If keyset changed but no ceremony docs, warn (but don't fail for minor updates)
+            if (keysetFiles.length > 0 && ceremonyFiles.length === 0) {
+              core.warning(
+                'Keyset changed without ceremony documentation. ' +
+                'For key rotations, please include ceremony evidence in security/key-ceremonies/<id>/'
+              );
+              core.setOutput('has_ceremony', 'false');
+              core.setOutput('ceremony_required', 'recommended');
+              return;
+            }
+
+            // If ceremony docs exist, validate completeness
+            if (ceremonyFiles.length > 0) {
+              console.log('Checking ceremony evidence completeness...');
+
+              // Find ceremony folder(s)
+              const ceremonyDirs = new Set();
+              for (const f of ceremonyFiles) {
+                const parts = f.filename.split('/');
+                if (parts.length >= 3) {
+                  // security/key-ceremonies/<ceremony-id>/...
+                  ceremonyDirs.add(parts.slice(0, 3).join('/'));
+                }
+              }
+
+              console.log(`Ceremony directories: ${Array.from(ceremonyDirs).join(', ')}`);
+
+              // Required files for a complete ceremony
+              const requiredFiles = [
+                'README.md',
+                // At least one of these evidence files:
+              ];
+
+              const evidenceFiles = [
+                'newkey.pem',
+                'newkey.pem.sha256',
+                'kms-create.json',
+                'cloudtrail-event.json',
+                'approvals.txt',
+              ];
+
+              for (const dir of ceremonyDirs) {
+                const dirFiles = ceremonyFiles
+                  .filter(f => f.filename.startsWith(dir + '/'))
+                  .map(f => f.filename.replace(dir + '/', ''));
+
+                console.log(`Files in ${dir}: ${dirFiles.join(', ')}`);
+
+                // Check for README
+                if (!dirFiles.includes('README.md')) {
+                  core.setFailed(`Missing README.md in ${dir}`);
+                }
+
+                // Check for at least one evidence file
+                const hasEvidence = evidenceFiles.some(ef => dirFiles.includes(ef));
+                if (!hasEvidence) {
+                  core.warning(
+                    `No evidence files found in ${dir}. ` +
+                    `Expected at least one of: ${evidenceFiles.join(', ')}`
+                  );
+                }
+              }
+
+              core.setOutput('has_ceremony', 'true');
+              core.setOutput('ceremony_dirs', Array.from(ceremonyDirs).join(','));
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Ceremony Evidence Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Has Ceremony Docs | ${{ steps.check-ceremony.outputs.has_ceremony || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ceremony Dirs | ${{ steps.check-ceremony.outputs.ceremony_dirs || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # JOB 3: Keyset Fingerprint Validation
+  # ==========================================================================
+  fingerprint-check:
+    name: Keyset Fingerprint Validation
+    runs-on: ubuntu-latest
+
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/iimos-verify/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools/iimos-verify
+        run: npm ci
+
+      - name: Validate keyset schema
+        working-directory: tools/iimos-verify
+        run: |
+          for f in keys/*.json; do
+            if [ -f "$f" ]; then
+              echo "Validating: $f"
+              npx ts-node scripts/validate_keyset.ts "$f"
+            fi
+          done
+
+      - name: Check PEM fingerprints
+        working-directory: tools/iimos-verify
+        run: |
+          echo "## PEM Fingerprint Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Keyset | Key ID | Fingerprint (SHA-256) |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|----------------------|" >> $GITHUB_STEP_SUMMARY
+
+          for f in keys/*.json; do
+            if [ -f "$f" ]; then
+              # Extract PEM blocks and compute fingerprints using node
+              node -e "
+                const fs = require('fs');
+                const crypto = require('crypto');
+                const keyset = JSON.parse(fs.readFileSync('$f', 'utf8'));
+                for (const key of keyset.allowed || []) {
+                  const fp = crypto.createHash('sha256')
+                    .update(key.spkiPem)
+                    .digest('hex')
+                    .substring(0, 16);
+                  const shortId = key.publicKeyId.split('/').pop().substring(0, 8);
+                  console.log('| $(basename $f) | ...' + shortId + '... | ' + fp + '... |');
+                }
+              " >> $GITHUB_STEP_SUMMARY
+            fi
+          done

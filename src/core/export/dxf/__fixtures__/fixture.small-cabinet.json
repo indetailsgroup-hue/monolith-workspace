@@ -1,0 +1,86 @@
+{
+  "$schema": "./fixture.schema.json",
+  "name": "small-cabinet",
+  "description": "Geometry baseline: 1 panel + 1 CUT polyline. Tests: units, orientation, polyline order, layer CUT, bounding box, R12 compatibility.",
+  "version": "1.0.0",
+  "category": "GEOMETRY",
+
+  "packet": {
+    "manifest": {
+      "jobId": "golden-small-cabinet-001",
+      "projectId": "golden-test-project",
+      "schema": "monolith.factory.packet@1.0",
+      "version": "1.0.0",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "toolVersion": "1.0.0",
+      "files": [],
+      "contentHash": "fixture-hash"
+    },
+    "drillMap": {
+      "version": "drillmap.v1",
+      "panels": [
+        {
+          "panelId": "panel-small-001",
+          "cabinetId": "cabinet-001",
+          "role": "LEFT_SIDE",
+          "dimensions": [600, 400, 18],
+          "points": []
+        }
+      ],
+      "summary": {
+        "totalDrills": 0,
+        "totalBores": 0,
+        "byPurpose": {},
+        "byDiameter": {}
+      },
+      "tools": []
+    }
+  },
+
+  "operationGraph": {
+    "machineId": "KDT-6000",
+    "operations": [
+      {
+        "type": "PROFILE",
+        "id": "cut-001",
+        "side": "OUTER",
+        "path": [
+          { "x": 0, "y": 0 },
+          { "x": 600, "y": 0 },
+          { "x": 600, "y": 400 },
+          { "x": 0, "y": 400 }
+        ],
+        "closed": true,
+        "depth": 18,
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "workpieceContext": {
+          "panelId": "panel-small-001"
+        }
+      }
+    ],
+    "toolsUsed": ["ROUTER_6"],
+    "metadata": {
+      "jobId": "golden-small-cabinet-001",
+      "panelId": "panel-small-001"
+    }
+  },
+
+  "expectedDxf": {
+    "layers": ["OUTLINE", "PROFILE_OUTER"],
+    "entityCount": 1,
+    "entityTypes": ["LWPOLYLINE"],
+    "bounds": {
+      "minX": 0,
+      "maxX": 600,
+      "minY": 0,
+      "maxY": 400
+    }
+  },
+
+  "assertions": [
+    { "type": "layer_exists", "layer": "OUTLINE" },
+    { "type": "entity_count", "expected": 1 },
+    { "type": "no_nan" },
+    { "type": "bounds", "minX": 0, "maxX": 600, "minY": 0, "maxY": 400 }
+  ]
+}

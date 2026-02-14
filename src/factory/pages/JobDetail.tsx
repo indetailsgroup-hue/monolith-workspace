@@ -1,15 +1,15 @@
 /**
  * JobDetail - Individual job view with verify & export
- * P1.1 Factory Ops UX + P2.1 Packet Viewer + P2.2 Gated Export + P7A Activity Timeline
+ * P1.1 Factory Ops UX + P2.1 Packet Viewer + P2.2 Gated Export + P7A Activity Timeline + D2.2 CNC
  *
- * Flow: Overview → Packet → Factory Check → Export
+ * Flow: Overview → Packet → Factory Check → Export → CNC
  * 100% read-only - no editing capabilities.
  *
- * @version 0.12.7
+ * @version 0.12.8 - D2.2 CNC Integration
  */
 
 import React, { useEffect, useCallback, useState } from "react";
-import { useFactoryStore } from "../state/factoryStore";
+import { useFactoryStore, createSelectVerifiedPacketCacheEntry } from "../state/factoryStore";
 import type { MachineType, ExportResponse, JobDetailData, MaterialSummary } from "../types/job";
 import { canVerify, canExport } from "../types/job";
 import { StatusBadge } from "../components/StatusBadge";
@@ -25,13 +25,15 @@ import {
   type ExportRequest,
 } from "../components/export";
 import { ActivityTimeline } from "../components/activity/ActivityTimeline";
+import { CncGeneratePanel, GcodePreviewPanel } from "../components/cnc";
+import type { GcodeBundle } from "../../cnc/post/types";
 
 export interface JobDetailProps {
   jobId: string;
   onBack: () => void;
 }
 
-type Tab = "overview" | "packet" | "validation" | "verify" | "export" | "activity";
+type Tab = "overview" | "packet" | "validation" | "verify" | "export" | "cnc" | "activity";
 
 export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement {
   const {
@@ -60,6 +62,13 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [exportConfig, setExportConfig] = useState<ExportRequest | null>(null);
+
+  // D2.2: CNC G-code generation state
+  const [gcodeBundle, setGcodeBundle] = useState<GcodeBundle | null>(null);
+  const [showGcodePreview, setShowGcodePreview] = useState(false);
+
+  // D0: Verified packet cache
+  const verifiedPacketEntry = useFactoryStore(createSelectVerifiedPacketCacheEntry(jobId));
 
   // Load job on mount
   useEffect(() => {
@@ -158,7 +167,9 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
           padding: 20,
         }}
       >
-        {activeTab === "overview" && <OverviewTab job={selectedJob} />}
+        {activeTab === "overview" && (
+          <OverviewTab job={selectedJob} verifiedPacketEntry={verifiedPacketEntry} />
+        )}
 
         {activeTab === "packet" && <PacketTab jobId={jobId} />}
 
@@ -193,6 +204,18 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
           />
         )}
 
+        {activeTab === "cnc" && (
+          <CncTab
+            jobId={jobId}
+            packet={verifiedPacketEntry.packet}
+            onGenerateComplete={(bundle) => setGcodeBundle(bundle)}
+            onPreviewRequest={(bundle) => {
+              setGcodeBundle(bundle);
+              setShowGcodePreview(true);
+            }}
+          />
+        )}
+
         {activeTab === "activity" && (
           <ActivityTab
             jobId={jobId}
@@ -201,6 +224,13 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
           />
         )}
       </div>
+
+      {/* G-code Preview Modal (D2.2) */}
+      <GcodePreviewPanel
+        bundle={gcodeBundle}
+        visible={showGcodePreview}
+        onClose={() => setShowGcodePreview(false)}
+      />
     </div>
   );
 }
@@ -304,6 +334,7 @@ function TabBar({
     // Legacy verify tab hidden - Factory Check is canonical
     { id: "verify", label: "✓ Verify", show: false },
     { id: "export", label: "📤 Export", show: showExportTab },
+    { id: "cnc", label: "⚙️ CNC", show: true },
     { id: "activity", label: "📜 Activity", show: true },
   ];
 
@@ -349,9 +380,10 @@ function TabBar({
 
 interface OverviewTabProps {
   job: JobDetailData;
+  verifiedPacketEntry: import("../state/factoryStore").VerifiedPacketCacheEntry;
 }
 
-function OverviewTab({ job }: OverviewTabProps): React.ReactElement {
+function OverviewTab({ job, verifiedPacketEntry }: OverviewTabProps): React.ReactElement {
   return (
     <div
       style={{
@@ -415,6 +447,11 @@ function OverviewTab({ job }: OverviewTabProps): React.ReactElement {
           </div>
         )}
       </InfoCard>
+
+      {/* Verified Packet Card (D0) */}
+      {verifiedPacketEntry.status !== "IDLE" && (
+        <VerifiedPacketCard entry={verifiedPacketEntry} />
+      )}
     </div>
   );
 }
@@ -751,6 +788,52 @@ function ActivityTab({
 }
 
 // ============================================================================
+// CNC Tab (D2.2)
+// ============================================================================
+
+interface CncTabProps {
+  jobId: string;
+  packet: import("../packet/types").FactoryPacket | null;
+  onGenerateComplete: (bundle: GcodeBundle) => void;
+  onPreviewRequest: (bundle: GcodeBundle) => void;
+}
+
+function CncTab({
+  jobId,
+  packet,
+  onGenerateComplete,
+  onPreviewRequest,
+}: CncTabProps): React.ReactElement {
+  return (
+    <div
+      style={{
+        maxWidth: 700,
+        margin: "0 auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
+      <div style={{ color: "#888", fontSize: 13 }}>
+        Generate machine-specific G-code from verified packet data.
+        Requires a verified packet with drill map data.
+      </div>
+
+      <CncGeneratePanel
+        jobId={jobId}
+        packet={packet}
+        onGenerateComplete={onGenerateComplete}
+        onPreviewRequest={onPreviewRequest}
+      />
+
+      <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>
+        G-code includes SHA-256 hash for traceability. Generated output is deterministic.
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Helper Components
 // ============================================================================
 
@@ -826,6 +909,99 @@ function LoadingState(): React.ReactElement {
       }}
     >
       <span style={{ fontSize: 48 }}>⟳</span>
+    </div>
+  );
+}
+
+// ============================================================================
+// Verified Packet Card (D0)
+// ============================================================================
+
+interface VerifiedPacketCardProps {
+  entry: import("../state/factoryStore").VerifiedPacketCacheEntry;
+}
+
+function VerifiedPacketCard({ entry }: VerifiedPacketCardProps): React.ReactElement {
+  const isVerified = entry.status === "VERIFIED";
+  const borderColor = isVerified ? "#22c55e" : "#ef4444";
+  const bgColor = isVerified ? "#22c55e20" : "#ef444420";
+
+  // Format file size
+  const formatBytes = (bytes: number | null): string => {
+    if (!bytes) return "Unknown";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  // Get summary from verify result
+  const summary = entry.verifyResult?.summary;
+  const packet = entry.packet;
+
+  return (
+    <div
+      style={{
+        padding: 20,
+        backgroundColor: bgColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: 12,
+      }}
+    >
+      <h3
+        style={{
+          margin: "0 0 16px 0",
+          fontSize: 14,
+          fontWeight: 600,
+          color: borderColor,
+          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        {isVerified ? "✓" : "✗"} Ingested Packet
+      </h3>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        <InfoRow label="File" value={entry.fileName || "Unknown"} />
+        <InfoRow label="Size" value={formatBytes(entry.fileSizeBytes)} />
+        <InfoRow
+          label="Status"
+          value={isVerified ? "Verified" : "Invalid"}
+        />
+
+        {summary && (
+          <InfoRow
+            label="Checks"
+            value={`${summary.passed} passed, ${summary.failed} failed, ${summary.warned} warned`}
+          />
+        )}
+
+        {packet && (
+          <>
+            <InfoRow label="Parts" value={`${packet.cutList?.summary?.totalParts || 0} pcs`} />
+            <InfoRow label="Drills" value={`${packet.drillMap?.summary?.totalDrills || 0} holes`} />
+          </>
+        )}
+
+        {entry.verifiedAt && (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: "#888",
+            }}
+          >
+            Ingested: {new Date(entry.verifiedAt).toLocaleString("th-TH")}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

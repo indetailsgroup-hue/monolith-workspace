@@ -1,6 +1,6 @@
 # React Three Fiber Architecture Deep Dive
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -958,5 +958,5 @@ import { EffectComposer, Bloom, SSAO } from '@react-three/postprocessing'
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Technical Team
+- **Owner:** MONOLITH Technical Team
 - **Status:** ✅ Active

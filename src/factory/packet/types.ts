@@ -1,232 +1,336 @@
 /**
- * Factory Packet Type Definitions
+ * Factory Packet Types - B2 MVP
  *
- * Defines the structure of factory data packets used for
- * CNC operation mapping and factory production.
+ * Defines the structure of factory packets for manufacturing.
+ * All data is deterministic: same input → same output.
  *
- * @version 1.0.0
+ * @version 1.0.0 - Phase B2: Factory Packet Generator MVP
  */
 
-// ============================================================================
-// Drill Map Types
-// ============================================================================
+// ============================================
+// VERSION & SCHEMA
+// ============================================
+
+export const FACTORY_PACKET_VERSION = '1.0.0' as const;
+export const FACTORY_PACKET_SCHEMA = 'monolith.factory.packet@1.0' as const;
+
+// ============================================
+// DRILL MAP TYPES (Subset for Packet)
+// ============================================
 
 /**
- * Face identifier for drill points.
- * 'A' = front face, 'B' = back face, 'E' = edge faces
- */
-export type DrillFace = 'A' | 'B' | 'E';
-
-/**
- * Purpose classification for drill points.
- */
-export type DrillPurpose =
-  | 'shelf_pin'
-  | 'cam_housing'
-  | 'bolt'
-  | 'dowel'
-  | 'hinge'
-  | 'system'
-  | 'custom'
-  | 'unknown';
-
-/**
- * Single drill point in a panel.
+ * Drill point in packet (simplified from DrillMapPoint)
  */
 export interface PacketDrillPoint {
-  /** Unique point identifier */
+  /** Unique point ID */
   id: string;
-  /** Panel this point belongs to */
+  /** Panel ID this point belongs to */
   panelId: string;
-  /** Position [x, y, z] in panel-local coordinates (mm) */
+  /** Position [x, y, z] in mm (world coordinates) */
   position: [number, number, number];
-  /** Surface normal [nx, ny, nz] */
+  /** Normal direction [nx, ny, nz] (unit vector) */
   normal: [number, number, number];
-  /** Hole diameter (mm) */
+  /** Hole diameter in mm */
   diameter: number;
-  /** Hole depth (mm) */
+  /** Hole depth in mm */
   depth: number;
-  /** Face identifier */
-  face: DrillFace;
-  /** Purpose classification */
-  purpose: DrillPurpose;
-  /** Whether this is a through-hole */
+  /** Through hole? */
   throughHole: boolean;
+  /** Purpose code */
+  purpose: string;
+  /** Face being drilled */
+  face: string;
+  /** Paired hole ID (for minifix cam↔bolt) */
+  pairedHoleId?: string;
 }
 
 /**
- * Panel in the drill map.
+ * Panel drill summary in packet
  */
 export interface PacketDrillPanel {
-  /** Panel identifier */
+  /** Panel ID */
   panelId: string;
-  /** Cabinet this panel belongs to */
+  /** Cabinet ID */
   cabinetId: string;
-  /** Panel role in cabinet */
+  /** Panel role */
   role: string;
-  /** Dimensions [width, height, thickness] in mm */
+  /** Panel dimensions [w, h, t] in mm */
   dimensions: [number, number, number];
   /** Drill points on this panel */
   points: PacketDrillPoint[];
 }
 
 /**
- * Drill map summary statistics.
- */
-export interface DrillMapSummary {
-  /** Total number of drill points */
-  totalDrills: number;
-  /** Total number of bore points */
-  totalBores?: number;
-  /** Count by purpose */
-  byPurpose?: Record<string, number>;
-  /** Count by face */
-  byFace?: Record<string, number>;
-  /** Additional summary fields */
-  [key: string]: number | Record<string, number> | undefined;
-}
-
-/**
- * Complete drill map from a factory packet.
+ * DrillMap section of packet
  */
 export interface PacketDrillMap {
   /** Schema version */
-  version: string;
-  /** Panels with drill points */
+  version: 'drillmap.v1';
+  /** Panels with drill data */
   panels: PacketDrillPanel[];
-  /** Summary statistics */
-  summary: DrillMapSummary;
-  /** Tools used (optional, for reference) */
-  tools?: unknown[];
+  /** Summary counts */
+  summary: {
+    totalDrills: number;
+    totalBores: number;
+    byPurpose: Record<string, number>;
+    byDiameter: Record<string, number>;
+  };
+  /** Required tools */
+  tools: Array<{
+    toolId: string;
+    name: string;
+    diameter: number;
+    type: string;
+    usageCount: number;
+  }>;
 }
 
-// ============================================================================
-// Connector Types
-// ============================================================================
+// ============================================
+// CONNECTOR TYPES (Minifix)
+// ============================================
 
 /**
- * Minifix connector point (cam or bolt).
- */
-export interface MinifixPoint {
-  /** Point identifier */
-  pointId: string;
-  /** Panel this point belongs to (optional for bolt points in test fixtures) */
-  panelId?: string;
-  /** Position [x, y, z] in panel-local coordinates (mm) */
-  position: [number, number, number];
-  /** Hole diameter (mm) (optional for bolt points where diameter is implicit) */
-  diameter?: number;
-  /** Hole depth (mm) */
-  depth: number;
-}
-
-/**
- * Validation status for a minifix pair.
- */
-export type MinifixPairStatus = 'VALID' | 'WARNING' | 'ERROR';
-
-/**
- * Minifix connector pair (cam + bolt).
+ * Minifix connector pair in packet
  */
 export interface PacketMinifixPair {
-  /** Pair identifier */
+  /** Pair ID */
   id: string;
+  /** Cam housing info */
+  cam: {
+    pointId: string;
+    panelId: string;
+    position: [number, number, number];
+    diameter: number;
+    depth: number;
+  };
+  /** Bolt info */
+  bolt: {
+    pointId: string;
+    panelId: string;
+    position: [number, number, number];
+    diameter: number;
+    depth: number;
+  };
   /** Validation status */
-  status: MinifixPairStatus;
-  /** Cam housing point (15mm bore) */
-  cam: MinifixPoint;
-  /** Bolt hole point (5mm or 8mm drill) */
-  bolt: MinifixPoint;
-  /** Validation issues (if any) */
+  status: 'VALID' | 'WARNING' | 'ERROR';
+  /** Issues if any */
   issues?: string[];
 }
 
 /**
- * Connectors summary statistics.
- */
-export interface ConnectorsSummary {
-  /** Total minifix pairs */
-  totalPairs: number;
-  /** Valid pairs */
-  validPairs: number;
-  /** Pairs with warnings */
-  warningPairs: number;
-  /** Pairs with errors */
-  errorPairs: number;
-}
-
-/**
- * Complete connectors data from a factory packet.
+ * Connectors section of packet
  */
 export interface PacketConnectors {
   /** Schema version */
-  version?: string;
-  /** Minifix connector pairs */
+  version: 'connectors.v1';
+  /** Minifix pairs */
   minifix: PacketMinifixPair[];
-  /** Summary statistics */
-  summary?: ConnectorsSummary;
+  /** Summary */
+  summary: {
+    totalPairs: number;
+    validPairs: number;
+    warningPairs: number;
+    errorPairs: number;
+  };
 }
 
-// ============================================================================
-// Packet Manifest
-// ============================================================================
+// ============================================
+// CUT LIST TYPES
+// ============================================
 
 /**
- * File entry in packet manifest.
+ * Cut list row in packet
  */
-export interface PacketManifestFile {
-  /** File path within packet */
-  path: string;
-  /** SHA-256 hash of file contents */
-  hash?: string;
-  /** File size in bytes */
-  size?: number;
+export interface PacketCutListRow {
+  /** Row number (1-based) */
+  rowNo: number;
+  /** Part ID */
+  partId: string;
+  /** Cabinet ID */
+  cabinetId: string;
+  /** Material ID */
+  materialId: string;
+  /** Quantity */
+  qty: number;
+  /** Finish width mm */
+  finishW: number;
+  /** Finish height mm */
+  finishH: number;
+  /** Edge banding [L, R, T, B] in mm */
+  edgeBanding: [number, number, number, number];
+  /** Premill [L, R, T, B] in mm */
+  premill: [number, number, number, number];
+  /** Cut width mm */
+  cutW: number;
+  /** Cut height mm */
+  cutH: number;
+  /** Grain direction */
+  grain: 'HORIZONTAL' | 'VERTICAL' | 'NONE';
+  /** Notes */
+  note?: string;
 }
 
 /**
- * Packet manifest metadata.
+ * CutList section of packet
+ */
+export interface PacketCutList {
+  /** Schema version */
+  version: 'cutlist.v1';
+  /** Cut list rows */
+  rows: PacketCutListRow[];
+  /** Summary */
+  summary: {
+    totalRows: number;
+    totalParts: number;
+    byMaterial: Record<string, { rows: number; parts: number }>;
+  };
+}
+
+// ============================================
+// GATE RESULT TYPES
+// ============================================
+
+/**
+ * Gate finding in packet
+ */
+export interface PacketGateFinding {
+  /** Finding key */
+  key: string;
+  /** Rule code */
+  code: string;
+  /** Severity */
+  severity: 'BLOCKER' | 'WARNING' | 'INFO';
+  /** Message */
+  message: string;
+  /** Affected entity IDs */
+  entityIds: string[];
+}
+
+/**
+ * Gate result section of packet
+ */
+export interface PacketGateResult {
+  /** Schema version */
+  version: 'gate.v1';
+  /** Policy version */
+  policyVersion: string;
+  /** Gate passed? */
+  passed: boolean;
+  /** Run timestamp */
+  runAt: string;
+  /** Findings */
+  findings: {
+    blockers: PacketGateFinding[];
+    warnings: PacketGateFinding[];
+    info: PacketGateFinding[];
+  };
+  /** Summary counts */
+  summary: {
+    blockerCount: number;
+    warningCount: number;
+    infoCount: number;
+  };
+}
+
+// ============================================
+// MANIFEST TYPES
+// ============================================
+
+/**
+ * File entry in manifest
+ */
+export interface ManifestFileEntry {
+  /** Relative path */
+  path: string;
+  /** SHA-256 hash of content */
+  sha256: string;
+  /** File size in bytes */
+  sizeBytes: number;
+}
+
+/**
+ * Manifest structure
  */
 export interface PacketManifest {
-  /** Schema identifier */
-  schema?: string;
+  /** Schema version */
+  schema: typeof FACTORY_PACKET_SCHEMA;
   /** Packet version */
-  version: string;
-  /** Job identifier */
+  version: typeof FACTORY_PACKET_VERSION;
+  /** Job ID */
   jobId: string;
-  /** Project identifier */
-  projectId?: string;
-  /** Content hash of the entire packet */
-  contentHash: string;
+  /** Project ID */
+  projectId: string;
   /** Creation timestamp (ISO 8601) */
   createdAt: string;
-  /** Tool version that created this packet */
-  toolVersion?: string;
-  /** Files included in the packet */
-  files?: PacketManifestFile[];
+  /** Tool version */
+  toolVersion: string;
+  /** Files in packet */
+  files: ManifestFileEntry[];
+  /** Content hash (SHA-256 of sorted file hashes) */
+  contentHash: string;
+  /** Signature (if signed) */
+  signature?: {
+    keyId: string;
+    algorithm: 'Ed25519';
+    value: string;
+  };
 }
 
-// ============================================================================
-// Factory Packet (Top-Level)
-// ============================================================================
+// ============================================
+// FACTORY PACKET (Complete)
+// ============================================
 
 /**
- * Complete factory packet structure.
+ * Complete Factory Packet
  *
- * Contains all data needed for factory production:
- * - manifest: metadata and file listing
- * - drillMap: all drill points per panel
- * - connectors: minifix pairs (optional)
- * - gateReport: gate verification results (optional)
+ * Contains all manufacturing data in a single bundle.
+ * Can be serialized to ZIP for download.
  */
 export interface FactoryPacket {
-  /** Packet manifest */
+  /** Manifest */
   manifest: PacketManifest;
-  /** Drill map with all panel drill points */
+  /** Drill map data */
   drillMap: PacketDrillMap;
-  /** Connector pairs (optional) */
-  connectors?: PacketConnectors;
-  /** Gate verification report (optional) */
-  gateReport?: unknown;
-  /** Additional metadata (optional) */
-  metadata?: Record<string, unknown>;
+  /** Connector data (minifix pairs) */
+  connectors: PacketConnectors;
+  /** Cut list data */
+  cutList: PacketCutList;
+  /** Gate validation result */
+  gateResult: PacketGateResult;
+}
+
+// ============================================
+// BUILDER INPUT TYPES
+// ============================================
+
+/**
+ * Input for building a factory packet
+ */
+export interface BuildFactoryPacketInput {
+  /** Job ID */
+  jobId: string;
+  /** Project ID */
+  projectId: string;
+  /** Tool version string */
+  toolVersion: string;
+  /** Optional: signing key ID */
+  signingKeyId?: string;
+}
+
+/**
+ * Output from building a factory packet
+ */
+export interface BuildFactoryPacketOutput {
+  /** The built packet */
+  packet: FactoryPacket;
+  /** JSON strings for each file */
+  files: {
+    'manifest.json': string;
+    'drillmap.json': string;
+    'connectors.minifix.json': string;
+    'cutlist.json': string;
+    'gate-result.json': string;
+  };
+  /** Combined content hash */
+  contentHash: string;
 }

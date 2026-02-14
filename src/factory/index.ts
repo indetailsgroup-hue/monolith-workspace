@@ -165,6 +165,57 @@ export {
   getMockExportResponse,
 } from "./api/mockData";
 
+// Phase C: Packet Ingest & Verify Components
+export { PacketIngestPanel } from "./components/PacketIngestPanel";
+export type { PacketIngestPanelProps } from "./components/PacketIngestPanel";
+
+export { VerifiedCutListView } from "./components/VerifiedCutListView";
+export type { VerifiedCutListViewProps } from "./components/VerifiedCutListView";
+
+// Phase C: Packet Verification (re-export from packet module)
+export {
+  unzipPacket,
+  unzipPacketFromFile,
+  verifyPacket,
+  verifyPacketFromFile,
+  quickVerifyPacket,
+  formatVerifyResult,
+  getVerifyErrors,
+  getVerifyWarnings,
+  isValidZip,
+} from "./packet";
+export type {
+  UnzipResult,
+  VerifyPacketResult,
+  VerifyCheck as PacketVerifyCheck, // Renamed to avoid conflict with types/job.ts VerifyCheck
+  VerifyOptions,
+} from "./packet";
+
 // Server-side Verifier Integration (PR-P1.1-B.3)
-// Note: These exports are for Node.js server environments only
-export * from "./server";
+// IMPORTANT: Server exports are NOT included in the browser bundle.
+// For Node.js server environments, import directly from "./factory/server":
+//   import { verifyJob, runVerifier, ... } from "./factory/server";
+// This prevents Node.js modules (child_process, fs, path) from being bundled for browser.
+
+// Phase D2.2: CNC G-code Generation
+export { CncGeneratePanel, GcodePreviewPanel } from "./components/cnc";
+export type { CncGeneratePanelProps, GcodePreviewPanelProps } from "./components/cnc";
+
+export {
+  generateGcodeForJob,
+  buildOperationGraphPreview,
+  getAvailableMachines,
+  getDefaultMachineId,
+  canGenerateGcode,
+  getGenerationValidation,
+} from "./cnc";
+export type {
+  CncCacheEntry,
+  CncGenerationStatus,
+  CncGenerateRequest,
+  CncGenerateResponse,
+  CncValidationIssue,
+  CncMachineOption,
+  CncErrorCode,
+  GcodePreviewState,
+} from "./cnc";

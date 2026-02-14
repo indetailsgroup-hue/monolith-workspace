@@ -1,67 +1,27 @@
 /**
  * ViewportController - SPEC-08 Compliant View System
- * 
+ *
  * Functionally meaningful views (not generic camera angles):
- * - Perspective: Design thinking / presentation
- * - Front: Contractor-friendly frontal view
- * - Left: Side profile for depth verification
- * - Install: Installation reference view
- * - Factory: Manufacturing truth (panel/op-aligned)
- * - CNC: CAM alignment (machine coordinate space)
+ * - Perspective: Design thinking / presentation (3D)
+ * - Front: Contractor-friendly frontal view (2D ortho)
+ * - Left: Side profile for depth verification (2D ortho)
+ * - Install: Installation reference view (3D)
+ * - Factory: Manufacturing truth (2D ortho top-down)
+ * - CNC: CAM alignment (2D ortho)
+ *
+ * Orthographic views provide true 2D representation like 3ds Max/AutoCAD
  */
 
 import React, { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { Vector3 } from 'three';
+import * as THREE from 'three';
 
 // View types as per SPEC-08
-export type ViewType = 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';
+export type ViewType = 'Perspective' | 'Front' | 'Left' | 'Top' | 'Install' | 'Factory' | 'CNC';
 
-// Camera presets for each view
-const VIEW_PRESETS: Record<ViewType, {
-  position: [number, number, number];
-  target: [number, number, number];
-  fov: number;
-  description: string;
-}> = {
-  Perspective: {
-    position: [1500, 1200, 2000],
-    target: [0, 400, 0],
-    fov: 45,
-    description: 'Design thinking / presentation view'
-  },
-  Front: {
-    position: [0, 400, 2500],
-    target: [0, 400, 0],
-    fov: 45,
-    description: 'Contractor-friendly frontal view'
-  },
-  Left: {
-    position: [-2500, 400, 0],
-    target: [0, 400, 0],
-    fov: 45,
-    description: 'Side profile for depth verification'
-  },
-  Install: {
-    position: [1200, 800, 1200],
-    target: [0, 300, 0],
-    fov: 50,
-    description: 'Installation reference view (3/4 angle)'
-  },
-  Factory: {
-    position: [0, 2500, 0],
-    target: [0, 0, 0],
-    fov: 45,
-    description: 'Manufacturing truth - top-down panel view'
-  },
-  CNC: {
-    position: [0, 0, 2500],
-    target: [0, 0, 0],
-    fov: 35,
-    description: 'CAM alignment - machine coordinate space'
-  }
-};
+// Re-export from store (single source of truth)
+import { VIEW_PRESETS } from '../../core/store/useViewStore';
 
 interface ViewportControllerProps {
   currentView: ViewType;
@@ -72,24 +32,33 @@ interface ViewportControllerProps {
 // Hook to animate camera to view
 export function useCameraView(viewType: ViewType, controlsRef?: React.RefObject<OrbitControlsImpl>) {
   const { camera } = useThree();
-  
+
   useEffect(() => {
     const preset = VIEW_PRESETS[viewType];
     if (!preset) return;
-    
+
     // Animate camera position
-    const targetPos = new Vector3(...preset.position);
-    const targetLookAt = new Vector3(...preset.target);
-    
+    const targetPos = new THREE.Vector3(...preset.position);
+    const targetLookAt = new THREE.Vector3(...preset.target);
+
     // Simple instant transition (can add GSAP for smooth animation later)
     camera.position.copy(targetPos);
     camera.lookAt(targetLookAt);
-    (camera as any).fov = preset.fov;
+
+    // Handle orthographic vs perspective
+    if (preset.isOrtho && camera instanceof THREE.OrthographicCamera) {
+      camera.zoom = preset.orthoZoom ?? 0.4;
+    } else if (!preset.isOrtho && camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = preset.fov;
+    }
+
     camera.updateProjectionMatrix();
-    
+
     // Update controls target if available
     if (controlsRef?.current) {
       controlsRef.current.target.copy(targetLookAt);
+      // Disable rotation for orthographic views
+      controlsRef.current.enableRotate = !preset.isOrtho;
       controlsRef.current.update();
     }
   }, [viewType, camera, controlsRef]);
@@ -150,17 +119,30 @@ interface CameraControllerProps {
 
 export function CameraController({ viewType }: CameraControllerProps) {
   const { camera } = useThree();
-  
+
   useEffect(() => {
     const preset = VIEW_PRESETS[viewType];
     if (!preset) return;
-    
+
+    // Set camera position
     camera.position.set(...preset.position);
-    camera.lookAt(new Vector3(...preset.target));
-    (camera as any).fov = preset.fov;
-    camera.updateProjectionMatrix();
+
+    // Set look-at target
+    const target = new THREE.Vector3(...preset.target);
+    camera.lookAt(target);
+
+    // Handle orthographic vs perspective camera
+    if (preset.isOrtho && camera instanceof THREE.OrthographicCamera) {
+      // Orthographic camera: set zoom
+      camera.zoom = preset.orthoZoom ?? 0.4;
+      camera.updateProjectionMatrix();
+    } else if (!preset.isOrtho && camera instanceof THREE.PerspectiveCamera) {
+      // Perspective camera: set FOV
+      camera.fov = preset.fov;
+      camera.updateProjectionMatrix();
+    }
   }, [viewType, camera]);
-  
+
   return null;
 }
 

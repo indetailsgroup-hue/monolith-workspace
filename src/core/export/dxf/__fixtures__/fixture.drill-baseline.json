@@ -1,0 +1,170 @@
+{
+  "$schema": "./fixture.schema.json",
+  "name": "drill-baseline",
+  "description": "Drill baseline: 1 panel + 3 DRILL operations (different diameter/depth). Tests: DRILL circle entities, layer naming DRILL_{dia}_D{depth}, radius precision.",
+  "version": "1.0.0",
+  "category": "OPERATIONS",
+
+  "packet": {
+    "manifest": {
+      "jobId": "golden-drill-baseline-001",
+      "projectId": "golden-test-project",
+      "schema": "monolith.factory.packet@1.0",
+      "version": "1.0.0",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "toolVersion": "1.0.0",
+      "files": [],
+      "contentHash": "fixture-hash"
+    },
+    "drillMap": {
+      "version": "drillmap.v1",
+      "panels": [
+        {
+          "panelId": "panel-drill-001",
+          "cabinetId": "cabinet-001",
+          "role": "SHELF",
+          "dimensions": [800, 400, 18],
+          "points": [
+            {
+              "id": "drill-5mm-shallow",
+              "x": 100,
+              "y": 200,
+              "z": 0,
+              "diameter": 5,
+              "depth": 10,
+              "direction": "V",
+              "purpose": "SHELF_PIN"
+            },
+            {
+              "id": "drill-8mm-medium",
+              "x": 400,
+              "y": 200,
+              "z": 0,
+              "diameter": 8,
+              "depth": 15,
+              "direction": "V",
+              "purpose": "DOWEL"
+            },
+            {
+              "id": "drill-10mm-deep",
+              "x": 700,
+              "y": 200,
+              "z": 0,
+              "diameter": 10,
+              "depth": 20,
+              "direction": "V",
+              "purpose": "SLEEVE"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "totalDrills": 3,
+        "totalBores": 0,
+        "byPurpose": {
+          "SHELF_PIN": 1,
+          "DOWEL": 1,
+          "SLEEVE": 1
+        },
+        "byDiameter": {
+          "5": 1,
+          "8": 1,
+          "10": 1
+        }
+      },
+      "tools": ["D5", "D8", "D10"]
+    }
+  },
+
+  "operationGraph": {
+    "machineId": "KDT-6000",
+    "operations": [
+      {
+        "type": "DRILL",
+        "id": "drill-001",
+        "position": { "x": 100, "y": 200, "z": 0 },
+        "diameter": 5,
+        "depth": 10,
+        "direction": "V",
+        "workpieceContext": {
+          "panelId": "panel-drill-001"
+        }
+      },
+      {
+        "type": "DRILL",
+        "id": "drill-002",
+        "position": { "x": 400, "y": 200, "z": 0 },
+        "diameter": 8,
+        "depth": 15,
+        "direction": "V",
+        "workpieceContext": {
+          "panelId": "panel-drill-001"
+        }
+      },
+      {
+        "type": "DRILL",
+        "id": "drill-003",
+        "position": { "x": 700, "y": 200, "z": 0 },
+        "diameter": 10,
+        "depth": 20,
+        "direction": "V",
+        "workpieceContext": {
+          "panelId": "panel-drill-001"
+        }
+      }
+    ],
+    "toolsUsed": ["D5", "D8", "D10"],
+    "metadata": {
+      "jobId": "golden-drill-baseline-001",
+      "panelId": "panel-drill-001"
+    }
+  },
+
+  "expectedDxf": {
+    "layers": ["OUTLINE", "DRILL_5_D10", "DRILL_8_D15", "DRILL_10_D20"],
+    "entityCount": 4,
+    "entityTypes": ["LWPOLYLINE", "CIRCLE"],
+    "entities": [
+      {
+        "type": "CIRCLE",
+        "layer": "DRILL_5_D10",
+        "center": { "x": 100, "y": 200 },
+        "radius": 2.5,
+        "comment": "5mm drill → radius 2.5mm (layer format: DRILL_{dia}_D{depth})"
+      },
+      {
+        "type": "CIRCLE",
+        "layer": "DRILL_8_D15",
+        "center": { "x": 400, "y": 200 },
+        "radius": 4,
+        "comment": "8mm drill → radius 4mm"
+      },
+      {
+        "type": "CIRCLE",
+        "layer": "DRILL_10_D20",
+        "center": { "x": 700, "y": 200 },
+        "radius": 5,
+        "comment": "10mm drill → radius 5mm"
+      }
+    ],
+    "bounds": {
+      "minX": 0,
+      "maxX": 800,
+      "minY": 0,
+      "maxY": 400
+    }
+  },
+
+  "assertions": [
+    { "type": "layer_exists", "layer": "OUTLINE" },
+    { "type": "layer_exists", "layer": "DRILL_5_D10" },
+    { "type": "layer_exists", "layer": "DRILL_8_D15" },
+    { "type": "layer_exists", "layer": "DRILL_10_D20" },
+    { "type": "entity_count", "expected": 5, "comment": "1 outline + 3 drills + 1 annotation (metadata enabled by default)" },
+    { "type": "circle_radius", "layer": "DRILL_5_D10", "expected": 2.5, "precision": 0.01 },
+    { "type": "circle_radius", "layer": "DRILL_8_D15", "expected": 4, "precision": 0.01 },
+    { "type": "circle_radius", "layer": "DRILL_10_D20", "expected": 5, "precision": 0.01 },
+    { "type": "no_nan" },
+    { "type": "bounds", "minX": 0, "maxX": 800, "minY": 0, "maxY": 400 }
+  ]
+}

@@ -1,46 +1,105 @@
 /**
- * signTrustReport.ts - Sign Trust Report
+ * signTrustReport.ts - Sign Trust Report with Ed25519
  *
- * Creates a SignedTrustReport by computing a canonical hash
- * of the trust report and signing it with the approval key.
+ * PROCESS:
+ * 1. Serialize TrustReport to canonical JSON
+ * 2. Compute SHA-256 hash
+ * 3. Sign hash with Ed25519 private key
+ * 4. Return SignedTrustReport envelope
  *
- * @version 1.0.0
+ * SECURITY:
+ * - Private key should come from secure storage
+ * - Never log or expose private key
  */
 
-import type { TrustReport, SignedTrustReport } from './trustReportTypes';
-import { sha256Hex, sha256CanonicalHex } from '../../crypto/sha256';
+import type { TrustReport } from './trustReportTypes';
+import type { SignedTrustReport } from './signedTrustTypes';
+import { sha256CanonicalHex } from '../crypto/sha256';
+import { signHashHex } from '../crypto/ed25519';
+
+// ============================================
+// SIGN TRUST REPORT
+// ============================================
 
 /**
- * Sign trust report configuration
+ * Sign a TrustReport with Ed25519
+ *
+ * @param args.trust - TrustReport to sign
+ * @param args.keyId - Key identifier for verification
+ * @param args.privateKeyHex - Ed25519 private key (64 hex chars)
+ * @returns SignedTrustReport with signature
+ *
+ * @example
+ * const signed = await signTrustReport({
+ *   trust: trustReport,
+ *   keyId: 'approval-key-001',
+ *   privateKeyHex: process.env.APPROVAL_PRIVATE_KEY,
+ * });
  */
-interface SignTrustReportArgs {
-  /** The trust report to sign */
+export async function signTrustReport(args: {
   trust: TrustReport;
-  /** Approval key ID */
   keyId: string;
-  /** Approval private key (hex) */
   privateKeyHex: string;
+}): Promise<SignedTrustReport> {
+  // 1. Compute canonical hash
+  const trustHashHex = await sha256CanonicalHex(args.trust);
+
+  // 2. Sign the hash
+  const signatureHex = await signHashHex({
+    hashHex: trustHashHex,
+    privateKeyHex: args.privateKeyHex,
+  });
+
+  // 3. Return signed envelope
+  return {
+    trust: args.trust,
+    trustHashHex,
+    signatureHex,
+    keyId: args.keyId,
+    algo: 'Ed25519',
+    signedAtIso: new Date().toISOString(),
+  };
 }
 
 /**
- * Sign a trust report with the approval key
- *
- * Uses HMAC-style signing: SHA-256(privateKey + canonicalHash)
- * This will be replaced with Ed25519 when available.
+ * Re-sign an existing signed trust report with a new key
+ * (Useful for key rotation or multi-signature)
  */
-export async function signTrustReport(args: SignTrustReportArgs): Promise<SignedTrustReport> {
-  const { trust, keyId, privateKeyHex } = args;
+export async function reSignTrustReport(args: {
+  signed: SignedTrustReport;
+  newKeyId: string;
+  newPrivateKeyHex: string;
+}): Promise<SignedTrustReport> {
+  // Recompute hash (should match original)
+  const trustHashHex = await sha256CanonicalHex(args.signed.trust);
 
-  // Compute canonical hash of trust report
-  const canonicalHash = await sha256CanonicalHex(trust);
+  // Sign with new key
+  const signatureHex = await signHashHex({
+    hashHex: trustHashHex,
+    privateKeyHex: args.newPrivateKeyHex,
+  });
 
-  // HMAC-style signature: hash(privateKey + canonicalHash)
-  const signatureHex = await sha256Hex(privateKeyHex + canonicalHash);
+  return {
+    trust: args.signed.trust,
+    trustHashHex,
+    signatureHex,
+    keyId: args.newKeyId,
+    algo: 'Ed25519',
+    signedAtIso: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create unsigned trust envelope (for testing or deferred signing)
+ */
+export async function createUnsignedTrustEnvelope(
+  trust: TrustReport
+): Promise<Omit<SignedTrustReport, 'signatureHex' | 'keyId'>> {
+  const trustHashHex = await sha256CanonicalHex(trust);
 
   return {
     trust,
-    signatureHex,
-    keyId,
-    timestampIso: new Date().toISOString(),
+    trustHashHex,
+    algo: 'Ed25519',
   };
 }

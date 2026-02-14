@@ -9,7 +9,7 @@
 
 import type { MaterialClass, MaterialHint } from './materialTypes';
 
-// Re-export for consumers that import from this file
+// Re-export MaterialHint for convenience
 export type { MaterialHint } from './materialTypes';
 
 // ============================================

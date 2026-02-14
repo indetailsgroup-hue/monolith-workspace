@@ -1,86 +1,147 @@
 /**
- * loadManifestChain.ts - Load Manifest Chain
+ * loadManifestChain.ts - Load Manifest Chain from HEAD
  *
- * Loads the full manifest chain from HEAD backward to genesis.
- * Used for timeline building and chain proof generation.
- *
- * @version 1.0.0
+ * Loads the complete manifest chain from HEAD back to genesis
+ * (or up to maxDepth). Used for Chain Viewer UI and auditing.
  */
 
-import type { SignedJobManifest } from '../trust/manifestChainTypes';
 import type { ManifestStore } from './manifestStoreTypes';
+import type { SignedJobManifest } from '../trust/manifestChainTypes';
+
+// ============================================
+// TYPES
+// ============================================
+
+export interface LoadChainResult {
+  ok: true;
+  headHash: string;
+  chain: SignedJobManifest[];
+  reachedGenesis: boolean;
+}
+
+export interface LoadChainError {
+  ok: false;
+  reason: string;
+}
+
+export type LoadChainOutcome = LoadChainResult | LoadChainError;
+
+// ============================================
+// LOAD CHAIN
+// ============================================
 
 /**
- * Load manifest chain result
- */
-type LoadChainResult =
-  | { ok: true; chain: SignedJobManifest[] }
-  | { ok: false; reason: string };
-
-/**
- * Load the full manifest chain for a job
+ * Load manifest chain from HEAD back to genesis
  *
- * Walks backward from HEAD to genesis, collecting all manifests.
- * Returns manifests in chronological order (genesis first).
+ * @param args.jobId - Job identifier
+ * @param args.store - Manifest store
+ * @param args.maxDepth - Maximum chain depth to load (default: 50)
+ * @returns Chain array (HEAD first) or error
  */
 export async function loadManifestChain(args: {
   jobId: string;
   store: ManifestStore;
-  maxDepth: number;
-}): Promise<LoadChainResult> {
-  const { jobId, store, maxDepth } = args;
+  maxDepth?: number;
+}): Promise<LoadChainOutcome> {
+  const { jobId, store, maxDepth = 50 } = args;
 
-  // Get HEAD
   const headHash = await store.getHead(jobId);
   if (!headHash) {
-    return { ok: false, reason: `No HEAD manifest for job: ${jobId}` };
+    return { ok: false, reason: 'No HEAD manifest for job' };
   }
 
-  const head = await store.loadByHash(headHash);
-  if (!head) {
-    return { ok: false, reason: `HEAD manifest missing: ${headHash}` };
-  }
+  const chain: SignedJobManifest[] = [];
+  let currentHash: string | null = headHash;
+  let reachedGenesis = false;
 
-  // Walk chain backward
-  const chain: SignedJobManifest[] = [head];
-  let current = head;
-  let depth = 0;
+  for (let i = 0; i < maxDepth; i++) {
+    if (!currentHash) {
+      reachedGenesis = true;
+      break;
+    }
 
-  while (current.prevManifestHashHex && depth < maxDepth) {
-    const prev = await store.loadByHash(current.prevManifestHashHex);
-    if (!prev) {
+    const manifest = await store.loadByHash(currentHash);
+    if (!manifest) {
       return {
         ok: false,
-        reason: `Chain broken: missing manifest ${current.prevManifestHashHex}`,
+        reason: `Missing manifest in chain: ${currentHash}`,
       };
     }
-    chain.push(prev);
-    current = prev;
-    depth++;
+
+    chain.push(manifest);
+
+    // Move to previous
+    currentHash = manifest.prevManifestHashHex;
+
+    // Check if genesis
+    if (currentHash === null) {
+      reachedGenesis = true;
+      break;
+    }
   }
 
-  // Reverse to chronological order (genesis first)
-  chain.reverse();
-
-  return { ok: true, chain };
+  return {
+    ok: true,
+    headHash,
+    chain,
+    reachedGenesis,
+  };
 }
 
 /**
- * Load a chain proof (subset of chain for bundle inclusion)
- *
- * Returns the most recent `depth` manifests in the chain.
+ * Load specific depth of chain (for proof bundle)
  */
 export async function loadChainProof(args: {
   jobId: string;
   store: ManifestStore;
   depth: number;
-}): Promise<SignedJobManifest[] | null> {
+}): Promise<SignedJobManifest[]> {
   const result = await loadManifestChain({
     jobId: args.jobId,
     store: args.store,
     maxDepth: args.depth,
   });
 
-  if (!result.ok) return null;
+  if (!result.ok) {
+    return [];
+  }
+
   return result.chain;
+}
+
+/**
+ * Get chain statistics
+ */
+export function getChainStats(chain: SignedJobManifest[]): {
+  length: number;
+  totalExports: number;
+  gateOkCount: number;
+  gateBlockedCount: number;
+  oldestIso: string | null;
+  newestIso: string | null;
+} {
+  let totalExports = 0;
+  let gateOkCount = 0;
+  let gateBlockedCount = 0;
+
+  for (const m of chain) {
+    totalExports += m.exports?.length ?? 0;
+    if (m.signedTrust?.trust?.gate?.ok) {
+      gateOkCount++;
+    } else {
+      gateBlockedCount++;
+    }
+  }
+
+  const oldest = chain.length > 0 ? chain[chain.length - 1].createdIso : null;
+  const newest = chain.length > 0 ? chain[0].createdIso : null;
+
+  return {
+    length: chain.length,
+    totalExports,
+    gateOkCount,
+    gateBlockedCount,
+    oldestIso: oldest,
+    newestIso: newest,
+  };
 }

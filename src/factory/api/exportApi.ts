@@ -1,7 +1,7 @@
 // src/factory/api/exportApi.ts
 /**
  * Export API - fetch options, export job, download zip
- * Priority 2: Wire to real backend with X-IIMOS-ZIP-SHA256 header support
+ * Priority 2: Wire to real backend with X-MONOLITH-ZIP-SHA256 header support
  */
 
 import { apiFetch } from "./client";
@@ -44,7 +44,7 @@ export async function runGatedExportApi(
   );
 
   // Extract SHA256 from response header (authoritative)
-  const sha256 = headers.get("X-IIMOS-ZIP-SHA256") ?? undefined;
+  const sha256 = headers.get("X-MONOLITH-ZIP-SHA256") ?? undefined;
 
   return { response: data, sha256 };
 }
@@ -65,7 +65,7 @@ export async function downloadExportApi(
   }
 
   const blob = await res.blob();
-  const sha256 = res.headers.get("X-IIMOS-ZIP-SHA256") ?? undefined;
+  const sha256 = res.headers.get("X-MONOLITH-ZIP-SHA256") ?? undefined;
 
   return { blob, headers: res.headers, sha256 };
 }

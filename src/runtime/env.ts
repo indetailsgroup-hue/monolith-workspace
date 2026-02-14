@@ -1,56 +1,88 @@
 /**
- * Runtime Environment Configuration (v0.10)
+ * Runtime Environment Configuration
  *
- * Provides runtime mode and factory identity for policy enforcement.
+ * Device-level configuration for Monolith runtime mode.
+ * MVP uses localStorage; production should use device provisioning or server config.
  *
  * Modes:
- * - DESIGNER: Development/design mode (flexible, policy optional)
- * - FACTORY: Production mode (strict, policy required)
+ * - DESIGNER: Design workstation (no factory restrictions)
+ * - FACTORY: Factory floor device (strict scope enforcement)
  *
- * Values stored in localStorage with 'iimos.' prefix.
- * Defaults: mode = DESIGNER, factoryId = null
+ * G9 COMPLIANCE: Uses unsafeStorage boundary for localStorage access.
  */
 
-/** Supported runtime modes */
+import {
+  readString,
+  writeRaw,
+  remove,
+} from '../core/persistence/unsafeStorage';
+
+const LS_FACTORY_ID = 'monolith.runtime.factoryId';
+const LS_MODE = 'monolith.runtime.mode';
+
+/**
+ * Runtime mode determines scope enforcement behavior
+ */
 export type RuntimeMode = 'DESIGNER' | 'FACTORY';
 
-const LS_MODE = 'iimos.runtime.mode';
-const LS_FACTORY_ID = 'iimos.runtime.factoryId';
-
 /**
- * Get current runtime mode.
- *
- * @returns 'DESIGNER' (default) or 'FACTORY'
+ * Get current runtime mode
+ * Defaults to DESIGNER if not set
  */
 export function getRuntimeMode(): RuntimeMode {
-  const stored = localStorage.getItem(LS_MODE);
-  if (stored === 'FACTORY') return 'FACTORY';
-  return 'DESIGNER';
+  const v = readString(LS_MODE);
+  return v === 'FACTORY' ? 'FACTORY' : 'DESIGNER';
 }
 
 /**
- * Get factory ID for scope binding.
- *
- * @returns Factory ID string or null if not set
- */
-export function getFactoryId(): string | null {
-  return localStorage.getItem(LS_FACTORY_ID) || null;
-}
-
-/**
- * Set runtime mode.
+ * Set runtime mode
  */
 export function setRuntimeMode(mode: RuntimeMode): void {
-  localStorage.setItem(LS_MODE, mode);
+  writeRaw(LS_MODE, mode);
 }
 
 /**
- * Set factory ID.
+ * Get factory ID for this device
+ * Only relevant in FACTORY mode
  */
-export function setFactoryId(id: string | null): void {
-  if (id) {
-    localStorage.setItem(LS_FACTORY_ID, id);
-  } else {
-    localStorage.removeItem(LS_FACTORY_ID);
-  }
+export function getFactoryId(): string | null {
+  return readString(LS_FACTORY_ID);
+}
+
+/**
+ * Set factory ID for this device
+ */
+export function setFactoryId(factoryId: string): void {
+  writeRaw(LS_FACTORY_ID, factoryId);
+}
+
+/**
+ * Clear factory ID
+ */
+export function clearFactoryId(): void {
+  remove(LS_FACTORY_ID);
+}
+
+/**
+ * Check if device is properly configured for FACTORY mode
+ */
+export function isFactoryConfigured(): boolean {
+  return getRuntimeMode() === 'FACTORY' && !!getFactoryId();
+}
+
+/**
+ * Get device context summary for display
+ */
+export function getDeviceContext(): {
+  mode: RuntimeMode;
+  factoryId: string | null;
+  configured: boolean;
+} {
+  const mode = getRuntimeMode();
+  const factoryId = getFactoryId();
+  return {
+    mode,
+    factoryId,
+    configured: mode === 'DESIGNER' || (mode === 'FACTORY' && !!factoryId),
+  };
 }

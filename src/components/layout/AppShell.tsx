@@ -1,7 +1,7 @@
 /**
- * AppShell - IIMOS Designer Workspace Main Layout
+ * AppShell - MONOLITH Designer Workspace Main Layout
  * 
- * Based on IIMOS Designer Workspace Spec v1.0
+ * Based on MONOLITH Designer Workspace Spec v1.0
  * 
  * Layout:
  * ┌─────────────────────────────────────────────────────────┐
@@ -43,6 +43,8 @@ interface AppShellProps {
   leftPanel: React.ReactNode;
   viewport: React.ReactNode;
   rightPanel: React.ReactNode;
+  /** Toolbar content to render in header (between logo and status badges) */
+  headerToolbar?: React.ReactNode;
   onExport?: () => void;
   onSpecStateChange?: (state: SpecState) => void;
 }
@@ -106,8 +108,8 @@ function GateStatusBadge({ status, errors, warnings }: { status: GateStatus; err
       </button>
 
       {showDetails && (errors.length > 0 || warnings.length > 0) && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-surface-2 border border-[#333] rounded-xl shadow-2xl z-50 p-4">
-          <h4 className="text-white font-medium text-sm mb-3">Gate Validation Report</h4>
+        <div className="absolute top-full right-0 mt-2 w-80 bg-surface-2 border border-oi-border rounded-xl shadow-2xl z-50 p-4">
+          <h4 className="text-textc-primary font-medium text-sm mb-3">Gate Validation Report</h4>
 
           {errors.length > 0 && (
             <div className="mb-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
@@ -147,7 +149,7 @@ function ExportButton({ enabled, onClick }: { enabled: boolean; onClick?: () => 
       className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all duration-200
         ${enabled
           ? 'bg-green-500 hover:bg-green-400 hover:shadow-glow-green text-black cursor-pointer'
-          : 'bg-surface-4 text-gray-500 cursor-not-allowed border border-[#333]'
+          : 'bg-surface-4 text-gray-500 cursor-not-allowed border border-oi-border'
         }`}
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,51 +162,41 @@ function ExportButton({ enabled, onClick }: { enabled: boolean; onClick?: () => 
 }
 
 // Main AppShell Component
-export function AppShell({ 
-  project, 
-  leftPanel, 
-  viewport, 
-  rightPanel, 
+export function AppShell({
+  project,
+  leftPanel,
+  viewport,
+  rightPanel,
+  headerToolbar,
   onExport,
-  onSpecStateChange 
+  onSpecStateChange
 }: AppShellProps) {
   const canExport = project.gateStatus === 'OK' && project.specState !== 'DRAFT';
   
   return (
-    <div className="h-screen w-screen flex flex-col bg-black text-white overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-surface-0 text-textc-primary overflow-hidden">
       {/* PROJECT HEADER */}
-      <header className="h-12 bg-surface-1 border-b border-[#333] flex items-center justify-between px-4 shrink-0">
+      <header className="h-12 bg-surface-1 border-b border-oi-border flex items-center justify-between px-4 shrink-0">
         {/* Left: Logo + Project Name */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-surface-3 border border-[#333] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-surface-3 border border-oi-border rounded-lg flex items-center justify-center">
               <span className="text-green-400 font-bold text-sm">II</span>
             </div>
-            <span className="text-white font-medium text-sm">IIMOS</span>
+            <span className="text-textc-primary font-medium text-sm">MONOLITH</span>
           </div>
 
-          <div className="h-6 w-px bg-[#333]" />
+          <div className="h-6 w-px bg-oi-border" />
 
           <div className="flex items-center gap-2">
-            <span className="text-white font-medium">{project.name}</span>
-            <span className="text-xs font-mono text-gray-500 bg-surface-3 px-2 py-0.5 rounded border border-[#333]">v{project.version}</span>
+            <span className="text-textc-primary font-medium">{project.name}</span>
+            <span className="text-xs font-mono text-gray-500 bg-surface-3 px-2 py-0.5 rounded border border-oi-border">v{project.version}</span>
           </div>
         </div>
 
-        {/* Center: View Controls (placeholder) */}
-        <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-1 border border-[#333]">
-          {['Front', 'Left', 'Perspective', 'Install', 'Factory', 'CNC'].map((view, i) => (
-            <button
-              key={view}
-              className={`px-3 py-1 text-xs rounded-md transition-all duration-200 ${
-                i === 2
-                  ? 'bg-surface-4 text-white'
-                  : 'text-gray-500 hover:text-white hover:bg-surface-3'
-              }`}
-            >
-              {view}
-            </button>
-          ))}
+        {/* Center: Header Toolbar */}
+        <div className="flex-1 flex items-center justify-center">
+          {headerToolbar}
         </div>
 
         {/* Right: Status + Export */}
@@ -215,7 +207,7 @@ export function AppShell({
             errors={project.gateErrors}
             warnings={project.gateWarnings}
           />
-          <div className="h-6 w-px bg-[#333]" />
+          <div className="h-6 w-px bg-oi-border" />
           <ExportButton enabled={canExport} onClick={onExport} />
         </div>
       </header>
@@ -223,8 +215,8 @@ export function AppShell({
       {/* MAIN CONTENT */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL - Designer Intent */}
-        <aside className="w-80 bg-surface-1 border-r border-[#333] flex flex-col shrink-0 overflow-hidden">
-          <div className="p-3 border-b border-[#333]">
+        <aside className="w-80 bg-surface-1 border-r border-oi-border flex flex-col shrink-0 overflow-hidden">
+          <div className="p-3 border-b border-oi-border">
             <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Designer Intent</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -233,12 +225,12 @@ export function AppShell({
         </aside>
 
         {/* CENTER - R3F Viewport */}
-        <main className="flex-1 relative overflow-hidden bg-black">
+        <main className="flex-1 relative overflow-hidden bg-surface-0">
           {viewport}
 
           {/* Engine Info Badge */}
           <div className="absolute bottom-4 left-4 pointer-events-none">
-            <div className="bg-surface-2/80 backdrop-blur-sm border border-[#333] rounded-lg px-3 py-2 space-y-1">
+            <div className="bg-surface-2/80 backdrop-blur-sm border border-oi-border rounded-lg px-3 py-2 space-y-1">
               <div className="text-green-400 text-xs font-mono font-medium flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                 BIOPHILIC RENDER ENGINE
@@ -251,8 +243,8 @@ export function AppShell({
         </main>
 
         {/* RIGHT PANEL - Parametric Contract */}
-        <aside className="w-80 bg-surface-1 border-l border-[#333] flex flex-col shrink-0 overflow-hidden">
-          <div className="p-3 border-b border-[#333]">
+        <aside className="w-80 bg-surface-1 border-l border-oi-border flex flex-col shrink-0 overflow-hidden">
+          <div className="p-3 border-b border-oi-border">
             <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Parametric Contract</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -262,7 +254,7 @@ export function AppShell({
       </div>
       
       {/* FOOTER */}
-      <footer className="h-8 bg-surface-1 border-t border-[#333] flex items-center justify-between px-4 text-xs shrink-0">
+      <footer className="h-8 bg-surface-1 border-t border-oi-border flex items-center justify-between px-4 text-xs shrink-0">
         {/* Machine Compatibility */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -270,10 +262,10 @@ export function AppShell({
             <span className="text-green-400 font-mono">Homag CENTATEQ P-110</span>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           </div>
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-oi-border" />
           <div className="flex items-center gap-2">
             <span className="text-gray-500">Nesting:</span>
-            <span className="text-white">Ready</span>
+            <span className="text-textc-primary">Ready</span>
           </div>
         </div>
 
@@ -285,14 +277,14 @@ export function AppShell({
               {project.gateStatus === 'OK' ? '✓ PASSED' : '○ PENDING'}
             </span>
           </div>
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-oi-border" />
           <div className="flex items-center gap-2">
             <span className="text-gray-500">Panels:</span>
-            <span className="text-white font-mono">6</span>
+            <span className="text-textc-primary font-mono">6</span>
           </div>
-          <div className="h-4 w-px bg-[#333]" />
+          <div className="h-4 w-px bg-oi-border" />
           <div className="text-gray-600 font-mono">
-            IIMOS Manufacturing OS v2.0
+            MONOLITH Manufacturing OS v2.0
           </div>
         </div>
       </footer>

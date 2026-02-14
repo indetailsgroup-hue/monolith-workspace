@@ -1,7 +1,7 @@
 /**
  * routes/index.tsx - React Router v6 Route Configuration
  *
- * Priority 3: Full routing for IIMOS
+ * Priority 3: Full routing for MONOLITH
  *
  * ROUTE MAP:
  * /                            - Designer workspace (default)
@@ -21,13 +21,93 @@
  * @version 0.12.6
  */
 
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { isPitchMode, withSearchParams } from '../core/ui/pitch';
-import { App } from '../App';
-import { SafetyGatePage } from '../components/pages/SafetyGatePage';
+
+// ============================================================================
+// T018 + O3 + O4: Route-level Lazy Loading
+// Lazy load heavy route components to reduce initial bundle size
+// ============================================================================
+
+// Designer Workspace - contains Canvas + three.js
+const DesignerWorkspace = lazy(() => import('../App'));
+
+// O3: Safety diagnostics page
+const SafetyGatePage = lazy(() =>
+  import('../components/pages/SafetyGatePage').then(m => ({ default: m.SafetyGatePage }))
+);
+
+// O4: Factory dashboard app
+const FactoryApp = lazy(() =>
+  import('../factory/FactoryApp').then(m => ({ default: m.FactoryApp }))
+);
+
+/**
+ * T018 + O1: Loading fallback for workspace routes
+ * CAD-grade "silent luxury" design with Monolith theme tokens
+ * Supports both dark and light themes via CSS variables
+ */
+function WorkspaceLoadingFallback() {
+  return (
+    <div className="w-screen h-screen bg-surface-0 text-textc-primary flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        {/* Spinner */}
+        <div className="relative w-10 h-10">
+          <div className="absolute inset-0 rounded-full border border-textc-primary/10" />
+          <div className="absolute inset-0 rounded-full border-2 border-textc-primary/20 border-t-textc-primary/70 animate-spin" />
+        </div>
+
+        {/* Text */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="text-sm font-medium text-textc-primary/80 tracking-wide">
+            Loading Workspace…
+          </div>
+          <div className="text-xs text-textc-secondary font-mono">
+            Initializing 3D engine & materials
+          </div>
+        </div>
+
+        {/* Subtle progress bar */}
+        <div className="w-64 h-1 rounded-full bg-textc-primary/10 overflow-hidden">
+          <div className="h-full w-1/2 bg-textc-primary/35 rounded-full animate-pulse" />
+        </div>
+
+        {/* Hint row */}
+        <div className="mt-1 flex items-center gap-2 text-[11px] text-textc-muted">
+          <span className="px-2 py-1 rounded-md bg-textc-primary/5 border border-textc-primary/10 font-mono">
+            Tip
+          </span>
+          <span>
+            Use <span className="text-textc-secondary font-mono">F</span> for Command Palette
+            {' '}•{' '}
+            <span className="text-textc-secondary font-mono">D</span> toggles dimensions
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * O3/O4: Simple loading fallback for non-workspace lazy routes
+ * Theme-aware using CSS variable tokens
+ */
+function PageLoadingFallback({ message = 'Loading…' }: { message?: string }) {
+  return (
+    <div className="w-screen h-screen bg-surface-0 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative w-8 h-8">
+          <div className="absolute inset-0 rounded-full border border-textc-primary/10" />
+          <div className="absolute inset-0 rounded-full border-2 border-textc-primary/20 border-t-textc-primary/60 animate-spin" />
+        </div>
+        <div className="text-sm text-textc-secondary">{message}</div>
+      </div>
+    </div>
+  );
+}
+
 import { ValidationScreen } from '../pages/ValidationScreen';
-import { FactoryApp } from '../factory/FactoryApp';
 import { JobDetail } from '../factory/pages/JobDetail';
 import { RequireRole } from '../core/auth/guards';
 import { hasRole, type Role } from '../core/auth/roles';
@@ -849,10 +929,14 @@ function NotFoundPage() {
 // ============================================================================
 
 export const router = createBrowserRouter([
-  // Designer Workspace (default)
+  // Designer Workspace (default) - T018: Lazy loaded
   {
     path: '/',
-    element: <App />,
+    element: (
+      <Suspense fallback={<WorkspaceLoadingFallback />}>
+        <DesignerWorkspace />
+      </Suspense>
+    ),
   },
   // Project List
   {
@@ -864,10 +948,14 @@ export const router = createBrowserRouter([
     path: '/projects/:projectId',
     element: <ProjectHomePage />,
   },
-  // Project Designer
+  // Project Designer - T018: Lazy loaded
   {
     path: '/projects/:projectId/design',
-    element: <App />,
+    element: (
+      <Suspense fallback={<WorkspaceLoadingFallback />}>
+        <DesignerWorkspace />
+      </Suspense>
+    ),
   },
   // Project Validation
   {
@@ -894,12 +982,14 @@ export const router = createBrowserRouter([
     path: '/packet/:id',
     element: <PacketViewerPage />,
   },
-  // Factory dashboard (role-protected)
+  // Factory dashboard (role-protected) - O4: Lazy loaded
   {
     path: '/factory',
     element: (
       <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
-        <FactoryApp useMockApi={false} />
+        <Suspense fallback={<PageLoadingFallback message="Loading Factory…" />}>
+          <FactoryApp useMockApi={false} />
+        </Suspense>
       </RequireRole>
     ),
   },
@@ -922,10 +1012,14 @@ export const router = createBrowserRouter([
     path: '/safety',
     element: <Navigate to="/diagnostics/safety" replace />,
   },
-  // Safety diagnostics (local-only, not authoritative)
+  // Safety diagnostics (local-only, not authoritative) - O3: Lazy loaded
   {
     path: '/diagnostics/safety',
-    element: <SafetyGatePage />,
+    element: (
+      <Suspense fallback={<PageLoadingFallback message="Loading Safety Diagnostics…" />}>
+        <SafetyGatePage />
+      </Suspense>
+    ),
   },
   // 404
   {

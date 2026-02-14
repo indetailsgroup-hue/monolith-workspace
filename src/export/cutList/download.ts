@@ -1,29 +1,32 @@
 /**
- * File Download Utility
+ * Browser Download Utility
  *
- * Browser-based file download via Blob + anchor click.
+ * Downloads text content as a file in the browser.
  */
 
 /**
- * Download text content as a file.
+ * Download text content as a file
  *
  * @param filename - Name for the downloaded file
  * @param content - Text content to download
- * @param mime - MIME type (default: text/plain)
+ * @param mime - MIME type (default: text/csv)
  */
 export function downloadTextFile(
   filename: string,
   content: string,
-  mime: string = 'text/plain;charset=utf-8'
-): void {
+  mime = 'text/csv;charset=utf-8'
+) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
-  a.style.display = 'none';
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.remove();
+
+  // Revoke after a short delay to ensure download starts
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

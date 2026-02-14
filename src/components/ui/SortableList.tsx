@@ -13,7 +13,7 @@
 
 import React, { ReactNode } from "react"
 import { Reorder, useDragControls, motion } from "motion/react"
-import { GripVertical, Check } from "lucide-react"
+import { GripVertical, Check, Trash2 } from "lucide-react"
 
 // ============================================
 // TYPES
@@ -160,7 +160,7 @@ export default function SortableList({
 }
 
 // ============================================
-// PANEL LIST (For Cabinet Panels in IIMOS)
+// PANEL LIST (For Cabinet Panels in MONOLITH)
 // ============================================
 
 export interface PanelItem {
@@ -177,6 +177,7 @@ interface PanelSortableListProps {
   panels: PanelItem[]
   selectedId: string | null
   onSelectPanel: (id: string) => void
+  onDeletePanel?: (id: string, role: string) => void
   onExpandPanel?: (id: string) => void
   expandedId?: string | null
 }
@@ -185,28 +186,30 @@ export function PanelSortableList({
   panels,
   selectedId,
   onSelectPanel,
+  onDeletePanel,
 }: PanelSortableListProps) {
   const [items, setItems] = React.useState(panels)
-  
+
   // Sync with props
   React.useEffect(() => {
     setItems(panels)
   }, [panels])
-  
+
   return (
     <Reorder.Group
       axis="y"
       values={items}
       onReorder={setItems}
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-0.5"
     >
       {items.map((panel, index) => (
-        <PanelReorderItem 
+        <PanelReorderItem
           key={panel.id}
           panel={panel}
           index={index}
           isSelected={selectedId === panel.id}
           onSelect={() => onSelectPanel(panel.id)}
+          onDelete={onDeletePanel ? () => onDeletePanel(panel.id, panel.role) : undefined}
         />
       ))}
     </Reorder.Group>
@@ -214,95 +217,104 @@ export function PanelSortableList({
 }
 
 // Separate component to use hooks properly
-function PanelReorderItem({ 
-  panel, 
-  index, 
-  isSelected, 
-  onSelect 
-}: { 
+function PanelReorderItem({
+  panel,
+  index,
+  isSelected,
+  onSelect,
+  onDelete
+}: {
   panel: PanelItem
   index: number
   isSelected: boolean
   onSelect: () => void
+  onDelete?: () => void
 }) {
   const dragControls = useDragControls()
-  
+
+  // Check if this panel is deletable (SHELF or DIVIDER)
+  const isDeletable = panel.role === 'SHELF' || panel.role === 'DIVIDER'
+
   return (
     <Reorder.Item
       value={panel}
       dragListener={false}
       dragControls={dragControls}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ 
-        type: "spring", 
-        stiffness: 400, 
+      exit={{ opacity: 0, y: -6 }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
         damping: 30,
-        delay: index * 0.03
+        delay: index * 0.02
       }}
       onClick={onSelect}
       className={cn(
-        "relative rounded-lg border cursor-pointer transition-all duration-200 group",
-        isSelected 
-          ? "bg-blue-500/15 border-blue-500/50 shadow-lg shadow-blue-500/10" 
+        "relative rounded border cursor-pointer transition-all duration-200 group",
+        isSelected
+          ? "bg-blue-500/15 border-blue-500/50"
           : "bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800"
       )}
     >
-      <div className="flex items-center gap-3 p-3">
+      <div className="flex items-center gap-1.5 px-1.5 py-1">
         {/* Drag Handle */}
-        <div 
-          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400"
+        <div
+          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 flex-shrink-0"
           onPointerDown={(e) => dragControls.start(e)}
         >
-          <GripVertical size={14} />
+          <GripVertical size={10} />
         </div>
-        
+
         {/* Color Bar */}
-        <motion.div 
+        <motion.div
           className={cn(
-            "w-1 h-10 rounded-full",
+            "w-0.5 h-6 rounded-full flex-shrink-0",
             isSelected ? "bg-blue-400" : "bg-zinc-600"
           )}
           layoutId={`bar-${panel.id}`}
         />
-        
+
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <motion.div 
+          <motion.div
             className={cn(
-              "text-sm font-medium truncate",
+              "text-xs font-medium truncate leading-tight",
               isSelected ? "text-blue-300" : "text-zinc-200"
             )}
             layout
           >
             {panel.name}
           </motion.div>
-          <div className="text-[10px] text-zinc-500 mt-0.5">
+          <div className="text-[9px] text-zinc-500 leading-tight">
             {panel.role}
           </div>
         </div>
-        
+
         {/* Dimensions */}
-        <div className="text-right">
-          <div className="text-xs text-zinc-400">
-            {panel.finishWidth} × {panel.finishHeight}
+        <div className="text-right flex-shrink-0">
+          <div className="text-[10px] text-zinc-400 leading-tight">
+            {panel.finishWidth.toFixed(1)} × {panel.finishHeight.toFixed(1)}
           </div>
           {panel.thickness && (
-            <div className="text-[10px] text-zinc-600">
+            <div className="text-[9px] text-zinc-600 leading-tight">
               t={panel.thickness.toFixed(1)}
             </div>
           )}
         </div>
-        
-        {/* Selected Indicator */}
-        {isSelected && (
-          <motion.div 
-            className="w-2 h-2 rounded-full bg-blue-400"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500 }}
-          />
+
+        {/* Delete Button - only for SHELF and DIVIDER */}
+        {isDeletable && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-all"
+            title={`Delete ${panel.role.toLowerCase()}`}
+          >
+            <Trash2 size={10} />
+          </button>
         )}
       </div>
     </Reorder.Item>

@@ -1,6 +1,6 @@
 # Operational Intelligence Component Library
 
-> Dark Mode Documentation Design System for IIMOS Designer Workspace
+> Dark Mode Documentation Design System for MONOLITH Designer Workspace
 
 ---
 
@@ -406,4 +406,4 @@ Syntax highlighting classes:
 
 ---
 
-*IIMOS Designer Workspace v2.0 - Operational Intelligence Design System*
+*MONOLITH Designer Workspace v2.0 - Operational Intelligence Design System*

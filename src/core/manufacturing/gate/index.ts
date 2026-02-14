@@ -20,7 +20,24 @@ export {
   runCabinetGate,
   canFreeze,
   getGateSummary,
+  // v1.1: Minifix integration
+  runFullCabinetGate,
+  canExport,
+  getFullGateSummary,
+  type CabinetGateReportWithMinifix,
 } from './runGate';
+
+// Minifix Gate (SPEC-MINIFIX-JOINT-LOGIC v1.0)
+export {
+  runMinifixGate,
+  canExportWithMinifix,
+  getMinifixGateSummary,
+  minifixErrorsToBlockers,
+  preflightMinifixOps,
+  type MinifixGateResult,
+  type MinifixGateError,
+  type MinifixGateErrorCode,
+} from './minifixGate';
 
 // Snapshot
 export type {

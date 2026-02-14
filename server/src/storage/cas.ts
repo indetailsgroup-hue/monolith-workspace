@@ -193,6 +193,46 @@ export class CAS {
   }
 
   /**
+   * Safely read JSON from a path (returns null if not found).
+   */
+  async readJsonSafe<T = unknown>(relativePath: string): Promise<T | null> {
+    try {
+      const buffer = await this.readBytes(relativePath);
+      return JSON.parse(buffer.toString('utf-8'));
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * List files in a directory.
+   */
+  async list(relativePath: string): Promise<string[]> {
+    if (this.useFileSystem) {
+      try {
+        const dirPath = this.getPath(relativePath);
+        return await fs.readdir(dirPath);
+      } catch {
+        return [];
+      }
+    } else {
+      // For memory store, filter keys that start with the path
+      const prefix = relativePath.endsWith('/') ? relativePath : relativePath + '/';
+      const files: string[] = [];
+      for (const key of this.memoryStore.keys()) {
+        if (key.startsWith(prefix)) {
+          const remainder = key.slice(prefix.length);
+          // Only include direct children (no nested paths)
+          if (!remainder.includes('/')) {
+            files.push(remainder);
+          }
+        }
+      }
+      return files;
+    }
+  }
+
+  /**
    * Check if a path exists.
    */
   async exists(relativePath: string): Promise<boolean> {

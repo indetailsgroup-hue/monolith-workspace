@@ -1,34 +1,46 @@
 /**
- * updateIssuePack.ts - Update Issue in Packs
+ * updateIssuePack.ts - Issue Pack Update Helpers
  *
- * Immutably updates an issue within its pack.
- * Returns new array of packs with the updated issue.
- *
- * @version 1.0.0
+ * Immutable updates to issue packs.
+ * All updates produce new objects (append-only audit trail).
  */
 
 import type { IssuePack, IssueItem, IssueStatus } from './issueTypes';
 
-/**
- * Partial update for an issue item
- */
-export interface IssuePatch {
-  status?: IssueStatus;
-  owner?: string;
-  note?: string;
-  resolvedIso?: string;
-  waivedBy?: string;
-  waivedReason?: string;
-  waivedAtIso?: string;
-  unwaivedAtIso?: string;
-  unwaivedBy?: string;
-  unwaivedReason?: string;
-}
+// ============================================
+// ISSUE PATCH TYPE
+// ============================================
 
 /**
- * Update an issue within its packs (immutable)
+ * Fields that can be patched on an issue
+ */
+export type IssuePatch = Partial<
+  Pick<
+    IssueItem,
+    | 'status'
+    | 'owner'
+    | 'note'
+    | 'waivedAtIso'
+    | 'waivedBy'
+    | 'waivedReason'
+    | 'unwaivedAtIso'
+    | 'unwaivedBy'
+    | 'unwaivedReason'
+  >
+>;
+
+// ============================================
+// UPDATE SINGLE ISSUE
+// ============================================
+
+/**
+ * Update a single issue within packs (immutable)
  *
- * @returns New array of packs with the updated issue
+ * @param args.packs - Current issue packs
+ * @param args.issueId - Issue ID to update
+ * @param args.patch - Fields to update
+ * @param args.nowIso - Current timestamp
+ * @returns New packs array with updated issue
  */
 export function updateIssueInPacks(args: {
   packs: IssuePack[];
@@ -36,39 +48,108 @@ export function updateIssueInPacks(args: {
   patch: IssuePatch;
   nowIso: string;
 }): IssuePack[] {
-  const { packs, issueId, patch, nowIso } = args;
-
-  return packs.map((pack) => ({
+  return args.packs.map((pack) => ({
     ...pack,
-    items: pack.items.map((item) => {
-      if (item.id !== issueId) return item;
-
-      const updated: IssueItem = { ...item };
-
-      if (patch.status !== undefined) updated.status = patch.status;
-      if (patch.owner !== undefined) updated.owner = patch.owner;
-      if (patch.note !== undefined) updated.note = patch.note;
-
-      // Resolve
-      if (patch.status === 'RESOLVED') {
-        updated.resolvedIso = patch.resolvedIso ?? nowIso;
+    items: (pack.items ?? []).map((item) => {
+      if (item.id !== args.issueId) {
+        return item;
       }
 
-      // Waive
-      if (patch.status === 'WAIVED') {
-        updated.waivedAtIso = patch.waivedAtIso ?? nowIso;
-        if (patch.waivedBy) updated.waivedBy = patch.waivedBy;
-        if (patch.waivedReason) updated.waivedReason = patch.waivedReason;
-      }
-
-      // Unwaive
-      if (patch.unwaivedBy) {
-        updated.unwaivedAtIso = patch.unwaivedAtIso ?? nowIso;
-        updated.unwaivedBy = patch.unwaivedBy;
-        if (patch.unwaivedReason) updated.unwaivedReason = patch.unwaivedReason;
-      }
-
-      return updated;
+      return {
+        ...item,
+        ...args.patch,
+        updatedAtIso: args.nowIso,
+      };
     }),
   }));
+}
+
+// ============================================
+// BULK UPDATES
+// ============================================
+
+/**
+ * Update multiple issues at once
+ */
+export function updateMultipleIssues(args: {
+  packs: IssuePack[];
+  updates: Array<{ issueId: string; patch: IssuePatch }>;
+  nowIso: string;
+}): IssuePack[] {
+  // Build lookup map for efficiency
+  const updateMap = new Map(
+    args.updates.map((u) => [u.issueId, u.patch])
+  );
+
+  return args.packs.map((pack) => ({
+    ...pack,
+    items: (pack.items ?? []).map((item) => {
+      const patch = updateMap.get(item.id);
+      if (!patch) {
+        return item;
+      }
+
+      return {
+        ...item,
+        ...patch,
+        updatedAtIso: args.nowIso,
+      };
+    }),
+  }));
+}
+
+/**
+ * Set all issues to a specific status
+ * (useful for bulk operations)
+ */
+export function setAllIssuesToStatus(args: {
+  packs: IssuePack[];
+  status: IssueStatus;
+  nowIso: string;
+  waivedBy?: string;
+  waivedReason?: string;
+}): IssuePack[] {
+  const isWaive = args.status === 'WAIVED';
+
+  return args.packs.map((pack) => ({
+    ...pack,
+    items: (pack.items ?? []).map((item) => ({
+      ...item,
+      status: args.status,
+      updatedAtIso: args.nowIso,
+      ...(isWaive
+        ? {
+            waivedAtIso: args.nowIso,
+            waivedBy: args.waivedBy,
+            waivedReason: args.waivedReason,
+          }
+        : {}),
+    })),
+  }));
+}
+
+// ============================================
+// FILTER HELPERS
+// ============================================
+
+/**
+ * Remove resolved/waived issues from packs
+ * (for creating "active issues only" view)
+ */
+export function filterActiveIssues(packs: IssuePack[]): IssuePack[] {
+  return packs
+    .map((pack) => ({
+      ...pack,
+      items: pack.items.filter(
+        (item) => item.status === 'OPEN' || item.status === 'IN_PROGRESS'
+      ),
+    }))
+    .filter((pack) => pack.items.length > 0);
+}
+
+/**
+ * Get all issues flattened from packs
+ */
+export function flattenIssues(packs: IssuePack[]): IssueItem[] {
+  return packs.flatMap((pack) => pack.items ?? []);
 }

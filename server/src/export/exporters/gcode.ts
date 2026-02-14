@@ -114,7 +114,7 @@ function generateGCode(
   const lines: string[] = [];
 
   // Header comments
-  lines.push(`; IIMOS G-Code Export`);
+  lines.push(`; MONOLITH G-Code Export`);
   lines.push(`; Job: ${jobName}`);
   lines.push(`; Panel: ${panel.id || panel.label}`);
   lines.push(`; Size: ${panel.width}x${panel.height}x${panel.thickness}mm`);

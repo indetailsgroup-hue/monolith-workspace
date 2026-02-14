@@ -4,7 +4,7 @@
  * Generates Biesse-compatible ISO G-code.
  * Baseline implementation - can be extended for specific Biesse post requirements.
  *
- * @version 1.3.0 - Phase D5-C.1A: Added through-hole dwell support
+ * @version 1.4.0 - Phase D5-D.1: Added automatic coolant control (M8/M9)
  */
 
 import type { MachineProfile } from '../../machine/machineProfile';
@@ -89,7 +89,8 @@ function generateBiesseGcode(
   generateBiesseHeader(builder, opts, machine, opGraph);
 
   // Generate setup codes
-  generateSetup(builder, machine, safeZ);
+  const useCoolant = opts.useCoolant ?? false;
+  generateSetup(builder, machine, safeZ, useCoolant);
 
   // Track current state
   let currentToolId: string | null = null;
@@ -186,12 +187,17 @@ function generateBiesseHeader(
   builder.addBlank();
 }
 
-function generateSetup(builder: GcodeBuilder, machine: MachineProfile, safeZ: number): void {
+function generateSetup(builder: GcodeBuilder, machine: MachineProfile, safeZ: number, useCoolant: boolean): void {
   builder.addComment('Setup');
   builder.setMillimeters(); // G21
   builder.setAbsolute(); // G90
   builder.setXYPlane(); // G17
   builder.cancelCycle(); // G80
+
+  // D5-D.1: Enable coolant if requested
+  if (useCoolant) {
+    builder.coolantOn(); // M8
+  }
 
   // Initial safe position
   builder.rapid({ z: safeZ });

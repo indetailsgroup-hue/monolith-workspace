@@ -41,7 +41,7 @@ export class GCode {
 
   constructor(options: GCodeOptions) {
     this.profile = options.profile;
-    this.jobName = options.jobName ?? 'IIMOS_JOB';
+    this.jobName = options.jobName ?? 'MONOLITH_JOB';
     this.sheetIndex = options.sheetIndex ?? 0;
   }
 
@@ -137,6 +137,42 @@ export class GCode {
     return this;
   }
 
+  /**
+   * Arc to point with center-based I/J calculation.
+   *
+   * This method calculates I/J offsets from the current position to the arc center.
+   * Assumes current X/Y position is known (call after a linear or rapid move).
+   *
+   * @param direction - 'CW' or 'CCW'
+   * @param endX - End point X
+   * @param endY - End point Y
+   * @param centerX - Arc center X
+   * @param centerY - Arc center Y
+   * @param currentX - Current X position (start of arc)
+   * @param currentY - Current Y position (start of arc)
+   * @param f - Feed rate (optional)
+   */
+  arcTo(
+    direction: 'CW' | 'CCW',
+    endX: number,
+    endY: number,
+    centerX: number,
+    centerY: number,
+    currentX: number,
+    currentY: number,
+    f?: number
+  ): this {
+    // I/J are relative offsets from current position to center
+    const i = centerX - currentX;
+    const j = centerY - currentY;
+
+    if (direction === 'CW') {
+      return this.arcCW(endX, endY, i, j, f);
+    } else {
+      return this.arcCCW(endX, endY, i, j, f);
+    }
+  }
+
   // ==========================================================================
   // Z Moves (Common Patterns)
   // ==========================================================================
@@ -208,6 +244,17 @@ export class GCode {
    */
   dwell(seconds: number): this {
     this.emit(`G4 P${seconds}`);
+    return this;
+  }
+
+  /**
+   * Dwell (pause) in milliseconds.
+   */
+  dwellMs(ms: number): this {
+    if (ms > 0) {
+      // G4 P in seconds
+      this.emit(`G4 P${(ms / 1000).toFixed(3)}`);
+    }
     return this;
   }
 

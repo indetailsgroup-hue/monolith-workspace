@@ -1,6 +1,6 @@
 # WebGPU Adoption Roadmap & Migration Strategy
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -24,7 +24,7 @@
 
 ## 1. Executive Summary
 
-**WebGPU** is the next-generation graphics API for the web, designed to replace WebGL and unlock modern GPU capabilities. For IIMOS Designer Workspace, WebGPU will provide:
+**WebGPU** is the next-generation graphics API for the web, designed to replace WebGL and unlock modern GPU capabilities. For MONOLITH Designer Workspace, WebGPU will provide:
 
 - **10x more draw calls** (render more objects simultaneously)
 - **Compute shaders** (physics simulation, AI inference on GPU)
@@ -40,8 +40,8 @@
 | Safari iOS Support | 🔄 Q1-Q2 2026 (Safari 18+) | In Progress |
 | Three.js WebGPURenderer | ✅ Stable | Available |
 | R3F WebGPU Support | ✅ Experimental | Available |
-| IIMOS Phase 1 Testing | Q2 2026 | Planned |
-| IIMOS Production Release | Q4 2026 | Planned |
+| MONOLITH Phase 1 Testing | Q2 2026 | Planned |
+| MONOLITH Production Release | Q4 2026 | Planned |
 
 ### Strategic Recommendation
 
@@ -76,7 +76,7 @@
 3. **Bind Groups:** Organize shader resources efficiently
 4. **Compute Shaders:** Run general-purpose code on GPU
 
-### 2.3 Why It Matters for IIMOS
+### 2.3 Why It Matters for MONOLITH
 
 **Current Limitations (WebGL):**
 - ❌ Rendering 100+ cabinet panels = performance drops
@@ -656,7 +656,7 @@ fn generate_wood_grain(uv: vec2<f32>) -> vec4<f32> {
 
 ## 13. Conclusion
 
-WebGPU represents a **generational leap** in web graphics capabilities. For IIMOS Designer Workspace, it's not just about rendering more panels—it's about unlocking entirely new categories of features:
+WebGPU represents a **generational leap** in web graphics capabilities. For MONOLITH Designer Workspace, it's not just about rendering more panels—it's about unlocking entirely new categories of features:
 
 - 🎨 **Photorealistic rendering**
 - 🤖 **AI-powered design tools**
@@ -687,5 +687,5 @@ WebGPU represents a **generational leap** in web graphics capabilities. For IIMO
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS Technical Team
+- **Owner:** MONOLITH Technical Team
 - **Status:** ✅ Active

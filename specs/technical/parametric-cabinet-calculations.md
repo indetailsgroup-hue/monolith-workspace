@@ -1,8 +1,8 @@
 # Parametric Cabinet Calculation Algorithms
 # หลักการคำนวณและอัลกอริทึมสำหรับตู้เฟอร์นิเจอร์ระบบพารามิเตอร์
 
-**Version:** 1.0
-**Last Updated:** 2026-01-10
+**Version:** 1.2
+**Last Updated:** 2026-01-12
 **Status:** Technical Reference
 **Authors:** Manufacturing Engineering Team
 
@@ -145,15 +145,24 @@ W_cut = 600 - (2.0 + 2.0) = 596 mm
 H_cut = 200 - (2.0 + 2.0) = 196 mm
 ```
 
-#### Advanced: Pre-milling Compensation
+#### Pre-milling (การปาดผิว)
 
-เครื่อง Edge Bander อาจมีการปาดผิวไม้เดิม (Pre-milling) 0.5mm เพื่อให้ขอบเรียบเนียนที่สุด:
+เครื่อง Edge Bander อาจมีการปาดผิวไม้เดิม (Pre-milling) 0.5-1.0mm เพื่อให้ขอบเรียบเนียนที่สุด
+
+**⚠️ สิ่งสำคัญ:** Pre-milling เป็น **ขั้นตอนเครื่องจักร** ที่เกิดขึ้นระหว่างกระบวนการปิดขอบ **ไม่ใช่ค่าที่บวกเพิ่มในขนาดตัด**
 
 ```
-Dimension_cut = Dimension_finish - Edge_thickness + Premill_depth
+Cut Size = Finish Size - Edge Thickness
 ```
 
-อย่างไรก็ตาม สำหรับการใช้งานทั่วไป เราใช้สูตรพื้นฐาน: **Cut = Finish - Edge**
+Pre-milling เป็นเพียงพารามิเตอร์สำหรับอ้างอิง/แสดงผลในระบบ Manufacturing Parameters แต่ **ไม่มีผลต่อการคำนวณ Cut Size**
+
+**สูตรมาตรฐาน (Standard Formula):**
+```typescript
+// Cut Size calculation - NO pre-milling added
+cutWidth = finishWidth - leftEdgeThickness - rightEdgeThickness
+cutHeight = finishHeight - topEdgeThickness - bottomEdgeThickness
+```
 
 #### ประเภทวัสดุขอบ (Edge Banding Types)
 
@@ -784,6 +793,7 @@ function calculateShelfDimensions(
   }
 
   // 7. คำนวณขนาดตัด (Cut Size)
+  // Cut Size = Finish Size - Edge Thicknesses (no pre-milling added)
   const edgeThickness = getEdgeThickness(shelfType)
   const D_shelf_cut = D_shelf_finish - edgeThickness.front - edgeThickness.rear
   const W_shelf_cut = W_shelf_finish - edgeThickness.left - edgeThickness.right
@@ -1198,6 +1208,45 @@ void main() {
    - ไม่เกินขนาดเครื่องจักร
 
 การนำสูตรเหล่านี้ไปใช้จะช่วยลดความผิดพลาดในการผลิต เพิ่มความแม่นยำ และยกระดับคุณภาพเฟอร์นิเจอร์ให้ทัดเทียมมาตรฐานสากล
+
+---
+
+## 3D Rendering Technical Notes
+
+### Edge Band Z-Fighting Prevention
+
+เมื่อแสดงผล Edge Band บน 3D Panel จะเกิดปัญหา **Z-fighting** (การกระพริบสลับระหว่าง texture) เนื่องจาก Edge Band mesh อยู่ในระดับ depth เดียวกับ Panel surface
+
+#### สาเหตุ
+- Edge Band strip position: `panel.finishWidth/2 - et/2`
+- Edge Band outer face: `panel.finishWidth/2 - et/2 + et/2 = panel.finishWidth/2`
+- Panel surface: `panel.finishWidth/2`
+- ทั้งสองอยู่ที่ Z-depth เดียวกัน → GPU สลับแสดงผลแบบสุ่ม
+
+#### วิธีแก้ไข
+ใช้ `polygonOffset` บน Edge Band material เพื่อเลื่อน depth ใน GPU buffer:
+
+```typescript
+// src/components/canvas/Cabinet3D.tsx
+<meshStandardMaterial
+  map={edgeBandTexture}
+  color={strip.color}
+  roughness={0.3}
+  metalness={0.02}
+  polygonOffset={true}
+  polygonOffsetFactor={-1}
+  polygonOffsetUnits={-1}
+/>
+```
+
+#### ค่า polygonOffset
+| Parameter | Value | Effect |
+|-----------|-------|--------|
+| `polygonOffset` | `true` | เปิดใช้งาน polygon offset |
+| `polygonOffsetFactor` | `-1` | เลื่อน depth ตาม slope |
+| `polygonOffsetUnits` | `-1` | เลื่อน depth คงที่ |
+
+ค่า negative (-1) ทำให้ Edge Band แสดงผล "ด้านหน้า" Panel surface ใน depth buffer
 
 ---
 

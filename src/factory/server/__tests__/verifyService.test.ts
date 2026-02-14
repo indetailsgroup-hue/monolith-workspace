@@ -78,15 +78,15 @@ describe("isValidJobId", () => {
 describe("getJobPacketPath", () => {
   beforeEach(() => {
     // Set up mock config
-    process.env.IIMOS_JOB_STORAGE_ROOT = "/mock/jobs";
-    process.env.IIMOS_VERIFIER_BIN_PATH = "/mock/bin";
-    process.env.IIMOS_PROD_KEYS_PATH = "/mock/keys";
+    process.env.MONOLITH_JOB_STORAGE_ROOT = "/mock/jobs";
+    process.env.MONOLITH_VERIFIER_BIN_PATH = "/mock/bin";
+    process.env.MONOLITH_PROD_KEYS_PATH = "/mock/keys";
   });
 
   afterEach(() => {
-    delete process.env.IIMOS_JOB_STORAGE_ROOT;
-    delete process.env.IIMOS_VERIFIER_BIN_PATH;
-    delete process.env.IIMOS_PROD_KEYS_PATH;
+    delete process.env.MONOLITH_JOB_STORAGE_ROOT;
+    delete process.env.MONOLITH_VERIFIER_BIN_PATH;
+    delete process.env.MONOLITH_PROD_KEYS_PATH;
   });
 
   it("should throw for invalid job ID", () => {
@@ -242,12 +242,12 @@ describe("verifyAudit", () => {
 
 describe("verifyService integration (mock mode)", () => {
   beforeEach(() => {
-    process.env.IIMOS_VERIFY_MOCK = "true";
+    process.env.MONOLITH_VERIFY_MOCK = "true";
     clearAuditLog();
   });
 
   afterEach(() => {
-    delete process.env.IIMOS_VERIFY_MOCK;
+    delete process.env.MONOLITH_VERIFY_MOCK;
   });
 
   // Note: Full integration tests require actual verifier binary

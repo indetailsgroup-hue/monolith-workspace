@@ -125,7 +125,7 @@ const SUMMARY_MESSAGES: Partial<Record<VerifyErrorCode, string>> = {
 // ============================================================================
 
 const TOOL_NAME = "factory-service";
-const TOOL_VERSION = process.env.IIMOS_BUILD_SHA || "dev";
+const TOOL_VERSION = process.env.MONOLITH_BUILD_SHA || "dev";
 
 // ============================================================================
 // Synthetic Golden Builder
@@ -189,7 +189,7 @@ export function buildSyntheticGolden(params: SyntheticGoldenParams): SyntheticGo
 
   if (code === "E_VERIFY_EXEC") {
     logLines.push(`Execution failed: Unable to start verifier process`);
-    logLines.push(`Check that IIMOS_VERIFIER_BIN_PATH is correct and executable`);
+    logLines.push(`Check that MONOLITH_VERIFIER_BIN_PATH is correct and executable`);
   }
 
   logLines.push("");

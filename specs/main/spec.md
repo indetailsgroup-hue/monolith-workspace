@@ -1,8 +1,8 @@
-# IIMOS Designer Workspace v2.0 - Specification
+# MONOLITH Designer Workspace v2.0 - Specification
 
 ## Overview
 
-**IIMOS Designer Workspace v2.0** is a parametric cabinet design and manufacturing system for modern furniture manufacturing. The system enables designers to create cabinet designs while maintaining manufacturing precision and validating against CNC machine constraints.
+**MONOLITH Designer Workspace v2.0** is a parametric cabinet design and manufacturing system for modern furniture manufacturing. The system enables designers to create cabinet designs while maintaining manufacturing precision and validating against CNC machine constraints.
 
 **Core Philosophy**: "Design is Free — Manufacturing is Deterministic"
 

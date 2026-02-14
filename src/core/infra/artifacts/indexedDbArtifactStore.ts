@@ -21,7 +21,7 @@ import type {
 // CONSTANTS
 // ============================================
 
-const DB_NAME = 'iimos-artifacts';
+const DB_NAME = 'monolith-artifacts';
 const DB_VERSION = 1;
 const STORE_NAME = 'artifacts';
 

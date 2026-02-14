@@ -2,7 +2,7 @@
  * Golden Output Parser
  * P1.1 Factory Ops UX - PR-P1.1-B.1
  *
- * Parses IIMOS_VERIFY_V1 golden format output.
+ * Parses MONOLITH_VERIFY_V1 golden format output.
  * Strict header check, tolerant KV parsing, strict required key validation.
  *
  * @version 0.12.0
@@ -35,7 +35,7 @@ export type GoldenValidationResult = ValidationResult | ValidationError;
 // ============================================================================
 
 /** Golden format header - must be first line */
-export const GOLDEN_HEADER = "IIMOS_VERIFY_V1";
+export const GOLDEN_HEADER = "MONOLITH_VERIFY_V1";
 
 /** Log section separator */
 export const LOG_SEPARATOR = "---LOG---";
@@ -76,7 +76,7 @@ export const OPTIONAL_KEYS = [
  * Parse golden format output
  *
  * Algorithm:
- * 1. Check first line is IIMOS_VERIFY_V1
+ * 1. Check first line is MONOLITH_VERIFY_V1
  * 2. Parse KEY=VALUE lines until ---LOG---
  * 3. Everything after ---LOG--- is verbatim log
  *
@@ -265,7 +265,7 @@ export function buildTimeoutGolden(
     details: jobId ? { JOB_ID: jobId } : undefined,
     logLines: [
       `[${tool}] Process killed after ${Math.round(timeoutMs / 1000)}s timeout`,
-      `[${tool}] iimos-verify did not respond`,
+      `[${tool}] monolith-verify did not respond`,
     ],
   });
 }

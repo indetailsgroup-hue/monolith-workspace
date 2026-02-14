@@ -1,5 +1,5 @@
 /**
- * IIMOS Crypto Module
+ * MONOLITH Crypto Module
  *
  * Step 8: Added Signer interface, KeyStore, ECDSA P-256
  */

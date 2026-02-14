@@ -15,7 +15,7 @@ import * as fs from "fs";
 // ============================================================================
 
 export interface VerifyConfig {
-  /** Absolute path to iimos-verify binary */
+  /** Absolute path to monolith-verify binary */
   verifierBinPath: string;
   /** Absolute path to production keyset JSON */
   prodKeysPath: string;
@@ -34,12 +34,12 @@ export interface VerifyConfig {
 // ============================================================================
 
 const ENV_KEYS = {
-  VERIFIER_BIN_PATH: "IIMOS_VERIFIER_BIN_PATH",
-  PROD_KEYS_PATH: "IIMOS_PROD_KEYS_PATH",
-  VERIFY_TIMEOUT_MS: "IIMOS_VERIFY_TIMEOUT_MS",
-  MAX_LOG_BYTES: "IIMOS_MAX_LOG_BYTES",
-  VERIFIER_WORKDIR: "IIMOS_VERIFIER_WORKDIR",
-  JOB_STORAGE_ROOT: "IIMOS_JOB_STORAGE_ROOT",
+  VERIFIER_BIN_PATH: "MONOLITH_VERIFIER_BIN_PATH",
+  PROD_KEYS_PATH: "MONOLITH_PROD_KEYS_PATH",
+  VERIFY_TIMEOUT_MS: "MONOLITH_VERIFY_TIMEOUT_MS",
+  MAX_LOG_BYTES: "MONOLITH_MAX_LOG_BYTES",
+  VERIFIER_WORKDIR: "MONOLITH_VERIFIER_WORKDIR",
+  JOB_STORAGE_ROOT: "MONOLITH_JOB_STORAGE_ROOT",
 } as const;
 
 // ============================================================================
@@ -231,7 +231,7 @@ export function clearConfigCache(): void {
  * Check if running in development/mock mode
  */
 export function isVerifyMockMode(): boolean {
-  return process.env.IIMOS_VERIFY_MOCK === "true";
+  return process.env.MONOLITH_VERIFY_MOCK === "true";
 }
 
 /**
@@ -239,7 +239,7 @@ export function isVerifyMockMode(): boolean {
  */
 export function createMockConfig(overrides: Partial<VerifyConfig> = {}): VerifyConfig {
   return {
-    verifierBinPath: overrides.verifierBinPath ?? "/mock/iimos-verify",
+    verifierBinPath: overrides.verifierBinPath ?? "/mock/monolith-verify",
     prodKeysPath: overrides.prodKeysPath ?? "/mock/production.pubkeys.v1.json",
     timeoutMs: overrides.timeoutMs ?? DEFAULTS.TIMEOUT_MS,
     maxLogBytes: overrides.maxLogBytes ?? DEFAULTS.MAX_LOG_BYTES,

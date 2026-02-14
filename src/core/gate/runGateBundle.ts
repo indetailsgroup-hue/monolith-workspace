@@ -1,95 +1,169 @@
 /**
- * runGateBundle.ts - Gate Bundle Runner
+ * runGateBundle.ts - Gate Bundle Runner for Multi-Select
  *
- * Runs gate validation across all selected cabinets.
- * Gate checking verifies manufacturing constraints before allowing commit.
+ * ARCHITECTURE:
+ * - Runs gate validation for all cabinets in selection
+ * - Merges collision issues with per-cabinet gate issues
+ * - Returns unified GateBundleResult
  *
- * @version 1.0.0
+ * USAGE:
+ * const result = runGateBundle({
+ *   selection: previewPositions,
+ *   collisionReport,
+ *   minGapMm: 1,
+ *   runGatePerCabinet,
+ * });
+ *
+ * if (!result.ok) {
+ *   // Block commit
+ * }
  */
 
-import type { GateBundleResult, GateIssue, GateResultPerCabinet } from './gateBundleTypes';
 import type { CabinetInstanceMinimal } from '../collision/collisionAdapter';
 import type { CollisionReport } from '../collision/collisionReport';
+import type { GateBundleResult, GatePerCabinet, GateIssue } from './gateBundleTypes';
+import { collisionReportToGateIssues, indexIssuesBySubject } from './collisionToIssues';
+
+// ============================================
+// TYPES
+// ============================================
 
 /**
- * Gate runner callback type
- *
- * Provided by the consumer to evaluate each cabinet.
+ * Per-cabinet gate runner function
  */
 export type RunGatePerCabinetFn = (
-  cabinets: CabinetInstanceMinimal[],
-  selectionIds: string[]
-) => GateBundleResult;
+  cab: CabinetInstanceMinimal
+) => { ok: boolean; issues: GateIssue[] };
+
+// ============================================
+// MAIN FUNCTION
+// ============================================
 
 /**
- * Gate bundle runner configuration
- */
-interface RunGateBundleConfig {
-  /** Selected cabinets */
-  selection: CabinetInstanceMinimal[];
-  /** Collision report */
-  collisionReport: CollisionReport | null;
-  /** Minimum gap setting (mm) */
-  minGapMm: number;
-  /** Per-cabinet gate runner */
-  runGatePerCabinet: RunGatePerCabinetFn;
-}
-
-/**
- * Run gate bundle validation
+ * Run gate validation for entire selection
  *
- * 1. Runs per-cabinet gate checks via callback
- * 2. Adds global collision-based issues if needed
- * 3. Aggregates results
+ * @param args.selection - Preview positions of selected cabinets
+ * @param args.collisionReport - Collision report (may be null)
+ * @param args.minGapMm - Minimum gap for collision messages
+ * @param args.runGatePerCabinet - Function to run per-cabinet gate checks
+ * @returns Combined GateBundleResult
  */
-export function runGateBundle(config: RunGateBundleConfig): GateBundleResult {
-  const { selection, collisionReport, minGapMm, runGatePerCabinet } = config;
+export function runGateBundle(args: {
+  selection: CabinetInstanceMinimal[];
+  collisionReport: CollisionReport | null;
+  minGapMm: number;
+  runGatePerCabinet: RunGatePerCabinetFn;
+}): GateBundleResult {
+  const perCabinet: GatePerCabinet[] = [];
 
-  // Run per-cabinet gate checks
-  const selectionIds = selection.map((c) => c.id);
-  const perCabinetResult = runGatePerCabinet(selection, selectionIds);
+  // Convert collision report to gate issues
+  const collisionIssues = collisionReportToGateIssues({
+    report: args.collisionReport,
+    minGapMm: args.minGapMm,
+    symmetric: true,
+  });
 
-  // Add collision-based global issues
-  const globalIssues: GateIssue[] = [...perCabinetResult.globalIssues];
+  // Index collision issues by subject ID
+  const collisionBySubject = indexIssuesBySubject(collisionIssues);
 
-  if (collisionReport?.blocked) {
-    globalIssues.push({
-      code: 'COLLISION_BLOCKED',
-      message: `Collision detected: ${collisionReport.pairs.length} collision pairs`,
-      severity: 'error',
+  let totalIssues = 0;
+  let errorCount = 0;
+  let warningCount = 0;
+
+  // Run gate for each cabinet
+  for (const cab of args.selection) {
+    const baseResult = args.runGatePerCabinet(cab);
+    const collisionForCab = collisionBySubject.get(cab.id) ?? [];
+
+    // Merge issues
+    const allIssues = [...baseResult.issues, ...collisionForCab];
+
+    // Check if any errors
+    const hasError = allIssues.some(i => i.severity === 'ERROR');
+    const ok = !hasError;
+
+    // Count issues
+    for (const issue of allIssues) {
+      totalIssues++;
+      if (issue.severity === 'ERROR') errorCount++;
+      else warningCount++;
+    }
+
+    perCabinet.push({
+      id: cab.id,
+      ok,
+      issues: allIssues,
     });
   }
 
-  // Check minimum gap
-  if (collisionReport && collisionReport.worstGapMm !== undefined) {
-    if (collisionReport.worstGapMm < minGapMm && collisionReport.worstGapMm > 0) {
-      globalIssues.push({
-        code: 'MIN_GAP_VIOLATION',
-        message: `Minimum gap ${minGapMm}mm violated: worst gap is ${collisionReport.worstGapMm}mm`,
-        severity: 'warning',
-      });
-    }
+  // Global issues (collision issues without subject)
+  const globalIssues = collisionBySubject.get('__GLOBAL__') ?? [];
+  for (const issue of globalIssues) {
+    totalIssues++;
+    if (issue.severity === 'ERROR') errorCount++;
+    else warningCount++;
   }
 
-  // Recalculate totals
-  const errorCount =
-    perCabinetResult.errorCount +
-    globalIssues.filter((i) => i.severity === 'error').length -
-    perCabinetResult.globalIssues.filter((i) => i.severity === 'error').length;
-
-  const warningCount =
-    perCabinetResult.warningCount +
-    globalIssues.filter((i) => i.severity === 'warning').length -
-    perCabinetResult.globalIssues.filter((i) => i.severity === 'warning').length;
-
-  const totalIssues = errorCount + warningCount;
+  const ok = errorCount === 0;
 
   return {
-    ok: errorCount === 0,
-    perCabinet: perCabinetResult.perCabinet,
+    ok,
+    perCabinet,
     globalIssues,
     totalIssues,
     errorCount,
     warningCount,
   };
+}
+
+/**
+ * Simple gate runner that only checks collision
+ * (Use when you don't have per-cabinet gate checks)
+ */
+export function runGateBundleCollisionOnly(args: {
+  selection: CabinetInstanceMinimal[];
+  collisionReport: CollisionReport | null;
+  minGapMm: number;
+}): GateBundleResult {
+  return runGateBundle({
+    ...args,
+    runGatePerCabinet: () => ({ ok: true, issues: [] }),
+  });
+}
+
+/**
+ * Check if gate bundle blocks commit
+ */
+export function isGateBundleBlocked(result: GateBundleResult | null): boolean {
+  if (!result) return false;
+  return !result.ok;
+}
+
+/**
+ * Get summary string for gate bundle
+ */
+export function formatGateBundleSummary(result: GateBundleResult): string {
+  if (result.ok) {
+    return `Gate OK (${result.warningCount} warnings)`;
+  }
+  return `Gate BLOCKED: ${result.errorCount} errors, ${result.warningCount} warnings`;
+}
+
+/**
+ * Get formatted issues list
+ */
+export function formatGateBundleIssues(result: GateBundleResult): string[] {
+  const formatted: string[] = [];
+
+  for (const pc of result.perCabinet) {
+    for (const issue of pc.issues) {
+      formatted.push(`[${issue.severity}] ${issue.message}`);
+    }
+  }
+
+  for (const issue of result.globalIssues) {
+    formatted.push(`[${issue.severity}] ${issue.message}`);
+  }
+
+  return formatted;
 }

@@ -1,5 +1,5 @@
 /**
- * IIMOS Export Module
+ * MONOLITH Export Module
  *
  * Factory artifact generation with SpecState enforcement
  *

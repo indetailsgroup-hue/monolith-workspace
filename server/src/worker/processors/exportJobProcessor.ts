@@ -498,7 +498,7 @@ async function exportGcode(
 
 function generateSimpleGcode(jobName: string, width: number, height: number, thickness: number): string {
   const lines: string[] = [
-    `; IIMOS G-Code Export`,
+    `; MONOLITH G-Code Export`,
     `; Job: ${jobName}`,
     `; Size: ${width}x${height}x${thickness}mm`,
     `; Generated: ${new Date().toISOString()}`,

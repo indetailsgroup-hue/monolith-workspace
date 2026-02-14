@@ -1,71 +1,79 @@
 /**
- * Command Palette - Plasticity-Style Quick Actions
+ * Command Palette - Deep Space Theme
  *
- * Press Space or Cmd+K to open.
+ * Press F or Cmd+K to open.
  * Type to filter commands, Enter to execute.
  *
- * "Designer types 'fillet' → System activates Edge Profile tool"
+ * Uses centralized command registry and UI store.
+ * Shows "Frequent" section based on telemetry data.
  *
- * v1.0: Initial command palette
+ * @version 3.0.0
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useModelingStore } from '@/core/modeling';
-import { MODELING_COMMANDS, type CommandDefinition, type SelectionType } from '@/core/modeling/types';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { useUiStore } from '@/core/store/useUiStore';
+import {
+  searchUiCommands,
+  executeUiCommand,
+  getUiCommandGroups,
+  canExecuteUiCommand,
+  getUiCommand,
+  type UiCommand,
+} from '@/core/commands/uiRegistry';
+import { useCommandTelemetry } from '@/core/commands/telemetry';
 
-interface CommandPaletteProps {
-  /** Override open state (for controlled mode) */
-  isOpen?: boolean;
-  /** Callback when closed */
-  onClose?: () => void;
-}
+// ============================================================================
+// Component
+// ============================================================================
 
-export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPaletteProps) {
+export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Store state
-  const storeOpen = useModelingStore((s) => s.commandPaletteOpen);
-  const query = useModelingStore((s) => s.commandPaletteQuery);
-  const selection = useModelingStore((s) => s.selection);
-  const setQuery = useModelingStore((s) => s.setCommandPaletteQuery);
-  const closeCommandPalette = useModelingStore((s) => s.closeCommandPalette);
-  const executeCommand = useModelingStore((s) => s.executeCommand);
+  const isOpen = useUiStore((s) => s.commandPalette.isOpen);
+  const query = useUiStore((s) => s.commandPalette.query);
+  const selectedIndex = useUiStore((s) => s.commandPalette.selectedIndex);
+  const setQuery = useUiStore((s) => s.setCommandPaletteQuery);
+  const setSelectedIndex = useUiStore((s) => s.setCommandPaletteSelectedIndex);
+  const closeCommandPalette = useUiStore((s) => s.closeCommandPalette);
 
-  const isOpen = controlledOpen ?? storeOpen;
-  const selectionType: SelectionType = selection?.type || 'none';
-
-  // Local state for keyboard navigation
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // Filter commands based on query and selection
+  // Filter commands based on query
   const filteredCommands = useMemo(() => {
-    const q = query.toLowerCase().trim();
+    return searchUiCommands(query);
+  }, [query]);
 
-    // Filter by selection type
-    let commands = MODELING_COMMANDS.filter(
-      (cmd) =>
-        cmd.requiresSelection.includes(selectionType) ||
-        cmd.requiresSelection.includes('panel') ||
-        cmd.requiresSelection.includes('cabinet') ||
-        selectionType === 'none' // Show all when nothing selected
-    );
+  // Get frequent commands from telemetry
+  const frequentStats = useCommandTelemetry((s) => s.mostUsed(5));
 
-    // Filter by query
-    if (q) {
-      commands = commands.filter(
-        (cmd) =>
-          cmd.label.toLowerCase().includes(q) ||
-          cmd.keywords.some((kw) => kw.toLowerCase().includes(q))
-      );
+  // Group commands by category with "Frequent" at top
+  const groups = useMemo(() => {
+    const grouped: Record<string, UiCommand[]> = {};
+
+    // Add "Frequent" section when no query (show most used)
+    if (!query && frequentStats.length > 0) {
+      const frequentCmds: UiCommand[] = [];
+      for (const stat of frequentStats) {
+        const cmd = getUiCommand(stat.id);
+        if (cmd) frequentCmds.push(cmd);
+      }
+      if (frequentCmds.length > 0) {
+        grouped['⭐ Frequent'] = frequentCmds;
+      }
     }
 
-    return commands;
-  }, [query, selectionType]);
+    // Add regular groups
+    const groupNames = getUiCommandGroups();
+    for (const name of groupNames) {
+      const cmds = filteredCommands.filter((c) => c.group === name);
+      if (cmds.length > 0) grouped[name] = cmds;
+    }
 
-  // Reset selected index when results change
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [filteredCommands.length]);
+    // Add ungrouped commands
+    const ungrouped = filteredCommands.filter((c) => !c.group);
+    if (ungrouped.length > 0) grouped['General'] = ungrouped;
+
+    return grouped;
+  }, [filteredCommands, query, frequentStats]);
 
   // Focus input when opened
   useEffect(() => {
@@ -77,7 +85,6 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
   // Handle close
   const handleClose = () => {
     closeCommandPalette();
-    onClose?.();
   };
 
   // Handle key navigation
@@ -85,17 +92,20 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
+        setSelectedIndex(Math.min(selectedIndex + 1, filteredCommands.length - 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
+        setSelectedIndex(Math.max(selectedIndex - 1, 0));
         break;
       case 'Enter':
         e.preventDefault();
         if (filteredCommands[selectedIndex]) {
-          executeCommand(filteredCommands[selectedIndex].id);
-          handleClose();
+          const cmd = filteredCommands[selectedIndex];
+          if (canExecuteUiCommand(cmd.id)) {
+            executeUiCommand(cmd.id);
+            handleClose();
+          }
         }
         break;
       case 'Escape':
@@ -106,49 +116,55 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
   };
 
   // Handle command click
-  const handleCommandClick = (cmd: CommandDefinition) => {
-    executeCommand(cmd.id);
-    handleClose();
+  const handleCommandClick = (cmd: UiCommand) => {
+    if (canExecuteUiCommand(cmd.id)) {
+      executeUiCommand(cmd.id);
+      handleClose();
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - black/50 with blur */}
       <div
         onClick={handleClose}
+        className="command-palette-backdrop"
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
           backdropFilter: 'blur(4px)',
           zIndex: 9998,
+          animation: 'fadeIn 120ms ease-out',
         }}
       />
 
-      {/* Palette */}
+      {/* Palette - 500px glass overlay */}
       <div
+        className="command-palette glass-panel"
         style={{
           position: 'fixed',
           top: '20%',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 480,
+          width: 500,
           maxWidth: '90vw',
-          backgroundColor: '#1a1a2e',
-          border: '1px solid #3a3a5a',
-          borderRadius: 12,
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 16,
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
           zIndex: 9999,
           overflow: 'hidden',
+          animation: 'slideDown 150ms ease-out',
         }}
       >
         {/* Search Input */}
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #3a3a5a',
+            borderBottom: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -161,15 +177,16 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a command... (fillet, bevel, groove)"
+            placeholder="Type a command... (move, rotate, duplicate)"
             style={{
               flex: 1,
               backgroundColor: 'transparent',
               border: 'none',
               outline: 'none',
-              color: '#fff',
-              fontSize: 16,
-              fontFamily: 'inherit',
+              color: 'var(--text-primary)',
+              fontSize: 15,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              letterSpacing: '-0.01em',
             }}
           />
           {query && (
@@ -178,42 +195,23 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: '#6b7280',
+                color: 'var(--text-muted)',
                 cursor: 'pointer',
                 padding: 4,
+                transition: 'color 80ms ease',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
               <ClearIcon />
             </button>
           )}
         </div>
 
-        {/* Selection Context */}
-        {selectionType !== 'none' && (
-          <div
-            style={{
-              padding: '8px 20px',
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
-              borderBottom: '1px solid #3a3a5a',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 12,
-              color: '#8b5cf6',
-            }}
-          >
-            <SelectionIcon type={selectionType} />
-            <span style={{ textTransform: 'capitalize' }}>{selectionType} Selected</span>
-            <span style={{ color: '#6b7280', marginLeft: 'auto' }}>
-              Showing relevant commands
-            </span>
-          </div>
-        )}
-
         {/* Command List */}
         <div
           style={{
-            maxHeight: 400,
+            maxHeight: 360,
             overflowY: 'auto',
           }}
         >
@@ -222,96 +220,138 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
               style={{
                 padding: '32px 20px',
                 textAlign: 'center',
-                color: '#6b7280',
+                color: 'var(--text-muted)',
+                fontSize: 13,
               }}
             >
               No commands found for "{query}"
             </div>
           ) : (
             <>
-              {/* Group by category */}
-              {['edge', 'face', 'panel', 'hole', 'pattern', 'general'].map((category) => {
-                const categoryCommands = filteredCommands.filter(
-                  (cmd) => cmd.category === category
-                );
-                if (categoryCommands.length === 0) return null;
+              {Object.entries(groups).map(([groupName, commands]) => (
+                <div key={groupName}>
+                  {/* Group Header */}
+                  <div
+                    style={{
+                      padding: '6px 20px',
+                      fontSize: 9,
+                      fontWeight: 600,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      backgroundColor: 'var(--bg-tertiary)',
+                    }}
+                  >
+                    {groupName}
+                  </div>
+                  {commands.map((cmd) => {
+                    const globalIndex = filteredCommands.indexOf(cmd);
+                    const isSelected = globalIndex === selectedIndex;
+                    const canExecute = canExecuteUiCommand(cmd.id);
 
-                return (
-                  <div key={category}>
-                    <div
-                      style={{
-                        padding: '8px 20px',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: 1,
-                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                      }}
-                    >
-                      {category} Operations
-                    </div>
-                    {categoryCommands.map((cmd) => {
-                      const globalIndex = filteredCommands.indexOf(cmd);
-                      const isSelected = globalIndex === selectedIndex;
-
-                      return (
-                        <div
-                          key={cmd.id}
-                          onClick={() => handleCommandClick(cmd)}
-                          onMouseEnter={() => setSelectedIndex(globalIndex)}
+                    return (
+                      <div
+                        key={cmd.id}
+                        onClick={() => handleCommandClick(cmd)}
+                        onMouseEnter={() => setSelectedIndex(globalIndex)}
+                        style={{
+                          padding: '10px 20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          cursor: canExecute ? 'pointer' : 'not-allowed',
+                          opacity: canExecute ? 1 : 0.5,
+                          backgroundColor: isSelected
+                            ? 'var(--accent-purple-20)'
+                            : 'transparent',
+                          borderLeft: isSelected
+                            ? '2px solid var(--accent-purple)'
+                            : '2px solid transparent',
+                          transition: 'all 80ms ease',
+                        }}
+                      >
+                        {/* Icon */}
+                        <span
                           style={{
-                            padding: '12px 20px',
+                            width: 26,
+                            height: 26,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 12,
-                            cursor: 'pointer',
+                            justifyContent: 'center',
                             backgroundColor: isSelected
-                              ? 'rgba(139, 92, 246, 0.2)'
-                              : 'transparent',
-                            borderLeft: isSelected ? '3px solid #8b5cf6' : '3px solid transparent',
-                            transition: 'all 0.1s ease',
+                              ? 'var(--accent-purple-30)'
+                              : 'var(--accent-purple-10)',
+                            borderRadius: 6,
+                            fontSize: 13,
+                            transition: 'background-color 80ms ease',
                           }}
                         >
-                          <span
+                          {cmd.icon || '⚡'}
+                        </span>
+                        {/* Label + Keywords */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
                             style={{
-                              width: 28,
-                              height: 28,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                              borderRadius: 6,
-                              fontSize: 14,
+                              color: 'var(--text-primary)',
+                              fontWeight: 500,
+                              fontSize: 13,
+                              lineHeight: 1.3,
                             }}
                           >
-                            {cmd.icon}
-                          </span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ color: '#fff', fontWeight: 500 }}>{cmd.label}</div>
-                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                              {cmd.keywords.slice(0, 4).join(', ')}
-                            </div>
+                            {cmd.title}
                           </div>
-                          {isSelected && (
-                            <span
+                          {cmd.keywords && cmd.keywords.length > 0 && (
+                            <div
                               style={{
-                                fontSize: 11,
-                                color: '#8b5cf6',
-                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                                padding: '2px 8px',
-                                borderRadius: 4,
+                                fontSize: 10,
+                                color: 'var(--text-muted)',
+                                marginTop: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
                             >
-                              Enter ↵
-                            </span>
+                              {cmd.keywords.slice(0, 4).join(' · ')}
+                            </div>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                        {/* Hotkey badge */}
+                        {cmd.hotkey && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: isSelected ? 'var(--accent-purple)' : 'var(--text-muted)',
+                              backgroundColor: isSelected
+                                ? 'var(--accent-purple-20)'
+                                : 'rgba(255, 255, 255, 0.05)',
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              fontFamily: 'JetBrains Mono, monospace',
+                            }}
+                          >
+                            {cmd.hotkey}
+                          </span>
+                        )}
+                        {/* Enter hint */}
+                        {isSelected && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: 'var(--accent-purple)',
+                              backgroundColor: 'var(--accent-purple-20)',
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              fontFamily: 'JetBrains Mono, monospace',
+                            }}
+                          >
+                            ↵
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -319,27 +359,35 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
         {/* Footer */}
         <div
           style={{
-            padding: '12px 20px',
-            borderTop: '1px solid #3a3a5a',
+            padding: '10px 20px',
+            borderTop: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: 11,
-            color: '#6b7280',
+            fontSize: 10,
+            color: 'var(--text-muted)',
+            backgroundColor: 'var(--bg-tertiary)',
           }}
         >
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             <span>
               <kbd style={kbdStyle}>↑↓</kbd> Navigate
             </span>
             <span>
-              <kbd style={kbdStyle}>Enter</kbd> Execute
+              <kbd style={kbdStyle}>⏎</kbd> Execute
             </span>
             <span>
               <kbd style={kbdStyle}>Esc</kbd> Close
             </span>
           </div>
-          <div>{filteredCommands.length} commands</div>
+          <div
+            style={{
+              fontFamily: 'JetBrains Mono, monospace',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {filteredCommands.length} commands
+          </div>
         </div>
       </div>
     </>
@@ -352,11 +400,12 @@ export function CommandPalette({ isOpen: controlledOpen, onClose }: CommandPalet
 
 const kbdStyle: React.CSSProperties = {
   display: 'inline-block',
-  padding: '2px 6px',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  borderRadius: 4,
-  fontSize: 10,
-  fontFamily: 'monospace',
+  padding: '1px 5px',
+  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  borderRadius: 3,
+  fontSize: 9,
+  fontFamily: 'JetBrains Mono, monospace',
   marginRight: 4,
 };
 
@@ -383,19 +432,6 @@ function ClearIcon() {
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
-}
-
-function SelectionIcon({ type }: { type: SelectionType }) {
-  const icons: Record<SelectionType, string> = {
-    none: '○',
-    panel: '▢',
-    edge: '─',
-    face: '▣',
-    hole: '◉',
-    compartment: '⬚',
-    cabinet: '▦',
-  };
-  return <span style={{ fontSize: 14 }}>{icons[type]}</span>;
 }
 
 export default CommandPalette;

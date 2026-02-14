@@ -20,14 +20,28 @@ interface PanelConfigModalProps {
 
 export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalProps) {
   const cabinet = useCabinet();
+
+  // Subscribe to cabinet.updatedAt to ensure re-render on any cabinet change
+  const cabinetUpdatedAt = useCabinetStore((s) => s.cabinet?.updatedAt);
+
+  // Subscribe to panels array to detect changes
+  const panels = useCabinetStore((s) => s.cabinet?.panels);
+
+  // Find panel from panels array (will re-run when panels change)
+  const panel = panels?.find(p => p.id === panelId) ?? null;
+
   const coreMaterials = useCabinetStore((s) => s.coreMaterials);
   const surfaceMaterials = useCabinetStore((s) => s.surfaceMaterials);
-  const edgeMaterials = useCabinetStore((s) => s.edgeMaterials);
+  const edgeMaterialsOnly = useCabinetStore((s) => s.edgeMaterials);
   const updatePanelMaterial = useCabinetStore((s) => s.updatePanelMaterial);
+
+  // Combine surface materials + edge-only materials for edge banding options
+  // (Same as MaterialSelector in DesignerIntentPanel)
+  const edgeMaterials = { ...surfaceMaterials, ...edgeMaterialsOnly };
   const updatePanelEdge = useCabinetStore((s) => s.updatePanelEdge);
   const updatePanelPositionOverride = useCabinetStore((s) => s.updatePanelPositionOverride);
   const resetPanelPosition = useCabinetStore((s) => s.resetPanelPosition);
-  
+
   // Draggable state
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -77,12 +91,11 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
     };
   }, [isDragging]);
   
-  if (!isOpen || !panelId || !cabinet) return null;
-  
-  // Find the panel
-  const panel = cabinet.panels.find(p => p.id === panelId);
-  if (!panel) return null;
-  
+  if (!isOpen || !panelId || !cabinet || !panel) return null;
+
+  // Type-safe panelId (guaranteed non-null after guards)
+  const currentPanelId = panelId;
+
   // Get current materials (use override or default)
   const currentCore = panel.coreMaterialId || cabinet.materials.defaultCore;
   const currentSurfaceA = panel.faces?.faceA || cabinet.materials.defaultSurface;
@@ -91,7 +104,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div 
-        className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-hidden select-none"
+        className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-hidden"
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? 'grabbing' : 'default'
@@ -140,7 +153,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
             <label className="block text-sm font-medium text-zinc-300 mb-2">Core Material</label>
             <select
               value={currentCore}
-              onChange={(e) => updatePanelMaterial(panelId, 'core', e.target.value)}
+              onChange={(e) => updatePanelMaterial(currentPanelId, 'core', e.target.value)}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
             >
               <option value="">Use Default ({(coreMaterials as Record<string, typeof coreMaterials[keyof typeof coreMaterials]>)[cabinet.materials.defaultCore]?.name})</option>
@@ -156,7 +169,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               <label className="block text-sm font-medium text-zinc-300 mb-2">Surface A (Front)</label>
               <select
                 value={currentSurfaceA || ''}
-                onChange={(e) => updatePanelMaterial(panelId, 'faceA', e.target.value || '')}
+                onChange={(e) => updatePanelMaterial(currentPanelId, 'faceA', e.target.value || '')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Use Default</option>
@@ -169,7 +182,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               <label className="block text-sm font-medium text-zinc-300 mb-2">Surface B (Back)</label>
               <select
                 value={currentSurfaceB || ''}
-                onChange={(e) => updatePanelMaterial(panelId, 'faceB', e.target.value || '')}
+                onChange={(e) => updatePanelMaterial(currentPanelId, 'faceB', e.target.value || '')}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">None / Backing</option>
@@ -191,7 +204,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                   </span>
                   {panel.useCustomPosition && (
                     <button
-                      onClick={() => resetPanelPosition(panelId)}
+                      onClick={() => resetPanelPosition(currentPanelId)}
                       className="px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-colors"
                     >
                       Reset to Auto
@@ -214,7 +227,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                   max="100"
                   step="1"
                   value={panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback}
-                  onChange={(e) => updatePanelPositionOverride(panelId, 'frontSetback', Number(e.target.value))}
+                  onChange={(e) => updatePanelPositionOverride(currentPanelId, 'frontSetback', Number(e.target.value))}
                   className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
                 <div className="flex justify-between text-xs text-zinc-500 mt-1">
@@ -237,7 +250,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                   max="100"
                   step="1"
                   value={panel.positionOverrides?.backSetback ?? DEFAULT_POSITION_OVERRIDES.backSetback}
-                  onChange={(e) => updatePanelPositionOverride(panelId, 'backSetback', Number(e.target.value))}
+                  onChange={(e) => updatePanelPositionOverride(currentPanelId, 'backSetback', Number(e.target.value))}
                   className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                 />
                 <div className="flex justify-between text-xs text-zinc-500 mt-1">
@@ -263,7 +276,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                     max={cabinet ? cabinet.dimensions.height - 100 : 600}
                     step="5"
                     value={panel.positionOverrides?.gapFromBelow ?? Math.round((cabinet?.dimensions.height || 720) / 3)}
-                    onChange={(e) => updatePanelPositionOverride(panelId, 'gapFromBelow', Number(e.target.value))}
+                    onChange={(e) => updatePanelPositionOverride(currentPanelId, 'gapFromBelow', Number(e.target.value))}
                     className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                   />
                   <div className="flex justify-between text-xs text-zinc-500 mt-1">
@@ -293,7 +306,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                     <span className="text-xs text-zinc-400 w-20">{sideLabels[side]}:</span>
                     <select
                       value={edgeId || ''}
-                      onChange={(e) => updatePanelEdge(panelId, side, e.target.value || '')}
+                      onChange={(e) => updatePanelEdge(currentPanelId, side, e.target.value || null)}
                       className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">None</option>
@@ -309,15 +322,50 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           
           {/* Computed Values */}
           <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-            <h4 className="text-sm font-medium text-zinc-300 mb-2">Computed Values</h4>
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <h4 className="text-sm font-medium text-zinc-300 mb-3">Computed Values</h4>
+
+            {/* Material Stack Breakdown */}
+            <div className="mb-4 p-3 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
+              <div className="text-xs text-zinc-400 mb-2">Material Stack</div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-amber-400">Core Structure:</span>
+                  <span className="text-white font-mono">
+                    {coreMaterials[currentCore as keyof typeof coreMaterials]?.thickness || 18} mm
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-400">Surface A (Front):</span>
+                  <span className="text-white font-mono">
+                    {surfaceMaterials[currentSurfaceA as keyof typeof surfaceMaterials]?.thickness || 0} mm
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-400">Surface B (Back):</span>
+                  <span className="text-white font-mono">
+                    {surfaceMaterials[currentSurfaceB as keyof typeof surfaceMaterials]?.thickness || 0} mm
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-cyan-400">Edge Banding:</span>
+                  <span className="text-white font-mono">
+                    {panel.edges?.top ? (edgeMaterials[panel.edges.top as keyof typeof edgeMaterials]?.thickness || 0) : 0} mm
+                  </span>
+                </div>
+                <div className="border-t border-zinc-700 pt-1.5 mt-1.5 flex justify-between items-center">
+                  <span className="text-emerald-400 font-medium">Total Thickness:</span>
+                  <span className="text-emerald-400 font-mono font-medium">
+                    {panel.computed?.realThickness || 18} mm
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Other Computed Values */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-zinc-500">Cut Size:</span>
                 <div className="text-white">{panel.computed?.cutWidth || panel.finishWidth} × {panel.computed?.cutHeight || panel.finishHeight} mm</div>
-              </div>
-              <div>
-                <span className="text-zinc-500">Thickness:</span>
-                <div className="text-white">{panel.computed?.realThickness || 18} mm</div>
               </div>
               <div>
                 <span className="text-zinc-500">Surface Area:</span>
@@ -336,9 +384,9 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           <button
             onClick={() => {
               // Reset to defaults
-              updatePanelMaterial(panelId, 'core', cabinet.materials.defaultCore);
-              updatePanelMaterial(panelId, 'faceA', cabinet.materials.defaultSurface);
-              updatePanelMaterial(panelId, 'faceB', '');
+              updatePanelMaterial(currentPanelId, 'core', cabinet.materials.defaultCore);
+              updatePanelMaterial(currentPanelId, 'faceA', cabinet.materials.defaultSurface);
+              updatePanelMaterial(currentPanelId, 'faceB', '');
             }}
             className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
           >

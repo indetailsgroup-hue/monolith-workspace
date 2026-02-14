@@ -10,6 +10,8 @@ import type { MachineProfile } from '../machine/machineProfile';
 import type { PostProcessor, GcodeDialect } from './types';
 import { fanucPostProcessor } from './dialects/fanuc';
 import { biesseIsoPostProcessor } from './dialects/biesseIso';
+import { heidenhainPostProcessor } from './dialects/heidenhain';
+import { weekePostProcessor } from './dialects/weeke';
 
 // ============================================================================
 // Dialect Registry
@@ -21,6 +23,10 @@ import { biesseIsoPostProcessor } from './dialects/biesseIso';
 const postProcessorRegistry: Record<GcodeDialect, PostProcessor> = {
   FANUC: fanucPostProcessor,
   BIESSE_ISO: biesseIsoPostProcessor,
+  // Aliases - map to existing processors
+  BIESSE: biesseIsoPostProcessor,      // BIESSE uses BIESSE_ISO format
+  HEIDENHAIN: heidenhainPostProcessor, // HEIDENHAIN conversational format
+  WEEKE: weekePostProcessor,           // WEEKE/Homag ISO variant
 };
 
 /**

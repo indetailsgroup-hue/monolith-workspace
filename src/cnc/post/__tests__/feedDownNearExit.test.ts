@@ -24,18 +24,22 @@ import type { CncPolicyOptions, PanelFrameInfo } from '../types';
 // ============================================
 
 const mockMachine: MachineProfile = {
-  id: 'TEST_MACHINE',
+  id: 'GENERIC',
   name: 'Test Machine',
   manufacturer: 'Test',
-  controller: 'FANUC',
-  defaultSafeZ: 50,
-  limits: { x: 3000, y: 1500, z: 100 },
+  units: 'mm',
+  axis: { x: { min: 0, max: 3000 }, y: { min: 0, max: 1500 }, z: { min: -100, max: 100 } },
   spindle: { minRpm: 1000, maxRpm: 24000, defaultRpm: 18000 },
   tools: [
-    { toolId: 'DRILL_5', type: 'drill', diameter: 5 },
-    { toolId: 'DRILL_8', type: 'drill', diameter: 8 },
-    { toolId: 'BORE_35', type: 'boring', diameter: 35 },
+    { toolId: 'DRILL_5', type: 'DRILL', diameter: 5, maxDepth: 60, supportsPeck: true, supportsBore: false, defaultFeedRate: 1200, defaultPlungeRate: 800 },
+    { toolId: 'DRILL_8', type: 'DRILL', diameter: 8, maxDepth: 60, supportsPeck: true, supportsBore: false, defaultFeedRate: 1000, defaultPlungeRate: 700 },
+    { toolId: 'BORE_35', type: 'BORE', diameter: 35, maxDepth: 25, supportsPeck: false, supportsBore: true, defaultFeedRate: 500, defaultPlungeRate: 400 },
   ],
+  defaultSafeZ: 50,
+  coordinateSystem: 'Z_UP',
+  dialect: 'FANUC',
+  supportsToolChange: true,
+  toolMagazineSize: 12,
 };
 
 function createDrillOp(
@@ -49,7 +53,9 @@ function createDrillOp(
     toolId: 'DRILL_5',
     position: { x: 100, y: 50, z: 0 },
     depth,
-    workpieceContext: panelId ? { panelId } : undefined,
+    throughHole: false,
+    sourceId: 'test-source-1',
+    workpieceContext: panelId ? { panelId, face: 'TOP', appliedOffset: { x: 0, y: 0, z: 0 } } : undefined,
     ...options,
   };
 }

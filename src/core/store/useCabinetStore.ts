@@ -16,6 +16,7 @@ import {
   CabinetPanel,
   CabinetDimensions,
   CabinetStructure,
+  CabinetHardware,
   CabinetType,
   JointType,
   PanelRole,
@@ -23,11 +24,99 @@ import {
   DEFAULT_DIMENSIONS,
   DEFAULT_STRUCTURE,
   DEFAULT_MANUFACTURING,
+  DEFAULT_HARDWARE,
   DEFAULT_POSITION_OVERRIDES,
+  DEFAULT_DRAWER_CONFIG,
+  DEFAULT_DRAWER_ROW,
+  DEFAULT_DRAWER_BOX_MATERIALS,
+  DEFAULT_DOOR_CONFIG,
+  DEFAULT_DOOR_PANEL,
   calculateRealThickness,
   calculateCutSize,
   createId,
+  type DrawerSlideType,
+  type DrawerRowConfig,
+  type DrawerConfig,
+  type DoorConfig,
+  type DoorPanelConfig,
+  type DoorOverlayType,
+  type DoorOpeningDirection,
 } from '../types/Cabinet';
+import {
+  generateDrawerPanels,
+  createDrawerRowId,
+  type DrawerMaterialProps,
+} from '../manufacturing/drawer';
+import {
+  generateDoorPanels,
+  createDoorPanelId,
+  type DoorMaterialProps,
+} from '../manufacturing/door';
+import { CABINET_TYPES, type ConstructionType } from '../catalog/CabinetTaxonomy';
+import { checkMutationAllowed, type SpecState } from '../spec/specState';
+import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
+import {
+  initMaterialRegistries,
+  computePanelTotalThickness,
+  computeBackDepthReduction,
+} from '../materials/materialThickness';
+import {
+  recomputeCabinetDerived,
+  type CabinetForDerivation,
+} from './cabinetDerivations';
+
+// ============================================
+// SPEC STATE MUTATION GUARD
+// ============================================
+
+// Lazy reference to avoid circular dependency at module load time
+// Will be set on first use via dynamic import
+let _specStoreRef: { getState: () => { specState: SpecState } } | null = null;
+
+/**
+ * Get current spec state from SpecStore
+ * Uses lazy initialization to avoid circular dependency
+ */
+function getSpecState(): SpecState {
+  if (!_specStoreRef) {
+    // Synchronously access the already-loaded module from the module cache
+    // This works because by the time this function is called, useSpecStore is already loaded
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      _specStoreRef = (window as any).__MONOLITH_SPEC_STORE__;
+      if (!_specStoreRef) {
+        // Fallback: return DRAFT to allow mutations if store not ready
+        console.warn('[CabinetStore] SpecStore not ready, defaulting to DRAFT');
+        return 'DRAFT';
+      }
+    } catch {
+      return 'DRAFT';
+    }
+  }
+  return _specStoreRef.getState().specState;
+}
+
+/**
+ * Register spec store reference (called from useSpecStore)
+ */
+export function registerSpecStore(store: { getState: () => { specState: SpecState } }) {
+  _specStoreRef = store;
+  (window as any).__MONOLITH_SPEC_STORE__ = store;
+}
+
+/**
+ * Check if geometry/structure mutation is allowed
+ * Returns true if allowed, logs warning and returns false otherwise
+ */
+function guardMutation(operation: string): boolean {
+  const specState = getSpecState();
+  const check = checkMutationAllowed(specState, operation);
+  if (check.ok === false) {
+    console.warn('[CabinetStore] Mutation blocked:', check.reason);
+    return false;
+  }
+  return true;
+}
 
 // ============================================
 // MATERIAL LIBRARY (Temporary - will move to separate store)
@@ -421,7 +510,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Bianco Dover',
     category: 'White',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2800,
     co2PerSqm: 3.5,
     color: '#F5F5F5',
@@ -432,7 +521,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Bianco Alaska',
     category: 'White',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 3000,
     co2PerSqm: 3.8,
     color: '#FFFFFF',
@@ -443,7 +532,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Bianco Kos',
     category: 'White',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2850,
     co2PerSqm: 3.6,
     color: '#F2F2F2',
@@ -454,7 +543,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Bianco Malè',
     category: 'White/Warm',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2900,
     co2PerSqm: 3.7,
     color: '#F9F6EF',
@@ -465,7 +554,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Beige Luxor',
     category: 'Beige',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2650,
     co2PerSqm: 3.3,
     color: '#D5C7B6',
@@ -476,7 +565,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Castoro Ottawa',
     category: 'Brown/Taupe',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2600,
     co2PerSqm: 3.2,
     color: '#93857B',
@@ -487,7 +576,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Beige Arizona',
     category: 'Beige/Greige',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2700,
     co2PerSqm: 3.4,
     color: '#B1A192',
@@ -498,7 +587,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Grigio Efeso',
     category: 'Grey/Light',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2550,
     co2PerSqm: 3.1,
     color: '#CFCFD0',
@@ -509,7 +598,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Grigio Londra',
     category: 'Grey/Medium',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2500,
     co2PerSqm: 3.0,
     color: '#757271',
@@ -520,7 +609,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Grigio Antrim',
     category: 'Grey/Cool',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2580,
     co2PerSqm: 3.2,
     color: '#A0A19F',
@@ -531,7 +620,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Nero Ingo',
     category: 'Black',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2450,
     co2PerSqm: 2.9,
     color: '#2D2D2D',
@@ -542,7 +631,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Grigio Bromo',
     category: 'Grey/Dark',
     type: 'FENIX_NTM',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 2480,
     co2PerSqm: 3.0,
     color: '#505255',
@@ -555,7 +644,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Acciaio Hamilton',
     category: 'Metal/Steel',
     type: 'FENIX_NTA',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 3800,
     co2PerSqm: 4.5,
     color: '#A8A5A1',
@@ -566,7 +655,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Argento Dukat',
     category: 'Metal/Silver',
     type: 'FENIX_NTA',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 4200,
     co2PerSqm: 5.0,
     color: '#BEBEC0',
@@ -577,7 +666,7 @@ const SURFACE_MATERIALS_CATALOG = {
     name: 'Oro Cortez',
     category: 'Metal/Gold',
     type: 'FENIX_NTA',
-    thickness: 12,
+    thickness: 1.2,
     costPerSqm: 5500,
     co2PerSqm: 6.5,
     color: '#C4B5A0',
@@ -1145,7 +1234,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 25,
     color: '#7a7a72',
-    textureUrl: '/textures/materials/428c5e7db15f9ac1df0adaa31089124a.jpg',
+    textureUrl: '/textures/wood/428c5e7db15f9ac1df0adaa31089124a.jpg',
   },
   'edge-abs-ash-silver-10': {
     id: 'edge-abs-ash-silver-10',
@@ -1155,7 +1244,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 24,
     color: '#8a8a8a',
-    textureUrl: '/textures/materials/ae7ac17779fa6e250256872104665661.jpg',
+    textureUrl: '/textures/wood/ae7ac17779fa6e250256872104665661.jpg',
   },
   'edge-abs-walnut-dark-10': {
     id: 'edge-abs-walnut-dark-10',
@@ -1165,7 +1254,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 28,
     color: '#5a4a3a',
-    textureUrl: '/textures/materials/6ec338abc60c08cd95f6fc5c011f60d5.jpg',
+    textureUrl: '/textures/wood/6ec338abc60c08cd95f6fc5c011f60d5.jpg',
   },
   // HPL Edge
   'edge-hpl-oak-08': {
@@ -1176,7 +1265,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 35,
     color: '#C4A77D',
-    textureUrl: '/textures/materials/9880503b9bc4fab08417c0ce7c618301.jpg',
+    textureUrl: '/textures/wood/9880503b9bc4fab08417c0ce7c618301.jpg',
   },
   'edge-hpl-walnut-08': {
     id: 'edge-hpl-walnut-08',
@@ -1186,7 +1275,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 38,
     color: '#5D4037',
-    textureUrl: '/textures/materials/6ca1ee6c8d4e09b967824c7580f4471b.jpg',
+    textureUrl: '/textures/wood/6ca1ee6c8d4e09b967824c7580f4471b.jpg',
   },
   // Solid Wood Edge
   'edge-wood-oak-30': {
@@ -1197,7 +1286,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 85,
     color: '#C4A77D',
-    textureUrl: '/textures/materials/9880503b9bc4fab08417c0ce7c618301.jpg',
+    textureUrl: '/textures/wood/9880503b9bc4fab08417c0ce7c618301.jpg',
   },
   'edge-wood-walnut-30': {
     id: 'edge-wood-walnut-30',
@@ -1207,7 +1296,7 @@ const EDGE_MATERIALS_CATALOG = {
     height: 23,
     costPerMeter: 95,
     color: '#5D4037',
-    textureUrl: '/textures/materials/6ca1ee6c8d4e09b967824c7580f4471b.jpg',
+    textureUrl: '/textures/wood/6ca1ee6c8d4e09b967824c7580f4471b.jpg',
   },
   // Aluminum Edge
   'edge-alu-silver-10': {
@@ -1234,8 +1323,185 @@ const EDGE_MATERIALS_CATALOG = {
 
 // Re-export for backward compatibility
 const CORE_MATERIALS = CORE_MATERIALS_CATALOG;
-const SURFACE_MATERIALS = SURFACE_MATERIALS_CATALOG;
+export const SURFACE_MATERIALS = SURFACE_MATERIALS_CATALOG;
 const EDGE_MATERIALS = EDGE_MATERIALS_CATALOG;
+
+// ============================================
+// INITIALIZE MATERIAL THICKNESS SYSTEM
+// ============================================
+
+// Initialize the material registries for the Truth Module
+// This MUST happen after catalogs are defined but before any thickness calculations
+initMaterialRegistries(CORE_MATERIALS_CATALOG, SURFACE_MATERIALS_CATALOG);
+
+// ============================================
+// PANEL THICKNESS HELPER (Wrapper for Truth Module)
+// ============================================
+
+/**
+ * Calculate actual total thickness of a panel from its materials
+ * DELEGATES to the Truth Module (materialThickness.ts) for single-source-of-truth
+ *
+ * @param panel - The panel to calculate thickness for
+ * @param defaultSurfaceId - Default surface material ID for fallback
+ * @returns Total thickness = core + faceA + faceB
+ */
+function calcPanelTotalThickness(
+  panel: { coreMaterialId: string; faces: { faceA: string | null; faceB: string | null } },
+  defaultSurfaceId: string
+): number {
+  return computePanelTotalThickness(panel, defaultSurfaceId);
+}
+
+/**
+ * TRUTH MODULE WRAPPER: Calculate back depth reduction
+ * Uses computeBackDepthReduction from materialThickness.ts
+ *
+ * @param structure - Cabinet structure with backPanelConstruction
+ * @param backPanel - The back panel (from cabinet.panels)
+ * @param defaultSurfaceId - Default surface material ID
+ * @returns Depth reduction in mm (0 for inset, backTotalT for overlay)
+ */
+function calcBackDepthReduction(
+  structure: { hasBackPanel: boolean; backPanelConstruction: 'inset' | 'overlay' },
+  backPanel: { coreMaterialId: string; faces: { faceA: string | null; faceB: string | null } } | null,
+  defaultSurfaceId: string
+): number {
+  return computeBackDepthReduction(structure, backPanel, defaultSurfaceId);
+}
+
+/**
+ * Recompute carcass geometry when back panel thickness changes (OVERLAY mode)
+ *
+ * INVARIANTS:
+ * - carcassDepth = D - backDepthReduction
+ * - carcassZ = backDepthReduction / 2
+ * - backZ = -D/2 + backTotalT/2
+ *
+ * @param cabinet - The cabinet to update (mutated in place)
+ * @param edgeMaterials - Edge materials catalog for cut size calculation
+ */
+function recomputeCarcassGeometry(
+  cabinet: Cabinet,
+  edgeMaterials: Record<string, { thickness: number }>
+): void {
+  if (!cabinet.structure?.hasBackPanel || cabinet.structure.backPanelConstruction !== 'overlay') {
+    return; // Only applies to overlay mode
+  }
+
+  const D = cabinet.dimensions.depth;
+  const defaultSurfaceId = cabinet.materials?.defaultSurface ?? 'surf-mel-white';
+  const backPanel = cabinet.panels.find(p => p.role === 'BACK');
+
+  if (!backPanel) return;
+
+  // TRUTH MODULE: Calculate back depth reduction
+  const backTotalT = calcPanelTotalThickness(backPanel, defaultSurfaceId);
+  const backDepthReduction = calcBackDepthReduction(cabinet.structure, backPanel, defaultSurfaceId);
+  const newCarcassDepth = D - backDepthReduction;
+  const newCarcassZ = backDepthReduction / 2;
+  const newBackZ = -D / 2 + backTotalT / 2;
+
+  // Update all panels with new geometry
+  for (const p of cabinet.panels) {
+    switch (p.role) {
+      case 'LEFT_SIDE':
+      case 'RIGHT_SIDE':
+        // finishWidth = depth for side panels
+        p.finishWidth = newCarcassDepth;
+        p.position = [p.position[0], p.position[1], newCarcassZ];
+        // Recalculate cut dimensions
+        if (p.computed) {
+          const edgeL = p.edges?.left ? (edgeMaterials[p.edges.left as keyof typeof edgeMaterials]?.thickness ?? 1) : 0;
+          const edgeR = p.edges?.right ? (edgeMaterials[p.edges.right as keyof typeof edgeMaterials]?.thickness ?? 1) : 0;
+          p.computed.cutWidth = p.finishWidth - edgeL - edgeR + (edgeL > 0 ? 1 : 0) + (edgeR > 0 ? 1 : 0);
+          p.computed.surfaceArea = (p.finishWidth * p.finishHeight) / 1000000 * 2;
+        }
+        break;
+
+      case 'TOP':
+      case 'BOTTOM':
+      case 'SHELF':
+        // finishHeight = depth for horizontal panels
+        p.finishHeight = newCarcassDepth;
+        p.position = [p.position[0], p.position[1], newCarcassZ];
+        // Recalculate cut dimensions
+        if (p.computed) {
+          const edgeT = p.edges?.top ? (edgeMaterials[p.edges.top as keyof typeof edgeMaterials]?.thickness ?? 1) : 0;
+          const edgeB = p.edges?.bottom ? (edgeMaterials[p.edges.bottom as keyof typeof edgeMaterials]?.thickness ?? 1) : 0;
+          p.computed.cutHeight = p.finishHeight - edgeT - edgeB + (edgeT > 0 ? 1 : 0) + (edgeB > 0 ? 1 : 0);
+          p.computed.surfaceArea = (p.finishWidth * p.finishHeight) / 1000000 * 2;
+        }
+        break;
+
+      case 'BACK':
+        // Update back panel Z position to stay inside OD budget
+        p.position = [p.position[0], p.position[1], newBackZ];
+        break;
+
+      case 'DIVIDER':
+        // Dividers also use finishHeight = depth
+        p.finishHeight = newCarcassDepth;
+        p.position = [p.position[0], p.position[1], newCarcassZ];
+        if (p.computed) {
+          p.computed.surfaceArea = (p.finishWidth * p.finishHeight) / 1000000 * 2;
+        }
+        break;
+    }
+  }
+}
+
+// ============================================
+// REACTIVITY CONTRACT: withActiveCabinet Helper
+// ============================================
+
+/**
+ * PHASE 3: Central helper for mutating the active cabinet
+ *
+ * CONTRACT:
+ * 1. Mutations go through cabinets[idx] (array element = truth)
+ * 2. After mutation, recomputeCabinetDerived is called
+ * 3. state.cabinet is synced as UI pointer
+ *
+ * This ensures Cabinet3D subscribers see updates immediately.
+ *
+ * @param state - The Immer draft state
+ * @param fn - Mutation function (receives cabinet, may mutate it)
+ * @param options - Control options
+ */
+function withActiveCabinet(
+  state: {
+    activeCabinetId: string | null;
+    cabinets: Cabinet[];
+    cabinet: Cabinet | null;
+    edgeMaterials: Record<string, { thickness: number }>;
+  },
+  fn: (cabinet: Cabinet) => void,
+  options: { skipRecompute?: boolean } = {}
+): void {
+  const id = state.activeCabinetId;
+  if (!id) return;
+
+  const idx = state.cabinets.findIndex(c => c.id === id);
+  if (idx === -1) return;
+
+  // Get the truth object (cabinet in array)
+  const cabinet = state.cabinets[idx];
+
+  // Execute mutation on the truth object
+  fn(cabinet);
+
+  // Recompute derived values (unless skipped for batch operations)
+  if (!options.skipRecompute) {
+    recomputeCabinetDerived(
+      cabinet as unknown as CabinetForDerivation,
+      state.edgeMaterials
+    );
+  }
+
+  // Sync UI pointer to truth object
+  state.cabinet = cabinet;
+}
 
 // ============================================
 // PANEL GENERATION LOGIC
@@ -1281,20 +1547,24 @@ function generatePanels(
   // Get material properties
   const core = CORE_MATERIALS[defaultCoreId as keyof typeof CORE_MATERIALS] || CORE_MATERIALS['core-pb-16'];
   const surface = SURFACE_MATERIALS[defaultSurfaceId as keyof typeof SURFACE_MATERIALS] || SURFACE_MATERIALS['surf-mel-white'];
-  const edge = EDGE_MATERIALS[defaultEdgeId as keyof typeof EDGE_MATERIALS] || EDGE_MATERIALS['edge-pvc-white-10'];
-  const ET = edge.thickness; // Edge thickness
+  // Edge can be from EDGE_MATERIALS or SURFACE_MATERIALS (user can select surface as edge)
+  const edgeFromEdgeMats = EDGE_MATERIALS[defaultEdgeId as keyof typeof EDGE_MATERIALS];
+  const edgeFromSurfaceMats = SURFACE_MATERIALS[defaultEdgeId as keyof typeof SURFACE_MATERIALS];
+  const edge = edgeFromEdgeMats || edgeFromSurfaceMats || EDGE_MATERIALS['edge-pvc-white-10'];
+  const ET = edge.thickness; // Edge thickness (from actual selected material)
   
-  // 1. MATERIAL PHYSICS: Calculate real thickness
+  // 1. MATERIAL PHYSICS: Calculate real thickness (no glue in displayed thickness)
   const T_real = calculateRealThickness(
-    core.thickness, 
-    surface.thickness, 
-    surface.thickness, 
-    MANUFACTURING_PARAMS.glueThickness
+    core.thickness,
+    surface.thickness,
+    surface.thickness,
+    0 // No glue in displayed thickness: e.g., 18 + 0.3 + 0.3 = 18.6mm
   );
   const T = T_real; // Use real thickness for position calculations
   
   // 2. BACK PANEL LOGIC: Calculate BackObstruction
-  const backObstruction = (MANUFACTURING_PARAMS.backPanelConstruction === 'inset')
+  // Use structure.backPanelConstruction (per-cabinet setting) instead of global MANUFACTURING_PARAMS
+  const backObstruction = (structure.backPanelConstruction === 'inset')
     ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness  // Groove: offset + thickness
     : MANUFACTURING_PARAMS.backThickness;  // Overlay: just thickness
   
@@ -1325,11 +1595,13 @@ function generatePanels(
   };
   
   // Helper to create edge assignment
-  const makeEdges = (front: boolean, back: boolean, top: boolean, bottom: boolean) => ({
+  // Default: ALL 4 edges get default edge material
+  // This ensures Apply Material with "All Panels" applies to ALL sides
+  const makeEdges = (front = true, back = true, left = true, right = true) => ({
     top: front ? defaultEdgeId : null,    // "top" in edge config = front edge of panel
     bottom: back ? defaultEdgeId : null,  // "bottom" = back edge
-    left: top ? defaultEdgeId : null,     // "left" = top edge
-    right: bottom ? defaultEdgeId : null, // "right" = bottom edge
+    left: left ? defaultEdgeId : null,    // "left" = left/top edge
+    right: right ? defaultEdgeId : null,  // "right" = right/bottom edge
   });
 
   // Cabinet body height - Toe Kick is ONLY a floor offset, NOT a height reduction
@@ -1341,37 +1613,76 @@ function generatePanels(
   // Joint type determines construction:
   // - OVERLAY: Top/Bottom sit ON TOP of sides → Side is SHORTER
   // - INSET: Top/Bottom fit BETWEEN sides → Side is FULL HEIGHT
-  
-  // Width (depth direction): always subtract front edge only
-  const sideW = D - ET;
-  
+
+  // FINISH dimensions = visible panel size AFTER edge banding
+  // Edge banding ADDS to the panel edge, it doesn't reduce the panel size
+  // CUT dimensions (computed in computePanel) account for edge banding
+
+  // Back panel thickness (needed for depth calculation when OVERLAY)
+  // TRUTH MODULE: Use calcPanelTotalThickness for consistent thickness calculation
+  const backCoreId = 'core-mdf-6'; // Default back panel core
+  const backPanelForCalc = {
+    coreMaterialId: backCoreId,
+    faces: { faceA: defaultSurfaceId, faceB: defaultSurfaceId } // 2-side finish
+  };
+  const backTotalT = calcPanelTotalThickness(backPanelForCalc, defaultSurfaceId);
+
+  // Depth reduction when back panel is OVERLAY
+  // TRUTH MODULE: Use calcBackDepthReduction for consistent depth reduction
+  const backDepthReduction = calcBackDepthReduction(structure, backPanelForCalc, defaultSurfaceId);
+
+  // Width (depth direction): cabinet depth minus back panel if overlay
+  const sideW = D - backDepthReduction;
+
   // Height calculation:
   // OVERLAY = Top/Bottom นั่งบนแผงข้าง → แผงข้างต้องสั้นลง (หัก T ของ Top/Bottom)
   // INSET = Top/Bottom เข้าไประหว่างแผงข้าง → แผงข้างสูงเต็ม
-  
+
   // Calculate reductions for OVERLAY joints
   const topReduction = structure.topJoint === 'OVERLAY' ? T : 0;      // หักความหนา Top Panel
   const bottomReduction = structure.bottomJoint === 'OVERLAY' ? T : 0; // หักความหนา Bottom Panel
-  
+
   // Side panel has edge at top/bottom only when it extends to that edge (INSET case)
   // For OVERLAY, the Top/Bottom covers the edge, so side has no edge there
   const hasTopEdge = structure.topJoint === 'INSET';     // INSET = side extends to top = needs edge
   const hasBottomEdge = structure.bottomJoint === 'INSET'; // INSET = side extends to bottom = needs edge
-  
-  // Calculate side height
-  let sideH = bodyH - topReduction - bottomReduction;  // หักความหนา Top/Bottom ถ้า OVERLAY
-  if (hasTopEdge) sideH -= ET;      // หัก edge บน (only for INSET)
-  if (hasBottomEdge) sideH -= ET;   // หัก edge ล่าง (only for INSET)
+
+  // Calculate side height (FINISH dimension - before edge banding)
+  // Only reduce for OVERLAY joints where Top/Bottom panels take up space
+  const sideH = bodyH - topReduction - bottomReduction;
   
   // Edge thicknesses for cut calculation
   const sideEdgeTop = hasTopEdge ? ET : 0;
   const sideEdgeBottom = hasBottomEdge ? ET : 0;
+
+  // Back edge logic depends on back panel construction AND joint types:
+  // When INSET (groove): back edges hidden → no edge banding for any panel
+  // When OVERLAY:
+  //   - Side panels: always need back edge (back edge visible from inside cabinet)
+  //   - Top panel: needs back edge only if Top Joint is OVERLAY (extends beyond sides)
+  //   - Bottom panel: needs back edge only if Bottom Joint is OVERLAY (extends beyond sides)
+  const isOverlayBack = structure.backPanelConstruction === 'overlay';
+  const sideHasBackEdge = isOverlayBack;
+  const topHasBackEdge = isOverlayBack && structure.topJoint === 'OVERLAY';
+  const bottomHasBackEdge = isOverlayBack && structure.bottomJoint === 'OVERLAY';
+  const sideBackEdgeT = sideHasBackEdge ? ET : 0;
+  const topBackEdgeT = topHasBackEdge ? ET : 0;
+  const bottomBackEdgeT = bottomHasBackEdge ? ET : 0;
   
   // Y position: center of side panel
   // For OVERLAY: side starts above bottom panel, ends below top panel
   const sideYOffset = (bottomReduction - topReduction) / 2;
   const sideY = bodyH/2 + Leg + sideYOffset;
-  
+
+  // Z position: shift forward when back panel is OVERLAY (to not overlap with back panel)
+  // CRITICAL: Use only backDepthReduction, NOT ET (edge thickness is irrelevant to Z transform)
+  // carcassZ = backTotalT/2 when overlay, else 0
+  const carcassZ = backDepthReduction / 2;
+
+  // Side panel edges: Front, Back, Top (if INSET), Bottom (if INSET)
+  // computePanel params: (finishW, finishH, edgeTop, edgeBottom, edgeLeft, edgeRight)
+  // - cutW uses edgeLeft (front) and edgeRight (back)
+  // - cutH uses edgeTop (top of panel) and edgeBottom (bottom of panel)
   panels.push({
     id: createId(),
     role: 'LEFT_SIDE',
@@ -1380,20 +1691,15 @@ function generatePanels(
     finishHeight: sideH,
     coreMaterialId: defaultCoreId,
     faces: { faceA: defaultSurfaceId, faceB: null },
-    edges: {
-      top: defaultEdgeId,  // front edge (always)
-      bottom: null,        // no back edge
-      left: hasTopEdge ? defaultEdgeId : null,   // top edge (only INSET)
-      right: hasBottomEdge ? defaultEdgeId : null, // bottom edge (only INSET)
-    },
+    edges: makeEdges(true, sideHasBackEdge, hasTopEdge, hasBottomEdge), // front, back, top, bottom
     grainDirection: 'VERTICAL',
-    computed: computePanel(sideW, sideH, ET, 0, sideEdgeTop, sideEdgeBottom),
-    position: [-W/2 + T/2, sideY, -ET/2],
+    computed: computePanel(sideW, sideH, sideEdgeTop, sideEdgeBottom, ET, sideBackEdgeT),
+    position: [-W/2 + T/2, sideY, carcassZ],
     rotation: [0, 0, 0],
     visible: true,
     selected: false,
   });
-  
+
   // ========== RIGHT SIDE ==========
   panels.push({
     id: createId(),
@@ -1403,26 +1709,21 @@ function generatePanels(
     finishHeight: sideH,
     coreMaterialId: defaultCoreId,
     faces: { faceA: defaultSurfaceId, faceB: null },
-    edges: {
-      top: defaultEdgeId,
-      bottom: null,
-      left: hasTopEdge ? defaultEdgeId : null,
-      right: hasBottomEdge ? defaultEdgeId : null,
-    },
+    edges: makeEdges(true, sideHasBackEdge, hasTopEdge, hasBottomEdge), // front, back, top, bottom
     grainDirection: 'VERTICAL',
-    computed: computePanel(sideW, sideH, ET, 0, sideEdgeTop, sideEdgeBottom),
-    position: [W/2 - T/2, sideY, -ET/2],
+    computed: computePanel(sideW, sideH, sideEdgeTop, sideEdgeBottom, ET, sideBackEdgeT),
+    position: [W/2 - T/2, sideY, carcassZ],
     rotation: [0, 0, 0],
     visible: true,
     selected: false,
   });
-  
+
   // ========== TOP PANEL ==========
   // For INSET joint: fits between sides
   // Edges: Front only
   const topBaseW = structure.topJoint === 'INSET' ? W - (2 * T) : W;
   const topW = topBaseW;      // No side edges on horizontal panels
-  const topH = D - ET;        // Depth - front edge
+  const topH = D - backDepthReduction; // Cabinet depth minus back panel if overlay
   
   // Top Y position:
   // INSET: Top fits between sides, center at bodyH - T/2
@@ -1432,6 +1733,11 @@ function generatePanels(
     ? bodyH - T/2 + Leg                           // INSET: between sides
     : bodyH - topReduction + T/2 + Leg;           // OVERLAY: on top of sides
   
+  // Top panel edges: Front, Back, Left, Right
+  // computePanel params: (finishW, finishH, edgeTop, edgeBottom, edgeLeft, edgeRight)
+  // - cutW (width direction) uses edgeLeft, edgeRight
+  // - cutH (depth direction) uses edgeTop (front), edgeBottom (back)
+  // Back edge only when backPanelConstruction is 'overlay'
   panels.push({
     id: createId(),
     role: 'TOP',
@@ -1440,20 +1746,20 @@ function generatePanels(
     finishHeight: topH,
     coreMaterialId: defaultCoreId,
     faces: { faceA: defaultSurfaceId, faceB: null },
-    edges: makeEdges(true, false, false, false), // Only front edge
+    edges: makeEdges(true, topHasBackEdge, true, true), // front, back, left, right
     grainDirection: 'HORIZONTAL',
-    computed: computePanel(topW, topH, ET, 0, 0, 0),
-    position: [0, topY, -ET/2],
+    computed: computePanel(topW, topH, ET, topBackEdgeT, ET, ET),
+    position: [0, topY, carcassZ],  // Same Z offset as side panels
     rotation: [0, 0, 0],
     visible: true,
     selected: false,
   });
-  
+
   // ========== BOTTOM PANEL ==========
   const bottomBaseW = structure.bottomJoint === 'INSET' ? W - (2 * T) : W;
   const bottomW = bottomBaseW;
-  const bottomH = D - ET;
-  
+  const bottomH = D - backDepthReduction; // Cabinet depth minus back panel if overlay
+
   // Bottom Y position:
   // INSET: Bottom fits between sides, center at T/2
   // OVERLAY: Bottom sits under sides, center at bottomReduction - T/2
@@ -1461,7 +1767,9 @@ function generatePanels(
   const bottomY = structure.bottomJoint === 'INSET'
     ? T/2 + Leg                                   // INSET: between sides
     : bottomReduction - T/2 + Leg;                // OVERLAY: under sides
-  
+
+  // Bottom panel edges: Front, Back, Left, Right
+  // Back edge only when backPanelConstruction is 'overlay'
   panels.push({
     id: createId(),
     role: 'BOTTOM',
@@ -1470,26 +1778,44 @@ function generatePanels(
     finishHeight: bottomH,
     coreMaterialId: defaultCoreId,
     faces: { faceA: defaultSurfaceId, faceB: null },
-    edges: makeEdges(true, false, false, false),
+    edges: makeEdges(true, bottomHasBackEdge, true, true), // front, back, left, right
     grainDirection: 'HORIZONTAL',
-    computed: computePanel(bottomW, bottomH, ET, 0, 0, 0),
-    position: [0, bottomY, -ET/2],
+    computed: computePanel(bottomW, bottomH, ET, bottomBackEdgeT, ET, ET),
+    position: [0, bottomY, carcassZ],  // Same Z offset as side panels
     rotation: [0, 0, 0],
     visible: true,
     selected: false,
   });
-  
+
   // ========== BACK PANEL ==========
   if (structure.hasBackPanel) {
-    const backCore = CORE_MATERIALS['core-mdf-6'];
-    const backT = backCore.thickness;
+    // backTotalT calculated above using Truth Module
     const groove = MANUFACTURING_PARAMS.grooveDepth;
     const clearance = MANUFACTURING_PARAMS.clearance;
-    
-    // Back panel fits into grooves
-    const backW = (W - 2*T) + (2*groove) - clearance;
-    const backH = (bodyH - 2*T) + (2*groove) - clearance;
-    
+
+    // Calculate back panel dimensions based on construction type
+    let backW: number;
+    let backH: number;
+    let backZ: number;
+
+    if (structure.backPanelConstruction === 'overlay') {
+      // OVERLAY: Back panel sits at the back, INSIDE the OD budget
+      // Width = full cabinet width (covers side panel back edges)
+      // Height = full body height (covers top/bottom panel back edges)
+      backW = W;
+      backH = bodyH;
+      // Position: back panel center is at back of OD, shifted forward by half its total thickness
+      // Formula: -D/2 + backTotalT/2 (inside OD budget, not outside)
+      // This ensures back panel's back face aligns with cabinet OD back face
+      backZ = -D/2 + backTotalT/2;
+    } else {
+      // INSET (default): Back panel fits into grooves
+      backW = (W - 2*T) + (2*groove) - clearance;
+      backH = (bodyH - 2*T) + (2*groove) - clearance;
+      // Position: recessed into grooves
+      backZ = -D/2 + structure.backPanelInset;
+    }
+
     panels.push({
       id: createId(),
       role: 'BACK',
@@ -1497,19 +1823,19 @@ function generatePanels(
       finishWidth: backW,
       finishHeight: backH,
       coreMaterialId: 'core-mdf-6',
-      faces: { faceA: defaultSurfaceId, faceB: null },
+      faces: { faceA: defaultSurfaceId, faceB: defaultSurfaceId }, // 2-side finish
       edges: { top: null, bottom: null, left: null, right: null },
       grainDirection: 'HORIZONTAL',
       computed: {
-        realThickness: backT,
+        realThickness: backTotalT, // Total finished thickness (from Truth Module)
         cutWidth: backW,
         cutHeight: backH,
         surfaceArea: (backW * backH) / 1000000 * 2, // Total surface area (both faces)
         edgeLength: 0,
-        cost: (backW * backH / 1000000) * backCore.costPerSqm,
-        co2: (backW * backH / 1000000) * backCore.co2PerSqm,
+        cost: (backW * backH / 1000000) * (CORE_MATERIALS[backCoreId]?.costPerSqm ?? 0),
+        co2: (backW * backH / 1000000) * (CORE_MATERIALS[backCoreId]?.co2PerSqm ?? 0),
       },
-      position: [0, bodyH/2 + Leg, -D/2 + structure.backPanelInset],
+      position: [0, bodyH/2 + Leg, backZ],
       rotation: [0, 0, 0],
       visible: true,
       selected: false,
@@ -1604,10 +1930,10 @@ function generatePanels(
       // Shelf Z position: centered based on front setback
       const shelfZ = (D/2 - frontSetback - ET/2) - (shelfD/2);
 
-      // Generate name: "Shelf 1" if no dividers, "Shelf 1a", "Shelf 1b" if dividers exist
+      // Generate name: "Main Shelf 1" if no dividers, "Main Shelf 1a", "Main Shelf 1b" if dividers exist
       const shelfName = segmentCount === 1
-        ? `Shelf ${i + 1}`
-        : `Shelf ${i + 1}${getSegmentLabel(seg)}`;
+        ? `Main Shelf ${i + 1}`
+        : `Main Shelf ${i + 1}${getSegmentLabel(seg)}`;
 
       panels.push({
         id: createId(),
@@ -1617,7 +1943,7 @@ function generatePanels(
         finishHeight: shelfD,
         coreMaterialId: defaultCoreId,
         faces: { faceA: defaultSurfaceId, faceB: null },
-        edges: makeEdges(true, false, false, false), // Only front edge
+        edges: makeEdges(), // Only front edge
         grainDirection: 'HORIZONTAL',
         computed: computePanel(segmentWidth, shelfD, ET, 0, 0, 0),
         position: [segmentX, shelfY, shelfZ],
@@ -1661,12 +1987,12 @@ function generatePanels(
       panels.push({
         id: createId(),
         role: 'DIVIDER',
-        name: `Divider ${i + 1}`,
+        name: `Main Divider ${i + 1}`,
         finishWidth: dividerD,
         finishHeight: dividerH,
         coreMaterialId: defaultCoreId,
         faces: { faceA: defaultSurfaceId, faceB: null },
-        edges: makeEdges(true, false, false, false), // Only front edge
+        edges: makeEdges(), // Only front edge
         grainDirection: 'VERTICAL',
         computed: computePanel(dividerD, dividerH, ET, 0, 0, 0),
         position: [dividerX, bodyH/2 + Leg, dividerZ],
@@ -1699,38 +2025,79 @@ function calculateTotals(panels: CabinetPanel[]) {
 // STORE DEFINITION
 // ============================================
 
+// Manufacturing parameters type (user-configurable per machine)
+interface ManufacturingParams {
+  preMilling: number;        // 0.5 - 1.0 mm per side
+  glueThickness: number;     // 0.1 - 0.2 mm
+  clearance: number;         // 1 - 2 mm
+  grooveDepth: number;       // 8 - 10 mm
+  backVoid: number;          // 19 - 20 mm
+  backThickness: number;     // 6 or 9 mm
+  safetyGap: number;         // 1 - 2 mm
+}
+
 interface CabinetState {
-  cabinet: Cabinet | null;
+  cabinet: Cabinet | null;           // Active cabinet (for editing)
+  cabinets: Cabinet[];               // All cabinets in scene
+  activeCabinetId: string | null;    // ID of active cabinet
   selectedPanelId: string | null;
 
-  // Multi-cabinet support
-  cabinets: Cabinet[];
-  activeCabinetId: string | null;
-
-  // Visibility (hide specific cabinets)
-  hiddenCabinetIds: string[];
-
-  // Drilling parameters (for drill map generation)
-  drillingParams: Record<string, unknown>;
+  // Construction type (Face Frame vs Frameless)
+  constructionType: ConstructionType;
 
   // Materials library (temporary)
   coreMaterials: typeof CORE_MATERIALS;
   surfaceMaterials: typeof SURFACE_MATERIALS;
   edgeMaterials: typeof EDGE_MATERIALS;
+
+  // Manufacturing parameters (user-configurable)
+  manufacturingParams: ManufacturingParams;
+
+  // Drilling parameters (editable from X-Ray mode labels)
+  drillingParams: {
+    firstHoleZ: number;         // System 32 first hole distance (default: 37mm)
+    drillingDistanceB: number;  // Häfele Drilling Distance B (default: 24mm per CAD spec)
+  };
+
+  // Cabinet visibility (Plasticity-style H/Shift+H/Alt+H)
+  // Using array instead of Set because Immer doesn't support Set without enableMapSet()
+  hiddenCabinetIds: string[];
 }
 
 interface CabinetActions {
   // Cabinet CRUD
   createCabinet: (type?: CabinetType, name?: string) => void;
-  
+
+  // Multi-cabinet actions
+  addCabinet: (type: CabinetType, name: string, dimensions?: Partial<CabinetDimensions>, position?: [number, number, number]) => Cabinet;
+  removeCabinet: (cabinetId: string) => void;
+  selectCabinet: (cabinetId: string | null) => void;
+  duplicateCabinet: (cabinetId: string) => Cabinet | null;
+  updateCabinetPosition: (cabinetId: string, position: [number, number, number]) => void;
+  updateCabinetRotation: (cabinetId: string, rotation: [number, number, number]) => void;
+  rotateCabinet90: (cabinetId: string, direction: 'cw' | 'ccw') => void;
+  mirrorCabinet: (cabinetId: string, axis: 'x' | 'z') => Cabinet | null;
+  resetScenePositions: () => void;
+
+  // Cabinet visibility actions (Plasticity-style)
+  hideCabinet: (cabinetId: string) => void;
+  showCabinet: (cabinetId: string) => void;
+  showAllCabinets: () => void;
+  hideUnselectedCabinets: (exceptId: string) => void;
+  toggleCabinetVisibility: (cabinetId: string) => void;
+
   // Dimension actions
   setDimension: (key: keyof CabinetDimensions, value: number) => void;
-  
+
+  // Drilling parameter actions (for X-Ray mode editable labels)
+  setDrillingParam: (param: 'firstHoleZ' | 'drillingDistanceB', value: number) => void;
+
   // Structure actions
   setJointType: (position: 'top' | 'bottom', type: JointType) => void;
   setShelfCount: (count: number) => void;
   setDividerCount: (count: number) => void;
   toggleBackPanel: () => void;
+  setBackPanelConstruction: (type: 'inset' | 'overlay') => void;
   
   // Material actions
   setDefaultCore: (materialId: string) => void;
@@ -1754,6 +2121,9 @@ interface CabinetActions {
   
   // Panel selection
   selectPanel: (panelId: string | null) => void;
+
+  // Panel removal (for sub-shelves/dividers)
+  removePanel: (panelId: string) => void;
   
   // Per-panel material actions
   updatePanelMaterial: (panelId: string, target: 'core' | 'faceA' | 'faceB', materialId: string) => void;
@@ -1771,17 +2141,43 @@ interface CabinetActions {
   addShelfInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerY?: number }) => void;
   addDividerInCompartment: (col: number, row: number, bounds?: { leftX: number; rightX: number; bottomY: number; topY: number; centerX?: number }) => void;
 
+  // Manufacturing parameters actions
+  setManufacturingParam: <K extends keyof ManufacturingParams>(key: K, value: ManufacturingParams[K]) => void;
+  resetManufacturingParams: () => void;
+
+  // Construction type
+  setConstructionType: (type: ConstructionType) => void;
+
   // Hardware configuration
-  updateHardware: (cabinetId: string, hardware: Record<string, unknown>) => void;
+  updateHardware: (cabinetId: string, hardware: Partial<CabinetHardware>) => void;
+  setMinifixPreset: (cabinetId: string, presetId: string | undefined) => void;
+  setHingePreset: (cabinetId: string, presetId: string | undefined) => void;
+
+  // Hardware point overrides (per-connector rotation/position)
+  setHardwarePointOverride: (
+    cabinetId: string,
+    pointId: string,
+    override: { rotation?: { rotX: number; rotY: number; rotZ: number }; position?: { dx: number; dy: number; dz: number } }
+  ) => void;
+  clearHardwarePointOverride: (cabinetId: string, pointId: string) => void;
+  getHardwarePointOverrides: (cabinetId: string) => Record<string, { rotation?: { rotX: number; rotY: number; rotZ: number }; position?: { dx: number; dy: number; dz: number } }>;
+
+  // Drawer configuration
+  enableDrawers: (slideType?: DrawerSlideType) => void;
+  disableDrawers: () => void;
+  addDrawerRow: (config?: Partial<DrawerRowConfig>) => void;
+  removeDrawerRow: (rowIndex: number) => void;
+  updateDrawerRow: (rowIndex: number, updates: Partial<DrawerRowConfig>) => void;
+
+  // Door configuration
+  enableDoors: (doorCount?: 1 | 2) => void;
+  disableDoors: () => void;
+  setDoorCount: (count: 1 | 2) => void;
+  updateDoorConfig: (updates: Partial<Omit<DoorConfig, 'doors'>>) => void;
+  updateDoorPanel: (doorIndex: number, updates: Partial<DoorPanelConfig>) => void;
 
   // Recalculation
   recalculate: () => void;
-
-  // Multi-cabinet actions
-  selectCabinet: (id: string | null) => void;
-  removeCabinet: (id: string) => void;
-  duplicateCabinet: (id: string) => void;
-  updateCabinetPosition: (id: string, position: [number, number, number]) => void;
 }
 
 type CabinetStore = CabinetState & CabinetActions;
@@ -1790,15 +2186,34 @@ export const useCabinetStore = create<CabinetStore>()(
   immer((set, get) => ({
     // Initial state
     cabinet: null,
+    cabinets: [],                    // Multi-cabinet array
+    activeCabinetId: null,           // Currently selected cabinet
     selectedPanelId: null,
-    cabinets: [],
-    activeCabinetId: null,
-    hiddenCabinetIds: [],
-    drillingParams: {},
+    constructionType: 'FRAMELESS' as ConstructionType,  // Default to European 32mm system
     coreMaterials: CORE_MATERIALS,
     surfaceMaterials: SURFACE_MATERIALS,
     edgeMaterials: EDGE_MATERIALS,
-    
+
+    // Manufacturing parameters with defaults from MANUFACTURING_PARAMS
+    manufacturingParams: {
+      preMilling: MANUFACTURING_PARAMS.preMilling,           // 0.5 mm per side
+      glueThickness: MANUFACTURING_PARAMS.glueThickness,    // 0.1 mm
+      clearance: MANUFACTURING_PARAMS.clearance,            // 2 mm
+      grooveDepth: MANUFACTURING_PARAMS.grooveDepth,        // 8 mm
+      backVoid: MANUFACTURING_PARAMS.backVoid,              // 20 mm
+      backThickness: MANUFACTURING_PARAMS.backThickness,    // 6 mm
+      safetyGap: MANUFACTURING_PARAMS.safetyGap,            // 2 mm
+    },
+
+    // Drilling parameters (editable from X-Ray mode labels)
+    drillingParams: {
+      firstHoleZ: 37,          // System 32 first hole (37mm from front edge)
+      drillingDistanceB: 24,   // Häfele Drilling Distance B (24mm per CAD spec)
+    },
+
+    // Cabinet visibility state (Plasticity-style H/Shift+H/Alt+H)
+    hiddenCabinetIds: [],
+
     // ========== CABINET CRUD ==========
     createCabinet: (type = 'BASE', name = 'Base Cabinet') => {
       const defaultCoreId = 'core-hmr-18';
@@ -1813,7 +2228,12 @@ export const useCabinetStore = create<CabinetStore>()(
         defaultEdgeId
       );
       
-      const cabinet: Cabinet = {
+      // Get wood thickness from core material for auto-applying Minifix config
+      const coreMaterial = CORE_MATERIALS[defaultCoreId as keyof typeof CORE_MATERIALS];
+      const woodThickness = coreMaterial?.thickness || 18;
+      const minifixConfig = getMinifixFullConfigForThickness(woodThickness);
+
+      const cabinet: Cabinet & { scenePosition: [number, number, number]; sceneRotation: [number, number, number] } = {
         id: createId(),
         name,
         type,
@@ -1830,104 +2250,466 @@ export const useCabinetStore = create<CabinetStore>()(
         computed: calculateTotals(panels),
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        scenePosition: [0, 0, 0],
+        sceneRotation: [0, 0, 0],
+        // Auto-apply Minifix S200 hardware config based on wood thickness
+        hardware: {
+          minifixConfig,
+          minifixPresetId: `auto_minifix_${woodThickness}mm`,
+        },
       };
-      
+
+      set({ cabinet: cabinet as Cabinet, cabinets: [cabinet as Cabinet], activeCabinetId: cabinet.id });
+    },
+
+    // ========== MULTI-CABINET ACTIONS ==========
+    addCabinet: (type, name, dimensions, position = [0, 0, 0]) => {
+      const defaultCoreId = 'core-hmr-18';
+      const defaultSurfaceId = 'surf-hpl-grey-oak';
+      const defaultEdgeId = 'edge-pvc-grey-10';
+
+      // Get cabinet type standards from imported CABINET_TYPES
+      const typeConfig = CABINET_TYPES[type] || CABINET_TYPES['BASE_STANDARD'];
+
+      const cabinetDimensions: CabinetDimensions = {
+        width: dimensions?.width ?? typeConfig?.standards?.width?.default ?? DEFAULT_DIMENSIONS.width,
+        height: dimensions?.height ?? typeConfig?.standards?.height?.default ?? DEFAULT_DIMENSIONS.height,
+        depth: dimensions?.depth ?? typeConfig?.standards?.depth?.default ?? DEFAULT_DIMENSIONS.depth,
+        toeKickHeight: dimensions?.toeKickHeight ?? (typeConfig?.toeKickHeight ?? DEFAULT_DIMENSIONS.toeKickHeight),
+      };
+
+      const structure: CabinetStructure = {
+        ...DEFAULT_STRUCTURE,
+        shelfCount: typeConfig?.defaultShelfCount ?? DEFAULT_STRUCTURE.shelfCount,
+        topJoint: typeConfig?.defaultTopJoint ?? DEFAULT_STRUCTURE.topJoint,
+        bottomJoint: typeConfig?.defaultBottomJoint ?? DEFAULT_STRUCTURE.bottomJoint,
+        hasBackPanel: typeConfig?.hasBack ?? DEFAULT_STRUCTURE.hasBackPanel,
+      };
+
+      const panels = generatePanels(
+        cabinetDimensions,
+        structure,
+        defaultCoreId,
+        defaultSurfaceId,
+        defaultEdgeId
+      );
+
+      // Get wood thickness from core material for auto-applying Minifix config
+      const coreMaterial = CORE_MATERIALS[defaultCoreId as keyof typeof CORE_MATERIALS];
+      const woodThickness = coreMaterial?.thickness || 18;
+      const minifixConfig = getMinifixFullConfigForThickness(woodThickness);
+
+      const newCabinet: Cabinet & { scenePosition: [number, number, number]; sceneRotation: [number, number, number] } = {
+        id: createId(),
+        name,
+        type: (type.includes('BASE') ? 'BASE' : type.includes('WALL') ? 'WALL' : type.includes('TALL') ? 'TALL' : type.includes('CORNER') ? 'CORNER' : 'BASE') as CabinetType,
+        dimensions: cabinetDimensions,
+        structure,
+        materials: {
+          defaultCore: defaultCoreId,
+          defaultSurface: defaultSurfaceId,
+          defaultEdge: defaultEdgeId,
+          overrides: new Map(),
+        },
+        manufacturing: { ...DEFAULT_MANUFACTURING },
+        panels,
+        computed: calculateTotals(panels),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        scenePosition: position,
+        sceneRotation: [0, 0, 0],
+        // Auto-apply Minifix S200 hardware config based on wood thickness
+        hardware: {
+          minifixConfig,
+          minifixPresetId: `auto_minifix_${woodThickness}mm`,
+        },
+      };
+
       set((state) => {
-        state.cabinet = cabinet;
-        state.cabinets.push(cabinet);
-        state.activeCabinetId = cabinet.id;
+        state.cabinets.push(newCabinet as Cabinet);
+        state.cabinet = newCabinet as Cabinet;
+        state.activeCabinetId = newCabinet.id;
       });
+
+      return newCabinet as Cabinet;
+    },
+
+    removeCabinet: (cabinetId) => {
+      set((state) => {
+        const index = state.cabinets.findIndex(c => c.id === cabinetId);
+        if (index !== -1) {
+          state.cabinets.splice(index, 1);
+        }
+        // If removed active cabinet, select another or null
+        if (state.activeCabinetId === cabinetId) {
+          if (state.cabinets.length > 0) {
+            state.activeCabinetId = state.cabinets[0].id;
+            state.cabinet = state.cabinets[0];
+          } else {
+            state.activeCabinetId = null;
+            state.cabinet = null;
+          }
+        }
+      });
+    },
+
+    selectCabinet: (cabinetId) => {
+      set((state) => {
+        if (cabinetId === null) {
+          state.activeCabinetId = null;
+          state.cabinet = null;
+          return;
+        }
+        const cabinet = state.cabinets.find(c => c.id === cabinetId);
+        if (cabinet) {
+          state.activeCabinetId = cabinetId;
+          state.cabinet = cabinet;
+        }
+      });
+    },
+
+    duplicateCabinet: (cabinetId) => {
+      const state = get();
+      const source = state.cabinets.find(c => c.id === cabinetId);
+      if (!source) return null;
+
+      // Get source position and offset the duplicate
+      let sourcePos = (source as any).scenePosition || [0, 0, 0];
+      const sourceRot = (source as any).sceneRotation || [0, 0, 0];
+      const offsetX = source.dimensions.width + 100; // Offset by cabinet width + 100mm gap
+
+      // SANITY CHECK: Source position should never exceed 10 meters (10000mm)
+      const MAX_POSITION = 10000;
+      const sourceCorrupted = Math.abs(sourcePos[0]) > MAX_POSITION || Math.abs(sourcePos[2]) > MAX_POSITION;
+      if (sourceCorrupted) {
+        console.warn('[Cabinet] Source position corrupted, resetting to origin:', sourcePos);
+        sourcePos = [0, 0, 0];
+        // Also fix the source cabinet's position in the store
+        set((state) => {
+          const srcCabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+          if (srcCabinet) {
+            srcCabinet.scenePosition = [0, 0, 0];
+          }
+        });
+      }
+
+      // Deep clone the cabinet
+      const newCabinet: Cabinet = {
+        ...source,
+        id: createId(),
+        name: `${source.name} (Copy)`,
+        panels: source.panels.map(p => ({ ...p, id: createId() })),
+        materials: {
+          ...source.materials,
+          overrides: new Map(source.materials.overrides),
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      // Set scene position for the new cabinet (offset from source)
+      (newCabinet as any).scenePosition = [sourcePos[0] + offsetX, sourcePos[1], sourcePos[2]];
+      (newCabinet as any).sceneRotation = [...sourceRot];
+
+      set((state) => {
+        state.cabinets.push(newCabinet);
+        state.cabinet = newCabinet;
+        state.activeCabinetId = newCabinet.id;
+      });
+
+      return newCabinet;
+    },
+
+    updateCabinetPosition: (cabinetId, position) => {
+      // SANITY CHECK: Position should never exceed 10 meters (10000mm)
+      const MAX_POSITION = 10000;
+      if (Math.abs(position[0]) > MAX_POSITION || Math.abs(position[1]) > MAX_POSITION || Math.abs(position[2]) > MAX_POSITION) {
+        return; // Don't update with invalid position
+      }
+
+      set((state) => {
+        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        if (cabinet) {
+          cabinet.scenePosition = position;
+        }
+      });
+    },
+
+    updateCabinetRotation: (cabinetId, rotation) => {
+      set((state) => {
+        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        if (cabinet) {
+          cabinet.sceneRotation = rotation;
+        }
+      });
+    },
+
+    rotateCabinet90: (cabinetId, direction) => {
+      set((state) => {
+        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        if (cabinet) {
+          const currentY = cabinet.sceneRotation?.[1] || 0;
+          // CW = clockwise = negative Y rotation, CCW = counter-clockwise = positive
+          const delta = direction === 'cw' ? -Math.PI / 2 : Math.PI / 2;
+          cabinet.sceneRotation = [0, currentY + delta, 0];
+        }
+      });
+    },
+
+    mirrorCabinet: (cabinetId, axis) => {
+      const state = get();
+      const source = state.cabinets.find(c => c.id === cabinetId);
+      if (!source) return null;
+
+      // Get source position
+      const sourcePos = (source as any).scenePosition || [0, 0, 0];
+      const sourceRot = (source as any).sceneRotation || [0, 0, 0];
+
+      // Deep clone the cabinet
+      const newCabinet: Cabinet = {
+        ...source,
+        id: createId(),
+        name: `${source.name} (Mirror)`,
+        panels: source.panels.map(p => ({ ...p, id: createId() })),
+        materials: {
+          ...source.materials,
+          overrides: new Map(source.materials.overrides),
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      // Mirror position and rotation
+      // For X-axis mirror: flip X position and add 180° Y rotation
+      // For Z-axis mirror: flip Z position and add 180° Y rotation
+      const offsetAmount = source.dimensions.width + 100;
+      let newPos: [number, number, number];
+      let newRot: [number, number, number];
+
+      if (axis === 'x') {
+        // Mirror across X axis: negate X, rotate 180° around Y
+        newPos = [sourcePos[0] - offsetAmount, sourcePos[1], sourcePos[2]];
+        newRot = [sourceRot[0], sourceRot[1] + Math.PI, sourceRot[2]];
+      } else {
+        // Mirror across Z axis: negate Z, rotate 180° around Y
+        newPos = [sourcePos[0], sourcePos[1], sourcePos[2] - (source.dimensions.depth + 100)];
+        newRot = [sourceRot[0], sourceRot[1] + Math.PI, sourceRot[2]];
+      }
+
+      (newCabinet as any).scenePosition = newPos;
+      (newCabinet as any).sceneRotation = newRot;
+
+      set((state) => {
+        state.cabinets.push(newCabinet);
+        state.cabinet = newCabinet;
+        state.activeCabinetId = newCabinet.id;
+      });
+
+      return newCabinet;
+    },
+
+    resetScenePositions: () => {
+      set((state) => {
+        let xOffset = 0;
+        const gap = 100; // 100mm gap between cabinets
+
+        state.cabinets.forEach((cabinet: any) => {
+          const newPos: [number, number, number] = [xOffset, 0, 0];
+          cabinet.scenePosition = newPos;
+          cabinet.sceneRotation = [0, 0, 0];
+          xOffset += cabinet.dimensions.width + gap;
+        });
+      });
+    },
+
+    // ========== CABINET VISIBILITY ACTIONS (Plasticity-style) ==========
+    hideCabinet: (cabinetId) => {
+      set((state) => {
+        if (!state.hiddenCabinetIds.includes(cabinetId)) {
+          state.hiddenCabinetIds.push(cabinetId);
+        }
+      });
+    },
+
+    showCabinet: (cabinetId) => {
+      set((state) => {
+        const index = state.hiddenCabinetIds.indexOf(cabinetId);
+        if (index !== -1) {
+          state.hiddenCabinetIds.splice(index, 1);
+        }
+      });
+    },
+
+    showAllCabinets: () => {
+      set((state) => {
+        state.hiddenCabinetIds = [];
+      });
+    },
+
+    hideUnselectedCabinets: (exceptId) => {
+      set((state) => {
+        state.hiddenCabinetIds = state.cabinets
+          .filter((c) => c.id !== exceptId)
+          .map((c) => c.id);
+      });
+    },
+
+    toggleCabinetVisibility: (cabinetId) => {
+      const state = get();
+      if (state.hiddenCabinetIds.includes(cabinetId)) {
+        get().showCabinet(cabinetId);
+      } else {
+        get().hideCabinet(cabinetId);
+      }
     },
 
     // ========== DIMENSION ACTIONS ==========
     setDimension: (key, value) => {
+      // SPEC-08: Block geometry mutations when not in DRAFT
+      if (!guardMutation('setDimension')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.dimensions[key] = value;
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.dimensions[key] = value;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
+    // ========== DRILLING PARAM ACTIONS ==========
+    setDrillingParam: (param, value) => {
+      // SPEC-08: Block geometry mutations when not in DRAFT
+      if (!guardMutation('setDrillingParam')) return;
+
+      set((state) => {
+        state.drillingParams[param] = value;
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.updatedAt = Date.now();
+        }, { skipRecompute: true }); // Drill map regenerates via dependency
+      });
+    },
+
     // ========== STRUCTURE ACTIONS ==========
     setJointType: (position, type) => {
+      // SPEC-08: Block structure mutations when not in DRAFT
+      if (!guardMutation('setJointType')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        if (position === 'top') {
-          state.cabinet.structure.topJoint = type;
-        } else {
-          state.cabinet.structure.bottomJoint = type;
-        }
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (position === 'top') {
+            cabinet.structure.topJoint = type;
+          } else {
+            cabinet.structure.bottomJoint = type;
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
     setShelfCount: (count) => {
+      // SPEC-08: Block structure mutations when not in DRAFT
+      if (!guardMutation('setShelfCount')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.structure.shelfCount = Math.max(0, Math.min(10, count));
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.shelfCount = Math.max(0, Math.min(10, count));
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
     setDividerCount: (count) => {
+      // SPEC-08: Block structure mutations when not in DRAFT
+      if (!guardMutation('setDividerCount')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.structure.dividerCount = Math.max(0, Math.min(5, count));
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.dividerCount = Math.max(0, Math.min(5, count));
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
     toggleBackPanel: () => {
+      // SPEC-08: Block structure mutations when not in DRAFT
+      if (!guardMutation('toggleBackPanel')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.structure.hasBackPanel = !state.cabinet.structure.hasBackPanel;
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.hasBackPanel = !cabinet.structure.hasBackPanel;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
+    setBackPanelConstruction: (type) => {
+      // SPEC-08: Block structure mutations when not in DRAFT
+      if (!guardMutation('setBackPanelConstruction')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.backPanelConstruction = type;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+      get().recalculate();
+    },
+
     // ========== MATERIAL ACTIONS ==========
     setDefaultCore: (materialId) => {
+      // SPEC-08: Block material mutations when not in DRAFT
+      if (!guardMutation('setDefaultCore')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.materials.defaultCore = materialId;
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.materials.defaultCore = materialId;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
     setDefaultSurface: (materialId) => {
+      // SPEC-08: Block material mutations when not in DRAFT
+      if (!guardMutation('setDefaultSurface')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.materials.defaultSurface = materialId;
-        state.cabinet.updatedAt = Date.now();
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.materials.defaultSurface = materialId;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
-    
+
     setDefaultEdge: (materialId) => {
+      // SPEC-08: Block material mutations when not in DRAFT
+      if (!guardMutation('setDefaultEdge')) return;
+
       set((state) => {
-        if (!state.cabinet) return;
-        state.cabinet.materials.defaultEdge = materialId;
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.materials.defaultEdge = materialId;
 
-        // Force apply edge material to ALL panels (except back panel)
-        state.cabinet.panels.forEach(panel => {
-          if (panel.role === 'BACK') return; // Skip back panel
+          // Force apply edge material to ALL panels (except back panel)
+          cabinet.panels.forEach(panel => {
+            if (panel.role === 'BACK') return; // Skip back panel
 
-          // Force assign edge material to all sides
-          panel.edges = {
-            top: materialId,
-            bottom: materialId,
-            left: materialId,
-            right: materialId
-          };
-        });
-
-        state.cabinet.updatedAt = Date.now();
+            // Force assign edge material to all sides
+            panel.edges = {
+              top: materialId,
+              bottom: materialId,
+              left: materialId,
+              right: materialId
+            };
+          });
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
     },
@@ -1936,7 +2718,44 @@ export const useCabinetStore = create<CabinetStore>()(
     selectPanel: (panelId) => {
       set({ selectedPanelId: panelId });
     },
-    
+
+    // ========== PANEL REMOVAL (for sub-shelves/dividers) ==========
+    removePanel: (panelId) => {
+      // SPEC-08: Block panel removal when not in DRAFT
+      if (!guardMutation('removePanel')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          // Find the panel
+          const panelIndex = cabinet.panels.findIndex(p => p.id === panelId);
+          if (panelIndex === -1) return;
+
+          const panel = cabinet.panels[panelIndex];
+
+          // Only allow removal of Sub Shelf / Sub Divider (custom position panels)
+          if (!panel.name.startsWith('Sub')) return;
+
+          // Remove the panel from cabinet
+          cabinet.panels.splice(panelIndex, 1);
+
+          // Clear selection if this panel was selected
+          if (state.selectedPanelId === panelId) {
+            state.selectedPanelId = null;
+          }
+
+          // Recalculate totals for cabinet
+          cabinet.computed = {
+            totalCost: cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
+            totalCO2: cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
+            panelCount: cabinet.panels.length,
+            totalSurfaceArea: cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
+            totalEdgeLength: cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+          };
+        });
+      });
+    },
+
     // ========== MATERIAL CRUD - CORE ==========
     addCoreMaterial: (material) => {
       set((state) => {
@@ -2027,51 +2846,87 @@ export const useCabinetStore = create<CabinetStore>()(
     // ========== PER-PANEL MATERIAL ACTIONS ==========
     updatePanelMaterial: (panelId, target, materialId) => {
       set((state) => {
-        if (!state.cabinet) return;
-        
-        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        if (!state.activeCabinetId) return;
+
+        // CRITICAL: Mutate through state.cabinets[idx] path for proper Immer/Zustand reactivity
+        // If we mutate through state.cabinet directly, Zustand won't detect the change
+        // because the cabinets array selector uses shallow equality
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+
+        const cabinet = state.cabinets[cabinetIndex];
+        const panel = cabinet.panels.find(p => p.id === panelId);
         if (!panel) return;
-        
+
+        // Update the material reference
         if (target === 'core') {
           panel.coreMaterialId = materialId;
-          // Recalculate panel thickness
-          const core = state.coreMaterials[materialId as keyof typeof state.coreMaterials];
-          const surface = state.surfaceMaterials[panel.faces?.faceA as keyof typeof state.surfaceMaterials];
-          if (core) {
-            const surfaceThickness = surface?.thickness || 0;
-            panel.computed.realThickness = core.thickness + (surfaceThickness * 2) + 0.2; // 2 faces + glue
-          }
         } else if (target === 'faceA') {
           if (!panel.faces) panel.faces = { faceA: null, faceB: null };
-          panel.faces.faceA = materialId;
+          panel.faces.faceA = materialId || null;
         } else if (target === 'faceB') {
           if (!panel.faces) panel.faces = { faceA: null, faceB: null };
-          panel.faces.faceB = materialId;
+          panel.faces.faceB = materialId || null;
         }
-        
+
+        // Always recalculate realThickness after any material change
+        // USES TRUTH MODULE: computePanelTotalThickness for single-source-of-truth
+        const defaultSurfaceId = cabinet.materials?.defaultSurface ?? 'surf-mel-white';
+        if (panel.computed) {
+          panel.computed.realThickness = calcPanelTotalThickness(panel, defaultSurfaceId);
+        }
+
+        // ============================================================
+        // CRITICAL: Recalculate dependent carcass geometry when BACK panel changes
+        // Uses recomputeCarcassGeometry which delegates to Truth Module
+        // ============================================================
+        if (panel.role === 'BACK') {
+          recomputeCarcassGeometry(cabinet, state.edgeMaterials);
+        }
+
+        // Update timestamp
+        cabinet.updatedAt = Date.now();
+
         // Recalculate cabinet totals
-        state.cabinet.computed = calculateTotals(state.cabinet.panels);
+        cabinet.computed = calculateTotals(cabinet.panels);
+
+        // Sync state.cabinet reference (for UI panels that use state.cabinet)
+        state.cabinet = cabinet;
       });
     },
     
     updatePanelEdge: (panelId, side, edgeId) => {
       set((state) => {
-        if (!state.cabinet) return;
+        if (!state.activeCabinetId) return;
 
-        const panel = state.cabinet.panels.find(p => p.id === panelId);
-        if (!panel) return;
+        // CRITICAL: Mutate through state.cabinets[idx] path for proper Immer/Zustand reactivity
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
 
+        const cabinet = state.cabinets[cabinetIndex];
+        const panelIndex = cabinet.panels.findIndex(p => p.id === panelId);
+        if (panelIndex === -1) return;
+
+        // Get panel reference (Immer allows direct mutation)
+        const panel = cabinet.panels[panelIndex];
+
+        // Ensure edges object exists
         if (!panel.edges) {
           panel.edges = { top: null, bottom: null, left: null, right: null };
         }
 
+        // Direct mutation of the specific edge (Immer tracks this)
         panel.edges[side] = edgeId;
 
         // Recalculate cut size based on new edge thicknesses
+        // Edge can be from edgeMaterials OR surfaceMaterials (user can select surface as edge)
         const getEdgeThickness = (id: string | null) => {
           if (!id) return 0;
+          // Check edgeMaterials first, then surfaceMaterials
           const edge = state.edgeMaterials[id as keyof typeof state.edgeMaterials];
-          return edge?.thickness || 0;
+          if (edge) return edge.thickness;
+          const surface = state.surfaceMaterials[id as keyof typeof state.surfaceMaterials];
+          return surface?.thickness || 0;
         };
 
         const edgeT = getEdgeThickness(panel.edges.top);
@@ -2079,29 +2934,41 @@ export const useCabinetStore = create<CabinetStore>()(
         const edgeL = getEdgeThickness(panel.edges.left);
         const edgeR = getEdgeThickness(panel.edges.right);
 
-        // Cut size = Finish - edges + pre-milling
-        const preMilling = 0.5;
-        panel.computed.cutWidth = panel.finishWidth - edgeL - edgeR + (2 * preMilling);
-        panel.computed.cutHeight = panel.finishHeight - edgeT - edgeB + (2 * preMilling);
-
-        // Recalculate edge length
+        // Cut size = Finish - edges + pre-milling (only for sides WITH edges)
+        // preMilling is configurable per machine - use MANUFACTURING_PARAMS
+        const preMilling = MANUFACTURING_PARAMS.preMilling;
+        const preMillWidth = (edgeL > 0 ? preMilling : 0) + (edgeR > 0 ? preMilling : 0);
+        const preMillHeight = (edgeT > 0 ? preMilling : 0) + (edgeB > 0 ? preMilling : 0);
+        panel.computed.cutWidth = panel.finishWidth - edgeL - edgeR + preMillWidth;
+        panel.computed.cutHeight = panel.finishHeight - edgeT - edgeB + preMillHeight;
         panel.computed.edgeLength =
-          (edgeT > 0 ? panel.finishWidth : 0) +
-          (edgeB > 0 ? panel.finishWidth : 0) +
-          (edgeL > 0 ? panel.finishHeight : 0) +
-          (edgeR > 0 ? panel.finishHeight : 0);
+          ((edgeT > 0 ? panel.finishWidth : 0) +
+           (edgeB > 0 ? panel.finishWidth : 0) +
+           (edgeL > 0 ? panel.finishHeight : 0) +
+           (edgeR > 0 ? panel.finishHeight : 0)) / 1000; // Convert to meters (consistent with generatePanels)
+
+        // Update timestamp to trigger re-renders
+        cabinet.updatedAt = Date.now();
 
         // Recalculate cabinet totals
-        state.cabinet.computed = calculateTotals(state.cabinet.panels);
+        cabinet.computed = calculateTotals(cabinet.panels);
+
+        // Sync state.cabinet reference (for UI panels that use state.cabinet)
+        state.cabinet = cabinet;
       });
     },
 
     // ========== PER-PANEL POSITION ACTIONS ==========
     updatePanelPositionOverride: (panelId, field, value) => {
       set((state) => {
-        if (!state.cabinet) return;
+        if (!state.activeCabinetId) return;
 
-        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        // CRITICAL: Mutate through state.cabinets[idx] for proper Zustand/Immer reactivity
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+
+        const cabinet = state.cabinets[cabinetIndex];
+        const panel = cabinet.panels.find(p => p.id === panelId);
         if (!panel) return;
 
         // Initialize position overrides if not exists
@@ -2111,33 +2978,178 @@ export const useCabinetStore = create<CabinetStore>()(
 
         panel.positionOverrides[field] = value as number;
         panel.useCustomPosition = true;
-        state.cabinet.updatedAt = Date.now();
+
+        // Recalculate panel position and dimensions directly (without regenerating all panels)
+        const { depth: D, toeKickHeight: Leg } = cabinet.dimensions;
+        const T = 18; // Panel thickness
+        const ET = 1; // Edge thickness approximation
+
+        // Back panel calculations (use per-cabinet setting)
+        const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
+          ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
+          : MANUFACTURING_PARAMS.backThickness;
+        const depthInternal = D - backObstruction - MANUFACTURING_PARAMS.safetyGap;
+
+        // Get current overrides
+        const frontSetback = panel.positionOverrides.frontSetback ?? MANUFACTURING_PARAMS.shelfSetbackFront;
+        const backSetback = panel.positionOverrides.backSetback ?? MANUFACTURING_PARAMS.shelfSetbackBack;
+        const gapFromBelow = panel.positionOverrides.gapFromBelow;
+
+        if (panel.role === 'SHELF' || panel.role === 'DIVIDER') {
+          // Calculate new depth based on setbacks
+          const newDepth = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+
+          // Calculate new Z position (centered based on front setback)
+          const newZ = (D/2 - frontSetback - ET/2) - (newDepth/2);
+
+          // Calculate new Y position if gapFromBelow is set (for shelves)
+          let newY = panel.position[1];
+          if (panel.role === 'SHELF' && gapFromBelow !== null && gapFromBelow !== undefined) {
+            // Y position = bottom of cabinet + bottom panel thickness + gap + half shelf thickness
+            newY = Leg + T + gapFromBelow + T/2;
+          }
+
+          // Update panel dimensions (finishHeight is depth for horizontal panels)
+          panel.finishHeight = newDepth;
+          panel.position = [panel.position[0], newY, newZ];
+
+          // Update computed values
+          if (panel.computed) {
+            panel.computed.cutHeight = newDepth;
+            panel.computed.surfaceArea = (panel.finishWidth * newDepth) / 1000000 * 2;
+          }
+
+          // === UPDATE RELATED PARTIAL DIVIDERS ===
+          // When a shelf moves, update the height of any partial dividers that are bounded by it
+          if (panel.role === 'SHELF') {
+            const shelfY = newY;
+            const shelfX = panel.position[0];
+            const shelfHalfWidth = panel.finishWidth / 2;
+            const { height: H, toeKickHeight: LegH } = cabinet.dimensions;
+            const usableHeight = H - 2 * T;
+
+            // Find partial dividers (not full-height) that overlap with this shelf's X range
+            const partialDividers = cabinet.panels.filter(p => {
+              if (p.role !== 'DIVIDER') return false;
+              if (p.finishHeight >= usableHeight - 10) return false; // Skip full-height dividers
+
+              // Check X overlap with shelf
+              const dividerX = p.position[0];
+              return dividerX >= shelfX - shelfHalfWidth && dividerX <= shelfX + shelfHalfWidth;
+            });
+
+            // Update each partial divider's height based on new shelf position
+            for (const divider of partialDividers) {
+              const dividerY = divider.position[1];
+              const dividerHalfHeight = divider.finishHeight / 2;
+              const dividerTop = dividerY + dividerHalfHeight;
+              const dividerBottom = dividerY - dividerHalfHeight;
+
+              // Check if this shelf is above or below the divider
+              const shelfTopSurface = shelfY + T/2;
+              const shelfBottomSurface = shelfY - T/2;
+
+              // If shelf is above the divider center, it constrains the top
+              if (shelfBottomSurface > dividerY && shelfBottomSurface < dividerTop) {
+                // Shelf is above - adjust divider's top to shelf's bottom
+                const newHeight = Math.round((shelfBottomSurface - dividerBottom) * 10) / 10;
+                const newDividerY = Math.round((dividerBottom + shelfBottomSurface) / 2 * 10) / 10;
+                divider.finishHeight = newHeight;
+                divider.position = [divider.position[0], newDividerY, divider.position[2]];
+                if (divider.computed) {
+                  divider.computed.cutHeight = newHeight;
+                  divider.computed.surfaceArea = (divider.finishWidth * newHeight) / 1000000 * 2;
+                }
+              }
+              // If shelf is below the divider center, it constrains the bottom
+              else if (shelfTopSurface < dividerY && shelfTopSurface > dividerBottom) {
+                // Shelf is below - adjust divider's bottom to shelf's top
+                const newHeight = Math.round((dividerTop - shelfTopSurface) * 10) / 10;
+                const newDividerY = Math.round((shelfTopSurface + dividerTop) / 2 * 10) / 10;
+                divider.finishHeight = newHeight;
+                divider.position = [divider.position[0], newDividerY, divider.position[2]];
+                if (divider.computed) {
+                  divider.computed.cutHeight = newHeight;
+                  divider.computed.surfaceArea = (divider.finishWidth * newHeight) / 1000000 * 2;
+                }
+              }
+            }
+          }
+        }
+
+        cabinet.updatedAt = Date.now();
+
+        // Sync state.cabinet reference for UI panels
+        state.cabinet = cabinet;
       });
-      // Recalculate to apply new position
-      get().recalculate();
+      // Don't call recalculate() - we updated the panel directly to preserve panel IDs
     },
 
     resetPanelPosition: (panelId) => {
       set((state) => {
-        if (!state.cabinet) return;
+        // REACTIVITY FIX: Use cabinets[idx] path for Zustand subscribers
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
 
-        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        const panel = cabinet.panels.find(p => p.id === panelId);
         if (!panel) return;
 
-        panel.positionOverrides = undefined;
+        // Reset to default overrides
+        panel.positionOverrides = { ...DEFAULT_POSITION_OVERRIDES };
         panel.useCustomPosition = false;
-        state.cabinet.updatedAt = Date.now();
+
+        // Recalculate panel position and dimensions with default values
+        const { depth: D } = cabinet.dimensions;
+        const ET = 1; // Edge thickness approximation
+
+        // Back panel calculations (use per-cabinet setting)
+        const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
+          ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
+          : MANUFACTURING_PARAMS.backThickness;
+        const depthInternal = D - backObstruction - MANUFACTURING_PARAMS.safetyGap;
+
+        // Use default setbacks
+        const frontSetback = MANUFACTURING_PARAMS.shelfSetbackFront;
+        const backSetback = MANUFACTURING_PARAMS.shelfSetbackBack;
+
+        if (panel.role === 'SHELF' || panel.role === 'DIVIDER') {
+          // Calculate new depth based on default setbacks
+          const newDepth = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+
+          // Calculate new Z position (centered based on front setback)
+          const newZ = (D/2 - frontSetback - ET/2) - (newDepth/2);
+
+          // Update panel dimensions
+          panel.finishHeight = newDepth;
+          panel.position = [panel.position[0], panel.position[1], newZ];
+
+          // Update computed values
+          if (panel.computed) {
+            panel.computed.cutHeight = newDepth;
+            panel.computed.surfaceArea = (panel.finishWidth * newDepth) / 1000000 * 2;
+          }
+        }
+
+        cabinet.updatedAt = Date.now();
+        // Sync UI reference
+        state.cabinet = cabinet;
       });
-      get().recalculate();
+      // Don't call recalculate() - we updated the panel directly to preserve panel IDs
     },
 
     // ========== DIVIDER POSITION ==========
     moveDivider: (dividerIndex, newXPosition) => {
       set((state) => {
-        if (!state.cabinet) return;
+        // REACTIVITY FIX: Use cabinets[idx] path for Zustand subscribers
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
 
         // Find all dividers sorted by X position
-        const dividers = state.cabinet.panels
+        const dividers = cabinet.panels
           .filter(p => p.role === 'DIVIDER')
           .sort((a, b) => a.position[0] - b.position[0]);
 
@@ -2145,7 +3157,7 @@ export const useCabinetStore = create<CabinetStore>()(
 
         const divider = dividers[dividerIndex];
         const T = 18; // Panel thickness
-        const W = state.cabinet.dimensions.width;
+        const W = cabinet.dimensions.width;
 
         // Clamp new position within cabinet bounds
         const minX = -W/2 + T + 50; // At least 50mm from left side
@@ -2165,7 +3177,9 @@ export const useCabinetStore = create<CabinetStore>()(
           };
         }
 
-        state.cabinet.updatedAt = Date.now();
+        cabinet.updatedAt = Date.now();
+        // Sync UI reference
+        state.cabinet = cabinet;
       });
 
       // Recalculate to update shelves that depend on divider positions
@@ -2175,19 +3189,23 @@ export const useCabinetStore = create<CabinetStore>()(
     // Move a partial divider by its panel ID (for partial dividers within compartments)
     movePartialDividerById: (panelId, newXPosition) => {
       set((state) => {
-        if (!state.cabinet) return;
+        // REACTIVITY FIX: Use cabinets[idx] path for Zustand subscribers
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
 
         // Find the panel by ID
-        const panel = state.cabinet.panels.find(p => p.id === panelId);
+        const panel = cabinet.panels.find(p => p.id === panelId);
         if (!panel || panel.role !== 'DIVIDER') return;
 
         const T = 18; // Panel thickness
-        const W = state.cabinet.dimensions.width;
-        const H = state.cabinet.dimensions.height;
+        const W = cabinet.dimensions.width;
+        const H = cabinet.dimensions.height;
 
         // Get full-height dividers for column boundaries
         const usableHeight = H - 2 * T;
-        const fullHeightDividers = state.cabinet.panels
+        const fullHeightDividers = cabinet.panels
           .filter(p => p.role === 'DIVIDER' && p.finishHeight >= usableHeight - 10)
           .sort((a, b) => a.position[0] - b.position[0]);
         const dividerXPositions = fullHeightDividers.map(p => p.position[0]);
@@ -2224,7 +3242,9 @@ export const useCabinetStore = create<CabinetStore>()(
           };
         }
 
-        state.cabinet.updatedAt = Date.now();
+        cabinet.updatedAt = Date.now();
+        // Sync UI reference
+        state.cabinet = cabinet;
       });
 
       // Note: Do NOT call recalculate() here because partial dividers
@@ -2237,6 +3257,9 @@ export const useCabinetStore = create<CabinetStore>()(
     // Creates a PARTIAL shelf only within the compartment bounds (column width)
     // Now accepts optional bounds parameter for sub-compartment support
     addShelfInCompartment: (col, row, bounds) => {
+      // SPEC-08: Block panel additions when not in DRAFT
+      if (!guardMutation('addShelfInCompartment')) return;
+
       const state = get();
       if (!state.cabinet) return;
 
@@ -2309,6 +3332,12 @@ export const useCabinetStore = create<CabinetStore>()(
       const edgeMat = state.edgeMaterials[defaultEdgeId as keyof typeof state.edgeMaterials];
       const edgeThickness = edgeMat?.thickness || 1;
 
+      // TRUTH MODULE: Calculate actual panel thickness from materials
+      const actualPanelThickness = calcPanelTotalThickness(
+        { coreMaterialId: defaultCoreId, faces: { faceA: defaultSurfaceId, faceB: null } },
+        defaultSurfaceId
+      );
+
       // Compute panel values
       const computePanel = (finishW: number, finishH: number, edgeTop: number) => {
         const cutW = finishW - edgeTop;
@@ -2316,7 +3345,7 @@ export const useCabinetStore = create<CabinetStore>()(
         const surfaceArea = (finishW * finishH) / 1000000;
         const edgeLength = edgeTop > 0 ? finishW / 1000 : 0;
         return {
-          realThickness: T,
+          realThickness: actualPanelThickness, // Use Truth Module instead of hardcoded T
           cutWidth: cutW,
           cutHeight: cutH,
           surfaceArea,
@@ -2328,20 +3357,24 @@ export const useCabinetStore = create<CabinetStore>()(
 
       // Create partial shelf panel directly
       set((state) => {
-        if (!state.cabinet) return;
+        // REACTIVITY FIX: Use cabinets[idx] path for Zustand subscribers
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
 
-        // Count existing shelves to generate name
-        const existingShelfCount = state.cabinet.panels.filter(p => p.role === 'SHELF').length;
+        // Count existing sub shelves to generate name
+        const existingSubShelfCount = cabinet.panels.filter(p => p.role === 'SHELF' && p.name.startsWith('Sub')).length;
 
         const newShelf: CabinetPanel = {
           id: createId(),
           role: 'SHELF',
-          name: `Shelf ${existingShelfCount + 1}`,
+          name: `Sub Shelf ${existingSubShelfCount + 1}`,
           finishWidth: shelfWidth,
           finishHeight: shelfDepth, // For shelf, finishHeight is depth
           coreMaterialId: defaultCoreId,
           faces: { faceA: defaultSurfaceId, faceB: null },
-          edges: { top: defaultEdgeId, bottom: null, left: null, right: null }, // Only front edge
+          edges: { top: defaultEdgeId, bottom: defaultEdgeId, left: defaultEdgeId, right: defaultEdgeId }, // All 4 edges
           grainDirection: 'HORIZONTAL',
           computed: computePanel(shelfWidth, shelfDepth, edgeThickness),
           position: [newShelfX, newShelfY, shelfZ],
@@ -2356,17 +3389,20 @@ export const useCabinetStore = create<CabinetStore>()(
           },
         };
 
-        state.cabinet.panels.push(newShelf);
-        state.cabinet.updatedAt = Date.now();
+        cabinet.panels.push(newShelf);
+        cabinet.updatedAt = Date.now();
 
         // Recalculate totals
-        state.cabinet.computed = {
-          totalCost: state.cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
-          totalCO2: state.cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
-          panelCount: state.cabinet.panels.length,
-          totalSurfaceArea: state.cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
-          totalEdgeLength: state.cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+        cabinet.computed = {
+          totalCost: cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
+          totalCO2: cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
+          panelCount: cabinet.panels.length,
+          totalSurfaceArea: cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
+          totalEdgeLength: cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
         };
+
+        // Sync UI reference
+        state.cabinet = cabinet;
       });
     },
 
@@ -2374,6 +3410,9 @@ export const useCabinetStore = create<CabinetStore>()(
     // Creates a PARTIAL divider only within the compartment bounds, not full height
     // Now accepts optional bounds parameter for sub-compartment support
     addDividerInCompartment: (col, row, bounds) => {
+      // SPEC-08: Block panel additions when not in DRAFT
+      if (!guardMutation('addDividerInCompartment')) return;
+
       const state = get();
       if (!state.cabinet) return;
 
@@ -2419,17 +3458,70 @@ export const useCabinetStore = create<CabinetStore>()(
       // Use provided bounds or calculate from col/row (fallback for backward compatibility)
       const leftX = bounds?.leftX ?? colLeftX;
       const rightX = bounds?.rightX ?? colRightX;
-      const bottomY = bounds?.bottomY ?? (row === 0 ? Leg + T : shelfYs[row - 1] + T/2);
-      const topY = bounds?.topY ?? (row === rowCount - 1 ? Leg + bodyH - T : shelfYs[row] - T/2);
-      const compartmentHeight = topY - bottomY;
+      let bottomY = bounds?.bottomY ?? (row === 0 ? Leg + T : shelfYs[row - 1] + T/2);
+      let topY = bounds?.topY ?? (row === rowCount - 1 ? Leg + bodyH - T : shelfYs[row] - T/2);
 
       // New partial divider position: use provided centerX or calculate from bounds
       const newDividerX = bounds?.centerX ?? (leftX + rightX) / 2;
-      const newDividerY = (bottomY + topY) / 2;
+      const targetCenterY = (bottomY + topY) / 2;
+
+      // === PARTIAL SHELF CONSTRAINT ===
+      // Check for partial shelves that might constrain the divider's height
+      // Partial shelves are shelves with useCustomPosition=true or that don't span full column width
+      const partialShelves = panels
+        .filter(p => p.role === 'SHELF')
+        .filter(p => {
+          // Check if shelf overlaps with the divider's X position
+          const shelfHalfWidth = p.finishWidth / 2;
+          const shelfLeftX = p.position[0] - shelfHalfWidth;
+          const shelfRightX = p.position[0] + shelfHalfWidth;
+          const overlapsX = newDividerX >= shelfLeftX && newDividerX <= shelfRightX;
+
+          // Check if shelf is within the Y bounds (not at the exact boundary)
+          const shelfY = p.position[1];
+          const isWithinBounds = shelfY > bottomY + T && shelfY < topY - T;
+
+          return overlapsX && isWithinBounds;
+        });
+
+      // If there are partial shelves, find the ones closest to the target center Y
+      // and adjust the bounds to not overlap with them
+      if (partialShelves.length > 0) {
+        // Find shelves above and below the target center
+        const shelvesBelow = partialShelves
+          .filter(s => s.position[1] < targetCenterY)
+          .sort((a, b) => b.position[1] - a.position[1]); // Descending - closest first
+
+        const shelvesAbove = partialShelves
+          .filter(s => s.position[1] >= targetCenterY)
+          .sort((a, b) => a.position[1] - b.position[1]); // Ascending - closest first
+
+        // Adjust bottomY if there's a shelf below
+        if (shelvesBelow.length > 0) {
+          const closestBelow = shelvesBelow[0];
+          const shelfTopSurface = closestBelow.position[1] + T/2;
+          if (shelfTopSurface > bottomY) {
+            bottomY = shelfTopSurface;
+          }
+        }
+
+        // Adjust topY if there's a shelf above
+        if (shelvesAbove.length > 0) {
+          const closestAbove = shelvesAbove[0];
+          const shelfBottomSurface = closestAbove.position[1] - T/2;
+          if (shelfBottomSurface < topY) {
+            topY = shelfBottomSurface;
+          }
+        }
+      }
+
+      // Round to avoid floating point precision issues (0.1mm precision)
+      const compartmentHeight = Math.round((topY - bottomY) * 10) / 10;
+      const newDividerY = Math.round(((bottomY + topY) / 2) * 10) / 10;
 
       // Calculate divider dimensions
       const depthInternal = D - T; // Internal depth
-      const dividerD = depthInternal - ET; // Divider depth (no front setback for dividers)
+      const dividerD = Math.round((depthInternal - ET) * 10) / 10; // Divider depth (no front setback for dividers)
       const dividerH = compartmentHeight; // Only as tall as the compartment
 
       // Divider Z position
@@ -2444,6 +3536,12 @@ export const useCabinetStore = create<CabinetStore>()(
       const edgeMat = state.edgeMaterials[defaultEdgeId as keyof typeof state.edgeMaterials];
       const edgeThickness = edgeMat?.thickness || 1;
 
+      // TRUTH MODULE: Calculate actual panel thickness from materials
+      const actualPanelThickness = calcPanelTotalThickness(
+        { coreMaterialId: defaultCoreId, faces: { faceA: defaultSurfaceId, faceB: null } },
+        defaultSurfaceId
+      );
+
       // Compute panel values
       const computePanel = (finishW: number, finishH: number, edgeTop: number) => {
         const cutW = finishW - edgeTop;
@@ -2451,7 +3549,7 @@ export const useCabinetStore = create<CabinetStore>()(
         const surfaceArea = (finishW * finishH) / 1000000;
         const edgeLength = edgeTop > 0 ? finishW / 1000 : 0;
         return {
-          realThickness: T,
+          realThickness: actualPanelThickness, // Use Truth Module instead of hardcoded T
           cutWidth: cutW,
           cutHeight: cutH,
           surfaceArea,
@@ -2463,20 +3561,24 @@ export const useCabinetStore = create<CabinetStore>()(
 
       // Create partial divider panel directly
       set((state) => {
-        if (!state.cabinet) return;
+        // REACTIVITY FIX: Use cabinets[idx] path for Zustand subscribers
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
 
-        // Count existing dividers to generate name
-        const existingDividerCount = state.cabinet.panels.filter(p => p.role === 'DIVIDER').length;
+        // Count existing sub dividers to generate name
+        const existingSubDividerCount = cabinet.panels.filter(p => p.role === 'DIVIDER' && p.name.startsWith('Sub')).length;
 
         const newDivider: CabinetPanel = {
           id: createId(),
           role: 'DIVIDER',
-          name: `Divider ${existingDividerCount + 1}`,
+          name: `Sub Divider ${existingSubDividerCount + 1}`,
           finishWidth: dividerD,
           finishHeight: dividerH,
           coreMaterialId: defaultCoreId,
           faces: { faceA: defaultSurfaceId, faceB: null },
-          edges: { top: defaultEdgeId, bottom: null, left: null, right: null },
+          edges: { top: defaultEdgeId, bottom: defaultEdgeId, left: defaultEdgeId, right: defaultEdgeId }, // All 4 edges
           grainDirection: 'VERTICAL',
           computed: computePanel(dividerD, dividerH, edgeThickness),
           position: [newDividerX, newDividerY, dividerZ],
@@ -2491,24 +3593,417 @@ export const useCabinetStore = create<CabinetStore>()(
           },
         };
 
-        state.cabinet.panels.push(newDivider);
-        state.cabinet.updatedAt = Date.now();
+        cabinet.panels.push(newDivider);
+        cabinet.updatedAt = Date.now();
 
         // Recalculate totals
-        state.cabinet.computed = {
-          totalCost: state.cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
-          totalCO2: state.cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
-          panelCount: state.cabinet.panels.length,
-          totalSurfaceArea: state.cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
-          totalEdgeLength: state.cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+        cabinet.computed = {
+          totalCost: cabinet.panels.reduce((sum, p) => sum + p.computed.cost, 0),
+          totalCO2: cabinet.panels.reduce((sum, p) => sum + p.computed.co2, 0),
+          panelCount: cabinet.panels.length,
+          totalSurfaceArea: cabinet.panels.reduce((sum, p) => sum + p.computed.surfaceArea, 0),
+          totalEdgeLength: cabinet.panels.reduce((sum, p) => sum + p.computed.edgeLength, 0),
+        };
+
+        // Sync UI reference
+        state.cabinet = cabinet;
+      });
+    },
+
+    // ========== MANUFACTURING PARAMETERS ==========
+    setManufacturingParam: (key, value) => {
+      set((state) => {
+        state.manufacturingParams[key] = value;
+
+        // Note: Cut size calculation no longer uses preMilling
+        // Cut Size = Finish Size - Edge Thicknesses (preMilling is machine operation only)
+        // Manufacturing params like preMilling are for reference/display only
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          // Just mark as updated (no other changes needed)
+        }, { skipRecompute: true });
+      });
+    },
+
+    resetManufacturingParams: () => {
+      set((state) => {
+        state.manufacturingParams = {
+          preMilling: MANUFACTURING_PARAMS.preMilling,
+          glueThickness: MANUFACTURING_PARAMS.glueThickness,
+          clearance: MANUFACTURING_PARAMS.clearance,
+          grooveDepth: MANUFACTURING_PARAMS.grooveDepth,
+          backVoid: MANUFACTURING_PARAMS.backVoid,
+          backThickness: MANUFACTURING_PARAMS.backThickness,
+          safetyGap: MANUFACTURING_PARAMS.safetyGap,
         };
       });
+    },
+
+    // ========== CONSTRUCTION TYPE ==========
+    setConstructionType: (type) => {
+      set((state) => {
+        state.constructionType = type;
+      });
+    },
+
+    // ========== HARDWARE CONFIGURATION ==========
+    updateHardware: (cabinetId, hardware) => {
+      set((state) => {
+        const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+        if (cabinet) {
+          if (!cabinet.hardware) {
+            cabinet.hardware = { ...DEFAULT_HARDWARE };
+          }
+          cabinet.hardware = { ...cabinet.hardware, ...hardware };
+        }
+      });
+    },
+
+    setMinifixPreset: (cabinetId, presetId) => {
+      set((state) => {
+        const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+        if (cabinet) {
+          if (!cabinet.hardware) {
+            cabinet.hardware = { ...DEFAULT_HARDWARE };
+          }
+          cabinet.hardware.minifixPresetId = presetId;
+          // Clear inline config when using preset
+          if (presetId) {
+            cabinet.hardware.minifixConfig = undefined;
+          }
+        }
+      });
+    },
+
+    setHingePreset: (cabinetId, presetId) => {
+      set((state) => {
+        const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+        if (cabinet) {
+          if (!cabinet.hardware) {
+            cabinet.hardware = { ...DEFAULT_HARDWARE };
+          }
+          cabinet.hardware.hingePresetId = presetId;
+          // Clear inline config when using preset
+          if (presetId) {
+            cabinet.hardware.hingeConfig = undefined;
+          }
+        }
+      });
+    },
+
+    // ========== HARDWARE POINT OVERRIDES ==========
+    setHardwarePointOverride: (cabinetId, pointId, override) => {
+      set((state) => {
+        const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+        if (cabinet) {
+          if (!cabinet.hardwareOverrides) {
+            cabinet.hardwareOverrides = {};
+          }
+          // Merge with existing override (if any)
+          const existing = cabinet.hardwareOverrides[pointId] || {};
+          cabinet.hardwareOverrides[pointId] = {
+            ...existing,
+            ...(override.rotation && { rotation: override.rotation }),
+            ...(override.position && { position: override.position }),
+          };
+        }
+      });
+    },
+
+    clearHardwarePointOverride: (cabinetId, pointId) => {
+      set((state) => {
+        const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+        if (cabinet?.hardwareOverrides) {
+          delete cabinet.hardwareOverrides[pointId];
+        }
+      });
+    },
+
+    getHardwarePointOverrides: (cabinetId) => {
+      const state = get();
+      const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+      return cabinet?.hardwareOverrides || {};
+    },
+
+    // ========== DRAWER CONFIGURATION ==========
+    enableDrawers: (slideType = 'undermount') => {
+      if (!guardMutation('enableDrawers')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          // Initialize drawer config if not present
+          if (!cabinet.structure.drawerConfig) {
+            cabinet.structure.drawerConfig = {
+              ...DEFAULT_DRAWER_CONFIG,
+              hasDrawers: true,
+              slideType,
+            };
+          } else {
+            cabinet.structure.drawerConfig.hasDrawers = true;
+            cabinet.structure.drawerConfig.slideType = slideType;
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to generate drawer panels
+      get().recalculate();
+    },
+
+    disableDrawers: () => {
+      if (!guardMutation('disableDrawers')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.drawerConfig) return;
+          cabinet.structure.drawerConfig.hasDrawers = false;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to remove drawer panels
+      get().recalculate();
+    },
+
+    addDrawerRow: (config) => {
+      if (!guardMutation('addDrawerRow')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          // Initialize drawer config if not present
+          if (!cabinet.structure.drawerConfig) {
+            cabinet.structure.drawerConfig = {
+              ...DEFAULT_DRAWER_CONFIG,
+              hasDrawers: true,
+            };
+          }
+
+          const newRow: DrawerRowConfig = {
+            id: createDrawerRowId(),
+            frontHeight: config?.frontHeight ?? DEFAULT_DRAWER_ROW.frontHeight,
+            gapAbove: config?.gapAbove ?? DEFAULT_DRAWER_ROW.gapAbove,
+            slideSystemId: config?.slideSystemId ?? DEFAULT_DRAWER_ROW.slideSystemId,
+            handleConfig: config?.handleConfig ?? DEFAULT_DRAWER_ROW.handleConfig,
+          };
+
+          cabinet.structure.drawerConfig.rows.push(newRow);
+          cabinet.structure.drawerConfig.hasDrawers = true;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to generate new drawer panels
+      get().recalculate();
+    },
+
+    removeDrawerRow: (rowIndex) => {
+      if (!guardMutation('removeDrawerRow')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.drawerConfig) return;
+
+          const rows = cabinet.structure.drawerConfig.rows;
+          if (rowIndex >= 0 && rowIndex < rows.length) {
+            rows.splice(rowIndex, 1);
+          }
+
+          // If no rows left, disable drawers
+          if (rows.length === 0) {
+            cabinet.structure.drawerConfig.hasDrawers = false;
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to update panels
+      get().recalculate();
+    },
+
+    updateDrawerRow: (rowIndex, updates) => {
+      if (!guardMutation('updateDrawerRow')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.drawerConfig) return;
+
+          const rows = cabinet.structure.drawerConfig.rows;
+          if (rowIndex >= 0 && rowIndex < rows.length) {
+            Object.assign(rows[rowIndex], updates);
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to update drawer dimensions
+      get().recalculate();
+    },
+
+    // ========== DOOR CONFIGURATION ==========
+    enableDoors: (doorCount = 1) => {
+      if (!guardMutation('enableDoors')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          // Initialize door config if not present
+          if (!cabinet.structure.doorConfig) {
+            // Create door panels based on count
+            const doors: DoorPanelConfig[] = [];
+
+            if (doorCount === 1) {
+              doors.push({
+                ...DEFAULT_DOOR_PANEL,
+                id: createDoorPanelId(),
+                openingDirection: 'left',
+              });
+            } else {
+              // Two doors: left opens left, right opens right
+              doors.push({
+                ...DEFAULT_DOOR_PANEL,
+                id: createDoorPanelId(),
+                openingDirection: 'left',
+              });
+              doors.push({
+                ...DEFAULT_DOOR_PANEL,
+                id: createDoorPanelId(),
+                openingDirection: 'right',
+              });
+            }
+
+            cabinet.structure.doorConfig = {
+              ...DEFAULT_DOOR_CONFIG,
+              hasDoors: true,
+              doorCount,
+              doors,
+            };
+          } else {
+            cabinet.structure.doorConfig.hasDoors = true;
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to generate door panels
+      get().recalculate();
+    },
+
+    disableDoors: () => {
+      if (!guardMutation('disableDoors')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.doorConfig) return;
+          cabinet.structure.doorConfig.hasDoors = false;
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to remove door panels
+      get().recalculate();
+    },
+
+    setDoorCount: (count) => {
+      if (!guardMutation('setDoorCount')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          const doorConfig = cabinet.structure.doorConfig;
+          if (!doorConfig) {
+            // If no door config, enable doors with the new count
+            cabinet.structure.doorConfig = {
+              ...DEFAULT_DOOR_CONFIG,
+              hasDoors: true,
+              doorCount: count,
+              doors: count === 1
+                ? [{
+                    ...DEFAULT_DOOR_PANEL,
+                    id: createDoorPanelId(),
+                    openingDirection: 'left',
+                  }]
+                : [{
+                    ...DEFAULT_DOOR_PANEL,
+                    id: createDoorPanelId(),
+                    openingDirection: 'left',
+                  }, {
+                    ...DEFAULT_DOOR_PANEL,
+                    id: createDoorPanelId(),
+                    openingDirection: 'right',
+                  }],
+            };
+          } else if (doorConfig.doorCount !== count) {
+            doorConfig.doorCount = count;
+
+            if (count === 1) {
+              // Keep first door, remove second if exists
+              doorConfig.doors = [doorConfig.doors[0] || {
+                ...DEFAULT_DOOR_PANEL,
+                id: createDoorPanelId(),
+                openingDirection: 'left',
+              }];
+            } else {
+              // Add second door if needed
+              if (doorConfig.doors.length === 1) {
+                doorConfig.doors.push({
+                  ...DEFAULT_DOOR_PANEL,
+                  id: createDoorPanelId(),
+                  openingDirection: 'right',
+                });
+              }
+            }
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to update door panels
+      get().recalculate();
+    },
+
+    updateDoorConfig: (updates) => {
+      if (!guardMutation('updateDoorConfig')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.doorConfig) return;
+          Object.assign(cabinet.structure.doorConfig, updates);
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to update door dimensions
+      get().recalculate();
+    },
+
+    updateDoorPanel: (doorIndex, updates) => {
+      if (!guardMutation('updateDoorPanel')) return;
+
+      set((state) => {
+        // PHASE 3: Use withActiveCabinet for reactive mutations
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.doorConfig) return;
+
+          const doors = cabinet.structure.doorConfig.doors;
+          if (doorIndex >= 0 && doorIndex < doors.length) {
+            Object.assign(doors[doorIndex], updates);
+          }
+        }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+
+      // Trigger recalculation to update door panel
+      get().recalculate();
     },
 
     // ========== RECALCULATION ==========
     recalculate: () => {
       set((state) => {
-        if (!state.cabinet) return;
+        // PHASE 3: Get truth object from cabinets array
+        if (!state.activeCabinetId) return;
+        const idx = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (idx === -1) return;
+        const cabinet = state.cabinets[idx];
+
+        const { width: W, height: H, depth: D, toeKickHeight: Leg } = cabinet.dimensions;
+        const T = 18;
 
         // Preserve existing panel overrides before regenerating
         const existingOverrides = new Map<string, {
@@ -2519,110 +4014,249 @@ export const useCabinetStore = create<CabinetStore>()(
           xPosition?: number; // Custom X position for dividers
         }>();
 
+        // Separate partial panels (custom-created) from standard panels
+        // Partial panels are those created via addShelfInCompartment/addDividerInCompartment
+        // They have useCustomPosition=true and are not full-width shelves or full-height dividers
+        const usableHeight = H - 2 * T;
+        const usableWidth = W - 2 * T;
+
+        const partialPanels: CabinetPanel[] = [];
+
         // Index shelves and dividers by their name pattern
-        // Shelf names: "Shelf 1", "Shelf 1a", "Shelf 1b", etc.
-        // Divider names: "Divider 1", "Divider 2", etc.
+        // Main Shelf names: "Main Shelf 1", "Main Shelf 1a", "Main Shelf 1b", etc.
+        // Sub Shelf names: "Sub Shelf 1", "Sub Shelf 2", etc. (partial shelves)
+        // Main Divider names: "Main Divider 1", "Main Divider 2", etc.
+        // Sub Divider names: "Sub Divider 1", "Sub Divider 2", etc. (partial dividers)
         let dividerIndex = 0;
-        state.cabinet.panels.forEach(panel => {
+        cabinet.panels.forEach(panel => {
           if (panel.role === 'SHELF') {
-            // Parse shelf name to get row and segment
-            // "Shelf 1" -> row=0, seg=0
-            // "Shelf 1a" -> row=0, seg=0
-            // "Shelf 2b" -> row=1, seg=1
-            const match = panel.name.match(/Shelf (\d+)([a-z])?/);
-            if (match) {
-              const row = parseInt(match[1], 10) - 1; // Convert to 0-based
-              const segLetter = match[2];
-              const seg = segLetter ? segLetter.charCodeAt(0) - 97 : 0; // 'a'=0, 'b'=1, etc.
-              const key = `SHELF-${row}-${seg}`;
-              existingOverrides.set(key, {
-                role: panel.role,
-                index: row,
-                overrides: panel.positionOverrides,
-                useCustomPosition: panel.useCustomPosition,
-              });
+            // Check if this is a Sub shelf (partial shelf)
+            const isSubShelf = panel.name.startsWith('Sub');
+
+            if (isSubShelf) {
+              // This is a Sub shelf - preserve it completely
+              partialPanels.push({ ...panel });
+            } else {
+              // Main shelf - preserve overrides
+              const match = panel.name.match(/Main Shelf (\d+)([a-z])?/);
+              if (match) {
+                const row = parseInt(match[1], 10) - 1;
+                const segLetter = match[2];
+                const seg = segLetter ? segLetter.charCodeAt(0) - 97 : 0;
+                const key = `SHELF-${row}-${seg}`;
+                existingOverrides.set(key, {
+                  role: panel.role,
+                  index: row,
+                  overrides: panel.positionOverrides,
+                  useCustomPosition: panel.useCustomPosition,
+                });
+              }
             }
           } else if (panel.role === 'DIVIDER') {
-            existingOverrides.set(`DIVIDER-${dividerIndex}`, {
-              role: panel.role,
-              index: dividerIndex,
-              overrides: panel.positionOverrides,
-              useCustomPosition: panel.useCustomPosition,
-              xPosition: panel.position[0], // Preserve X position for dividers
-            });
-            dividerIndex++;
+            // Check if this is a Sub divider (partial divider)
+            const isSubDivider = panel.name.startsWith('Sub');
+
+            if (isSubDivider) {
+              // This is a Sub divider - preserve it completely
+              partialPanels.push({ ...panel });
+            } else {
+              // Main divider - preserve overrides
+              existingOverrides.set(`DIVIDER-${dividerIndex}`, {
+                role: panel.role,
+                index: dividerIndex,
+                overrides: panel.positionOverrides,
+                useCustomPosition: panel.useCustomPosition,
+                xPosition: panel.position[0],
+              });
+              dividerIndex++;
+            }
           }
         });
 
         const newPanels = generatePanels(
-          state.cabinet.dimensions,
-          state.cabinet.structure,
-          state.cabinet.materials.defaultCore,
-          state.cabinet.materials.defaultSurface,
-          state.cabinet.materials.defaultEdge,
+          cabinet.dimensions,
+          cabinet.structure,
+          cabinet.materials.defaultCore,
+          cabinet.materials.defaultSurface,
+          cabinet.materials.defaultEdge,
           existingOverrides
         );
 
-        state.cabinet.panels = newPanels;
-        state.cabinet.computed = calculateTotals(newPanels);
-      });
-    },
+        // Recalculate partial panel dimensions based on new compartment boundaries
+        // First, find the new full-height divider X positions (column boundaries)
+        const fullHeightDividers = newPanels
+          .filter(p => p.role === 'DIVIDER' && p.finishHeight >= usableHeight * 0.8)
+          .sort((a, b) => a.position[0] - b.position[0]);
+        const dividerXPositions = fullHeightDividers.map(p => p.position[0]);
 
-    // ========== MULTI-CABINET ACTIONS ==========
-    selectCabinet: (id) => {
-      set((state) => {
-        state.activeCabinetId = id;
-        state.cabinet = id ? (state.cabinets.find(c => c.id === id) ?? null) : null;
-        state.selectedPanelId = null;
-      });
-    },
+        // Find the new full-width shelf Y positions (row boundaries)
+        const fullWidthShelves = newPanels
+          .filter(p => p.role === 'SHELF' && p.finishWidth >= usableWidth * 0.8)
+          .sort((a, b) => a.position[1] - b.position[1]);
+        const shelfYPositions = fullWidthShelves.map(p => p.position[1]);
 
-    removeCabinet: (id) => {
-      set((state) => {
-        const index = state.cabinets.findIndex(c => c.id === id);
-        if (index === -1) return;
-        state.cabinets.splice(index, 1);
-        if (state.activeCabinetId === id) {
-          const next = state.cabinets[0] ?? null;
-          state.activeCabinetId = next?.id ?? null;
-          state.cabinet = next;
+        // Update partial panels to match new compartment sizes
+        partialPanels.forEach(panel => {
+          const panelX = panel.position[0];
+          const panelY = panel.position[1];
+
+          if (panel.role === 'DIVIDER') {
+            // Partial divider - find which compartment (row) it belongs to
+            // and update its height to match the new compartment height
+
+            // Find row boundaries based on Y position
+            let rowBottomY = Leg + T; // Bottom of cabinet
+            let rowTopY = Leg + H - T; // Top of cabinet
+
+            for (let i = 0; i < shelfYPositions.length; i++) {
+              if (shelfYPositions[i] < panelY) {
+                rowBottomY = shelfYPositions[i] + T / 2;
+              } else {
+                rowTopY = shelfYPositions[i] - T / 2;
+                break;
+              }
+            }
+
+            // Update divider height and Y position
+            const newHeight = rowTopY - rowBottomY;
+            const newY = (rowBottomY + rowTopY) / 2;
+
+            panel.finishHeight = newHeight;
+            panel.position = [panelX, newY, panel.position[2]];
+
+            // Update computed values
+            panel.computed.cutHeight = newHeight;
+            panel.computed.surfaceArea = (panel.finishWidth * newHeight) / 1000000;
+          } else if (panel.role === 'SHELF') {
+            // Partial shelf - find which sub-compartment it belongs to
+            // and update its width to match
+
+            // Find column boundaries based on X position
+            let colLeftX = -W / 2 + T;
+            let colRightX = W / 2 - T;
+
+            for (let i = 0; i < dividerXPositions.length; i++) {
+              if (dividerXPositions[i] < panelX) {
+                colLeftX = dividerXPositions[i] + T / 2;
+              } else {
+                colRightX = dividerXPositions[i] - T / 2;
+                break;
+              }
+            }
+
+            // Check for partial dividers that might further subdivide this column
+            // Find partial dividers in this column that are at the same vertical level
+            const partialDividersInColumn = partialPanels.filter(p => {
+              if (p.role !== 'DIVIDER') return false;
+              const divX = p.position[0];
+              return divX > colLeftX && divX < colRightX;
+            });
+
+            // Adjust bounds based on partial dividers
+            partialDividersInColumn.forEach(pd => {
+              const pdX = pd.position[0];
+              if (pdX < panelX && pdX > colLeftX) {
+                colLeftX = pdX + T / 2;
+              } else if (pdX > panelX && pdX < colRightX) {
+                colRightX = pdX - T / 2;
+              }
+            });
+
+            // Update shelf width and X position
+            const newWidth = colRightX - colLeftX - 2; // Small clearance
+            const newX = (colLeftX + colRightX) / 2;
+
+            panel.finishWidth = newWidth;
+            panel.position = [newX, panelY, panel.position[2]];
+
+            // Update computed values
+            panel.computed.cutWidth = newWidth;
+            panel.computed.surfaceArea = (newWidth * panel.finishHeight) / 1000000;
+          }
+        });
+
+        // Add back the partial panels (now with updated dimensions)
+        newPanels.push(...partialPanels);
+
+        // ========== DRAWER PANEL GENERATION ==========
+        // Generate drawer panels if drawer config is enabled
+        if (cabinet.structure.drawerConfig?.hasDrawers) {
+          const drawerConfig = cabinet.structure.drawerConfig;
+
+          // Calculate material properties for drawer generation
+          const coreMaterial = CORE_MATERIALS[cabinet.materials.defaultCore as keyof typeof CORE_MATERIALS] || CORE_MATERIALS['core-pb-16'];
+          const surfaceMaterial = SURFACE_MATERIALS[cabinet.materials.defaultSurface as keyof typeof SURFACE_MATERIALS] || SURFACE_MATERIALS['surf-mel-white'];
+          const edgeMaterial = EDGE_MATERIALS[cabinet.materials.defaultEdge as keyof typeof EDGE_MATERIALS] || EDGE_MATERIALS['edge-pvc-white-10'];
+
+          const cabinetPanelThickness = calculateRealThickness(
+            coreMaterial.thickness,
+            surfaceMaterial.thickness,
+            surfaceMaterial.thickness,
+            0
+          );
+
+          const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
+            ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
+            : MANUFACTURING_PARAMS.backThickness;
+
+          const materialProps: DrawerMaterialProps = {
+            edgeThickness: edgeMaterial.thickness,
+            cabinetPanelThickness,
+            backObstruction,
+          };
+
+          const drawerResult = generateDrawerPanels({
+            dimensions: cabinet.dimensions,
+            structure: cabinet.structure,
+            frontCoreId: cabinet.materials.defaultCore,
+            frontSurfaceId: cabinet.materials.defaultSurface,
+            edgeId: cabinet.materials.defaultEdge,
+            materialProps,
+          });
+
+          // Add drawer panels to the panel list
+          newPanels.push(...drawerResult.panels);
         }
-        state.selectedPanelId = null;
-      });
-    },
 
-    duplicateCabinet: (id) => {
-      set((state) => {
-        const source = state.cabinets.find(c => c.id === id);
-        if (!source) return;
-        const newId = createId();
-        const clone = JSON.parse(JSON.stringify(source));
-        clone.id = newId;
-        clone.name = `${source.name} (Copy)`;
-        clone.createdAt = Date.now();
-        clone.updatedAt = Date.now();
-        // Restore Map for overrides (JSON.stringify loses Map)
-        clone.materials.overrides = new Map();
-        state.cabinets.push(clone);
-        state.activeCabinetId = newId;
-        state.cabinet = clone;
-        state.selectedPanelId = null;
-      });
-    },
+        // Generate door panels if enabled
+        if (cabinet.structure.doorConfig?.hasDoors) {
+          // Get material info for door calculation
+          const coreMaterial = CORE_MATERIALS[cabinet.materials.defaultCore as keyof typeof CORE_MATERIALS] || CORE_MATERIALS['core-pb-16'];
+          const surfaceMaterial = SURFACE_MATERIALS[cabinet.materials.defaultSurface as keyof typeof SURFACE_MATERIALS] || SURFACE_MATERIALS['surf-mel-white'];
+          const edgeMaterial = EDGE_MATERIALS[cabinet.materials.defaultEdge as keyof typeof EDGE_MATERIALS] || EDGE_MATERIALS['edge-pvc-white-10'];
 
-    updateCabinetPosition: (id, position) => {
-      set((state) => {
-        const cab = state.cabinets.find(c => c.id === id);
-        if (!cab) return;
-        (cab as any).scenePosition = position;
-      });
-    },
+          const cabinetPanelThickness = calculateRealThickness(
+            coreMaterial.thickness,
+            surfaceMaterial.thickness,
+            surfaceMaterial.thickness,
+            0
+          );
 
-    updateHardware: (cabinetId, hardware) => {
-      set((state) => {
-        const cab = state.cabinets.find(c => c.id === cabinetId);
-        if (!cab) return;
-        cab.hardware = { ...cab.hardware, ...hardware };
+          const doorMaterialProps: DoorMaterialProps = {
+            edgeThickness: edgeMaterial.thickness,
+            cabinetPanelThickness,
+          };
+
+          const doorResult = generateDoorPanels({
+            dimensions: cabinet.dimensions,
+            structure: cabinet.structure,
+            coreId: cabinet.materials.defaultCore,
+            surfaceId: cabinet.materials.defaultSurface,
+            edgeId: cabinet.materials.defaultEdge,
+            materialProps: doorMaterialProps,
+          });
+
+          // Add door panels to the panel list
+          newPanels.push(...doorResult.panels);
+        }
+
+        // PHASE 3: Update cabinet in array (truth) then sync UI pointer
+        cabinet.panels = newPanels;
+        cabinet.computed = calculateTotals(newPanels);
+        cabinet.updatedAt = Date.now();
+
+        // Sync UI pointer to truth object
+        state.cabinet = cabinet;
       });
     },
   }))
@@ -2636,15 +4270,26 @@ export const useSelectedPanel = () => {
   return cabinet?.panels.find(p => p.id === selectedId) || null;
 };
 
-// Multi-cabinet selector hooks
+/**
+ * T017: Optimized selector for active cabinet from array
+ *
+ * Uses reference equality on the cabinet object itself, not the array.
+ * This prevents re-renders when OTHER cabinets change - only triggers
+ * when the ACTIVE cabinet's data actually changes.
+ */
 export const useActiveCabinetFromArray = () => {
-  const cabinets = useCabinetStore((s) => s.cabinets);
-  const activeId = useCabinetStore((s) => s.activeCabinetId);
-  return cabinets.find(c => c.id === activeId) ?? null;
+  return useCabinetStore((s) => {
+    if (!s.activeCabinetId) return null;
+    return s.cabinets.find((c) => c.id === s.activeCabinetId) || null;
+  });
 };
 
-export const useCabinetById = (id: string | null) => {
-  const cabinets = useCabinetStore((s) => s.cabinets);
-  if (!id) return null;
-  return cabinets.find(c => c.id === id) ?? null;
+/**
+ * T017: Selector to get a specific cabinet by ID without array subscription
+ */
+export const useCabinetById = (cabinetId: string | null) => {
+  return useCabinetStore((s) => {
+    if (!cabinetId) return null;
+    return s.cabinets.find((c) => c.id === cabinetId) || null;
+  });
 };

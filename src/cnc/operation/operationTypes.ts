@@ -27,7 +27,7 @@ export interface BaseOperation {
   /** Unique operation ID */
   id: string;
   /** Source entity ID (e.g., drill point ID, panel ID) */
-  sourceId?: string;
+  sourceId: string;
   /** Tool ID to use */
   toolId: string;
   /** Position in machine coordinates (mm) */
@@ -50,18 +50,23 @@ export interface BaseOperation {
 // DRILL OPERATION
 // ============================================
 
+/** Drill direction: V=vertical (into face), H=horizontal (into edge) */
+export type DrillDirection = 'V' | 'H';
+
 export interface DrillOperation extends BaseOperation {
   type: 'DRILL';
+  /** Drill diameter in mm (tool diameter). Optional for backward compat. */
+  diameter?: number;
   /** Drill depth in mm */
   depth: number;
-  /** Drill diameter in mm (optional, when carried through from source) */
-  diameter?: number;
+  /** Drill direction: V=vertical (face), H=horizontal (edge). Optional for backward compat. */
+  direction?: DrillDirection;
   /** Peck depth for deep holes (mm per peck) */
   peckDepth?: number;
   /** Dwell time at bottom (ms) */
   dwellTime?: number;
   /** Through hole flag */
-  throughHole?: boolean;
+  throughHole: boolean;
 }
 
 // ============================================
@@ -74,6 +79,8 @@ export interface BoreOperation extends BaseOperation {
   diameter: number;
   /** Bore depth in mm */
   depth: number;
+  /** Bore direction: V=vertical (face), H=horizontal (edge). Optional for backward compat. */
+  direction?: DrillDirection;
   /** Flat bottom (true) or pointed (false) */
   flatBottom: boolean;
 }

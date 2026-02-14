@@ -1,8 +1,8 @@
 # Formula Reference
 # สูตรคำนวณอ้างอิง
 
-**Version:** 1.0.0
-**Last Updated:** 2026-01-10
+**Version:** 1.1.0
+**Last Updated:** 2026-01-12
 **Status:** Single Source of Truth
 **Scope:** All Calculation Formulas
 
@@ -10,7 +10,7 @@
 
 ## บทนำ (Introduction)
 
-เอกสารนี้รวบรวม **สูตรคำนวณทั้งหมด** ที่ใช้ในระบบ IIMOS Designer เพื่อแก้ปัญหา:
+เอกสารนี้รวบรวม **สูตรคำนวณทั้งหมด** ที่ใช้ในระบบ MONOLITH Designer เพื่อแก้ปัญหา:
 - สูตรขัดแย้งกันในหลายเอกสาร (เช่น Drawer Width: 42mm vs 26mm)
 - ไม่ชัดเจนว่าสูตรไหนใช้กับ Hardware ไหน
 - หน่วยและสัญลักษณ์ไม่สอดคล้องกัน
@@ -211,9 +211,55 @@ cut-optimization-algorithms.md:
 
 ---
 
-## ส่วนที่ 3: Shelf Setback Formulas
+## ส่วนที่ 3: Cut Size Formula (Edge Deduction)
 
-### 3.1 Base Formula
+### 3.1 Master Formula
+
+```typescript
+// Cut Size = Finish Size - Edge Thicknesses
+// ⚠️ Pre-milling is NOT added to cut size (it's a machine operation only)
+
+cutWidth = finishWidth - leftEdgeThickness - rightEdgeThickness
+cutHeight = finishHeight - topEdgeThickness - bottomEdgeThickness
+```
+
+### 3.2 Implementation
+
+```typescript
+// src/core/types/Cabinet.ts
+export function calculateCutSize(
+  finishSize: number,
+  edge1: number,
+  edge2: number,
+  _preMillPerSide: number = 0.5  // Reference only, not used in calculation
+): number {
+  // Cut Size = Finish Size - Edge Thicknesses
+  // This is the panel size AFTER pre-milling, ready for edge banding
+  return finishSize - (edge1 + edge2);
+}
+```
+
+### 3.3 Examples
+
+| Finish Size | Edges | Cut Size |
+|-------------|-------|----------|
+| 600mm | 1.2mm × 2 (both sides) | 600 - 1.2 - 1.2 = **597.6mm** |
+| 1000mm | 1.2mm × 2 (top + bottom) | 1000 - 1.2 - 1.2 = **997.6mm** |
+| 600mm | 1.2mm × 1 (front only) | 600 - 1.2 - 0 = **598.8mm** |
+| 500mm | 2.0mm × 2 (ABS thick) | 500 - 2.0 - 2.0 = **496mm** |
+
+### 3.4 Important Notes
+
+- **Pre-milling** (0.5-1.0mm) is a machine operation during edge banding
+- Pre-milling is stored in Manufacturing Parameters for reference only
+- It does **NOT** affect the Cut Size calculation
+- Cut Size is the dimension **after** pre-milling, ready for edge banding
+
+---
+
+## ส่วนที่ 4: Shelf Setback Formulas
+
+### 4.1 Base Formula
 
 ```typescript
 // Shelf Depth Calculation
@@ -226,7 +272,7 @@ D_shelf = D_internal - S_front - S_rear
 // S_rear     = Rear setback (mm)
 ```
 
-### 3.2 Setback Values by Cabinet Type
+### 4.2 Setback Values by Cabinet Type
 
 | Cabinet Type | S_front | S_rear | Notes |
 |--------------|---------|--------|-------|
@@ -237,7 +283,7 @@ D_shelf = D_internal - S_front - S_rear
 | **Open Shelf (no door)** | 0mm | 10mm | Flush with front |
 | **Glass Door** | 5mm | 10mm | Minimal protrusion |
 
-### 3.3 Hinge Clearance Formula
+### 4.3 Hinge Clearance Formula
 
 ```typescript
 // Front setback must account for hinge protrusion
@@ -492,6 +538,7 @@ totalCost = coreCost + surfaceCost + edgeCost + laborCost
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-01-12 | Added Cut Size formula section (Section 3); Clarified pre-milling is NOT added to cut size |
 | 1.0.0 | 2026-01-10 | Initial consolidation, resolved drawer width conflict |
 
 ---

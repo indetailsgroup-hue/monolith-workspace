@@ -41,12 +41,19 @@ import {
   fetchExportOptionsApi,
   runGatedExportApi,
 } from "../api/exportApi";
+import {
+  fetchJobsApi,
+  fetchJobDetailApi,
+  triggerLegacyExportApi,
+} from "../api/jobsApi";
 import type {
   ActivityRecord,
   ActivityCacheEntry,
   ActivityFetchStatus,
 } from "../types/activity";
 import { fetchJobActivityApi } from "../api/activityApi";
+import type { VerifyPacketResult } from "../packet/verifyPacket";
+import type { FactoryPacket } from "../packet/types";
 
 // ============================================================================
 // Filter & Sort
@@ -79,6 +86,33 @@ export interface JobVerifyState {
   response: VerifyApiResponse | null;
   lastRunAt: string | null;
   retryCount: number;
+}
+
+// ============================================================================
+// Verified Packet Cache (D0 - Client-side packet persistence)
+// ============================================================================
+
+export type VerifiedPacketStatus = "IDLE" | "VERIFIED" | "INVALID";
+
+/**
+ * Verified packet metadata stored per job.
+ * The actual packet blob can optionally be stored in IndexedDB.
+ */
+export interface VerifiedPacketCacheEntry {
+  /** Verification status */
+  status: VerifiedPacketStatus;
+  /** Original filename */
+  fileName: string | null;
+  /** Verification result from verifyPacket */
+  verifyResult: VerifyPacketResult | null;
+  /** Extracted packet data (for UI display, not the raw blob) */
+  packet: FactoryPacket | null;
+  /** File size in bytes */
+  fileSizeBytes: number | null;
+  /** Timestamp when verified */
+  verifiedAt: string | null;
+  /** Optional: IndexedDB blob key for persistence */
+  blobKey?: string;
 }
 
 // ============================================================================
@@ -116,6 +150,9 @@ interface FactoryState {
 
   // Packet cache (P2.1)
   packetByJobId: Record<string, PacketCacheEntry>;
+
+  // Verified packet cache (D0 - client-side packet persistence)
+  verifiedPacketByJobId: Record<string, VerifiedPacketCacheEntry>;
 
   // Export (legacy)
   exporting: boolean;
@@ -185,6 +222,18 @@ interface FactoryActions {
   fetchPacket: (jobId: string) => Promise<PacketResponse>;
   clearPacketCache: (jobId: string) => void;
   clearAllPacketCache: () => void;
+
+  // Verified packet cache (D0)
+  getVerifiedPacketCacheEntry: (jobId: string) => VerifiedPacketCacheEntry;
+  setVerifiedPacket: (
+    jobId: string,
+    fileName: string,
+    verifyResult: VerifyPacketResult,
+    packet: FactoryPacket | null,
+    fileSizeBytes: number
+  ) => void;
+  clearVerifiedPacket: (jobId: string) => void;
+  clearAllVerifiedPackets: () => void;
 
   // Export (legacy)
   startExport: (
@@ -257,6 +306,9 @@ const initialState: FactoryState = {
   // Packet cache (P2.1)
   packetByJobId: {},
 
+  // Verified packet cache (D0)
+  verifiedPacketByJobId: {},
+
   exporting: false,
   exportResult: null,
   selectedMachine: null,
@@ -308,10 +360,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       setJobsError(null);
 
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch("/api/factory/jobs");
-        if (!response.ok) throw new Error("Failed to fetch jobs");
-        const jobs = await response.json();
+        const jobs = await fetchJobsApi();
         setJobs(jobs);
       } catch (error) {
         setJobsError(
@@ -350,10 +399,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       setSelectedJobLoading(true);
 
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(`/api/factory/jobs/${jobId}`);
-        if (!response.ok) throw new Error("Failed to fetch job detail");
-        const job = await response.json();
+        const job = await fetchJobDetailApi(jobId);
         setSelectedJob(job);
       } catch (error) {
         console.error("Failed to load job:", error);
@@ -644,6 +690,66 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       }),
 
     // ========================================================================
+    // Verified Packet Cache Actions (D0)
+    // ========================================================================
+
+    getVerifiedPacketCacheEntry: (jobId) => {
+      const state = get();
+      return (
+        state.verifiedPacketByJobId[jobId] || {
+          status: "IDLE" as VerifiedPacketStatus,
+          fileName: null,
+          verifyResult: null,
+          packet: null,
+          fileSizeBytes: null,
+          verifiedAt: null,
+        }
+      );
+    },
+
+    setVerifiedPacket: (jobId, fileName, verifyResult, packet, fileSizeBytes) => {
+      const { addActivity } = get();
+
+      set((state) => {
+        state.verifiedPacketByJobId[jobId] = {
+          status: verifyResult.valid ? "VERIFIED" : "INVALID",
+          fileName,
+          verifyResult,
+          packet,
+          fileSizeBytes,
+          verifiedAt: new Date().toISOString(),
+        };
+      });
+
+      // Log activity for packet verification
+      addActivity({
+        jobId,
+        type: verifyResult.valid ? "VERIFY_PASSED" : "VERIFY_FAILED",
+        actor: "factory-operator",
+        timestamp: new Date().toISOString(),
+        details: {
+          source: "packet-ingest",
+          fileName,
+          fileSizeBytes,
+          checksRun: verifyResult.checks.length,
+          passed: verifyResult.summary.passed,
+          failed: verifyResult.summary.failed,
+          warned: verifyResult.summary.warned,
+        },
+      });
+    },
+
+    clearVerifiedPacket: (jobId) =>
+      set((state) => {
+        delete state.verifiedPacketByJobId[jobId];
+      }),
+
+    clearAllVerifiedPackets: () =>
+      set((state) => {
+        state.verifiedPacketByJobId = {};
+      }),
+
+    // ========================================================================
     // Export Actions
     // ========================================================================
 
@@ -662,14 +768,10 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       });
 
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(`/api/factory/jobs/${jobId}/export`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ machine, format: "per_job" }),
+        const result = await triggerLegacyExportApi(jobId, {
+          machine,
+          format: "per_job",
         });
-        if (!response.ok) throw new Error("Export failed");
-        const result: ExportResponse = await response.json();
 
         setExportResult(result);
 
@@ -1141,4 +1243,18 @@ export const createSelectExportCacheEntry = (jobId: string) => (state: FactorySt
     lastExport: undefined,
     error: undefined,
     fetchedAt: undefined,
+  };
+
+// Verified Packet Selectors (D0)
+export const selectVerifiedPacketByJobId = (state: FactoryState) => state.verifiedPacketByJobId;
+
+/** Create a selector for a specific job's verified packet cache entry */
+export const createSelectVerifiedPacketCacheEntry = (jobId: string) => (state: FactoryState): VerifiedPacketCacheEntry =>
+  state.verifiedPacketByJobId[jobId] || {
+    status: "IDLE" as VerifiedPacketStatus,
+    fileName: null,
+    verifyResult: null,
+    packet: null,
+    fileSizeBytes: null,
+    verifiedAt: null,
   };

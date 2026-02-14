@@ -1,0 +1,142 @@
+/**
+ * Connector OS v1.1 - Hardware Catalog (Gems Catalog)
+ *
+ * Data-driven connector definitions for Minifix 15 and Target J10.
+ * All values per Häfele FF 3.10 and Italiana Ferramenta specifications.
+ *
+ * @see docs/connector-os/hardware-catalog.md
+ */
+
+import type {
+  ConnectorSpec,
+  ConnectorPlacementProfile,
+  MaterialStackPreset,
+  ConnectorFamily,
+} from './types';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Connector Specs
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
+  connectorId: 'HAFELE_MINIFIX_15_B24',
+  brand: 'Hafele',
+  family: 'MINIFIX',
+  features: [
+    {
+      id: 'CAM',
+      kind: 'FACE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 15,
+      depthMm: 13.5, // 18mm wood per Häfele FF 3.10
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 24, // Distance B
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37, // System 32 first hole
+      axisSecondary: 'V',
+    },
+    {
+      id: 'BOLT',
+      kind: 'EDGE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 8,
+      depthMm: 34,
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 0,
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37,
+      axisSecondary: 'V',
+    },
+  ],
+};
+
+export const IF_TARGET_J10: ConnectorSpec = {
+  connectorId: 'IF_TARGET_J10',
+  brand: 'Italiana Ferramenta',
+  family: 'TARGET_J',
+  features: [
+    {
+      id: 'PINION',
+      kind: 'FACE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 10,
+      depthMm: 13,
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 9.5,
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37,
+      axisSecondary: 'V',
+      transform: { type: 'OFFSET_DELTA', deltaMm: -25 }, // B = A - 25
+    },
+    {
+      id: 'DOWEL',
+      kind: 'EDGE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 10,
+      depthMm: 12,
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 0,
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37,
+      axisSecondary: 'V',
+    },
+  ],
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Placement Profiles
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const KITCHEN_PREMIUM_PROFILE: ConnectorPlacementProfile = {
+  id: 'KITCHEN_PREMIUM',
+  system32: { firstHole: 37, pitch: 32, endOffset: 40 },
+  constraints: {
+    minPerJoint: 2,
+    maxSpacingMm: 128,
+    loadOverrides: {
+      LIGHT: { maxSpacingMm: 128 },
+      STANDARD: { maxSpacingMm: 128 },
+      HEAVY: { maxSpacingMm: 96 },
+    },
+  },
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Material Stack Presets
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const HMR18_HPL08x2_PVC1: MaterialStackPreset = {
+  id: 'HMR18_HPL0p8x2_PVC1',
+  core: { material: 'HMR_GREEN', thickness: 18.0 },
+  surface: { material: 'HPL_GREY_OAK', thickness: 0.8, sides: 2 },
+  edge: { material: 'PVC_GREY', thickness: 1.0 },
+  resolved: {
+    coreThk: 18.0,
+    finishedThk: 19.6,
+    edgeThk: 1.0,
+  },
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Selection Helper
+// ──────────────────────────────────────────────────────────────────────────────
+
+export function selectConnector(
+  _coreThk: number,
+  family: ConnectorFamily,
+): ConnectorSpec {
+  if (family === 'TARGET_J') return IF_TARGET_J10;
+  return HAFELE_MINIFIX_15_B24;
+}

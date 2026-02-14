@@ -107,9 +107,7 @@ export function ExpandableScreenContent({ children }: ExpandableScreenContentPro
     }
   }, [isExpanded])
 
-  const close = () => {
-    setIsExpanded(false)
-  }
+  const close = () => setIsExpanded(false)
 
   const content = typeof children === 'function'
     ? children({ close })

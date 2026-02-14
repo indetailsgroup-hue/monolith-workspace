@@ -82,6 +82,8 @@ export interface MachineProfile {
   id: MachineId;
   /** Machine display name */
   name: string;
+  /** Machine description */
+  description?: string;
   /** Manufacturer */
   manufacturer?: string;
   /** Unit system (always mm for now) */
@@ -94,6 +96,8 @@ export interface MachineProfile {
   spindle: SpindleConfig;
   /** Available tools */
   tools: ToolCapability[];
+  /** Tool table (alias for tools, for compatibility) */
+  toolTable?: ToolCapability[];
   /** Safe Z height for rapid moves */
   defaultSafeZ: number;
   /** Coordinate system orientation */

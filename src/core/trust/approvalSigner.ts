@@ -1,21 +1,38 @@
 /**
- * approvalSigner.ts - Approval Signer Interface
+ * approvalSigner.ts - Approval Signer Contract
  *
- * Abstract interface for signing trust reports.
- * Used by the trust chain service for revision fork workflows.
+ * ARCHITECTURE:
+ * - Abstracts the signing of TrustReports
+ * - TrustChainService doesn't need to know about private keys directly
+ * - Allows swapping key management (local, server, HSM) without changing service
  *
- * @version 1.0.0
+ * USE CASES:
+ * - Signing TrustReports during commit
+ * - Re-signing TrustReports during revision fork
+ * - Future: HSM integration, remote signing service
  */
 
-import type { TrustReport, SignedTrustReport } from './trustReportTypes';
+import type { TrustReport } from './trustReportTypes';
+import type { SignedTrustReport } from './signedTrustTypes';
+
+// ============================================
+// APPROVAL SIGNER CONTRACT
+// ============================================
 
 /**
- * Approval signer interface
+ * Contract for signing TrustReports with approval key
  *
- * Wraps the signing key and provides a simple signTrust() method.
- * Implementations may use hardware keys, browser crypto, or test keys.
+ * Implementations can use:
+ * - Local private key (MVP)
+ * - Server-side signing API
+ * - Hardware Security Module (HSM)
  */
 export interface ApprovalSigner {
-  /** Sign a trust report */
-  signTrust(trust: TrustReport): Promise<SignedTrustReport>;
+  /**
+   * Sign a TrustReport with approval key
+   *
+   * @param trust - TrustReport to sign
+   * @returns SignedTrustReport with signature
+   */
+  signTrust: (trust: TrustReport) => Promise<SignedTrustReport>;
 }

@@ -1,6 +1,6 @@
 # Test Specifications
 
-**Project:** IIMOS Designer Workspace v2.0
+**Project:** MONOLITH Designer Workspace v2.0
 **Document Version:** 1.0
 **Date:** 2026-01-10
 **Status:** Active
@@ -1159,5 +1159,5 @@ export default defineConfig({
 - **Version:** 1.0
 - **Last Updated:** 2026-01-10
 - **Next Review:** 2026-04-10
-- **Owner:** IIMOS QA Team
+- **Owner:** MONOLITH QA Team
 - **Status:** ✅ Active

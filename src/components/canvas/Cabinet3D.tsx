@@ -38,6 +38,7 @@ import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../.
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
 import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
 import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
 import { useXrayRaycastPolicy } from './useXrayRaycastPolicy';
@@ -152,7 +153,7 @@ interface Hardware3DOverlayProps {
   topJoint?: 'INSET' | 'OVERLAY';     // Joint style for top panel
   bottomJoint?: 'INSET' | 'OVERLAY';  // Joint style for bottom panel
   showDimensions?: boolean;  // Show CAD-style dimension lines
-  currentView?: string;  // Controls which dimensions to show
+  currentView?: 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
 }
 
 /**
@@ -338,7 +339,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   return (
     <group name="hardware-3d-overlay-preview3d">
       {boltPoints.map((boltPoint, index) => {
-        const [x, y, z = 0] = boltPoint.position;
+        const [x, y, z] = boltPoint.position;
 
         // Use stored cornerType from drill map generation (most reliable)
         // Falls back to position-based calculation only if cornerType not stored
@@ -406,83 +407,88 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         const positionOffset = getPositionForPoint(boltPoint.id, cornerType);
         const currentPosition = { dx: positionOffset.dx, dy: positionOffset.dy, dz: positionOffset.dz };
 
-        // ✅ POSITION CENTERING FIX (v4.1): Align bolt with CAM pocket center
+        // ============================================================
+        // v5.5: CAM-ALIGNED via scene-graph LOCAL offset
+        // ============================================================
+        // Place Preview3D so its internal CAM aligns with the actual
+        // CAM drill indicator position from the drill map.
         //
-        // CRITICAL: Drill map now positions bolt at:
-        // - X = SIDE panel inner face (not center)
-        // - Y = maxY - camDepth/2 (CAM pocket center, not Distance B)
+        // APPROACH: Instead of manually computing world-space quaternion
+        // offsets (error-prone due to Euler↔Quaternion mismatches), use
+        // the scene graph:
+        //   outerGroup (position=camTarget, rotation=rot)
+        //     └─ offsetGroup (position=[0, -camLocalDist, 0])  ← LOCAL shift
+        //          └─ scaleGroup (scale=100)
+        //               └─ Preview3D (cam at local Y = camLocalDist)
         //
-        // Visualization offset should position the 3D bolt model so that:
-        // - Ball head center aligns with CAM pocket center
-        // - Bolt protrudes Distance B (24mm) from SIDE inner face
-        //
-        let yCenteringOffset = 0;
-        let xCenteringOffset = 0;
+        // The cam ends up at outerGroup origin = camTarget. ✓
+        // No manual quaternion math needed - R3F handles rotation.
+        // ============================================================
 
-        if (mountType === 'INSET') {
-          // Y offset: NOT NEEDED!
-          // Drill map already positions bolt Y at CAM pocket center (camDepth/2 from edge)
-          // Adding extra Y offset would misalign the bolt with CAM center
-          yCenteringOffset = 0;
+        // Distance from Preview3D origin (sleeve center) to cam center
+        // Must include all offsets that Preview3D applies internally
+        const camLocalDist = (config.sleeveLength / 2)
+          + config.neckShaftLength
+          + (config.ballHeadDia / 2)
+          + config.ballHeadOffset
+          + config.camOffset;
 
-          // X offset: Position THREAD-SLEEVE JUNCTION flush with SIDE panel inner face
-          //
-          // ENGINEERING STANDARD (Häfele S200):
-          // - THREAD-SLEEVE JUNCTION (รอยต่อเกลียว/ปลอกแดง) = Mechanical Stop
-          // - Thread (11mm) goes INTO the side panel wood
-          // - Red Sleeve (14.25mm) stays OUTSIDE (enters horizontal panel's Ø10mm hole)
-          // - Protrusion = sleeve + neck + ballRadius = 14.25 + 6.5 + 3.25 = 24mm = Distance B
-          //
-          // MODEL GEOMETRY (Preview3D):
-          // - Origin at sleeve CENTER
-          // - Thread-Sleeve junction at -sleeveLength/2 from origin (toward thread)
-          // - After rotation for LEFT panel: -Y → -X, so junction is at origin - sleeveLength/2 in X
-          //
-          // To put Thread-Sleeve junction at inner face:
-          // - LEFT panel: origin - sleeveLength/2 = drillPos → offset = +sleeveLength/2
-          // - RIGHT panel: origin + sleeveLength/2 = drillPos → offset = -sleeveLength/2
-          //
-          const HALF_SLEEVE = (config.sleeveLength ?? 14.25) / 2;  // 7.125mm
-          const isLeftPanel = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
-          if (isLeftPanel) {
-            // Left panels: move RIGHT (+X) to put thread-sleeve junction at inner face
-            xCenteringOffset = +HALF_SLEEVE;
+        // Find the matching cam point for this bolt (by pairId)
+        const matchingCam = camPoints.find(cp => cp.pairId === boltPoint.pairId);
+
+        let groupX: number, groupY: number, groupZ: number;
+
+        if (matchingCam) {
+          // Cam pocket center: surface entry + half depth into material
+          const [cx, cy, cz] = matchingCam.position;
+          const [nx, ny, nz] = matchingCam.normal;
+          const halfDepth = config.camDepth / 2;
+          groupX = cx + nx * halfDepth + positionOffset.dx;
+          groupY = cy + ny * halfDepth + positionOffset.dy;
+          groupZ = cz + nz * halfDepth + positionOffset.dz;
+        } else {
+          // Fallback: use targetPocketCenter stored on boltPoint
+          if (boltPoint.targetPocketCenter) {
+            const [tx, ty, tz] = boltPoint.targetPocketCenter;
+            groupX = tx + positionOffset.dx;
+            groupY = ty + positionOffset.dy;
+            groupZ = tz + positionOffset.dz;
           } else {
-            // Right panels: move LEFT (-X) to put thread-sleeve junction at inner face
-            xCenteringOffset = -HALF_SLEEVE;
+            // Last resort: bolt surface position (no cam data available)
+            groupX = x + positionOffset.dx;
+            groupY = y + positionOffset.dy;
+            groupZ = z + positionOffset.dz;
           }
         }
-
-        // Apply position offset to hardware position
-        const finalX = x + positionOffset.dx + xCenteringOffset;
-        const finalY = y + positionOffset.dy + yCenteringOffset;
-        const finalZ = z + positionOffset.dz;
 
         return (
           <group
             key={`minifix-preview-${index}-${boltPoint.id}`}
-            position={[finalX, finalY, finalZ]}
+            position={[groupX, groupY, groupZ]}
             rotation={[rotX, rotY, rotZ]}
           >
             {/* Hit sphere for hardware interaction - uses HARDWARE layer for priority */}
-            {/* Centered at origin with large radius to cover both cam and bolt after any rotation */}
             <HardwareHitSphere
-              position={[0, 25, 0]}
+              position={[0, 0, 0]}
               onRightClick={(e) => handleContextMenu(e, boltPoint, cornerType, currentRotation, currentPosition)}
             />
 
-            {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (×100) */}
-            {/* NOTE: Pass xRayMode={false} to show proper colors (red sleeve, gray cam) */}
-            <group scale={[100, 100, 100]}>
-              <Preview3D
-                config={config}
-                showCam={true}
-                showDowel={config.includeDowel}
-                xRayMode={false}
-                isAttached={true}
-                showDimensions={false}
-                onUpdateConfig={handleUpdateConfig}
-              />
+            {/* LOCAL offset: shift Preview3D so its internal cam is at the group origin */}
+            {/* Preview3D cam is at local Y = camLocalDist from sleeve center (origin) */}
+            {/* Shifting by -camLocalDist makes cam land at Y=0 (group origin = camTarget) */}
+            <group position={[0, -camLocalDist, 0]}>
+              {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (×100) */}
+              <group scale={[100, 100, 100]}>
+                <Preview3D
+                  config={config}
+                  showCam={true}
+                  showDowel={config.includeDowel}
+                  xRayMode={false}
+                  isAttached={true}
+                  showDimensions={false}
+                  onUpdateConfig={handleUpdateConfig}
+                />
+              </group>
             </group>
           </group>
         );
@@ -1048,8 +1054,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     // Compute bounds from drill map (uses same coordinate system as hardware positions)
     const bounds = computeBoundsFromDrillMap(drillMap, 50);
     setCabinetBounds(bounds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [xRayMode, show3DHardware, activeCabinetFromArray, drillingParams, drillMapVersion]);
+  }, [xRayMode, show3DHardware, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion]);
 
   // Check if glue mode is active at parent level
   const isGlueModeActive = activeTool === 'glue' && glueMode !== 'idle';

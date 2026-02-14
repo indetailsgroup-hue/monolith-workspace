@@ -1,22 +1,76 @@
 /**
  * Spec Store - Manufacturing Specification State Management
- * 
+ *
  * SPEC-08 Compliant:
  * - Spec State: DRAFT → FROZEN → RELEASED
  * - Gate Enforcement: Lock export based on state & validation
  * - Validation: Check rules before allowing state transitions
- * 
+ *
+ * P9: Spec Lineage Anchor
+ * - Records state transitions in append-only audit log
+ * - Content-based revision IDs (SHA-256)
+ * - Parent-child chain linkage
+ *
+ * P11: Server State Sync
+ * - Calls P10 server endpoints for state transitions
+ * - Server-authoritative state with offline fallback
+ * - Sync status tracking
+ *
  * "Design is Free — Manufacturing is Deterministic"
  */
 
 import { create } from 'zustand';
-import { useCabinetStore } from './useCabinetStore';
+import { useCabinetStore, registerSpecStore } from './useCabinetStore';
+import { useDrillMapStore } from './useDrillMapStore';
+import { useProjectStore } from './useProjectStore';
+import { sha256Hex } from '../../crypto/sha256';
+import {
+  getJobState,
+  freezeJob as apiFreezeJob,
+  releaseJob as apiReleaseJob,
+  revokeJob as apiRevokeJob,
+  checkCanExport as apiCheckCanExport,
+  type SyncStatus,
+  type StateResponse,
+} from '../api/stateApi';
 
 // ============================================
 // TYPES
 // ============================================
 
 export type SpecState = 'DRAFT' | 'FROZEN' | 'RELEASED';
+
+/**
+ * B4: Release Record - Immutable snapshot of a RELEASED spec
+ *
+ * Created when spec transitions from FROZEN → RELEASED.
+ * Contains content hashes for verification and audit trail.
+ */
+export interface SpecReleaseRecord {
+  /** Unique release ID (generated at release time) */
+  releaseId: string;
+  /** ISO timestamp of release */
+  releasedAt: string;
+  /** Who released (user ID or system) */
+  releasedBy: string;
+  /** Parent release ID (for fork chain tracking) */
+  parentReleaseId: string | null;
+  /** Content hashes for integrity verification */
+  contentHashes: {
+    /** Hash of all cabinet data */
+    cabinetsHash: string;
+    /** Hash of drill map data */
+    drillMapHash: string;
+    /** Hash of gate result (if available) */
+    gateResultHash: string | null;
+    /** Combined manifest hash */
+    manifestHash: string;
+  };
+  /** Server revision ID (P11) */
+  serverRevisionId: string | null;
+  /** Optional release note */
+  note?: string;
+}
 
 export interface ValidationRule {
   id: string;
@@ -95,7 +149,7 @@ function runValidation(): ValidationResult {
   const cabinet = useCabinetStore.getState().cabinet;
   const rules: ValidationRule[] = [];
   
-  if (!cabinet) {
+  if (!cabinet || !cabinet.dimensions || !cabinet.structure) {
     return {
       ok: false,
       passCount: 0,
@@ -106,12 +160,12 @@ function runValidation(): ValidationResult {
         name: 'Cabinet Required',
         category: 'STRUCTURAL',
         status: 'FAIL',
-        message: 'No cabinet defined',
+        message: 'No cabinet defined or cabinet data incomplete',
       }],
       timestamp: Date.now(),
     };
   }
-  
+
   const { dimensions, panels, structure } = cabinet;
   
   // ========== DIMENSIONAL RULES ==========
@@ -288,7 +342,7 @@ function runValidation(): ValidationResult {
   }
   
   // ========== SAFETY RULES ==========
-  
+
   // Rule: Minimum clearances
   rules.push({
     id: 'clearance-ok',
@@ -297,6 +351,22 @@ function runValidation(): ValidationResult {
     status: 'PASS',
     message: 'All clearances within specification',
   });
+
+  // G9: Persistence Gate - External state validation
+  try {
+    const { g9ToValidationRules } = require('../gate/g9PersistenceGate');
+    const g9Rules = g9ToValidationRules() as ValidationRule[];
+    rules.push(...g9Rules);
+  } catch {
+    // If G9 module fails to load, add a warning
+    rules.push({
+      id: 'g9-load-error',
+      name: 'G9 Persistence Gate',
+      category: 'SAFETY',
+      status: 'WARN',
+      message: 'G9 persistence gate module not available',
+    });
+  }
   
   // ========== CALCULATE TOTALS ==========
   
@@ -321,35 +391,67 @@ function runValidation(): ValidationResult {
 interface SpecStoreState {
   // Spec state
   specState: SpecState;
-  
+
   // Validation
   validation: ValidationResult | null;
-  
+
   // Machine
   selectedMachine: string;
-  
+
   // Gate
   gateStatus: GateStatus;
+
+  // P11: Server sync
+  syncStatus: SyncStatus;
+  lastServerResponse: StateResponse | null;
+  serverRevisionId: string | null;
+
+  // P11.1: Pending intent (for offline retry)
+  pendingTransition: {
+    type: 'FREEZE' | 'RELEASE' | 'REVOKE';
+    note?: string;
+    changeClass?: string;
+    queuedAt: string;
+  } | null;
+
+  // B4: Release records (immutable history)
+  releaseRecords: SpecReleaseRecord[];
+  currentReleaseId: string | null;
 }
 
 interface SpecStoreActions {
   // State transitions
   setSpecState: (state: SpecState) => void;
-  freezeSpec: () => boolean;
-  releaseSpec: () => boolean;
+  freezeSpec: () => Promise<boolean>;
+  releaseSpec: (options?: { releasedBy?: string; note?: string }) => Promise<boolean>;
   unfreezeSpec: () => void;
-  
+  revokeSpec: () => Promise<boolean>;
+
   // Validation
   runValidation: () => ValidationResult;
-  
+
   // Machine
   setMachine: (machineId: string) => void;
-  
+
   // Gate
   updateGateStatus: () => void;
-  
+
   // Export
   canExport: (format: 'CUT_LIST' | 'DXF' | 'CNC') => boolean;
+
+  // P11: Server sync
+  syncWithServer: () => Promise<void>;
+  checkServerCanExport: () => Promise<boolean>;
+
+  // P11.1: Pending intent
+  queueTransition: (type: 'FREEZE' | 'RELEASE' | 'REVOKE', note?: string, changeClass?: string) => void;
+  clearPendingTransition: () => void;
+  drainPendingTransition: () => Promise<boolean>;
+
+  // B4: Release records & fork
+  getCurrentReleaseRecord: () => SpecReleaseRecord | null;
+  forkSpec: () => Promise<string | null>;  // Returns new project ID or null on failure
+  isWriteAllowed: () => boolean;
 }
 
 /** Extended state for ReleaseCenter (future API) */
@@ -384,6 +486,18 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
     canExport: false,
     blockers: ['Run validation first'],
   },
+
+  // P11: Server sync initial state
+  syncStatus: 'pending' as SyncStatus,
+  lastServerResponse: null,
+  serverRevisionId: null,
+
+  // P11.1: Pending intent initial state
+  pendingTransition: null,
+
+  // B4: Release records initial state
+  releaseRecords: [],
+  currentReleaseId: null,
   
   // ========== STATE TRANSITIONS ==========
   
@@ -392,48 +506,171 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
     get().updateGateStatus();
   },
   
-  freezeSpec: () => {
-    const { specState, validation } = get();
-    
+  freezeSpec: async () => {
+    const { specState } = get();
+
     // Must be in DRAFT
     if (specState !== 'DRAFT') {
       console.warn('[SpecStore] Cannot freeze: not in DRAFT state');
       return false;
     }
-    
+
     // Must pass validation
     const result = get().runValidation();
     if (!result.ok) {
       console.warn('[SpecStore] Cannot freeze: validation failed');
       return false;
     }
-    
-    set({ specState: 'FROZEN' });
-    get().updateGateStatus();
-    console.log('[SpecStore] Spec frozen');
-    return true;
+
+    // P11.1: Server-only authority - no local fallback
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      console.warn('[SpecStore] Cannot freeze: no jobId');
+      return false;
+    }
+
+    set({ syncStatus: 'pending' });
+
+    try {
+      const response = await apiFreezeJob(jobId, {
+        changeClass: 'GEOMETRY',
+        note: 'Frozen from DRAFT',
+      });
+
+      if (response.ok && response.specState) {
+        // Server succeeded - update local state
+        set({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+          pendingTransition: null, // Clear any pending
+        });
+        get().updateGateStatus();
+        return true;
+      } else {
+        // Server rejected - do NOT fall back to local
+        console.warn('[SpecStore] Server freeze rejected:', response.error);
+        set({ syncStatus: 'error', lastServerResponse: response });
+        return false;
+      }
+    } catch (error) {
+      // P11.1: Server unreachable - queue intent, do NOT change local state
+      console.warn('[SpecStore] Server unavailable - cannot freeze. Queuing intent.');
+      set({
+        syncStatus: 'offline',
+        pendingTransition: {
+          type: 'FREEZE',
+          note: 'Frozen from DRAFT',
+          changeClass: 'GEOMETRY',
+          queuedAt: new Date().toISOString(),
+        },
+      });
+      return false;
+    }
   },
   
-  releaseSpec: () => {
-    const { specState, validation } = get();
-    
+  releaseSpec: async (options?: { releasedBy?: string; note?: string }) => {
+    const { specState, currentReleaseId } = get();
+    const releasedBy = options?.releasedBy || 'system';
+    const note = options?.note || 'Released from FROZEN';
+
     // Must be in FROZEN
     if (specState !== 'FROZEN') {
       console.warn('[SpecStore] Cannot release: not in FROZEN state');
       return false;
     }
-    
+
     // Re-validate
     const result = get().runValidation();
     if (!result.ok) {
       console.warn('[SpecStore] Cannot release: validation failed');
       return false;
     }
-    
-    set({ specState: 'RELEASED' });
-    get().updateGateStatus();
-    console.log('[SpecStore] Spec released');
-    return true;
+
+    // P11.1: Server-only authority - no local fallback
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      console.warn('[SpecStore] Cannot release: no jobId');
+      return false;
+    }
+
+    set({ syncStatus: 'pending' });
+
+    try {
+      const response = await apiReleaseJob(jobId, {
+        note,
+      });
+
+      if (response.ok && response.specState) {
+        // B4: Create release record with content hashes
+        const cabinetState = useCabinetStore.getState();
+        const drillMapState = useDrillMapStore.getState();
+        const cabinetsJson = JSON.stringify(cabinetState.cabinets);
+        const drillMapJson = JSON.stringify(drillMapState.drillMap || null);
+
+        // Compute content hashes
+        const cabinetsHash = await sha256Hex(cabinetsJson);
+        const drillMapHash = await sha256Hex(drillMapJson);
+        const manifestData = JSON.stringify({
+          jobId,
+          cabinetsHash,
+          drillMapHash,
+          releasedAt: new Date().toISOString(),
+        });
+        const manifestHash = await sha256Hex(manifestData);
+
+        const releaseId = `rel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const releaseRecord: SpecReleaseRecord = {
+          releaseId,
+          releasedAt: new Date().toISOString(),
+          releasedBy,
+          parentReleaseId: currentReleaseId,
+          contentHashes: {
+            cabinetsHash,
+            drillMapHash,
+            gateResultHash: null, // Will be added if gate result available
+            manifestHash,
+          },
+          serverRevisionId: response.revisionId || null,
+          note,
+        };
+
+        // Server succeeded - update local state with release record
+        set((state) => ({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+          pendingTransition: null,
+          currentReleaseId: releaseId,
+          releaseRecords: [...state.releaseRecords, releaseRecord],
+        }));
+        get().updateGateStatus();
+        return true;
+      } else {
+        // Server rejected - do NOT fall back to local
+        console.warn('[SpecStore] Server release rejected:', response.error);
+        set({ syncStatus: 'error', lastServerResponse: response });
+        return false;
+      }
+    } catch (error) {
+      // P11.1: Server unreachable - queue intent, do NOT change local state
+      console.warn('[SpecStore] Server unavailable - cannot release. Queuing intent.');
+      set({
+        syncStatus: 'offline',
+        pendingTransition: {
+          type: 'RELEASE',
+          note,
+          queuedAt: new Date().toISOString(),
+        },
+      });
+      return false;
+    }
   },
   
   unfreezeSpec: () => {
@@ -446,7 +683,6 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
     
     set({ specState: 'DRAFT' });
     get().updateGateStatus();
-    console.log('[SpecStore] Spec unfrozen to DRAFT');
   },
   
   // ========== VALIDATION ==========
@@ -459,8 +695,16 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
   },
   
   // ========== MACHINE ==========
-  
+
   setMachine: (machineId) => {
+    // SPEC-08: Block machine profile changes after FREEZE
+    // Machine selection is part of manufacturing contract
+    const { specState } = get();
+    if (specState !== 'DRAFT') {
+      console.warn('[SpecStore] Cannot change machine: spec is', specState, '(requires DRAFT)');
+      return;
+    }
+
     if (MACHINE_PROFILES[machineId]) {
       set({ selectedMachine: machineId });
       get().runValidation(); // Re-validate with new machine
@@ -507,13 +751,20 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
   },
   
   // ========== EXPORT ==========
-  
+
   canExport: (format) => {
-    const { specState, validation, gateStatus } = get();
-    
+    const { specState, gateStatus, syncStatus } = get();
+
+    // P11.1: Must be synced with server for authoritative export
+    // Offline/error state cannot guarantee server state
+    if (syncStatus !== 'synced') {
+      console.warn('[SpecStore] canExport: not synced with server');
+      return false;
+    }
+
     // Basic gate check
     if (!gateStatus.canExport) return false;
-    
+
     // Format-specific rules
     switch (format) {
       case 'CUT_LIST':
@@ -526,7 +777,291 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
         return false;
     }
   },
+
+  // ========== P11: SERVER SYNC ==========
+
+  revokeSpec: async () => {
+    const { specState } = get();
+
+    // Must be in RELEASED
+    if (specState !== 'RELEASED') {
+      console.warn('[SpecStore] Cannot revoke: not in RELEASED state');
+      return false;
+    }
+
+    // P11.1: Server-only authority - no local fallback
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      console.warn('[SpecStore] Cannot revoke: no jobId');
+      return false;
+    }
+
+    set({ syncStatus: 'pending' });
+
+    try {
+      const response = await apiRevokeJob(jobId, {
+        note: 'Revoked from RELEASED',
+      });
+
+      if (response.ok && response.specState) {
+        // Server succeeded - update local state
+        set({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+          pendingTransition: null, // Clear any pending
+        });
+        get().updateGateStatus();
+        return true;
+      } else {
+        console.warn('[SpecStore] Server revoke rejected:', response.error);
+        set({ syncStatus: 'error', lastServerResponse: response });
+        return false;
+      }
+    } catch (error) {
+      // P11.1: Server unreachable - queue intent, do NOT change local state
+      console.warn('[SpecStore] Server unavailable - cannot revoke. Queuing intent.');
+      set({
+        syncStatus: 'offline',
+        pendingTransition: {
+          type: 'REVOKE',
+          note: 'Revoked from RELEASED',
+          queuedAt: new Date().toISOString(),
+        },
+      });
+      return false;
+    }
+  },
+
+  syncWithServer: async () => {
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      set({ syncStatus: 'offline' });
+      return;
+    }
+
+    set({ syncStatus: 'pending' });
+
+    try {
+      const response = await getJobState(jobId);
+
+      if (response.ok && response.specState) {
+        // Server response is authoritative
+        set({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+        });
+        get().updateGateStatus();
+      } else {
+        // Server returned error - might be new job (DRAFT)
+        if (response.error?.includes('Invalid jobId') || response.error?.includes('ENOENT')) {
+          // New job, no server state yet - this is OK
+          set({ syncStatus: 'synced', lastServerResponse: response });
+        } else {
+          set({ syncStatus: 'error', lastServerResponse: response });
+          console.warn('[SpecStore] Server sync error:', response.error);
+        }
+      }
+    } catch (error) {
+      console.warn('[SpecStore] Server unreachable');
+      set({ syncStatus: 'offline' });
+    }
+  },
+
+  checkServerCanExport: async () => {
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      return false;
+    }
+
+    try {
+      const response = await apiCheckCanExport(jobId);
+      return response.ok && response.canExport === true;
+    } catch (error) {
+      console.warn('[SpecStore] Cannot check export status');
+      return false;
+    }
+  },
+
+  // ========== P11.1: PENDING INTENT ==========
+
+  queueTransition: (type, note, changeClass) => {
+    set({
+      pendingTransition: {
+        type,
+        note,
+        changeClass,
+        queuedAt: new Date().toISOString(),
+      },
+    });
+  },
+
+  clearPendingTransition: () => {
+    set({ pendingTransition: null });
+  },
+
+  drainPendingTransition: async () => {
+    const { pendingTransition, specState } = get();
+
+    if (!pendingTransition) {
+      return true;
+    }
+
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      console.warn('[SpecStore] Cannot drain: no jobId');
+      return false;
+    }
+
+    try {
+      let response: StateResponse;
+
+      switch (pendingTransition.type) {
+        case 'FREEZE':
+          if (specState !== 'DRAFT') {
+            console.warn('[SpecStore] Cannot drain FREEZE: not in DRAFT');
+            set({ pendingTransition: null });
+            return false;
+          }
+          response = await apiFreezeJob(jobId, {
+            note: pendingTransition.note,
+            changeClass: pendingTransition.changeClass as any,
+          });
+          break;
+
+        case 'RELEASE':
+          if (specState !== 'FROZEN') {
+            console.warn('[SpecStore] Cannot drain RELEASE: not in FROZEN');
+            set({ pendingTransition: null });
+            return false;
+          }
+          response = await apiReleaseJob(jobId, {
+            note: pendingTransition.note,
+          });
+          break;
+
+        case 'REVOKE':
+          if (specState !== 'RELEASED') {
+            console.warn('[SpecStore] Cannot drain REVOKE: not in RELEASED');
+            set({ pendingTransition: null });
+            return false;
+          }
+          response = await apiRevokeJob(jobId, {
+            note: pendingTransition.note,
+          });
+          break;
+
+        default:
+          console.warn('[SpecStore] Unknown pending transition type');
+          set({ pendingTransition: null });
+          return false;
+      }
+
+      if (response.ok && response.specState) {
+        set({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+          pendingTransition: null,
+        });
+        get().updateGateStatus();
+        return true;
+      } else {
+        console.warn('[SpecStore] Drain failed:', response.error);
+        set({ syncStatus: 'error', lastServerResponse: response });
+        return false;
+      }
+    } catch (error) {
+      console.warn('[SpecStore] Drain failed - server unreachable');
+      set({ syncStatus: 'offline' });
+      return false;
+    }
+  },
+
+  // ========== B4: RELEASE RECORDS & FORK ==========
+
+  getCurrentReleaseRecord: () => {
+    const { currentReleaseId, releaseRecords } = get();
+    if (!currentReleaseId) return null;
+    return releaseRecords.find((r) => r.releaseId === currentReleaseId) || null;
+  },
+
+  forkSpec: async () => {
+    const { specState, currentReleaseId, releaseRecords } = get();
+    const projectStore = useProjectStore.getState();
+    const currentMeta = projectStore.metadata;
+
+    // B4: Fork is only allowed from RELEASED state
+    if (specState !== 'RELEASED') {
+      console.warn('[SpecStore] Cannot fork: only RELEASED specs can be forked');
+      return null;
+    }
+
+    if (!currentMeta?.id) {
+      console.warn('[SpecStore] Cannot fork: no current project');
+      return null;
+    }
+
+    // Find current release record for parent chain
+    const currentRecord = releaseRecords.find((r) => r.releaseId === currentReleaseId);
+
+    // Create new project with FORK prefix
+    const forkName = `[Fork] ${currentMeta.name || 'Untitled'}`;
+
+    try {
+      // Create new project using newProject (resets cabinet too)
+      projectStore.newProject(forkName);
+
+      // Get the newly created project's ID
+      const newMeta = useProjectStore.getState().metadata;
+      const forkId = newMeta?.id || `fork-${Date.now()}`;
+
+      // Reset spec state to DRAFT for the fork
+      set({
+        specState: 'DRAFT',
+        currentReleaseId: null,
+        // Keep release records for lineage tracking
+        releaseRecords: currentRecord
+          ? [
+              {
+                ...currentRecord,
+                releaseId: `fork-parent-${currentRecord.releaseId}`,
+                note: `Forked from ${currentMeta.id}`,
+              },
+            ]
+          : [],
+        validation: null,
+        syncStatus: 'pending',
+      });
+
+      return forkId;
+    } catch (error) {
+      console.error('[SpecStore] Fork failed:', error);
+      return null;
+    }
+  },
+
+  isWriteAllowed: () => {
+    const { specState } = get();
+    // B4: Only DRAFT allows writes
+    return specState === 'DRAFT';
+  },
 }));
+
+// Register spec store for cross-store access (avoids circular dependency)
+registerSpecStore(useSpecStore);
 
 // ============================================
 // SELECTOR HOOKS
@@ -539,3 +1074,15 @@ export const useMachineProfile = () => {
   const machineId = useSpecStore((s) => s.selectedMachine);
   return MACHINE_PROFILES[machineId];
 };
+
+// P11: Server sync hooks
+export const useSyncStatus = () => useSpecStore((s) => s.syncStatus);
+export const useServerRevisionId = () => useSpecStore((s) => s.serverRevisionId);
+
+// P11.1: Pending intent hooks
+export const usePendingTransition = () => useSpecStore((s) => s.pendingTransition);
+
+// B4: Release record hooks
+export const useReleaseRecords = () => useSpecStore((s) => s.releaseRecords);
+export const useCurrentReleaseId = () => useSpecStore((s) => s.currentReleaseId);
+export const useIsWriteAllowed = () => useSpecStore((s) => s.specState === 'DRAFT');

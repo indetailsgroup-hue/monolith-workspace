@@ -85,3 +85,20 @@ export type ToolHealth = {
   healthPct: number; // 0..100
   status: 'OK' | 'NEARING_LIMIT' | 'OVER_LIMIT';
 };
+
+// D6.2: Wear trend data point
+export type WearDataPoint = {
+  timestamp: number;     // epoch ms
+  wearUnits: number;     // cumulative wear at this point
+  jobId?: string;        // associated job (optional)
+};
+
+// D6.2: Tool health with trend information
+export type ToolHealthTrend = ToolHealth & {
+  /** Recent wear history (last N data points) */
+  wearHistory: WearDataPoint[];
+  /** Trend direction based on recent wear rate */
+  trend: 'STABLE' | 'INCREASING' | 'RAPID';
+  /** Average wear units per job (recent) */
+  avgWearPerJob: number;
+};

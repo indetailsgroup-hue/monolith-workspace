@@ -1,44 +1,40 @@
 /**
- * trustReportTypes.ts - Trust Report Types
+ * trustReportTypes.ts - Trust Report Types for Factory Traceability
  *
- * The TrustReport is a cryptographically signed snapshot of the
- * design state at a point in time, including gate results and collision status.
+ * ARCHITECTURE:
+ * - TrustReport: comprehensive validation snapshot
+ * - Includes gate results, collision summary, timestamps
+ * - Includes SpecStatus (DRAFT/FROZEN/RELEASED) - signed for factory trust
+ * - Used for factory audit trail and export enforcement
  *
- * @version 1.0.0
+ * DETERMINISTIC:
+ * - Same inputs produce same report structure
+ * - Hashing ensures tamper detection
  */
 
-import type { SpecStatus } from '../spec/specState';
 import type { GateBundleResult } from '../gate/gateBundleTypes';
+import type { SpecStatus } from '../spec/specState';
 
 // ============================================
 // COLLISION SUMMARY
 // ============================================
 
 /**
- * Summary of collision detection results
- * (stored in trust report, derived from CollisionReport)
+ * Collision summary for trust report
  */
-export interface CollisionSummary {
-  /** Whether collisions block placement */
+export interface TrustCollisionSummary {
+  /** Whether any collisions blocked commit */
   blocked: boolean;
-  /** Number of collision pairs */
+  /** Number of collision pairs detected */
   pairCount: number;
-  /** Worst penetration depth (mm) */
-  worstPenetrationMm: number;
-  /** Worst gap distance (mm) */
-  worstGapMm: number;
-}
-
-/**
- * Create an empty collision summary (no collisions)
- */
-export function createEmptyCollisionSummary(): CollisionSummary {
-  return {
-    blocked: false,
-    pairCount: 0,
-    worstPenetrationMm: 0,
-    worstGapMm: 0,
-  };
+  /** Worst penetration depth in mm (undefined if no overlaps) */
+  worstPenetrationMm?: number;
+  /** Worst (smallest) gap in mm (undefined if no gaps) */
+  worstGapMm?: number;
+  /** Number of internal collisions (within selection) */
+  internalCount?: number;
+  /** Number of external collisions (with non-selected) */
+  externalCount?: number;
 }
 
 // ============================================
@@ -46,51 +42,120 @@ export function createEmptyCollisionSummary(): CollisionSummary {
 // ============================================
 
 /**
- * Trust report - a signed snapshot of the design state
- *
- * Created on every geometry commit. Captures:
- * - Which cabinets were selected
- * - Gate validation results
- * - Collision detection results
- * - Current spec state
+ * Trust report version
+ */
+export type TrustReportVersion = '1.0';
+
+/**
+ * Trust report for factory traceability
  */
 export interface TrustReport {
   /** Report version */
-  version: '1.0';
-  /** Job ID */
+  version: TrustReportVersion;
+  /** Job/project identifier */
   jobId: string;
-  /** Timestamp */
+  /** ISO timestamp when report was generated */
   timestampIso: string;
-  /** Selected cabinet IDs */
+
+  // ---- Selection context ----
+  /** IDs of selected cabinets */
   selectionIds: string[];
-  /** Active cabinet ID */
+  /** Active cabinet ID (pivot) */
   activeId: string | null;
-  /** Spec state at time of report */
+
+  // ---- Spec state (DRAFT/FROZEN/RELEASED) ----
+  /** Spec status - signed for factory trust */
   spec: SpecStatus;
-  /** Gate validation result */
+
+  // ---- Validation results ----
+  /** Gate bundle result */
   gate: GateBundleResult;
   /** Collision summary */
-  collision: CollisionSummary;
-  /** Hash of snapshot inputs (for deduplication) */
-  inputsHash?: string;
-  /** Hash of design state snapshot */
+  collision: TrustCollisionSummary;
+
+  // ---- Snapshot Hash Lock ----
+  /**
+   * SHA-256 hash of normalized JobSnapshot
+   *
+   * FACTORY HASH LOCK:
+   * - Computed at preflight/release time
+   * - Signed as part of TrustReport
+   * - Used to detect changes after preflight
+   * - Factory can verify exported data matches this hash
+   */
   snapshotHashHex?: string;
+
+  // ---- Optional: hashes for integrity ----
+  /** Hash of input parameters (optional) */
+  inputsHash?: string;
+  /** Hash of scene state (optional) */
+  sceneHash?: string;
 }
 
 // ============================================
-// SIGNED TRUST REPORT
+// CREATION HELPERS
 // ============================================
 
 /**
- * Signed trust report with cryptographic proof
+ * Create empty collision summary
  */
-export interface SignedTrustReport {
-  /** The trust report data */
-  trust: TrustReport;
-  /** Signature hex */
-  signatureHex: string;
-  /** Key ID used for signing */
-  keyId: string;
-  /** Signing timestamp */
-  timestampIso: string;
+export function createEmptyCollisionSummary(): TrustCollisionSummary {
+  return {
+    blocked: false,
+    pairCount: 0,
+  };
+}
+
+/**
+ * Create empty trust report
+ */
+export function createEmptyTrustReport(jobId: string): TrustReport {
+  return {
+    version: '1.0',
+    jobId,
+    timestampIso: new Date().toISOString(),
+    selectionIds: [],
+    activeId: null,
+    spec: { state: 'DRAFT' },
+    gate: {
+      ok: true,
+      perCabinet: [],
+      globalIssues: [],
+      totalIssues: 0,
+      errorCount: 0,
+      warningCount: 0,
+    },
+    collision: createEmptyCollisionSummary(),
+  };
+}
+
+// ============================================
+// VALIDATION
+// ============================================
+
+/**
+ * Check if trust report is valid (passes all checks)
+ */
+export function isTrustReportValid(report: TrustReport): boolean {
+  return report.gate.ok && !report.collision.blocked;
+}
+
+/**
+ * Get validation status string
+ */
+export function getTrustReportStatus(report: TrustReport): 'VALID' | 'INVALID' {
+  return isTrustReportValid(report) ? 'VALID' : 'INVALID';
+}
+
+/**
+ * Get summary string for UI display
+ */
+export function formatTrustReportSummary(report: TrustReport): string {
+  const status = getTrustReportStatus(report);
+  const gateStr = report.gate.ok ? 'Gate OK' : `Gate BLOCKED (${report.gate.errorCount} errors)`;
+  const collStr = report.collision.blocked
+    ? `Collision BLOCKED (${report.collision.pairCount} pairs)`
+    : 'Collision OK';
+
+  return `[${status}] ${gateStr} | ${collStr}`;
 }

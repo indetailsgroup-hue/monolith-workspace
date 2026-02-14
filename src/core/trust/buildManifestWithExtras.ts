@@ -1,65 +1,81 @@
 /**
- * buildManifestWithExtras.ts - Build Signed Manifest with Extensions
+ * buildManifestWithExtras.ts - Build Signed Manifest with Extra Core Fields
  *
- * Extended version of buildSignedManifest that supports:
- * - Revision metadata (for fork workflows)
- * - Issue packs (from factory rejections)
- * - Factory receipts
+ * ARCHITECTURE:
+ * - Extends buildSignedManifest to support additional core fields
+ * - Extra fields (like receipts) are included in core hash
+ * - Ensures receipts are cryptographically signed with manifest
  *
- * Used via dynamic import() in trustChainService.ts for advanced operations.
- *
- * @version 1.0.0
+ * USE CASES:
+ * - Appending factory receipts to chain
+ * - Adding custom metadata that needs to be signed
  */
 
-import type { SignedJobManifest, ExportArtifactRecord, RevisionMeta } from './manifestChainTypes';
-import type { SignedTrustReport } from './trustReportTypes';
-import type { SignedFactoryReceipt } from '../receipt/factoryReceiptTypes';
-import type { IssuePack } from '../issues/issueTypes';
-import { sha256Hex, sha256CanonicalHex } from '../../crypto/sha256';
+import type { SignedTrustReport } from './signedTrustTypes';
+import type { SignedJobManifest, ExportArtifactRecord } from './manifestChainTypes';
+import { sha256CanonicalHex } from '../crypto/sha256';
+import { signHashHex } from '../crypto/ed25519';
 
-/**
- * Core extras that can be attached to a manifest
- */
-interface CoreExtras {
-  /** Revision metadata (for forked jobs) */
-  revision?: RevisionMeta;
-  /** Factory receipts */
-  receipts?: SignedFactoryReceipt[];
-  /** Issue packs */
-  issuePacks?: IssuePack[];
-}
+// ============================================
+// EXTENDED CORE TYPE
+// ============================================
 
 /**
- * Build signed manifest with extras configuration
+ * Extended manifest core with arbitrary extras
  */
-interface BuildSignedManifestWithExtrasArgs {
-  /** Job identifier */
+interface ExtendedManifestCore {
+  version: '1.0';
   jobId: string;
-  /** Previous manifest hash (null for genesis) */
   prevManifestHashHex: string | null;
-  /** Signed trust report */
-  signedTrust: SignedTrustReport | null;
-  /** Export artifact records */
+  signedTrust: SignedTrustReport;
   exports: ExportArtifactRecord[];
-  /** Manifest key ID */
   manifestKeyId: string;
-  /** Manifest private key (hex) */
-  manifestPrivateKeyHex: string;
-  /** Creator identifier */
-  createdBy?: string;
-  /** Extra data to include in the manifest */
-  coreExtras: CoreExtras;
+  algo: 'Ed25519';
+  [key: string]: unknown; // Extra fields
 }
 
+// ============================================
+// BUILD WITH EXTRAS
+// ============================================
+
 /**
- * Build and sign a manifest with extra data
+ * Build signed manifest with extra core fields
  *
- * Same as buildSignedManifest but merges coreExtras into the manifest
- * before hashing and signing.
+ * Extra fields are included in the core hash and signed.
+ * This is the correct way to add fields like `receipts` to the manifest.
+ *
+ * @param args.jobId - Job ID
+ * @param args.prevManifestHashHex - Previous manifest hash (null for genesis)
+ * @param args.signedTrust - Signed trust report
+ * @param args.exports - Export artifacts
+ * @param args.manifestKeyId - Manifest key ID
+ * @param args.manifestPrivateKeyHex - Manifest private key
+ * @param args.createdBy - Optional creator identifier
+ * @param args.coreExtras - Extra fields to include in core hash
+ * @returns SignedJobManifest with extras
+ *
+ * @example
+ * // Append factory receipt
+ * const manifest = await buildSignedManifestWithExtras({
+ *   jobId,
+ *   prevManifestHashHex: head.manifestHashHex,
+ *   signedTrust: head.signedTrust,
+ *   exports: head.exports,
+ *   manifestKeyId,
+ *   manifestPrivateKeyHex,
+ *   coreExtras: { receipts: [signedReceipt] },
+ * });
  */
-export async function buildSignedManifestWithExtras(
-  args: BuildSignedManifestWithExtrasArgs
-): Promise<SignedJobManifest> {
+export async function buildSignedManifestWithExtras(args: {
+  jobId: string;
+  prevManifestHashHex: string | null;
+  signedTrust: SignedTrustReport;
+  exports: ExportArtifactRecord[];
+  manifestKeyId: string;
+  manifestPrivateKeyHex: string;
+  createdBy?: string;
+  coreExtras?: Record<string, unknown>;
+}): Promise<SignedJobManifest> {
   const {
     jobId,
     prevManifestHashHex,
@@ -68,45 +84,37 @@ export async function buildSignedManifestWithExtras(
     manifestKeyId,
     manifestPrivateKeyHex,
     createdBy,
-    coreExtras,
+    coreExtras = {},
   } = args;
 
-  const createdIso = new Date().toISOString();
-
-  // Content to hash (deterministic, without hash/signature)
-  const content = {
+  // 1. Build extended core with extras
+  const core: ExtendedManifestCore = {
+    version: '1.0',
     jobId,
     prevManifestHashHex,
     signedTrust,
     exports,
-    createdIso,
-    createdBy,
-    revision: coreExtras.revision,
-    receipts: coreExtras.receipts,
-    issuePacks: coreExtras.issuePacks,
+    manifestKeyId,
+    algo: 'Ed25519',
+    // Spread extras into core (e.g., receipts)
+    ...coreExtras,
   };
 
-  // Compute content hash
-  const manifestHashHex = await sha256CanonicalHex(content);
+  // 2. Compute canonical hash of extended core
+  const manifestHashHex = await sha256CanonicalHex(core);
 
-  // Sign the hash (HMAC-style)
-  const signatureHex = await sha256Hex(manifestPrivateKeyHex + manifestHashHex);
+  // 3. Sign the hash
+  const manifestSignatureHex = await signHashHex({
+    hashHex: manifestHashHex,
+    privateKeyHex: manifestPrivateKeyHex,
+  });
 
+  // 4. Return complete manifest
   return {
-    jobId,
+    ...core,
     manifestHashHex,
-    prevManifestHashHex,
-    signedTrust,
-    exports: exports.length > 0 ? exports : undefined,
-    createdIso,
+    manifestSignatureHex,
+    createdIso: new Date().toISOString(),
     createdBy,
-    manifestSignature: {
-      keyId: manifestKeyId,
-      signatureHex,
-      algorithm: 'HMAC-SHA256',
-    },
-    revision: coreExtras.revision,
-    receipts: coreExtras.receipts,
-    issuePacks: coreExtras.issuePacks,
-  };
+  } as SignedJobManifest;
 }

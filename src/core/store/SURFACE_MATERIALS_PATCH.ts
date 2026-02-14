@@ -41,7 +41,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 450, 
     co2PerSqm: 1.2, 
     color: '#C4A77D',
-    textureUrl: '/textures/materials/9880503b9bc4fab08417c0ce7c618301.jpg',  // Natural Oak
+    textureUrl: '/textures/wood/9880503b9bc4fab08417c0ce7c618301.jpg',  // Natural Oak
   },
   'surf-hpl-walnut': { 
     id: 'surf-hpl-walnut', 
@@ -51,7 +51,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 520, 
     co2PerSqm: 1.2, 
     color: '#5D4037',
-    textureUrl: '/textures/materials/6ca1ee6c8d4e09b967824c7580f4471b.jpg',  // Natural Walnut
+    textureUrl: '/textures/wood/6ca1ee6c8d4e09b967824c7580f4471b.jpg',  // Natural Walnut
   },
   
   // ========== NEW: Premium Wood Textures ==========
@@ -63,7 +63,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 580, 
     co2PerSqm: 1.2, 
     color: '#9a8b7a',
-    textureUrl: '/textures/materials/c524e72250b3ddd648c1f317165c7f79.jpg',
+    textureUrl: '/textures/wood/c524e72250b3ddd648c1f317165c7f79.jpg',
   },
   'surf-hpl-oak-grey': { 
     id: 'surf-hpl-oak-grey', 
@@ -73,7 +73,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 550, 
     co2PerSqm: 1.2, 
     color: '#7a7a72',
-    textureUrl: '/textures/materials/428c5e7db15f9ac1df0adaa31089124a__3_.jpg',
+    textureUrl: '/textures/wood/428c5e7db15f9ac1df0adaa31089124a__3_.jpg',
   },
   'surf-hpl-ash-silver': { 
     id: 'surf-hpl-ash-silver', 
@@ -83,7 +83,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 520, 
     co2PerSqm: 1.2, 
     color: '#8a8a8a',
-    textureUrl: '/textures/materials/ae7ac17779fa6e250256872104665661.jpg',
+    textureUrl: '/textures/wood/ae7ac17779fa6e250256872104665661.jpg',
   },
   'surf-hpl-walnut-dark': { 
     id: 'surf-hpl-walnut-dark', 
@@ -93,7 +93,7 @@ const SURFACE_MATERIALS = {
     costPerSqm: 620, 
     co2PerSqm: 1.2, 
     color: '#5a4a3a',
-    textureUrl: '/textures/materials/6ec338abc60c08cd95f6fc5c011f60d5.jpg',
+    textureUrl: '/textures/wood/6ec338abc60c08cd95f6fc5c011f60d5.jpg',
   },
 };
 

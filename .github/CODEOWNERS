@@ -1,0 +1,70 @@
+# CODEOWNERS - GitHub automatic review assignment
+#
+# PR-S4.3: Key Rotation Ceremony + Dual Approval (2-Man Rule)
+#
+# This file defines code ownership for security-sensitive files.
+# PRs that modify these files require review from the specified owners.
+#
+# For dual approval (2-man rule) on keyset changes:
+# - Both @security-custodian-a AND @security-custodian-b must approve
+# - Self-approval is not allowed (enforced by branch protection)
+#
+# See: security/key-ceremonies/CEREMONY_SPEC.md
+#
+# v0.10.8.5 - PR-S4.3: Key Rotation Ceremony
+
+# =============================================================================
+# SECURITY-CRITICAL: Pinned Keysets (Dual Approval Required)
+# =============================================================================
+
+# Production keysets - require dual custodian approval
+/tools/iimos-verify/keys/*.json                    @security-custodian-a @security-custodian-b
+
+# Development keysets (less strict but still requires custodians)
+/tools/iimos-verify/keys/dev.*.json                @security-custodian-a
+
+# =============================================================================
+# SECURITY-SENSITIVE: Key Management Scripts
+# =============================================================================
+
+# Key lifecycle scripts
+/tools/iimos-verify/scripts/update_keyset.ts       @security-custodian-a @security-custodian-b
+/tools/iimos-verify/scripts/retire_key.ts          @security-custodian-a @security-custodian-b
+/tools/iimos-verify/scripts/fetch_kms_pubkey*.ts   @security-custodian-a @security-custodian-b
+/tools/iimos-verify/scripts/validate_keyset.ts     @security-custodian-a @security-custodian-b
+
+# Key type definitions
+/tools/iimos-verify/src/keys/                      @security-custodian-a @security-custodian-b
+
+# =============================================================================
+# SECURITY-SENSITIVE: Key Rotation Ceremonies
+# =============================================================================
+
+# Ceremony documentation and evidence
+/security/key-ceremonies/                          @security-custodian-a @security-custodian-b
+
+# =============================================================================
+# CI/CD Security Guards
+# =============================================================================
+
+# Keyset validation workflow
+/.github/workflows/keyset-validate.yml             @security-custodian-a @security-custodian-b
+/.github/workflows/keyset-dual-approval.yml        @security-custodian-a @security-custodian-b
+
+# This CODEOWNERS file itself
+/.github/CODEOWNERS                                @security-custodian-a @security-custodian-b
+
+# =============================================================================
+# RELEASE SECURITY
+# =============================================================================
+
+# Release/signing related code
+/src/release/                                      @security-custodian-a
+/src/crypto/                                       @security-custodian-a
+
+# =============================================================================
+# DEFAULT OWNERSHIP (Optional)
+# =============================================================================
+
+# All other files - standard review
+# * @default-reviewers

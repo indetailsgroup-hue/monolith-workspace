@@ -1,15 +1,29 @@
 /**
  * HardwarePanel - Hardware & Fitting System
- * 
+ *
  * Manages cabinet hardware placement:
+ * - Connectors (Minifix, Dowels, Confirmat)
  * - Hinges (Blum, Hettich, etc.)
  * - Drawer systems (Tandembox, ArciTech)
  * - Shelf supports
  * - Handles & knobs
  * - Lighting
+ *
+ * Includes Hardware Library for preset configuration and
+ * Catalog for browsing/adding hardware items.
+ *
+ * v1.1: Added Hardware Library integration with Minifix S200 config
  */
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
+import { ConnectorManager } from './connectors';
+import { Package, ShoppingCart, Wrench } from 'lucide-react';
+import { ModalLoadingFallback } from './LoadingFallback';
+
+// Lazy load heavy component (T018 code splitting)
+const HardwareLibraryPanel = lazy(() =>
+  import('./HardwareLibrary').then(m => ({ default: m.HardwareLibraryPanel }))
+);
 // import { useCabinetStore } from '../../core/store/useCabinetStore';
 
 // Hardware catalog types
@@ -115,79 +129,92 @@ interface InstalledHardware extends HardwareItem {
   quantity: number;
 }
 
-export function HardwarePanel() {
+// ============================================
+// TAB TYPES
+// ============================================
+
+type HardwareTab = 'library' | 'catalog' | 'connectors';
+
+// ============================================
+// CATALOG VIEW COMPONENT
+// ============================================
+
+function CatalogView() {
   const [installedHardware, setInstalledHardware] = useState<InstalledHardware[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Filter hardware by category
   const categories = [
-    { id: 'hinge', name: 'Hinges', items: HARDWARE_CATALOG.filter(h => h.category === 'hinge') },
-    { id: 'drawer', name: 'Drawer Systems', items: HARDWARE_CATALOG.filter(h => h.category === 'drawer') },
-    { id: 'shelf_support', name: 'Shelf Supports', items: HARDWARE_CATALOG.filter(h => h.category === 'shelf_support') },
-    { id: 'handle', name: 'Handles & Knobs', items: HARDWARE_CATALOG.filter(h => h.category === 'handle') },
-    { id: 'lighting', name: 'Lighting', items: HARDWARE_CATALOG.filter(h => h.category === 'lighting') },
+    { id: 'hinge', name: 'Hinges', items: HARDWARE_CATALOG.filter((h) => h.category === 'hinge') },
+    { id: 'drawer', name: 'Drawer Systems', items: HARDWARE_CATALOG.filter((h) => h.category === 'drawer') },
+    { id: 'shelf_support', name: 'Shelf Supports', items: HARDWARE_CATALOG.filter((h) => h.category === 'shelf_support') },
+    { id: 'handle', name: 'Handles & Knobs', items: HARDWARE_CATALOG.filter((h) => h.category === 'handle') },
+    { id: 'lighting', name: 'Lighting', items: HARDWARE_CATALOG.filter((h) => h.category === 'lighting') },
   ];
-  
+
   // Filter by search
-  const filteredCategories = categories.map(cat => ({
-    ...cat,
-    items: cat.items.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.brand.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(cat => cat.items.length > 0);
-  
+  const filteredCategories = categories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.brand.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((cat) => cat.items.length > 0);
+
   const handleAddHardware = (item: HardwareItem) => {
     // Check if already installed
-    const existing = installedHardware.find(h => h.id === item.id);
+    const existing = installedHardware.find((h) => h.id === item.id);
     if (existing) {
-      setInstalledHardware(prev => prev.map(h => 
-        h.id === item.id ? { ...h, quantity: h.quantity + 1 } : h
-      ));
+      setInstalledHardware((prev) => prev.map((h) => (h.id === item.id ? { ...h, quantity: h.quantity + 1 } : h)));
     } else {
-      setInstalledHardware(prev => [...prev, {
-        ...item,
-        instanceId: `${item.id}-${Date.now()}`,
-        quantity: 1
-      }]);
+      setInstalledHardware((prev) => [
+        ...prev,
+        {
+          ...item,
+          instanceId: `${item.id}-${Date.now()}`,
+          quantity: 1,
+        },
+      ]);
     }
   };
-  
+
   const handleRemoveHardware = (instanceId: string) => {
-    setInstalledHardware(prev => prev.filter(h => h.instanceId !== instanceId));
+    setInstalledHardware((prev) => prev.filter((h) => h.instanceId !== instanceId));
   };
-  
+
   // Calculate total cost
-  const totalCost = installedHardware.reduce((sum, h) => sum + (h.price * h.quantity), 0);
-  
+  const totalCost = installedHardware.reduce((sum, h) => sum + h.price * h.quantity, 0);
+
   return (
     <div className="h-full flex flex-col">
       {/* Search */}
-      <div className="p-4 border-b border-zinc-800">
+      <div className="p-2 border-b border-[#333]">
         <input
           type="text"
           placeholder="Search hardware..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+          className="w-full bg-surface-2 border border-[#444] rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
         />
       </div>
-      
+
       {/* Installed Hardware Summary */}
       {installedHardware.length > 0 && (
-        <div className="p-4 bg-zinc-800/30 border-b border-zinc-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-zinc-300">Installed Hardware</span>
-            <span className="text-sm text-emerald-400">฿{totalCost.toLocaleString()}</span>
+        <div className="p-2 bg-surface-2/50 border-b border-[#333]">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-medium text-gray-300">Installed Hardware</span>
+            <span className="text-[10px] text-green-400">฿{totalCost.toLocaleString()}</span>
           </div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-1 max-h-24 overflow-y-auto">
             {installedHardware.map((h) => (
-              <div key={h.instanceId} className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">{h.icon} {h.name} ×{h.quantity}</span>
-                <button 
-                  onClick={() => handleRemoveHardware(h.instanceId)}
-                  className="text-red-400 hover:text-red-300"
-                >
+              <div key={h.instanceId} className="flex items-center justify-between text-[10px]">
+                <span className="text-gray-400">
+                  {h.icon} {h.name} ×{h.quantity}
+                </span>
+                <button onClick={() => handleRemoveHardware(h.instanceId)} className="text-red-400 hover:text-red-300">
                   ✕
                 </button>
               </div>
@@ -195,22 +222,75 @@ export function HardwarePanel() {
           </div>
         </div>
       )}
-      
+
       {/* Hardware Catalog */}
       <div className="flex-1 overflow-y-auto">
         {filteredCategories.map((category) => (
           <Section key={category.id} title={category.name} defaultOpen={category.id === 'hinge'}>
             <div className="space-y-2">
               {category.items.map((item) => (
-                <HardwareCard 
-                  key={item.id} 
-                  item={item} 
-                  onAdd={handleAddHardware}
-                />
+                <HardwareCard key={item.id} item={item} onAdd={handleAddHardware} />
               ))}
             </div>
           </Section>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// MAIN HARDWARE PANEL
+// ============================================
+
+export function HardwarePanel() {
+  const [activeTab, setActiveTab] = useState<HardwareTab>('library');
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Tab Bar */}
+      <div className="flex border-b border-[#333] shrink-0">
+        <button
+          onClick={() => setActiveTab('library')}
+          className={`flex-1 px-2 py-1.5 text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 relative ${
+            activeTab === 'library' ? 'text-green-400 bg-surface-2' : 'text-gray-500 hover:text-white hover:bg-surface-2/50'
+          }`}
+        >
+          {activeTab === 'library' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400" />}
+          <Package size={12} />
+          <span>Library</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('catalog')}
+          className={`flex-1 px-2 py-1.5 text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 relative ${
+            activeTab === 'catalog' ? 'text-green-400 bg-surface-2' : 'text-gray-500 hover:text-white hover:bg-surface-2/50'
+          }`}
+        >
+          {activeTab === 'catalog' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-400" />}
+          <ShoppingCart size={12} />
+          <span>Catalog</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('connectors')}
+          className={`flex-1 px-2 py-1.5 text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 relative ${
+            activeTab === 'connectors' ? 'text-purple-400 bg-surface-2' : 'text-gray-500 hover:text-white hover:bg-surface-2/50'
+          }`}
+        >
+          {activeTab === 'connectors' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-400" />}
+          <Wrench size={12} />
+          <span>Connectors</span>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'library' && (
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <HardwareLibraryPanel />
+          </Suspense>
+        )}
+        {activeTab === 'catalog' && <CatalogView />}
+        {activeTab === 'connectors' && <ConnectorManager />}
       </div>
     </div>
   );

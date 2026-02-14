@@ -40,10 +40,7 @@ function getLockedReason(
     return "Verification required before export";
   }
   if (result.verdict === "FAIL") {
-    return result.message || "Verification failed - export blocked";
-  }
-  if (result.verdict === "ERROR") {
-    return "Verification error - please retry";
+    return result.summary || "Verification failed - export blocked";
   }
   if (jobStatus === "BLOCKED") {
     return "Job is blocked - export not available";

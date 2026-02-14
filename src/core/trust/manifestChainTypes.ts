@@ -1,66 +1,79 @@
 /**
- * manifestChainTypes.ts - Manifest Chain Core Types
+ * manifestChainTypes.ts - Signed Manifest Chain Types
  *
- * SignedJobManifest is the CENTRAL data type of the trust chain.
- * Every state change (commit, freeze, release, export, receipt)
- * produces a new manifest linked to its predecessor.
+ * ARCHITECTURE:
+ * - SignedJobManifest: manifest with cryptographic chain linkage
+ * - prevManifestHashHex: links to previous manifest (blockchain-style)
+ * - Each manifest contains a SignedTrustReport
  *
- * @version 1.0.0
+ * CHAIN PROPERTIES:
+ * - Genesis manifest has prevManifestHashHex = null
+ * - Each subsequent manifest points to previous
+ * - Tampering breaks the chain (hash mismatch)
+ * - Full audit trail from genesis to current
  */
 
-import type { SignedTrustReport } from './trustReportTypes';
+import type { SignedTrustReport } from './signedTrustTypes';
 import type { SignedFactoryReceipt } from '../receipt/factoryReceiptTypes';
 import type { IssuePack } from '../issues/issueTypes';
 
 // ============================================
-// EXPORT ARTIFACT RECORD (legacy format)
+// EXPORT ARTIFACT RECORD
 // ============================================
 
 /**
- * Export kind identifier
+ * Export format types
  */
-export type ExportKind = 'DXF' | 'CSV' | 'JSON' | 'CNC' | 'REPORT' | 'FACTORY_PACKAGE';
+export type ExportKind = 'DXF' | 'CSV' | 'GCODE' | 'PDF' | 'JSON';
 
 /**
- * Export artifact record (used in manifest.exports[])
- * This is the legacy per-file format used by exportPipeline.ts
+ * Record of exported artifact
  */
 export interface ExportArtifactRecord {
-  /** Export kind */
+  /** Export format */
   kind: ExportKind;
-  /** Filename */
+  /** Filename or identifier */
   filename: string;
-  /** SHA-256 hash of content */
+  /** SHA-256 hash of file content */
   contentHashHex: string;
   /** File size in bytes */
-  sizeBytes: number;
-  /** Creation timestamp */
-  createdIso: string;
+  sizeBytes?: number;
+  /** Export timestamp */
+  createdIso?: string;
 }
 
 // ============================================
-// REVISION META
+// REVISION META (for forked revisions)
 // ============================================
 
 /**
  * Revision metadata for forked jobs
  *
- * When a factory receipt is REJECTED, a revision fork is created
- * to resolve the issues without affecting the original job.
+ * When a job receives a REJECTED receipt, a new revision fork
+ * is created with a new job ID (e.g., JOB_123__R2).
+ * This metadata tracks the lineage.
  */
 export interface RevisionMeta {
-  /** Revision number (1, 2, 3...) */
+  /** Revision number (1 = original, 2+ = revisions) */
   revisionNumber: number;
-  /** Original (root) job ID */
+
+  /** Original job ID (before any revisions) */
   originalJobId: string;
-  /** Job ID we forked from */
-  forkedFromJobId: string;
-  /** Manifest hash at fork point */
-  forkedFromManifestHashHex: string;
-  /** Receipt hash that triggered fork */
-  forkedFromReceiptHashHex: string;
-  /** Reason for revision */
-  reason: string;
+
+  /** Job ID this was forked from (null for original) */
+  forkedFromJobId: string | null;
+
+  /** Manifest hash that was rejected (null for original) */
+  forkedFromManifestHashHex: string | null;
+
+  /** Receipt hash that caused the fork (null for original) */
+  forkedFromReceiptHashHex: string | null;
+
+  /** Reason for creating revision */
+  reason?: string;
+
+  /** Timestamp of fork creation */
+  forkedAtIso?: string;
 }
 
 // ============================================
@@ -68,84 +81,205 @@ export interface RevisionMeta {
 // ============================================
 
 /**
- * Signed job manifest - the core unit of the trust chain
- *
- * Each manifest is:
- * 1. Content-addressed (manifestHashHex)
- * 2. Linked to predecessor (prevManifestHashHex)
- * 3. Contains a signed trust report
- * 4. Optionally contains exports, receipts, and issue packs
+ * Manifest version
+ */
+export type ManifestChainVersion = '1.0';
+
+/**
+ * Signed job manifest with chain linkage
  */
 export interface SignedJobManifest {
-  /** Job identifier */
+  /** Manifest version */
+  version: ManifestChainVersion;
+  /** Job/project identifier */
   jobId: string;
-  /** SHA-256 hash of this manifest's canonical content */
-  manifestHashHex: string;
-  /** Previous manifest hash (null for genesis) */
+
+  // ---- Chain linkage ----
+  /** Hash of previous manifest (null for genesis) */
   prevManifestHashHex: string | null;
-  /** Signed trust report */
-  signedTrust: SignedTrustReport | null;
-  /** Export artifact records */
-  exports?: ExportArtifactRecord[];
+  /** Hash of this manifest's core (excludes signature) */
+  manifestHashHex: string;
+
+  // ---- Signed trust (gate snapshot) ----
+  /** Signed trust report at time of manifest creation */
+  signedTrust: SignedTrustReport;
+
+  // ---- Exports ----
+  /** Export artifacts created from this approved state */
+  exports: ExportArtifactRecord[];
+
+  // ---- Factory Receipts ----
+  /** Signed factory acceptance/rejection receipts */
+  receipts?: SignedFactoryReceipt[];
+
+  // ---- Revision Tracking ----
+  /** Revision metadata (for forked revisions) */
+  revision?: RevisionMeta;
+
+  // ---- Issue Packs ----
+  /** Issue packs from rejected receipts (for revision jobs) */
+  issuePacks?: IssuePack[];
+
+  // ---- Manifest signature ----
+  /** Ed25519 signature of manifestHashHex */
+  manifestSignatureHex: string;
+  /** Key ID for manifest signature */
+  manifestKeyId: string;
+  /** Signature algorithm */
+  algo: 'Ed25519';
+
+  // ---- Metadata ----
   /** Creation timestamp */
   createdIso: string;
   /** Creator identifier */
   createdBy?: string;
-  /** Manifest signature */
-  manifestSignature?: {
-    keyId: string;
-    signatureHex: string;
-    algorithm: string;
-  };
-  /** Revision metadata (if this is a forked revision) */
-  revision?: RevisionMeta;
-  /** Factory receipts attached to this manifest */
+}
+
+// ============================================
+// MANIFEST CORE (for hashing)
+// ============================================
+
+/**
+ * Core fields of manifest (excludes signature to avoid circular hash)
+ */
+export interface ManifestCore {
+  version: ManifestChainVersion;
+  jobId: string;
+  prevManifestHashHex: string | null;
+  signedTrust: SignedTrustReport;
+  exports: ExportArtifactRecord[];
   receipts?: SignedFactoryReceipt[];
-  /** Issue packs attached to this manifest */
+  revision?: RevisionMeta;
   issuePacks?: IssuePack[];
+  manifestKeyId: string;
+  algo: 'Ed25519';
+}
+
+/**
+ * Extract core fields for hashing
+ */
+export function extractManifestCore(manifest: SignedJobManifest): ManifestCore {
+  return {
+    version: manifest.version,
+    jobId: manifest.jobId,
+    prevManifestHashHex: manifest.prevManifestHashHex,
+    signedTrust: manifest.signedTrust,
+    exports: manifest.exports,
+    receipts: manifest.receipts,
+    revision: manifest.revision,
+    issuePacks: manifest.issuePacks,
+    manifestKeyId: manifest.manifestKeyId,
+    algo: manifest.algo,
+  };
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Check if manifest is genesis (first in chain)
+ */
+export function isGenesisManifest(manifest: SignedJobManifest): boolean {
+  return manifest.prevManifestHashHex === null;
+}
+
+/**
+ * Get chain depth (0 for genesis)
+ */
+export function getChainDepth(
+  manifest: SignedJobManifest,
+  loadByHash: (hash: string) => SignedJobManifest | null,
+  maxDepth: number = 100
+): number {
+  let depth = 0;
+  let current: SignedJobManifest | null = manifest;
+
+  while (current && current.prevManifestHashHex && depth < maxDepth) {
+    current = loadByHash(current.prevManifestHashHex);
+    depth++;
+  }
+
+  return depth;
+}
+
+/**
+ * Check manifest structure validity
+ */
+export function isValidManifestStructure(manifest: unknown): manifest is SignedJobManifest {
+  if (!manifest || typeof manifest !== 'object') return false;
+
+  const m = manifest as Record<string, unknown>;
+
+  return (
+    m.version === '1.0' &&
+    typeof m.jobId === 'string' &&
+    typeof m.manifestHashHex === 'string' &&
+    typeof m.manifestSignatureHex === 'string' &&
+    typeof m.manifestKeyId === 'string' &&
+    m.algo === 'Ed25519' &&
+    typeof m.signedTrust === 'object' &&
+    Array.isArray(m.exports)
+  );
 }
 
 // ============================================
 // REVISION HELPERS
 // ============================================
 
+/** Revision suffix pattern: __R2, __R3, etc. */
+const REVISION_PATTERN = /__R(\d+)$/;
+
 /**
- * Parse revision info from a job ID
+ * Parse revision info from job ID
  *
- * Job IDs follow the pattern: `JOB_abc123` or `JOB_abc123_REV2`
- *
- * @returns Original job ID and revision number
+ * @example
+ * parseRevisionFromJobId('JOB_123') // { originalJobId: 'JOB_123', revisionNumber: 1 }
+ * parseRevisionFromJobId('JOB_123__R2') // { originalJobId: 'JOB_123', revisionNumber: 2 }
  */
 export function parseRevisionFromJobId(jobId: string): {
   originalJobId: string;
   revisionNumber: number;
 } {
-  const revMatch = jobId.match(/^(.+)_REV(\d+)$/);
-  if (revMatch) {
-    return {
-      originalJobId: revMatch[1],
-      revisionNumber: parseInt(revMatch[2], 10),
-    };
+  const match = jobId.match(REVISION_PATTERN);
+
+  if (match) {
+    const revisionNumber = parseInt(match[1], 10);
+    const originalJobId = jobId.replace(REVISION_PATTERN, '');
+    return { originalJobId, revisionNumber };
   }
+
+  return { originalJobId: jobId, revisionNumber: 1 };
+}
+
+/**
+ * Generate new revision job ID
+ *
+ * @example
+ * generateRevisionJobId('JOB_123', 2) // 'JOB_123__R2'
+ * generateRevisionJobId('JOB_123__R2', 3) // 'JOB_123__R3'
+ */
+export function generateRevisionJobId(jobId: string, newRevisionNumber: number): string {
+  const { originalJobId } = parseRevisionFromJobId(jobId);
+  return `${originalJobId}__R${newRevisionNumber}`;
+}
+
+/**
+ * Create initial revision meta for original job
+ */
+export function createOriginalRevisionMeta(jobId: string): RevisionMeta {
+  const { originalJobId } = parseRevisionFromJobId(jobId);
   return {
-    originalJobId: jobId,
-    revisionNumber: 0,
+    revisionNumber: 1,
+    originalJobId,
+    forkedFromJobId: null,
+    forkedFromManifestHashHex: null,
+    forkedFromReceiptHashHex: null,
   };
 }
 
 /**
- * Generate a revision job ID
- *
- * @example generateRevisionJobId('JOB_abc123', 2) → 'JOB_abc123_REV2'
- */
-export function generateRevisionJobId(jobId: string, revision: number): string {
-  // Strip existing revision suffix
-  const { originalJobId } = parseRevisionFromJobId(jobId);
-  return `${originalJobId}_REV${revision}`;
-}
-
-/**
- * Create revision metadata for a fork
+ * Create revision meta for forked job
  */
 export function createForkedRevisionMeta(args: {
   newRevisionNumber: number;
@@ -153,7 +287,7 @@ export function createForkedRevisionMeta(args: {
   forkedFromJobId: string;
   forkedFromManifestHashHex: string;
   forkedFromReceiptHashHex: string;
-  reason: string;
+  reason?: string;
 }): RevisionMeta {
   return {
     revisionNumber: args.newRevisionNumber,
@@ -162,5 +296,6 @@ export function createForkedRevisionMeta(args: {
     forkedFromManifestHashHex: args.forkedFromManifestHashHex,
     forkedFromReceiptHashHex: args.forkedFromReceiptHashHex,
     reason: args.reason,
+    forkedAtIso: new Date().toISOString(),
   };
 }

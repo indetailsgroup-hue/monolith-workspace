@@ -1,5 +1,5 @@
 /**
- * SafetyGatePage - IIMOS Manufacturing OS Theme
+ * SafetyGatePage - MONOLITH Manufacturing OS Theme
  * 
  * Full Safety & Gate dashboard matching the reference design:
  * - Safety Overview with verdict
@@ -259,7 +259,7 @@ export function SafetyGatePage() {
             
             {/* Rules Table */}
             <div className="bg-[#141414] border border-zinc-800 rounded-xl p-6 mb-6">
-              <SectionHeader title="Rules" engine="IIMOS Safety v1.0" />
+              <SectionHeader title="Rules" engine="MONOLITH Safety v1.0" />
               
               <table className="w-full">
                 <thead>

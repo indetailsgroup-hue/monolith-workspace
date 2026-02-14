@@ -1,118 +1,249 @@
 /**
- * indexedDbPacketStore.ts - IndexedDB Packet Storage
+ * indexedDbPacketStore.ts - IndexedDB Packet Blob Storage
  *
- * Provides persistent storage for factory packet blobs and metadata.
+ * Persists verified factory packet blobs for offline access.
+ * Works alongside factoryStore's verifiedPacketByJobId metadata.
  *
- * @version 1.0.0 - Phase D3.3
+ * STORES:
+ * - blobs: Key by jobId, stores Uint8Array of ZIP data
+ * - metadata: Key by jobId, stores verification timestamp + metadata
+ *
+ * @version 1.0.0 - Phase D0: Verified Packet Persistence
  */
 
-export interface PacketMetadata {
-  jobId: string;
-  contentHash: string;
-  createdAt: number;
-  machineId?: string;
-}
+import { openDb, reqToPromise } from '../../core/infra/idb/idb';
 
-export interface PacketStore {
-  saveBlob(jobId: string, blob: Blob): Promise<void>;
-  loadBlob(jobId: string): Promise<Blob | null>;
-  saveMetadata(jobId: string, metadata: PacketMetadata): Promise<void>;
-  loadMetadata(jobId: string): Promise<PacketMetadata | null>;
-  deletePacket(jobId: string): Promise<void>;
-  listJobIds(): Promise<string[]>;
-}
+// ============================================
+// CONSTANTS
+// ============================================
 
-const DB_NAME = 'monolith-packets';
+const DB_NAME = 'monolith-factory-packets';
 const DB_VERSION = 1;
-const BLOB_STORE = 'blobs';
-const META_STORE = 'metadata';
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(BLOB_STORE)) {
-        db.createObjectStore(BLOB_STORE);
-      }
-      if (!db.objectStoreNames.contains(META_STORE)) {
-        db.createObjectStore(META_STORE);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+const STORE_BLOBS = 'blobs';
+const STORE_METADATA = 'metadata';
+
+// ============================================
+// TYPES
+// ============================================
+
+export interface StoredPacketMetadata {
+  /** Job ID */
+  jobId: string;
+  /** Original filename */
+  fileName: string;
+  /** File size in bytes */
+  sizeBytes: number;
+  /** SHA-256 content hash */
+  contentHash: string | null;
+  /** Verification passed */
+  verified: boolean;
+  /** Timestamp stored */
+  storedAt: string;
+  /** Part count */
+  partCount: number;
 }
 
-function createStore(): PacketStore {
-  return {
-    async saveBlob(jobId, blob) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(BLOB_STORE, 'readwrite');
-        tx.objectStore(BLOB_STORE).put(blob, jobId);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    },
+// ============================================
+// SCHEMA UPGRADE
+// ============================================
 
-    async loadBlob(jobId) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(BLOB_STORE, 'readonly');
-        const req = tx.objectStore(BLOB_STORE).get(jobId);
-        req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
-        req.onerror = () => { db.close(); reject(req.error); };
-      });
-    },
+function upgradeSchema(db: IDBDatabase, oldVersion: number, _newVersion: number): void {
+  // Version 1: Initial schema
+  if (oldVersion < 1) {
+    // Blobs store: key = jobId, value = Uint8Array (ZIP data)
+    if (!db.objectStoreNames.contains(STORE_BLOBS)) {
+      db.createObjectStore(STORE_BLOBS);
+    }
 
-    async saveMetadata(jobId, metadata) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(META_STORE, 'readwrite');
-        tx.objectStore(META_STORE).put(metadata, jobId);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    },
-
-    async loadMetadata(jobId) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(META_STORE, 'readonly');
-        const req = tx.objectStore(META_STORE).get(jobId);
-        req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
-        req.onerror = () => { db.close(); reject(req.error); };
-      });
-    },
-
-    async deletePacket(jobId) {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction([BLOB_STORE, META_STORE], 'readwrite');
-        tx.objectStore(BLOB_STORE).delete(jobId);
-        tx.objectStore(META_STORE).delete(jobId);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    },
-
-    async listJobIds() {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(META_STORE, 'readonly');
-        const req = tx.objectStore(META_STORE).getAllKeys();
-        req.onsuccess = () => { db.close(); resolve(req.result as string[]); };
-        req.onerror = () => { db.close(); reject(req.error); };
-      });
-    },
-  };
+    // Metadata store: key = jobId, value = StoredPacketMetadata
+    if (!db.objectStoreNames.contains(STORE_METADATA)) {
+      db.createObjectStore(STORE_METADATA, { keyPath: 'jobId' });
+    }
+  }
 }
 
-let _store: PacketStore | null = null;
+// ============================================
+// IMPLEMENTATION
+// ============================================
 
-/** Get the singleton packet store instance. */
-export function getPacketStore(): PacketStore {
-  if (!_store) _store = createStore();
-  return _store;
+export class IndexedDbPacketStore {
+  private dbPromise: Promise<IDBDatabase>;
+
+  constructor() {
+    this.dbPromise = openDb({
+      dbName: DB_NAME,
+      version: DB_VERSION,
+      onUpgrade: upgradeSchema,
+    });
+  }
+
+  /**
+   * Store packet blob with metadata
+   */
+  async storePacket(
+    jobId: string,
+    blob: Uint8Array,
+    metadata: Omit<StoredPacketMetadata, 'jobId' | 'storedAt'>
+  ): Promise<void> {
+    const db = await this.dbPromise;
+
+    await new Promise<void>((resolve, reject) => {
+      const t = db.transaction([STORE_BLOBS, STORE_METADATA], 'readwrite');
+      const blobStore = t.objectStore(STORE_BLOBS);
+      const metaStore = t.objectStore(STORE_METADATA);
+
+      // Store blob by jobId
+      blobStore.put(blob, jobId);
+
+      // Store metadata
+      const fullMetadata: StoredPacketMetadata = {
+        ...metadata,
+        jobId,
+        storedAt: new Date().toISOString(),
+      };
+      metaStore.put(fullMetadata);
+
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error ?? new Error('Transaction aborted'));
+    });
+  }
+
+  /**
+   * Load packet blob by job ID
+   */
+  async loadBlob(jobId: string): Promise<Uint8Array | null> {
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const t = db.transaction([STORE_BLOBS], 'readonly');
+      const store = t.objectStore(STORE_BLOBS);
+      const req = store.get(jobId);
+
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  /**
+   * Load packet metadata by job ID
+   */
+  async loadMetadata(jobId: string): Promise<StoredPacketMetadata | null> {
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const t = db.transaction([STORE_METADATA], 'readonly');
+      const store = t.objectStore(STORE_METADATA);
+      const req = store.get(jobId);
+
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  /**
+   * Check if packet exists for job
+   */
+  async hasPacket(jobId: string): Promise<boolean> {
+    const metadata = await this.loadMetadata(jobId);
+    return metadata !== null;
+  }
+
+  /**
+   * Delete packet for job
+   */
+  async deletePacket(jobId: string): Promise<void> {
+    const db = await this.dbPromise;
+
+    await new Promise<void>((resolve, reject) => {
+      const t = db.transaction([STORE_BLOBS, STORE_METADATA], 'readwrite');
+
+      t.objectStore(STORE_BLOBS).delete(jobId);
+      t.objectStore(STORE_METADATA).delete(jobId);
+
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+    });
+  }
+
+  /**
+   * List all stored packet job IDs
+   */
+  async listJobIds(): Promise<string[]> {
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const t = db.transaction([STORE_METADATA], 'readonly');
+      const store = t.objectStore(STORE_METADATA);
+      const req = store.getAllKeys();
+
+      req.onsuccess = () => resolve(req.result as string[]);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  /**
+   * Get storage stats
+   */
+  async getStats(): Promise<{
+    packetCount: number;
+    totalSizeBytes: number;
+    jobIds: string[];
+  }> {
+    const db = await this.dbPromise;
+
+    return new Promise((resolve, reject) => {
+      const t = db.transaction([STORE_METADATA], 'readonly');
+      const store = t.objectStore(STORE_METADATA);
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const items = (req.result || []) as StoredPacketMetadata[];
+        resolve({
+          packetCount: items.length,
+          totalSizeBytes: items.reduce((sum, m) => sum + (m.sizeBytes || 0), 0),
+          jobIds: items.map((m) => m.jobId),
+        });
+      };
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  /**
+   * Clear all stored packets (for testing/reset)
+   */
+  async clear(): Promise<void> {
+    const db = await this.dbPromise;
+
+    await new Promise<void>((resolve, reject) => {
+      const t = db.transaction([STORE_BLOBS, STORE_METADATA], 'readwrite');
+
+      t.objectStore(STORE_BLOBS).clear();
+      t.objectStore(STORE_METADATA).clear();
+
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+    });
+  }
+}
+
+// ============================================
+// SINGLETON INSTANCE
+// ============================================
+
+let _instance: IndexedDbPacketStore | null = null;
+
+export function getPacketStore(): IndexedDbPacketStore {
+  if (!_instance) {
+    _instance = new IndexedDbPacketStore();
+  }
+  return _instance;
+}
+
+/**
+ * Reset singleton (for testing)
+ */
+export function resetPacketStore(): void {
+  _instance = null;
 }

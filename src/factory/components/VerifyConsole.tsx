@@ -1036,7 +1036,7 @@ interface OfflineStepsModalProps {
 function OfflineStepsModal({ onClose }: OfflineStepsModalProps): React.ReactElement {
   const [copied, setCopied] = useState(false);
 
-  const command = `iimos-verify verify packet.json --keys production.pubkeys.v1.json`;
+  const command = `monolith-verify verify packet.json --keys production.pubkeys.v1.json`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(command);

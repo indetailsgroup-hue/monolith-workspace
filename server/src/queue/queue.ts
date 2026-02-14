@@ -16,7 +16,7 @@ import { Redis } from 'ioredis';
 // Constants
 // ============================================================================
 
-export const QUEUE_NAME = 'iimos_export_jobs';
+export const QUEUE_NAME = 'monolith_export_jobs';
 
 // ============================================================================
 // Job Types

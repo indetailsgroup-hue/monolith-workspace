@@ -1,74 +1,119 @@
 /**
  * Local Revocation Policy Store (v0.7)
  *
- * In-memory + localStorage store for editing revocation rules
- * before exporting as a signed artifact.
+ * This is the "policy source" that admin edits locally.
+ * When releasing, this gets "frozen" into an immutable signed artifact.
  *
- * Uses localStorage with 'iimos.policy.local.' prefix.
+ * Storage: localStorage (MVP) - production should use secure storage.
+ *
+ * G9 COMPLIANCE: Uses unsafeStorage boundary for localStorage access.
  */
 
 import type { RevocationRule } from './revocationPolicyTypes';
+import {
+  readValidatedSafe,
+  writeJson,
+  remove,
+} from '../../core/persistence/unsafeStorage';
+import { z } from 'zod';
 
-const LS_KEY = 'iimos.policy.local.v1';
+const LS_LOCAL_REV = 'monolith.local.revocation.rules.v1';
 
 /**
- * Local policy state (editable, unsigned).
+ * Local (editable) revocation policy
  */
-export interface LocalRevocationPolicy {
-  scope: 'ORG' | 'FACTORY';
+export type LocalRevocationPolicy = {
+  /** Scope for the policy */
+  scope: 'ORG' | 'FACTORY' | 'PROJECT';
+  /** Scope ID (required for FACTORY scope) */
   scopeId?: string;
-  rules: RevocationRule[];
-  updatedBy: string;
+  /** Last update time (ISO) */
   updatedAtIso: string;
-}
+  /** Who updated */
+  updatedBy: string;
+  /** Revocation rules */
+  rules: RevocationRule[];
+};
 
+/**
+ * Zod schema for LocalRevocationPolicy validation
+ */
+const LocalRevocationPolicySchema = z.object({
+  scope: z.enum(['ORG', 'FACTORY', 'PROJECT']),
+  scopeId: z.string().optional(),
+  updatedAtIso: z.string().refine(s => !isNaN(Date.parse(s)), { message: 'Invalid ISO timestamp' }),
+  updatedBy: z.string(),
+  rules: z.array(z.object({
+    keyId: z.string(),
+    revokedAtIso: z.string().refine(s => !isNaN(Date.parse(s)), { message: 'Invalid ISO timestamp' }),
+    reason: z.string(),
+  })),
+});
+
+/**
+ * Get current ISO timestamp
+ */
 function nowIso(): string {
   return new Date().toISOString();
 }
 
+/**
+ * Default empty policy
+ */
 function defaultPolicy(): LocalRevocationPolicy {
   return {
     scope: 'ORG',
-    rules: [],
-    updatedBy: 'system',
     updatedAtIso: nowIso(),
+    updatedBy: 'local-admin',
+    rules: [],
   };
 }
 
+/**
+ * Load local policy from storage
+ */
 function load(): LocalRevocationPolicy {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return defaultPolicy();
-    return JSON.parse(raw) as LocalRevocationPolicy;
-  } catch {
+  const result = readValidatedSafe(LS_LOCAL_REV, LocalRevocationPolicySchema);
+  if (!result.ok) {
     return defaultPolicy();
   }
-}
-
-function save(policy: LocalRevocationPolicy): void {
-  localStorage.setItem(LS_KEY, JSON.stringify(policy, null, 2));
+  return result.data;
 }
 
 /**
- * Get current local revocation policy.
+ * Save local policy to storage
+ */
+function save(p: LocalRevocationPolicy): void {
+  writeJson(LS_LOCAL_REV, p);
+}
+
+/**
+ * Get local revocation policy
  */
 export function getLocalRevocationPolicy(): LocalRevocationPolicy {
   return load();
 }
 
 /**
- * Set policy scope.
+ * Set local policy scope
  */
-export function setLocalPolicyScope(scope: 'ORG' | 'FACTORY', scopeId?: string): void {
-  const policy = load();
-  policy.scope = scope;
-  policy.scopeId = scopeId;
-  policy.updatedAtIso = nowIso();
-  save(policy);
+export function setLocalPolicyScope(
+  scope: 'ORG' | 'FACTORY' | 'PROJECT',
+  scopeId: string | undefined,
+  by: string
+): void {
+  const p = load();
+  save({
+    ...p,
+    scope,
+    scopeId,
+    updatedAtIso: nowIso(),
+    updatedBy: by,
+  });
 }
 
 /**
- * Add or update a revocation rule.
+ * Add or update a revocation rule
  */
 export function upsertLocalRevocationRule(input: {
   keyId: string;
@@ -76,49 +121,51 @@ export function upsertLocalRevocationRule(input: {
   reason: string;
   by: string;
 }): void {
-  const policy = load();
-  const existing = policy.rules.findIndex((r) => r.keyId === input.keyId);
-  const rule: RevocationRule = {
-    keyId: input.keyId,
-    revokedAtIso: input.revokedAtIso,
-    reason: input.reason,
-    by: input.by,
-  };
-
-  if (existing >= 0) {
-    policy.rules[existing] = rule;
-  } else {
-    policy.rules.push(rule);
-  }
-
-  policy.updatedBy = input.by;
-  policy.updatedAtIso = nowIso();
-  save(policy);
+  const p = load();
+  const rules = p.rules
+    .filter((r) => r.keyId !== input.keyId)
+    .concat({
+      keyId: input.keyId,
+      revokedAtIso: input.revokedAtIso,
+      reason: input.reason,
+    });
+  save({
+    ...p,
+    updatedAtIso: nowIso(),
+    updatedBy: input.by,
+    rules,
+  });
 }
 
 /**
- * Remove a revocation rule by key ID.
+ * Remove a revocation rule
  */
-export function removeLocalRevocationRule(keyId: string, _by: string): void {
-  const policy = load();
-  policy.rules = policy.rules.filter((r) => r.keyId !== keyId);
-  policy.updatedAtIso = nowIso();
-  save(policy);
+export function removeLocalRevocationRule(keyId: string, by: string): void {
+  const p = load();
+  save({
+    ...p,
+    updatedAtIso: nowIso(),
+    updatedBy: by,
+    rules: p.rules.filter((r) => r.keyId !== keyId),
+  });
 }
 
 /**
- * Clear all local rules.
+ * Clear all local revocation rules
  */
-export function clearLocalRevocationRules(): void {
-  const policy = load();
-  policy.rules = [];
-  policy.updatedAtIso = nowIso();
-  save(policy);
+export function clearLocalRevocationRules(by: string): void {
+  const p = load();
+  save({
+    ...p,
+    updatedAtIso: nowIso(),
+    updatedBy: by,
+    rules: [],
+  });
 }
 
 /**
- * Clear entire local policy store.
+ * Clear entire local policy store
  */
 export function clearLocalRevocationPolicyStore(): void {
-  localStorage.removeItem(LS_KEY);
+  remove(LS_LOCAL_REV);
 }

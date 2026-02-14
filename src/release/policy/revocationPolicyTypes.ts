@@ -1,58 +1,63 @@
 /**
  * Revocation Policy Types (v0.7)
  *
- * Type definitions for signed revocation policy artifacts.
- * Used for key revocation enforcement in factory verification.
+ * Artifact format for signed revocation policy.
+ * Policy is immutable once released - becomes part of the bundle.
+ *
+ * Factory Safety:
+ * - Policy is signed with ed25519 (same as manifest)
+ * - Scope binding enforced at verification time
+ * - Offline-friendly: policy travels with bundle
  */
 
 /**
- * Single revocation rule — blocks a specific key after a timestamp.
+ * Single revocation rule
  */
-export interface RevocationRule {
+export type RevocationRule = {
   /** Key ID being revoked */
   keyId: string;
-  /** ISO timestamp when key was revoked */
+  /** Effective revocation time (ISO) - manifests created after this fail */
   revokedAtIso: string;
-  /** Human-readable reason for revocation */
+  /** Reason for revocation */
   reason: string;
-  /** Who initiated the revocation */
-  by: string;
-}
+};
 
 /**
- * Unsigned revocation policy (editable, pre-signing).
+ * Signed revocation policy artifact
+ *
+ * This is the format for revocation-policy.json in release bundles.
+ * Signature covers canonical JSON without signature field.
  */
-export interface UnsignedRevocationPolicy {
-  /** Always 'revocation-policy' */
+export type SignedRevocationPolicy = {
+  /** Policy type identifier */
   policyType: 'revocation-policy';
-  /** Policy version identifier */
-  policyVersion: 'revocation-policy.v1';
-  /** Scope: 'ORG' or 'FACTORY' */
-  scope: 'ORG' | 'FACTORY';
-  /** Scope ID (factory ID or org ID) */
+  /** Policy version for schema evolution */
+  policyVersion: 'revpol-0.2.0';
+
+  /** Scope binding (factory-safe) */
+  scope: 'ORG' | 'FACTORY' | 'PROJECT';
+  /** Scope ID (required for FACTORY scope) */
   scopeId?: string;
+
+  /** When policy was last updated (ISO) */
+  updatedAtIso: string;
+  /** Who updated the policy */
+  updatedBy: string;
+
   /** Revocation rules */
   rules: RevocationRule[];
-  /** Who last updated */
-  updatedBy: string;
-  /** When last updated (ISO) */
-  updatedAtIso: string;
-}
 
-/**
- * Signed revocation policy artifact.
- * Extends unsigned with cryptographic signature.
- */
-export interface SignedRevocationPolicy extends UnsignedRevocationPolicy {
-  /** Cryptographic signature */
+  /** Ed25519 signature over canonical policy JSON (without signature) */
   signature: {
-    /** Signature algorithm */
-    alg: string;
-    /** Public key identifier of signer */
+    alg: 'ed25519';
+    /** Key ID used to sign the policy */
     publicKeyId: string;
-    /** ISO timestamp when signed */
-    signedAtIso: string;
     /** Base64-encoded signature */
     sigBase64: string;
   };
-}
+};
+
+/**
+ * Unsigned policy (before signing)
+ */
+export type UnsignedRevocationPolicy = Omit<SignedRevocationPolicy, 'signature'>;

@@ -1,111 +1,203 @@
 /**
- * roles.ts - Role-Based Access Control
+ * roles.ts - Role Definitions
  *
- * Defines user roles and role information for IIMOS.
+ * Priority 0: Role-based access control for MONOLITH
  *
- * @version 0.12.3
+ * Roles map to Swimlane actors:
+ * - DESIGNER: Creates specs, runs validation, initiates release
+ * - FACTORY: Receives released specs, exports to CNC
+ * - INSTALLER: Views installation guides (future)
+ * - FINANCE: Views cost breakdowns, handles deposits (future)
+ * - ADMIN: Full access, can override gates
  */
 
 // ============================================================================
 // Role Types
 // ============================================================================
 
-/**
- * User roles in the system.
- */
-export type Role = 'DESIGNER' | 'FACTORY' | 'FINANCE' | 'ADMIN';
+export type Role = 'DESIGNER' | 'FACTORY' | 'INSTALLER' | 'FINANCE' | 'ADMIN';
 
-/**
- * Role information for display.
- */
+export const ROLES: Role[] = ['DESIGNER', 'FACTORY', 'INSTALLER', 'FINANCE', 'ADMIN'];
+
+// ============================================================================
+// Role Metadata
+// ============================================================================
+
 export interface RoleInfo {
-  /** Role label */
+  id: Role;
   label: string;
-  /** Role description */
   description: string;
-  /** Display color */
   color: string;
 }
 
-/**
- * Role information lookup table.
- */
 export const ROLE_INFO: Record<Role, RoleInfo> = {
   DESIGNER: {
+    id: 'DESIGNER',
     label: 'Designer',
-    description: 'Can design and modify cabinets',
-    color: '#8b5cf6',
+    description: 'Creates and edits cabinet specs, runs validation, initiates release',
+    color: '#8b5cf6', // Purple
   },
   FACTORY: {
+    id: 'FACTORY',
     label: 'Factory',
-    description: 'Can verify and produce jobs',
-    color: '#22c55e',
+    description: 'Receives released specs, verifies, exports to CNC machines',
+    color: '#22c55e', // Green
+  },
+  INSTALLER: {
+    id: 'INSTALLER',
+    label: 'Installer',
+    description: 'Views installation guides and assembly instructions',
+    color: '#3b82f6', // Blue
   },
   FINANCE: {
+    id: 'FINANCE',
     label: 'Finance',
-    description: 'Can view financial data',
-    color: '#3b82f6',
+    description: 'Views cost breakdowns, handles deposits and invoicing',
+    color: '#f59e0b', // Amber
   },
   ADMIN: {
+    id: 'ADMIN',
     label: 'Admin',
-    description: 'Full system access',
-    color: '#f59e0b',
+    description: 'Full system access, can override gates and manage keys',
+    color: '#ef4444', // Red
   },
 };
 
 // ============================================================================
-// Role Helpers
+// Role Storage (localStorage for MVP)
 // ============================================================================
 
-/** Current user role (stored in localStorage) */
-let _currentRole: Role = 'DESIGNER';
+const ROLE_STORAGE_KEY = 'monolith.user.role';
 
 /**
- * Get the current user role.
+ * Get current user role from storage.
+ * Defaults to DESIGNER for development.
  */
 export function getCurrentRole(): Role {
-  if (typeof localStorage !== 'undefined') {
-    const stored = localStorage.getItem('iimos:role');
-    if (stored && isValidRole(stored)) {
-      _currentRole = stored;
-    }
+  if (typeof window === 'undefined') return 'DESIGNER';
+
+  const stored = localStorage.getItem(ROLE_STORAGE_KEY);
+  if (stored && ROLES.includes(stored as Role)) {
+    return stored as Role;
   }
-  return _currentRole;
+  return 'DESIGNER';
 }
 
 /**
- * Set the current user role.
+ * Set current user role.
+ * In production, this would come from auth system.
  */
 export function setCurrentRole(role: Role): void {
-  _currentRole = role;
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem('iimos:role', role);
-  }
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ROLE_STORAGE_KEY, role);
 }
 
 /**
- * Check if a string is a valid role.
+ * Check if current role is in allowed list.
  */
-export function isValidRole(value: string): value is Role {
-  return ['DESIGNER', 'FACTORY', 'FINANCE', 'ADMIN'].includes(value);
-}
-
-/**
- * Check if user has a specific role or any of the specified roles.
- */
-export function hasRole(role: Role | Role[]): boolean {
+export function hasRole(allowed: Role[]): boolean {
   const current = getCurrentRole();
-  // ADMIN has all roles
-  if (current === 'ADMIN') return true;
-  if (Array.isArray(role)) {
-    return role.includes(current);
-  }
-  return current === role;
+  return allowed.includes(current);
 }
 
 /**
- * Check if user has any of the specified roles.
+ * Check if current role is Admin.
  */
-export function hasAnyRole(roles: Role[]): boolean {
-  return roles.some((r) => hasRole(r));
+export function isAdmin(): boolean {
+  return getCurrentRole() === 'ADMIN';
+}
+
+// ============================================================================
+// Role-Based Feature Flags
+// ============================================================================
+
+/**
+ * Features available per role.
+ */
+export interface RoleFeatures {
+  canAccessWorkspace: boolean;
+  canEditSpec: boolean;
+  canRunValidation: boolean;
+  canInitiateRelease: boolean;
+  canViewPacket: boolean;
+  canExportToMachine: boolean;
+  canViewFinance: boolean;
+  canOverrideGates: boolean;
+  canManageKeys: boolean;
+}
+
+export function getRoleFeatures(role: Role): RoleFeatures {
+  switch (role) {
+    case 'DESIGNER':
+      return {
+        canAccessWorkspace: true,
+        canEditSpec: true,
+        canRunValidation: true,
+        canInitiateRelease: true,
+        canViewPacket: true,
+        canExportToMachine: false, // ← Designer cannot export
+        canViewFinance: false,
+        canOverrideGates: false,
+        canManageKeys: false,
+      };
+
+    case 'FACTORY':
+      return {
+        canAccessWorkspace: false, // Factory uses separate app
+        canEditSpec: false,
+        canRunValidation: true, // Re-verify on receive
+        canInitiateRelease: false,
+        canViewPacket: true,
+        canExportToMachine: true, // ← Factory CAN export
+        canViewFinance: false,
+        canOverrideGates: false,
+        canManageKeys: false,
+      };
+
+    case 'INSTALLER':
+      return {
+        canAccessWorkspace: false,
+        canEditSpec: false,
+        canRunValidation: false,
+        canInitiateRelease: false,
+        canViewPacket: true, // Read-only
+        canExportToMachine: false,
+        canViewFinance: false,
+        canOverrideGates: false,
+        canManageKeys: false,
+      };
+
+    case 'FINANCE':
+      return {
+        canAccessWorkspace: false,
+        canEditSpec: false,
+        canRunValidation: false,
+        canInitiateRelease: false,
+        canViewPacket: true,
+        canExportToMachine: false,
+        canViewFinance: true,
+        canOverrideGates: false,
+        canManageKeys: false,
+      };
+
+    case 'ADMIN':
+      return {
+        canAccessWorkspace: true,
+        canEditSpec: true,
+        canRunValidation: true,
+        canInitiateRelease: true,
+        canViewPacket: true,
+        canExportToMachine: true,
+        canViewFinance: true,
+        canOverrideGates: true,
+        canManageKeys: true,
+      };
+  }
+}
+
+/**
+ * Get features for current role.
+ */
+export function getCurrentRoleFeatures(): RoleFeatures {
+  return getRoleFeatures(getCurrentRole());
 }

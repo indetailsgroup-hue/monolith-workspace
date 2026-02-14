@@ -1,0 +1,131 @@
+# GitHub Actions CI for IIMOS Kernel Truth Service (PyOCC)
+#
+# Triggers:
+#   - Push to main (services/kernel-pyocc/**)
+#   - Pull requests touching kernel-pyocc
+#   - Manual dispatch
+#
+# Jobs:
+#   1. Build Docker image
+#   2. Run container and test /health
+#   3. Run pytest inside container
+
+name: Kernel PyOCC CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/kernel-pyocc/**'
+      - '.github/workflows/kernel-pyocc.yml'
+  pull_request:
+    paths:
+      - 'services/kernel-pyocc/**'
+      - '.github/workflows/kernel-pyocc.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/kernel-pyocc/Dockerfile
+          push: false
+          load: true
+          tags: iimos-kernel-pyocc:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start container
+        run: |
+          docker run -d --name kernel-pyocc \
+            -p 8080:8080 \
+            iimos-kernel-pyocc:ci
+
+          # Wait for container to be healthy
+          echo "Waiting for container to start..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:8080/kernel/v1/health; then
+              echo ""
+              echo "Container is healthy!"
+              break
+            fi
+            echo "Attempt $i/30..."
+            sleep 2
+          done
+
+      - name: Test health endpoint
+        run: |
+          RESPONSE=$(curl -sf http://localhost:8080/kernel/v1/health)
+          echo "Health response: $RESPONSE"
+
+          # Verify response structure
+          echo "$RESPONSE" | jq -e '.ok == true' || exit 1
+          echo "$RESPONSE" | jq -e '.service == "iimos-kernel-pyocc"' || exit 1
+          echo "$RESPONSE" | jq -e '.tolPolicyId == "tol:1e-06:0.001:1e-06"' || exit 1
+
+          echo "Health check passed!"
+
+      - name: Test OCC import
+        run: |
+          docker exec kernel-pyocc micromamba run -n iimos-kernel python -c "
+          from OCC.Core.gp import gp_Pnt, gp_Vec
+          from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+          from OCC.Core.TopoDS import TopoDS_Shape
+
+          # Basic geometry test
+          p1 = gp_Pnt(0, 0, 0)
+          p2 = gp_Pnt(100, 0, 0)
+          edge = BRepBuilderAPI_MakeEdge(p1, p2).Edge()
+
+          print('OCC geometry test passed!')
+          print(f'  Point: {p1.X()}, {p1.Y()}, {p1.Z()}')
+          print(f'  Edge created: {type(edge).__name__}')
+          "
+
+      - name: Run pytest
+        run: |
+          docker exec kernel-pyocc micromamba run -n iimos-kernel \
+            pytest /app/tests -v --tb=short
+
+      - name: Container logs (on failure)
+        if: failure()
+        run: docker logs kernel-pyocc
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop kernel-pyocc || true
+          docker rm kernel-pyocc || true
+
+  # Optional: Push to registry on main branch
+  # push-image:
+  #   needs: build-and-test
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Login to Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         file: services/kernel-pyocc/Dockerfile
+  #         push: true
+  #         tags: ghcr.io/${{ github.repository }}/kernel-pyocc:latest

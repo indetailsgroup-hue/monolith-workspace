@@ -288,7 +288,7 @@ export async function readActivityWithStats(
 
 /**
  * Extract actor info from request headers.
- * Uses X-IIMOS-ACTOR-ROLE and X-IIMOS-ACTOR-NAME headers.
+ * Uses X-MONOLITH-ACTOR-ROLE and X-MONOLITH-ACTOR-NAME headers.
  * P8.1: Normalized with allowlist and sanitization.
  */
 export function extractActorFromHeaders(headers: Record<string, string | string[] | undefined>): {
@@ -296,12 +296,12 @@ export function extractActorFromHeaders(headers: Record<string, string | string[
   name?: string;
 } {
   // Get role header
-  let roleHeader = headers["x-iimos-actor-role"];
+  let roleHeader = headers["x-monolith-actor-role"];
   if (Array.isArray(roleHeader)) roleHeader = roleHeader[0];
   const role = normalizeRole(roleHeader);
 
   // Get name header
-  let nameHeader = headers["x-iimos-actor-name"];
+  let nameHeader = headers["x-monolith-actor-name"];
   if (Array.isArray(nameHeader)) nameHeader = nameHeader[0];
   const name = normalizeName(nameHeader);
 

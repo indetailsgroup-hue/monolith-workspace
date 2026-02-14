@@ -214,7 +214,7 @@ export function ProjectToolbar() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json,.iimos.json"
+        accept=".json,.monolith.json"
         onChange={handleFileImport}
         className="hidden"
       />
