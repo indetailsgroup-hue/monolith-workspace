@@ -81,7 +81,7 @@ export interface BoreFeature {
 // Connector Level: ConnectorSpec
 // ──────────────────────────────────────────────────────────────────────────────
 
-export type ConnectorFamily = 'MINIFIX' | 'TARGET_J' | 'RASTEX';
+export type ConnectorFamily = 'MINIFIX' | 'TARGET_J' | 'RASTEX' | 'DOWEL';
 
 export interface ConnectorSpec {
   connectorId: string;

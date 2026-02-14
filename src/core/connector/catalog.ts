@@ -44,6 +44,18 @@ export const ITALIANA_PART_NUMBERS = {
   INSERT_NUT_M6X13: '20102020GR',
 } as const;
 
+/**
+ * Häfele Wood Dowel Part Numbers.
+ * Source: Häfele FF 3.10 Catalog.
+ *
+ * Standard beech wood dowels for reinforcement joints.
+ * @see DowelCatalog.ts for full spec (D8x30)
+ */
+export const HAFELE_WOOD_DOWEL_PART_NUMBERS = {
+  /** Fluted Beech Dowel 8×30mm (262.00.110) */
+  WOOD_DOWEL_8X30_FLUTED: '262.00.110',
+} as const;
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Connector Specs
 // ──────────────────────────────────────────────────────────────────────────────
@@ -125,6 +137,53 @@ export const IF_TARGET_J10: ConnectorSpec = {
   ],
 };
 
+/**
+ * Häfele Wood Dowel 8×30mm - Standalone Reinforcement Connector
+ *
+ * Used alongside Minifix to provide shear resistance and panel alignment.
+ * Each dowel produces a paired bore: EDGE_BORE on Bottom + FACE_BORE on Side.
+ *
+ * Physical spec: Ø8mm fluted beech, 30mm total length (15mm per side).
+ * @see DowelCatalog.ts D8x30 for full material data
+ */
+export const HAFELE_WOOD_DOWEL_8x30: ConnectorSpec = {
+  connectorId: 'HAFELE_WOOD_DOWEL_8x30',
+  brand: 'Hafele',
+  family: 'DOWEL',
+  features: [
+    {
+      id: 'DOWEL_EDGE',
+      kind: 'EDGE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 8,
+      depthMm: 15, // holeDepthPerSide for D8x30
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 0,
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37, // System 32 first hole
+      axisSecondary: 'V',
+    },
+    {
+      id: 'DOWEL_FACE',
+      kind: 'FACE_BORE',
+      role: 'STRUCTURAL',
+      diaMm: 8,
+      depthMm: 15, // holeDepthPerSide for D8x30
+      refFrame: 'CORE',
+      refSurface: 'INNER_FACE',
+      refEdgePrimary: 'JOIN_EDGE',
+      offsetPrimaryMm: 0,
+      axisPrimary: 'U',
+      refEdgeSecondary: 'FRONT_EDGE',
+      offsetSecondaryMm: 37,
+      axisSecondary: 'V',
+    },
+  ],
+};
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Placement Profiles
 // ──────────────────────────────────────────────────────────────────────────────
@@ -168,5 +227,6 @@ export function selectConnector(
   family: ConnectorFamily,
 ): ConnectorSpec {
   if (family === 'TARGET_J') return IF_TARGET_J10;
+  if (family === 'DOWEL') return HAFELE_WOOD_DOWEL_8x30;
   return HAFELE_MINIFIX_15_B24;
 }
