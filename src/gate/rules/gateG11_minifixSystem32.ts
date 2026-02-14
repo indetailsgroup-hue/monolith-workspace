@@ -756,7 +756,6 @@ export function validateG11FromDrillMap(
         depth: point.depth,
         purpose: point.purpose,
         componentType: point.componentType,
-        status: point.status ?? 'VALID',
         pairId: point.pairId,
         pairedHoleId: point.pairedHoleId,
         edgeDistance: point.edgeDistance,

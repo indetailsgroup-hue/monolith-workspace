@@ -148,7 +148,7 @@ export function CabinetNode({
   return (
     <SceneObjectRef
       id={id}
-      onRefReady={(group) => {
+      onRefReady={(group: Group) => {
         // SceneObjectRef creates a wrapper group
         // We need to get our inner group for transforms
         if (onRefReady && groupRef.current) {

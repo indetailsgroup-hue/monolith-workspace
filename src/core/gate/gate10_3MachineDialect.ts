@@ -298,7 +298,7 @@ function validateDrillOperation(
   issues: G10_3Issue[]
 ): void {
   // Check depth against tool maxDepth
-  if (op.depth > tool.maxDepth) {
+  if (tool.maxDepth !== undefined && op.depth > tool.maxDepth) {
     issues.push({
       code: G10_3_CODES.TOOL_DEPTH_RANGE,
       severity: 'BLOCK',
@@ -350,7 +350,7 @@ function validateBoreOperation(
   issues: G10_3Issue[]
 ): void {
   // Check depth
-  if (op.depth > tool.maxDepth) {
+  if (tool.maxDepth !== undefined && op.depth > tool.maxDepth) {
     issues.push({
       code: G10_3_CODES.TOOL_DEPTH_RANGE,
       severity: 'BLOCK',
@@ -392,7 +392,7 @@ function validatePocketOperation(
   issues: G10_3Issue[]
 ): void {
   // Check depth
-  if (op.depth > tool.maxDepth) {
+  if (tool.maxDepth !== undefined && op.depth > tool.maxDepth) {
     issues.push({
       code: G10_3_CODES.TOOL_DEPTH_RANGE,
       severity: 'BLOCK',
@@ -423,7 +423,7 @@ function validateProfileOperation(
   issues: G10_3Issue[]
 ): void {
   // Check depth
-  if (op.depth > tool.maxDepth) {
+  if (tool.maxDepth !== undefined && op.depth > tool.maxDepth) {
     issues.push({
       code: G10_3_CODES.TOOL_DEPTH_RANGE,
       severity: 'BLOCK',
@@ -459,7 +459,7 @@ function validateSlotOperation(
   issues: G10_3Issue[]
 ): void {
   // Check depth
-  if (op.depth > tool.maxDepth) {
+  if (tool.maxDepth !== undefined && op.depth > tool.maxDepth) {
     issues.push({
       code: G10_3_CODES.TOOL_DEPTH_RANGE,
       severity: 'BLOCK',

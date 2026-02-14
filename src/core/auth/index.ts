@@ -9,10 +9,5 @@ export * from './roles';
 export * from './permissions';
 export {
   RequireRole,
-  RequireSpecState,
-  RequirePermission,
-  DevOnly,
-  AdminOnly,
-  FactoryOnly,
   RoleBadge,
 } from './guards';

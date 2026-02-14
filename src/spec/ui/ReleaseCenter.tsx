@@ -115,7 +115,7 @@ export function ReleaseCenter() {
     }
 
     const filename = `${release.releaseId}_${path}`;
-    const content = item.content ?? new TextDecoder().decode(item.bytes);
+    const content = item.content;
     const mime = item.mime ?? 'application/octet-stream';
     downloadTextFile(filename, content, mime);
   };

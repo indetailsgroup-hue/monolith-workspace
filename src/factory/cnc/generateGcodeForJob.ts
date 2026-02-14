@@ -256,7 +256,7 @@ export function getAvailableMachines(packet: FactoryPacket | null): CncMachineOp
     const option: CncMachineOption = {
       id: machine.id,
       name: machine.name,
-      dialect: machine.dialect,
+      dialect: machine.dialect ?? 'FANUC',
       description: machine.description || '',
       available: true,
     };
@@ -635,7 +635,7 @@ export async function generateCncBundleZip(
         observerContext: {
           jobId: request.jobId,
           machineId: machine.id,
-          dialect: machine.dialect,
+          dialect: machine.dialect ?? '',
           postVersion: result.manifest.post?.version ?? '1.0.0',
           programHash: result.manifest.gcodeSha256,
           packetContentHash: packet.manifest.contentHash,

@@ -1,21 +1,11 @@
 /**
- * Scene Utilities (Stub)
+ * Scene Utilities
  *
- * Scene object reference wrapper for Three.js objects.
+ * Re-exports all scene symbols from the scene/ directory so that
+ * imports from './scene' resolve correctly (the file takes priority
+ * over the scene/ directory when both exist).
  */
 
-import { forwardRef, type ReactNode } from 'react';
-import type { Group } from 'three';
-
-interface SceneObjectRefProps {
-  children?: ReactNode;
-  id?: string;
-  [key: string]: unknown;
-}
-
-/** Scene object reference - wraps children in a group */
-export const SceneObjectRef = forwardRef<Group, SceneObjectRefProps>(
-  function SceneObjectRef(_props, _ref) {
-    return null;
-  }
-);
+// Re-export everything from the scene directory
+export { SceneObjectRef } from './scene/SceneObjectRef';
+export { SceneRegistryProvider, useSceneRegistry } from './scene/SceneRegistry';

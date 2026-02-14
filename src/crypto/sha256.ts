@@ -31,6 +31,19 @@ export async function sha256Hex(
 }
 
 /**
+ * Compute SHA-256 hash of a canonical JSON representation.
+ *
+ * Serializes the object with sorted keys to ensure deterministic hashing.
+ *
+ * @param obj - Object to hash
+ * @returns Hex-encoded SHA-256 hash (64 characters)
+ */
+export async function sha256CanonicalHex(obj: unknown): Promise<Sha256Hex> {
+  const canonical = JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());
+  return sha256Hex(canonical);
+}
+
+/**
  * Convert Uint8Array to hex string
  */
 function bytesToHex(bytes: Uint8Array): string {

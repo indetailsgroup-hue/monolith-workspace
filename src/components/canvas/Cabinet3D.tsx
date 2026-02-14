@@ -153,7 +153,7 @@ interface Hardware3DOverlayProps {
   topJoint?: 'INSET' | 'OVERLAY';     // Joint style for top panel
   bottomJoint?: 'INSET' | 'OVERLAY';  // Joint style for bottom panel
   showDimensions?: boolean;  // Show CAD-style dimension lines
-  currentView?: 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
+  currentView?: 'Perspective' | 'Front' | 'Left' | 'Top' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
 }
 
 /**

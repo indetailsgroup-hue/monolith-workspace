@@ -195,7 +195,8 @@ function validateOperationBounds(
 
   for (const op of operations) {
     const { x, y, z } = op.position;
-    const { axis } = machine;
+    const axis = machine.axis;
+    if (!axis) continue;
     const violations: string[] = [];
 
     // Check X axis

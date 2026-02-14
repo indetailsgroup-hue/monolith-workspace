@@ -372,7 +372,7 @@ function validateDepth(
   tool: ToolCapability | undefined,
   warnings: string[]
 ): void {
-  if (tool && point.depth > tool.maxDepth) {
+  if (tool && tool.maxDepth !== undefined && point.depth > tool.maxDepth) {
     warnings.push(
       `Point ${point.id}: depth ${point.depth}mm exceeds tool max ${tool.maxDepth}mm`
     );

@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { hasAnyRole, type Role } from './roles';
+import { hasRole, getCurrentRole, ROLE_INFO, type Role } from './roles';
 
 // ============================================================================
 // RequireRole Component
@@ -33,8 +33,45 @@ interface RequireRoleProps {
  * ```
  */
 export function RequireRole({ allow, fallback = null, children }: RequireRoleProps): React.ReactElement {
-  if (hasAnyRole(allow)) {
+  if (hasRole(allow)) {
     return React.createElement(React.Fragment, null, children);
   }
   return React.createElement(React.Fragment, null, fallback);
+}
+
+// ============================================================================
+// RoleBadge Component
+// ============================================================================
+
+interface RoleBadgeProps {
+  /** Override role to display */
+  role?: Role;
+  /** Show full label or just icon. Default: 'full' */
+  variant?: 'full' | 'compact';
+}
+
+/**
+ * Display badge showing current (or specified) role.
+ */
+export function RoleBadge({
+  role,
+  variant = 'full',
+}: RoleBadgeProps): React.ReactElement {
+  const displayRole = role ?? getCurrentRole();
+  const info = ROLE_INFO[displayRole];
+
+  return React.createElement('span', {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+      padding: variant === 'full' ? '4px 8px' : '2px 6px',
+      backgroundColor: `${info.color}20`,
+      border: `1px solid ${info.color}40`,
+      borderRadius: 4,
+      fontSize: variant === 'full' ? 12 : 10,
+      fontWeight: 600,
+      color: info.color,
+    },
+  }, info.label);
 }
