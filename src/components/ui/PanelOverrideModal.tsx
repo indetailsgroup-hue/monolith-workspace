@@ -104,7 +104,7 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div 
-        className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-hidden"
+        className="bg-surface-1 border border-[#333] rounded-lg shadow-2xl w-[340px] max-h-[70vh] overflow-hidden"
         style={{ 
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? 'grabbing' : 'default'
@@ -112,49 +112,90 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
         onMouseDown={handleMouseDown}
       >
         {/* Header - Draggable */}
-        <div className="drag-handle flex items-center justify-between px-6 py-4 border-b border-zinc-800 cursor-grab active:cursor-grabbing">
-          <div className="flex items-center gap-3">
-            <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="drag-handle flex items-center justify-between px-3 py-2 border-b border-[#333] cursor-grab active:cursor-grabbing">
+          <div className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
             </svg>
             <div>
-              <h2 className="text-lg font-semibold text-white">Panel Configuration</h2>
-              <p className="text-sm text-zinc-400">{panel.name || panel.role}</p>
+              <h2 className="text-xs font-medium text-white">Panel Configuration</h2>
+              <p className="text-[10px] text-gray-500">{panel.name || panel.role}</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+          <div className="flex items-center gap-1">
+            {/* Eye toggle for panel visibility */}
+            <button
+              onClick={() => useCabinetStore.getState().togglePanelVisibility(currentPanelId)}
+              title={panel.visible ? 'Hide panel' : 'Show panel'}
+              className="p-1.5 text-gray-500 hover:text-white hover:bg-surface-3 rounded-lg transition-all duration-200"
+            >
+              {panel.visible ? (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-gray-500 hover:text-white hover:bg-surface-3 rounded-lg transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Visibility Actions */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-[#333] bg-surface-1">
+          <button
+            onClick={() => useCabinetStore.getState().setPanelVisible(currentPanelId, false)}
+            className="px-2 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 border border-[#333] rounded transition-all duration-200 text-gray-500 hover:text-white"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            Hide
+          </button>
+          <button
+            onClick={() => useCabinetStore.getState().hideUnselectedPanels(currentPanelId)}
+            className="px-2 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 border border-[#333] rounded transition-all duration-200 text-gray-500 hover:text-white"
+          >
+            Hide Others
+          </button>
+          <button
+            onClick={() => useCabinetStore.getState().showAllPanels()}
+            className="px-2 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 border border-[#333] rounded transition-all duration-200 text-gray-500 hover:text-white"
+          >
+            Show All
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+        <div className="p-4 space-y-3 overflow-y-auto max-h-[50vh]">
           {/* Panel Info */}
-          <div className="p-4 bg-zinc-800/50 rounded-lg">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="p-2 bg-surface-2 rounded-lg border border-[#333]">
+            <div className="flex items-center justify-between text-[10px]">
               <div>
-                <span className="text-zinc-500">Dimensions:</span>
-                <span className="ml-2 text-white">{panel.finishWidth} × {panel.finishHeight} mm</span>
+                <span className="text-gray-500">Dimensions:</span>
+                <span className="ml-1 text-white font-mono">{panel.finishWidth} × {panel.finishHeight} mm</span>
               </div>
               <div>
-                <span className="text-zinc-500">Role:</span>
-                <span className="ml-2 text-white">{panel.role}</span>
+                <span className="text-gray-500">Role:</span>
+                <span className="ml-1 text-white font-mono">{panel.role}</span>
               </div>
             </div>
           </div>
           
           {/* Core Material */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">Core Material</label>
+            <label className="block text-[10px] text-gray-500 mb-1">Core Material</label>
             <select
               value={currentCore}
               onChange={(e) => updatePanelMaterial(currentPanelId, 'core', e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
+              className="w-full bg-surface-2 border border-[#333] rounded-lg px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all duration-200"
             >
               <option value="">Use Default ({(coreMaterials as Record<string, typeof coreMaterials[keyof typeof coreMaterials]>)[cabinet.materials.defaultCore]?.name})</option>
               {Object.values(coreMaterials).map((mat) => (
@@ -164,13 +205,13 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           </div>
           
           {/* Surface Materials */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Surface A (Front)</label>
+              <label className="block text-[10px] text-gray-500 mb-1">Surface A (Front)</label>
               <select
                 value={currentSurfaceA || ''}
                 onChange={(e) => updatePanelMaterial(currentPanelId, 'faceA', e.target.value || '')}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-surface-2 border border-[#333] rounded-lg px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all duration-200"
               >
                 <option value="">Use Default</option>
                 {Object.values(surfaceMaterials).map((mat) => (
@@ -179,11 +220,11 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Surface B (Back)</label>
+              <label className="block text-[10px] text-gray-500 mb-1">Surface B (Back)</label>
               <select
                 value={currentSurfaceB || ''}
                 onChange={(e) => updatePanelMaterial(currentPanelId, 'faceB', e.target.value || '')}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-surface-2 border border-[#333] rounded-lg px-1.5 py-0.5 text-xs text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all duration-200"
               >
                 <option value="">None / Backing</option>
                 {Object.values(surfaceMaterials).map((mat) => (
@@ -195,17 +236,17 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           
           {/* Position Overrides - Only for Shelf and Divider */}
           {(panel.role === 'SHELF' || panel.role === 'DIVIDER') && (
-            <div className="p-4 bg-emerald-900/20 rounded-lg border border-emerald-500/30">
-              <div className="flex items-center justify-between mb-4">
-                <label className="text-sm font-medium text-emerald-300">Position Overrides</label>
+            <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-[10px] font-medium text-green-400">Position Overrides</label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-[10px] text-gray-500">
                     {panel.useCustomPosition ? 'Custom' : 'Auto'}
                   </span>
                   {panel.useCustomPosition && (
                     <button
                       onClick={() => resetPanelPosition(currentPanelId)}
-                      className="px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-colors"
+                      className="px-1.5 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 border border-[#333] text-gray-500 hover:text-white rounded transition-all duration-200"
                     >
                       Reset to Auto
                     </button>
@@ -214,10 +255,10 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               </div>
 
               {/* Front Setback */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-zinc-400">Front Setback</span>
-                  <span className="text-xs text-emerald-400 font-mono">
+                  <span className="text-[10px] text-gray-500">Front Setback</span>
+                  <span className="text-[10px] text-green-400 font-mono">
                     {panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback} mm
                   </span>
                 </div>
@@ -228,19 +269,19 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                   step="1"
                   value={panel.positionOverrides?.frontSetback ?? DEFAULT_POSITION_OVERRIDES.frontSetback}
                   onChange={(e) => updatePanelPositionOverride(currentPanelId, 'frontSetback', Number(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-0.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-green-500 [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-green-400"
                 />
-                <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
                   <span>0</span>
                   <span>100 mm</span>
                 </div>
               </div>
 
               {/* Back Setback (LED) */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-zinc-400">Back Setback (LED)</span>
-                  <span className="text-xs text-emerald-400 font-mono">
+                  <span className="text-[10px] text-gray-500">Back Setback (LED)</span>
+                  <span className="text-[10px] text-green-400 font-mono">
                     {panel.positionOverrides?.backSetback ?? DEFAULT_POSITION_OVERRIDES.backSetback} mm
                   </span>
                 </div>
@@ -251,9 +292,9 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                   step="1"
                   value={panel.positionOverrides?.backSetback ?? DEFAULT_POSITION_OVERRIDES.backSetback}
                   onChange={(e) => updatePanelPositionOverride(currentPanelId, 'backSetback', Number(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-0.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-green-500 [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-green-400"
                 />
-                <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
                   <span>0</span>
                   <span>100 mm</span>
                 </div>
@@ -263,8 +304,8 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               {panel.role === 'SHELF' && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-zinc-400">Gap Height (from bottom)</span>
-                    <span className="text-xs text-emerald-400 font-mono">
+                    <span className="text-[10px] text-gray-500">Gap Height (from bottom)</span>
+                    <span className="text-[10px] text-green-400 font-mono">
                       {panel.positionOverrides?.gapFromBelow !== null && panel.positionOverrides?.gapFromBelow !== undefined
                         ? `${panel.positionOverrides.gapFromBelow} mm`
                         : 'Auto'}
@@ -277,9 +318,9 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                     step="5"
                     value={panel.positionOverrides?.gapFromBelow ?? Math.round((cabinet?.dimensions.height || 720) / 3)}
                     onChange={(e) => updatePanelPositionOverride(currentPanelId, 'gapFromBelow', Number(e.target.value))}
-                    className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full h-0.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-green-500 [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-green-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:bg-green-400"
                   />
-                  <div className="flex justify-between text-xs text-zinc-500 mt-1">
+                  <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
                     <span>0</span>
                     <span>{cabinet ? cabinet.dimensions.height - 100 : 600} mm</span>
                   </div>
@@ -289,25 +330,25 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           )}
 
           {/* Edge Banding */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-3">Edge Banding</label>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="p-2 bg-surface-2 rounded-lg border border-[#333]">
+            <div className="text-[10px] text-gray-500 mb-2">Edge Banding</div>
+            <div className="space-y-1.5">
               {(['top', 'bottom', 'left', 'right'] as const).map((side) => {
                 const edgeId = panel.edges?.[side];
                 const sideLabels = {
-                  top: 'Front Edge',
-                  bottom: 'Back Edge',
-                  left: 'Left Edge',
-                  right: 'Right Edge'
+                  top: 'Front',
+                  bottom: 'Back',
+                  left: 'Left',
+                  right: 'Right'
                 };
 
                 return (
-                  <div key={side} className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-400 w-20">{sideLabels[side]}:</span>
+                  <div key={side} className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-gray-500 w-10 shrink-0">{sideLabels[side]}</span>
                     <select
                       value={edgeId || ''}
                       onChange={(e) => updatePanelEdge(currentPanelId, side, e.target.value || null)}
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      className="flex-1 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all duration-200 truncate"
                     >
                       <option value="">None</option>
                       {Object.values(edgeMaterials).map((mat) => (
@@ -321,12 +362,12 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
           </div>
           
           {/* Computed Values */}
-          <div className="p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-            <h4 className="text-sm font-medium text-zinc-300 mb-3">Computed Values</h4>
+          <div className="p-2 bg-surface-2 rounded-lg border border-[#333]">
+            <h4 className="text-xs font-medium text-white mb-2">Computed Values</h4>
 
             {/* Material Stack Breakdown */}
-            <div className="mb-4 p-3 bg-zinc-900/50 rounded-lg border border-zinc-700/30">
-              <div className="text-xs text-zinc-400 mb-2">Material Stack</div>
+            <div className="mb-3 p-2 bg-surface-1 rounded-lg border border-[#333]">
+              <div className="text-[10px] text-gray-500 mb-1.5">Material Stack</div>
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-amber-400">Core Structure:</span>
@@ -352,9 +393,9 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                     {panel.edges?.top ? (edgeMaterials[panel.edges.top as keyof typeof edgeMaterials]?.thickness || 0) : 0} mm
                   </span>
                 </div>
-                <div className="border-t border-zinc-700 pt-1.5 mt-1.5 flex justify-between items-center">
-                  <span className="text-emerald-400 font-medium">Total Thickness:</span>
-                  <span className="text-emerald-400 font-mono font-medium">
+                <div className="border-t border-[#333] pt-1.5 mt-1.5 flex justify-between items-center">
+                  <span className="text-green-400 font-medium">Total Thickness:</span>
+                  <span className="text-green-400 font-mono font-medium">
                     {panel.computed?.realThickness || 18} mm
                   </span>
                 </div>
@@ -362,25 +403,25 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
             </div>
 
             {/* Other Computed Values */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-2 gap-1.5 text-[10px]">
               <div>
-                <span className="text-zinc-500">Cut Size:</span>
-                <div className="text-white">{panel.computed?.cutWidth || panel.finishWidth} × {panel.computed?.cutHeight || panel.finishHeight} mm</div>
+                <div className="text-gray-500 mb-0.5">Cut Size</div>
+                <div className="text-white font-mono text-xs">{panel.computed?.cutWidth || panel.finishWidth} × {panel.computed?.cutHeight || panel.finishHeight} mm</div>
               </div>
               <div>
-                <span className="text-zinc-500">Surface Area:</span>
-                <div className="text-white">{(panel.computed?.surfaceArea || 0).toFixed(3)} m²</div>
+                <div className="text-gray-500 mb-0.5">Surface Area</div>
+                <div className="text-white font-mono text-xs">{(panel.computed?.surfaceArea || 0).toFixed(3)} m²</div>
               </div>
               <div>
-                <span className="text-zinc-500">Edge Banding Total:</span>
-                <div className="text-emerald-400 font-medium">{((panel.computed?.edgeLength || 0) * 1000).toFixed(0)} mm</div>
+                <div className="text-gray-500 mb-0.5">Edge Banding Total</div>
+                <div className="text-green-400 font-medium font-mono text-xs">{((panel.computed?.edgeLength || 0) * 1000).toFixed(0)} mm</div>
               </div>
             </div>
           </div>
         </div>
         
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 bg-zinc-900/50">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-[#333] bg-surface-1">
           <button
             onClick={() => {
               // Reset to defaults
@@ -388,13 +429,13 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
               updatePanelMaterial(currentPanelId, 'faceA', cabinet.materials.defaultSurface);
               updatePanelMaterial(currentPanelId, 'faceB', '');
             }}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-gray-500 hover:text-white bg-surface-2 hover:bg-surface-3 rounded border border-[#333] transition-all duration-200"
           >
             Reset to Defaults
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg text-[10px] font-medium transition-all duration-200"
           >
             Done
           </button>
