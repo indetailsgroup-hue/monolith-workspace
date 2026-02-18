@@ -63,7 +63,7 @@ export interface HardwareSmartDimensionsProps {
     sideDistance?: boolean;
     verticalDistance?: boolean;
   };
-  currentView?: 'Perspective' | 'Front' | 'Left' | 'Install' | 'Factory' | 'CNC';
+  currentView?: 'Perspective' | 'Front' | 'Left' | 'Top' | 'Install' | 'Factory' | 'CNC';
   boltRotations?: BoltRotation[];
 }
 

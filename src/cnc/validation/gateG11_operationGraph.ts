@@ -137,17 +137,18 @@ function getG11Meta(op: Operation): G11OperationMeta {
   // Check if metadata is attached via workpieceContext
   const ctx = op.workpieceContext;
   if (ctx) {
+    const ctxAny = ctx as unknown as Record<string, unknown>;
     return {
-      panelRole: (ctx as Record<string, unknown>).panelRole as string | undefined,
-      purpose: (ctx as Record<string, unknown>).purpose as G11Purpose | undefined,
-      distanceFromMatingEdge: (ctx as Record<string, unknown>).distanceFromMatingEdge as number | undefined,
-      matingPairId: (ctx as Record<string, unknown>).matingPairId as string | undefined,
-      sourcePointId: ctx.sourceId,
+      panelRole: ctxAny.panelRole as string | undefined,
+      purpose: ctxAny.purpose as G11Purpose | undefined,
+      distanceFromMatingEdge: ctxAny.distanceFromMatingEdge as number | undefined,
+      matingPairId: ctxAny.matingPairId as string | undefined,
+      sourcePointId: ctxAny.sourceId as string | undefined,
     };
   }
 
   // Check if attached as g11Meta property
-  const anyOp = op as Record<string, unknown>;
+  const anyOp = op as unknown as Record<string, unknown>;
   if (anyOp.g11Meta) {
     return anyOp.g11Meta as G11OperationMeta;
   }

@@ -35,6 +35,7 @@ function baseOp(id: string): Omit<Operation, 'type'> {
     sourceId: `source-${id}`,
     toolId: 'tool-1',
     position: { x: 0, y: 0, z: 0 },
+    depth: 0,
   };
 }
 

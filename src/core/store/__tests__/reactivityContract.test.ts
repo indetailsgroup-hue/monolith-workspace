@@ -32,7 +32,7 @@ beforeEach(() => {
  */
 function createTestCabinet(): string {
   const store = useCabinetStore.getState();
-  store.addCabinet('BASE_STANDARD', 'Test Cabinet', { width: 600, height: 720, depth: 560 });
+  store.addCabinet('BASE', 'Test Cabinet', { width: 600, height: 720, depth: 560 });
   const state = useCabinetStore.getState();
   return state.activeCabinetId!;
 }
@@ -243,7 +243,7 @@ describe('T4: Actions maintain reference equality (cabinets[idx] === cabinet)', 
   it('should have same reference after setJointType', () => {
     const cabinetId = createTestCabinet();
 
-    useCabinetStore.getState().setJointType('top', 'butt');
+    useCabinetStore.getState().setJointType('top', 'INSET');
 
     const state = useCabinetStore.getState();
     const cabinetMirror = state.cabinet;

@@ -135,6 +135,8 @@ export type G11IssueCode =
   // G11.5 Bolt Tip ↔ CAM Center Alignment
   | 'B_G11_BOLT_CAM_MISALIGNMENT'
   | 'W_G11_BOLT_CAM_NEAR_TOLERANCE'
+  // G11.6 Bolt-CAM Corner Mismatch
+  | 'B_G11_BOLT_CAM_CORNER_MISMATCH'
   // General
   | 'I_G11_CONNECTOR_COUNT_SUBOPTIMAL';
 
