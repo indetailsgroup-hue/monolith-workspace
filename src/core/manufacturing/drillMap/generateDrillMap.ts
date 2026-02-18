@@ -729,14 +729,14 @@ function generateCornerJointPoints(
  * Uses AABB-based panel basis for robust coordinate transformation.
  *
  * @param cabinet - Cabinet with panels
- * @param configOrParams - Can be MinifixConfig OR DrillingParams
+ * @param config - Partial MinifixConfig overrides (manufacturing truth only)
  * @param params - Drilling parameters (optional)
  * @param options - Generation options
  * @returns DrillMap with all drill points
  */
 export function generateMinifixDrillMap(
   cabinet: Cabinet,
-  configOrParams?: Partial<MinifixConfig> | Partial<DrillingParams>,
+  config?: Partial<MinifixConfig>,
   params?: Partial<DrillingParams>,
   options?: {
     connectorCount?: number;
@@ -749,24 +749,9 @@ export function generateMinifixDrillMap(
   // Reset point ID counter for consistent IDs
   resetPointIdCounter();
 
-  // Detect argument format (backward compatibility)
-  let config: Partial<MinifixConfig> | undefined;
-  let drillingParams: Partial<DrillingParams> | undefined;
-
-  if (configOrParams) {
-    if ('firstHoleZ' in configOrParams || ('drillingDistanceB' in configOrParams && !('camDia' in configOrParams))) {
-      drillingParams = configOrParams as Partial<DrillingParams>;
-    } else {
-      config = configOrParams as Partial<MinifixConfig>;
-      drillingParams = params;
-    }
-  } else {
-    drillingParams = params;
-  }
-
-  // Merge with defaults
-  const fullConfig: MinifixConfig = { ...DEFAULT_MINIFIX_CONFIG, ...config };
-  const fullParams: DrillingParams = { ...DEFAULT_DRILLING_PARAMS, ...drillingParams };
+  // Type-safe API: config is always arg #2, params is arg #3 (no union/detection)
+  const fullConfig: MinifixConfig = { ...DEFAULT_MINIFIX_CONFIG, ...(config ?? {}) };
+  const fullParams: DrillingParams = { ...DEFAULT_DRILLING_PARAMS, ...(params ?? {}) };
 
   // DEV-ONLY: Guard — preview-only keys must never reach the compiler
   assertNoPreviewKeys(fullConfig as unknown as Record<string, unknown>, 'generateMinifixDrillMap');

@@ -207,3 +207,24 @@ describe('assertNoPreviewKeys (compiler boundary guard)', () => {
     }).toThrow(/Preview-only key "rotationX" leaked/);
   });
 });
+
+// ============================================================================
+// Type-level API contract: generateMinifixDrillMap signature
+// arg2 = Partial<MinifixConfig>, arg3 = Partial<DrillingParams>
+// These compile-time checks NEVER execute at runtime.
+// ============================================================================
+
+import { generateMinifixDrillMap } from '@/core/manufacturing/drillMap/generateDrillMap';
+import type { Cabinet } from '@/core/types/Cabinet';
+
+if (false) {
+  const cabinet = {} as Cabinet;
+
+  // @ts-expect-error - DrillingParams (firstHoleZ) must be arg3, not arg2
+  generateMinifixDrillMap(cabinet, { firstHoleZ: 12 });
+
+  // Correct usage: config as arg2, params as arg3
+  generateMinifixDrillMap(cabinet, { camDia: 15 }, { firstHoleZ: 12 });
+  generateMinifixDrillMap(cabinet, {}, { firstHoleZ: 37, drillingDistanceB: 24 });
+  generateMinifixDrillMap(cabinet);
+}
