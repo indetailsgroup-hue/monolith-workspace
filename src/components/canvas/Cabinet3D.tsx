@@ -37,8 +37,8 @@ import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapSto
 import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../../core/manufacturing/drillMap/types';
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
-import { Preview3D, DEFAULT_MINIFIX_CONFIG, sanitizeManufacturingConfig, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
-import { CamHousing3D } from './Hardware3D';
+import { DEFAULT_MINIFIX_CONFIG, sanitizeManufacturingConfig, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+import { CamHousing3D, HardwareFromPoint } from './Hardware3D';
 import { placeMeshByDrillPoint } from '../../core/geometry/placeMeshByDrillPoint';
 import { createCamPocketCenterAnchor } from '../../core/manufacturing/hardware/anchors/minifixAnchors';
 
@@ -182,9 +182,6 @@ function Hardware3DOverlay(props: Hardware3DOverlayProps) {
 }
 
 function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth = 600, cabinetHeight = 720, cabinetDepth = 560, topJoint = 'INSET', bottomJoint = 'INSET', showDimensions = false, currentView = 'Perspective' }: Hardware3DOverlayProps & { drillMap: DrillMap }) {
-  // No-op handler since we don't need editing in cabinet view
-  const handleUpdateConfig = useCallback(() => {}, []);
-
   // Store hooks for rotation/position overrides and context menu
   const rotationDefaults = useDrillMapStore((s) => s.rotationDefaults);
   const openContextMenu = useDrillMapStore((s) => s.openHardwareContextMenu);
@@ -341,158 +338,62 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
 
   return (
     <group name="hardware-3d-overlay-preview3d">
+      {/* ============================================================ */}
+      {/* DECOUPLED BOLT RENDERING (DrillMap truth-chain)               */}
+      {/* Uses HardwareFromPoint → buildBoltMeshFrame() → per-part mesh */}
+      {/* No Preview3D assembly, no offset hack, no scale×100.          */}
+      {/* Truth chain: DrillMap point → buildBoltMeshFrame → mesh       */}
+      {/* ============================================================ */}
       {boltPoints.map((boltPoint, index) => {
         const [x, y, z] = boltPoint.position;
-
-        // Use stored cornerType from drill map generation (most reliable)
-        // Falls back to position-based calculation only if cornerType not stored
         const cornerType: CornerType = boltPoint.cornerType || getCornerType([x, y, z], cabinetWidth, cabinetHeight);
 
-        // Derive isLeftSide and isTopPanel from cornerType (avoids coordinate system issues)
-        const isLeftSide = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
+        // Position override from user (right-click context menu adjustments)
+        const positionOffset = getPositionForPoint(boltPoint.id, cornerType);
+        const currentPosition = { dx: positionOffset.dx, dy: positionOffset.dy, dz: positionOffset.dz };
+
+        // Rotation override (still needed for context menu / user fine-tuning)
         const isTopPanel = cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT';
-
-        // ✅ UNIFIED BOLT ORIENTATION (v2.1)
-        // Uses single source of truth: drilling axis + panel normal
-        //
-        // KEY INSIGHT:
-        // - boltDir = drilling axis ONLY (NOT bolt→cam vector!)
-        // - boltPanelNormal = SIDE panel normal (±X), NOT TOP/BOTTOM (±Y)
-        // - seamDir = cross(boltPanelNormal, boltDir) → joint edge direction
-        //
-        // DRILLING AXES (depends on joint type):
-        // - INSET: X-axis drilling into FACE of side panel (±X)
-        // - OVERLAY: Y-axis drilling into EDGE of side panel (±Y)
-
-        // Determine mount type from joint mode
         const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
         const mountType: MountType = jointMode;
-
-        // ✅ FIX: Use getDrillingAxis with jointMode to get correct drilling direction
-        // INSET: horizontal X-axis drilling into face
-        // OVERLAY: vertical Y-axis drilling into edge
         const boltDirWorld = getDrillingAxis(cornerType as Corner, mountType);
-
-        // Get panel normal from utility (uses consistent ±X convention)
         const boltPanelNormalWorld = selectBoltPanelNormalWorld(cornerType as Corner);
-
-        // ✅ SINGLE COMPUTATION: base alignment + twist in one call
-        // This eliminates the old split between resolveSeamDrivenTwist + calculateBoltRotationWithTwist
-        const orientationResult = computeBoltQuatWithTwist({
-          boltDirWorld,
-          boltPanelNormalWorld,
-          mountType,
-        });
-
-        // Validate orientation (throws on error - disable in production)
-        // assertOrientation(orientationResult, boltDirWorld);
-
-        // ✅ VERTICAL FLIP FIX: TOP_LEFT INSET needs 180° rotation around drilling axis
-        // User validation confirmed: TOP_LEFT wrong, TOP_RIGHT/BOTTOM_LEFT/BOTTOM_RIGHT correct
+        const orientationResult = computeBoltQuatWithTwist({ boltDirWorld, boltPanelNormalWorld, mountType });
         let finalQuat = orientationResult.boltQuat.clone();
         if (cornerType === 'TOP_LEFT' && mountType === 'INSET') {
           const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
           finalQuat = flipQuat.multiply(finalQuat);
         }
-
-        // Convert quaternion to Euler for existing override system
         const calculatedRotation = quaternionToRotationOverride(finalQuat);
-
-        // Get final rotation (considers user overrides and defaults)
         const finalRotation = getRotationForPoint(boltPoint.id, cornerType, calculatedRotation);
-        const rotX = finalRotation.rotX;
-        const rotY = finalRotation.rotY;
-        const rotZ = finalRotation.rotZ;
-
-        const currentRotation: RotationOverride = { rotX, rotY, rotZ };
-
-        // Get position override (considers point override > corner default > zero)
-        const positionOffset = getPositionForPoint(boltPoint.id, cornerType);
-        const currentPosition = { dx: positionOffset.dx, dy: positionOffset.dy, dz: positionOffset.dz };
-
-        // ============================================================
-        // v5.5: CAM-ALIGNED via scene-graph LOCAL offset
-        // ============================================================
-        // Place Preview3D so its internal CAM aligns with the actual
-        // CAM drill indicator position from the drill map.
-        //
-        // APPROACH: Instead of manually computing world-space quaternion
-        // offsets (error-prone due to Euler↔Quaternion mismatches), use
-        // the scene graph:
-        //   outerGroup (position=camTarget, rotation=rot)
-        //     └─ offsetGroup (position=[0, -camLocalDist, 0])  ← LOCAL shift
-        //          └─ scaleGroup (scale=100)
-        //               └─ Preview3D (cam at local Y = camLocalDist)
-        //
-        // The cam ends up at outerGroup origin = camTarget. ✓
-        // No manual quaternion math needed - R3F handles rotation.
-        // ============================================================
-
-        // Distance from Preview3D origin (sleeve center) to cam center
-        // Must include all offsets that Preview3D applies internally
-        const camLocalDist = (config.sleeveLength / 2)
-          + config.neckShaftLength
-          + (config.ballHeadDia / 2)
-          + config.ballHeadOffset
-          + config.camOffset;
-
-        // Find the matching cam point for this bolt (by pairId)
-        const matchingCam = camPoints.find(cp => cp.pairId === boltPoint.pairId);
-
-        let groupX: number, groupY: number, groupZ: number;
-
-        if (matchingCam) {
-          // Cam pocket center: surface entry + half depth into material
-          const [cx, cy, cz] = matchingCam.position;
-          const [nx, ny, nz] = matchingCam.normal;
-          const halfDepth = config.camDepth / 2;
-          groupX = cx + nx * halfDepth + positionOffset.dx;
-          groupY = cy + ny * halfDepth + positionOffset.dy;
-          groupZ = cz + nz * halfDepth + positionOffset.dz;
-        } else {
-          // Fallback: use targetPocketCenter stored on boltPoint
-          if (boltPoint.targetPocketCenter) {
-            const [tx, ty, tz] = boltPoint.targetPocketCenter;
-            groupX = tx + positionOffset.dx;
-            groupY = ty + positionOffset.dy;
-            groupZ = tz + positionOffset.dz;
-          } else {
-            // Last resort: bolt surface position (no cam data available)
-            groupX = x + positionOffset.dx;
-            groupY = y + positionOffset.dy;
-            groupZ = z + positionOffset.dz;
-          }
-        }
+        const currentRotation: RotationOverride = {
+          rotX: finalRotation.rotX,
+          rotY: finalRotation.rotY,
+          rotZ: finalRotation.rotZ,
+        };
 
         return (
           <group
-            key={`minifix-preview-${index}-${boltPoint.id}`}
-            position={[groupX, groupY, groupZ]}
-            rotation={[rotX, rotY, rotZ]}
+            key={`bolt-drillmap-${index}-${boltPoint.id}`}
+            position={[
+              x + positionOffset.dx,
+              y + positionOffset.dy,
+              z + positionOffset.dz,
+            ]}
           >
-            {/* Hit sphere for hardware interaction - uses HARDWARE layer for priority */}
+            {/* Hit sphere for hardware interaction */}
             <HardwareHitSphere
               position={[0, 0, 0]}
               onRightClick={(e) => handleContextMenu(e, boltPoint, cornerType, currentRotation, currentPosition)}
             />
 
-            {/* LOCAL offset: shift Preview3D so its internal cam is at the group origin */}
-            {/* Preview3D cam is at local Y = camLocalDist from sleeve center (origin) */}
-            {/* Shifting by -camLocalDist makes cam land at Y=0 (group origin = camTarget) */}
-            <group position={[0, -camLocalDist, 0]}>
-              {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (×100) */}
-              <group scale={[100, 100, 100]}>
-                <Preview3D
-                  config={config}
-                  showCam={false}
-                  showDowel={config.includeDowel}
-                  xRayMode={false}
-                  isAttached={true}
-                  showDimensions={false}
-                  onUpdateConfig={handleUpdateConfig}
-                />
-              </group>
-            </group>
+            {/* Bolt rendered from DrillMap truth via HardwareFromPoint */}
+            {/* buildBoltMeshFrame() inside uses point.position + point.targetPocketCenter */}
+            <HardwareFromPoint
+              point={boltPoint}
+              hardwareConfig={config}
+              xRayMode={false}
+            />
           </group>
         );
       })}
