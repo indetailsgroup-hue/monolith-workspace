@@ -159,19 +159,28 @@ export function buildBoltMeshFrame(args: BuildBoltMeshFrameArgs): BoltMeshFrame 
 
   const A = point.position as Vec3Tuple;
 
-  // axis = A -> C (or legacy normal)
+  // axis = bolt direction (or legacy normal)
   const boltDir = (point.boltDirection || point.normal) as Vec3Tuple;
   const axis = tupleNormalize(boltDir);
 
-  // BALL target: use targetPocketCenter if available (B=C truth)
+  // BALL target: use axialOffsetMm (pure axial distance) if available,
+  // fallback to targetPocketCenter for backward compatibility,
+  // final fallback to default part stacking distance.
+  const axialOffset = point.axialOffsetMm as number | undefined;
   const C = point.targetPocketCenter as Vec3Tuple | undefined;
-
-  // fallback puts ball "in front" of A toward cam direction
   const fallbackDistance = SLEEVE_LENGTH + NECK_LENGTH + BALL_HEAD_RADIUS;
 
-  const ballPos: Vec3Tuple = C
-    ? tupleSub(C, A) // local coords relative to A
-    : tupleScale(axis, fallbackDistance);
+  let ballPos: Vec3Tuple;
+  if (axialOffset != null && axialOffset > 0) {
+    // ✅ NEW: Pure axial placement — ball center at axialOffsetMm along drill normal
+    // This ensures bolt mesh stays on-axis, no sideways drift from cross-panel C-A vector
+    ballPos = tupleScale(axis, axialOffset);
+  } else if (C) {
+    // Legacy: use C - A (may have cross-axis component)
+    ballPos = tupleSub(C, A);
+  } else {
+    ballPos = tupleScale(axis, fallbackDistance);
+  }
 
   // Anchor all parts to ballPos (robust approach)
   const neckOffset = BALL_HEAD_RADIUS + NECK_LENGTH / 2;
@@ -1410,7 +1419,7 @@ export function HardwareFromPoint({
   }
 
   // ============================================
-  // DOWEL
+  // DOWEL (Anchor-based placement)
   // ============================================
   if (componentType === 'DOWEL' || purpose === 'DOWEL') {
     // Only show DOWELs if explicitly enabled via includeDowel
@@ -1419,14 +1428,18 @@ export function HardwareFromPoint({
       return null;
     }
 
-    // Center the dowel at the joint (half in each panel)
-    // Use hardwareConfig values if available, otherwise use defaults
+    // Use drill point depth to determine insertion depth for this side
+    // DrillMap compiler sets depth per point: 12mm for face bore, 18mm for edge bore
+    const insertionDepth = point.depth || 12;
     const dowelLength = hardwareConfig?.dowelLength || 30;
     const dowelDiameter = hardwareConfig?.dowelDia || point.diameter;
+
+    // Anchor-based placement: offset dowel center along drill normal
+    // by insertionDepth/2 so the dowel entry face sits at the drill point surface
     const offset: [number, number, number] = [
-      normal.x * (dowelLength / 4),
-      normal.y * (dowelLength / 4),
-      normal.z * (dowelLength / 4),
+      normal.x * (insertionDepth / 2),
+      normal.y * (insertionDepth / 2),
+      normal.z * (insertionDepth / 2),
     ];
 
     return (

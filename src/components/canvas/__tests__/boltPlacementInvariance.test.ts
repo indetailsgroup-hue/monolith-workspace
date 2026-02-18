@@ -254,7 +254,120 @@ describe('bolt placement: B=24mm golden geometry', () => {
 });
 
 // ============================================================================
-// 4. Determinism: same input → same output
+// 4. Axial-only invariant: ballPos must be along drill normal ONLY
+// ============================================================================
+
+describe('bolt placement: axial-only invariant (axialOffsetMm)', () => {
+  it('ballPos is pure axial when axialOffsetMm is set', () => {
+    // Bolt entry on left side panel, drilling toward -X
+    const point = mkPoint({
+      position: [24, 700, 37],
+      boltDirection: [-1, 0, 0],
+      targetPocketCenter: [0, 693.75, 37], // cross-panel C has Y-offset
+      axialOffsetMm: 24,                   // pure axial distance
+    });
+
+    const frame = buildBoltMeshFrame({ point });
+
+    // ballPos should be purely along -X axis (no Y or Z component)
+    expect(frame.ballPos[0]).toBeCloseTo(-24, 2);  // -24 along axis
+    expect(frame.ballPos[1]).toBeCloseTo(0, 5);     // no Y drift
+    expect(frame.ballPos[2]).toBeCloseTo(0, 5);     // no Z drift
+  });
+
+  it('cross product of ballPos and axis is near zero (no sideways drift)', () => {
+    const directions: Vec3Tuple[] = [
+      [-1, 0, 0], [1, 0, 0],
+      [0, -1, 0], [0, 1, 0],
+      [0, 0, -1], [0, 0, 1],
+    ];
+    for (const dir of directions) {
+      const point = mkPoint({
+        position: [100, 200, 300],
+        boltDirection: dir,
+        axialOffsetMm: 24,
+      });
+
+      const frame = buildBoltMeshFrame({ point });
+
+      // cross(ballPos, axis) should be zero-length (parallel vectors)
+      const cross: Vec3Tuple = [
+        frame.ballPos[1] * frame.axis[2] - frame.ballPos[2] * frame.axis[1],
+        frame.ballPos[2] * frame.axis[0] - frame.ballPos[0] * frame.axis[2],
+        frame.ballPos[0] * frame.axis[1] - frame.ballPos[1] * frame.axis[0],
+      ];
+      const crossLen = vecLen(cross);
+      expect(crossLen).toBeLessThan(0.001);
+    }
+  });
+
+  it('distance A→ball = axialOffsetMm exactly', () => {
+    const offsets = [24, 34, 18, 12];
+    for (const offset of offsets) {
+      const point = mkPoint({
+        position: [50, 400, 37],
+        boltDirection: [1, 0, 0],
+        axialOffsetMm: offset,
+      });
+
+      const frame = buildBoltMeshFrame({ point });
+      const dist = vecLen(frame.ballPos);
+      expect(dist).toBeCloseTo(offset, 2);
+    }
+  });
+
+  it('axialOffsetMm takes priority over targetPocketCenter', () => {
+    // When both are present, axialOffsetMm should win
+    const point = mkPoint({
+      position: [24, 700, 37],
+      boltDirection: [-1, 0, 0],
+      targetPocketCenter: [0, 693.75, 37], // has Y-offset → not axial
+      axialOffsetMm: 24,
+    });
+
+    const frame = buildBoltMeshFrame({ point });
+
+    // ballPos should be pure axial (-24, 0, 0), NOT C-A (-24, -6.25, 0)
+    expect(frame.ballPos[1]).toBeCloseTo(0, 5); // no Y drift
+    expect(vecLen(frame.ballPos)).toBeCloseTo(24, 2);
+  });
+
+  it('falls back to targetPocketCenter when axialOffsetMm is absent', () => {
+    const A: Vec3Tuple = [24, 700, 37];
+    const C: Vec3Tuple = [0, 693.75, 37];
+    const point = mkPoint({
+      position: A,
+      boltDirection: [-1, 0, 0],
+      targetPocketCenter: C,
+      // no axialOffsetMm
+    });
+
+    const frame = buildBoltMeshFrame({ point });
+
+    // Should use C - A (legacy behavior)
+    const ballWorld = vecAdd(A, frame.ballPos);
+    expectVec3Close(ballWorld, C);
+  });
+
+  it('parts (neck, sleeve, thread) remain on-axis when axialOffsetMm is set', () => {
+    const point = mkPoint({
+      position: [0, 0, 0],
+      boltDirection: [0, 1, 0],  // bolt along +Y
+      axialOffsetMm: 24,
+    });
+
+    const frame = buildBoltMeshFrame({ point });
+
+    // All part positions should have only Y-component (no X or Z drift)
+    for (const partPos of [frame.ballPos, frame.neckPos, frame.sleevePos, frame.threadPos]) {
+      expect(Math.abs(partPos[0])).toBeLessThan(0.001); // no X drift
+      expect(Math.abs(partPos[2])).toBeLessThan(0.001); // no Z drift
+    }
+  });
+});
+
+// ============================================================================
+// 5. Determinism: same input → same output
 // ============================================================================
 
 describe('bolt placement: determinism', () => {

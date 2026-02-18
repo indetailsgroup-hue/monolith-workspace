@@ -565,6 +565,20 @@ function generateCornerJointPoints(
       // ✅ Store pocket center on bolt point for downstream render (B=C truth chain)
       result.boltPoint.targetPocketCenter = camPocketCenter;
 
+      // ✅ Compute axialOffsetMm: distance from bolt entry to ball center, ALONG bolt normal only
+      // This replaces the cross-panel C-A vector with a pure axial distance
+      // axialOffsetMm = dot(C - A, boltNormal) — projected onto drill axis
+      const boltNormal = result.boltPoint.normal;
+      const diffCA: Vec3Tuple = [
+        camPocketCenter[0] - result.boltPoint.position[0],
+        camPocketCenter[1] - result.boltPoint.position[1],
+        camPocketCenter[2] - result.boltPoint.position[2],
+      ];
+      const axialDist = Math.abs(
+        diffCA[0] * boltNormal[0] + diffCA[1] * boltNormal[1] + diffCA[2] * boltNormal[2]
+      );
+      result.boltPoint.axialOffsetMm = axialDist;
+
       // ========================================
       // BOLT DIRECTION = DRILLING AXIS (v4.0: horizontal X-axis)
       // ========================================

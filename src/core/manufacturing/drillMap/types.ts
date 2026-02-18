@@ -121,6 +121,7 @@ export interface DrillMapPoint {
   // Extended drilling properties
   boltDirection?: Vec3Tuple;            // Direction vector of bolt [x, y, z]
   targetPocketCenter?: Vec3Tuple;       // Cam pocket center in world coords for this bolt (B=C truth)
+  axialOffsetMm?: number;              // Distance from surface entry to ball center, ALONG drill normal only
   boltTwistDeg?: number;                // Bolt twist angle in degrees (for fin orientation)
   drillingDistanceB?: number;           // Secondary drilling distance
   jointStyle?: string;                  // Joint style identifier
