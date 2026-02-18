@@ -39,6 +39,8 @@ import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cab
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
 import { Preview3D, DEFAULT_MINIFIX_CONFIG, sanitizeManufacturingConfig, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
 import { CamHousing3D } from './Hardware3D';
+import { placeMeshByDrillPoint } from '../../core/geometry/placeMeshByDrillPoint';
+import { createCamPocketCenterAnchor } from '../../core/manufacturing/hardware/anchors/minifixAnchors';
 
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
 import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
@@ -496,36 +498,49 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
       })}
 
       {/* ============================================================ */}
-      {/* DECOUPLED CAM RENDERING                                      */}
-      {/* CAM is rendered OUTSIDE Preview3D and OUTSIDE scale×100      */}
-      {/* Position: pocket center (surface + halfDepth × normal)       */}
-      {/* Rotation: align CylinderGeometry Y-axis → drill normal       */}
+      {/* DECOUPLED CAM RENDERING (Anchor-based placement)             */}
+      {/* Uses placeMeshByDrillPoint() + createCamPocketCenterAnchor() */}
+      {/* No manual THREE.js quaternion math needed.                   */}
+      {/* Truth chain: DrillMap → AnchorSpec → placeMeshByDrillPoint() */}
       {/* ============================================================ */}
       {camPoints.map((camPoint, camIdx) => {
-        const [cx, cy, cz] = camPoint.position;     // surface entry point
-        const [nx, ny, nz] = camPoint.normal;        // normal pointing INTO material
         const camDia = camPoint.diameter ?? config.camDia;
         const camDepth = camPoint.depth ?? config.camDepth;
 
-        // Pocket center = surface entry + halfDepth into material
+        // CamHousing3D mesh: centered cylinder, Y-axis aligned
+        // CamPocketCenter anchor: localAxis=[0,-1,0], localAnchor=[0,0,0]
+        //   → places geometric center of cam at the drill point position
+        //
+        // We compute pocket center from drill entry (surface) + halfDepth × normal,
+        // then use the pocket center anchor (zero offset) for clean alignment.
         const halfDepth = camDepth / 2;
-        const pocketX = cx + nx * halfDepth;
-        const pocketY = cy + ny * halfDepth;
-        const pocketZ = cz + nz * halfDepth;
+        const [cx, cy, cz] = camPoint.position;
+        const [nx, ny, nz] = camPoint.normal;
+        const pocketCenter: [number, number, number] = [
+          cx + nx * halfDepth,
+          cy + ny * halfDepth,
+          cz + nz * halfDepth,
+        ];
 
-        // Quaternion: align CylinderGeometry Y-axis to camPoint.normal
-        const camNormal = new THREE.Vector3(nx, ny, nz).normalize();
-        const yAxis = new THREE.Vector3(0, 1, 0);
-        const camQuat = new THREE.Quaternion().setFromUnitVectors(yAxis, camNormal);
-        const camEuler = new THREE.Euler().setFromQuaternion(camQuat);
+        // Anchor-based placement: aligns cam -Y axis with drill normal
+        const camPocketAnchor = createCamPocketCenterAnchor();
+        const placement = placeMeshByDrillPoint(
+          pocketCenter,
+          camPoint.normal as [number, number, number],
+          camPocketAnchor,
+        );
 
         const positionOffset = getPositionForPoint(camPoint.id, (camPoint.cornerType || 'TOP_LEFT') as CornerType);
 
         return (
           <CamHousing3D
             key={`decoupled-cam-${camIdx}-${camPoint.id}`}
-            position={[pocketX + positionOffset.dx, pocketY + positionOffset.dy, pocketZ + positionOffset.dz]}
-            rotation={[camEuler.x, camEuler.y, camEuler.z]}
+            position={[
+              placement.worldPos[0] + positionOffset.dx,
+              placement.worldPos[1] + positionOffset.dy,
+              placement.worldPos[2] + positionOffset.dz,
+            ]}
+            rotation={placement.worldEuler}
             diameter={camDia}
             depth={camDepth}
           />

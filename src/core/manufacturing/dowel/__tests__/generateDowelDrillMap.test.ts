@@ -46,23 +46,24 @@ function createTestCabinet(): Cabinet {
 
   const basePanelComputed = {
     realThickness: T,
-    totalCost: 0,
-    totalCO2: 0,
+    cutWidth: 0,
+    cutHeight: 0,
     surfaceArea: 0,
     edgeLength: 0,
-    weight: 0,
+    cost: 0,
+    co2: 0,
   };
 
   const basePanelFaces = {
-    front: { materialId: 'default', direction: 'horizontal' as const },
-    back: { materialId: 'default', direction: 'horizontal' as const },
+    faceA: 'default' as string | null,
+    faceB: 'default' as string | null,
   };
 
   const basePanelEdges = {
-    top: { materialId: 'default', thickness: 0.5 },
-    bottom: { materialId: 'default', thickness: 0.5 },
-    left: { materialId: 'default', thickness: 0.5 },
-    right: { materialId: 'default', thickness: 0.5 },
+    top: 'default' as string | null,
+    bottom: 'default' as string | null,
+    left: 'default' as string | null,
+    right: 'default' as string | null,
   };
 
   function makePanel(
@@ -81,7 +82,7 @@ function createTestCabinet(): Cabinet {
       coreMaterialId: 'default',
       faces: basePanelFaces,
       edges: basePanelEdges,
-      grainDirection: 'horizontal',
+      grainDirection: 'HORIZONTAL',
       computed: basePanelComputed,
       position,
       rotation: [0, 0, 0],
