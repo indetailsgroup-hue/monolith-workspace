@@ -37,7 +37,7 @@ import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapSto
 import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../../core/manufacturing/drillMap/types';
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
-import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+import { Preview3D, DEFAULT_MINIFIX_CONFIG, sanitizeManufacturingConfig, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
 import { CamHousing3D } from './Hardware3D';
 
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
@@ -1077,13 +1077,17 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
 
     // Synchronous update - no debounce, no RAF
     // Get minifixConfig from cabinet's hardware settings (if set via HardwareLibrary)
-    const minifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
+    const rawMinifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
+    // Sanitize: strip preview-only fields (flip/rotate/move) before compiler
+    const minifixConfig = rawMinifixConfig
+      ? sanitizeManufacturingConfig(rawMinifixConfig)
+      : {};
     // Pass config as second arg, drillingParams as third arg
     // CRITICAL: Limit connectorCount to 2 per corner to match Hardware3DOverlay visualization
     // This ensures drill indicators (Ø10, Ø15) match the actual hardware shown
     const drillMap = generateMinifixDrillMap(
       activeCabinetFromArray,
-      minifixConfig || {},
+      minifixConfig,
       drillingParams,
       { connectorCount: 2 }  // Match MAX_HARDWARE_PER_CORNER in Hardware3DOverlay
     );
