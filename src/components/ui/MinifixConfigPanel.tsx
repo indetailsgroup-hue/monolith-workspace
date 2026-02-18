@@ -132,11 +132,11 @@ export interface MinifixPreviewState {
 }
 
 /** Keys that belong to preview-only state — stripped from manufacturing config */
-export const MINIFIX_PREVIEW_ONLY_KEYS: (keyof MinifixPreviewState)[] = [
+export const MINIFIX_PREVIEW_ONLY_KEYS: readonly (keyof MinifixPreviewState)[] = [
   'flipVertical', 'flipHorizontal',
   'rotationX', 'rotationY', 'rotationZ',
   'moveX', 'moveY', 'moveZ',
-];
+] as const;
 
 /** Default preview state (no transformation) */
 export const DEFAULT_PREVIEW_STATE: MinifixPreviewState = {
@@ -150,31 +150,29 @@ export const DEFAULT_PREVIEW_STATE: MinifixPreviewState = {
   moveZ: 0,
 };
 
+// ---- Minifix guard instance (uses shared framework) ----
+import { createPreviewGuard } from '../../core/guards/previewOnly';
+
+/** Minifix-specific preview guard (sanitize + assertClean) */
+export const minifixPreviewGuard = createPreviewGuard<MinifixPreviewState>(
+  MINIFIX_PREVIEW_ONLY_KEYS,
+  'MinifixConfig'
+);
+
 /**
  * Sanitize config for manufacturing output — removes all preview-only fields.
- * Use before: Copy Config, Save Preset, or passing to compiler/DrillMap.
+ * Delegates to shared guard framework.
  */
 export function sanitizeManufacturingConfig(config: MinifixFullConfig): Omit<MinifixFullConfig, keyof MinifixPreviewState> {
-  const clean = { ...config };
-  for (const key of MINIFIX_PREVIEW_ONLY_KEYS) {
-    delete (clean as Record<string, unknown>)[key];
-  }
-  return clean as Omit<MinifixFullConfig, keyof MinifixPreviewState>;
+  return minifixPreviewGuard.sanitize(config);
 }
 
 /**
  * Dev-only runtime assert: throws if any preview-only key is found in config.
- * Place at compiler boundaries (e.g. generateDrillMap entry) to catch leaks.
+ * Delegates to shared guard framework.
  */
 export function assertNoPreviewKeys(cfg: Record<string, unknown>, context = 'MinifixConfig'): void {
-  if (import.meta.env?.DEV) {
-    for (const k of MINIFIX_PREVIEW_ONLY_KEYS) {
-      if (k in cfg) {
-        throw new Error(`[Monolith] Preview-only key "${k}" leaked into ${context}. ` +
-          `Use sanitizeManufacturingConfig() before passing config to compiler.`);
-      }
-    }
-  }
+  minifixPreviewGuard.assertClean(cfg, context);
 }
 
 // ============================================
