@@ -759,6 +759,7 @@ export function generateMinifixDrillMap(
 
   // Traceability: hash inputs for audit trail
   const meta = buildDrillMapMeta({
+    generatorName: 'generateMinifixDrillMap',
     fullConfig: fullConfig as unknown as Record<string, unknown>,
     fullParams: fullParams as unknown as Record<string, unknown>,
     connectorCount: options?.connectorCount,

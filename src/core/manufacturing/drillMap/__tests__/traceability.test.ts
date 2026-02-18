@@ -120,47 +120,52 @@ describe('buildDrillMapMeta', () => {
 
   it('produces meta with valid hash lengths', () => {
     const meta = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: baseConfig,
       fullParams: baseParams,
       connectorCount: 2,
     });
 
-    expect(meta.inputs.minifixConfigHash).toHaveLength(64);
-    expect(meta.inputs.drillingParamsHash).toHaveLength(64);
-    expect(meta.inputs.minifixConfigHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(meta.inputs.drillingParamsHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(meta.inputs.configHash).toHaveLength(64);
+    expect(meta.inputs.paramsHash).toHaveLength(64);
+    expect(meta.inputs.configHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(meta.inputs.paramsHash).toMatch(/^[0-9a-f]{64}$/);
     expect(meta.generator.name).toBe('generateMinifixDrillMap');
     expect(meta.inputs.connectorCount).toBe(2);
   });
 
   it('config hash changes when config field changes', () => {
     const metaA = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: { ...baseConfig, camDia: 15 },
       fullParams: baseParams,
     });
     const metaB = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: { ...baseConfig, camDia: 12 },
       fullParams: baseParams,
     });
 
-    expect(metaA.inputs.minifixConfigHash).not.toBe(metaB.inputs.minifixConfigHash);
+    expect(metaA.inputs.configHash).not.toBe(metaB.inputs.configHash);
     // params hash unchanged
-    expect(metaA.inputs.drillingParamsHash).toBe(metaB.inputs.drillingParamsHash);
+    expect(metaA.inputs.paramsHash).toBe(metaB.inputs.paramsHash);
   });
 
   it('params hash changes when params field changes', () => {
     const metaA = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: baseConfig,
       fullParams: { ...baseParams, firstHoleZ: 37 },
     });
     const metaB = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: baseConfig,
       fullParams: { ...baseParams, firstHoleZ: 40 },
     });
 
-    expect(metaA.inputs.drillingParamsHash).not.toBe(metaB.inputs.drillingParamsHash);
+    expect(metaA.inputs.paramsHash).not.toBe(metaB.inputs.paramsHash);
     // config hash unchanged
-    expect(metaA.inputs.minifixConfigHash).toBe(metaB.inputs.minifixConfigHash);
+    expect(metaA.inputs.configHash).toBe(metaB.inputs.configHash);
   });
 });
 
@@ -171,6 +176,7 @@ describe('buildDrillMapMeta', () => {
 describe('buildDrillMapMeta stability', () => {
   it('produces identical hashes across calls with same inputs', () => {
     const args = {
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: { camDia: 15, camDepth: 13.5, woodThickness: 18 },
       fullParams: { firstHoleZ: 37, drillingDistanceB: 24 },
       connectorCount: 2,
@@ -180,8 +186,8 @@ describe('buildDrillMapMeta stability', () => {
     const meta2 = buildDrillMapMeta(args);
 
     // Hashes must be stable (timestamps may differ but are NOT in hash)
-    expect(meta1.inputs.minifixConfigHash).toBe(meta2.inputs.minifixConfigHash);
-    expect(meta1.inputs.drillingParamsHash).toBe(meta2.inputs.drillingParamsHash);
+    expect(meta1.inputs.configHash).toBe(meta2.inputs.configHash);
+    expect(meta1.inputs.paramsHash).toBe(meta2.inputs.paramsHash);
   });
 
   it('key insertion order does not affect hash', () => {
@@ -189,14 +195,16 @@ describe('buildDrillMapMeta stability', () => {
     const configB = { camDia: 15, a: 2, z: 1, m: 3 };
 
     const metaA = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: configA,
       fullParams: { firstHoleZ: 37 },
     });
     const metaB = buildDrillMapMeta({
+      generatorName: 'generateMinifixDrillMap',
       fullConfig: configB,
       fullParams: { firstHoleZ: 37 },
     });
 
-    expect(metaA.inputs.minifixConfigHash).toBe(metaB.inputs.minifixConfigHash);
+    expect(metaA.inputs.configHash).toBe(metaB.inputs.configHash);
   });
 });

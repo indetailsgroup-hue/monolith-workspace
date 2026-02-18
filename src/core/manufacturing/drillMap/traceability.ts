@@ -153,6 +153,7 @@ const GENERATOR_VERSION = '1.0.0';
  * Timestamps are NOT included in hashes (for determinism).
  */
 export function buildDrillMapMeta(args: {
+  generatorName: string;
   fullConfig: Record<string, unknown>;
   fullParams: Record<string, unknown>;
   connectorCount?: number;
@@ -163,15 +164,15 @@ export function buildDrillMapMeta(args: {
 
   return {
     generator: {
-      name: 'generateMinifixDrillMap',
+      name: args.generatorName,
       version: GENERATOR_VERSION,
       env: (typeof import.meta !== 'undefined' && import.meta.env?.DEV) ? 'dev' : 'prod',
     },
     inputs: {
       connectorCount: args.connectorCount,
-      minifixPresetId: args.presetId,
-      minifixConfigHash: sha256HexSync(configCanonical),
-      drillingParamsHash: sha256HexSync(paramsCanonical),
+      presetId: args.presetId,
+      configHash: sha256HexSync(configCanonical),
+      paramsHash: sha256HexSync(paramsCanonical),
     },
     timestamps: {
       generatedAtIso: new Date().toISOString(),

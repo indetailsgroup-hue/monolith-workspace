@@ -356,17 +356,17 @@ export interface DrillMap {
  */
 export interface DrillMapMeta {
   generator: {
-    name: 'generateMinifixDrillMap';
+    name: string;             // e.g. 'generateMinifixDrillMap', 'generateDowelDrillMap'
     version: string;
     env?: 'dev' | 'prod';
   };
   inputs: {
     connectorCount?: number;
-    minifixPresetId?: string;
+    presetId?: string;
     /** SHA-256 hex of stableStringify(fullConfig) — 64 chars */
-    minifixConfigHash: string;
+    configHash: string;
     /** SHA-256 hex of stableStringify(fullParams) — 64 chars */
-    drillingParamsHash: string;
+    paramsHash: string;
   };
   timestamps?: {
     /** ISO string — for audit/debug only, NOT included in hashes */
