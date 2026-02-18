@@ -98,18 +98,81 @@ export interface MinifixFullConfig {
   dowelLength: number;
   dowelOffset: number;
 
-  // Transform (Hardware Manipulation)
-  flipVertical: boolean;   // Vertical flip (V)
-  flipHorizontal: boolean; // Horizontal flip (H)
-  rotationX: number;       // Fine rotation X (degrees)
-  rotationY: number;       // Fine rotation Y (degrees)
-  rotationZ: number;       // Fine rotation Z (degrees)
-  moveX: number;           // Move hardware X (mm)
-  moveY: number;           // Move hardware Y (mm)
-  moveZ: number;           // Move hardware Z (mm)
+  // ⚠️ PREVIEW-ONLY: These fields affect ONLY the editor 3D preview.
+  // They are NOT serialized into manufacturing config (see MINIFIX_PREVIEW_ONLY_KEYS)
+  // and have NO effect on CNC drilling positions or the Designer scene.
+  flipVertical: boolean;
+  flipHorizontal: boolean;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  moveX: number;
+  moveY: number;
+  moveZ: number;
 
   // Display Preferences (UI State saved with preset)
   showDimensions: boolean; // Show dimension annotations in 3D preview
+}
+
+/**
+ * Preview-only state for the Minifix Config Editor.
+ * These fields affect ONLY the 3D preview inside the editor modal.
+ * They are NEVER serialized into manufacturing config and have
+ * NO effect on CNC drilling positions or the Designer scene.
+ */
+export interface MinifixPreviewState {
+  flipVertical: boolean;
+  flipHorizontal: boolean;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  moveX: number;
+  moveY: number;
+  moveZ: number;
+}
+
+/** Keys that belong to preview-only state — stripped from manufacturing config */
+export const MINIFIX_PREVIEW_ONLY_KEYS: readonly (keyof MinifixPreviewState)[] = [
+  'flipVertical', 'flipHorizontal',
+  'rotationX', 'rotationY', 'rotationZ',
+  'moveX', 'moveY', 'moveZ',
+] as const;
+
+/** Default preview state (no transformation) */
+export const DEFAULT_PREVIEW_STATE: MinifixPreviewState = {
+  flipVertical: false,
+  flipHorizontal: false,
+  rotationX: 0,
+  rotationY: 0,
+  rotationZ: 0,
+  moveX: 0,
+  moveY: 0,
+  moveZ: 0,
+};
+
+// ---- Minifix guard instance (uses shared framework) ----
+import { createPreviewGuard } from '../../core/guards/previewOnly';
+
+/** Minifix-specific preview guard (sanitize + assertClean) */
+export const minifixPreviewGuard = createPreviewGuard<MinifixPreviewState>(
+  MINIFIX_PREVIEW_ONLY_KEYS,
+  'MinifixConfig'
+);
+
+/**
+ * Sanitize config for manufacturing output — removes all preview-only fields.
+ * Delegates to shared guard framework.
+ */
+export function sanitizeManufacturingConfig(config: MinifixFullConfig): Omit<MinifixFullConfig, keyof MinifixPreviewState> {
+  return minifixPreviewGuard.sanitize(config);
+}
+
+/**
+ * Dev-only runtime assert: throws if any preview-only key is found in config.
+ * Delegates to shared guard framework.
+ */
+export function assertNoPreviewKeys(cfg: Record<string, unknown>, context = 'MinifixConfig'): void {
+  minifixPreviewGuard.assertClean(cfg, context);
 }
 
 // ============================================
@@ -1515,7 +1578,7 @@ export function MinifixPreviewCanvas({
 // MAIN COMPONENT
 // ============================================
 
-type ConfigTab = 'type' | 'cam' | 'sleeve' | 'bolt' | 'dowel' | 'transform';
+type ConfigTab = 'type' | 'cam' | 'sleeve' | 'bolt' | 'dowel' | 'preview';
 
 interface MinifixConfigPanelProps {
   onConfigChange?: (config: MinifixFullConfig) => void;
@@ -1597,8 +1660,9 @@ export function MinifixConfigPanel({
   };
 
   const copyConfig = () => {
-    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-    // Could add toast notification here
+    // Strip preview-only fields — export manufacturing config only
+    const configForExport = sanitizeManufacturingConfig(config);
+    navigator.clipboard.writeText(JSON.stringify(configForExport, null, 2));
   };
 
   return (
@@ -1815,10 +1879,10 @@ export function MinifixConfigPanel({
           onClick={() => setActiveTab('dowel')}
         />
         <TabButton
-          icon={<span className="text-xs">⚙️</span>}
-          label="Transform"
-          isActive={activeTab === 'transform'}
-          onClick={() => setActiveTab('transform')}
+          icon={<span className="text-xs">👁️</span>}
+          label="Preview"
+          isActive={activeTab === 'preview'}
+          onClick={() => setActiveTab('preview')}
         />
       </div>
 
@@ -2248,9 +2312,17 @@ export function MinifixConfigPanel({
           </div>
         )}
 
-        {/* TRANSFORM TAB - Hardware Manipulation */}
-        {activeTab === 'transform' && (
+        {/* PREVIEW TAB - Preview-only manipulation (no CNC / no Designer impact) */}
+        {activeTab === 'preview' && (
           <div className="space-y-4">
+            {/* Preview-only badge */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-md"
+              title="These controls only affect the 3D preview inside this editor. They do not change CNC drilling positions or the Designer scene."
+            >
+              <span className="text-[10px] font-semibold text-amber-400 tracking-wide uppercase">Preview-only</span>
+              <span className="text-[10px] text-amber-400/70">— no effect on CNC or Designer</span>
+            </div>
             {/* Flip Section */}
             <div className="p-3 bg-[#243040] rounded-lg border border-[#3a4a5a]">
               <div className="flex items-center gap-2 mb-3">
@@ -2418,10 +2490,10 @@ export function MinifixConfigPanel({
                 className="w-full py-2 bg-[#2a3a4a] hover:bg-[#3a4a5a] rounded text-xs font-medium text-gray-300 transition-all flex items-center justify-center gap-2"
               >
                 <RotateCcw size={12} />
-                Reset All Transforms
+                Reset Preview
               </button>
               <div className="text-[10px] text-gray-500 text-center mt-2">
-                💡 Transforms affect assembly preview and drilling positions
+                👁️ Preview only — does not change CNC drilling positions or Designer scene
               </div>
             </div>
           </div>

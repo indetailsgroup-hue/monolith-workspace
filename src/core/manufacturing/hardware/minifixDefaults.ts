@@ -141,7 +141,9 @@ export function getMinifixFullConfigForThickness(woodThickness: number) {
     // HÄFELE STANDARD: Split depth (18mm edge + 12mm face = 30mm total)
     dowelDepthEdge: config.dowelDepthEdge ?? 18,
     dowelDepthFace: config.dowelDepthFace ?? 12,
-    // Transform (default: no transformation)
+    // Preview-only fields (flip/rotate/move) intentionally included with defaults
+    // for backward compat. They affect ONLY the editor 3D preview, NOT CNC/DrillMap.
+    // See MinifixPreviewState and MINIFIX_PREVIEW_ONLY_KEYS in MinifixConfigPanel.tsx.
     flipVertical: false,
     flipHorizontal: false,
     rotationX: 0,

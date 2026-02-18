@@ -37,7 +37,8 @@ import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapSto
 import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../../core/manufacturing/drillMap/types';
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
-import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+import { Preview3D, DEFAULT_MINIFIX_CONFIG, sanitizeManufacturingConfig, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
+import { CamHousing3D } from './Hardware3D';
 
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
 import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
@@ -481,7 +482,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
               <group scale={[100, 100, 100]}>
                 <Preview3D
                   config={config}
-                  showCam={true}
+                  showCam={false}
                   showDowel={config.includeDowel}
                   xRayMode={false}
                   isAttached={true}
@@ -491,6 +492,43 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
               </group>
             </group>
           </group>
+        );
+      })}
+
+      {/* ============================================================ */}
+      {/* DECOUPLED CAM RENDERING                                      */}
+      {/* CAM is rendered OUTSIDE Preview3D and OUTSIDE scale×100      */}
+      {/* Position: pocket center (surface + halfDepth × normal)       */}
+      {/* Rotation: align CylinderGeometry Y-axis → drill normal       */}
+      {/* ============================================================ */}
+      {camPoints.map((camPoint, camIdx) => {
+        const [cx, cy, cz] = camPoint.position;     // surface entry point
+        const [nx, ny, nz] = camPoint.normal;        // normal pointing INTO material
+        const camDia = camPoint.diameter ?? config.camDia;
+        const camDepth = camPoint.depth ?? config.camDepth;
+
+        // Pocket center = surface entry + halfDepth into material
+        const halfDepth = camDepth / 2;
+        const pocketX = cx + nx * halfDepth;
+        const pocketY = cy + ny * halfDepth;
+        const pocketZ = cz + nz * halfDepth;
+
+        // Quaternion: align CylinderGeometry Y-axis to camPoint.normal
+        const camNormal = new THREE.Vector3(nx, ny, nz).normalize();
+        const yAxis = new THREE.Vector3(0, 1, 0);
+        const camQuat = new THREE.Quaternion().setFromUnitVectors(yAxis, camNormal);
+        const camEuler = new THREE.Euler().setFromQuaternion(camQuat);
+
+        const positionOffset = getPositionForPoint(camPoint.id, (camPoint.cornerType || 'TOP_LEFT') as CornerType);
+
+        return (
+          <CamHousing3D
+            key={`decoupled-cam-${camIdx}-${camPoint.id}`}
+            position={[pocketX + positionOffset.dx, pocketY + positionOffset.dy, pocketZ + positionOffset.dz]}
+            rotation={[camEuler.x, camEuler.y, camEuler.z]}
+            diameter={camDia}
+            depth={camDepth}
+          />
         );
       })}
 
@@ -1039,13 +1077,17 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
 
     // Synchronous update - no debounce, no RAF
     // Get minifixConfig from cabinet's hardware settings (if set via HardwareLibrary)
-    const minifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
+    const rawMinifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
+    // Sanitize: strip preview-only fields (flip/rotate/move) before compiler
+    const minifixConfig = rawMinifixConfig
+      ? sanitizeManufacturingConfig(rawMinifixConfig)
+      : {};
     // Pass config as second arg, drillingParams as third arg
     // CRITICAL: Limit connectorCount to 2 per corner to match Hardware3DOverlay visualization
     // This ensures drill indicators (Ø10, Ø15) match the actual hardware shown
     const drillMap = generateMinifixDrillMap(
       activeCabinetFromArray,
-      minifixConfig || {},
+      minifixConfig,
       drillingParams,
       { connectorCount: 2 }  // Match MAX_HARDWARE_PER_CORNER in Hardware3DOverlay
     );
