@@ -143,7 +143,7 @@ export function getMinifixFullConfigForThickness(woodThickness: number) {
     dowelDepthFace: config.dowelDepthFace ?? 12,
     // Preview-only fields (flip/rotate/move) intentionally included with defaults
     // for backward compat. They affect ONLY the editor 3D preview, NOT CNC/DrillMap.
-    // See MinifixPreviewState and PREVIEW_KEYS in MinifixConfigPanel.tsx.
+    // See MinifixPreviewState and MINIFIX_PREVIEW_ONLY_KEYS in MinifixConfigPanel.tsx.
     flipVertical: false,
     flipHorizontal: false,
     rotationX: 0,

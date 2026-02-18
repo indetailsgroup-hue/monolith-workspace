@@ -99,7 +99,7 @@ export interface MinifixFullConfig {
   dowelOffset: number;
 
   // ⚠️ PREVIEW-ONLY: These fields affect ONLY the editor 3D preview.
-  // They are NOT serialized into manufacturing config (see PREVIEW_KEYS)
+  // They are NOT serialized into manufacturing config (see MINIFIX_PREVIEW_ONLY_KEYS)
   // and have NO effect on CNC drilling positions or the Designer scene.
   flipVertical: boolean;
   flipHorizontal: boolean;
@@ -131,8 +131,8 @@ export interface MinifixPreviewState {
   moveZ: number;
 }
 
-/** Keys that belong to preview-only state — stripped from Copy Config / Save */
-export const PREVIEW_KEYS: (keyof MinifixPreviewState)[] = [
+/** Keys that belong to preview-only state — stripped from manufacturing config */
+export const MINIFIX_PREVIEW_ONLY_KEYS: (keyof MinifixPreviewState)[] = [
   'flipVertical', 'flipHorizontal',
   'rotationX', 'rotationY', 'rotationZ',
   'moveX', 'moveY', 'moveZ',
@@ -151,15 +151,30 @@ export const DEFAULT_PREVIEW_STATE: MinifixPreviewState = {
 };
 
 /**
- * Strip preview-only fields from config before serialization.
- * Returns a clean manufacturing config without preview transforms.
+ * Sanitize config for manufacturing output — removes all preview-only fields.
+ * Use before: Copy Config, Save Preset, or passing to compiler/DrillMap.
  */
-export function stripPreviewFields(config: MinifixFullConfig): Omit<MinifixFullConfig, keyof MinifixPreviewState> {
+export function sanitizeManufacturingConfig(config: MinifixFullConfig): Omit<MinifixFullConfig, keyof MinifixPreviewState> {
   const clean = { ...config };
-  for (const key of PREVIEW_KEYS) {
+  for (const key of MINIFIX_PREVIEW_ONLY_KEYS) {
     delete (clean as Record<string, unknown>)[key];
   }
   return clean as Omit<MinifixFullConfig, keyof MinifixPreviewState>;
+}
+
+/**
+ * Dev-only runtime assert: throws if any preview-only key is found in config.
+ * Place at compiler boundaries (e.g. generateDrillMap entry) to catch leaks.
+ */
+export function assertNoPreviewKeys(cfg: Record<string, unknown>, context = 'MinifixConfig'): void {
+  if (import.meta.env?.DEV) {
+    for (const k of MINIFIX_PREVIEW_ONLY_KEYS) {
+      if (k in cfg) {
+        throw new Error(`[Monolith] Preview-only key "${k}" leaked into ${context}. ` +
+          `Use sanitizeManufacturingConfig() before passing config to compiler.`);
+      }
+    }
+  }
 }
 
 // ============================================
@@ -1648,7 +1663,7 @@ export function MinifixConfigPanel({
 
   const copyConfig = () => {
     // Strip preview-only fields — export manufacturing config only
-    const configForExport = stripPreviewFields(config);
+    const configForExport = sanitizeManufacturingConfig(config);
     navigator.clipboard.writeText(JSON.stringify(configForExport, null, 2));
   };
 
@@ -2302,6 +2317,14 @@ export function MinifixConfigPanel({
         {/* PREVIEW TAB - Preview-only manipulation (no CNC / no Designer impact) */}
         {activeTab === 'preview' && (
           <div className="space-y-4">
+            {/* Preview-only badge */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-md"
+              title="These controls only affect the 3D preview inside this editor. They do not change CNC drilling positions or the Designer scene."
+            >
+              <span className="text-[10px] font-semibold text-amber-400 tracking-wide uppercase">Preview-only</span>
+              <span className="text-[10px] text-amber-400/70">— no effect on CNC or Designer</span>
+            </div>
             {/* Flip Section */}
             <div className="p-3 bg-[#243040] rounded-lg border border-[#3a4a5a]">
               <div className="flex items-center gap-2 mb-3">

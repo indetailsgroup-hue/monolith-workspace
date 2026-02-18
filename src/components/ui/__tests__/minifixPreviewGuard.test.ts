@@ -4,15 +4,15 @@
  * Ensures preview-only fields (flip, rotate, move) never leak into
  * manufacturing config or affect CNC drilling output.
  *
- * @see MinifixPreviewState, PREVIEW_KEYS, stripPreviewFields() in MinifixConfigPanel.tsx
+ * @see MinifixPreviewState, MINIFIX_PREVIEW_ONLY_KEYS, sanitizeManufacturingConfig()
  */
 
 import { describe, it, expect } from 'vitest';
 import {
-  PREVIEW_KEYS,
-  stripPreviewFields,
+  MINIFIX_PREVIEW_ONLY_KEYS,
+  sanitizeManufacturingConfig,
+  assertNoPreviewKeys,
   DEFAULT_PREVIEW_STATE,
-  type MinifixPreviewState,
   type MinifixFullConfig,
 } from '../MinifixConfigPanel';
 import { getMinifixFullConfigForThickness } from '@/core/manufacturing/hardware/minifixDefaults';
@@ -21,7 +21,7 @@ import { getMinifixFullConfigForThickness } from '@/core/manufacturing/hardware/
 // Test 1: Copy Config excludes preview fields
 // ============================================================================
 
-describe('stripPreviewFields (Copy Config guard)', () => {
+describe('sanitizeManufacturingConfig (Copy Config guard)', () => {
   it('removes all preview keys from config', () => {
     // Create a config with NON-DEFAULT preview values
     const configWithPreview: MinifixFullConfig = {
@@ -36,10 +36,10 @@ describe('stripPreviewFields (Copy Config guard)', () => {
       moveZ: 20,
     };
 
-    const stripped = stripPreviewFields(configWithPreview);
+    const stripped = sanitizeManufacturingConfig(configWithPreview);
 
     // Assert: no preview keys remain
-    for (const key of PREVIEW_KEYS) {
+    for (const key of MINIFIX_PREVIEW_ONLY_KEYS) {
       expect(stripped).not.toHaveProperty(key);
     }
   });
@@ -53,7 +53,7 @@ describe('stripPreviewFields (Copy Config guard)', () => {
       moveZ: 20,
     };
 
-    const stripped = stripPreviewFields(configWithPreview);
+    const stripped = sanitizeManufacturingConfig(configWithPreview);
 
     // Assert: critical manufacturing fields are unchanged
     expect(stripped.camDia).toBe(base.camDia);
@@ -70,10 +70,10 @@ describe('stripPreviewFields (Copy Config guard)', () => {
     expect(stripped.woodThickness).toBe(base.woodThickness);
   });
 
-  it('PREVIEW_KEYS matches MinifixPreviewState keys exactly', () => {
-    // Guard: if someone adds a preview field to the interface but forgets PREVIEW_KEYS
+  it('MINIFIX_PREVIEW_ONLY_KEYS matches MinifixPreviewState keys exactly', () => {
+    // Guard: if someone adds a preview field to the interface but forgets MINIFIX_PREVIEW_ONLY_KEYS
     const previewStateKeys = Object.keys(DEFAULT_PREVIEW_STATE).sort();
-    const registeredKeys = [...PREVIEW_KEYS].sort();
+    const registeredKeys = [...MINIFIX_PREVIEW_ONLY_KEYS].sort();
 
     expect(registeredKeys).toEqual(previewStateKeys);
   });
@@ -84,7 +84,7 @@ describe('stripPreviewFields (Copy Config guard)', () => {
 // ============================================================================
 
 describe('Manufacturing config unaffected by preview state', () => {
-  it('stripPreviewFields produces identical output regardless of preview values', () => {
+  it('sanitizeManufacturingConfig produces identical output regardless of preview values', () => {
     const base = getMinifixFullConfigForThickness(18);
 
     // Config A: default preview state
@@ -106,8 +106,8 @@ describe('Manufacturing config unaffected by preview state', () => {
       moveZ: 50,
     };
 
-    const strippedA = stripPreviewFields(configA);
-    const strippedB = stripPreviewFields(configB);
+    const strippedA = sanitizeManufacturingConfig(configA);
+    const strippedB = sanitizeManufacturingConfig(configB);
 
     // Manufacturing output must be byte-identical
     expect(JSON.stringify(strippedA)).toBe(JSON.stringify(strippedB));
@@ -125,7 +125,7 @@ describe('Manufacturing config unaffected by preview state', () => {
         moveZ: 50,
       };
 
-      const stripped = stripPreviewFields(withPreview);
+      const stripped = sanitizeManufacturingConfig(withPreview);
 
       // No preview contamination
       expect(stripped).not.toHaveProperty('flipVertical');
@@ -136,5 +136,74 @@ describe('Manufacturing config unaffected by preview state', () => {
       expect(stripped.woodThickness).toBe(thickness);
       expect(stripped.camDia).toBe(15); // Minifix 15 standard
     }
+  });
+});
+
+// ============================================================================
+// Test 3: Serialized JSON string contains no preview keys
+// ============================================================================
+
+describe('Serialized JSON guard (anti-serialize-before-strip)', () => {
+  it('JSON.stringify of sanitized config contains zero preview key names', () => {
+    const config: MinifixFullConfig = {
+      ...getMinifixFullConfigForThickness(18),
+      flipVertical: true,
+      flipHorizontal: true,
+      rotationX: 999,
+      rotationY: -45,
+      rotationZ: 360,
+      moveX: 100,
+      moveY: -200,
+      moveZ: 50,
+    };
+
+    const jsonString = JSON.stringify(sanitizeManufacturingConfig(config));
+
+    // Verify at the STRING level — catches "serialize before strip" bugs
+    for (const key of MINIFIX_PREVIEW_ONLY_KEYS) {
+      expect(jsonString).not.toContain(`"${key}"`);
+    }
+  });
+
+  it('JSON output matches copyConfig() pattern exactly', () => {
+    const config: MinifixFullConfig = {
+      ...getMinifixFullConfigForThickness(18),
+      rotationX: 90,
+      moveZ: 50,
+    };
+
+    // Simulate what copyConfig() does
+    const configForExport = sanitizeManufacturingConfig(config);
+    const clipboardContent = JSON.stringify(configForExport, null, 2);
+
+    // Parse back and verify no preview contamination round-tripped
+    const parsed = JSON.parse(clipboardContent);
+    for (const key of MINIFIX_PREVIEW_ONLY_KEYS) {
+      expect(parsed).not.toHaveProperty(key);
+    }
+  });
+});
+
+// ============================================================================
+// Test 4: assertNoPreviewKeys runtime guard
+// ============================================================================
+
+describe('assertNoPreviewKeys (compiler boundary guard)', () => {
+  it('does not throw for clean manufacturing config', () => {
+    const clean = sanitizeManufacturingConfig(getMinifixFullConfigForThickness(18));
+    expect(() => {
+      assertNoPreviewKeys(clean as unknown as Record<string, unknown>, 'test');
+    }).not.toThrow();
+  });
+
+  it('throws if preview key is present', () => {
+    const leaked = {
+      ...sanitizeManufacturingConfig(getMinifixFullConfigForThickness(18)),
+      rotationX: 45,  // <-- leaked preview key
+    } as unknown as Record<string, unknown>;
+
+    expect(() => {
+      assertNoPreviewKeys(leaked, 'test');
+    }).toThrow(/Preview-only key "rotationX" leaked/);
   });
 });

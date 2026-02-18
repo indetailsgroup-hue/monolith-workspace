@@ -78,6 +78,7 @@ import {
   type Box3Like,
   type System32AutoParams,
 } from './panelBasis';
+import { assertNoPreviewKeys } from '../../../components/ui/MinifixConfigPanel';
 
 // ============================================
 // CONSTANTS
@@ -766,6 +767,9 @@ export function generateMinifixDrillMap(
   // Merge with defaults
   const fullConfig: MinifixConfig = { ...DEFAULT_MINIFIX_CONFIG, ...config };
   const fullParams: DrillingParams = { ...DEFAULT_DRILLING_PARAMS, ...drillingParams };
+
+  // DEV-ONLY: Guard — preview-only keys must never reach the compiler
+  assertNoPreviewKeys(fullConfig as unknown as Record<string, unknown>, 'generateMinifixDrillMap');
 
   // maxConnectors option: undefined = auto (all that fit), or a specific number
   const maxConnectors = options?.connectorCount;
