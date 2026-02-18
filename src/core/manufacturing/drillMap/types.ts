@@ -344,6 +344,34 @@ export interface DrillMap {
   // Additional metadata (used by test fixtures and validation)
   tools?: unknown[];         // Tool list for the drill map
   warnings?: string[];       // Validation warnings
+
+  // Traceability: deterministic hashes of inputs for audit/debug
+  meta?: DrillMapMeta;
+}
+
+/**
+ * Traceability metadata attached to each generated DrillMap.
+ * Hashes reflect merged (fullConfig + fullParams) inputs — NOT timestamps.
+ * Use to answer: "which config produced this drill map?"
+ */
+export interface DrillMapMeta {
+  generator: {
+    name: 'generateMinifixDrillMap';
+    version: string;
+    env?: 'dev' | 'prod';
+  };
+  inputs: {
+    connectorCount?: number;
+    minifixPresetId?: string;
+    /** SHA-256 hex of stableStringify(fullConfig) — 64 chars */
+    minifixConfigHash: string;
+    /** SHA-256 hex of stableStringify(fullParams) — 64 chars */
+    drillingParamsHash: string;
+  };
+  timestamps?: {
+    /** ISO string — for audit/debug only, NOT included in hashes */
+    generatedAtIso: string;
+  };
 }
 
 // ============================================

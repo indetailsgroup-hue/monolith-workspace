@@ -79,6 +79,7 @@ import {
   type System32AutoParams,
 } from './panelBasis';
 import { assertNoPreviewKeys } from '../../../components/ui/MinifixConfigPanel';
+import { buildDrillMapMeta } from './traceability';
 
 // ============================================
 // CONSTANTS
@@ -756,6 +757,13 @@ export function generateMinifixDrillMap(
   // DEV-ONLY: Guard — preview-only keys must never reach the compiler
   assertNoPreviewKeys(fullConfig as unknown as Record<string, unknown>, 'generateMinifixDrillMap');
 
+  // Traceability: hash inputs for audit trail
+  const meta = buildDrillMapMeta({
+    fullConfig: fullConfig as unknown as Record<string, unknown>,
+    fullParams: fullParams as unknown as Record<string, unknown>,
+    connectorCount: options?.connectorCount,
+  });
+
   // maxConnectors option: undefined = auto (all that fit), or a specific number
   const maxConnectors = options?.connectorCount;
 
@@ -873,6 +881,9 @@ export function generateMinifixDrillMap(
       }
     }
   }
+
+  // Attach traceability meta
+  drillMap.meta = meta;
 
   return drillMap;
 }
