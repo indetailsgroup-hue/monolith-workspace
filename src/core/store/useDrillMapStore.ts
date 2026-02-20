@@ -79,6 +79,8 @@ interface DrillMapState {
 
   // Rotation defaults (persisted)
   rotationDefaults: RotationDefaults;
+  // Explicit vertical flip state by point id (do not infer from rotX)
+  flipXStateByPointId: Record<string, boolean>;
 
   // Position defaults (persisted)
   positionDefaults: PositionDefaults;
@@ -274,6 +276,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       },
       hardwareRightClickTime: 0,
       rotationDefaults: DEFAULT_ROTATION_DEFAULTS,
+      flipXStateByPointId: {},
       positionDefaults: DEFAULT_POSITION_DEFAULTS,
       cabinetBoundsWorld: FALLBACK_BOUNDS,
       drillMapVersion: 0,
@@ -296,7 +299,10 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
                   if (saved) {
                     return {
                       ...point,
-                      rotationOverride: saved.rotation || point.rotationOverride,
+                      // Keep baseline rotation deterministic from current algorithm.
+                      // Persisted rotation overrides caused stale corner orientation.
+                      rotationOverride: point.rotationOverride,
+                      // Position nudges are still safe to restore.
                       positionOverride: saved.position || point.positionOverride,
                     };
                   }
@@ -315,7 +321,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         set({ drillMap });
       },
 
-      clearDrillMap: () => set({ drillMap: null }),
+      clearDrillMap: () => set({ drillMap: null, flipXStateByPointId: {} }),
 
       setShowDrillMap: (show) => set({ showDrillMap: show }),
 
@@ -471,11 +477,12 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           }
         }
 
+        let pairedHoleId: string | undefined;
         const updatedPanels = state.drillMap.panels.map(panel => ({
           ...panel,
           points: panel.points.map(point =>
             point.id === pointId
-              ? { ...point, rotationOverride: undefined }
+              ? ((pairedHoleId = point.pairedHoleId), { ...point, rotationOverride: undefined })
               : point
           ),
         }));
@@ -488,6 +495,12 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             ...state.drillMap,
             panels: updatedPanels,
           },
+          flipXStateByPointId: (() => {
+            const next = { ...state.flipXStateByPointId };
+            delete next[pointId];
+            if (pairedHoleId) delete next[pairedHoleId];
+            return next;
+          })(),
           // Update context menu to show default rotation after clearing override
           hardwareContextMenu: state.hardwareContextMenu.pointId === pointId
             ? { ...state.hardwareContextMenu, currentRotation: defaultRotation }
@@ -548,18 +561,24 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
 
         if (!currentRotation) return;
 
+        // Resolve pair once so rotation + explicit flip state stay in sync.
+        let pairedHoleId: string | undefined;
+        for (const panel of state.drillMap.panels) {
+          const point = panel.points.find((p) => p.id === pointId);
+          if (point?.pairedHoleId) {
+            pairedHoleId = point.pairedHoleId;
+            break;
+          }
+        }
+
         // Apply the action
         const newRotation = { ...currentRotation };
         switch (action) {
           case 'flipX':
-            // Toggle flip state by adding/subtracting π (preserves fine rotation offset)
-            // If rotX is in "unflipped" half (< π/2), add π to flip
-            // If rotX is in "flipped" half (>= π/2), subtract π to unflip
-            if (currentRotation.rotX >= Math.PI / 2) {
-              newRotation.rotX = currentRotation.rotX - Math.PI;
-            } else {
-              newRotation.rotX = currentRotation.rotX + Math.PI;
-            }
+            // IMPORTANT:
+            // Vertical Flip should swap hardware/holes to opposite panel face.
+            // Do NOT inject extra 180° rotation here (it fights placement logic).
+            // Rotation remains unchanged for flipX; only explicit flip state toggles below.
             break;
           case 'flipY':
             // Same toggle logic for Y axis
@@ -589,11 +608,57 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             break;
         }
 
-        // Normalize rotation to prevent values from accumulating outside [-π, π]
-        const normalizedRotation = normalizeRotationOverride(newRotation);
+        // For non-flip actions, persist rotation overrides.
+        // flipX uses dedicated face-swap state and should not alter rotation override.
+        if (action !== 'flipX') {
+          // Normalize rotation to prevent values from accumulating outside [-π, π]
+          const normalizedRotation = normalizeRotationOverride(newRotation);
 
-        // Update the point
-        get().setPointRotationOverride(pointId, normalizedRotation);
+          // Update the point
+          get().setPointRotationOverride(pointId, normalizedRotation);
+
+          // Keep paired CAM/BOLT in sync so rotation edits affect both.
+          if (pairedHoleId) {
+            get().setPointRotationOverride(pairedHoleId, normalizedRotation);
+          }
+        }
+
+        if (action === 'flipX') {
+          const nextFlip = !(state.flipXStateByPointId[pointId] ?? false);
+          let selectedCorner: CornerType | undefined = state.hardwareContextMenu.cornerType ?? undefined;
+          if (!selectedCorner) {
+            for (const panel of state.drillMap.panels) {
+              const point = panel.points.find((p) => p.id === pointId);
+              if (point?.cornerType) {
+                selectedCorner = point.cornerType;
+                break;
+              }
+            }
+          }
+
+          const pointIdsInSameCorner: string[] = [];
+          if (selectedCorner) {
+            for (const panel of state.drillMap.panels) {
+              for (const point of panel.points) {
+                if (point.cornerType === selectedCorner) {
+                  pointIdsInSameCorner.push(point.id);
+                }
+              }
+            }
+          }
+
+          set((s) => ({
+            flipXStateByPointId: {
+              ...s.flipXStateByPointId,
+              ...(pointIdsInSameCorner.length > 0
+                ? Object.fromEntries(pointIdsInSameCorner.map((id) => [id, nextFlip]))
+                : {
+                    [pointId]: nextFlip,
+                    ...(pairedHoleId ? { [pairedHoleId]: nextFlip } : {}),
+                  }),
+            },
+          }));
+        }
       },
 
       getRotationForPoint: (pointId, cornerType, calculatedRotation) => {
@@ -633,11 +698,23 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       setCabinetBounds: (bounds) => set({ cabinetBoundsWorld: bounds }),
 
       resetAllDefaults: () => {
-        // Reset both rotation and position defaults to system defaults
-        // This fixes Z-alignment issues caused by incorrect saved rotations
+        // Reset defaults + clear all per-point overrides/flip state so baseline is deterministic.
+        const state = get();
+        const activeCabinetId = useCabinetStore.getState().activeCabinetId;
+        if (activeCabinetId) {
+          const overrides = useCabinetStore.getState().getHardwarePointOverrides(activeCabinetId);
+          for (const pointId of Object.keys(overrides)) {
+            useCabinetStore.getState().clearHardwarePointOverride(activeCabinetId, pointId);
+          }
+        }
+
+        const currentVersion = state.drillMapVersion;
         set({
           rotationDefaults: DEFAULT_ROTATION_DEFAULTS,
           positionDefaults: DEFAULT_POSITION_DEFAULTS,
+          flipXStateByPointId: {},
+          drillMap: null,
+          drillMapVersion: currentVersion + 1,
         });
       },
 
@@ -892,16 +969,16 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
     }),
     {
       name: 'drill-map-settings',
-      version: 3,  // v3: Force regeneration with corrected Distance B = 24mm
+      version: 4,  // v4: Force-reset persisted rotation/position defaults for stable CAM baseline
       partialize: (state) => ({
         // Only persist rotation/position defaults, not the drill map itself
         rotationDefaults: state.rotationDefaults,
         positionDefaults: state.positionDefaults,
       }),
       migrate: (persistedState, version) => {
-        // Version 3: Corrected Distance B from 34mm to 24mm per CAD spec
-        if (version < 3) {
-          console.log('[DrillMap] Migrating settings to v3 (Distance B = 24mm per CAD spec)');
+        // Version 4: Reset persisted defaults to prevent stale flip/orientation carry-over
+        if (version < 4) {
+          console.log('[DrillMap] Migrating settings to v4 (reset persisted hardware defaults)');
           const state = persistedState as Partial<DrillMapState> | null;
           return {
             ...(state ?? {}),
@@ -938,6 +1015,7 @@ export const selectShow3DHardware = (state: DrillMapState) => state.show3DHardwa
 export const selectDrillingParams = (state: DrillMapState) => state.drillingParams;
 export const selectHardwareContextMenu = (state: DrillMapState) => state.hardwareContextMenu;
 export const selectRotationDefaults = (state: DrillMapState) => state.rotationDefaults;
+export const selectFlipXStateByPointId = (state: DrillMapState) => state.flipXStateByPointId;
 export const selectPositionDefaults = (state: DrillMapState) => state.positionDefaults;
 export const selectCabinetBounds = (state: DrillMapState) => state.cabinetBoundsWorld;
 export const selectDrillMapVersion = (state: DrillMapState) => state.drillMapVersion;

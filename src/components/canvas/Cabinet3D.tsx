@@ -32,13 +32,15 @@ import type { Vec3 } from '../../core/types/SnapTypes';
 import { calculateSnap, type SnapTarget } from '../../core/utils/snapSystem';
 import { DrillMapOverlay } from './DrillMapOverlay';
 import { CSGDrillOverlay } from './CSGDrillOverlay';
+import { DrillGuideLayer } from './DrillGuideLayer';
 import { CADDrillIndicators } from './CADDrillIndicators';
 import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapStore';
-import type { DrillMap, DrillMapPoint, CornerType, RotationOverride } from '../../core/manufacturing/drillMap/types';
+import type { DrillMap, DrillMapPoint, CornerType, RotationOverride, DrillPurpose } from '../../core/manufacturing/drillMap/types';
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
 import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
 
+import { Dowel3D, quatFromYTo } from './Hardware3D';
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
 import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
 import { useXrayRaycastPolicy } from './useXrayRaycastPolicy';
@@ -187,71 +189,26 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   const openContextMenu = useDrillMapStore((s) => s.openHardwareContextMenu);
   const getRotationForPoint = useDrillMapStore((s) => s.getRotationForPoint);
   const getPositionForPoint = useDrillMapStore((s) => s.getPositionForPoint);
+  const flipXStateByPointId = useDrillMapStore((s) => s.flipXStateByPointId);
 
   // Early return removed - wrapper handles visibility check
 
-  // Find all BOLT points on SIDE panels - these are where the visible Minifix hardware goes
-  // CAM_LOCK is drilled INTO TOP/BOTTOM panels (hidden inside)
-  // BOLT is drilled INTO LEFT_SIDE/RIGHT_SIDE panels (visible hardware)
-  //
-  // IMPORTANT: Limit to first N System32 positions per corner to avoid "row of clones"
-  // PDF pattern: typically 1-2 connectors per corner depending on depth
-  const MAX_HARDWARE_PER_CORNER = 2;  // Limit: first 2 System32 positions (37mm, 69mm)
-  const ALLOWED_SYS32_POSITIONS = [37, 69];  // System32 first two positions
-
-  const allBoltPoints: DrillMapPoint[] = [];
-  const allCamPoints: DrillMapPoint[] = [];
+  // Find all BOLT, CAM_LOCK, and DOWEL points from drill map
+  // v4.1: Drill map generation (selectConnectorPositions) now limits positions
+  // per Häfele CAD spec, so no hardcoded position filter needed here.
+  const boltPoints: DrillMapPoint[] = [];
+  const camPoints: DrillMapPoint[] = [];
+  const dowelPoints: DrillMapPoint[] = [];
   drillMap.panels.forEach(panel => {
     panel.points.forEach(point => {
       if (point.purpose === 'BOLT') {
-        allBoltPoints.push(point);
-      } else if (point.purpose === 'CAM_LOCK') {
-        allCamPoints.push(point);
+        boltPoints.push(point);
+      } else if (point.purpose === 'CAM_LOCK' || point.purpose === 'MINIFIX') {
+        camPoints.push(point);
+      } else if (point.purpose === 'DOWEL') {
+        dowelPoints.push(point);
       }
     });
-  });
-
-  // Filter to keep only first N positions per corner
-  // Group by cornerType, then keep only allowed positions
-  const cornerCounts = new Map<string, number>();
-  const boltPoints = allBoltPoints.filter(point => {
-    const corner = point.cornerType || 'UNKNOWN';
-    const depthPos = Math.round(point.depthPosition ?? -1);
-
-    // Only allow specific System32 positions
-    if (!ALLOWED_SYS32_POSITIONS.includes(depthPos)) {
-      return false;
-    }
-
-    // Count per corner
-    const currentCount = cornerCounts.get(corner) || 0;
-    if (currentCount >= MAX_HARDWARE_PER_CORNER) {
-      return false;
-    }
-
-    cornerCounts.set(corner, currentCount + 1);
-    return true;
-  });
-
-  // Filter CAM points with same logic as bolts
-  const camCornerCounts = new Map<string, number>();
-  const camPoints = allCamPoints.filter(point => {
-    const corner = point.cornerType || 'UNKNOWN';
-    const depthPos = Math.round(point.depthPosition ?? -1);
-
-    // Only allow specific System32 positions
-    if (!ALLOWED_SYS32_POSITIONS.includes(depthPos)) {
-      return false;
-    }
-
-    // Count per corner
-    const currentCount = camCornerCounts.get(corner) || 0;
-    if (currentCount >= MAX_HARDWARE_PER_CORNER) {
-      return false;
-    }
-
-    camCornerCounts.set(corner, currentCount + 1);
-    return true;
   });
 
   // Use provided config or defaults
@@ -289,9 +246,14 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
       });
 
       let finalQuat = orientationResult.boltQuat.clone();
-      if (cornerType === 'TOP_LEFT' && mountType === 'INSET') {
+      if ((cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT') && mountType === 'INSET') {
         const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
         finalQuat = flipQuat.multiply(finalQuat);
+      }
+      // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
+      if (flipXStateByPointId[boltPoint.id]) {
+        const faceSwapQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
+        finalQuat = faceSwapQuat.multiply(finalQuat);
       }
 
       const calculatedRotation = quaternionToRotationOverride(finalQuat);
@@ -304,7 +266,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         rotZ: finalRotation.rotZ,
       };
     });
-  }, [boltPoints, cabinetWidth, cabinetHeight, topJoint, bottomJoint, getRotationForPoint]);
+  }, [boltPoints, cabinetWidth, cabinetHeight, topJoint, bottomJoint, getRotationForPoint, flipXStateByPointId]);
 
   // IMPORTANT: Drill map uses CENTER-BASED coordinates
   // x < 0 is LEFT, x > 0 is RIGHT
@@ -384,12 +346,16 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         // Validate orientation (throws on error - disable in production)
         // assertOrientation(orientationResult, boltDirWorld);
 
-        // ✅ VERTICAL FLIP FIX: TOP_LEFT INSET needs 180° rotation around drilling axis
-        // User validation confirmed: TOP_LEFT wrong, TOP_RIGHT/BOTTOM_LEFT/BOTTOM_RIGHT correct
+        // ✅ VERTICAL FLIP FIX: TOP corners INSET need 180° rotation around drilling axis
         let finalQuat = orientationResult.boltQuat.clone();
-        if (cornerType === 'TOP_LEFT' && mountType === 'INSET') {
+        if ((cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT') && mountType === 'INSET') {
           const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
           finalQuat = flipQuat.multiply(finalQuat);
+        }
+        // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
+        if (flipXStateByPointId[boltPoint.id]) {
+          const faceSwapQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
+          finalQuat = faceSwapQuat.multiply(finalQuat);
         }
 
         // Convert quaternion to Euler for existing override system
@@ -433,32 +399,63 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           + config.ballHeadOffset
           + config.camOffset;
 
-        // Find the matching cam point for this bolt (by pairId)
-        const matchingCam = camPoints.find(cp => cp.pairId === boltPoint.pairId);
+        // Find matching CAM for this bolt.
+        // Priority:
+        // 1) direct pairedHoleId
+        // 2) pairId
+        // 3) nearest CAM in same corner (robust fallback)
+        const matchingCamByPair =
+          camPoints.find((cp) => cp.id === boltPoint.pairedHoleId)
+          || camPoints.find((cp) => cp.pairId === boltPoint.pairId);
+
+        const matchingCamByNearest = (() => {
+          const sameCorner = camPoints.filter((cp) => cp.cornerType === boltPoint.cornerType);
+          if (sameCorner.length === 0) return undefined;
+          const [bx, by, bz] = boltPoint.position;
+          let nearest = sameCorner[0];
+          let bestDist2 = Number.POSITIVE_INFINITY;
+          for (const cp of sameCorner) {
+            const [cx, cy, cz] = cp.position;
+            const dx = cx - bx;
+            const dy = cy - by;
+            const dz = cz - bz;
+            const dist2 = dx * dx + dy * dy + dz * dz;
+            if (dist2 < bestDist2) {
+              bestDist2 = dist2;
+              nearest = cp;
+            }
+          }
+          return nearest;
+        })();
+
+        const matchingCam = matchingCamByPair || matchingCamByNearest;
 
         let groupX: number, groupY: number, groupZ: number;
 
-        if (matchingCam) {
-          // Cam pocket center: surface entry + half depth into material
+        const isVerticalFlipped = !!flipXStateByPointId[boltPoint.id];
+
+        // Always anchor hardware on bolt axis center when available.
+        // This guarantees bolt/thread stays centered in Top/Bottom thickness.
+        if (boltPoint.targetPocketCenter) {
+          const [tx, ty, tz] = boltPoint.targetPocketCenter;
+          groupX = tx + positionOffset.dx;
+          groupY = ty + positionOffset.dy;
+          groupZ = tz + positionOffset.dz;
+        } else if (matchingCam) {
+          // Legacy fallback without targetPocketCenter:
+          // use panel-thickness center from CAM entry point.
           const [cx, cy, cz] = matchingCam.position;
           const [nx, ny, nz] = matchingCam.normal;
-          const halfDepth = config.camDepth / 2;
-          groupX = cx + nx * halfDepth + positionOffset.dx;
-          groupY = cy + ny * halfDepth + positionOffset.dy;
-          groupZ = cz + nz * halfDepth + positionOffset.dz;
+          const panelThickness = matchingCam.panelThickness || 18;
+          const axisCenterOffset = panelThickness / 2;
+          groupX = cx + nx * axisCenterOffset + positionOffset.dx;
+          groupY = cy + ny * axisCenterOffset + positionOffset.dy;
+          groupZ = cz + nz * axisCenterOffset + positionOffset.dz;
         } else {
-          // Fallback: use targetPocketCenter stored on boltPoint
-          if (boltPoint.targetPocketCenter) {
-            const [tx, ty, tz] = boltPoint.targetPocketCenter;
-            groupX = tx + positionOffset.dx;
-            groupY = ty + positionOffset.dy;
-            groupZ = tz + positionOffset.dz;
-          } else {
-            // Last resort: bolt surface position (no cam data available)
-            groupX = x + positionOffset.dx;
-            groupY = y + positionOffset.dy;
-            groupZ = z + positionOffset.dz;
-          }
+          // Last resort: bolt surface position (no cam data available)
+          groupX = x + positionOffset.dx;
+          groupY = y + positionOffset.dy;
+          groupZ = z + positionOffset.dz;
         }
 
         return (
@@ -482,7 +479,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
                 <Preview3D
                   config={config}
                   showCam={true}
-                  showDowel={config.includeDowel}
+                  showDowel={false}  // Dowels rendered separately via drill map positions below
                   xRayMode={false}
                   isAttached={true}
                   showDimensions={false}
@@ -491,6 +488,40 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
               </group>
             </group>
           </group>
+        );
+      })}
+
+      {/* DOWEL 3D Hardware - v4.1 per Häfele CAD spec */}
+      {config.includeDowel && dowelPoints
+        // Render only SIDE panel drill points to avoid double-rendering.
+        // Each physical dowel has 2 drill points: side (FACE_BORE) + horiz (EDGE_BORE).
+        // We render from the SIDE point and position to span the joint.
+        .filter((dp) => dp.pairId?.endsWith('-dowel-side'))
+        .map((dp) => {
+        // Calculate rotation from drill normal → Dowel3D Y-axis
+        const rotation = quatFromYTo(dp.normal);
+
+        // Dowel spans joint: 12mm into SIDE panel (along normal) + 18mm into HORIZ panel (opposite).
+        // Drill point is at SIDE inner face, normal points INTO side panel.
+        // Center offset = (sideFaceDepth - horizEdgeDepth) / 2 = (12 - 18) / 2 = -3mm along normal
+        const SIDE_FACE_DEPTH = 12;   // mm - Häfele spec FACE_BORE
+        const HORIZ_EDGE_DEPTH = 18;  // mm - Häfele spec EDGE_BORE
+        const centerOffset = (SIDE_FACE_DEPTH - HORIZ_EDGE_DEPTH) / 2;
+        const pos: [number, number, number] = [
+          dp.position[0] + dp.normal[0] * centerOffset,
+          dp.position[1] + dp.normal[1] * centerOffset,
+          dp.position[2] + dp.normal[2] * centerOffset,
+        ];
+
+        return (
+          <Dowel3D
+            key={`dowel-hw-${dp.id}`}
+            position={pos}
+            rotation={rotation}
+            diameter={config.dowelDia || 8}
+            length={config.dowelLength || 30}
+            xRayMode={false}
+          />
         );
       })}
 
@@ -658,6 +689,7 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
   // Check if glue mode is active - use both tool store AND glue store mode
   // activeTool === 'glue' AND glueMode !== 'idle' should both be true
   const isGlueMode = activeTool === 'glue' && glueMode !== 'idle';
+  const isDrillGuideMode = activeTool === 'drillGuide';
 
   // For rendering GlueFaceHighlights, only check activeTool - let the component handle its own lifecycle
   // This allows the delayed unmount in GlueFaceHighlights to work properly
@@ -881,6 +913,8 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
           onClick={(e) => {
             // In glue mode, let clicks pass through to face planes
             if (isGlueMode) return;
+            // In drill guide mode, let clicks pass through to hotspot spheres
+            if (isDrillGuideMode) return;
             e.stopPropagation();
             onSelect();
           }}
@@ -995,6 +1029,9 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   // X-Ray mode controls drill map visibility
   // When X-Ray is ON, show drill holes regardless of drillMapVisible
   const showDrillMap = xRayMode || drillMapVisible;
+  const drillPurposeFilter = useMemo<DrillPurpose[] | undefined>(() => {
+    return drillMapPurpose ? [drillMapPurpose as DrillPurpose] : undefined;
+  }, [drillMapPurpose]);
 
   // Get drill map actions for auto-generation
   const setDrillMap = useDrillMapStore((s) => s.setDrillMap);
@@ -1041,13 +1078,12 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     // Get minifixConfig from cabinet's hardware settings (if set via HardwareLibrary)
     const minifixConfig = (activeCabinetFromArray as any).hardware?.minifixConfig;
     // Pass config as second arg, drillingParams as third arg
-    // CRITICAL: Limit connectorCount to 2 per corner to match Hardware3DOverlay visualization
-    // This ensures drill indicators (Ø10, Ø15) match the actual hardware shown
+    // Let selectConnectorPositions() determine count per Häfele CAD spec:
+    // Depth < 400mm → 2 corners, Depth >= 400mm → 2 corners + 1 middle
     const drillMap = generateMinifixDrillMap(
       activeCabinetFromArray,
       minifixConfig || {},
-      drillingParams,
-      { connectorCount: 2 }  // Match MAX_HARDWARE_PER_CORNER in Hardware3DOverlay
+      drillingParams
     );
     setDrillMap(drillMap);
 
@@ -1145,6 +1181,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           showDepth={showHardwareDimensions}
           showCrosshairs={true}
           lineWidth={2}
+          filterPurpose={drillPurposeFilter}
         />
       </group>
 
@@ -1174,7 +1211,11 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           visible={xRayMode && showDrillMap}
           colorByPurpose={true}
           opacity={0.8}
+          filterPurpose={drillPurposeFilter}
         />
+
+        {/* Red Drill Guide Lines - shows drill guide lines at joints */}
+        <DrillGuideLayer />
       </group>
     </group>
   );
@@ -1639,8 +1680,6 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
     }
   };
   
-  if (!panel.visible) return null;
-  
   // Show texture only when not selected/hovered
   // Note: BACK panel now shows texture (has 2-side surface finish)
   const showTexture = texture && !isSelected && !hovered;
@@ -1712,6 +1751,9 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
 
   // Determine effective render mode (X-Ray takes precedence)
   const effectiveMode = xRayMode ? 'XRAY' : renderMode;
+
+  // Visibility gate — placed after all hooks to comply with React rules of hooks
+  if (!panel.visible) return null;
 
   return (
     <group position={panel.position} rotation={panel.rotation}>

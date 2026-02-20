@@ -1851,7 +1851,8 @@ function generatePanels(
   // Calculate shelf segments based on dividers
   const segmentCount = structure.dividerCount + 1; // Number of horizontal segments
   const dividerThickness = T; // Divider panel thickness
-  const internalWidth = W - (2 * T) - MANUFACTURING_PARAMS.clearance;
+  // Main shelves should span between side panels without side clearance.
+  const internalWidth = W - (2 * T);
 
   // Calculate segment positions (X coordinates of dividers)
   // IMPORTANT: Use actual custom positions from existingOverrides if available
@@ -1895,7 +1896,7 @@ function generatePanels(
       const backSetback = overrides?.backSetback ?? MANUFACTURING_PARAMS.shelfSetbackBack;
 
       // Calculate shelf depth based on setbacks (round to 1 decimal)
-      const shelfD = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+      const shelfD = Math.round((depthInternal - frontSetback - backSetback) * 10) / 10;
 
       // Calculate segment width
       let segmentWidth: number;
@@ -1908,11 +1909,11 @@ function generatePanels(
       } else {
         // Calculate segment boundaries
         const leftBoundary = seg === 0
-          ? -W/2 + T + MANUFACTURING_PARAMS.clearance/2
+          ? -W/2 + T
           : dividerPositions[seg - 1] + dividerThickness/2;
 
         const rightBoundary = seg === segmentCount - 1
-          ? W/2 - T - MANUFACTURING_PARAMS.clearance/2
+          ? W/2 - T
           : dividerPositions[seg] - dividerThickness/2;
 
         segmentWidth = Math.round((rightBoundary - leftBoundary) * 10) / 10; // Round to 1 decimal
@@ -2086,6 +2087,12 @@ interface CabinetActions {
   hideUnselectedCabinets: (exceptId: string) => void;
   toggleCabinetVisibility: (cabinetId: string) => void;
 
+  // Panel visibility actions
+  setPanelVisible: (panelId: string, visible: boolean) => void;
+  togglePanelVisibility: (panelId: string) => void;
+  showAllPanels: () => void;
+  hideUnselectedPanels: (exceptPanelId: string) => void;
+
   // Dimension actions
   setDimension: (key: keyof CabinetDimensions, value: number) => void;
 
@@ -2255,7 +2262,7 @@ export const useCabinetStore = create<CabinetStore>()(
         // Auto-apply Minifix S200 hardware config based on wood thickness
         hardware: {
           minifixConfig,
-          minifixPresetId: `auto_minifix_${woodThickness}mm`,
+          minifixPresetId: `builtin_minifix_${woodThickness}mm`,
         },
       };
 
@@ -2321,7 +2328,7 @@ export const useCabinetStore = create<CabinetStore>()(
         // Auto-apply Minifix S200 hardware config based on wood thickness
         hardware: {
           minifixConfig,
-          minifixPresetId: `auto_minifix_${woodThickness}mm`,
+          minifixPresetId: `builtin_minifix_${woodThickness}mm`,
         },
       };
 
@@ -2561,6 +2568,44 @@ export const useCabinetStore = create<CabinetStore>()(
       } else {
         get().hideCabinet(cabinetId);
       }
+    },
+
+    // ========== PANEL VISIBILITY ACTIONS ==========
+
+    setPanelVisible: (panelId, visible) => {
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          const panel = cabinet.panels.find(p => p.id === panelId);
+          if (panel) panel.visible = visible;
+        });
+      });
+    },
+
+    togglePanelVisibility: (panelId) => {
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          const panel = cabinet.panels.find(p => p.id === panelId);
+          if (panel) panel.visible = !panel.visible;
+        });
+      });
+    },
+
+    showAllPanels: () => {
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          for (const p of cabinet.panels) { p.visible = true; }
+        });
+      });
+    },
+
+    hideUnselectedPanels: (exceptPanelId) => {
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          for (const p of cabinet.panels) {
+            p.visible = p.id === exceptPanelId;
+          }
+        });
+      });
     },
 
     // ========== DIMENSION ACTIONS ==========
@@ -2997,7 +3042,7 @@ export const useCabinetStore = create<CabinetStore>()(
 
         if (panel.role === 'SHELF' || panel.role === 'DIVIDER') {
           // Calculate new depth based on setbacks
-          const newDepth = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+          const newDepth = Math.round((depthInternal - frontSetback - backSetback) * 10) / 10;
 
           // Calculate new Z position (centered based on front setback)
           const newZ = (D/2 - frontSetback - ET/2) - (newDepth/2);
@@ -3116,7 +3161,7 @@ export const useCabinetStore = create<CabinetStore>()(
 
         if (panel.role === 'SHELF' || panel.role === 'DIVIDER') {
           // Calculate new depth based on default setbacks
-          const newDepth = Math.round((depthInternal - frontSetback - backSetback - ET) * 10) / 10;
+          const newDepth = Math.round((depthInternal - frontSetback - backSetback) * 10) / 10;
 
           // Calculate new Z position (centered based on front setback)
           const newZ = (D/2 - frontSetback - ET/2) - (newDepth/2);
@@ -3317,8 +3362,8 @@ export const useCabinetStore = create<CabinetStore>()(
       const frontSetback = 20; // Default front setback
       const backSetback = 28;  // Default back setback
       const depthInternal = D - T; // Internal depth
-      const shelfDepth = depthInternal - frontSetback - backSetback - ET;
-      const shelfWidth = subCompartmentWidth - 2; // Small clearance, use sub-compartment width
+      const shelfDepth = depthInternal - frontSetback - backSetback;
+      const shelfWidth = subCompartmentWidth;
 
       // Shelf Z position
       const shelfZ = (D/2 - frontSetback - ET/2) - (shelfDepth/2);
