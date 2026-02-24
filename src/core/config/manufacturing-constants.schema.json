@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Manufacturing Constants",
+  "description": "Configuration for cabinet manufacturing calculation constants. All dimensions in millimeters (mm).",
+  "type": "object",
+  "required": ["version", "backPanel", "edgeBanding", "safetyGap", "shelf", "compositions"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the config format"
+    },
+    "backPanel": {
+      "type": "object",
+      "description": "Back panel default configuration",
+      "required": ["defaultConstruction", "thickness", "grooveOffset"],
+      "properties": {
+        "defaultConstruction": {
+          "type": "string",
+          "enum": ["inset", "overlay"],
+          "description": "Default back panel construction method"
+        },
+        "thickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Default back panel thickness in mm (e.g., 6 or 9)"
+        },
+        "grooveOffset": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Distance from back edge to groove in mm"
+        }
+      },
+      "additionalProperties": false
+    },
+    "edgeBanding": {
+      "type": "object",
+      "description": "Edge banding and pre-mill defaults",
+      "required": ["defaultEdges", "defaultPreMill"],
+      "properties": {
+        "defaultEdges": {
+          "$ref": "#/definitions/fourSides",
+          "description": "Default edge banding thickness per side in mm"
+        },
+        "defaultPreMill": {
+          "$ref": "#/definitions/fourSides",
+          "description": "Default pre-mill allowance per side in mm"
+        }
+      },
+      "additionalProperties": false
+    },
+    "safetyGap": {
+      "type": "object",
+      "description": "Safety gap configuration for anti-collision",
+      "required": ["default"],
+      "properties": {
+        "default": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Default safety gap in mm to prevent collision with back panel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "shelf": {
+      "type": "object",
+      "description": "Shelf calculation defaults",
+      "required": ["defaultFrontSetback", "defaultSideClearance"],
+      "properties": {
+        "defaultFrontSetback": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Default front setback in mm (distance shelf is recessed from front)"
+        },
+        "defaultSideClearance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Default side clearance in mm per side"
+        }
+      },
+      "additionalProperties": false
+    },
+    "compositions": {
+      "type": "object",
+      "description": "Common material compositions keyed by name",
+      "additionalProperties": {
+        "$ref": "#/definitions/materialComposition"
+      },
+      "minProperties": 1
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "fourSides": {
+      "type": "object",
+      "required": ["top", "bottom", "left", "right"],
+      "properties": {
+        "top": { "type": "number", "minimum": 0 },
+        "bottom": { "type": "number", "minimum": 0 },
+        "left": { "type": "number", "minimum": 0 },
+        "right": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "materialComposition": {
+      "type": "object",
+      "required": ["coreThickness", "surfaceAThickness", "surfaceBThickness", "glueThickness"],
+      "properties": {
+        "coreThickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Core material thickness in mm"
+        },
+        "surfaceAThickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Surface A (top) laminate thickness in mm"
+        },
+        "surfaceBThickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Surface B (bottom) laminate thickness in mm"
+        },
+        "glueThickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Glue layer thickness in mm (0 for pre-bonded surfaces)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

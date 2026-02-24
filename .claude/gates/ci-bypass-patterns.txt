@@ -1,0 +1,256 @@
+# CI Bypass Patterns - GATE SAFETY
+# ================================
+#
+# These patterns are FORBIDDEN in production code.
+# BLOCK = CI FAIL (exit code 1)
+# WARN = Review required (exit code 2 unless --strict)
+#
+# Format: GATE|SEVERITY|PATTERN|DESCRIPTION
+# - GATE: G9, G10, G10.1, G10.2, ALL
+# - SEVERITY: BLOCK (always fail), WARN-HIGH, WARN-MED, WARN-LOW
+#   - WARN-HIGH: Likely gate bypass, needs immediate attention
+#   - WARN-MED: Quality/determinism issue, should fix before release
+#   - WARN-LOW: Code hygiene, fix when convenient
+# - PATTERN: grep -E compatible regex
+# - DESCRIPTION: Human-readable explanation
+#
+# Lines starting with # are comments
+# Empty lines are ignored
+
+# ============================================
+# G9: PERSISTENCE SAFETY (BYPASS-PROOF)
+# ============================================
+# INVARIANT: Only unsafeStorage.ts may access localStorage directly.
+# INVARIANT: All external state must pass through Zod validation.
+
+# Unsafe brand casts (bypasses type safety)
+G9|BLOCK|as Verified[A-Z]|Unsafe cast to Verified brand type
+G9|BLOCK|as Safe[A-Z]|Unsafe cast to Safe brand type
+G9|BLOCK|as Valid[A-Z]|Unsafe cast to Valid brand type
+
+# String literal brands (weak pattern, no runtime safety)
+G9|BLOCK|__brand:|String literal brand (use unique symbol)
+G9|BLOCK|'__brand'|String literal brand reference
+G9|BLOCK|"__brand"|String literal brand reference
+
+# ============================================
+# G9: SINGLE CHOKE POINT ENFORCEMENT (BLOCK)
+# ============================================
+# localStorage access MUST go through unsafeStorage.ts
+
+G9|BLOCK|localStorage\.getItem\s*\(|G9 bypass: localStorage.getItem must use unsafeStorage.readRaw/readString
+G9|BLOCK|localStorage\.setItem\s*\(|G9 bypass: localStorage.setItem must use unsafeStorage.writeRaw/writeJson
+G9|BLOCK|localStorage\.removeItem\s*\(|G9 bypass: localStorage.removeItem must use unsafeStorage.remove
+G9|BLOCK|localStorage\.clear\s*\(|G9 bypass: localStorage.clear is forbidden (use targeted removal)
+
+# sessionStorage (same boundary rules)
+G9|BLOCK|sessionStorage\.getItem\s*\(|G9 bypass: sessionStorage must use unsafeStorage boundary
+G9|BLOCK|sessionStorage\.setItem\s*\(|G9 bypass: sessionStorage must use unsafeStorage boundary
+
+# JSON.parse without validation wrapper
+G9|BLOCK|JSON\.parse\([^)]*\)\s*as\s+[A-Z]|G9 bypass: JSON.parse with unsafe cast (use Zod validation)
+
+# Double-cast bypass attempt
+G9|BLOCK|as\s+unknown\s+as\s+|G9 bypass: double-cast unknown→type is forbidden
+
+# Any type in store state (breaks type safety)
+G9|WARN-MED|:\s*any\s*[;,})]|Any type in type annotation
+
+# ============================================
+# G9: OPERATION GRAPH BOUNDARY (BLOCK)
+# ============================================
+# Only ValidatedFactoryPacket may enter buildOperationGraph()
+
+# Unsafe cast to ValidatedFactoryPacket (bypasses G9 gate)
+G9|BLOCK|as ValidatedFactoryPacket|Unsafe cast to ValidatedFactoryPacket (use assertValidatedPacket)
+G9|BLOCK|as unknown as ValidatedFactoryPacket|Double-cast to ValidatedFactoryPacket forbidden
+
+# markPacketAsValidated usage outside trusted modules (WARN-HIGH for auditing)
+G9|WARN-HIGH|markPacketAsValidated\(|markPacketAsValidated only allowed in trusted modules
+
+# ============================================
+# G10: DXF SAFETY
+# ============================================
+
+# Unsafe SafeDxf cast (bypasses G10 gate)
+G10|BLOCK|as SafeDxf|Unsafe cast to SafeDxf (must use assertDxfSafety)
+
+# Direct DXF generation (bypasses choke point)
+G10|BLOCK|operationGraphToDxf\(|Direct call outside dxfExportFromOperationGraph.ts
+G10|BLOCK|new DXFGenerator\(|Legacy DXF generator (use operationGraphToDxf)
+
+# Skip semantic validation
+G10.2|BLOCK|skipRules.*DRILL_INSIDE|Skipping critical safety rule
+G10.2|BLOCK|skipRules.*DRILL_DEPTH|Skipping critical safety rule
+G10.2|BLOCK|skipRules.*MINIFIX|Skipping hardware validation
+
+# ============================================
+# G10.1: DETERMINISTIC DXF
+# ============================================
+
+# Floating point without normalization
+G10.1|WARN-MED|\.toFixed\([0-3]\)|Low precision toFixed (should be 4 for DXF)
+
+# ============================================
+# ALL: GENERAL SAFETY
+# ============================================
+
+# Silent stubs (hides errors)
+ALL|BLOCK|return \[\]\s*;?\s*//.*TODO|Silent stub with TODO
+ALL|BLOCK|return true\s*;?\s*//.*TODO|Silent stub with TODO
+ALL|WARN-MED|return \[\]\s*$|Potentially silent stub (empty array)
+
+# Console in production code
+ALL|WARN-LOW|console\.log\(|Console.log in production code
+ALL|WARN-LOW|console\.warn\(|Console.warn in production code
+
+# Disabled eslint rules
+ALL|WARN-MED|eslint-disable.*@typescript-eslint/no-explicit-any|Disabled any check
+ALL|WARN-MED|eslint-disable.*@typescript-eslint/no-unsafe|Disabled unsafe check
+
+# ============================================
+# EXCEPTIONS (files where patterns are allowed)
+# ============================================
+# Format: EXCEPT|PATTERN|FILE_GLOB
+#
+# These files are excluded from specific pattern checks
+
+# G9: Brand factory exceptions
+EXCEPT|as Verified|**/__tests__/**
+EXCEPT|as Verified|**/factoryStore.ts
+EXCEPT|as Safe|**/gate10DxfSafety.ts
+EXCEPT|as Safe|**/dxfExportFromOperationGraph.ts
+EXCEPT|as Safe|**/__tests__/**
+
+# G10: DXF safety exceptions
+EXCEPT|as SafeDxf|**/gate10DxfSafety.ts
+EXCEPT|as SafeDxf|**/dxfExportFromOperationGraph.ts
+EXCEPT|as SafeDxf|**/__tests__/**
+EXCEPT|operationGraphToDxf|**/dxfExportFromOperationGraph.ts
+EXCEPT|operationGraphToDxf|**/operationGraphToDxf.ts
+EXCEPT|operationGraphToDxf|**/gate10DxfSafety.ts
+EXCEPT|operationGraphToDxf|**/__tests__/**
+
+# G10.2: Semantic gate implementation
+EXCEPT|skipRules|**/gate10_2DxfSemantic.ts
+EXCEPT|skipRules|**/__tests__/**
+
+# ============================================
+# G10.3: MACHINE DIALECT GATE (BYPASS-PROOF)
+# ============================================
+# INVARIANT: No OperationGraph may be exported unless validated against MachineProfile
+# INVARIANT: DXF/G-code export MUST go through single choke point
+
+# Skip dialect validation (bypasses G10.3)
+G10.3|BLOCK|skipDialectValidation|Skipping machine dialect validation forbidden
+G10.3|BLOCK|skipMachineCheck|Skipping machine check forbidden
+
+# Direct export without G10.3 validation
+G10.3|BLOCK|operationGraphToDxf\([^)]*\)\s*//\s*skip|Skipping G10.3 validation is forbidden
+
+# Ignore dialect issues (suppressing errors)
+G10.3|BLOCK|dialectResult\.ok\s*=\s*true|Overwriting dialect result is forbidden
+G10.3|BLOCK|issues\.length\s*=\s*0|Clearing dialect issues is forbidden
+
+# Machine profile bypass
+G10.3|WARN-HIGH|getMachineProfile\([^)]*\)\s*\|\|\s*\{|Fallback empty machine profile (should fail explicitly)
+
+# Tool table bypass
+G10.3|WARN-HIGH|tools:\s*\[\]|Empty tool table (machine must have tools)
+G10.3|WARN-HIGH|toolTable:\s*\[\]|Empty tool table (machine must have tools)
+
+# G10.3 Exception patterns
+EXCEPT|skipDialectValidation|**/__tests__/**
+EXCEPT|skipMachineCheck|**/__tests__/**
+EXCEPT|tools:\s*\[\]|**/__tests__/**
+EXCEPT|toolTable:\s*\[\]|**/__tests__/**
+
+# ============================================
+# G9: OPERATION GRAPH BOUNDARY EXCEPTIONS
+# ============================================
+# Only these trusted modules may call markPacketAsValidated()
+
+# Trusted internal paths
+EXCEPT|markPacketAsValidated|**/factory/packet/buildFactoryPacket.ts
+EXCEPT|markPacketAsValidated|**/factory/cnc/generateGcodeForJob.ts
+EXCEPT|markPacketAsValidated|**/core/export/dxfExportFromOperationGraph.ts
+EXCEPT|markPacketAsValidated|**/cnc/mapping/g9AssertValidPacket.ts
+
+# Test files
+EXCEPT|markPacketAsValidated|**/__tests__/**
+EXCEPT|markPacketAsValidated|**/*.test.ts
+EXCEPT|markPacketAsValidated|**/*.test.tsx
+
+# ValidatedFactoryPacket casts - ONLY in tests
+EXCEPT|as ValidatedFactoryPacket|**/__tests__/**
+EXCEPT|as ValidatedFactoryPacket|**/*.test.ts
+
+# ============================================
+# G9: CHOKE POINT EXCEPTIONS (STRICT)
+# ============================================
+# ONLY unsafeStorage.ts is allowed to access localStorage directly.
+# projectScopedStorage.ts wraps unsafeStorage, allowed for now.
+
+# localStorage - ONLY choke point files
+EXCEPT|localStorage\.getItem|**/unsafeStorage.ts
+EXCEPT|localStorage\.setItem|**/unsafeStorage.ts
+EXCEPT|localStorage\.removeItem|**/unsafeStorage.ts
+EXCEPT|localStorage\.getItem|**/projectScopedStorage.ts
+EXCEPT|localStorage\.setItem|**/projectScopedStorage.ts
+EXCEPT|localStorage\.removeItem|**/projectScopedStorage.ts
+
+# Tests may mock localStorage
+EXCEPT|localStorage\.|**/__tests__/**
+EXCEPT|localStorage\.|**/*.test.ts
+EXCEPT|localStorage\.|**/*.test.tsx
+
+# sessionStorage - ONLY choke point
+EXCEPT|sessionStorage\.|**/unsafeStorage.ts
+EXCEPT|sessionStorage\.|**/__tests__/**
+
+# ============================================
+# ALL: General exceptions
+# ============================================
+
+# JSON.parse - only in designated parsers and tests
+EXCEPT|JSON\.parse|**/canonicalJson.ts
+EXCEPT|JSON\.parse|**/verifyManifest.ts
+EXCEPT|JSON\.parse|**/unzipPacket.ts
+EXCEPT|JSON\.parse|**/pinnedKeys.config.ts
+EXCEPT|JSON\.parse|**/__tests__/**
+EXCEPT|JSON\.parse|**/*.test.ts
+
+# Console logging
+EXCEPT|console\.log|**/__tests__/**
+EXCEPT|console\.log|**/scripts/**
+EXCEPT|console\.warn|**/__tests__/**
+
+# Any type in tests
+EXCEPT|: any|**/__tests__/**
+
+# Double-cast exceptions
+# Note: Pattern uses regex \s+ so we must match the regex pattern, not literal
+EXCEPT|as\s+unknown\s+as\s+|**/__tests__/**
+EXCEPT|as\s+unknown\s+as\s+|**/*.test.ts
+EXCEPT|as\s+unknown\s+as\s+|**/*.test.tsx
+
+# Internal type coercion (not persistence bypass)
+# These are TypeScript escape hatches for type narrowing, not external data casting
+EXCEPT|as\s+unknown\s+as\s+|**/buildConnectors.ts
+EXCEPT|as\s+unknown\s+as\s+|**/Cabinet3D.tsx
+EXCEPT|as\s+unknown\s+as\s+|**/gate09.ts
+EXCEPT|as\s+unknown\s+as\s+|**/factoryReceiptTypes.ts
+EXCEPT|as\s+unknown\s+as\s+|**/normalizeSnapshot.ts
+EXCEPT|as\s+unknown\s+as\s+|**/trustChainService.ts
+EXCEPT|as\s+unknown\s+as\s+|**/shadowRunner.ts
+EXCEPT|as\s+unknown\s+as\s+|**/geometryConsistency.ts
+EXCEPT|as\s+unknown\s+as\s+|**/pinnedKeys.config.ts
+EXCEPT|as\s+unknown\s+as\s+|**/schemas.ts
+EXCEPT|as\s+unknown\s+as\s+|**/ecdsaP256.ts
+EXCEPT|as\s+unknown\s+as\s+|**/ed25519.ts
+EXCEPT|as\s+unknown\s+as\s+|**/CncOverlayMarker.tsx
+EXCEPT|as\s+unknown\s+as\s+|**/indexedDbToolingStore.ts
+EXCEPT|as\s+unknown\s+as\s+|**/buildOperationGraph.ts
+
+# Empty array returns in tests
+EXCEPT|return \[\]|**/__tests__/**

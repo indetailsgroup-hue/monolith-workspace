@@ -1,0 +1,459 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "Monolith OS Command Registry - SPEC-08 v8.2",
+  "lastUpdated": "2026-01-16",
+  "commands": [
+    {
+      "id": "file.new",
+      "name": "New Project",
+      "category": "file",
+      "hotkey": "Ctrl+N",
+      "icon": "file-plus",
+      "description": "Create a new project",
+      "preconditions": [],
+      "uiAction": "openNewProjectDialog",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "file.open",
+      "name": "Open Project",
+      "category": "file",
+      "hotkey": "Ctrl+O",
+      "icon": "folder-open",
+      "description": "Open an existing project",
+      "preconditions": [],
+      "uiAction": "openProjectDialog",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "file.save",
+      "name": "Save Project",
+      "category": "file",
+      "hotkey": "Ctrl+S",
+      "icon": "save",
+      "description": "Save current project",
+      "preconditions": [],
+      "uiAction": "saveProject",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "edit.undo",
+      "name": "Undo",
+      "category": "edit",
+      "hotkey": "Ctrl+Z",
+      "icon": "undo",
+      "description": "Undo last action",
+      "preconditions": [
+        { "type": "custom", "fn": "canUndo" }
+      ],
+      "uiAction": "undo",
+      "undoable": false,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "edit.redo",
+      "name": "Redo",
+      "category": "edit",
+      "hotkey": "Ctrl+Y",
+      "icon": "redo",
+      "description": "Redo last undone action",
+      "preconditions": [
+        { "type": "custom", "fn": "canRedo" }
+      ],
+      "uiAction": "redo",
+      "undoable": false,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "edit.delete",
+      "name": "Delete",
+      "category": "edit",
+      "hotkey": "Delete",
+      "icon": "trash-2",
+      "description": "Delete selected objects",
+      "preconditions": [
+        { "type": "selection", "count": "any" }
+      ],
+      "uiAction": "deleteSelection",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "edit.duplicate",
+      "name": "Duplicate",
+      "category": "edit",
+      "hotkey": "Ctrl+D",
+      "icon": "copy",
+      "description": "Duplicate selected objects",
+      "preconditions": [
+        { "type": "selection", "count": "any" }
+      ],
+      "uiAction": "duplicateSelection",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "view.resetCamera",
+      "name": "Reset View",
+      "category": "view",
+      "hotkey": "Home",
+      "icon": "home",
+      "description": "Reset camera to default position",
+      "preconditions": [],
+      "uiAction": "resetCamera",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "view.fitAll",
+      "name": "Fit All",
+      "category": "view",
+      "hotkey": "F",
+      "icon": "maximize",
+      "description": "Fit all objects in view",
+      "preconditions": [],
+      "uiAction": "fitAll",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "tool.select",
+      "name": "Select Tool",
+      "category": "transform",
+      "hotkey": "V",
+      "icon": "mouse-pointer-2",
+      "description": "Activate selection tool",
+      "preconditions": [],
+      "uiAction": "setTool:select",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "tool.move",
+      "name": "Move Tool",
+      "category": "transform",
+      "hotkey": "W",
+      "icon": "move",
+      "description": "Activate move/translate tool",
+      "preconditions": [],
+      "uiAction": "setTool:move",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "tool.rotate",
+      "name": "Rotate Tool",
+      "category": "transform",
+      "hotkey": "R",
+      "icon": "rotate-cw",
+      "description": "Activate rotation tool",
+      "preconditions": [],
+      "uiAction": "setTool:rotate",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "tool.glue",
+      "name": "Glue Tool",
+      "category": "transform",
+      "hotkey": "G",
+      "icon": "link-2",
+      "description": "Activate face-to-face glue alignment",
+      "preconditions": [],
+      "uiAction": "setTool:glue",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "tool.measure",
+      "name": "Measure Tool",
+      "category": "measure",
+      "hotkey": "M",
+      "icon": "ruler",
+      "description": "Activate measurement tool",
+      "preconditions": [],
+      "uiAction": "setTool:measure",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "transform.rotate90cw",
+      "name": "Rotate 90° CW",
+      "category": "transform",
+      "hotkey": "Ctrl+Right",
+      "icon": "rotate-cw",
+      "description": "Rotate selected cabinet 90° clockwise",
+      "preconditions": [
+        { "type": "selection", "count": "one" }
+      ],
+      "uiAction": "rotateCabinet90:cw",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "transform.rotate90ccw",
+      "name": "Rotate 90° CCW",
+      "category": "transform",
+      "hotkey": "Ctrl+Left",
+      "icon": "rotate-ccw",
+      "description": "Rotate selected cabinet 90° counter-clockwise",
+      "preconditions": [
+        { "type": "selection", "count": "one" }
+      ],
+      "uiAction": "rotateCabinet90:ccw",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "snap.toggle",
+      "name": "Toggle Snap",
+      "category": "transform",
+      "hotkey": "Shift+S",
+      "icon": "grid-3x3",
+      "description": "Toggle grid/edge snap",
+      "preconditions": [],
+      "uiAction": "toggleSnap",
+      "undoable": false,
+      "requiredGateState": null
+    },
+    {
+      "id": "create.cabinet",
+      "name": "Add Cabinet",
+      "category": "create",
+      "hotkey": "Shift+A",
+      "icon": "box",
+      "description": "Add a new cabinet to the scene",
+      "preconditions": [],
+      "uiAction": "addCabinet",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "create.solidFromProfile",
+      "name": "Extrude Profile",
+      "category": "create",
+      "hotkey": "E",
+      "icon": "box",
+      "description": "Create solid from 2D profile extrusion",
+      "preconditions": [
+        { "type": "custom", "fn": "hasProfile" }
+      ],
+      "kernelOp": "createSolidFromProfile",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "modify.booleanCut",
+      "name": "Boolean Cut",
+      "category": "modify",
+      "hotkey": "Ctrl+Shift+B",
+      "icon": "scissors",
+      "description": "Subtract one solid from another",
+      "preconditions": [
+        { "type": "selection", "count": "many" }
+      ],
+      "kernelOp": "booleanCut",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "modify.fillet",
+      "name": "Fillet Edges",
+      "category": "modify",
+      "hotkey": "Ctrl+F",
+      "icon": "corner-up-right",
+      "description": "Apply fillet to selected edges",
+      "preconditions": [
+        { "type": "selection", "count": "any" }
+      ],
+      "kernelOp": "filletEdges",
+      "undoable": true,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "export.cutlist",
+      "name": "Export Cut List",
+      "category": "export",
+      "hotkey": "Ctrl+Shift+E",
+      "icon": "file-text",
+      "description": "Export cut list as CSV",
+      "preconditions": [
+        { "type": "gateState", "state": "RELEASED" }
+      ],
+      "uiAction": "exportCutlist",
+      "undoable": false,
+      "requiredGateState": "RELEASED"
+    },
+    {
+      "id": "export.dxf",
+      "name": "Export DXF",
+      "category": "export",
+      "hotkey": "Ctrl+Shift+D",
+      "icon": "file-code",
+      "description": "Export 2D DXF for CNC",
+      "preconditions": [
+        { "type": "gateState", "state": "RELEASED" }
+      ],
+      "uiAction": "exportDxf",
+      "undoable": false,
+      "requiredGateState": "RELEASED"
+    },
+    {
+      "id": "export.gcode",
+      "name": "Export G-Code",
+      "category": "export",
+      "hotkey": "Ctrl+Shift+G",
+      "icon": "terminal",
+      "description": "Export G-Code for CNC machine",
+      "preconditions": [
+        { "type": "gateState", "state": "RELEASED" }
+      ],
+      "uiAction": "exportGcode",
+      "undoable": false,
+      "requiredGateState": "RELEASED"
+    },
+    {
+      "id": "gate.freeze",
+      "name": "Freeze Spec",
+      "category": "gate",
+      "hotkey": null,
+      "icon": "lock",
+      "description": "Freeze current spec for approval",
+      "preconditions": [
+        { "type": "gateState", "state": "DRAFT" }
+      ],
+      "uiAction": "freezeSpec",
+      "undoable": false,
+      "requiredGateState": "DRAFT"
+    },
+    {
+      "id": "gate.unfreeze",
+      "name": "Unfreeze Spec",
+      "category": "gate",
+      "hotkey": null,
+      "icon": "unlock",
+      "description": "Return spec to draft for modifications",
+      "preconditions": [
+        { "type": "gateState", "state": "FROZEN" }
+      ],
+      "uiAction": "unfreezeSpec",
+      "undoable": false,
+      "requiredGateState": "FROZEN"
+    },
+    {
+      "id": "gate.release",
+      "name": "Release Spec",
+      "category": "gate",
+      "hotkey": null,
+      "icon": "check-circle",
+      "description": "Release spec for factory production",
+      "preconditions": [
+        { "type": "gateState", "state": "FROZEN" },
+        { "type": "custom", "fn": "gateChecksPassed" }
+      ],
+      "uiAction": "releaseSpec",
+      "undoable": false,
+      "requiredGateState": "FROZEN"
+    }
+  ],
+  "categories": [
+    {
+      "id": "file",
+      "name": "File",
+      "order": 1
+    },
+    {
+      "id": "edit",
+      "name": "Edit",
+      "order": 2
+    },
+    {
+      "id": "view",
+      "name": "View",
+      "order": 3
+    },
+    {
+      "id": "create",
+      "name": "Create",
+      "order": 4
+    },
+    {
+      "id": "modify",
+      "name": "Modify",
+      "order": 5
+    },
+    {
+      "id": "transform",
+      "name": "Transform",
+      "order": 6
+    },
+    {
+      "id": "measure",
+      "name": "Measure",
+      "order": 7
+    },
+    {
+      "id": "export",
+      "name": "Export",
+      "order": 8
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "order": 9
+    }
+  ],
+  "preconditionTypes": {
+    "selection": {
+      "description": "Requires object selection",
+      "params": {
+        "count": {
+          "type": "string",
+          "enum": ["one", "many", "any"],
+          "description": "one = exactly 1, many = 2+, any = 1+"
+        }
+      }
+    },
+    "toolActive": {
+      "description": "Requires specific tool to be active",
+      "params": {
+        "toolId": {
+          "type": "string",
+          "description": "Tool identifier"
+        }
+      }
+    },
+    "gateState": {
+      "description": "Requires specific gate state",
+      "params": {
+        "state": {
+          "type": "string",
+          "enum": ["DRAFT", "FROZEN", "RELEASED"],
+          "description": "Required gate state"
+        }
+      }
+    },
+    "solidExists": {
+      "description": "Requires solid to exist in kernel",
+      "params": {
+        "solidId": {
+          "type": "string",
+          "description": "Solid handle ID"
+        }
+      }
+    },
+    "custom": {
+      "description": "Custom precondition function",
+      "params": {
+        "fn": {
+          "type": "string",
+          "description": "Function name to evaluate"
+        }
+      }
+    }
+  }
+}

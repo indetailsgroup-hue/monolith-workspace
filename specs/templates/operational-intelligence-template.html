@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIMOS Designer - Operational Intelligence Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            0: '#000000',
+                            1: '#050505',
+                            2: '#0A0A0A',
+                            3: '#111111',
+                            4: '#1A1A1A',
+                        },
+                        border: {
+                            default: '#333333',
+                            subtle: 'rgba(255,255,255,0.1)',
+                            hover: '#555555',
+                        },
+                        text: {
+                            primary: '#FFFFFF',
+                            secondary: '#888888',
+                            muted: '#666666',
+                        },
+                        accent: {
+                            green: '#22C55E',
+                            red: '#EF4444',
+                            blue: '#3B82F6',
+                            amber: '#F59E0B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111111; }
+        ::-webkit-scrollbar-thumb { background: #333333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555555; }
+
+        /* Smooth transitions */
+        .card-hover { transition: all 0.2s ease-in-out; }
+        .card-hover:hover { border-color: #555555; transform: translateY(-2px); }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #FFFFFF 0%, #888888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Glow effects */
+        .glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+        .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+
+        /* Code block styling */
+        .code-block {
+            background: linear-gradient(135deg, #0A0A0A 0%, #111111 100%);
+            border: 1px solid #333333;
+        }
+
+        /* Flow connector lines */
+        .flow-line {
+            background: linear-gradient(90deg, transparent 0%, #333333 50%, transparent 100%);
+            height: 1px;
+        }
+
+        /* Pulse animation for live indicators */
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-surface-0 text-text-primary font-sans min-h-screen antialiased">
+
+    <!-- Navigation Header -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-surface-0/80 backdrop-blur-xl border-b border-border-subtle">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="text-xs font-mono text-text-muted border border-border-default px-2 py-1 rounded">
+                        IIMOS v2.0
+                    </div>
+                    <h1 class="text-lg font-medium">Operational Intelligence</h1>
+                </div>
+                <div class="flex items-center gap-6 text-sm text-text-secondary">
+                    <a href="#overview" class="hover:text-text-primary transition-colors">Overview</a>
+                    <a href="#specifications" class="hover:text-text-primary transition-colors">Specifications</a>
+                    <a href="#algorithms" class="hover:text-text-primary transition-colors">Algorithms</a>
+                    <a href="#reference" class="hover:text-text-primary transition-colors">Reference</a>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-accent-green rounded-full pulse-dot"></span>
+                        <span class="text-accent-green text-xs">System Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Hero Section -->
+            <section class="mb-16">
+                <div class="text-xs font-mono text-text-muted border border-border-default inline-block px-3 py-1.5 rounded-lg mb-4">
+                    Manufacturing Intelligence Platform
+                </div>
+                <h1 class="text-5xl font-medium tracking-tight mb-4 gradient-text">
+                    Parametric Cabinet System
+                </h1>
+                <p class="text-xl text-text-secondary max-w-2xl leading-relaxed">
+                    Complete documentation for CNC manufacturing, hardware integration,
+                    and intelligent optimization algorithms.
+                </p>
+
+                <!-- Quick Stats -->
+                <div class="flex gap-8 mt-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-surface-2 border border-border-default flex items-center justify-center">
+                            <span class="text-accent-green font-mono text-sm">12</span>
+                        </div>
+                        <div>
+                            <div class="text-sm text-text-secondary">Spec Documents</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-surface-2 border border-border-default flex items-center justify-center">
+                            <span class="text-accent-blue font-mono text-sm">48</span>
+                        </div>
+                        <div>
+                            <div class="text-sm text-text-secondary">Algorithms</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-surface-2 border border-border-default flex items-center justify-center">
+                            <span class="text-accent-amber font-mono text-sm">156</span>
+                        </div>
+                        <div>
+                            <div class="text-sm text-text-secondary">Hardware SKUs</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bento Grid - Main Documentation -->
+            <section id="overview" class="mb-16">
+                <h2 class="text-2xl font-medium mb-6">Documentation Overview</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                    <!-- Large Card - Parametric Calculations -->
+                    <div class="lg:col-span-2 border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-xs font-mono text-accent-green border border-accent-green/30 px-2 py-1 rounded">
+                                CORE SYSTEM
+                            </div>
+                            <div class="text-xs text-text-muted">v14.0</div>
+                        </div>
+                        <h3 class="text-xl font-medium mb-2">Parametric Cabinet Calculations</h3>
+                        <p class="text-text-secondary text-sm mb-4">
+                            Complete mathematical framework for cabinet construction including
+                            joinery, hardware integration, and material optimization.
+                        </p>
+
+                        <!-- Mini visualization -->
+                        <div class="bg-surface-3 rounded-lg p-4 border border-border-subtle">
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div>
+                                    <div class="text-2xl font-mono text-accent-green">32mm</div>
+                                    <div class="text-xs text-text-muted">System Grid</div>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-mono text-accent-blue">±0.1mm</div>
+                                    <div class="text-xs text-text-muted">Tolerance</div>
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-mono text-accent-amber">18mm</div>
+                                    <div class="text-xs text-text-muted">Default MT</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2">
+                            <span class="text-xs bg-surface-3 px-2 py-1 rounded text-text-secondary">Joinery</span>
+                            <span class="text-xs bg-surface-3 px-2 py-1 rounded text-text-secondary">Formulas</span>
+                            <span class="text-xs bg-surface-3 px-2 py-1 rounded text-text-secondary">Tolerances</span>
+                        </div>
+                    </div>
+
+                    <!-- Hardware Card -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-xs font-mono text-accent-blue border border-accent-blue/30 px-2 py-1 rounded">
+                                HARDWARE
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Drilling Specifications</h3>
+                        <p class="text-text-secondary text-sm mb-4">
+                            System 32 patterns, Blum/Häfele hardware mounting, and CNC drilling programs.
+                        </p>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-text-muted">Minifix 15</span>
+                                <span class="font-mono text-accent-green">∅15mm</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-text-muted">Cam Depth</span>
+                                <span class="font-mono text-accent-green">13.5mm</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-text-muted">Dowel</span>
+                                <span class="font-mono text-accent-green">∅8×30mm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cut Optimization Card -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-xs font-mono text-accent-amber border border-accent-amber/30 px-2 py-1 rounded">
+                                OPTIMIZATION
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Cut Optimization</h3>
+                        <p class="text-text-secondary text-sm mb-4">
+                            2D bin packing algorithms, waste minimization, and grain direction handling.
+                        </p>
+
+                        <!-- Mini chart -->
+                        <div class="flex items-end gap-1 h-16">
+                            <div class="w-full bg-accent-green/20 rounded-t" style="height: 85%">
+                                <div class="bg-accent-green rounded-t h-full"></div>
+                            </div>
+                            <div class="w-full bg-accent-amber/20 rounded-t" style="height: 12%">
+                                <div class="bg-accent-amber rounded-t h-full"></div>
+                            </div>
+                            <div class="w-full bg-surface-4 rounded-t" style="height: 3%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-text-muted mt-2">
+                            <span>Used 85%</span>
+                            <span>Offcuts 12%</span>
+                            <span>Waste 3%</span>
+                        </div>
+                    </div>
+
+                    <!-- Kerf Bending Card -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-xs font-mono text-accent-red border border-accent-red/30 px-2 py-1 rounded">
+                                ADVANCED
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Kerf Bending</h3>
+                        <p class="text-text-secondary text-sm mb-4">
+                            Curved panel fabrication through precision CNC kerf cutting patterns.
+                        </p>
+
+                        <div class="bg-surface-3 rounded-lg p-3 border border-border-subtle">
+                            <code class="text-xs font-mono text-accent-green">
+                                n = (π × R × θ) / (180 × S)
+                            </code>
+                            <div class="text-xs text-text-muted mt-1">Kerf count formula</div>
+                        </div>
+                    </div>
+
+                    <!-- Door & Drawer Card -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-xs font-mono text-text-secondary border border-border-default px-2 py-1 rounded">
+                                ASSEMBLY
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">Door & Drawer Guide</h3>
+                        <p class="text-text-secondary text-sm mb-4">
+                            Complete guide for doors, drawers, hinges, and runner systems.
+                        </p>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-surface-3 rounded p-2 text-center">
+                                <div class="font-mono text-accent-green">CLIP top</div>
+                                <div class="text-text-muted">Hinges</div>
+                            </div>
+                            <div class="bg-surface-3 rounded p-2 text-center">
+                                <div class="font-mono text-accent-blue">MOVENTO</div>
+                                <div class="text-text-muted">Runners</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Flow Diagram Section -->
+            <section class="mb-16">
+                <h2 class="text-2xl font-medium mb-6">Manufacturing Workflow</h2>
+
+                <div class="border border-border-default bg-surface-2 rounded-xl p-8">
+                    <div class="flex items-center justify-between">
+
+                        <!-- Step 1 -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-xl bg-surface-3 border border-accent-green/50 flex items-center justify-center mb-3 mx-auto glow-green">
+                                <span class="text-2xl">📐</span>
+                            </div>
+                            <div class="text-sm font-medium">Design</div>
+                            <div class="text-xs text-text-muted">Parametric Input</div>
+                        </div>
+
+                        <!-- Connector -->
+                        <div class="flex-1 mx-4 flow-line"></div>
+
+                        <!-- Step 2 -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-xl bg-surface-3 border border-accent-blue/50 flex items-center justify-center mb-3 mx-auto glow-blue">
+                                <span class="text-2xl">⚙️</span>
+                            </div>
+                            <div class="text-sm font-medium">Calculate</div>
+                            <div class="text-xs text-text-muted">Algorithms</div>
+                        </div>
+
+                        <!-- Connector -->
+                        <div class="flex-1 mx-4 flow-line"></div>
+
+                        <!-- Step 3 -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-xl bg-surface-3 border border-accent-amber/50 flex items-center justify-center mb-3 mx-auto">
+                                <span class="text-2xl">📋</span>
+                            </div>
+                            <div class="text-sm font-medium">Optimize</div>
+                            <div class="text-xs text-text-muted">Cut Lists</div>
+                        </div>
+
+                        <!-- Connector -->
+                        <div class="flex-1 mx-4 flow-line"></div>
+
+                        <!-- Step 4 -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-xl bg-surface-3 border border-border-default flex items-center justify-center mb-3 mx-auto">
+                                <span class="text-2xl">🔧</span>
+                            </div>
+                            <div class="text-sm font-medium">Machine</div>
+                            <div class="text-xs text-text-muted">CNC Output</div>
+                        </div>
+
+                        <!-- Connector -->
+                        <div class="flex-1 mx-4 flow-line"></div>
+
+                        <!-- Step 5 -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-xl bg-surface-3 border border-accent-green/50 flex items-center justify-center mb-3 mx-auto glow-green">
+                                <span class="text-2xl">✅</span>
+                            </div>
+                            <div class="text-sm font-medium">Assembly</div>
+                            <div class="text-xs text-text-muted">Final Product</div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- Code Example Section -->
+            <section id="algorithms" class="mb-16">
+                <h2 class="text-2xl font-medium mb-6">Algorithm Examples</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                    <!-- TypeScript Example -->
+                    <div class="code-block rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-accent-red"></div>
+                                <div class="w-3 h-3 rounded-full bg-accent-amber"></div>
+                                <div class="w-3 h-3 rounded-full bg-accent-green"></div>
+                            </div>
+                            <span class="text-xs font-mono text-text-muted">drawer-calculation.ts</span>
+                        </div>
+                        <pre class="text-sm font-mono overflow-x-auto"><code class="text-text-secondary"><span class="text-accent-blue">interface</span> <span class="text-accent-amber">DrawerParams</span> {
+  openingWidth: <span class="text-accent-green">number</span>;
+  runnerType: <span class="text-accent-green">'MOVENTO' | 'TANDEM' | 'Standard'</span>;
+}
+
+<span class="text-accent-blue">function</span> <span class="text-text-primary">calculateDrawerWidth</span>(
+  params: <span class="text-accent-amber">DrawerParams</span>
+): <span class="text-accent-green">number</span> {
+  <span class="text-accent-blue">const</span> clearance =
+    params.runnerType === <span class="text-accent-green">'MOVENTO'</span> ||
+    params.runnerType === <span class="text-accent-green">'TANDEM'</span>
+      ? <span class="text-accent-amber">42</span>  <span class="text-text-muted">// Blum full-extension</span>
+      : <span class="text-accent-amber">26</span>; <span class="text-text-muted">// Standard runners</span>
+
+  <span class="text-accent-blue">return</span> params.openingWidth - clearance;
+}</code></pre>
+                    </div>
+
+                    <!-- Formula Card -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6">
+                        <h3 class="text-lg font-medium mb-4">Key Formulas</h3>
+
+                        <div class="space-y-4">
+                            <div class="bg-surface-3 rounded-lg p-4 border border-border-subtle">
+                                <div class="text-xs text-text-muted mb-2">Drawer Box Width (Blum)</div>
+                                <code class="font-mono text-accent-green">DW = LW - 42mm</code>
+                            </div>
+
+                            <div class="bg-surface-3 rounded-lg p-4 border border-border-subtle">
+                                <div class="text-xs text-text-muted mb-2">Inner Width Calculation</div>
+                                <code class="font-mono text-accent-blue">IW = EW - (2 × MT)</code>
+                            </div>
+
+                            <div class="bg-surface-3 rounded-lg p-4 border border-border-subtle">
+                                <div class="text-xs text-text-muted mb-2">Shelf Width (Dado Joint)</div>
+                                <code class="font-mono text-accent-amber">SW = IW + (2 × DD)</code>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Reference Section -->
+            <section id="reference" class="mb-16">
+                <h2 class="text-2xl font-medium mb-6">Quick Reference</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <!-- Hardware Database -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-accent-green/10 flex items-center justify-center">
+                                <span class="text-accent-green">🗄️</span>
+                            </div>
+                            <div>
+                                <h3 class="font-medium">Hardware Database</h3>
+                                <div class="text-xs text-text-muted">156 SKUs</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary mb-4">
+                            Complete Blum & Häfele hardware catalog with drilling patterns.
+                        </p>
+                        <a href="#" class="text-sm text-accent-green hover:underline">View database →</a>
+                    </div>
+
+                    <!-- Formula Reference -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-accent-blue/10 flex items-center justify-center">
+                                <span class="text-accent-blue">📊</span>
+                            </div>
+                            <div>
+                                <h3 class="font-medium">Formula Reference</h3>
+                                <div class="text-xs text-text-muted">48 formulas</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary mb-4">
+                            Consolidated formulas with variable definitions and units.
+                        </p>
+                        <a href="#" class="text-sm text-accent-blue hover:underline">View formulas →</a>
+                    </div>
+
+                    <!-- Cross Reference -->
+                    <div class="border border-border-default bg-surface-2 rounded-xl p-6 card-hover">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-accent-amber/10 flex items-center justify-center">
+                                <span class="text-accent-amber">🔗</span>
+                            </div>
+                            <div>
+                                <h3 class="font-medium">Cross Reference</h3>
+                                <div class="text-xs text-text-muted">Index</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-text-secondary mb-4">
+                            Navigation map connecting all documentation topics.
+                        </p>
+                        <a href="#" class="text-sm text-accent-amber hover:underline">View index →</a>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Status/Alert Cards -->
+            <section class="mb-16">
+                <h2 class="text-2xl font-medium mb-6">System Status</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <!-- Success Alert -->
+                    <div class="border border-accent-green/30 bg-accent-green/5 rounded-xl p-4 flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent-green/20 flex items-center justify-center flex-shrink-0">
+                            <span class="text-accent-green">✓</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-accent-green mb-1">All Systems Operational</h4>
+                            <p class="text-sm text-text-secondary">
+                                Documentation synchronized. Last update: January 2026.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Warning Alert -->
+                    <div class="border border-accent-amber/30 bg-accent-amber/5 rounded-xl p-4 flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent-amber/20 flex items-center justify-center flex-shrink-0">
+                            <span class="text-accent-amber">!</span>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-accent-amber mb-1">Errata Available</h4>
+                            <p class="text-sm text-text-secondary">
+                                4 Minifix 3D visualization corrections documented in Section 23.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border-subtle py-8 px-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-sm text-text-muted">
+            <div>IIMOS Designer Workspace v2.0</div>
+            <div class="flex items-center gap-4">
+                <span>Operational Intelligence</span>
+                <span>•</span>
+                <span>January 2026</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

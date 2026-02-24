@@ -1,0 +1,56 @@
+{
+  "$schema": "./manufacturing-constants.schema.json",
+  "version": "1.0.0",
+  "backPanel": {
+    "defaultConstruction": "inset",
+    "thickness": 6,
+    "grooveOffset": 20
+  },
+  "edgeBanding": {
+    "defaultEdges": {
+      "top": 1,
+      "bottom": 0,
+      "left": 0,
+      "right": 0
+    },
+    "defaultPreMill": {
+      "top": 0.5,
+      "bottom": 0.5,
+      "left": 0.5,
+      "right": 0.5
+    }
+  },
+  "safetyGap": {
+    "default": 2
+  },
+  "shelf": {
+    "defaultFrontSetback": 20,
+    "defaultSideClearance": 1
+  },
+  "compositions": {
+    "PB-MEL": {
+      "coreThickness": 16,
+      "surfaceAThickness": 0.1,
+      "surfaceBThickness": 0.1,
+      "glueThickness": 0
+    },
+    "PB-HPL": {
+      "coreThickness": 16,
+      "surfaceAThickness": 0.8,
+      "surfaceBThickness": 0.8,
+      "glueThickness": 0.1
+    },
+    "MDF-HPL": {
+      "coreThickness": 18,
+      "surfaceAThickness": 0.8,
+      "surfaceBThickness": 0.8,
+      "glueThickness": 0.1
+    },
+    "HMR-HPL": {
+      "coreThickness": 18,
+      "surfaceAThickness": 0.8,
+      "surfaceBThickness": 0.8,
+      "glueThickness": 0.1
+    }
+  }
+}

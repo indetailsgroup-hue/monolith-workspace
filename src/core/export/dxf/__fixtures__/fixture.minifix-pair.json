@@ -1,0 +1,229 @@
+{
+  "$schema": "./fixture.schema.json",
+  "name": "minifix-pair",
+  "description": "Minifix S200 pair: Cam housing (Ø15) + Bolt sleeve (Ø10) with Distance B = 24mm. Tests: paired holes, layer naming BORE_15D12/DRILL_H_*, hardware spec compliance.",
+  "version": "1.0.0",
+  "category": "HARDWARE",
+
+  "packet": {
+    "manifest": {
+      "jobId": "golden-minifix-pair-001",
+      "projectId": "golden-test-project",
+      "schema": "monolith.factory.packet@1.0",
+      "version": "1.0.0",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "toolVersion": "1.0.0",
+      "files": [],
+      "contentHash": "fixture-hash"
+    },
+    "drillMap": {
+      "version": "drillmap.v1",
+      "panels": [
+        {
+          "panelId": "panel-side-001",
+          "cabinetId": "cabinet-001",
+          "role": "LEFT_SIDE",
+          "dimensions": [600, 800, 18],
+          "points": [
+            {
+              "id": "minifix-cam-001",
+              "x": 200,
+              "y": 37,
+              "z": 9,
+              "diameter": 15,
+              "depth": 12.5,
+              "direction": "V",
+              "purpose": "CAM_HOUSING",
+              "pairedHoleId": "minifix-bolt-001",
+              "comment": "Cam housing Ø15 depth 12.5mm for 18mm panel"
+            },
+            {
+              "id": "minifix-bolt-001",
+              "x": 200,
+              "y": 24,
+              "z": 0,
+              "diameter": 10,
+              "depth": 17.5,
+              "direction": "H",
+              "purpose": "BOLT_SLEEVE",
+              "pairedHoleId": "minifix-cam-001",
+              "comment": "Bolt sleeve Ø10 depth 17.5mm, Distance B = 24mm from edge"
+            }
+          ]
+        },
+        {
+          "panelId": "panel-shelf-001",
+          "cabinetId": "cabinet-001",
+          "role": "SHELF",
+          "dimensions": [564, 400, 18],
+          "points": [
+            {
+              "id": "minifix-cam-002",
+              "x": 9,
+              "y": 200,
+              "z": 37,
+              "diameter": 15,
+              "depth": 12.5,
+              "direction": "H",
+              "purpose": "CAM_HOUSING",
+              "pairedHoleId": "minifix-bolt-002",
+              "comment": "Cam housing on shelf end"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "totalDrills": 1,
+        "totalBores": 2,
+        "byPurpose": {
+          "CAM_HOUSING": 2,
+          "BOLT_SLEEVE": 1
+        },
+        "byDiameter": {
+          "10": 1,
+          "15": 2
+        }
+      },
+      "tools": ["D10", "D15"]
+    }
+  },
+
+  "operationGraph": {
+    "machineId": "KDT-6000",
+    "operations": [
+      {
+        "type": "BORE",
+        "id": "bore-cam-001",
+        "position": { "x": 200, "y": 37, "z": 9 },
+        "diameter": 15,
+        "depth": 12.5,
+        "direction": "V",
+        "workpieceContext": {
+          "panelId": "panel-side-001"
+        },
+        "metadata": {
+          "purpose": "CAM_HOUSING",
+          "pairedHoleId": "drill-bolt-001"
+        }
+      },
+      {
+        "type": "DRILL",
+        "id": "drill-bolt-001",
+        "position": { "x": 200, "y": 24, "z": 0 },
+        "diameter": 10,
+        "depth": 17.5,
+        "direction": "H",
+        "workpieceContext": {
+          "panelId": "panel-side-001"
+        },
+        "metadata": {
+          "purpose": "BOLT_SLEEVE",
+          "pairedHoleId": "bore-cam-001",
+          "distanceB": 24
+        }
+      },
+      {
+        "type": "BORE",
+        "id": "bore-cam-002",
+        "position": { "x": 9, "y": 200, "z": 37 },
+        "diameter": 15,
+        "depth": 12.5,
+        "direction": "H",
+        "workpieceContext": {
+          "panelId": "panel-shelf-001"
+        },
+        "metadata": {
+          "purpose": "CAM_HOUSING"
+        }
+      }
+    ],
+    "toolsUsed": ["D10", "D15"],
+    "metadata": {
+      "jobId": "golden-minifix-pair-001",
+      "panelId": "panel-side-001"
+    }
+  },
+
+  "expectedDxf": {
+    "comment": "Layer format: BORE_{dia}D{depth}, DRILL_{dia}_D{depth} (depth rounds to int)",
+    "panels": {
+      "panel-side-001": {
+        "layers": ["OUTLINE", "BORE_15D13", "DRILL_10_D18"],
+        "entityCount": 3,
+        "entityTypes": ["LWPOLYLINE", "CIRCLE"],
+        "entities": [
+          {
+            "type": "CIRCLE",
+            "layer": "BORE_15D13",
+            "center": { "x": 200, "y": 37 },
+            "radius": 7.5,
+            "comment": "Cam housing Ø15 depth 12.5→13 → radius 7.5mm"
+          },
+          {
+            "type": "CIRCLE",
+            "layer": "DRILL_10_D18",
+            "center": { "x": 200, "y": 24 },
+            "radius": 5,
+            "comment": "Bolt sleeve Ø10 depth 17.5→18 → radius 5mm, y=24 (Distance B)"
+          }
+        ],
+        "bounds": {
+          "minX": 0,
+          "maxX": 600,
+          "minY": 0,
+          "maxY": 800
+        }
+      },
+      "panel-shelf-001": {
+        "layers": ["OUTLINE", "BORE_15D13"],
+        "entityCount": 2,
+        "entityTypes": ["LWPOLYLINE", "CIRCLE"],
+        "entities": [
+          {
+            "type": "CIRCLE",
+            "layer": "BORE_15D13",
+            "center": { "x": 9, "y": 200 },
+            "radius": 7.5,
+            "comment": "Shelf end cam housing Ø15 depth 12.5→13"
+          }
+        ],
+        "bounds": {
+          "minX": 0,
+          "maxX": 564,
+          "minY": 0,
+          "maxY": 400
+        }
+      }
+    }
+  },
+
+  "assertions": [
+    { "type": "layer_exists", "panel": "panel-side-001", "layer": "BORE_15D13" },
+    { "type": "layer_exists", "panel": "panel-side-001", "layer": "DRILL_10_D18" },
+    { "type": "layer_exists", "panel": "panel-shelf-001", "layer": "BORE_15D13" },
+
+    { "type": "circle_radius", "panel": "panel-side-001", "layer": "BORE_15D13", "expected": 7.5, "precision": 0.01 },
+    { "type": "circle_radius", "panel": "panel-side-001", "layer": "DRILL_10_D18", "expected": 5, "precision": 0.01 },
+
+    { "type": "circle_center_y", "panel": "panel-side-001", "layer": "DRILL_10_D18", "expected": 24, "precision": 0.01, "comment": "Distance B = 24mm" },
+
+    { "type": "paired_holes", "panel": "panel-side-001", "cam": "bore-cam-001", "bolt": "drill-bolt-001" },
+
+    { "type": "no_nan" },
+    { "type": "bounds", "panel": "panel-side-001", "minX": 0, "maxX": 600, "minY": 0, "maxY": 800 },
+    { "type": "bounds", "panel": "panel-shelf-001", "minX": 0, "maxX": 564, "minY": 0, "maxY": 400 }
+  ],
+
+  "hardwareSpec": {
+    "component": "Minifix S200",
+    "manufacturer": "Häfele",
+    "critical_dimensions": {
+      "distanceB_mm": 24,
+      "camDiameter_mm": 15,
+      "camDepth_mm": 13.5,
+      "boltDiameter_mm": 10,
+      "boltLength_mm": 17.5,
+      "system32_firstHole_mm": 37
+    }
+  }
+}

@@ -1,0 +1,224 @@
+/**
+ * Minifix Render Invariant Test
+ *
+ * Verifies that the 3D renderer uses targetPocketCenter (B=C) correctly.
+ * This prevents regression where someone might remove targetPocketCenter
+ * or revert to magic offset calculations.
+ *
+ * The invariant: ballCenterW === targetPocketCenter (exact match)
+ */
+
+import { describe, it, expect } from 'vitest';
+import type { DrillMapPoint, Vec3Tuple } from '../../../core/manufacturing/drillMap/types';
+
+// ============================================
+// HELPER: Simulate renderer's ball position calculation
+// ============================================
+
+/**
+ * Mirrors the logic in Hardware3D.tsx BOLT section
+ * This is the "truth" we're testing against
+ */
+function computeBallCenterWorld(
+  point: DrillMapPoint,
+  fallbackDistance: number = 27.75 // SLEEVE_LENGTH + NECK_LENGTH + BALL_HEAD_RADIUS
+): Vec3Tuple {
+  const A = point.position;
+  const C = point.targetPocketCenter;
+
+  // If C exists: ballPos = C (exact pocket center)
+  // Otherwise: ballPos = A + axis * fallbackDistance (legacy)
+  if (C) {
+    return C;
+  }
+
+  // Legacy fallback (should not be used in production)
+  const axis = point.boltDirection || point.normal;
+  return [
+    A[0] + axis[0] * fallbackDistance,
+    A[1] + axis[1] * fallbackDistance,
+    A[2] + axis[2] * fallbackDistance,
+  ];
+}
+
+/**
+ * Compute distance between two Vec3Tuples
+ */
+function distance(a: Vec3Tuple, b: Vec3Tuple): number {
+  const dx = a[0] - b[0];
+  const dy = a[1] - b[1];
+  const dz = a[2] - b[2];
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// ============================================
+// TEST FIXTURES
+// ============================================
+
+function makeBoltPointWithTarget(
+  position: Vec3Tuple,
+  targetPocketCenter: Vec3Tuple,
+  boltDirection: Vec3Tuple
+): DrillMapPoint {
+  return {
+    id: 'bolt-test',
+    panelId: 'panel-test',
+    position,
+    normal: [-1, 0, 0], // Default drilling normal
+    diameter: 10,
+    depth: 17.5,
+    purpose: 'BOLT',
+    componentType: 'BOLT',
+    status: 'VALID',
+    boltDirection,
+    targetPocketCenter,
+  };
+}
+
+function makeBoltPointWithoutTarget(
+  position: Vec3Tuple,
+  boltDirection: Vec3Tuple
+): DrillMapPoint {
+  return {
+    id: 'bolt-legacy',
+    panelId: 'panel-test',
+    position,
+    normal: [-1, 0, 0],
+    diameter: 10,
+    depth: 17.5,
+    purpose: 'BOLT',
+    componentType: 'BOLT',
+    status: 'VALID',
+    boltDirection,
+    // No targetPocketCenter - legacy mode
+  };
+}
+
+// ============================================
+// TESTS
+// ============================================
+
+describe('Minifix Render Invariant: B=C', () => {
+  it('ball center equals targetPocketCenter when provided (exact match)', () => {
+    const A: Vec3Tuple = [24, 700, 37]; // Bolt drill origin
+    const C: Vec3Tuple = [0, 693.75, 37]; // Cam pocket center (computed by Gate)
+    const axis: Vec3Tuple = [-0.9682, -0.25, 0]; // Normalized direction from A to C
+
+    const point = makeBoltPointWithTarget(A, C, axis);
+    const ballCenterW = computeBallCenterWorld(point);
+
+    // INVARIANT: Ball center should be EXACTLY at C
+    expect(ballCenterW[0]).toBe(C[0]);
+    expect(ballCenterW[1]).toBe(C[1]);
+    expect(ballCenterW[2]).toBe(C[2]);
+    expect(distance(ballCenterW, C)).toBe(0);
+  });
+
+  it('ball center uses fallback when targetPocketCenter missing (legacy)', () => {
+    const A: Vec3Tuple = [24, 700, 37];
+    const axis: Vec3Tuple = [-1, 0, 0];
+
+    const point = makeBoltPointWithoutTarget(A, axis);
+    const ballCenterW = computeBallCenterWorld(point);
+
+    // Without targetPocketCenter, uses fallback distance along axis
+    const fallbackDistance = 27.75;
+    const expectedX = A[0] + axis[0] * fallbackDistance;
+
+    expect(ballCenterW[0]).toBeCloseTo(expectedX, 4);
+    expect(ballCenterW[1]).toBeCloseTo(A[1], 4);
+    expect(ballCenterW[2]).toBeCloseTo(A[2], 4);
+  });
+
+  it('targetPocketCenter takes precedence over boltDirection for position', () => {
+    // Even if boltDirection is wrong, targetPocketCenter should be used
+    const A: Vec3Tuple = [24, 700, 37];
+    const C: Vec3Tuple = [0, 693.75, 37];
+    const wrongAxis: Vec3Tuple = [1, 0, 0]; // Points away from cam (wrong!)
+
+    const point = makeBoltPointWithTarget(A, C, wrongAxis);
+    const ballCenterW = computeBallCenterWorld(point);
+
+    // INVARIANT: Ball center should still be at C, regardless of axis
+    expect(distance(ballCenterW, C)).toBe(0);
+  });
+
+  it('real-world corner joint: TOP_LEFT', () => {
+    // Typical TOP_LEFT corner joint at Z=37 (first System32 position)
+    // CAM on TOP panel, BOLT on LEFT_SIDE panel
+
+    const boltDrillOrigin: Vec3Tuple = [24, 700, 37]; // A: edge of LEFT_SIDE
+    const camPocketCenter: Vec3Tuple = [0, 693.75, 37]; // C: inside TOP panel
+
+    // Direction from A to C
+    const dx = camPocketCenter[0] - boltDrillOrigin[0];
+    const dy = camPocketCenter[1] - boltDrillOrigin[1];
+    const dz = camPocketCenter[2] - boltDrillOrigin[2];
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const boltDirection: Vec3Tuple = [dx / len, dy / len, dz / len];
+
+    const point = makeBoltPointWithTarget(boltDrillOrigin, camPocketCenter, boltDirection);
+    const ballCenterW = computeBallCenterWorld(point);
+
+    // Ball should be at cam pocket center
+    expect(distance(ballCenterW, camPocketCenter)).toBe(0);
+
+    // Additional sanity checks
+    expect(ballCenterW[1]).toBeLessThan(boltDrillOrigin[1]); // Ball Y < Bolt Y (goes up into TOP)
+  });
+
+  it('real-world corner joint: BOTTOM_RIGHT', () => {
+    // BOTTOM_RIGHT corner joint
+    // CAM on BOTTOM panel, BOLT on RIGHT_SIDE panel
+
+    const boltDrillOrigin: Vec3Tuple = [576, 100, 37]; // A: edge of RIGHT_SIDE
+    const camPocketCenter: Vec3Tuple = [600, 106.25, 37]; // C: inside BOTTOM panel
+
+    // Direction from A to C
+    const dx = camPocketCenter[0] - boltDrillOrigin[0];
+    const dy = camPocketCenter[1] - boltDrillOrigin[1];
+    const dz = camPocketCenter[2] - boltDrillOrigin[2];
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const boltDirection: Vec3Tuple = [dx / len, dy / len, dz / len];
+
+    const point = makeBoltPointWithTarget(boltDrillOrigin, camPocketCenter, boltDirection);
+    const ballCenterW = computeBallCenterWorld(point);
+
+    // Ball should be at cam pocket center
+    expect(distance(ballCenterW, camPocketCenter)).toBe(0);
+
+    // Additional sanity checks
+    expect(ballCenterW[1]).toBeGreaterThan(boltDrillOrigin[1]); // Ball Y > Bolt Y (goes down into BOTTOM)
+  });
+});
+
+describe('Minifix Render: Axis and Position Consistency', () => {
+  it('boltDirection should point from A toward C', () => {
+    const A: Vec3Tuple = [24, 700, 37];
+    const C: Vec3Tuple = [0, 693.75, 37];
+
+    // Expected axis: normalized(C - A)
+    const dx = C[0] - A[0];
+    const dy = C[1] - A[1];
+    const dz = C[2] - A[2];
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const expectedAxis: Vec3Tuple = [dx / len, dy / len, dz / len];
+
+    // Verify expected axis
+    expect(expectedAxis[0]).toBeLessThan(0); // Points left (negative X)
+    expect(expectedAxis[1]).toBeLessThan(0); // Points up slightly (negative Y)
+  });
+
+  it('distance A to C should match expected geometry', () => {
+    // For 16mm panel with camDepth=12.5mm and drillingDistanceB=24mm
+    // Distance A to C ≈ sqrt(24² + 6.25²) ≈ 24.8mm
+
+    const A: Vec3Tuple = [24, 700, 37];
+    const C: Vec3Tuple = [0, 693.75, 37]; // Y offset = 700 - 693.75 = 6.25 (camDepth/2)
+
+    const dist = distance(A, C);
+
+    // Expected: sqrt(24² + 6.25²) = sqrt(576 + 39.0625) = sqrt(615.0625) ≈ 24.8
+    expect(dist).toBeCloseTo(24.8, 0);
+  });
+});

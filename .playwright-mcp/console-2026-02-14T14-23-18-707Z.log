@@ -1,0 +1,25 @@
+[     261ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4435
+[     756ms] [ERROR] [Material] ❌ Failed to load full: Natural Oak InvalidStateError: The source image could not be decoded. @ http://localhost:5180/node_modules/.vite/deps/chunk-UI5QWGQE.js?v=b22683f8:17704
+[  344384ms] [ERROR] Warning: Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?%s%s 
+
+Check the render method of `PopChild`. 
+    at ToastItem (http://localhost:5180/src/components/ui/ToastContainer.tsx:63:22)
+    at PopChildMeasure (http://localhost:5180/node_modules/.vite/deps/chunk-DROWREJV.js?v=b22683f8:7768:23)
+    at PopChild (http://localhost:5180/node_modules/.vite/deps/chunk-DROWREJV.js?v=b22683f8:7794:21)
+    at PresenceChild (http://localhost:5180/node_modules/.vite/deps/chunk-DROWREJV.js?v=b22683f8:7842:24)
+    at AnimatePresence (http://localhost:5180/node_modules/.vite/deps/chunk-DROWREJV.js?v=b22683f8:7921:26)
+    at div
+    at ToastContainer (http://localhost:5180/src/components/ui/ToastContainer.tsx:146:18)
+    at App (http://localhost:5180/src/App.tsx:425:20)
+    at Suspense
+    at RenderedRoute (http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4131:5)
+    at RenderErrorBoundary (http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4091:5)
+    at DataRoutes (http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:5282:5)
+    at Router (http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4544:15)
+    at RouterProvider (http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:5096:5)
+    at AppRouter @ http://localhost:5180/node_modules/.vite/deps/chunk-UI5QWGQE.js?v=b22683f8:17704
+[  372416ms] [WARNING] [WebGL] Context lost, attempting recovery in 500ms... @ http://localhost:5180/src/App.tsx:223
+[ 1065278ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4435
+[ 1065980ms] [ERROR] [Material] ❌ Failed to load full: Natural Oak InvalidStateError: The source image could not be decoded. @ http://localhost:5180/node_modules/.vite/deps/chunk-UI5QWGQE.js?v=b22683f8:17704
+[ 1075290ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5180/node_modules/.vite/deps/react-router-dom.js?v=b22683f8:4435
+[ 1075569ms] [ERROR] [Material] ❌ Failed to load full: Natural Oak InvalidStateError: The source image could not be decoded. @ http://localhost:5180/node_modules/.vite/deps/chunk-UI5QWGQE.js?v=b22683f8:17704
