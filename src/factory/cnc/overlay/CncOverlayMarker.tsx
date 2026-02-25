@@ -18,6 +18,7 @@ import { Cylinder, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CncOverlayPoint, CncOverlayMarkerStyle } from './cncOverlayTypes';
 import { getOverlayPointColor, OVERLAY_COLORS } from './cncOverlayTypes';
+import { overlayPointToThreePosition, type OverlayPreviewState } from './overlayPreviewTransform';
 
 // ============================================================================
 // TYPES
@@ -32,6 +33,8 @@ export interface CncOverlayMarkerProps {
   isSelected?: boolean;
   /** Whether this marker is hovered */
   isHovered?: boolean;
+  /** Preview transform state (flip/rotate) — preview-only, does not affect truth */
+  previewState?: OverlayPreviewState | null;
   /** Callback when marker is clicked */
   onClick?: (pointId: string) => void;
   /** Callback when marker is hovered */
@@ -60,6 +63,7 @@ export const CncOverlayMarker: React.FC<CncOverlayMarkerProps> = ({
   style,
   isSelected = false,
   isHovered = false,
+  previewState,
   onClick,
   onHover,
 }) => {
@@ -73,14 +77,11 @@ export const CncOverlayMarker: React.FC<CncOverlayMarkerProps> = ({
     return { radius, height };
   }, [point.diameter, point.depth, style.scale]);
 
-  // Calculate position (adjust Y to start from surface and go down)
+  // Calculate position with preview transform (D4.2)
+  // Uses P' = A + M(P-A) in mm-space, then converts to Three.js coords
   const position = useMemo((): [number, number, number] => {
-    const x = point.position.x * MM_TO_M;
-    const y = point.position.y * MM_TO_M;
-    // Z position: start at surface, center of cylinder goes down
-    const z = point.position.z * MM_TO_M - markerDimensions.height / 2;
-    return [x, z, -y]; // Swap Y/Z for Three.js coordinate system
-  }, [point.position, markerDimensions.height]);
+    return overlayPointToThreePosition(point, previewState, markerDimensions.height / 2);
+  }, [point, previewState, markerDimensions.height]);
 
   // Get color based on point type
   const color = useMemo(() => {

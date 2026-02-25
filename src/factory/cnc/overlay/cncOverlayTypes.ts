@@ -24,6 +24,7 @@
 import type { Position3D, OperationType } from '../../../cnc/operation/operationTypes';
 import type { PanelFace } from '../../../cnc/transform/workpieceTypes';
 import type { CycleType, HoleKind } from '../../../cnc/policy/drillPolicyTypes';
+import type { DrillFace6 } from '../../../core/manufacturing/drillMap/types';
 
 // ============================================================================
 // OVERLAY POINT
@@ -83,6 +84,38 @@ export interface CncOverlayPoint {
 
   /** Dwell time for G82 cycle (seconds) */
   readonly dwellTime?: number;
+
+  /**
+   * Preview transform metadata (D4.2).
+   *
+   * Non-semantic: does NOT affect manufacturing truth.
+   * Used by overlay renderer to apply preview-only transforms (flip/rotate)
+   * so markers follow the hardware 3D preview state.
+   */
+  readonly preview?: CncOverlayPreviewMeta;
+}
+
+/**
+ * Preview metadata for overlay transform.
+ *
+ * Forwarded from DrillMapPoint via OperationWorkpieceContext.drillmap.
+ * READ-ONLY for visualization — never used in G-code export.
+ */
+export interface CncOverlayPreviewMeta {
+  /** Lookup key for preview state (= DrillMapPoint.id) */
+  readonly key: string;
+  /** Transform anchor point in mm (targetPocketCenter or position) */
+  readonly anchor: Position3D;
+  /** Drill axis — unit vector into material (mm-space) */
+  readonly normal?: Position3D;
+  /** Edge side for H-direction drilling */
+  readonly edgeSide?: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
+  /** Full 6-face identifier */
+  readonly face6?: DrillFace6;
+  /** Connector pair ID (CAM ↔ BOLT isolation) */
+  readonly pairId?: string;
+  /** Corner type for debug */
+  readonly cornerType?: string;
 }
 
 // ============================================================================

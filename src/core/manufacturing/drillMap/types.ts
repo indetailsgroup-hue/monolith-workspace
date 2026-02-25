@@ -34,6 +34,18 @@ export type ComponentType =
 
 export type DrillStatus = 'VALID' | 'WARNING' | 'ERROR';
 
+/**
+ * 6-face panel face identifier.
+ *
+ * - 'A'/'B': Panel surface faces (A = front/top, B = back/bottom) → V-direction drilling
+ * - 'TOP'/'BOTTOM'/'LEFT'/'RIGHT': Panel edge faces → H-direction drilling
+ *
+ * Used in DrillMapPoint to indicate which face/edge the drill enters.
+ * The CNC workpiece system narrows this to PanelFace ('TOP'|'BOTTOM') for machining,
+ * but the full 6-value set is forwarded as visualization metadata for preview transforms.
+ */
+export type DrillFace6 = 'A' | 'B' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
+
 // ============================================
 // HARDWARE TRANSFORM OVERRIDES (User-adjustable)
 // ============================================
@@ -127,7 +139,7 @@ export interface DrillMapPoint {
   drillingDistanceB?: number;           // Secondary drilling distance
   jointStyle?: string;                  // Joint style identifier
   panelThickness?: number;              // Thickness of the panel in mm
-  face?: 'A' | 'B' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';  // Which face of the panel
+  face?: DrillFace6;               // Which face/edge of the panel (6 values)
   pairedHoleId?: string;                // ID of paired hole for connectors
   connectedPanelRole?: string;          // Role of connected panel
   operationId?: string;                 // Operation identifier

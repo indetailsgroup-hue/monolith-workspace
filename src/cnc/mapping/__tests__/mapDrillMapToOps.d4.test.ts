@@ -156,8 +156,13 @@ describe('mapDrillMapToOps - D4 Workpiece Transforms', () => {
       expect(op.position.y).toBe(30);
       expect(op.position.z).toBe(0);
 
-      // No workpiece context
-      expect(op.workpieceContext).toBeUndefined();
+      // D4.2: workpieceContext is now populated with drillmap metadata
+      // even without workpiece transform, for overlay preview support
+      expect(op.workpieceContext).toBeDefined();
+      expect(op.workpieceContext?.drillmap).toBeDefined();
+      expect(op.workpieceContext?.drillmap?.pointId).toBe(point.id);
+      // But appliedOffset should be zero (no actual transform)
+      expect(op.workpieceContext?.appliedOffset).toEqual({ x: 0, y: 0, z: 0 });
     });
 
     it('should maintain backward compatibility when transforms not enabled', () => {
@@ -173,7 +178,9 @@ describe('mapDrillMapToOps - D4 Workpiece Transforms', () => {
 
       // Position unchanged
       expect(op.position).toEqual({ x: 100, y: 50, z: 0 });
-      expect(op.workpieceContext).toBeUndefined();
+      // D4.2: workpieceContext now always has drillmap metadata for overlay
+      expect(op.workpieceContext).toBeDefined();
+      expect(op.workpieceContext?.drillmap?.pointId).toBe(point.id);
     });
   });
 

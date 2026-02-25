@@ -12,10 +12,12 @@
  * - Z=0: Workpiece surface (TOP face)
  * - Negative Z: Into the material
  *
- * @version 1.0.0 - Phase D4.1: Workpiece Coordinate Mapping
+ * @version 1.1.0 - Phase D4.1: Workpiece Coordinate Mapping
+ *                  D4.2: Added DrillMap visualization metadata
  */
 
 import type { Position3D } from '../operation/operationTypes';
+import type { DrillFace6, CornerType } from '../../core/manufacturing/drillMap/types';
 
 // ============================================================================
 // PANEL FACE
@@ -135,6 +137,42 @@ export interface OperationWorkpieceContext {
   appliedOffset: Position3D;
   /** Original position in workpiece coordinates (D4: for audit trail) */
   workpiecePosition?: Position3D;
+
+  /**
+   * DrillMap visualization metadata (D4.2).
+   *
+   * Non-semantic: does NOT affect manufacturing / G-code generation.
+   * Used by CNC overlay renderer for preview transforms (flip/rotate)
+   * so that overlay markers follow hardware 3D preview state.
+   */
+  drillmap?: DrillMapVisualMetadata;
+}
+
+/**
+ * Visualization metadata forwarded from DrillMapPoint.
+ *
+ * IMPORTANT: This data is READ-ONLY for visualization/inspection.
+ * It must NEVER be used to alter machining truth (op.position, G-code export).
+ */
+export interface DrillMapVisualMetadata {
+  /** DrillMapPoint.id — used to look up preview state */
+  pointId: string;
+  /** Connector pair ID linking CAM ↔ BOLT */
+  pairId?: string;
+  /** Full 6-face identifier (not narrowed to TOP/BOTTOM) */
+  face6?: DrillFace6;
+  /** Edge side for H-direction drilling (undefined for V-direction) */
+  edgeSide?: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
+  /** Detected corner position */
+  cornerType?: CornerType;
+  /** Drill axis direction — unit vector into material (mm-space) */
+  normal?: Position3D;
+  /** Bolt direction vector (for alignment/flip) */
+  boltDirection?: Position3D;
+  /** Transform anchor point in mm — targetPocketCenter (best) or position */
+  anchor?: Position3D;
+  /** Role of the connected panel (debug/filter) */
+  connectedPanelRole?: string;
 }
 
 // ============================================================================

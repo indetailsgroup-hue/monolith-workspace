@@ -18,6 +18,7 @@ import { useCncOverlayStore, selectFilteredPoints } from '../../../core/store/us
 import { CncOverlayMarker } from './CncOverlayMarker';
 import type { CncOverlayPoint } from './cncOverlayTypes';
 import { getOverlayPointColor } from './cncOverlayTypes';
+import { overlayPointToThreePosition, type OverlayPreviewState } from './overlayPreviewTransform';
 
 // ============================================================================
 // TYPES
@@ -28,6 +29,8 @@ export interface CncOverlayLayerProps {
   visible?: boolean;
   /** Maximum points to render (for performance) */
   maxPoints?: number;
+  /** Preview transform state (flip/rotate) — preview-only, does not affect truth */
+  previewState?: OverlayPreviewState | null;
   /** Callback when a point is selected */
   onPointSelect?: (point: CncOverlayPoint | null) => void;
 }
@@ -46,6 +49,7 @@ const DEFAULT_MAX_POINTS = 500;
 export const CncOverlayLayer: React.FC<CncOverlayLayerProps> = ({
   visible,
   maxPoints = DEFAULT_MAX_POINTS,
+  previewState,
   onPointSelect,
 }) => {
   // Get store state
@@ -120,6 +124,7 @@ export const CncOverlayLayer: React.FC<CncOverlayLayerProps> = ({
           style={markerStyle}
           isSelected={point.id === selectedPointId}
           isHovered={point.id === hoveredPointId}
+          previewState={previewState}
           onClick={handlePointClick}
           onHover={handlePointHover}
         />
@@ -160,6 +165,7 @@ const INSTANCING_THRESHOLD = 100;
 export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
   visible,
   maxPoints = 5000,
+  previewState,
   onPointSelect,
 }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -187,6 +193,7 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
       <CncOverlayLayer
         visible={visible}
         maxPoints={maxPoints}
+        previewState={previewState}
         onPointSelect={onPointSelect}
       />
     );
@@ -220,15 +227,11 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
       const point = visiblePoints[i];
       pointIdMap.set(i, point.id);
 
-      // Calculate position (convert mm to meters)
-      const x = point.position.x * MM_TO_M;
-      const y = point.position.y * MM_TO_M;
       const height = Math.max(point.depth * MM_TO_M * markerStyle.scale, MIN_MARKER_HEIGHT);
-      // Z position: start at surface, center of cylinder goes down
-      const z = point.position.z * MM_TO_M - height / 2;
 
-      // Set position (swap Y/Z for Three.js coordinate system)
-      tempPosition.set(x, z, -y);
+      // D4.2: Apply preview transform + convert to Three.js coords
+      const [px, py, pz] = overlayPointToThreePosition(point, previewState, height / 2);
+      tempPosition.set(px, py, pz);
 
       // Calculate scale based on actual diameter and depth
       const radius = (point.diameter / 2) * MM_TO_M * markerStyle.scale;
@@ -250,7 +253,7 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
     }
 
     return { matrices, colors, pointIdMap };
-  }, [visiblePoints, markerStyle.scale]);
+  }, [visiblePoints, markerStyle.scale, previewState]);
 
   // Update instance matrices when points change
   useEffect(() => {

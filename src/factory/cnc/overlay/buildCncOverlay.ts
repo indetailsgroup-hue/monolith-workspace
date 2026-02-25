@@ -144,6 +144,20 @@ function buildOverlayPoint(
   // Build label
   const label = buildPointLabel(op, diameter, depth, decision.params.cycle);
 
+  // D4.2: Forward DrillMap visualization metadata for preview transforms
+  const dm = ctx?.drillmap;
+  const preview = dm
+    ? {
+        key: dm.pointId,
+        anchor: dm.anchor ?? { ...op.position },
+        normal: dm.normal,
+        edgeSide: dm.edgeSide,
+        face6: dm.face6,
+        pairId: dm.pairId,
+        cornerType: dm.cornerType,
+      }
+    : undefined;
+
   return {
     id: op.id,
     type: op.type as 'DRILL' | 'BORE',
@@ -161,6 +175,7 @@ function buildOverlayPoint(
     comment: op.comment,
     peckDepth: decision.params.peckDepth,
     dwellTime: decision.params.dwellTime,
+    preview,
   };
 }
 

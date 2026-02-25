@@ -14,6 +14,7 @@ import type {
   DrillMapPanel,
   DrillMapPoint,
   DrillPurpose,
+  DrillFace6,
 } from '../../core/manufacturing/drillMap/types';
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getToolByDiameter } from '../machine/machineProfile';
@@ -22,8 +23,9 @@ import type {
   DrillOperation,
   BoreOperation,
   Position3D,
+  DrillDirection,
 } from '../operation/operationTypes';
-import type { WorkpieceTransformContext, OperationWorkpieceContext } from '../transform/workpieceTypes';
+import type { WorkpieceTransformContext, OperationWorkpieceContext, DrillMapVisualMetadata } from '../transform/workpieceTypes';
 import { transformToMachine } from '../transform/transformPrimitives';
 
 // ============================================
@@ -150,7 +152,22 @@ export function mapDrillMapToOps(
           op.workpieceContext = {
             ...transformResult.context,
             workpiecePosition: originalPosition,
+            // D4.2: Forward DrillMap visualization metadata
+            drillmap: buildDrillmapMetadata(point),
           };
+        } else {
+          // D4.2: Even without workpiece transform, forward drillmap metadata
+          // so overlay renderer has preview keys/anchor/normal
+          if (!op.workpieceContext) {
+            op.workpieceContext = {
+              panelId: panel.panelId,
+              face: 'TOP',
+              appliedOffset: { x: 0, y: 0, z: 0 },
+              drillmap: buildDrillmapMetadata(point),
+            };
+          } else {
+            op.workpieceContext.drillmap = buildDrillmapMetadata(point);
+          }
         }
         operations.push(op);
       } else {
@@ -286,6 +303,7 @@ function createDrillOp(
     toolId: tool?.toolId ?? `drill-${diameter}mm`,
     position,
     depth: point.depth,
+    direction: deriveDrillDirection(point.face),
     throughHole: point.throughHole ?? false,
     peckDepth: needsPeck ? opts.defaultPeckDepth : undefined,
     feedRate: opts.feedRate || tool?.defaultFeedRate,
@@ -321,9 +339,57 @@ function createBoreOp(
     position,
     diameter,
     depth: point.depth,
+    direction: deriveDrillDirection(point.face),
     flatBottom: point.purpose === 'CAM_LOCK' || point.purpose === 'MINIFIX' || point.purpose === 'BOLT',
     feedRate: opts.feedRate || tool?.defaultFeedRate,
     comment: `${formatPurpose(point.purpose)} bore (panel: ${panel.panelId})`,
+  };
+}
+
+// ============================================
+// DRILLMAP METADATA FORWARDING (D4.2)
+// ============================================
+
+/** Surface faces → V-direction drilling */
+const SURFACE_FACES: ReadonlySet<DrillFace6> = new Set(['A', 'B']);
+
+/** Edge faces → H-direction drilling */
+const EDGE_FACES: ReadonlySet<string> = new Set(['TOP', 'BOTTOM', 'LEFT', 'RIGHT']);
+
+/**
+ * Derive drill direction from DrillMapPoint.face.
+ * - 'A'/'B' (surface faces) → 'V' (vertical, into face)
+ * - 'TOP'/'BOTTOM'/'LEFT'/'RIGHT' (edge faces) → 'H' (horizontal, into edge)
+ */
+function deriveDrillDirection(face?: DrillFace6): DrillDirection | undefined {
+  if (!face) return undefined;
+  if (SURFACE_FACES.has(face)) return 'V';
+  if (EDGE_FACES.has(face)) return 'H';
+  return undefined;
+}
+
+/**
+ * Build visualization metadata from a DrillMapPoint.
+ *
+ * IMPORTANT: This metadata is non-semantic (does NOT affect manufacturing).
+ * Used by CNC overlay renderer for preview transforms (flip/rotate).
+ */
+function buildDrillmapMetadata(point: DrillMapPoint): DrillMapVisualMetadata {
+  const face6 = point.face;
+  const isEdge = face6 ? EDGE_FACES.has(face6) : false;
+
+  return {
+    pointId: point.id,
+    pairId: point.pairId,
+    face6,
+    edgeSide: isEdge ? (face6 as 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT') : undefined,
+    cornerType: point.cornerType,
+    normal: point.normal ? convertPosition(point.normal) : undefined,
+    boltDirection: point.boltDirection ? convertPosition(point.boltDirection) : undefined,
+    anchor: point.targetPocketCenter
+      ? convertPosition(point.targetPocketCenter)
+      : convertPosition(point.position),
+    connectedPanelRole: point.connectedPanelRole,
   };
 }
 

@@ -14,6 +14,7 @@ export type {
   WorkpieceOffset,
   WorkpieceTransformContext,
   OperationWorkpieceContext,
+  DrillMapVisualMetadata,
   TransformResult,
 } from './workpieceTypes';
 
