@@ -390,7 +390,14 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           finalQuat = flipQuat.multiply(finalQuat);
         }
         // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
-        if (flipXStateByPointId[boltPoint.id]) {
+        // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
+        const resolvedPreviewCam = resolvePreviewState(
+          boltPoint.pairId,
+          hardwareOverrides,
+          null  // No global config for Hardware3D flip — only per-connector
+        );
+        const isFlippedCam = resolvedPreviewCam?.flipVertical ?? flipXStateByPointId[boltPoint.id] ?? false;
+        if (isFlippedCam) {
           const faceSwapQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
           finalQuat = faceSwapQuat.multiply(finalQuat);
         }
@@ -469,7 +476,13 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
 
         let groupX: number, groupY: number, groupZ: number;
 
-        const isVerticalFlipped = !!flipXStateByPointId[boltPoint.id];
+        // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
+        const resolvedPreviewPos = resolvePreviewState(
+          boltPoint.pairId,
+          hardwareOverrides,
+          null  // No global config for Hardware3D flip — only per-connector
+        );
+        const isVerticalFlipped = resolvedPreviewPos?.flipVertical ?? !!flipXStateByPointId[boltPoint.id];
 
         // Always anchor hardware on bolt axis center when available.
         // This guarantees bolt/thread stays centered in Top/Bottom thickness.

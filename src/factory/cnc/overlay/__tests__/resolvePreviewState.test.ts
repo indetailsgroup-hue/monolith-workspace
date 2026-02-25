@@ -208,4 +208,60 @@ describe('isIdentityPreview', () => {
       rotationZ: 5,
     })).toBe(false);
   });
+
+  it('returns false when flipHorizontal is true', () => {
+    expect(isIdentityPreview({
+      flipVertical: false,
+      flipHorizontal: true,
+      rotationX: 0,
+      rotationY: 0,
+      rotationZ: 0,
+    })).toBe(false);
+  });
+});
+
+// ============================================================================
+// Test 5: flipHorizontal support
+// ============================================================================
+
+describe('resolvePreviewState - flipHorizontal', () => {
+  it('returns flipHorizontal from per-connector override', () => {
+    const overrides: HardwarePointOverrides = {
+      'pair-TOP_RIGHT-0': {
+        previewState: { flipHorizontal: true },
+      },
+    };
+
+    const result = resolvePreviewState('pair-TOP_RIGHT-0', overrides, null);
+
+    expect(result).not.toBeNull();
+    expect(result!.flipHorizontal).toBe(true);
+    expect(result!.flipVertical).toBe(false);
+  });
+
+  it('supports both flipVertical and flipHorizontal independently', () => {
+    const overrides: HardwarePointOverrides = {
+      'pair-TOP_LEFT-0': {
+        previewState: { flipVertical: true, flipHorizontal: true },
+      },
+    };
+
+    const result = resolvePreviewState('pair-TOP_LEFT-0', overrides, null);
+
+    expect(result!.flipVertical).toBe(true);
+    expect(result!.flipHorizontal).toBe(true);
+  });
+
+  it('defaults flipHorizontal to false when only flipVertical is set', () => {
+    const overrides: HardwarePointOverrides = {
+      'pair-TOP_LEFT-0': {
+        previewState: { flipVertical: true },
+      },
+    };
+
+    const result = resolvePreviewState('pair-TOP_LEFT-0', overrides, null);
+
+    expect(result!.flipVertical).toBe(true);
+    expect(result!.flipHorizontal).toBe(false);
+  });
 });

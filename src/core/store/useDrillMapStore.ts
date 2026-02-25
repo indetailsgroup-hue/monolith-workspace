@@ -623,6 +623,53 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           }
         }
 
+        // PERSIST: flipY → hardwareOverrides[pairId].previewState.flipHorizontal
+        if (action === 'flipY') {
+          // flipY toggles rotY by ±π; if was >= π/2 we just unflipped, else we just flipped
+          const wasFlippedH = currentRotation.rotY >= Math.PI / 2;
+          const nextFlipH = !wasFlippedH;
+
+          // Collect pairIds for per-connector persistence (same corner logic as flipX)
+          const pairIdsForFlipY = new Set<string>();
+          let flipYCorner: CornerType | undefined = state.hardwareContextMenu.cornerType ?? undefined;
+          if (!flipYCorner) {
+            for (const panel of state.drillMap.panels) {
+              const pt = panel.points.find((p) => p.id === pointId);
+              if (pt?.cornerType) { flipYCorner = pt.cornerType; break; }
+            }
+          }
+          if (flipYCorner) {
+            for (const panel of state.drillMap.panels) {
+              for (const pt of panel.points) {
+                if (pt.cornerType === flipYCorner && pt.pairId) {
+                  pairIdsForFlipY.add(pt.pairId);
+                }
+              }
+            }
+          }
+
+          const activeCabIdY = useCabinetStore.getState().activeCabinetId;
+          if (activeCabIdY) {
+            const payloadY = { flipHorizontal: nextFlipH };
+            if (pairIdsForFlipY.size > 0) {
+              for (const pid of pairIdsForFlipY) {
+                useCabinetStore.getState().setHardwarePointOverride(activeCabIdY, pid, {
+                  previewState: payloadY,
+                });
+              }
+            } else {
+              useCabinetStore.getState().setHardwarePointOverride(activeCabIdY, pointId, {
+                previewState: payloadY,
+              });
+              if (pairedHoleId) {
+                useCabinetStore.getState().setHardwarePointOverride(activeCabIdY, pairedHoleId, {
+                  previewState: payloadY,
+                });
+              }
+            }
+          }
+        }
+
         if (action === 'flipX') {
           const nextFlip = !(state.flipXStateByPointId[pointId] ?? false);
           let selectedCorner: CornerType | undefined = state.hardwareContextMenu.cornerType ?? undefined;

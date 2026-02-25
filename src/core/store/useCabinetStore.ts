@@ -2169,14 +2169,22 @@ interface CabinetActions {
   setMinifixPreset: (cabinetId: string, presetId: string | undefined) => void;
   setHingePreset: (cabinetId: string, presetId: string | undefined) => void;
 
-  // Hardware point overrides (per-connector rotation/position)
+  // Hardware point overrides (per-connector rotation/position/previewState)
   setHardwarePointOverride: (
     cabinetId: string,
     pointId: string,
-    override: { rotation?: { rotX: number; rotY: number; rotZ: number }; position?: { dx: number; dy: number; dz: number } }
+    override: {
+      rotation?: { rotX: number; rotY: number; rotZ: number };
+      position?: { dx: number; dy: number; dz: number };
+      previewState?: { flipVertical?: boolean; flipHorizontal?: boolean; rotationX?: number; rotationY?: number; rotationZ?: number };
+    }
   ) => void;
   clearHardwarePointOverride: (cabinetId: string, pointId: string) => void;
-  getHardwarePointOverrides: (cabinetId: string) => Record<string, { rotation?: { rotX: number; rotY: number; rotZ: number }; position?: { dx: number; dy: number; dz: number } }>;
+  getHardwarePointOverrides: (cabinetId: string) => Record<string, {
+    rotation?: { rotX: number; rotY: number; rotZ: number };
+    position?: { dx: number; dy: number; dz: number };
+    previewState?: { flipVertical?: boolean; flipHorizontal?: boolean; rotationX?: number; rotationY?: number; rotationZ?: number };
+  }>;
 
   // Drawer configuration
   enableDrawers: (slideType?: DrawerSlideType) => void;
@@ -3759,8 +3767,18 @@ export const useCabinetStore = create<CabinetStore>()(
             ...existing,
             ...(override.rotation && { rotation: override.rotation }),
             ...(override.position && { position: override.position }),
-            ...(override.previewState && { previewState: override.previewState }),
+            ...(override.previewState && {
+              previewState: {
+                ...(existing.previewState || {}),
+                ...override.previewState,
+              },
+            }),
           };
+
+          // Sync state.cabinet pointer so selectors reading s.cabinet re-render
+          if (cabinet.id === state.activeCabinetId) {
+            state.cabinet = cabinet;
+          }
         }
       });
     },
@@ -3770,6 +3788,11 @@ export const useCabinetStore = create<CabinetStore>()(
         const cabinet = state.cabinets.find((c) => c.id === cabinetId);
         if (cabinet?.hardwareOverrides) {
           delete cabinet.hardwareOverrides[pointId];
+
+          // Sync state.cabinet pointer
+          if (cabinet.id === state.activeCabinetId) {
+            state.cabinet = cabinet;
+          }
         }
       });
     },
