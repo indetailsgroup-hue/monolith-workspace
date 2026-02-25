@@ -144,10 +144,14 @@ interface DrillOperation {
 
 | Field | Audit Use |
 |-------|-----------|
-| `pairId` | Ensures every bore has its counterpart (Cam↔Bolt) |
+| `pairId` | Ensures every bore has its counterpart (Cam↔Bolt). Also canonical key for per-connector preview state — see [`HARDWARE_PREVIEW_KEYS.md`](../architecture/HARDWARE_PREVIEW_KEYS.md) |
 | `role` | Validates structural bores use CORE reference |
 | `frame` | Gate G11 checks frame compliance |
 | `tags` | Human-readable reason tags for traceability |
+
+> **Note:** `mapDrillMapToOps` forwards `pairId`, `anchor`, `normal`, and `edgeSide`
+> through `OperationWorkpieceContext.drillmap` for CNC overlay preview transforms.
+> See [Hardware Preview Keys](../architecture/HARDWARE_PREVIEW_KEYS.md) for the full contract.
 
 ---
 

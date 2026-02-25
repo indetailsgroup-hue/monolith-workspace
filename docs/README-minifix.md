@@ -50,6 +50,11 @@ Use this for:
 3. Run the regression test plan after changes  
 4. Use the Thai version for team communication and handoff
 
+## Related Architecture Docs
+
+- **Preview keys contract:** [`docs/architecture/HARDWARE_PREVIEW_KEYS.md`](architecture/HARDWARE_PREVIEW_KEYS.md)
+  — canonical keying (`pairId`) and resolution order for per-connector preview transforms
+
 ## Important Notes
 
 - `localhost` and `127.0.0.1` use different localStorage namespaces
