@@ -209,3 +209,99 @@ calculateCncCoordinate(37.0, 24.0, PREMIUM_STACK, 'DRILL_ON_FINISHED');
 calculateCncCoordinate(37.0, 24.0, PREMIUM_STACK, 'DRILL_ON_CORE');
 // → { u: 24.0, v: 36.0, n: 9.0 }
 ```
+
+---
+
+## 8. Physical Validation Protocol (19.6mm Stack)
+
+### Materials Required
+
+| Item | Specification | Qty |
+|------|--------------|-----|
+| HMR 18mm board | Green moisture-resistant | 2 panels (side + bottom) |
+| HPL 0.8mm laminate | Grey Oak (both sides) | 4 sheets |
+| PVC 1.0mm edge banding | Grey | ~2m |
+| Häfele Minifix 15 cam | Ø15, B=24mm | 4 pcs |
+| Häfele Minifix S200 bolt | Ø10 | 4 pcs |
+| Target J10 (optional) | B=9.5mm | 2 pcs |
+
+### Equipment Required
+
+- Digital caliper (0.01mm resolution)
+- Steel ruler (300mm)
+- Depth gauge
+- Straight edge (500mm)
+- Feeler gauge set (0.05–1.0mm)
+- Go/No-Go bore gauges (Ø5, Ø10, Ø15)
+- Alignment pin Ø8
+
+### Test Procedure
+
+#### Test A: N-Axis Center Verification
+
+1. Export drill file for test panel using `calculateCncCoordinate()`
+2. Run CNC program on HMR 18mm board (with HPL laminated)
+3. Measure bore center from raw face (top) with caliper
+4. Measure bore center from raw face (bottom) with caliper
+
+| Check | Expected | Tolerance | Pass/Fail |
+|-------|----------|-----------|-----------|
+| N from top face | 9.0mm | ±0.15mm | ☐ |
+| N from bottom face | 9.0mm | ±0.15mm | ☐ |
+| Symmetry (top − bottom) | 0.0mm | ≤0.3mm | ☐ |
+
+#### Test B: V-Axis Position (DRILL_ON_CORE)
+
+1. Export drill file with mode `DRILL_ON_CORE`
+2. Run CNC on raw board (no PVC yet)
+3. Measure first hole from raw edge
+4. Apply PVC 1.0mm edge banding
+5. Measure first hole from finished edge
+
+| Check | Expected | Tolerance | Pass/Fail |
+|-------|----------|-----------|-----------|
+| V from raw edge | 36.0mm | ±0.2mm | ☐ |
+| V from finished edge (after PVC) | 37.0mm | ±0.3mm | ☐ |
+
+#### Test C: V-Axis Position (DRILL_ON_FINISHED)
+
+1. Apply PVC 1.0mm edge banding first
+2. Export drill file with mode `DRILL_ON_FINISHED`
+3. Run CNC on finished board
+4. Measure first hole from finished edge
+
+| Check | Expected | Tolerance | Pass/Fail |
+|-------|----------|-----------|-----------|
+| V from finished edge | 37.0mm | ±0.2mm | ☐ |
+
+#### Test D: Assembly Fit
+
+1. Prepare side panel + bottom panel (both drilled)
+2. Insert Minifix cam into face bore, bolt into edge bore
+3. Assemble joint, turn cam to lock
+
+| Check | Expected | Tolerance | Pass/Fail |
+|-------|----------|-----------|-----------|
+| Joint flush (straight edge) | No gap | ≤0.2mm | ☐ |
+| Cam locks smoothly | 90° turn, no force | — | ☐ |
+| No joint wobble | Rigid under hand pressure | — | ☐ |
+| Bore alignment (Ø8 pin test) | Pin passes freely | No binding | ☐ |
+
+### Results Summary
+
+| Test | Description | Result |
+|------|-------------|--------|
+| A | N-Axis center | ☐ PASS / ☐ FAIL |
+| B | V-Axis (DRILL_ON_CORE) | ☐ PASS / ☐ FAIL |
+| C | V-Axis (DRILL_ON_FINISHED) | ☐ PASS / ☐ FAIL |
+| D | Assembly fit | ☐ PASS / ☐ FAIL |
+
+**Overall:** ☐ ALL PASS → Stack configuration validated / ☐ ANY FAIL → Root cause analysis
+
+### Sign-Off
+
+| Role | Name | Date | Signature |
+|------|------|------|-----------|
+| Software Engineer | | | |
+| CNC Operator | | | |
+| QA Inspector | | | |

@@ -1,6 +1,6 @@
 # Tool Health & Wear Tracking System
 
-> **Version:** 1.1.0 (D6.1 Release)
+> **Version:** 1.2.0 (D6.2 Release)
 > **Schema:** `monolith-factory-tooling (v1)`
 > **Status:** Production Ready
 
@@ -236,8 +236,98 @@ await resetToolingDb();
 - [x] Threshold presets (Light/Standard/Heavy/Extra Heavy)
 - [x] Audit trail for maintenance actions (localStorage)
 
-## Future Enhancements (D6.2)
+## D6.2 Features
 
-- [ ] Export wear report (CSV/JSON)
-- [ ] Maintenance history view
-- [ ] Tool replacement scheduling
+### Trend Analysis — ✅ COMPLETE
+
+Wear trend tracking to predict tool replacement needs.
+
+```typescript
+// Get health with trend for a single tool
+await getToolHealthTrend(toolId: string, options?: TrendQueryOptions): Promise<ToolHealthTrend | null>
+
+// List health with trend for all tools
+await listToolHealthTrend(options?: TrendQueryOptions): Promise<ToolHealthTrend[]>
+```
+
+#### Types
+
+```typescript
+type WearDataPoint = {
+  timestamp: number;     // epoch ms
+  wearUnits: number;     // cumulative wear at this point
+  jobId?: string;        // associated job (optional)
+};
+
+type ToolHealthTrend = ToolHealth & {
+  wearHistory: WearDataPoint[];                   // Recent data points
+  trend: 'STABLE' | 'INCREASING' | 'RAPID';      // Trend direction
+  avgWearPerJob: number;                          // Average wear per job
+};
+
+type TrendQueryOptions = ToolHealthQueryOptions & {
+  dataPoints?: number;   // Recent points to include (default: 5)
+  maxEvents?: number;    // Max events to scan (default: 50)
+};
+```
+
+#### Trend Direction Logic
+
+| Direction | Condition | Action |
+|-----------|-----------|--------|
+| `STABLE` | Wear rate consistent or decreasing | No action needed |
+| `INCREASING` | Rate > 1.1× average | Monitor closely |
+| `RAPID` | Rate > 1.5× average | Schedule replacement soon |
+
+### Wear Summary by Material — ✅ COMPLETE
+
+Breakdown of wear contribution by material class.
+
+```typescript
+function summarizeWearByMaterial(record: ToolUsageRecord): WearSummary
+
+type WearMaterialSummary = {
+  material: MaterialClass;
+  wearUnits: number;
+  percent: number;         // 0..100, all items sum to 100
+};
+
+type WearSummary = {
+  toolId: string;
+  totalWearUnits: number;
+  items: WearMaterialSummary[];  // Sorted desc by wearUnits
+};
+```
+
+### Maintenance History — ✅ COMPLETE
+
+Audit trail for all maintenance actions, stored in localStorage.
+
+```typescript
+interface MaintenanceLogEntry {
+  toolId: string;
+  action: 'RESET' | 'THRESHOLD_SET' | 'THRESHOLD_DELETE';
+  reason?: ResetReason;
+  note?: string;
+  timestamp: number;
+}
+
+// Read maintenance log (max 100 entries, FIFO)
+function getMaintenanceLog(): MaintenanceLogEntry[]
+
+// Clear maintenance log
+function clearMaintenanceLog(): void
+```
+
+- Storage key: `monolith.tooling.maintenanceLog`
+- Automatically appended when `resetToolWear()` or threshold functions are called
+- Max 100 entries (oldest evicted on overflow)
+- Non-critical: errors are swallowed to avoid blocking CNC operations
+
+### D6.2 Checklist
+
+- [x] Trend analysis (`getToolHealthTrend`, `listToolHealthTrend`)
+- [x] Wear summary by material (`summarizeWearByMaterial`)
+- [x] Maintenance history log (`getMaintenanceLog`)
+- [ ] Export wear report (CSV/JSON download)
+- [ ] Tool replacement scheduling (predictive)

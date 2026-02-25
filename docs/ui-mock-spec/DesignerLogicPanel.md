@@ -188,20 +188,36 @@ interface AssemblyStepsTabProps {
 
 ## State Management
 
-### Store Integration
+### Decision: Dedicated Store (Option 1) — ✅ IMPLEMENTED
 
-```tsx
-// Option 1: Dedicated store
-const useDesignerLogicStore = create<DesignerLogicState>((set) => ({
-  evaluation: null,
-  setEvaluation: (eval) => set({ evaluation: eval }),
-}));
+The Designer Logic uses a **dedicated Zustand store** (`useDesignerLogicStore`) rather than extending `useCabinetStore`. This was chosen for:
 
-// Option 2: Extend useCabinetStore
-interface CabinetState {
-  // ... existing state
-  designerEvaluation: DesignerEvaluationPDF | null;
-  evaluateDesignerIntent: () => void;
+1. **Separation of concerns** — Cabinet geometry state stays clean, evaluation state is independent
+2. **Independent update cycle** — Evaluation can re-run without triggering cabinet re-renders
+3. **Panel-specific state** — Active tab, filter, expand/collapse belong to the panel, not the cabinet
+
+### Store Definition
+
+```typescript
+// src/core/store/useDesignerLogicStore.ts
+interface DesignerLogicState {
+  // Core evaluation
+  intent: DesignerIntentPDF;
+  evaluation: DesignerEvaluationPDF | null;
+
+  // UI state
+  isEvaluating: boolean;
+  lastEvaluatedAt: string | null;
+  activeTab: DesignerLogicTab;       // 'hardware' | 'drilling' | 'assembly'
+  isPanelExpanded: boolean;
+  filter: DesignerLogicFilter;       // Severity/category filters
+
+  // Actions
+  setIntent: (intent: DesignerIntentPDF) => void;
+  evaluate: () => void;
+  setActiveTab: (tab: DesignerLogicTab) => void;
+  togglePanel: () => void;
+  setFilter: (filter: Partial<DesignerLogicFilter>) => void;
 }
 ```
 

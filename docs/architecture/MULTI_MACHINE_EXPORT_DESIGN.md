@@ -383,15 +383,187 @@ export const MACHINE_PRESETS: Record<string, StrictMachineProfile> = {
 - `presets/index.ts` — All 5 presets wired
 - 47 tests covering: XXL structure, bore operations, depth handling, through holes, string sanitization, edge cases
 
-### Phase 5: Custom Post-Processor SDK — ⏳ NOT STARTED
+### Phase 5: Custom Post-Processor SDK + HOP/TCN — ⏳ NOT STARTED
 
-**Scope (planned):**
-- User-defined post-processors
-- Template system
-- Import/export of custom formats
-- HOP (Holzher) and TCN (Felder) formats
+**Scope:**
+- HOP format (Holz-Her NC-HOPS) and TCN format (Felder TpaCAD)
+- User-defined post-processor template system
+- Import/export of custom format configurations
 
-**Estimated Effort:** 7-10 days (optional)
+**Planned Architecture:**
+
+```
+src/cnc/post/
+├── dialects/
+│   ├── hop.ts                # Holz-Her HOP format
+│   ├── tcn.ts                # Felder TCN format
+│   └── custom.ts             # Custom template-based dialect
+├── sdk/
+│   ├── postProcessorSDK.ts   # SDK entry point
+│   ├── templateEngine.ts     # Template interpolation
+│   ├── templateTypes.ts      # Template schema types
+│   └── __tests__/
+│       ├── hop.test.ts
+│       ├── tcn.test.ts
+│       └── templateEngine.test.ts
+└── presets/
+    ├── holzher.ts             # Holz-Her machine preset
+    └── felder.ts              # Felder machine preset
+```
+
+#### HOP Format (Holz-Her) — Planned
+
+Holz-Her machines use NC-HOPS CAM software with a proprietary text-based format.
+
+```
+; NC-HOPS Program
+PROGRAM panel_001
+PANEL X=600 Y=720 Z=18
+;
+BORE X=50 Y=37 Z=-12.5 D=8 TYP=THRU
+BORE X=50 Y=69 Z=-12.5 D=15 TYP=BLIND
+;
+END_PROGRAM
+```
+
+```typescript
+export const hopPostProcessor: PostProcessor = {
+  dialect: 'HOP',
+  fileExt: '.hop',
+  post(opGraph, machine, opts) {
+    // 1. Header: PROGRAM + PANEL dimensions
+    // 2. Operations: BORE with X, Y, negative Z, D (diameter)
+    // 3. TYP=THRU for through holes, TYP=BLIND otherwise
+    // 4. END_PROGRAM terminator
+  },
+};
+```
+
+| Feature | HOP Convention |
+|---------|---------------|
+| Depth | Negative Z (like CIX) |
+| Through holes | `TYP=THRU` |
+| Comments | `;` prefix |
+| Line endings | CRLF |
+| Number format | 1 decimal (e.g., `12.5`) |
+
+#### TCN Format (Felder) — Planned
+
+Felder machines use TpaCAD software with TCN format (text-based, section-structured).
+
+```
+[HEADER]
+NAME=panel_001
+VERSION=1.0
+
+[PANEL]
+LX=600
+LY=720
+LZ=18
+
+[OPERATIONS]
+BV;X=50;Y=37;DP=12.5;DM=8;TH=1
+BV;X=50;Y=69;DP=12.5;DM=15;TH=0
+
+[END]
+```
+
+```typescript
+export const tcnPostProcessor: PostProcessor = {
+  dialect: 'TCN',
+  fileExt: '.tcn',
+  post(opGraph, machine, opts) {
+    // 1. [HEADER] section with NAME, VERSION
+    // 2. [PANEL] section with LX, LY, LZ dimensions
+    // 3. [OPERATIONS] with BV (bore vertical): X, Y, DP (depth), DM (diameter), TH (through)
+    // 4. [END] terminator
+  },
+};
+```
+
+| Feature | TCN Convention |
+|---------|---------------|
+| Sections | `[HEADER]`, `[PANEL]`, `[OPERATIONS]`, `[END]` |
+| Depth | Positive (`DP=12.5`) |
+| Through holes | `TH=1` / `TH=0` |
+| Field separator | `;` |
+| Line endings | CRLF |
+
+#### Registry Update
+
+```typescript
+// Extended registry (v1.5.0)
+const registry: Record<GcodeDialect, PostProcessor> = {
+  // ... existing 8 dialects
+  HOP:  hopPostProcessor,
+  TCN:  tcnPostProcessor,
+  CUSTOM: customPostProcessor,  // Template-based
+};
+
+// Extended machine mapping
+const machineDialectMap: Record<string, GcodeDialect> = {
+  // ... existing 7 mappings
+  HOLZHER:     'HOP',
+  FELDER:      'TCN',
+  HOLZHER_ISO: 'FANUC',
+  FELDER_ISO:  'FANUC',
+};
+
+// New presets
+const HOLZHER_MACHINE: StrictMachineProfile = { /* ... */ };
+const FELDER_MACHINE: StrictMachineProfile = { /* ... */ };
+```
+
+#### Custom Post-Processor SDK
+
+Template-based system for user-defined formats without code changes.
+
+```typescript
+interface PostProcessorTemplate {
+  id: string;
+  name: string;
+  fileExt: FileExt;
+  encoding: 'utf-8' | 'ascii';
+  lineEnding: 'LF' | 'CRLF';
+  sections: TemplateSection[];
+}
+
+interface TemplateSection {
+  type: 'HEADER' | 'PANEL' | 'OPERATION' | 'FOOTER';
+  template: string;            // Mustache-style: "BORE X={{x}} Y={{y}} Z={{z}}"
+  repeatFor?: 'operations';    // Repeat for each operation
+}
+
+// SDK API
+function createCustomPostProcessor(template: PostProcessorTemplate): PostProcessor;
+function validateTemplate(template: PostProcessorTemplate): ValidationResult;
+function exportTemplate(template: PostProcessorTemplate): string;   // JSON
+function importTemplate(json: string): PostProcessorTemplate;
+```
+
+**Template Variables:**
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `{{panelName}}` | string | Part name |
+| `{{panelX}}`, `{{panelY}}`, `{{panelZ}}` | number | Panel dimensions |
+| `{{x}}`, `{{y}}` | number | Bore position |
+| `{{z}}` or `{{depth}}` | number | Bore depth |
+| `{{diameter}}` | number | Tool diameter |
+| `{{through}}` | boolean | Through-hole flag |
+| `{{toolNumber}}` | number | Tool index |
+
+**Deliverables:**
+- `hop.ts` — Holz-Her HOP format (~350 lines est.)
+- `tcn.ts` — Felder TCN format (~350 lines est.)
+- `custom.ts` — Template-based custom dialect
+- `postProcessorSDK.ts` — SDK for creating/validating/importing templates
+- `templateEngine.ts` — Mustache-style template interpolation
+- `holzher.ts`, `felder.ts` — Machine presets
+- `postProcessor.ts` v1.5.0 — Registry updated with HOP, TCN, CUSTOM
+- ~40 tests per new dialect + SDK tests
+
+**Estimated Effort:** 7-10 days
 
 ---
 

@@ -320,17 +320,118 @@ interface NestingSheet {
 - `NestingPanel.tsx` — `GrainLines` SVG component, grain toggle, grain symbols (═ ║)
 - 12 additional grain-specific tests (included in the 47 total)
 
-### Phase 3: Genetic Algorithm — ⏳ NOT STARTED
+### Phase 3: Genetic Algorithm Refinement — ⏳ NOT STARTED
 
 **Scope:**
 - GA-based optimization using FFDH as fitness evaluator
-- Configurable time limit
-- Solution comparison UI
+- Configurable time limit (default: 2s, max: 10s)
+- Solution comparison UI (before/after)
 
-**Deliverables (planned):**
-- `genetic.ts` optimizer
-- Progress/status UI
-- Benchmark suite
+**Planned Architecture:**
+
+```
+src/nesting/
+├── genetic.ts              # GA optimizer
+├── geneticTypes.ts         # GA-specific types
+└── __tests__/
+    └── genetic.test.ts     # GA tests + benchmarks
+```
+
+**Algorithm Design:**
+
+```typescript
+interface GAConfig {
+  populationSize: number;     // Default: 50
+  generations: number;        // Default: 200
+  crossoverRate: number;      // Default: 0.8
+  mutationRate: number;       // Default: 0.05
+  elitismCount: number;       // Default: 2
+  timeLimitMs: number;        // Default: 2000
+}
+
+interface GAResult {
+  bestSolution: NestingResult;
+  initialFitness: number;     // FFDH baseline utilization
+  finalFitness: number;       // GA-optimized utilization
+  improvement: number;        // Percentage improvement
+  generationsRun: number;
+  timeElapsedMs: number;
+  convergedAt?: number;       // Generation where fitness plateaued
+}
+
+// Main entry point
+function optimizeWithGA(
+  parts: NestingPart[],
+  config: NestingConfig,
+  gaConfig?: Partial<GAConfig>,
+): GAResult;
+```
+
+**Chromosome Encoding:**
+
+Each individual is a permutation of part indices + rotation flags:
+
+```typescript
+type Chromosome = {
+  order: number[];           // Permutation of part indices
+  rotations: (0 | 90)[];    // Rotation per part (respecting canRotate)
+  fitness: number;           // Cached fitness value
+};
+```
+
+**Genetic Operators:**
+
+| Operator | Method | Description |
+|----------|--------|-------------|
+| Selection | Tournament (k=3) | Pick 3 random, select fittest |
+| Crossover | Order Crossover (OX) | Preserves relative order of parts |
+| Mutation | Swap + Rotate | Swap two part positions; flip rotation if `canRotate` |
+| Elitism | Top-N preserve | Best N individuals pass unchanged |
+
+**Fitness Function:**
+
+```typescript
+function fitness(chromosome: Chromosome, parts: NestingPart[], config: NestingConfig): number {
+  // 1. Reorder parts according to chromosome.order
+  // 2. Apply chromosome.rotations
+  // 3. Run ffdhMultiSheet() on reordered parts
+  // 4. Return overall utilization (0–100)
+  //    Penalty: +1000 per sheet beyond minimum theoretical
+}
+```
+
+**Time Budget:**
+
+| Job Size | Time Limit | Expected Improvement |
+|----------|-----------|---------------------|
+| < 20 parts | 1s | 2-5% over FFDH |
+| 20-50 parts | 2s | 5-10% over FFDH |
+| 50-100 parts | 5s | 8-15% over FFDH |
+| > 100 parts | 10s | 10-20% over FFDH |
+
+**UI Integration:**
+
+```tsx
+// NestingPanel additions
+<Button onClick={runGA} disabled={isOptimizing}>
+  Optimize (GA)
+</Button>
+
+<ProgressBar value={progress} label={`Gen ${gen}/${maxGen}`} />
+
+// Before/After comparison
+<ComparisonView
+  baseline={{ sheets: ffdhResult.sheets, utilization: ffdhResult.utilization }}
+  optimized={{ sheets: gaResult.sheets, utilization: gaResult.utilization }}
+/>
+```
+
+**Deliverables:**
+- `genetic.ts` — GA optimizer with configurable parameters
+- `geneticTypes.ts` — GA-specific type definitions
+- Progress callback for UI integration
+- Benchmark suite comparing FFDH vs GA across standard job sizes
+- Web Worker wrapper for non-blocking execution
 
 **Estimated Effort:** 4-5 days
 
@@ -342,10 +443,101 @@ interface NestingSheet {
 - Multiple sheet sizes per material
 - Leftover/remnant tracking
 
-**Deliverables (planned):**
-- Production-ready module with auto-trigger
-- User documentation
-- Performance tuning
+**Planned Architecture:**
+
+```
+src/nesting/
+├── autoNesting.ts          # useCabinetStore integration
+├── pdfExport.ts            # PDF cut diagram generation
+├── remnantTracker.ts       # Leftover sheet tracking
+└── __tests__/
+    ├── autoNesting.test.ts
+    ├── pdfExport.test.ts
+    └── remnantTracker.test.ts
+```
+
+**Auto-Nesting Integration:**
+
+```typescript
+// Hook for automatic re-nesting on cabinet changes
+function useAutoNesting(options?: {
+  debounceMs?: number;       // Default: 500
+  autoRun?: boolean;         // Default: false (manual trigger)
+}): {
+  result: NestingResult | null;
+  isRunning: boolean;
+  runNesting: () => void;
+  lastComputeMs: number;
+};
+```
+
+**PDF Export:**
+
+```typescript
+interface NestingPDFOptions {
+  paperSize: 'A4' | 'A3';
+  orientation: 'portrait' | 'landscape';
+  includePartLabels: boolean;     // Default: true
+  includeGrainIndicators: boolean; // Default: true
+  includeUtilizationBar: boolean;  // Default: true
+  includeSummaryPage: boolean;     // Default: true
+  scale: 'fit' | number;          // 'fit' or fixed scale (e.g., 0.1 = 1:10)
+}
+
+async function exportNestingPDF(
+  result: NestingResult,
+  options?: Partial<NestingPDFOptions>,
+): Promise<Blob>;
+```
+
+**Remnant Tracking:**
+
+```typescript
+interface RemnantSheet {
+  id: string;
+  materialId: string;
+  width: number;            // mm (remaining usable width)
+  height: number;           // mm (remaining usable height)
+  origin: 'FULL' | 'PARTIAL';  // Full new sheet or leftover
+  sourceSheetIndex?: number;     // Which nesting sheet this came from
+  createdAt: number;        // Timestamp
+}
+
+// Track leftover material from nesting
+function calculateRemnants(result: NestingResult, config: NestingConfig): RemnantSheet[];
+
+// Use remnants before new sheets
+function nestWithRemnants(
+  parts: NestingPart[],
+  remnants: RemnantSheet[],
+  config: NestingConfig,
+): { sheets: SheetResult[]; usedRemnants: string[]; newRemnants: RemnantSheet[] };
+```
+
+**Multiple Sheet Sizes:**
+
+```typescript
+interface SheetSizeOption {
+  width: number;
+  height: number;
+  costPerSheet: number;      // For cost optimization
+  available: number;         // Stock quantity (-1 = unlimited)
+}
+
+// Extended config for multi-size nesting
+interface MultiSizeNestingConfig extends NestingConfig {
+  sheetSizes: SheetSizeOption[];   // Available sheet sizes
+  optimizeFor: 'UTILIZATION' | 'COST' | 'SHEETS';
+}
+```
+
+**Deliverables:**
+- `autoNesting.ts` — React hook for auto-nesting on cabinet changes
+- `pdfExport.ts` — PDF cut diagram generation (using jsPDF or similar)
+- `remnantTracker.ts` — Leftover sheet inventory management
+- Multi-size sheet support in `optimizer.ts`
+- Updated `NestingPanel.tsx` with PDF export button and remnant display
+- Performance tuning: Web Worker for large jobs, memoization
 
 **Estimated Effort:** 3-4 days
 

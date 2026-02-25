@@ -1,7 +1,7 @@
 # Annex D: Designer Logic Specification
 
-> Version 1.0
-> Date: 2026-01-27
+> Version 1.1
+> Date: 2026-02-24
 
 ---
 
@@ -509,15 +509,66 @@ src/core/designerIntent/
 
 ---
 
-## D.12 Version History
+## D.12 Implementation Status
+
+### Verified Implementation (v1.0)
+
+All modules specified in this document have been implemented and tested:
+
+| Module | File | Status |
+|--------|------|--------|
+| Type definitions | `src/core/designerIntent/types.ts` | ✅ Implemented |
+| Rule engine | `src/core/designerIntent/ruleEngine.ts` | ✅ Implemented |
+| Default rules | `src/core/designerIntent/designerRules.default.ts` | ✅ Implemented |
+| Hardware mapper | `src/core/designerIntent/mappers/hardwareMapper.ts` | ✅ Implemented |
+| Drilling mapper | `src/core/designerIntent/mappers/drillingMapper.ts` | ✅ Implemented |
+| Assembly mapper | `src/core/designerIntent/mappers/assemblyMapper.ts` | ✅ Implemented |
+| CNC bridge | `src/core/designerIntent/cncBridge.ts` | ✅ Implemented |
+| Public API | `src/core/designerIntent/index.ts` | ✅ Implemented |
+
+### Test Coverage
+
+| Test File | Coverage |
+|-----------|----------|
+| `__tests__/ruleEngine.test.ts` | Rule evaluation, condition operators (eq, neq, lt, gt, in, exists), effect severity, AND logic |
+| `__tests__/mappers.test.ts` | Hardware selection, drilling plan generation, assembly sequence |
+| `__tests__/types.test.ts` | Type validation, default intent creation |
+
+### Rule Engine Operators — Verified
+
+| Operator | Behavior | Tested |
+|----------|----------|--------|
+| `eq` | Strict equality | ✅ |
+| `neq` | Not equal | ✅ |
+| `lt` | Less than | ✅ |
+| `lte` | Less than or equal | ✅ |
+| `gt` | Greater than | ✅ |
+| `gte` | Greater than or equal | ✅ |
+| `in` | Value in array | ✅ |
+| `exists` | Path exists and is truthy | ✅ |
+
+### UI Integration
+
+The Designer Logic Panel component has been implemented at `src/components/ui/DesignerLogicPanel.tsx` with:
+- Gate status badge (PASS/WARN/BLOCK)
+- Active effects list with severity icons
+- Tabbed interface: Hardware / Drilling / Assembly
+- Real-time evaluation on cabinet changes
+- Dark theme with Framer Motion animations
+- Dedicated state management via `useDesignerLogicStore`
+
+---
+
+## D.13 Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-01-27 | Initial specification |
+| 1.1 | 2026-02-24 | Added implementation verification, test coverage, UI integration status |
 
 ---
 
-## D.13 References
+## D.14 References
 
 - Assembly PDF (Thai) - Factory assembly standards
 - Wall System PDF - Wall cabinet specifications
