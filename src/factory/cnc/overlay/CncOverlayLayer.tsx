@@ -15,6 +15,7 @@
 import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useCncOverlayStore, selectFilteredPoints } from '../../../core/store/useCncOverlayStore';
+import { useCabinetStore } from '../../../core/store/useCabinetStore';
 import { CncOverlayMarker } from './CncOverlayMarker';
 import type { CncOverlayPoint } from './cncOverlayTypes';
 import { getOverlayPointColor } from './cncOverlayTypes';
@@ -52,6 +53,22 @@ export const CncOverlayLayer: React.FC<CncOverlayLayerProps> = ({
   previewState,
   onPointSelect,
 }) => {
+  // D4.2: If parent does not supply previewState, derive it from the active cabinet's hardware config.
+  // This keeps preview-only transforms working in Designer view without additional wiring.
+  const derivedPreviewState = useCabinetStore((s) => {
+    const cfg: any = s.cabinet?.hardware?.minifixConfig;
+    if (!cfg) return null;
+    return {
+      flipVertical: !!cfg.flipVertical,
+      flipHorizontal: !!cfg.flipHorizontal,
+      rotationX: Number(cfg.rotationX ?? 0),
+      rotationY: Number(cfg.rotationY ?? 0),
+      rotationZ: Number(cfg.rotationZ ?? 0),
+    } as OverlayPreviewState;
+  });
+
+  const effectivePreviewState = previewState ?? derivedPreviewState;
+
   // Get store state
   const isVisible = useCncOverlayStore((s) => visible ?? s.isVisible);
   const overlayResult = useCncOverlayStore((s) => s.overlayResult);
@@ -124,7 +141,7 @@ export const CncOverlayLayer: React.FC<CncOverlayLayerProps> = ({
           style={markerStyle}
           isSelected={point.id === selectedPointId}
           isHovered={point.id === hoveredPointId}
-          previewState={previewState}
+          previewState={effectivePreviewState}
           onClick={handlePointClick}
           onHover={handlePointHover}
         />
@@ -169,6 +186,22 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
   onPointSelect,
 }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  // D4.2: Default to active cabinet preview settings when not explicitly supplied.
+  const derivedPreviewState = useCabinetStore((s) => {
+    const cfg: any = s.cabinet?.hardware?.minifixConfig;
+    if (!cfg) return null;
+    return {
+      flipVertical: !!cfg.flipVertical,
+      flipHorizontal: !!cfg.flipHorizontal,
+      rotationX: Number(cfg.rotationX ?? 0),
+      rotationY: Number(cfg.rotationY ?? 0),
+      rotationZ: Number(cfg.rotationZ ?? 0),
+    } as OverlayPreviewState;
+  });
+
+  const effectivePreviewState = previewState ?? derivedPreviewState;
+
   const isVisible = useCncOverlayStore((s) => visible ?? s.isVisible);
   const overlayResult = useCncOverlayStore((s) => s.overlayResult);
   const markerStyle = useCncOverlayStore((s) => s.markerStyle);
@@ -193,7 +226,7 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
       <CncOverlayLayer
         visible={visible}
         maxPoints={maxPoints}
-        previewState={previewState}
+        previewState={effectivePreviewState}
         onPointSelect={onPointSelect}
       />
     );
@@ -230,7 +263,7 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
       const height = Math.max(point.depth * MM_TO_M * markerStyle.scale, MIN_MARKER_HEIGHT);
 
       // D4.2: Apply preview transform + convert to Three.js coords
-      const [px, py, pz] = overlayPointToThreePosition(point, previewState, height / 2);
+      const [px, py, pz] = overlayPointToThreePosition(point, effectivePreviewState, height / 2);
       tempPosition.set(px, py, pz);
 
       // Calculate scale based on actual diameter and depth
@@ -253,7 +286,7 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
     }
 
     return { matrices, colors, pointIdMap };
-  }, [visiblePoints, markerStyle.scale, previewState]);
+  }, [visiblePoints, markerStyle.scale, effectivePreviewState]);
 
   // Update instance matrices when points change
   useEffect(() => {
