@@ -112,8 +112,10 @@ export interface CncOverlayPreviewMeta {
   readonly edgeSide?: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
   /** Full 6-face identifier */
   readonly face6?: DrillFace6;
-  /** Connector pair ID (CAM ↔ BOLT isolation) */
+  /** Connector pair ID (CAM ↔ BOLT isolation, v1: index-based) */
   readonly pairId?: string;
+  /** Content-addressed pair key (v2: position-based) */
+  readonly pairKeyV2?: string;
   /** Corner type for debug */
   readonly cornerType?: string;
 }

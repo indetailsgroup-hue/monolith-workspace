@@ -157,8 +157,10 @@ export interface OperationWorkpieceContext {
 export interface DrillMapVisualMetadata {
   /** DrillMapPoint.id — used to look up preview state */
   pointId: string;
-  /** Connector pair ID linking CAM ↔ BOLT */
+  /** Connector pair ID linking CAM ↔ BOLT (v1: index-based) */
   pairId?: string;
+  /** Content-addressed pair key (v2: position-based) */
+  pairKeyV2?: string;
   /** Full 6-face identifier (not narrowed to TOP/BOTTOM) */
   face6?: DrillFace6;
   /** Edge side for H-direction drilling (undefined for V-direction) */

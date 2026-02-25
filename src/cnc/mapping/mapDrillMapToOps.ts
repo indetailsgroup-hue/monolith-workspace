@@ -381,6 +381,7 @@ function buildDrillmapMetadata(point: DrillMapPoint): DrillMapVisualMetadata {
   return {
     pointId: point.id,
     pairId: point.pairId,
+    pairKeyV2: point.pairKeyV2,
     face6,
     edgeSide: isEdge ? (face6 as 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT') : undefined,
     cornerType: point.cornerType,

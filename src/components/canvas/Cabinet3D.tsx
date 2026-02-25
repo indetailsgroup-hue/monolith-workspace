@@ -283,6 +283,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
       // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
       // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
       const resolvedPreview = resolvePreviewState(
+        boltPoint.pairKeyV2,
         boltPoint.pairId,
         hardwareOverrides,
         null  // No global config for Hardware3D flip — only per-connector
@@ -392,6 +393,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
         // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
         const resolvedPreviewCam = resolvePreviewState(
+          boltPoint.pairKeyV2,
           boltPoint.pairId,
           hardwareOverrides,
           null  // No global config for Hardware3D flip — only per-connector
@@ -478,6 +480,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
 
         // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
         const resolvedPreviewPos = resolvePreviewState(
+          boltPoint.pairKeyV2,
           boltPoint.pairId,
           hardwareOverrides,
           null  // No global config for Hardware3D flip — only per-connector

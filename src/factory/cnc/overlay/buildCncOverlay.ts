@@ -154,6 +154,7 @@ function buildOverlayPoint(
         edgeSide: dm.edgeSide,
         face6: dm.face6,
         pairId: dm.pairId,
+        pairKeyV2: dm.pairKeyV2,
         cornerType: dm.cornerType,
       }
     : undefined;

@@ -133,8 +133,9 @@ export const CncOverlayLayer: React.FC<CncOverlayLayerProps> = ({
   return (
     <group name="cnc-overlay-layer">
       {visiblePoints.map((point) => {
-        // Per-point preview resolution: overrides[pairId] → global → identity
+        // Per-point preview resolution: overrides[v2] → overrides[v1] → global → identity
         const pointPreview = previewState ?? resolvePreviewState(
+          point.preview?.pairKeyV2,
           point.preview?.pairId,
           hardwareOverrides,
           globalPreviewConfig
@@ -263,8 +264,9 @@ export const CncOverlayLayerInstanced: React.FC<CncOverlayLayerProps> = ({
 
       const height = Math.max(point.depth * MM_TO_M * markerStyle.scale, MIN_MARKER_HEIGHT);
 
-      // Per-point preview resolution: overrides[pairId] → global → identity
+      // Per-point preview resolution: overrides[v2] → overrides[v1] → global → identity
       const pointPreview = previewState ?? resolvePreviewState(
+        point.preview?.pairKeyV2,
         point.preview?.pairId,
         hardwareOverrides,
         globalPreviewConfig

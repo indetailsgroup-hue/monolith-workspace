@@ -82,6 +82,7 @@ import {
   sanitizeManufacturingConfig,
 } from '../../../components/ui/MinifixConfigPanel';
 import { buildDrillMapMeta } from './traceability';
+import { buildPairKeyV2 } from './pairKeyV2';
 
 // ============================================
 // CONSTANTS
@@ -362,6 +363,7 @@ interface CreateDrillPointParams {
   depth: number;
   purpose: DrillPurpose;
   pairId: string;
+  pairKeyV2?: string;  // Content-addressed key (v2)
   edgeDistance: number;
   depthPosition: number;
   cornerType: CornerType;
@@ -389,6 +391,7 @@ function createDrillPoint(params: CreateDrillPointParams): DrillMapPoint {
             : 'OTHER',
     status: 'VALID',
     pairId: params.pairId,
+    pairKeyV2: params.pairKeyV2,
     edgeDistance: params.edgeDistance,
     depthPosition: params.depthPosition,
     cornerType: params.cornerType,
@@ -466,6 +469,7 @@ function generateCornerJointPoints(
   }
 
   const pairId = `pair-${corner}-${positionIndex}`;
+  const pairKeyV2 = buildPairKeyV2(corner, sys32Z);
 
 
   // ========================================
@@ -519,6 +523,7 @@ function generateCornerJointPoints(
     depth: config.sleeveLength,
     purpose: 'BOLT',
     pairId,
+    pairKeyV2,
     edgeDistance: effectiveDistanceB, // Distance B from mating edge
     depthPosition: sys32Z,
     cornerType: corner,
@@ -535,6 +540,7 @@ function generateCornerJointPoints(
     depth: config.shaftLength,
     purpose: 'BOLT_THREAD',
     pairId,
+    pairKeyV2,
     edgeDistance: effectiveDistanceB,
     depthPosition: sys32Z,
     cornerType: corner,
@@ -557,6 +563,7 @@ function generateCornerJointPoints(
     depth: effectiveDistanceB,
     purpose: 'BOLT_ENTRY',
     pairId,
+    pairKeyV2,
     edgeDistance: effectiveDistanceB,
     depthPosition: sys32Z,
     cornerType: corner,
@@ -620,6 +627,7 @@ function generateCornerJointPoints(
       depth: config.camDepth,
       purpose: 'CAM_LOCK',
       pairId,
+      pairKeyV2,
       edgeDistance: actualEdgeDistance,
       depthPosition: sys32Z,
       cornerType: corner,
@@ -755,6 +763,7 @@ function generateCornerJointPoints(
           depth: config.dowelDepthSideFace ?? 12,  // 12mm face bore
           purpose: 'DOWEL',
           pairId: `${pairId}-dowel-side`,
+          pairKeyV2: `${pairKeyV2}-dowel-side`,
           edgeDistance: effectiveDistanceB,
           depthPosition: sys32Z,
           cornerType: corner,
@@ -801,6 +810,7 @@ function generateCornerJointPoints(
           depth: config.dowelDepthHorizEdge ?? 18,  // 18mm edge bore
           purpose: 'DOWEL',
           pairId: `${pairId}-dowel-horiz`,
+          pairKeyV2: `${pairKeyV2}-dowel-horiz`,
           edgeDistance: effectiveDistanceB,
           depthPosition: sys32Z,
           cornerType: corner,

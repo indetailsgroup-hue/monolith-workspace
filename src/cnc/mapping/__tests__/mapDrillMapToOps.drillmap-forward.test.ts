@@ -183,6 +183,22 @@ describe('mapDrillMapToOps - drillmap metadata forwarding', () => {
     }
   });
 
+  it('forwards pairKeyV2', () => {
+    const drillMap = createDrillMap([createPoint({ pairKeyV2: 'pair2-TOP_LEFT-37' })]);
+    const result = mapDrillMapToOps(drillMap, undefined, {});
+
+    const dm = result.operations[0].workpieceContext?.drillmap;
+    expect(dm?.pairKeyV2).toBe('pair2-TOP_LEFT-37');
+  });
+
+  it('forwards undefined pairKeyV2 for legacy points', () => {
+    const drillMap = createDrillMap([createPoint({ pairKeyV2: undefined })]);
+    const result = mapDrillMapToOps(drillMap, undefined, {});
+
+    const dm = result.operations[0].workpieceContext?.drillmap;
+    expect(dm?.pairKeyV2).toBeUndefined();
+  });
+
   it('does NOT mutate op.position (truth preserved)', () => {
     const drillMap = createDrillMap([createPoint()]);
     const result = mapDrillMapToOps(drillMap, undefined, {});

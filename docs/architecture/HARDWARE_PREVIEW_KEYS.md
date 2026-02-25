@@ -1,7 +1,7 @@
 # Hardware Preview Keys & Resolution Contract
 
 > **Last Updated:** 2026-02-25
-> **Status:** LOCKED (v1)
+> **Status:** LOCKED (v2)
 
 This document defines the canonical keying and resolution rules for
 preview-only transforms (flip/rotation/position) applied to hardware
@@ -22,7 +22,7 @@ Non-goals:
 
 ## Key Types
 
-There are three relevant identifiers in the pipeline:
+There are four relevant identifiers in the pipeline:
 
 ### 1) Point Key (per drill point)
 
@@ -36,20 +36,33 @@ There are three relevant identifiers in the pipeline:
 Used for:
 - per-point fine tuning (rotation/position) of a single point
 
-### 2) Connector Key (per hardware connector set)
+### 2) Connector Key v2 (per hardware connector set — content-addressed)
 
 | Field | Value |
 |-------|-------|
-| **Name** | `pairId` |
-| **Source** | `DrillMapPoint.pairId` |
-| **Example** | `pair-TOP_LEFT-0` |
+| **Name** | `pairKeyV2` |
+| **Source** | `buildPairKeyV2(cornerType, sys32Z)` |
+| **Format** | `pair2-${cornerType}-${Math.round(sys32Z)}` |
+| **Example** | `pair2-TOP_RIGHT-37` |
 | **Granularity** | one connector set (CAM + BOLT + BOLT_ENTRY + optional DOWELs) |
 
 Used for:
 - per-connector preview transforms (flip/rotation) that must apply
   consistently to all member points
+- **Stable across dimension changes** — key based on physical System32
+  position rather than iteration counter
 
-### 3) Global Key (cabinet-wide)
+### 3) Connector Key v1 (legacy — index-based)
+
+| Field | Value |
+|-------|-------|
+| **Name** | `pairId` |
+| **Source** | `generateCornerJointPoints` loop counter |
+| **Format** | `pair-${cornerType}-${positionIndex}` |
+| **Example** | `pair-TOP_LEFT-0` |
+| **Status** | **Legacy** — still generated and forwarded for backward compatibility |
+
+### 4) Global Key (cabinet-wide)
 
 | Field | Value |
 |-------|-------|
@@ -62,14 +75,15 @@ Used for:
 
 ---
 
-## Canonical Key Decision (LOCKED)
+## Canonical Key Decision (LOCKED v2)
 
-### Per-connector preview state uses `pairId` as the canonical key.
+### Per-connector preview state uses `pairKeyV2` as the canonical key, with `pairId` as fallback.
 
 Rationale:
 - Users flip/rotate a connector as a unit, not an individual hole.
-- All member points of the same connector share the same `pairId`.
-- Efficient lookup: one lookup covers CAM+BOLT+DOWEL group.
+- All member points of the same connector share the same `pairKeyV2`.
+- Content-addressed: stable across dimension changes and regeneration.
+- Legacy `pairId` fallback ensures backward compatibility.
 
 ---
 
@@ -80,8 +94,9 @@ Rationale:
 - **Key:** none (singleton)
 
 ### Per-connector preview state (connector-wide)
-- **Store:** `cabinet.hardwareOverrides[pairId].previewState`
-- **Key:** `pairId`
+- **Store:** `cabinet.hardwareOverrides[pairKeyV2].previewState`
+- **Key:** `pairKeyV2` (primary), `pairId` (legacy fallback)
+- **Write policy:** dual-write to both keys during migration period
 
 ### Per-point override (fine-tune)
 - **Store:** `cabinet.hardwareOverrides[pointId]`
@@ -90,25 +105,26 @@ Rationale:
 
 ---
 
-## Resolution Order
+## Resolution Order (v2)
 
 When rendering a point (hardware or overlay), resolve preview state in
 the following order:
 
 ```
-1) cabinet.hardwareOverrides[pairId]?.previewState     (per-connector)
-2) cabinet.hardware.minifixConfig                      (global fallback)
-3) identity / no-op                                    (no preview transform)
+1) cabinet.hardwareOverrides[pairKeyV2]?.previewState  (v2 content-addressed)
+2) cabinet.hardwareOverrides[pairId]?.previewState      (v1 legacy fallback)
+3) cabinet.hardware.minifixConfig                       (global fallback)
+4) identity / no-op                                     (no preview transform)
 ```
 
 ---
 
 ## Pipeline Requirements (Invariants)
 
-### Invariant A: Member points of a connector MUST carry `pairId`
+### Invariant A: Member points of a connector MUST carry both `pairId` and `pairKeyV2`
 
 All points that visually/mechanically belong to the same connector
-must share the same `pairId`:
+must share the same `pairId` and `pairKeyV2`:
 - CAM pocket point(s)
 - BOLT axis point(s)
 - BOLT_ENTRY edge bore point(s)
@@ -126,30 +142,42 @@ To prevent drift:
 - Hardware3D and CNC Overlay must use identical preview resolution
   rules and the same key mapping.
 
+### Invariant D: pairKeyV2 is deterministic
+
+`buildPairKeyV2(cornerType, sys32Z)` must always produce the same
+output for the same physical position. It depends only on:
+- `cornerType` (enum)
+- `sys32Z` (System32 position from front edge, mm)
+
 ---
 
-## Stability Assumptions
+## pairKeyV2 Utility
 
-Current IDs (`pointId`, `pairId`) are deterministic within a given
-cabinet topology and iteration order. They are stable across rebuilds
-*as long as*:
-- cabinet dimensions/topology do not change the iteration order or
-  count of placements
-- corner topology remains consistent
+**File:** `src/core/manufacturing/drillMap/pairKeyV2.ts`
 
-### Future upgrade (optional)
+```typescript
+buildPairKeyV2(cornerType: CornerType, sys32Z: number): string
+// → "pair2-TOP_RIGHT-37"
 
-> **TODO:** For full stability across dimension changes, migrate
-> connector keys to a content-addressed form, e.g.:
-> `pair-${cornerType}-${round(sys32Z)}` or another geometric hash
-> that is independent of insertion order.
+isPairKeyV2(key: string): boolean
+// → true for "pair2-*" keys
+```
+
+---
+
+## Migration Strategy
+
+1. **Reads** use dual-key resolution (v2 first, v1 fallback)
+2. **Writes** dual-write to both v2 and v1 keys
+3. **No migration script needed** — the fallback chain handles existing data
+4. After 2-3 releases: remove dual-write, simplify resolver to v2-only
 
 ---
 
 ## Implementation Notes
 
 - Forward DrillMap metadata through `OperationWorkpieceContext.drillmap`:
-  - `pointId`, `pairId`, `anchor`, `normal`, `edgeSide`, etc.
+  - `pointId`, `pairId`, `pairKeyV2`, `anchor`, `normal`, `edgeSide`, etc.
 - CNC overlay should apply preview transforms at render time:
   - `P' = A + M(P - A)` (around anchor `A`)
 - Hardware3D uses negative scale for flips (`scaleX=-1`, `scaleY=-1`),
@@ -161,11 +189,13 @@ cabinet topology and iteration order. They are stable across rebuilds
 
 | File | Role |
 |------|------|
-| `src/core/manufacturing/drillMap/generateDrillMap.ts` | ID generation (`generatePointId`, `pairId`) |
+| `src/core/manufacturing/drillMap/pairKeyV2.ts` | `buildPairKeyV2` utility (v2 key generation) |
+| `src/core/manufacturing/drillMap/generateDrillMap.ts` | ID generation (`generatePointId`, `pairId`, `pairKeyV2`) |
 | `src/cnc/mapping/mapDrillMapToOps.ts` | Metadata forwarding (`buildDrillmapMetadata`) |
 | `src/cnc/transform/workpieceTypes.ts` | `DrillMapVisualMetadata` interface |
 | `src/factory/cnc/overlay/cncOverlayTypes.ts` | `CncOverlayPreviewMeta` interface |
 | `src/factory/cnc/overlay/buildCncOverlay.ts` | `preview.key` assignment |
+| `src/factory/cnc/overlay/resolvePreviewState.ts` | Dual-key resolver (v2 → v1 → global → identity) |
 | `src/factory/cnc/overlay/overlayPreviewTransform.ts` | Transform helper (`P' = A + M(P-A)`) |
 | `src/factory/cnc/overlay/CncOverlayLayer.tsx` | Preview state resolution (renderer) |
 | `src/factory/cnc/overlay/CncOverlayMarker.tsx` | Per-marker preview transform |

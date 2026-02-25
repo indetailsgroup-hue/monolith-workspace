@@ -641,8 +641,9 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           if (flipYCorner) {
             for (const panel of state.drillMap.panels) {
               for (const pt of panel.points) {
-                if (pt.cornerType === flipYCorner && pt.pairId) {
-                  pairIdsForFlipY.add(pt.pairId);
+                if (pt.cornerType === flipYCorner) {
+                  if (pt.pairKeyV2) pairIdsForFlipY.add(pt.pairKeyV2);
+                  if (pt.pairId) pairIdsForFlipY.add(pt.pairId); // dual-write for migration
                 }
               }
             }
@@ -691,7 +692,8 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
               for (const point of panel.points) {
                 if (point.cornerType === selectedCorner) {
                   pointIdsInSameCorner.push(point.id);
-                  if (point.pairId) pairIdsInSameCorner.add(point.pairId);
+                  if (point.pairKeyV2) pairIdsInSameCorner.add(point.pairKeyV2);
+                  if (point.pairId) pairIdsInSameCorner.add(point.pairId); // dual-write for migration
                 }
               }
             }
@@ -710,8 +712,8 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             },
           }));
 
-          // PERSIST: Write per-connector previewState to cabinet store (keyed by pairId)
-          // See docs/architecture/HARDWARE_PREVIEW_KEYS.md — pairId is canonical key
+          // PERSIST: Write per-connector previewState to cabinet store (keyed by pairKeyV2 + legacy pairId)
+          // See docs/architecture/HARDWARE_PREVIEW_KEYS.md — pairKeyV2 is canonical, pairId is migration fallback
           const activeCabinetId = useCabinetStore.getState().activeCabinetId;
           if (activeCabinetId) {
             const previewStatePayload = { flipVertical: nextFlip };

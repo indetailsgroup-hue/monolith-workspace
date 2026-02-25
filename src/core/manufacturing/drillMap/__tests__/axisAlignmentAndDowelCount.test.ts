@@ -500,3 +500,47 @@ describe('v4.4 Display Layer Does Not Mutate Positions', () => {
     expect(sideDowels.length).toBe(horizDowels.length);
   });
 });
+
+describe('pairKeyV2 generation (content-addressed keys)', () => {
+  const cabinet = createTestCabinet();
+  const drillMap = generateMinifixDrillMap(cabinet);
+  const allPoints = getAllPoints(drillMap);
+
+  it('all points with pairId also carry pairKeyV2', () => {
+    const pointsWithPairId = allPoints.filter((p) => p.pairId);
+    expect(pointsWithPairId.length).toBeGreaterThan(0);
+    for (const pt of pointsWithPairId) {
+      expect(pt.pairKeyV2, `${pt.id} should have pairKeyV2`).toBeDefined();
+      expect(pt.pairKeyV2).toMatch(/^pair2-/);
+    }
+  });
+
+  it('pairKeyV2 encodes cornerType and depthPosition', () => {
+    const bolts = getByPurpose(allPoints, 'BOLT');
+    for (const bolt of bolts) {
+      expect(bolt.pairKeyV2).toContain(bolt.cornerType!);
+      expect(bolt.pairKeyV2).toContain(String(Math.round(bolt.depthPosition!)));
+    }
+  });
+
+  it('pairKeyV2 is deterministic across regeneration', () => {
+    const dm2 = generateMinifixDrillMap(cabinet);
+    const pts2 = getAllPoints(dm2);
+
+    const keys1 = allPoints.map((p) => p.pairKeyV2).filter(Boolean).sort();
+    const keys2 = pts2.map((p) => p.pairKeyV2).filter(Boolean).sort();
+    expect(keys1).toEqual(keys2);
+  });
+
+  it('members of same connector set share pairKeyV2 (CAM ↔ BOLT)', () => {
+    const bolts = getByPurpose(allPoints, 'BOLT');
+    const cams = getByPurpose(allPoints, 'CAM_LOCK');
+
+    for (const bolt of bolts) {
+      const matchingCam = cams.find((c) => c.pairId === bolt.pairId);
+      if (matchingCam) {
+        expect(matchingCam.pairKeyV2).toBe(bolt.pairKeyV2);
+      }
+    }
+  });
+});

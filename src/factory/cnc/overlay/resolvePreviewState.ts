@@ -5,16 +5,17 @@
  * docs/architecture/HARDWARE_PREVIEW_KEYS.md so that CNC overlay
  * and Hardware3D always agree on the same transform.
  *
- * Resolution order:
- *   1. hardwareOverrides[pairId]?.previewState   (per-connector)
- *   2. globalConfig (cabinet.hardware.minifixConfig)  (global)
- *   3. null  (identity / no-op)
+ * Resolution order (v2):
+ *   1. hardwareOverrides[pairKeyV2]?.previewState  (v2 content-addressed)
+ *   2. hardwareOverrides[pairId]?.previewState      (v1 legacy fallback)
+ *   3. globalConfig (cabinet.hardware.minifixConfig) (global)
+ *   4. null  (identity / no-op)
  *
  * ══════════════════════════════════════════════════════════════════
  * ⚠️ PREVIEW-ONLY: Never import this from G-code/export modules
  * ══════════════════════════════════════════════════════════════════
  *
- * @version 1.0.0 - Per-connector preview state
+ * @version 2.0.0 - Dual-key resolution (pairKeyV2 + pairId fallback)
  */
 
 import type { OverlayPreviewState } from './overlayPreviewTransform';
@@ -27,17 +28,27 @@ import type { HardwarePointOverrides, HardwarePreviewState } from '../../../core
 /**
  * Resolve the effective preview state for a single point/connector.
  *
- * @param pairId     - Connector pair ID (canonical key). May be undefined.
- * @param overrides  - Cabinet's `hardwareOverrides` map.
+ * @param pairKeyV2   - Content-addressed connector key (v2). May be undefined.
+ * @param pairId      - Legacy connector pair ID (v1). May be undefined.
+ * @param overrides   - Cabinet's `hardwareOverrides` map.
  * @param globalConfig - Cabinet-wide preview config (from minifixConfig).
  * @returns Resolved preview state, or null for identity (no transform).
  */
 export function resolvePreviewState(
+  pairKeyV2: string | undefined,
   pairId: string | undefined,
   overrides: HardwarePointOverrides | undefined,
   globalConfig: PartialPreviewConfig | null | undefined
 ): OverlayPreviewState | null {
-  // 1. Per-connector override (keyed by pairId)
+  // 1. Per-connector override (v2 key — content-addressed, stable across dim changes)
+  if (pairKeyV2 && overrides) {
+    const ps = overrides[pairKeyV2]?.previewState;
+    if (ps) {
+      return toFullPreviewState(ps);
+    }
+  }
+
+  // 2. Per-connector override (v1 key — legacy fallback)
   if (pairId && overrides) {
     const ps = overrides[pairId]?.previewState;
     if (ps) {
@@ -45,12 +56,12 @@ export function resolvePreviewState(
     }
   }
 
-  // 2. Global config fallback
+  // 3. Global config fallback
   if (globalConfig) {
     return toFullPreviewState(globalConfig);
   }
 
-  // 3. Identity (no transform)
+  // 4. Identity (no transform)
   return null;
 }
 

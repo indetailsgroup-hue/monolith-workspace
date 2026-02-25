@@ -120,7 +120,8 @@ export interface DrillMapPoint {
   issues?: string[];        // Validation issues or warnings for this point
 
   // Metadata
-  pairId?: string;          // Links CAM to its BOLT
+  pairId?: string;          // Links CAM to its BOLT (v1: index-based)
+  pairKeyV2?: string;       // Content-addressed key: "pair2-{corner}-{round(sys32Z)}"
   edgeDistance?: number;    // Distance from panel edge (A dimension)
   depthPosition?: number;   // Position along panel depth (Z dimension)
 
