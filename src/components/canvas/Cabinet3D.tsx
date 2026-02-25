@@ -35,6 +35,8 @@ import { CSGDrillOverlay } from './CSGDrillOverlay';
 import { DrillGuideLayer } from './DrillGuideLayer';
 import { CADDrillIndicators } from './CADDrillIndicators';
 import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapStore';
+import { resolvePreviewState } from '../../factory/cnc/overlay/resolvePreviewState';
+import type { HardwarePointOverrides } from '../../core/types/Cabinet';
 import type { DrillMap, DrillMapPoint, CornerType, RotationOverride, DrillPurpose } from '../../core/manufacturing/drillMap/types';
 import { computeBoundsFromDrillMap } from '../../core/manufacturing/drillMap/cabinetBounds';
 import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/generateDrillMap';
@@ -213,6 +215,12 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   const getPositionForPoint = useDrillMapStore((s) => s.getPositionForPoint);
   const flipXStateByPointId = useDrillMapStore((s) => s.flipXStateByPointId);
 
+  // Per-connector preview state: resolved via pairId → global → identity
+  // See docs/architecture/HARDWARE_PREVIEW_KEYS.md
+  const hardwareOverrides = useCabinetStore(
+    (s) => s.cabinet?.hardwareOverrides as HardwarePointOverrides | undefined
+  );
+
   // Early return removed - wrapper handles visibility check
 
   // Find all BOLT, CAM_LOCK, and DOWEL points from drill map
@@ -273,7 +281,14 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         finalQuat = flipQuat.multiply(finalQuat);
       }
       // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
-      if (flipXStateByPointId[boltPoint.id]) {
+      // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
+      const resolvedPreview = resolvePreviewState(
+        boltPoint.pairId,
+        hardwareOverrides,
+        null  // No global config for Hardware3D flip — only per-connector
+      );
+      const isFlipped = resolvedPreview?.flipVertical ?? flipXStateByPointId[boltPoint.id] ?? false;
+      if (isFlipped) {
         const faceSwapQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
         finalQuat = faceSwapQuat.multiply(finalQuat);
       }
@@ -288,7 +303,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         rotZ: finalRotation.rotZ,
       };
     });
-  }, [boltPoints, cabinetWidth, cabinetHeight, topJoint, bottomJoint, getRotationForPoint, flipXStateByPointId]);
+  }, [boltPoints, cabinetWidth, cabinetHeight, topJoint, bottomJoint, getRotationForPoint, flipXStateByPointId, hardwareOverrides]);
 
   // IMPORTANT: Drill map uses CENTER-BASED coordinates
   // x < 0 is LEFT, x > 0 is RIGHT

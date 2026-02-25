@@ -3759,6 +3759,7 @@ export const useCabinetStore = create<CabinetStore>()(
             ...existing,
             ...(override.rotation && { rotation: override.rotation }),
             ...(override.position && { position: override.position }),
+            ...(override.previewState && { previewState: override.previewState }),
           };
         }
       });

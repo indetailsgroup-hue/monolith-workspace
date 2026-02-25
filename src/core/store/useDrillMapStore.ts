@@ -637,16 +637,20 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           }
 
           const pointIdsInSameCorner: string[] = [];
+          // Also collect unique pairIds in the same corner for per-connector persistence
+          const pairIdsInSameCorner = new Set<string>();
           if (selectedCorner) {
             for (const panel of state.drillMap.panels) {
               for (const point of panel.points) {
                 if (point.cornerType === selectedCorner) {
                   pointIdsInSameCorner.push(point.id);
+                  if (point.pairId) pairIdsInSameCorner.add(point.pairId);
                 }
               }
             }
           }
 
+          // Update in-memory flip state (legacy path for Hardware3D backward compat)
           set((s) => ({
             flipXStateByPointId: {
               ...s.flipXStateByPointId,
@@ -658,6 +662,30 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
                   }),
             },
           }));
+
+          // PERSIST: Write per-connector previewState to cabinet store (keyed by pairId)
+          // See docs/architecture/HARDWARE_PREVIEW_KEYS.md — pairId is canonical key
+          const activeCabinetId = useCabinetStore.getState().activeCabinetId;
+          if (activeCabinetId) {
+            const previewStatePayload = { flipVertical: nextFlip };
+            if (pairIdsInSameCorner.size > 0) {
+              for (const pid of pairIdsInSameCorner) {
+                useCabinetStore.getState().setHardwarePointOverride(activeCabinetId, pid, {
+                  previewState: previewStatePayload,
+                });
+              }
+            } else {
+              // Fallback: persist by pointId if no pairId available
+              useCabinetStore.getState().setHardwarePointOverride(activeCabinetId, pointId, {
+                previewState: previewStatePayload,
+              });
+              if (pairedHoleId) {
+                useCabinetStore.getState().setHardwarePointOverride(activeCabinetId, pairedHoleId, {
+                  previewState: previewStatePayload,
+                });
+              }
+            }
+          }
         }
       },
 

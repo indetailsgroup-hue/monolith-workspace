@@ -318,9 +318,18 @@ export const HardwarePositionOverrideSchema = z.object({
   dz: z.number(),
 });
 
+export const HardwarePreviewStateSchema = z.object({
+  flipVertical: z.boolean().optional(),
+  flipHorizontal: z.boolean().optional(),
+  rotationX: z.number().optional(),
+  rotationY: z.number().optional(),
+  rotationZ: z.number().optional(),
+});
+
 export const HardwarePointOverrideSchema = z.object({
   rotation: HardwareRotationOverrideSchema.optional(),
   position: HardwarePositionOverrideSchema.optional(),
+  previewState: HardwarePreviewStateSchema.optional(),
 });
 
 export const HardwarePointOverridesSchema = z.record(z.string(), HardwarePointOverrideSchema);

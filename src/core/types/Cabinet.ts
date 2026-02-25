@@ -487,17 +487,39 @@ export interface HardwarePositionOverride {
 }
 
 /**
+ * Preview-only transform state for hardware visualization.
+ * Used for per-connector flip/rotation (preview-only, does NOT affect manufacturing).
+ *
+ * Field names match MinifixFullConfig for merge simplicity.
+ * See docs/architecture/HARDWARE_PREVIEW_KEYS.md for canonical keying contract.
+ */
+export interface HardwarePreviewState {
+  flipVertical?: boolean;
+  flipHorizontal?: boolean;
+  rotationX?: number;   // degrees
+  rotationY?: number;   // degrees
+  rotationZ?: number;   // degrees
+}
+
+/**
  * Per-point hardware override settings.
- * Keyed by drillMap pointId (e.g., "CAM-TOP-LEFT-0").
+ * Keyed by drillMap pointId (e.g., "cam_lock-TOP_LEFT-0") for fine-tune,
+ * or by pairId (e.g., "pair-TOP_LEFT-0") for per-connector preview state.
+ *
+ * Resolution order (see HARDWARE_PREVIEW_KEYS.md):
+ *   1. overrides[pairId]?.previewState   (per-connector)
+ *   2. cabinet.hardware.minifixConfig     (global)
+ *   3. identity / no-op
  */
 export interface HardwarePointOverride {
   rotation?: HardwareRotationOverride;
   position?: HardwarePositionOverride;
+  previewState?: HardwarePreviewState;
 }
 
 /**
  * All hardware point overrides for a cabinet.
- * Map: pointId → override settings
+ * Map: pointId or pairId → override settings
  */
 export type HardwarePointOverrides = Record<string, HardwarePointOverride>;
 
