@@ -388,6 +388,57 @@ describe('Invariants: Contract guarantees', () => {
     });
   });
 
+  it('I3a: setHardwarePointOverride syncs state.cabinet ref', () => {
+    const cabinetId = createTestCabinet();
+
+    useCabinetStore.getState().setHardwarePointOverride(cabinetId, 'pair-TOP_LEFT-0', {
+      previewState: { flipVertical: true },
+    });
+
+    const state = useCabinetStore.getState();
+    const cabinetMirror = state.cabinet;
+    const cabinetFromArray = state.cabinets.find(c => c.id === cabinetId);
+
+    // Must be same reference (reactivity contract)
+    expect(cabinetMirror).toBe(cabinetFromArray);
+    // Must contain the override
+    expect(cabinetFromArray!.hardwareOverrides?.['pair-TOP_LEFT-0']?.previewState?.flipVertical).toBe(true);
+  });
+
+  it('I3b: setHardwarePointOverride merges previewState additively', () => {
+    const cabinetId = createTestCabinet();
+
+    // First write: flipVertical
+    useCabinetStore.getState().setHardwarePointOverride(cabinetId, 'pair-TOP_LEFT-0', {
+      previewState: { flipVertical: true },
+    });
+
+    // Second write: flipHorizontal (must NOT wipe flipVertical)
+    useCabinetStore.getState().setHardwarePointOverride(cabinetId, 'pair-TOP_LEFT-0', {
+      previewState: { flipHorizontal: true },
+    });
+
+    const state = useCabinetStore.getState();
+    const ps = state.cabinet!.hardwareOverrides?.['pair-TOP_LEFT-0']?.previewState;
+
+    expect(ps?.flipVertical).toBe(true);   // NOT wiped
+    expect(ps?.flipHorizontal).toBe(true); // newly added
+  });
+
+  it('I3c: clearHardwarePointOverride syncs state.cabinet ref', () => {
+    const cabinetId = createTestCabinet();
+
+    // Set then clear
+    useCabinetStore.getState().setHardwarePointOverride(cabinetId, 'pair-TOP_LEFT-0', {
+      previewState: { flipVertical: true },
+    });
+    useCabinetStore.getState().clearHardwarePointOverride(cabinetId, 'pair-TOP_LEFT-0');
+
+    const state = useCabinetStore.getState();
+    expect(state.cabinet).toBe(state.cabinets.find(c => c.id === cabinetId));
+    expect(state.cabinet!.hardwareOverrides?.['pair-TOP_LEFT-0']).toBeUndefined();
+  });
+
   it('I3: No action mutates only state.cabinet - verified by reference check', () => {
     const cabinetId = createTestCabinet();
 
