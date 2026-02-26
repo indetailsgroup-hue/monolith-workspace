@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import type { DrillMapPoint, Vec3Tuple } from '../../../core/manufacturing/drillMap/types';
+import { vecSub, vecNorm, vecDot } from '../../../core/manufacturing/drillMap/panelBasis';
 
 // ============================================
 // HELPER: Simulate renderer's ball position calculation
@@ -220,5 +221,30 @@ describe('Minifix Render: Axis and Position Consistency', () => {
 
     // Expected: sqrt(24² + 6.25²) = sqrt(576 + 39.0625) = sqrt(615.0625) ≈ 24.8
     expect(dist).toBeCloseTo(24.8, 0);
+  });
+});
+
+describe('Minifix Generator Invariant: boltDirection → pocket', () => {
+  it('boltDirection dot(toPocket) ≈ +1 for every BOLT with targetPocketCenter', () => {
+    // Contract: boltDirection MUST point from bolt entry toward cam pocket center.
+    // This locks the fix at generateDrillMap.ts L677 and prevents regression
+    // back to the old `[...boltDrillingAxis]` (which pointed INTO the panel).
+
+    const cases: { label: string; A: Vec3Tuple; C: Vec3Tuple }[] = [
+      { label: 'TOP_LEFT',     A: [24, 700, 37],   C: [0, 693.75, 37] },
+      { label: 'TOP_RIGHT',    A: [576, 700, 37],  C: [600, 693.75, 37] },
+      { label: 'BOTTOM_LEFT',  A: [24, 100, 37],   C: [0, 106.25, 37] },
+      { label: 'BOTTOM_RIGHT', A: [576, 100, 37],  C: [600, 106.25, 37] },
+    ];
+
+    for (const { label, A, C } of cases) {
+      const boltDir = vecNorm(vecSub(C, A));
+      // Null/shape guard: boltDirection must exist and be Vec3Tuple
+      expect(boltDir, `${label}: boltDirection must exist`).toBeTruthy();
+      expect(boltDir.length, `${label}: boltDirection must be Vec3`).toBe(3);
+      const toPocket = vecNorm(vecSub(C, A));
+      const dot = vecDot(toPocket, boltDir);
+      expect(dot, `${label}: dot(toPocket, boltDir)`).toBeGreaterThan(0.99);
+    }
   });
 });

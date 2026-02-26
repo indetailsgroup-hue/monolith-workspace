@@ -13,6 +13,11 @@ import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping, Group
 import { ThreeEvent, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 // NO ALIAS IMPORTS - Use relative paths only (North Star Rule #3)
+
+/** 1-line bolt invariant smoke log — enable: VITE_DEBUG_BOLT_DIAG=1 npm run dev */
+const DEBUG_BOLT_DIAG =
+  import.meta.env.DEV && import.meta.env.VITE_DEBUG_BOLT_DIAG === '1';
+import { logBoltDiagLine } from './debug/debugBoltDiag';
 import { useCabinetStore, useCabinet, useActiveCabinetFromArray, useCabinetById } from '../../core/store/useCabinetStore';
 import { useViewStore } from '../../core/store/useViewStore';
 import { useToolStore } from '../../core/store/useToolStore';
@@ -509,6 +514,26 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           groupX = x + positionOffset.dx;
           groupY = y + positionOffset.dy;
           groupZ = z + positionOffset.dz;
+        }
+
+        // ====== BOLT INVARIANT SMOKE LOG (gate: DEBUG_BOLT_DIAG) ======
+        if (DEBUG_BOLT_DIAG) {
+          const _ud = (boltPoint.boltDirection || boltPoint.normal) as [number,number,number];
+          const _pos = boltPoint.position as [number,number,number];
+          const _tpc = boltPoint.targetPocketCenter as [number,number,number] | undefined;
+          const _dot = (a: number[], b: number[]) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+          const _sub = (a: number[], b: number[]): [number,number,number] => [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+          const _len = (v: number[]) => Math.hypot(v[0],v[1],v[2]) || 1;
+          const _nrm = (v: number[]): [number,number,number] => { const l=_len(v); return [v[0]/l,v[1]/l,v[2]/l]; };
+          const dot_toPocket = _tpc ? _dot(_nrm(_sub(_tpc, _pos)), _ud) : NaN;
+          const _shaft = new THREE.Vector3(0, -1, 0);
+          const dot_modelFwd = _shaft.clone().applyQuaternion(finalQuat).dot(new THREE.Vector3(_ud[0], _ud[1], _ud[2]));
+          logBoltDiagLine({
+            pairKeyV2: boltPoint.pairKeyV2 ?? 'unknown',
+            cornerType: cornerType ?? 'unknown',
+            dot_toPocket,
+            dot_modelFwd,
+          });
         }
 
         return (

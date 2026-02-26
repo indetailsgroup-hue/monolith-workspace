@@ -69,6 +69,7 @@ import {
   vecMul,
   vecAdd,
   vecSub,
+  vecNorm,
   vecLen,
   boltEdgePointFromSideAABB,
   boltFacePointFromSideAABB_v4,
@@ -77,6 +78,7 @@ import {
   type Box3Like,
   type System32AutoParams,
 } from './panelBasis';
+import { validateBoltPocketLinkage } from './validateBoltPocketLinkage';
 import {
   assertNoPreviewKeys,
   sanitizeManufacturingConfig,
@@ -667,14 +669,14 @@ function generateCornerJointPoints(
       result.boltPoint.targetPocketCenter = camPocketCenter;
 
       // ========================================
-      // BOLT DIRECTION = DRILLING AXIS (v4.0: horizontal X-axis)
+      // BOLT DIRECTION CONTRACT (LOCKED — see minifixRenderInvariant.test.ts)
       // ========================================
-      // v4.0 Side-covers-Top: BOLT drills into SIDE panel FACE (horizontal X)
-      // - LEFT panels: [-1, 0, 0] (drill LEFT toward outer face)
-      // - RIGHT panels: [+1, 0, 0] (drill RIGHT toward outer face)
+      // - boltPoint.normal        = drilling axis INTO panel face (manufacturing truth)
+      // - boltPoint.boltDirection = entry → cam pocket center   (preview + pairing truth)
+      //   DO NOT set boltDirection = normal/drillingAxis — that breaks preview orientation.
       const boltPos = result.boltPoint.position;
-      const boltDrillingAxis = result.boltPoint.normal; // [±1, 0, 0] for face drilling
-      result.boltPoint.boltDirection = [...boltDrillingAxis];
+      const boltDrillingAxis = result.boltPoint.normal; // [±1, 0, 0] — kept for twist calc below
+      result.boltPoint.boltDirection = vecNorm(vecSub(camPocketCenter, boltPos));
 
       // ========================================
       // COMPUTE BOLT TWIST ANGLE
@@ -1010,6 +1012,21 @@ export function generateMinifixDrillMap(
 
   // Attach traceability meta
   drillMap.meta = meta;
+
+  // ========================================
+  // POST-GENERATION VALIDATION: bolt → pocket linkage contract
+  // ========================================
+  if (import.meta.env.DEV) {
+    const allPoints = drillMap.panels.flatMap(p => p.points);
+
+    const linkageIssues = validateBoltPocketLinkage(allPoints);
+    if (linkageIssues.length > 0) {
+      console.warn(
+        '[DrillMap] bolt→pocket linkage contract violated:',
+        linkageIssues,
+      );
+    }
+  }
 
   return drillMap;
 }
