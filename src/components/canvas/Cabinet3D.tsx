@@ -48,7 +48,6 @@ import { generateMinifixDrillMap } from '../../core/manufacturing/drillMap/gener
 import { Preview3D, DEFAULT_MINIFIX_CONFIG, type MinifixFullConfig } from '../ui/MinifixConfigPanel';
 
 import { Dowel3D, quatFromYTo } from './Hardware3D';
-import { MinifixDrillMarkersLocal } from './MinifixDrillMarkersLocal';
 import { HardwareContextMenu } from '../ui/HardwareContextMenu';
 import { RAY_LAYERS, setObjectLayer } from './raycastLayers';
 import { useXrayRaycastPolicy } from './useXrayRaycastPolicy';
@@ -566,15 +565,6 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
                 />
               </group>
             </group>
-
-            {/* Flip-aware drill markers — rendered as child of the hardware group
-                so they inherit the same rotation (including Vertical/Horizontal Flip).
-                Positions are converted from world→local by subtracting groupPosition. */}
-            <MinifixDrillMarkersLocal
-              drillMap={drillMap}
-              pairKeyV2={boltPoint.pairKeyV2}
-              pivotWorld={[groupX, groupY, groupZ]}
-            />
           </group>
         );
       })}
@@ -1122,22 +1112,6 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     };
   }, [drillMapDataRaw]);
 
-  // Collect pairKeyV2 roots of all BOLT points for MinifixDrillMarkersLocal dedup.
-  // These roots are passed to CADDrillIndicators as hiddenPairKeyV2Roots so the
-  // global overlay hides markers that are rendered flip-aware inside hardware groups.
-  const minifixPairKeyV2Roots = useMemo(() => {
-    if (!drillMapData?.panels) return [];
-    const roots: string[] = [];
-    for (const panel of drillMapData.panels) {
-      for (const pt of panel.points) {
-        if (pt.purpose === 'BOLT' && pt.pairKeyV2) {
-          roots.push(pt.pairKeyV2);
-        }
-      }
-    }
-    return roots;
-  }, [drillMapData]);
-
   const drillMapScale = useDrillMapStore((s) => s.drillMapScale);
   const show3DHardware = useDrillMapStore((s) => s.show3DHardware);
   const showDrillDimensions = useDrillMapStore((s) => s.showDrillDimensions);
@@ -1301,7 +1275,6 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           filterPurpose={drillPurposeFilter}
           selectedId={selectedPoint?.id ?? null}
           onPointClick={(point) => setSelectedPoint(point)}
-          hiddenPairKeyV2Roots={xRayMode ? minifixPairKeyV2Roots : undefined}
         />
       </group>
 
