@@ -70,6 +70,13 @@ interface CADDrillIndicatorsProps {
   selectedId?: string | null;
   /** Callback when clicking a drill point */
   onPointClick?: (point: DrillMapPoint) => void;
+  /**
+   * pairKeyV2 root strings to HIDE from this global overlay.
+   * Points whose pairKeyV2 starts with any of these roots are suppressed
+   * because they are rendered by MinifixDrillMarkersLocal inside the
+   * hardware group (which inherits flip transforms).
+   */
+  hiddenPairKeyV2Roots?: string[];
 }
 
 // ============================================
@@ -475,6 +482,7 @@ export function CADDrillIndicators({
   filterPurpose,
   selectedId = null,
   onPointClick,
+  hiddenPairKeyV2Roots,
 }: CADDrillIndicatorsProps) {
   // Collect all drill points from all panels
   const allPoints = useMemo(() => {
@@ -489,14 +497,22 @@ export function CADDrillIndicators({
 
     const points = buildDisplayPoints(rawPoints);
 
+    // Hide points rendered by MinifixDrillMarkersLocal (flip-aware local markers)
+    let filtered = points;
+    if (hiddenPairKeyV2Roots && hiddenPairKeyV2Roots.length > 0) {
+      filtered = filtered.filter(p =>
+        !p.pairKeyV2 || !hiddenPairKeyV2Roots.some(root => p.pairKeyV2!.startsWith(root))
+      );
+    }
+
     // Apply purpose filter if specified
     if (filterPurpose && filterPurpose.length > 0) {
-      return points.filter(p => filterPurpose.includes(p.purpose));
+      return filtered.filter(p => filterPurpose.includes(p.purpose));
     }
 
     // ALL mode: show everything (dedup in buildDisplayPoints handles overlaps)
-    return points;
-  }, [drillMap, filterPurpose]);
+    return filtered;
+  }, [drillMap, filterPurpose, hiddenPairKeyV2Roots]);
 
   // v4.4: Label dedup — merge labels across panels at same position.
   // Circle/crosshair still renders for every point; only labels deduplicate.
