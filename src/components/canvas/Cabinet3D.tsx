@@ -395,7 +395,8 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
           finalQuat = flipQuat.multiply(finalQuat);
         }
-        // Vertical Flip = swap CAM clockface side (render-only orientation toggle).
+        // Vertical Flip = rotate CAM disc/housing visual 180° around bolt axis.
+        // Contract S: flip affects cam housing mesh ONLY — bolt parts & drill holes unchanged.
         // Resolution: persisted overrides[pairId].previewState → legacy flipXStateByPointId
         const resolvedPreviewCam = resolvePreviewState(
           boltPoint.pairKeyV2,
@@ -404,10 +405,13 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           null  // No global config for Hardware3D flip — only per-connector
         );
         const isFlippedCam = resolvedPreviewCam?.flipVertical ?? flipXStateByPointId[boltPoint.id] ?? false;
-        if (isFlippedCam) {
-          const faceSwapQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
-          finalQuat = faceSwapQuat.multiply(finalQuat);
-        }
+        // camFlipQuat is applied to cam housing mesh only (inside Preview3D),
+        // NOT to finalQuat which controls the entire assembly orientation.
+        // Axis = local Y (0,1,0) because Preview3D's bolt runs along Y.
+        // (Equivalent to boltDirWorld rotation in world space, just expressed in local frame.)
+        const camFlipQuat = isFlippedCam
+          ? new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+          : undefined; // undefined = no extra group wrapper needed
 
         // Convert quaternion to Euler for existing override system
         const calculatedRotation = quaternionToRotationOverride(finalQuat);
@@ -562,6 +566,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
                   isAttached={true}
                   showDimensions={false}
                   onUpdateConfig={handleUpdateConfig}
+                  camFlipQuat={camFlipQuat}
                 />
               </group>
             </group>

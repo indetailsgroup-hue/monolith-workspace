@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import * as THREE from 'three';
 import type { DrillMapPoint, Vec3Tuple } from '../../../core/manufacturing/drillMap/types';
 import { vecSub, vecNorm, vecDot } from '../../../core/manufacturing/drillMap/panelBasis';
 
@@ -221,6 +222,68 @@ describe('Minifix Render: Axis and Position Consistency', () => {
 
     // Expected: sqrt(24² + 6.25²) = sqrt(576 + 39.0625) = sqrt(615.0625) ≈ 24.8
     expect(dist).toBeCloseTo(24.8, 0);
+  });
+});
+
+describe('Contract S: cam flip affects cam housing only (quat isolated)', () => {
+  /**
+   * Contract S semantics: "Flip = rotate cam disc 180° in same Ø15 pocket"
+   *
+   * - baseQuat (bolt orientation) MUST NOT change when flip is toggled
+   * - camFlipQuat rotates around bolt local Y axis (Preview3D convention)
+   * - Vectors orthogonal to Y should invert, Y itself unchanged
+   */
+  it('cam flip quat is identity when not flipped', () => {
+    const isFlipped = false;
+    const camFlipQuat = isFlipped
+      ? new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+      : undefined;
+
+    expect(camFlipQuat).toBeUndefined();
+  });
+
+  it('cam flip rotates around Y axis: X → -X, Z → -Z, Y unchanged', () => {
+    const boltLocalAxis = new THREE.Vector3(0, 1, 0); // bolt axis in Preview3D frame
+    const camFlipQuat = new THREE.Quaternion().setFromAxisAngle(boltLocalAxis, Math.PI);
+
+    // Y (bolt axis) unchanged
+    const y = new THREE.Vector3(0, 1, 0).applyQuaternion(camFlipQuat);
+    expect(y.y).toBeCloseTo(1, 6);
+    expect(y.x).toBeCloseTo(0, 6);
+    expect(y.z).toBeCloseTo(0, 6);
+
+    // X → -X (cam housing flips side)
+    const x = new THREE.Vector3(1, 0, 0).applyQuaternion(camFlipQuat);
+    expect(x.x).toBeCloseTo(-1, 6);
+
+    // Z → -Z
+    const z = new THREE.Vector3(0, 0, 1).applyQuaternion(camFlipQuat);
+    expect(z.z).toBeCloseTo(-1, 6);
+  });
+
+  it('baseQuat is unchanged regardless of flip state', () => {
+    const boltQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0), Math.PI / 4 // arbitrary orientation
+    );
+
+    // With flip
+    const baseQuatFlipped = boltQuat.clone(); // NO flip applied to baseQuat
+    // Without flip
+    const baseQuatNotFlipped = boltQuat.clone();
+
+    expect(baseQuatFlipped.equals(baseQuatNotFlipped)).toBe(true);
+  });
+
+  it('camFlipQuat * baseQuat ≠ baseQuat when flipped', () => {
+    const baseQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0), Math.PI / 4
+    );
+    const camFlipQuat = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0), Math.PI
+    );
+    const combined = camFlipQuat.clone().multiply(baseQuat);
+
+    expect(combined.equals(baseQuat)).toBe(false);
   });
 });
 

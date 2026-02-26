@@ -678,9 +678,11 @@ export interface Preview3DProps {
   onUpdateConfig: (key: keyof MinifixFullConfig, value: number) => void;
   /** Debug mode: show axis arrows to visualize model orientation */
   debugAxis?: boolean;
+  /** Contract S: cam disc flip quaternion (rotates cam housing mesh only, not bolt parts) */
+  camFlipQuat?: THREE.Quaternion;
 }
 
-export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, showDimensions, onUpdateConfig, debugAxis = false }: Preview3DProps) {
+export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, showDimensions, onUpdateConfig, debugAxis = false, camFlipQuat }: Preview3DProps) {
   // Scale: 1mm in config = 0.01 units in scene (so 31mm shaft = 0.31 units)
   const scale = 0.01;
 
@@ -971,7 +973,14 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
           ? [Math.PI / 2, Math.PI, 0] // Horizontal, flipped upward
           : [Math.PI / 2, Math.PI, 0]; // Same for detached view
 
+        // Contract S: cam flip rotates only the cam housing visual, not bolt parts.
+        // camFlipQuat is around local Y (bolt axis in Preview3D frame).
+        // Wrap OUTSIDE position/rotation so the flip is around Preview3D's Y axis,
+        // not the cam's post-rotation local axis.
+        const camQ = camFlipQuat; // undefined = no wrapper needed
+
         return (
+          <group quaternion={camQ}>
           <group position={camPosition} rotation={camRotation}>
             {/* Main cam body - steel gray matching Threaded Shaft */}
             <mesh>
@@ -1032,6 +1041,7 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
                 </div>
               </Html>
             )}
+          </group>
           </group>
         );
       })()}
