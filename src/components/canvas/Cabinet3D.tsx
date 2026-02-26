@@ -1095,8 +1095,22 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
 
   // Drill map visualization - FIXED: Use correct selector names from useDrillMapStore
   const drillMapVisible = useDrillMapStore((s) => s.showDrillMap);
-  const drillMapData = useDrillMapStore((s) => s.drillMap);
+  const drillMapDataRaw = useDrillMapStore((s) => s.drillMap);
   const drillMapPurpose = useDrillMapStore((s) => s.drillMapPurpose);
+
+  // Filter out B-run dowel points from visualization.
+  // B-run data is kept in the drill map for manufacturing export but
+  // should not render as 3D hardware or CAD indicators.
+  const drillMapData = useMemo(() => {
+    if (!drillMapDataRaw) return null;
+    return {
+      ...drillMapDataRaw,
+      panels: drillMapDataRaw.panels.map(panel => ({
+        ...panel,
+        points: panel.points.filter(p => !p.pairId?.includes('-brun-')),
+      })),
+    };
+  }, [drillMapDataRaw]);
   const drillMapScale = useDrillMapStore((s) => s.drillMapScale);
   const show3DHardware = useDrillMapStore((s) => s.show3DHardware);
   const showDrillDimensions = useDrillMapStore((s) => s.showDrillDimensions);
