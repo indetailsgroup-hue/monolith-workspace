@@ -678,11 +678,11 @@ export interface Preview3DProps {
   onUpdateConfig: (key: keyof MinifixFullConfig, value: number) => void;
   /** Debug mode: show axis arrows to visualize model orientation */
   debugAxis?: boolean;
-  /** Contract S: cam disc flip quaternion (rotates cam housing mesh only, not bolt parts) */
-  camFlipQuat?: THREE.Quaternion;
+  /** Contract S: world-space bolt axis for cam flip (Preview3D converts to local) */
+  camFlipAxisWorld?: THREE.Vector3;
 }
 
-export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, showDimensions, onUpdateConfig, debugAxis = false, camFlipQuat }: Preview3DProps) {
+export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, showDimensions, onUpdateConfig, debugAxis = false, camFlipAxisWorld }: Preview3DProps) {
   // Scale: 1mm in config = 0.01 units in scene (so 31mm shaft = 0.31 units)
   const scale = 0.01;
 
@@ -975,13 +975,23 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
 
         // Contract S: cam flip rotates only the cam housing visual, not bolt parts.
         // The cam body (cylinder + rim) is axially symmetric — rotating 180° looks identical.
-        // Only asymmetric parts (PZ2 slot, eccentric bore indicator) are wrapped with camFlipQuat
-        // so the user can SEE the flip. camFlipQuat is around cam-local Y (bolt axis after camRotation).
-
-        // Cam flip quaternion for asymmetric parts only.
-        // Applied INSIDE the positioned/rotated cam group, on the cam's LOCAL Y axis,
-        // so it spins the slot/indicator in place without moving the housing.
-        const camQ = camFlipQuat; // undefined = no flip
+        // Only asymmetric parts (PZ2 slot, eccentric bore indicator) are wrapped with camQ.
+        //
+        // camFlipAxisWorld is the bolt drilling axis in WORLD space.
+        // We must convert it to CAM-LOCAL space before creating the quaternion,
+        // because <group quaternion={camQ}> applies in the parent's local frame
+        // which has rotation={camRotation}.
+        const camQ = (() => {
+          if (!camFlipAxisWorld) return undefined;
+          const camPlacementQuat = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(camRotation[0], camRotation[1], camRotation[2])
+          );
+          const axisLocal = camFlipAxisWorld
+            .clone()
+            .applyQuaternion(camPlacementQuat.clone().invert())
+            .normalize();
+          return new THREE.Quaternion().setFromAxisAngle(axisLocal, Math.PI);
+        })();
 
         return (
           <group position={camPosition} rotation={camRotation}>
@@ -1011,7 +1021,7 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
               />
             </mesh>
 
-            {/* ── Asymmetric parts: wrapped with camFlipQuat ── */}
+            {/* ── Asymmetric parts: wrapped with camQ (world→local flip) ── */}
             {/* PZ2 slot + eccentric cam bore indicator rotate together on flip */}
             <group quaternion={camQ}>
               {/* PZ2 cross slot on face (X shape) */}

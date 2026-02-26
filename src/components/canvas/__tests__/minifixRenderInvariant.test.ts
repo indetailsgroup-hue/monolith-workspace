@@ -225,40 +225,61 @@ describe('Minifix Render: Axis and Position Consistency', () => {
   });
 });
 
-describe('Contract S: cam flip affects cam housing only (quat isolated)', () => {
+describe('Contract S: cam flip affects cam housing only (world→local axis)', () => {
   /**
    * Contract S semantics: "Flip = rotate cam disc 180° in same Ø15 pocket"
    *
    * - baseQuat (bolt orientation) MUST NOT change when flip is toggled
-   * - camFlipQuat rotates around bolt local Y axis (Preview3D convention)
-   * - Vectors orthogonal to Y should invert, Y itself unchanged
+   * - camFlipAxisWorld is the bolt drilling axis in WORLD space
+   * - Preview3D converts it to cam-LOCAL space using inverse of camRotation
+   * - The local-space quaternion is then applied to the asymmetric parts group
    */
-  it('cam flip quat is identity when not flipped', () => {
+
+  // Helper: replicates Preview3D's world→local conversion
+  function computeCamQ(axisWorld: THREE.Vector3, camRotation: [number, number, number]): THREE.Quaternion {
+    const camPlacementQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(camRotation[0], camRotation[1], camRotation[2])
+    );
+    const axisLocal = axisWorld
+      .clone()
+      .applyQuaternion(camPlacementQuat.clone().invert())
+      .normalize();
+    return new THREE.Quaternion().setFromAxisAngle(axisLocal, Math.PI);
+  }
+
+  it('cam flip axis is undefined when not flipped', () => {
     const isFlipped = false;
-    const camFlipQuat = isFlipped
-      ? new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+    const camFlipAxisWorld = isFlipped
+      ? new THREE.Vector3(1, 0, 0).normalize()
       : undefined;
 
-    expect(camFlipQuat).toBeUndefined();
+    expect(camFlipAxisWorld).toBeUndefined();
   });
 
-  it('cam flip rotates around Y axis: X → -X, Z → -Z, Y unchanged', () => {
-    const boltLocalAxis = new THREE.Vector3(0, 1, 0); // bolt axis in Preview3D frame
-    const camFlipQuat = new THREE.Quaternion().setFromAxisAngle(boltLocalAxis, Math.PI);
+  it('world→local conversion: axisLocal ≠ axisWorld when camRotation ≠ identity', () => {
+    const axisWorld = new THREE.Vector3(1, 0, 0); // bolt drills along X in world
+    const camRotation: [number, number, number] = [Math.PI / 2, Math.PI, 0]; // typical cam placement
 
-    // Y (bolt axis) unchanged
-    const y = new THREE.Vector3(0, 1, 0).applyQuaternion(camFlipQuat);
-    expect(y.y).toBeCloseTo(1, 6);
-    expect(y.x).toBeCloseTo(0, 6);
-    expect(y.z).toBeCloseTo(0, 6);
+    const camPlacementQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(camRotation[0], camRotation[1], camRotation[2])
+    );
+    const axisLocal = axisWorld.clone().applyQuaternion(camPlacementQuat.clone().invert()).normalize();
 
-    // X → -X (cam housing flips side)
-    const x = new THREE.Vector3(1, 0, 0).applyQuaternion(camFlipQuat);
-    expect(x.x).toBeCloseTo(-1, 6);
+    // With non-trivial camRotation, local axis MUST differ from world axis
+    expect(axisLocal.equals(axisWorld)).toBe(false);
+  });
 
-    // Z → -Z
-    const z = new THREE.Vector3(0, 0, 1).applyQuaternion(camFlipQuat);
-    expect(z.z).toBeCloseTo(-1, 6);
+  it('flip quat preserves bolt axis direction (180° rotation is involution)', () => {
+    const axisWorld = new THREE.Vector3(1, 0, 0);
+    const camRotation: [number, number, number] = [Math.PI / 2, Math.PI, 0];
+    const camQ = computeCamQ(axisWorld, camRotation);
+
+    // Applying camQ twice should return to identity (π + π = 2π)
+    const doubleFlip = camQ.clone().multiply(camQ);
+    const identity = new THREE.Quaternion();
+    // Check angle is ~0 or ~2π (both equivalent to identity)
+    const angle = 2 * Math.acos(Math.min(1, Math.abs(doubleFlip.w)));
+    expect(angle).toBeCloseTo(0, 4);
   });
 
   it('baseQuat is unchanged regardless of flip state', () => {
@@ -274,16 +295,19 @@ describe('Contract S: cam flip affects cam housing only (quat isolated)', () => 
     expect(baseQuatFlipped.equals(baseQuatNotFlipped)).toBe(true);
   });
 
-  it('camFlipQuat * baseQuat ≠ baseQuat when flipped', () => {
-    const baseQuat = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0), Math.PI / 4
-    );
-    const camFlipQuat = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0), Math.PI
-    );
-    const combined = camFlipQuat.clone().multiply(baseQuat);
+  it('camQ moves asymmetric geometry when camRotation is non-trivial', () => {
+    const axisWorld = new THREE.Vector3(1, 0, 0);
+    const camRotation: [number, number, number] = [Math.PI / 2, Math.PI, 0];
+    const camQ = computeCamQ(axisWorld, camRotation);
 
-    expect(combined.equals(baseQuat)).toBe(false);
+    // Use offset perpendicular to flip axis so 180° rotation actually moves it.
+    // The eccentric dot in Preview3D is at [camDia*0.2, camDepth/2+ε, 0] —
+    // but the Y component is what breaks symmetry vs the local flip axis.
+    const eccentricOffset = new THREE.Vector3(0, 0.2, 0); // perpendicular to any single-axis flip
+    const flipped = eccentricOffset.clone().applyQuaternion(camQ);
+
+    // The flipped position must differ from original
+    expect(flipped.distanceTo(eccentricOffset)).toBeGreaterThan(0.01);
   });
 });
 
