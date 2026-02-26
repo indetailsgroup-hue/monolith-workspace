@@ -537,7 +537,27 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
 
       applyRotationToPoint: (pointId, action) => {
         const state = get();
-        if (!state.drillMap) return;
+        const hasDrillMap = !!state.drillMap;
+
+        // ── CASE-2 lightweight path: drillMap null ──
+        // Allow preview overrides (especially flipX) even before drillMap is generated.
+        // flipX only toggles flip state — no currentRotation or pairedHole needed.
+        if (!hasDrillMap && action === 'flipX') {
+          const nextFlip = !(state.flipXStateByPointId[pointId] ?? false);
+          set((s) => ({
+            flipXStateByPointId: {
+              ...s.flipXStateByPointId,
+              [pointId]: nextFlip,
+            },
+          }));
+          const activeCabinetId = useCabinetStore.getState().activeCabinetId;
+          if (activeCabinetId) {
+            useCabinetStore.getState().setHardwarePointOverride(activeCabinetId, pointId, {
+              previewState: { flipVertical: nextFlip },
+            });
+          }
+          return;
+        }
 
         // PRIORITY: Use context menu state if this is the selected point
         // Context menu has the CORRECT cornerType and currentRotation from Cabinet3D
@@ -546,9 +566,9 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         if (state.hardwareContextMenu.pointId === pointId && state.hardwareContextMenu.currentRotation) {
           // Use context menu rotation (most reliable - matches what user sees)
           currentRotation = state.hardwareContextMenu.currentRotation;
-        } else {
-          // Fallback: Find from drillMap (less reliable if cornerType not set)
-          for (const panel of state.drillMap.panels) {
+        } else if (hasDrillMap) {
+          // Fallback: Find from drillMap (only when available)
+          for (const panel of state.drillMap!.panels) {
             const point = panel.points.find(p => p.id === pointId);
             if (point) {
               // Use context menu cornerType if available, else point.cornerType, else fallback
@@ -559,15 +579,21 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           }
         }
 
-        if (!currentRotation) return;
+        // ── CASE-3 fallback: derive default rotation from corner defaults ──
+        if (!currentRotation) {
+          const fallbackCorner = state.hardwareContextMenu.cornerType || 'TOP_RIGHT';
+          currentRotation = state.rotationDefaults[fallbackCorner] || { rotX: 0, rotY: 0, rotZ: 0 };
+        }
 
         // Resolve pair once so rotation + explicit flip state stay in sync.
         let pairedHoleId: string | undefined;
-        for (const panel of state.drillMap.panels) {
-          const point = panel.points.find((p) => p.id === pointId);
-          if (point?.pairedHoleId) {
-            pairedHoleId = point.pairedHoleId;
-            break;
+        if (hasDrillMap) {
+          for (const panel of state.drillMap!.panels) {
+            const point = panel.points.find((p) => p.id === pointId);
+            if (point?.pairedHoleId) {
+              pairedHoleId = point.pairedHoleId;
+              break;
+            }
           }
         }
 
@@ -632,14 +658,14 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           // Collect pairIds for per-connector persistence (same corner logic as flipX)
           const pairIdsForFlipY = new Set<string>();
           let flipYCorner: CornerType | undefined = state.hardwareContextMenu.cornerType ?? undefined;
-          if (!flipYCorner) {
-            for (const panel of state.drillMap.panels) {
+          if (!flipYCorner && hasDrillMap) {
+            for (const panel of state.drillMap!.panels) {
               const pt = panel.points.find((p) => p.id === pointId);
               if (pt?.cornerType) { flipYCorner = pt.cornerType; break; }
             }
           }
-          if (flipYCorner) {
-            for (const panel of state.drillMap.panels) {
+          if (flipYCorner && hasDrillMap) {
+            for (const panel of state.drillMap!.panels) {
               for (const pt of panel.points) {
                 if (pt.cornerType === flipYCorner) {
                   if (pt.pairKeyV2) pairIdsForFlipY.add(pt.pairKeyV2);
@@ -674,8 +700,8 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         if (action === 'flipX') {
           const nextFlip = !(state.flipXStateByPointId[pointId] ?? false);
           let selectedCorner: CornerType | undefined = state.hardwareContextMenu.cornerType ?? undefined;
-          if (!selectedCorner) {
-            for (const panel of state.drillMap.panels) {
+          if (!selectedCorner && hasDrillMap) {
+            for (const panel of state.drillMap!.panels) {
               const point = panel.points.find((p) => p.id === pointId);
               if (point?.cornerType) {
                 selectedCorner = point.cornerType;
@@ -687,8 +713,8 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           const pointIdsInSameCorner: string[] = [];
           // Also collect unique pairIds in the same corner for per-connector persistence
           const pairIdsInSameCorner = new Set<string>();
-          if (selectedCorner) {
-            for (const panel of state.drillMap.panels) {
+          if (selectedCorner && hasDrillMap) {
+            for (const panel of state.drillMap!.panels) {
               for (const point of panel.points) {
                 if (point.cornerType === selectedCorner) {
                   pointIdsInSameCorner.push(point.id);
