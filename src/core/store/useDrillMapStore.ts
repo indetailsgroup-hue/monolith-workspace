@@ -299,9 +299,12 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
                   if (saved) {
                     return {
                       ...point,
-                      // Keep baseline rotation deterministic from current algorithm.
-                      // Persisted rotation overrides caused stale corner orientation.
-                      rotationOverride: point.rotationOverride,
+                      // FIX: Restore rotation overrides so context-menu edits survive
+                      // the regeneration cycle (setHardwarePointOverride → cabinet change
+                      // → activeCabinetFromArray → useEffect → regenerate drillMap).
+                      // Without this, rotation/flip actions via the Minifix Transform
+                      // popover were immediately wiped by the regeneration.
+                      rotationOverride: saved.rotation || point.rotationOverride,
                       // Position nudges are still safe to restore.
                       positionOverride: saved.position || point.positionOverride,
                     };
