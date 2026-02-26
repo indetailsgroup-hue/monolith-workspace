@@ -17,6 +17,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateMinifixDrillMap } from '../generateDrillMap';
+import { isRunAxis } from '../pairKeyV2';
 import type { Cabinet, CabinetPanel } from '../../../types/Cabinet';
 import type { DrillMapPoint, DrillPurpose } from '../types';
 
@@ -204,6 +205,11 @@ function getByPanel(points: DrillMapPoint[], panelId: string): DrillMapPoint[] {
   return points.filter((p) => p.panelId === panelId);
 }
 
+/** Filter A-run dowels only (exclude B-run) using canonical isRunAxis() */
+function getARunDowels(points: DrillMapPoint[]): DrillMapPoint[] {
+  return points.filter((p) => p.purpose === 'DOWEL' && isRunAxis(p.pairKeyV2 ?? '', 'A'));
+}
+
 // ============================================
 // TESTS
 // ============================================
@@ -278,9 +284,10 @@ describe('v4.4 Axis Alignment — Side-panel Y = Joint Axis Y', () => {
   });
 
   it('DOWEL-side Y matches BOLT_ENTRY Y (within 0.5mm)', () => {
-    // DOWEL on side panels should share the joint axis Y
-    const dowels = getByPurpose(allPoints, 'DOWEL');
-    const sideDowels = dowels.filter((d) =>
+    // A-run DOWEL on side panels should share the joint axis Y
+    // (B-run dowels are on the width axis with different Y constraints)
+    const aRunDowels = getARunDowels(allPoints);
+    const sideDowels = aRunDowels.filter((d) =>
       d.panelId === 'panel-left' || d.panelId === 'panel-right'
     );
     const boltEntries = getByPurpose(allPoints, 'BOLT_ENTRY');
@@ -299,9 +306,10 @@ describe('v4.4 Axis Alignment — Side-panel Y = Joint Axis Y', () => {
   });
 
   it('DOWEL-horiz Y matches BOLT_ENTRY Y (within 0.5mm)', () => {
-    // DOWEL on horizontal panels should also be at thickness center
-    const dowels = getByPurpose(allPoints, 'DOWEL');
-    const horizDowels = dowels.filter((d) =>
+    // A-run DOWEL on horizontal panels should be at edge (same Y as bolt axis)
+    // (B-run dowels drill into FACE at different Y)
+    const aRunDowels = getARunDowels(allPoints);
+    const horizDowels = aRunDowels.filter((d) =>
       d.panelId === 'panel-top' || d.panelId === 'panel-bottom'
     );
     const boltEntries = getByPurpose(allPoints, 'BOLT_ENTRY');
@@ -317,16 +325,21 @@ describe('v4.4 Axis Alignment — Side-panel Y = Joint Axis Y', () => {
     }
   });
 
-  it('all joint-axis points in the same corner share the same Y (±0.5mm)', () => {
-    // For each corner, gather all BOLT, BOLT_THREAD, BOLT_ENTRY, DOWEL and
+  it('all A-run joint-axis points in the same corner share the same Y (±0.5mm)', () => {
+    // For each corner, gather all BOLT, BOLT_THREAD, BOLT_ENTRY, A-run DOWEL and
     // verify they share the same Y axis.
+    // B-run dowels have different Y (face/edge bores on width axis).
     const corners: string[] = ['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'];
-    const jointPurposes: DrillPurpose[] = ['BOLT', 'BOLT_ENTRY', 'BOLT_THREAD', 'DOWEL'];
+    const aRunDowels = getARunDowels(allPoints);
+    const nonDowelJointPurposes: DrillPurpose[] = ['BOLT', 'BOLT_ENTRY', 'BOLT_THREAD'];
 
     for (const corner of corners) {
-      const cornerPoints = allPoints.filter(
-        (p) => p.cornerType === corner && jointPurposes.includes(p.purpose)
-      );
+      const cornerPoints = [
+        ...allPoints.filter(
+          (p) => p.cornerType === corner && nonDowelJointPurposes.includes(p.purpose)
+        ),
+        ...aRunDowels.filter((p) => p.cornerType === corner),
+      ];
       if (cornerPoints.length === 0) continue;
 
       const referenceY = cornerPoints[0].position[1];
@@ -417,11 +430,12 @@ describe('v4.4 Dowel Z Offset from Bolt', () => {
   const allPoints = getAllPoints(drillMap);
 
   const bolts = getByPurpose(allPoints, 'BOLT');
-  const dowels = getByPurpose(allPoints, 'DOWEL');
+  // A-run dowels only — B-run dowels are on the width axis, not Z-offset from bolts
+  const aRunDowels = getARunDowels(allPoints);
 
-  it('DOWELs are ≈32mm away from BOLT along Z axis (System 32 pitch)', () => {
+  it('A-run DOWELs are ≈32mm away from BOLT along Z axis (System 32 pitch)', () => {
     for (const bolt of bolts) {
-      const associatedDowels = dowels.filter(
+      const associatedDowels = aRunDowels.filter(
         (d) =>
           d.panelId === bolt.panelId &&
           d.cornerType === bolt.cornerType &&
@@ -438,9 +452,9 @@ describe('v4.4 Dowel Z Offset from Bolt', () => {
     }
   });
 
-  it('DOWELs must NOT coincide with BOLT position (Z distance > 20mm)', () => {
+  it('A-run DOWELs must NOT coincide with BOLT position (Z distance > 20mm)', () => {
     for (const bolt of bolts) {
-      const samePanelDowels = dowels.filter(
+      const samePanelDowels = aRunDowels.filter(
         (d) => d.panelId === bolt.panelId && d.cornerType === bolt.cornerType
       );
 

@@ -1197,6 +1197,48 @@
       "depth": 18
     },
     {
+      "id": "dowel-BOTTOM_LEFT-8",
+      "purpose": "DOWEL",
+      "panelId": "panel-bottom",
+      "cornerType": "BOTTOM_LEFT",
+      "pairKeyV2": "pair2-BOTTOM_LEFT-B-37-dowel-brun-horiz",
+      "position": [
+        -254,
+        18,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
+      "id": "dowel-BOTTOM_LEFT-10",
+      "purpose": "DOWEL",
+      "panelId": "panel-bottom",
+      "cornerType": "BOTTOM_LEFT",
+      "pairKeyV2": "pair2-BOTTOM_LEFT-B-545-dowel-brun-horiz",
+      "position": [
+        254,
+        18,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
       "id": "dowel-BOTTOM_RIGHT-4",
       "purpose": "DOWEL",
       "panelId": "panel-bottom",
@@ -1279,6 +1321,48 @@
       "targetPocketCenter": null,
       "diameter": 8,
       "depth": 18
+    },
+    {
+      "id": "dowel-BOTTOM_RIGHT-8",
+      "purpose": "DOWEL",
+      "panelId": "panel-bottom",
+      "cornerType": "BOTTOM_RIGHT",
+      "pairKeyV2": "pair2-BOTTOM_RIGHT-B-37-dowel-brun-horiz",
+      "position": [
+        254,
+        18,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
+      "id": "dowel-BOTTOM_RIGHT-10",
+      "purpose": "DOWEL",
+      "panelId": "panel-bottom",
+      "cornerType": "BOTTOM_RIGHT",
+      "pairKeyV2": "pair2-BOTTOM_RIGHT-B-545-dowel-brun-horiz",
+      "position": [
+        -254,
+        18,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
     },
     {
       "id": "dowel-BOTTOM_LEFT-2",
@@ -1365,6 +1449,48 @@
       "depth": 12
     },
     {
+      "id": "dowel-BOTTOM_LEFT-9",
+      "purpose": "DOWEL",
+      "panelId": "panel-left",
+      "cornerType": "BOTTOM_LEFT",
+      "pairKeyV2": "pair2-BOTTOM_LEFT-B-37-dowel-brun-side",
+      "position": [
+        -254,
+        0,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
+      "id": "dowel-BOTTOM_LEFT-11",
+      "purpose": "DOWEL",
+      "panelId": "panel-left",
+      "cornerType": "BOTTOM_LEFT",
+      "pairKeyV2": "pair2-BOTTOM_LEFT-B-545-dowel-brun-side",
+      "position": [
+        254,
+        0,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
       "id": "dowel-TOP_LEFT-2",
       "purpose": "DOWEL",
       "panelId": "panel-left",
@@ -1447,6 +1573,48 @@
       "targetPocketCenter": null,
       "diameter": 8,
       "depth": 12
+    },
+    {
+      "id": "dowel-TOP_LEFT-9",
+      "purpose": "DOWEL",
+      "panelId": "panel-left",
+      "cornerType": "TOP_LEFT",
+      "pairKeyV2": "pair2-TOP_LEFT-B-37-dowel-brun-side",
+      "position": [
+        -254,
+        720,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
+      "id": "dowel-TOP_LEFT-11",
+      "purpose": "DOWEL",
+      "panelId": "panel-left",
+      "cornerType": "TOP_LEFT",
+      "pairKeyV2": "pair2-TOP_LEFT-B-545-dowel-brun-side",
+      "position": [
+        254,
+        720,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
     },
     {
       "id": "dowel-BOTTOM_RIGHT-2",
@@ -1533,6 +1701,48 @@
       "depth": 12
     },
     {
+      "id": "dowel-BOTTOM_RIGHT-9",
+      "purpose": "DOWEL",
+      "panelId": "panel-right",
+      "cornerType": "BOTTOM_RIGHT",
+      "pairKeyV2": "pair2-BOTTOM_RIGHT-B-37-dowel-brun-side",
+      "position": [
+        254,
+        0,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
+      "id": "dowel-BOTTOM_RIGHT-11",
+      "purpose": "DOWEL",
+      "panelId": "panel-right",
+      "cornerType": "BOTTOM_RIGHT",
+      "pairKeyV2": "pair2-BOTTOM_RIGHT-B-545-dowel-brun-side",
+      "position": [
+        -254,
+        0,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
       "id": "dowel-TOP_RIGHT-2",
       "purpose": "DOWEL",
       "panelId": "panel-right",
@@ -1615,6 +1825,48 @@
       "targetPocketCenter": null,
       "diameter": 8,
       "depth": 12
+    },
+    {
+      "id": "dowel-TOP_RIGHT-9",
+      "purpose": "DOWEL",
+      "panelId": "panel-right",
+      "cornerType": "TOP_RIGHT",
+      "pairKeyV2": "pair2-TOP_RIGHT-B-37-dowel-brun-side",
+      "position": [
+        254,
+        720,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
+    },
+    {
+      "id": "dowel-TOP_RIGHT-11",
+      "purpose": "DOWEL",
+      "panelId": "panel-right",
+      "cornerType": "TOP_RIGHT",
+      "pairKeyV2": "pair2-TOP_RIGHT-B-545-dowel-brun-side",
+      "position": [
+        -254,
+        720,
+        536
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 18
     },
     {
       "id": "dowel-TOP_LEFT-4",
@@ -1701,6 +1953,48 @@
       "depth": 18
     },
     {
+      "id": "dowel-TOP_LEFT-8",
+      "purpose": "DOWEL",
+      "panelId": "panel-top",
+      "cornerType": "TOP_LEFT",
+      "pairKeyV2": "pair2-TOP_LEFT-B-37-dowel-brun-horiz",
+      "position": [
+        -254,
+        702,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
+      "id": "dowel-TOP_LEFT-10",
+      "purpose": "DOWEL",
+      "panelId": "panel-top",
+      "cornerType": "TOP_LEFT",
+      "pairKeyV2": "pair2-TOP_LEFT-B-545-dowel-brun-horiz",
+      "position": [
+        254,
+        702,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
       "id": "dowel-TOP_RIGHT-4",
       "purpose": "DOWEL",
       "panelId": "panel-top",
@@ -1783,6 +2077,48 @@
       "targetPocketCenter": null,
       "diameter": 8,
       "depth": 18
+    },
+    {
+      "id": "dowel-TOP_RIGHT-8",
+      "purpose": "DOWEL",
+      "panelId": "panel-top",
+      "cornerType": "TOP_RIGHT",
+      "pairKeyV2": "pair2-TOP_RIGHT-B-37-dowel-brun-horiz",
+      "position": [
+        254,
+        702,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
+    },
+    {
+      "id": "dowel-TOP_RIGHT-10",
+      "purpose": "DOWEL",
+      "panelId": "panel-top",
+      "cornerType": "TOP_RIGHT",
+      "pairKeyV2": "pair2-TOP_RIGHT-B-545-dowel-brun-horiz",
+      "position": [
+        -254,
+        702,
+        536
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "boltDirection": null,
+      "targetPocketCenter": null,
+      "diameter": 8,
+      "depth": 12
     }
   ]
 }
