@@ -974,15 +974,18 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
           : [Math.PI / 2, Math.PI, 0]; // Same for detached view
 
         // Contract S: cam flip rotates only the cam housing visual, not bolt parts.
-        // camFlipQuat is around local Y (bolt axis in Preview3D frame).
-        // Wrap OUTSIDE position/rotation so the flip is around Preview3D's Y axis,
-        // not the cam's post-rotation local axis.
-        const camQ = camFlipQuat; // undefined = no wrapper needed
+        // The cam body (cylinder + rim) is axially symmetric — rotating 180° looks identical.
+        // Only asymmetric parts (PZ2 slot, eccentric bore indicator) are wrapped with camFlipQuat
+        // so the user can SEE the flip. camFlipQuat is around cam-local Y (bolt axis after camRotation).
+
+        // Cam flip quaternion for asymmetric parts only.
+        // Applied INSIDE the positioned/rotated cam group, on the cam's LOCAL Y axis,
+        // so it spins the slot/indicator in place without moving the housing.
+        const camQ = camFlipQuat; // undefined = no flip
 
         return (
-          <group quaternion={camQ}>
           <group position={camPosition} rotation={camRotation}>
-            {/* Main cam body - steel gray matching Threaded Shaft */}
+            {/* Main cam body - symmetric, NO flip wrapper */}
             <mesh>
               <cylinderGeometry args={[camDia / 2, camDia / 2, camDepth, 64]} />
               <meshStandardMaterial
@@ -995,7 +998,7 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
               />
             </mesh>
 
-            {/* Rim/flange at top (facing ball head) */}
+            {/* Rim/flange at top (facing ball head) - symmetric, NO flip wrapper */}
             <mesh position={[0, camDepth / 2 - camRimHeight / 2, 0]}>
               <cylinderGeometry args={[camRimDia / 2, camDia / 2, camRimHeight, 64]} />
               <meshStandardMaterial
@@ -1008,19 +1011,32 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
               />
             </mesh>
 
-            {/* PZ2 cross slot on face (X shape) */}
-            {!xRayMode && (
-              <group position={[0, camDepth / 2 + 0.001, 0]}>
-                <mesh rotation={[-Math.PI / 2, 0, Math.PI / 4]}>
-                  <planeGeometry args={[camDia * 0.6, 0.022]} />
-                  <meshBasicMaterial color="#1a1a1a" side={2} />
-                </mesh>
-                <mesh rotation={[-Math.PI / 2, 0, -Math.PI / 4]}>
-                  <planeGeometry args={[camDia * 0.6, 0.022]} />
-                  <meshBasicMaterial color="#1a1a1a" side={2} />
-                </mesh>
-              </group>
-            )}
+            {/* ── Asymmetric parts: wrapped with camFlipQuat ── */}
+            {/* PZ2 slot + eccentric cam bore indicator rotate together on flip */}
+            <group quaternion={camQ}>
+              {/* PZ2 cross slot on face (X shape) */}
+              {!xRayMode && (
+                <group position={[0, camDepth / 2 + 0.001, 0]}>
+                  <mesh rotation={[-Math.PI / 2, 0, Math.PI / 4]}>
+                    <planeGeometry args={[camDia * 0.6, 0.022]} />
+                    <meshBasicMaterial color="#1a1a1a" side={2} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, -Math.PI / 4]}>
+                    <planeGeometry args={[camDia * 0.6, 0.022]} />
+                    <meshBasicMaterial color="#1a1a1a" side={2} />
+                  </mesh>
+                </group>
+              )}
+
+              {/* Eccentric cam bore indicator — asymmetric offset dot that visually
+                  shows which "side" the cam eccentric faces. This is the only geometry
+                  that breaks axial symmetry, making the flip visible in any view angle.
+                  Offset along local X by ~40% of cam radius to represent the eccentric bore. */}
+              <mesh position={[camDia * 0.2, camDepth / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[camDia * 0.08, 16]} />
+                <meshBasicMaterial color={xRayMode ? '#ff00ff' : '#505050'} side={2} />
+              </mesh>
+            </group>
 
             {/* Cam dimension label */}
             {showDimensions && (
@@ -1041,7 +1057,6 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
                 </div>
               </Html>
             )}
-          </group>
           </group>
         );
       })()}
