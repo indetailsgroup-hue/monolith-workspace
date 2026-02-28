@@ -1,5 +1,5 @@
 /**
- * HardwareContextMenu - v1.3
+ * HardwareContextMenu - v1.4
  *
  * Right-click context menu for Minifix 3D hardware rotation AND position control.
  * Allows users to flip, rotate, move, and save overrides as defaults.
@@ -9,6 +9,9 @@
  * - Flip and fine rotation controls
  * - Move hardware position controls (X/Y/Z) with DYNAMIC AABB-based clamping
  * - Save as default or per-point override
+ *
+ * Theme: Uses surface-* design tokens and border-[#333] to match
+ * ParametricContractPanel and PanelConfigModal.
  *
  * Position clamping is now dynamic based on cabinet bounds (not fixed ±20mm).
  */
@@ -74,8 +77,8 @@ function MenuItem({ icon, label, shortcut, onClick, danger }: MenuItemProps) {
       onClick={onClick}
       className={`
         w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs
-        hover:bg-white/10 transition-colors rounded
-        ${danger ? 'text-red-400 hover:text-red-300' : 'text-gray-300 hover:text-white'}
+        hover:bg-surface-3 transition-all duration-200 rounded
+        ${danger ? 'text-red-400 hover:text-red-300' : 'text-gray-400 hover:text-white'}
       `}
     >
       <span className="w-4 h-4 flex items-center justify-center opacity-70">
@@ -83,7 +86,7 @@ function MenuItem({ icon, label, shortcut, onClick, danger }: MenuItemProps) {
       </span>
       <span className="flex-1">{label}</span>
       {shortcut && (
-        <span className="text-[10px] text-gray-500 bg-gray-800 px-1 rounded">
+        <span className="text-[10px] text-gray-600 bg-surface-3 px-1 rounded">
           {shortcut}
         </span>
       )}
@@ -93,11 +96,11 @@ function MenuItem({ icon, label, shortcut, onClick, danger }: MenuItemProps) {
 
 function RotationButtons({ axis, onMinus, onPlus }: RotationButtonsProps) {
   return (
-    <div className="flex items-center gap-1 px-3 py-1">
+    <div className="flex items-center gap-1.5 px-3 py-1">
       <span className="text-[10px] text-gray-500 w-10">Rot {axis}:</span>
       <button
         onClick={onMinus}
-        className="px-2 py-0.5 text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+        className="px-2 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 text-white rounded border border-[#333] transition-all duration-200"
         title={`Rotate ${axis} -15°`}
       >
         <RotateCcw size={10} className="inline mr-0.5" />
@@ -105,7 +108,7 @@ function RotationButtons({ axis, onMinus, onPlus }: RotationButtonsProps) {
       </button>
       <button
         onClick={onPlus}
-        className="px-2 py-0.5 text-[10px] bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+        className="px-2 py-0.5 text-[10px] bg-surface-2 hover:bg-surface-3 text-white rounded border border-[#333] transition-all duration-200"
         title={`Rotate ${axis} +15°`}
       >
         <RotateCw size={10} className="inline mr-0.5" />
@@ -116,7 +119,7 @@ function RotationButtons({ axis, onMinus, onPlus }: RotationButtonsProps) {
 }
 
 function Divider() {
-  return <div className="h-px bg-gray-700 my-1 mx-2" />;
+  return <div className="h-px bg-[#333] my-1 mx-2" />;
 }
 
 const POSITION_STEPS = [0.5, 1, 5];
@@ -133,7 +136,7 @@ function PositionButtons({ axis, label, value, range, onNudge, onChange }: Posit
           <button
             key={`minus-${step}`}
             onClick={() => onNudge(-step)}
-            className="px-1 py-0.5 text-[9px] bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+            className="px-1 py-0.5 text-[9px] bg-surface-2 hover:bg-surface-3 text-white rounded border border-[#333] transition-all duration-200"
             title={`Move ${axis} -${step}mm (range: ${rangeStr})`}
           >
             -{step}
@@ -147,7 +150,7 @@ function PositionButtons({ axis, label, value, range, onNudge, onChange }: Posit
         min={range?.[0]}
         max={range?.[1]}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-12 px-1 py-0.5 text-[9px] bg-gray-800 border border-gray-600 rounded text-center text-gray-300 focus:outline-none focus:border-purple-500"
+        className="w-12 px-1.5 py-0.5 text-[9px] bg-surface-2 border border-[#333] rounded-lg text-center text-white font-mono focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20 transition-all duration-200"
         title={`Range: ${rangeStr}`}
       />
       <div className="flex gap-0.5">
@@ -155,7 +158,7 @@ function PositionButtons({ axis, label, value, range, onNudge, onChange }: Posit
           <button
             key={`plus-${step}`}
             onClick={() => onNudge(step)}
-            className="px-1 py-0.5 text-[9px] bg-gray-700 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+            className="px-1 py-0.5 text-[9px] bg-surface-2 hover:bg-surface-3 text-white rounded border border-[#333] transition-all duration-200"
             title={`Move ${axis} +${step}mm (range: ${rangeStr})`}
           >
             +{step}
@@ -193,6 +196,11 @@ export function HardwareContextMenu() {
   const getClampRanges = useDrillMapStore((s) => s.getClampRangesForPoint);
 
   const { isOpen, position, pointId, cornerType, currentRotation, currentPosition, baseWorldPos } = contextMenu;
+
+  // Flip state indicators — show active state in menu
+  const flipXStateByPointId = useDrillMapStore((s) => s.flipXStateByPointId);
+  const isFlippedV = pointId ? (flipXStateByPointId[pointId] ?? false) : false;
+  const isFlippedH = currentRotation ? Math.abs(currentRotation.rotY) >= Math.PI / 2 : false;
 
   // Compute dynamic clamp ranges based on cabinet bounds
   const clampRanges: ClampRanges | null = useMemo(() => {
@@ -261,20 +269,35 @@ export function HardwareContextMenu() {
       }
     };
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeMenu();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      switch (e.key) {
+        case 'Escape':
+          closeMenu();
+          break;
+        case 'v':
+        case 'V':
+          e.preventDefault();
+          if (pointId) applyRotation(pointId, 'flipX');
+          break;
+        case 'h':
+        case 'H':
+          e.preventDefault();
+          if (pointId) applyRotation(pointId, 'flipY');
+          break;
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, closeMenu, isDragging]);
+  }, [isOpen, closeMenu, isDragging, pointId, applyRotation]);
 
   // Handlers
   const handleFlipX = useCallback(() => {
@@ -364,7 +387,7 @@ export function HardwareContextMenu() {
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-[9999] bg-[#1a2535] border border-[#3a4a5a] rounded-lg shadow-xl overflow-hidden"
+      className="fixed z-[9999] bg-surface-1 border border-[#333] rounded-lg shadow-xl overflow-hidden"
       style={{
         left: x,
         top: y,
@@ -374,7 +397,7 @@ export function HardwareContextMenu() {
       {/* Header - Draggable */}
       <div
         onMouseDown={handleDragStart}
-        className="flex items-center justify-between px-3 py-2 bg-[#0d1520] border-b border-[#3a4a5a] select-none hover:bg-[#152030] transition-colors"
+        className="flex items-center justify-between px-3 py-2 border-b border-[#333] select-none hover:bg-surface-3 transition-all duration-200"
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         title="Drag to move"
       >
@@ -396,24 +419,42 @@ export function HardwareContextMenu() {
       </div>
 
       {/* Corner Info */}
-      <div className="px-3 py-1.5 text-[10px] text-gray-500 border-b border-[#3a4a5a]/50">
+      <div className="px-3 py-1.5 text-[10px] text-gray-500 border-b border-[#333]">
         Corner: <span className="text-cyan-400">{cornerLabel}</span>
       </div>
 
-      {/* Flip Actions */}
+      {/* Flip Actions — active state shown with colored dot */}
       <div className="py-1">
-        <MenuItem
-          icon={<FlipVertical size={14} />}
-          label="Vertical Flip"
-          shortcut="V"
+        <button
           onClick={handleFlipX}
-        />
-        <MenuItem
-          icon={<FlipHorizontal size={14} />}
-          label="Horizontal Flip"
-          shortcut="H"
+          className={`
+            w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs
+            hover:bg-surface-3 transition-all duration-200 rounded
+            ${isFlippedV ? 'text-orange-400' : 'text-gray-400 hover:text-white'}
+          `}
+        >
+          <span className="w-4 h-4 flex items-center justify-center opacity-70">
+            <FlipVertical size={14} />
+          </span>
+          <span className="flex-1">Vertical Flip</span>
+          {isFlippedV && <span className="w-2 h-2 rounded-full bg-orange-400" title="Active" />}
+          <span className="text-[10px] text-gray-600 bg-surface-3 px-1 rounded">V</span>
+        </button>
+        <button
           onClick={handleFlipY}
-        />
+          className={`
+            w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs
+            hover:bg-surface-3 transition-all duration-200 rounded
+            ${isFlippedH ? 'text-orange-400' : 'text-gray-400 hover:text-white'}
+          `}
+        >
+          <span className="w-4 h-4 flex items-center justify-center opacity-70">
+            <FlipHorizontal size={14} />
+          </span>
+          <span className="flex-1">Horizontal Flip</span>
+          {isFlippedH && <span className="w-2 h-2 rounded-full bg-orange-400" title="Active" />}
+          <span className="text-[10px] text-gray-600 bg-surface-3 px-1 rounded">H</span>
+        </button>
       </div>
 
       <Divider />
@@ -534,8 +575,8 @@ export function HardwareContextMenu() {
       </div>
 
       {/* Current Values Display */}
-      <Divider />
-      <div className="px-3 py-2 text-[9px] font-mono text-gray-500 bg-[#0d1520]/50 grid grid-cols-2 gap-x-4">
+      <div className="border-t border-[#333]" />
+      <div className="px-3 py-2 text-[9px] font-mono text-gray-500 bg-surface-2 grid grid-cols-2 gap-x-4">
         {/* Rotation */}
         <div>
           <div className="text-[8px] text-purple-400 mb-0.5">Rotation</div>

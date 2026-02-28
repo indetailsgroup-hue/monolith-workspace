@@ -219,7 +219,6 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   const getRotationForPoint = useDrillMapStore((s) => s.getRotationForPoint);
   const getPositionForPoint = useDrillMapStore((s) => s.getPositionForPoint);
   const flipXStateByPointId = useDrillMapStore((s) => s.flipXStateByPointId);
-
   // Per-connector preview state: resolved via pairId → global → identity
   // See docs/architecture/HARDWARE_PREVIEW_KEYS.md
   const hardwareOverrides = useCabinetStore(
@@ -1102,6 +1101,12 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   const drillMapDataRaw = useDrillMapStore((s) => s.drillMap);
   const drillMapPurpose = useDrillMapStore((s) => s.drillMapPurpose);
 
+  // V-Flip state for drill position transform
+  const flipXStateByPointId = useDrillMapStore((s) => s.flipXStateByPointId);
+  const hardwareOverrides = useCabinetStore(
+    (s) => s.cabinet?.hardwareOverrides as import('../../core/types/Cabinet').HardwarePointOverrides | undefined
+  );
+
   // Filter out B-run dowel points from visualization.
   // B-run data is kept in the drill map for manufacturing export but
   // should not render as 3D hardware or CAD indicators.
@@ -1115,6 +1120,98 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
       })),
     };
   }, [drillMapDataRaw]);
+
+  // ── V-FLIP DRILL POSITION TRANSFORM ──────────────────────────────
+  // When V-Flip is active for a connector, the 3D hardware model rotates
+  // 180° around the bolt axis.  The drill indicators (CADDrillIndicators +
+  // CSGDrillOverlay) must follow — otherwise the circles/labels stay at
+  // the un-flipped position while the 3D cam moves away.
+  //
+  // Algorithm:
+  //   1. Group drill points by pairId → find the BOLT point per connector
+  //   2. Resolve V-Flip state via resolvePreviewState (same as Hardware3DOverlay)
+  //   3. For each NON-BOLT point in a flipped connector, rotate its position
+  //      180° around the bolt axis through the bolt position (Rodrigues 180°):
+  //        v = P − C,  P′ = C + 2·(v·n̂)·n̂ − v
+  // ─────────────────────────────────────────────────────────────────
+  const drillMapFlipped = useMemo(() => {
+    if (!drillMapData) return drillMapData;
+
+    // 1. Collect BOLT points keyed by pairId
+    const boltByPairId = new Map<string, DrillMapPoint>();
+    for (const panel of drillMapData.panels) {
+      for (const pt of panel.points) {
+        if (pt.purpose === 'BOLT' && pt.pairId) {
+          boltByPairId.set(pt.pairId, pt);
+        }
+      }
+    }
+    if (boltByPairId.size === 0) return drillMapData;
+
+    // 2. Check if ANY connector is flipped (quick bail-out)
+    let anyFlipped = false;
+    for (const [, bolt] of boltByPairId) {
+      const ps = resolvePreviewState(bolt.pairKeyV2, bolt.pairId, hardwareOverrides, null);
+      const flipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
+      if (flipped) { anyFlipped = true; break; }
+    }
+    if (!anyFlipped) return drillMapData;
+
+    // 3. Build a flipped copy
+    const newPanels = drillMapData.panels.map(panel => ({
+      ...panel,
+      points: panel.points.map(point => {
+        // Bolts sit on the rotation axis → position unchanged
+        if (point.purpose === 'BOLT') return point;
+        // Points without pairId can't be associated with a connector
+        if (!point.pairId) return point;
+
+        const bolt = boltByPairId.get(point.pairId);
+        if (!bolt || !bolt.boltDirection) return point;
+
+        // Resolve flip for THIS connector
+        const ps = resolvePreviewState(bolt.pairKeyV2, bolt.pairId, hardwareOverrides, null);
+        const isFlipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
+        if (!isFlipped) return point;
+
+        // Rodrigues 180° rotation: P' = C + 2·(v·n̂)·n̂ − v
+        const C = bolt.position;
+        const d = bolt.boltDirection;
+        const len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+        if (len < 1e-6) return point;
+        const nx = d[0] / len, ny = d[1] / len, nz = d[2] / len;
+
+        const vx = point.position[0] - C[0];
+        const vy = point.position[1] - C[1];
+        const vz = point.position[2] - C[2];
+
+        const dot = vx * nx + vy * ny + vz * nz;
+
+        const newPos: [number, number, number] = [
+          C[0] + 2 * dot * nx - vx,
+          C[1] + 2 * dot * ny - vy,
+          C[2] + 2 * dot * nz - vz,
+        ];
+
+        // Also flip the drill normal (180° around same axis)
+        const nvx = point.normal[0], nvy = point.normal[1], nvz = point.normal[2];
+        const ndot = nvx * nx + nvy * ny + nvz * nz;
+        const newNormal: [number, number, number] = [
+          2 * ndot * nx - nvx,
+          2 * ndot * ny - nvy,
+          2 * ndot * nz - nvz,
+        ];
+
+        return {
+          ...point,
+          position: newPos,
+          normal: newNormal,
+        };
+      }),
+    }));
+
+    return { ...drillMapData, panels: newPanels };
+  }, [drillMapData, hardwareOverrides, flipXStateByPointId]);
 
   const drillMapScale = useDrillMapStore((s) => s.drillMapScale);
   const show3DHardware = useDrillMapStore((s) => s.show3DHardware);
@@ -1270,7 +1367,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
         rotation={(activeCabinetFromArray as any)?.sceneRotation || [0, 0, 0]}
       >
         <CADDrillIndicators
-          drillMap={drillMapData}
+          drillMap={drillMapFlipped}
           visible={xRayMode && showDrillMap}
           showDiameter={true}
           showDepth={false}
@@ -1289,7 +1386,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
         rotation={(activeCabinetFromArray as any)?.sceneRotation || [0, 0, 0]}
       >
         <Hardware3DOverlay
-          drillMap={drillMapData}
+          drillMap={drillMapFlipped}
           visible={xRayMode}
           opacity={0.95}
           minifixConfig={normalizeMinifixConfig((activeCabinetFromArray as any)?.hardware?.minifixConfig)}
@@ -1304,7 +1401,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
 
         {/* CSG Drill Holes Overlay - shows drill holes as cylinders in X-Ray mode */}
         <CSGDrillOverlay
-          drillMap={drillMapData}
+          drillMap={drillMapFlipped}
           visible={xRayMode && showDrillMap}
           colorByPurpose={true}
           opacity={0.8}

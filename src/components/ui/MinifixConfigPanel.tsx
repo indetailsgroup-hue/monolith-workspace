@@ -981,49 +981,72 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
         // We must convert it to CAM-LOCAL space before creating the quaternion,
         // because <group quaternion={camQ}> applies in the parent's local frame
         // which has rotation={camRotation}.
-        const camQ = (() => {
-          if (!camFlipAxisWorld) return undefined;
-          const camPlacementQuat = new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(camRotation[0], camRotation[1], camRotation[2])
-          );
-          const axisLocal = camFlipAxisWorld
-            .clone()
-            .applyQuaternion(camPlacementQuat.clone().invert())
-            .normalize();
-          return new THREE.Quaternion().setFromAxisAngle(axisLocal, Math.PI);
-        })();
+        // ── CAM FLIP QUATERNION ──
+        // V-Flip = 180° rotation around the BOLT axis in cam-local space.
+        // The bolt enters the cam through its socket opening, which faces local Z.
+        // So V-Flip = 180° around cam-local Z axis.
+        //
+        // Effect: X→-X (eccentric bore flips side), Y→-Y (rim flips top↔bottom),
+        // Z unchanged (socket opening direction preserved).
+        //
+        // The ENTIRE cam assembly (body + rim + indicators) is wrapped in camQ
+        // so the rim/flange physically moves from one side to the other — making
+        // the flip clearly visible even on the symmetric cylinder body.
+        const isFlippedCam = !!camFlipAxisWorld;
+        const camQ = isFlippedCam
+          ? new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI)
+          : new THREE.Quaternion(); // identity
+
+        // Cam housing color: ALWAYS original color regardless of flip state.
+        // Flip is indicated by physical rotation only (rim moves top↔bottom).
+        const camBodyColor = xRayMode ? '#00ffff' : '#909090';
+        const camRimColor = xRayMode ? '#00ffff' : '#a0a0a0';
 
         return (
           <group position={camPosition} rotation={camRotation}>
-            {/* Main cam body - symmetric, NO flip wrapper */}
-            <mesh>
-              <cylinderGeometry args={[camDia / 2, camDia / 2, camDepth, 64]} />
-              <meshStandardMaterial
-                color={xRayMode ? '#00ffff' : '#909090'}
-                metalness={xRayMode ? 0 : 0.5}
-                roughness={xRayMode ? 1 : 0.35}
-                envMapIntensity={0.8}
-                transparent={xRayMode}
-                opacity={xRayMode ? 0.6 : 1}
-              />
-            </mesh>
-
-            {/* Rim/flange at top (facing ball head) - symmetric, NO flip wrapper */}
-            <mesh position={[0, camDepth / 2 - camRimHeight / 2, 0]}>
-              <cylinderGeometry args={[camRimDia / 2, camDia / 2, camRimHeight, 64]} />
-              <meshStandardMaterial
-                color={xRayMode ? '#00ffff' : '#a0a0a0'}
-                metalness={xRayMode ? 0 : 0.5}
-                roughness={xRayMode ? 1 : 0.3}
-                envMapIntensity={0.8}
-                transparent={xRayMode}
-                opacity={xRayMode ? 0.6 : 1}
-              />
-            </mesh>
-
-            {/* ── Asymmetric parts: wrapped with camQ (world→local flip) ── */}
-            {/* PZ2 slot + eccentric cam bore indicator rotate together on flip */}
+            {/* ── ENTIRE cam assembly wrapped in camQ ──
+                V-Flip rotates 180° around Z (bolt axis in cam-local space).
+                This physically flips the rim from top→bottom and the eccentric side,
+                making the flip clearly visible on the 3D model.
+                Color stays ORIGINAL (no orange) — only rotation changes. */}
             <group quaternion={camQ}>
+              {/* Main cam body — same material always (original metallic look) */}
+              <mesh>
+                <cylinderGeometry args={[camDia / 2, camDia / 2, camDepth, 64]} />
+                <meshStandardMaterial
+                  color={camBodyColor}
+                  metalness={xRayMode ? 0 : 0.5}
+                  roughness={xRayMode ? 1 : 0.35}
+                  envMapIntensity={0.8}
+                  transparent={xRayMode}
+                  opacity={xRayMode ? 0.6 : 1}
+                />
+              </mesh>
+
+              {/* Rim/flange — normally at top (Y+), flips to bottom (Y-) when V-flipped */}
+              <mesh position={[0, camDepth / 2 - camRimHeight / 2, 0]}>
+                <cylinderGeometry args={[camRimDia / 2, camDia / 2, camRimHeight, 64]} />
+                <meshStandardMaterial
+                  color={camRimColor}
+                  metalness={xRayMode ? 0 : 0.5}
+                  roughness={xRayMode ? 1 : 0.3}
+                  envMapIntensity={0.8}
+                  transparent={xRayMode}
+                  opacity={xRayMode ? 0.6 : 1}
+                />
+              </mesh>
+
+              {/* Half-moon indicator on cam face */}
+              <mesh position={[0, camDepth / 2 + 0.003, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[camDia / 2 * 0.85, 32, 0, Math.PI]} />
+                <meshBasicMaterial
+                  color="#00cc66"
+                  side={2}
+                  transparent
+                  opacity={xRayMode ? 0.5 : 0.35}
+                />
+              </mesh>
+
               {/* PZ2 cross slot on face (X shape) */}
               {!xRayMode && (
                 <group position={[0, camDepth / 2 + 0.001, 0]}>
@@ -1038,13 +1061,16 @@ export function Preview3D({ config, showCam, showDowel, xRayMode, isAttached, sh
                 </group>
               )}
 
-              {/* Eccentric cam bore indicator — asymmetric offset dot that visually
-                  shows which "side" the cam eccentric faces. This is the only geometry
-                  that breaks axial symmetry, making the flip visible in any view angle.
-                  Offset along local X by ~40% of cam radius to represent the eccentric bore. */}
-              <mesh position={[camDia * 0.2, camDepth / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <circleGeometry args={[camDia * 0.08, 16]} />
-                <meshBasicMaterial color={xRayMode ? '#ff00ff' : '#505050'} side={2} />
+              {/* Eccentric cam bore indicator */}
+              <mesh position={[camDia * 0.2, camDepth / 2 + 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[camDia * 0.15, 16]} />
+                <meshBasicMaterial color="#ff00ff" side={2} />
+              </mesh>
+
+              {/* Direction arrow line: center → eccentric bore */}
+              <mesh position={[camDia * 0.1, camDepth / 2 + 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[camDia * 0.2, camDia * 0.04]} />
+                <meshBasicMaterial color="#ff00ff" side={2} />
               </mesh>
             </group>
 
