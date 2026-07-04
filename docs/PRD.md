@@ -123,7 +123,8 @@ Non-goal คือ "ฟีเจอร์ที่คนอาจคาดหว
 
 ## 4. ผู้ใช้และ User Stories
 
-> [ข้อเสนอ 📝] สังเคราะห์จาก role ที่มีจริงใน code/spec — รอ owner ยืนยัน
+> [ข้อเสนอ 📝] Personas สังเคราะห์จาก role ที่มีจริงใน code/spec (roles.ts, C12, MCP catalog, RACI)
+> **มติ grilling (2026-07-04): ผู้ใช้นำร่อง (Pilot Wave 1) = เส้นทาง Designer → Technician → Factory Operator** บนแกน CAD/CAM ที่ production-ready แล้ว — เริ่มเก็บ baseline BG-1 (defect rate) จากงานจริงทันที; บทบาทฝั่ง workflow/LINE/บัญชี เปิดใช้เมื่อ Phase 13–14 ปิด (Wave 2)
 
 ### Personas
 
@@ -650,7 +651,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 ### Roadmap ถัดไป (เรียงตาม dependency)
 
-1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว
+0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
+1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
