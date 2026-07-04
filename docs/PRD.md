@@ -173,7 +173,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | ชั้น | Spec | สถานะ | หน้าที่ |
 |-----|------|-------|--------|
 | **Knowledge** | daph-obsidian-second-brain | ✅ 100% | QMS Vault (SOS/JES/PFMEA/RACI) → `_knowledge-export.json` |
-| **Intelligence/Action** | monolith-workflow-copilot | ✅ Phase 1 (113/134 tasks) | Work item, approval, SLA, Copilot, notification |
+| **Intelligence/Action** | monolith-workflow-copilot | 🔵 84% (113/134 tasks) | Work item, approval, SLA, Copilot, notification |
 | | monolith-mcp-layer | 🔵 43/49 tasks | MCP tool catalog + D2 gating + rate limit + audit |
 | | capture-spine | ✅ Wave 0+1 (42/43 tasks) | Ingest → OCR → verify → commit (ledger/spec/survey) |
 | | monolith-accounting | 🟡 37/103 tasks (Phase 3) | Ledger คู่, multi-book, VAT/WHT, BOM costing |
@@ -397,7 +397,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 **ไฟล์หลัก:** `src/workflow/`, `supabase/migrations/0001–0035`, Edge Functions: `sla-sweep-scheduler`, `approval-postback`, `notification-retry-worker`, `customer-design-view`, `web-fallback-api`
 
-#### ข้อกำหนด 21 ข้อ (Req 1–21) — ✅ Phase 1 เสร็จ, 🟡 Phase 1.5 (Req 21) ค้าง
+#### ข้อกำหนด 21 ข้อ (Req 1–21) — 🔵 113/134 tasks; ค้าง: Phase 13 (notification delivery RPC + retry), Phase 14 (delegation routing), Req 21 (Phase 1.5) และ property tests บางส่วน
 
 **[P0] Process Model & Work Items ✅**
 - Canonical 8 ขั้น (order 0–7): Sale → Area Measurement → Designer → 3D_Presentation → Production Planning → 3D_Rendering_Final → Factory → Installation
@@ -411,12 +411,13 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - Approver resolution จาก RACI: unanimous → approvers[]; อื่น → [accountable] (ADR-018)
 - One-click approve ผ่าน **LINE** (Encrypted_Postback + HMAC verify) และ **web fallback** (JWT session) — idempotent ตาม webhook_event_id
 - **Customer Approver (Req 20):** ลูกค้าอนุมัติผ่าน LINE Flex / customer-design-view โดยไม่เป็น DB principal; Edge Function mediate; timeout → escalate ไป project_manager
-- Delegation: มอบอำนาจอนุมัติ + revoke (0016/0017)
+- Delegation: มอบอำนาจอนุมัติ + revoke (migrations 0016/0017 มีแล้ว) — ⏳ delegation **routing** ค้าง Phase 14
 
-**[P0] Notifications ✅**
+**[P0] Notifications 🔵 (โครงหลัก + migrations มีแล้ว; delivery RPC + retry ค้าง Phase 13)**
 - Dispatch state machine: queued → pending → sent/failed; channels: direct_push / group_message
 - Quiet hours + mute category + **daily digest** (`notification_digest_pending`, no-orphan constraint); เร่งด่วน push ข้าม quiet hours
 - Retry worker (backoff exponential); celebrate เมื่อจบขั้นสุดท้ายจริงเท่านั้น (ไม่ใช่ manual close) และเคารพ quiet hours (0034/0035)
+- ⏳ ค้าง: notification delivery RPC + retry ให้ครบตาม tasks Phase 13
 
 **[P0] SLA & Escalation ✅**
 - SLA sweep (cron): 50% ของ SLA → reminder, 100% → timeout + escalate (status='escalated')
@@ -524,10 +525,10 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - Inventory issue: qty > stock → InsufficientStockError; Moving Average Cost ต่อ material receipt
 - FX: dual-standard rounding — ปัดต่อบรรทัด 2 ตำแหน่ง + plug residual เข้า rounding_difference account (ADR-022)
 
-**[P1] Connectors ✅ (บางส่วน)**
-- PDM sync (part master, idempotent ตาม eventId, revision history append-only), BIM import, bank feed reconciliation (โครง)
+**[P1] Connectors ✅ (ระดับตรรกะ)**
+- PDM sync (part master, idempotent ตาม eventId, revision history append-only), BIM import, bank feed reconciliation + multi-currency (implement แล้ว — vitest ฝั่ง accounting ~277 tests)
 
-**[P2] 📋 คงเหลือ:** bank feed connector จริง, multi-currency 160 สกุลเต็มรูป, รายงานงบการเงิน TFRS/NPAE, e-Tax production
+**[P2] 📋 คงเหลือ (66 tasks):** Capture-Spine integration, MCP tools ฝั่งบัญชี, PDPA + IAM/RLS ที่เหลือ, adapters, รายงานงบการเงิน TFRS/NPAE, e-Tax production (รอ ADR-025)
 
 ---
 
@@ -614,7 +615,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | CAD/CAM แกนหลัก (v2.1.0) | ✅ Production-ready | FIX_PLAN ปิดครบ; tsc 0 errors; 4,404 tests; e2e ผ่าน |
 | Knowledge Layer | ✅ 100% | Vault 224 ไฟล์; pipeline idempotent (PBT) |
 | line-oa-commerce | ✅ 100% | 20/20 tasks; 31 properties |
-| workflow-copilot | ✅ Phase 1 | 113/134 tasks; 42 properties |
+| workflow-copilot | 🔵 84% | 113/134 tasks; ค้าง Phase 13–14 |
 | capture-spine | ✅ Wave 0+1 | 42/43 tasks; migrations ถึง 0080 |
 | mcp-layer | 🔵 88% | 43/49 tasks |
 | accounting | 🟡 36% | 37/103 tasks (ตรรกะแกนมีแล้ว) |
@@ -622,7 +623,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 ### Roadmap ถัดไป (เรียงตาม dependency)
 
-1. **[ตอนนี้]** ปิด workflow-copilot Phase 1.5 — Req 21 revision/design-lock/re-quote + ADR-017/018 (order-key + multi-approver migration)
+1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
