@@ -752,7 +752,7 @@ export function ruleG11_NCenterPolicyMode(
 export function ruleG11_DoublePvcCompensation(
   drillPoints: G11DrillPointV11[],
   globalMode?: ManufacturingMode,
-  system32S: number = 37,
+  system32S: number = 50,
   pvcThickness: number = 1.0,
   policy: G11Policy = {},
 ): G11Issue[] {

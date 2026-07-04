@@ -171,10 +171,10 @@ export const HINGES = {
     plate: {
       /**
        * Calculate mounting plate distance from edge
-       * plate_distance = 15 + K - overlay
+       * plate_distance = 37 - overlay
        */
-      plate_formula: (k: number, overlay: number): number => 15 + k - overlay,
-      
+      plate_formula: (k: number, overlay: number): number => 37 - overlay,
+
       hole_spacing: 32,       // mm between mounting holes
       hole_dia: 5,            // mm
       hole_depth: 13,         // mm
@@ -271,7 +271,7 @@ export const CONNECTORS = {
         depth: 50,            // mm
       },
       // Standard offset from edge
-      offset: 37,             // mm (System 32)
+      offset: 50,             // mm (System 32)
     },
     
     patterns: {
@@ -443,12 +443,12 @@ export const SHELF_SUPPORTS = {
   system_32_pins: {
     id: 'sys32_pins',
     name: 'System 32 Shelf Pins (5mm)',
-    
+
     params: {
       hole_spacing: 32,       // mm vertical spacing
       hole_diameter: 5,       // mm
       hole_depth: 13,         // mm
-      front_offset: 37,       // mm from front edge
+      front_offset: 50,       // mm from front edge
       back_offset: 50,        // mm from back edge
       start_height: 64,       // mm from bottom (first hole)
     },

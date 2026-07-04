@@ -71,7 +71,10 @@ export type JointPosition = 'TOP' | 'BOTTOM';
 export type JointMode = 'INSET' | 'OVERLAY';
 export type PanelSide = 'LEFT' | 'RIGHT';
 export type HardwareModel = 'S200' | 'S100' | 'CUSTOM';
-export type CornerType = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+export type CabinetCornerType = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+export type ShelfCornerType = `SHELF_${number}_${'LEFT' | 'RIGHT'}`;
+export type BackCornerType = 'BACK_LEFT' | 'BACK_RIGHT';
+export type CornerType = CabinetCornerType | ShelfCornerType | BackCornerType;
 
 /** Simple 3D vector type */
 export type Vec3 = { x: number; y: number; z: number };
@@ -358,8 +361,11 @@ export function deriveSeamDirFromCorner(cornerType: CornerType): Vec3 {
     case 'TOP_RIGHT':
     case 'BOTTOM_RIGHT':
       return vec3(0, 0, 1);  // +Z (same direction for symmetry)
+    case 'BACK_LEFT':
+    case 'BACK_RIGHT':
+      return vec3(0, 1, 0);  // +Y (seam runs along height for back panel)
     default:
-      return vec3(0, 0, 1);  // fallback
+      return vec3(0, 0, 1);  // fallback (shelf corners etc.)
   }
 }
 

@@ -341,6 +341,17 @@ export function useGlobalHotkeys(): void {
       }
 
       // ─────────────────────────────────────────────────────────────────────
+      // CSG Boolean Drill Holes: Ctrl+Shift+H
+      // ─────────────────────────────────────────────────────────────────────
+      if ((e.key === 'h' || e.key === 'H') && e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        const wasCSG = useViewStore.getState().useCSGHoles;
+        useViewStore.getState().toggleCSGHoles();
+        toastShortcut('Ctrl+⇧+H', wasCSG ? 'Boolean holes off' : 'Boolean holes on');
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────────────
       // Plasticity-Style View Presets: Numpad 1, 3, 7, 5
       // Use e.code to detect numpad keys specifically
       // ─────────────────────────────────────────────────────────────────────

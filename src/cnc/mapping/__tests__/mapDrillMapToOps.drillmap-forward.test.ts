@@ -38,9 +38,11 @@ function createPoint(overrides?: Partial<DrillMapPoint>): DrillMapPoint {
 function createDrillMap(points: DrillMapPoint[]): DrillMap {
   const panel: DrillMapPanel = {
     panelId: 'panel-1',
-    panelName: 'Test Panel',
+    role: 'LEFT_SIDE',
     points,
     dimensions: { width: 600, height: 400, thickness: 18 },
+    worldPosition: [0, 0, 0],
+    worldRotation: [0, 0, 0],
   };
 
   return {
@@ -48,14 +50,9 @@ function createDrillMap(points: DrillMapPoint[]): DrillMap {
     panels: [panel],
     stats: {
       totalPoints: points.length,
-      validPoints: points.length,
-      warningPoints: 0,
-      errorPoints: 0,
+      byPurpose: {},
     },
-    metadata: {
-      generatedAt: new Date().toISOString(),
-      generatorVersion: 'test@1.0.0',
-    },
+    generatedAt: new Date().toISOString(),
   };
 }
 

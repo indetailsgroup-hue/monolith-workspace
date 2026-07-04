@@ -291,7 +291,7 @@ export const DEFAULT_SYSTEM_32_CONFIG: ShelfPinRowConfig = {
   spacing: 32,
   rowCount: 1,
   rowSpacing: 0,
-  startOffset: 37,          // 37mm from top (standard)
+  startOffset: 37,          // 37mm from top
   endOffset: 37,            // 37mm from bottom
   frontSetback: 37,         // 37mm from front edge
   backSetback: 37,          // 37mm from back edge (or second row position)

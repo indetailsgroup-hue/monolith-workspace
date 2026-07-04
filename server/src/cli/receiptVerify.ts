@@ -40,6 +40,7 @@ export type VerifyCode =
   | 'R_SIG_INVALID'
   | 'R_SIG_KEY_UNKNOWN'
   | 'R_SIG_KEY_REVOKED'
+  | 'R_SIG_KEY_EXPIRED'
   | 'R_PROOF_WARNINGS'
   | 'R_INTERNAL_ERROR';
 
@@ -201,6 +202,7 @@ export async function verifyReceiptZip(zipPath: string): Promise<CliVerifyResult
     let code: VerifyCode = 'R_SIG_INVALID';
     if (sigResult.error === 'UNKNOWN_KEY') code = 'R_SIG_KEY_UNKNOWN';
     if (sigResult.error === 'KEY_REVOKED') code = 'R_SIG_KEY_REVOKED';
+    if (sigResult.error === 'KEY_EXPIRED') code = 'R_SIG_KEY_EXPIRED';
 
     return {
       version: CLI_VERSION,

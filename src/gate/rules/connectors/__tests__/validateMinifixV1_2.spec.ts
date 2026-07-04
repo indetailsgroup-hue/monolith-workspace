@@ -267,7 +267,7 @@ describe('MONO-MINIFIX-DIST-001: Distance B validation', () => {
 
   it('should WARN when Distance B deviates from standard', () => {
     const cam = makeCam({ id: 'cam-distb-bad', y: 100, pairedHoleId: 'bolt-distb-bad' });
-    cam.drillingDistanceB = 34; // 34mm — 10mm off from 24mm standard
+    cam.drillingDistanceB = 40; // 40mm — off from all accepted variants (22/24/25/34)
     const bolt = makeBolt({ id: 'bolt-distb-bad', y: 93.25 });
     const drillMap = onePanel([cam, bolt]);
 
@@ -275,7 +275,7 @@ describe('MONO-MINIFIX-DIST-001: Distance B validation', () => {
     const distFindings = result.findings.filter(f => f.code === 'MONO_MINIFIX_DISTANCE_B_OUT_OF_RANGE');
     expect(distFindings).toHaveLength(1);
     expect(distFindings[0].severity).toBe('WARNING');
-    expect(distFindings[0].measured?.distance_b_mm).toBe(34);
+    expect(distFindings[0].measured?.distance_b_mm).toBe(40);
   });
 
   it('should PASS when Distance B is within tolerance', () => {

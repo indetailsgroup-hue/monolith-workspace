@@ -145,7 +145,7 @@ function calculatePosition(
     const isFront = idx % 2 === 0;
 
     return {
-      x: isFront ? 37 : width - 37,
+      x: isFront ? 50 : width - 50,
       y: isTop ? height - 24 : 24,
       z: 0,
     };
@@ -154,7 +154,7 @@ function calculatePosition(
   if (ref.startsWith('BOLT_')) {
     // Bolts on horizontal panels, positioned from edge
     return {
-      x: 37 + (index % 2) * (width - 74),
+      x: 50 + (index % 2) * (width - 100),
       y: 24,
       z: 0,
     };
@@ -163,7 +163,7 @@ function calculatePosition(
   // Shelf pin line (System 32)
   if (ref.startsWith('SHELF_LINE_')) {
     const isFront = ref.includes('FRONT');
-    const firstHole = system32?.firstHole ?? 37;
+    const firstHole = system32?.firstHole ?? 50;
     const pitch = system32?.pitch ?? 32;
 
     // Generate position along System 32 grid
@@ -198,7 +198,7 @@ function calculatePosition(
   if (ref.startsWith('HINGE_PLATE_')) {
     const hingeIdx = parseInt(ref.split('_')[3]) || 0;
     return {
-      x: 37,
+      x: 50,
       y: 100 + hingeIdx * 300,
       z: 0,
     };
@@ -208,7 +208,7 @@ function calculatePosition(
   if (ref.startsWith('SLIDE_')) {
     const slideIdx = parseInt(ref.split('_')[2]) || 0;
     return {
-      x: 37 + (index % 2) * 100,
+      x: 50 + (index % 2) * 100,
       y: 50 + slideIdx * 150,
       z: 0,
     };

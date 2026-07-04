@@ -128,7 +128,7 @@ export function calculatePanelAABB(panel: CabinetPanel): Box3Like {
   // But panel data stores: finishWidth, finishHeight
   let boxW: number, boxH: number, boxD: number;
 
-  if (panel.role === 'TOP' || panel.role === 'BOTTOM') {
+  if (panel.role === 'TOP' || panel.role === 'BOTTOM' || panel.role === 'SHELF') {
     // Horizontal panel: lies flat
     // finishWidth = cabinet width (X direction)
     // finishHeight = cabinet depth (Z direction)
@@ -240,6 +240,28 @@ export function getPanelBasisFromAABB(panel: CabinetPanel, aabb: Box3Like): Pane
       };
     }
 
+    case 'SHELF': {
+      // Shelf = horizontal panel (like BOTTOM)
+      // Machining face = TOP face (y = maxY) — CAM drilled downward into shelf
+      //
+      // Panel-local coordinates:
+      // - localX: left → right (world +X) — Distance B measured along this axis
+      // - localY: front → back (world -Z) — System 32 depth positions
+      // - localU: into material = downward (world -Y)
+      //
+      // Origin = front-left corner on machining face (top surface)
+      return {
+        origin: [minX, maxY, maxZ],     // front-left on machining face
+        xAxis: [1, 0, 0],               // +localX = +X (right)
+        yAxis: [0, 0, -1],              // +localY = -Z (toward back)
+        uAxis: [0, -1, 0],              // +localU = -Y (into material, downward)
+        faceWidth: sizeX,               // X span (shelf width)
+        faceHeight: sizeZ,              // Z span (shelf depth)
+        thickness: T,
+        role: panel.role,
+      };
+    }
+
     case 'LEFT_SIDE': {
       // Machining face = RIGHT face of LEFT_SIDE panel (x = maxX)
       //
@@ -277,6 +299,27 @@ export function getPanelBasisFromAABB(panel: CabinetPanel, aabb: Box3Like): Pane
         uAxis: [1, 0, 0],               // +localU = +X (into material, rightward)
         faceWidth: sizeZ,               // Z span
         faceHeight: sizeY,              // Y span
+        thickness: T,
+        role: panel.role,
+      };
+    }
+
+    case 'BACK': {
+      // Machining face = FRONT face of BACK panel (z = maxZ, facing cabinet interior)
+      //
+      // Panel-local coordinates:
+      // - localX: left → right (world +X) — Distance B measured along this axis
+      // - localY: bottom → top (world +Y) — System 32 height positions
+      // - localU: into material = backward (world -Z)
+      //
+      // Origin = bottom-left on inner face (front face facing cabinet)
+      return {
+        origin: [minX, minY, maxZ],     // bottom-left on inner face
+        xAxis: [1, 0, 0],               // +localX = +X (right)
+        yAxis: [0, 1, 0],               // +localY = +Y (up)
+        uAxis: [0, 0, -1],              // +localU = -Z (into material, backward)
+        faceWidth: sizeX,               // X span (back panel width)
+        faceHeight: sizeY,              // Y span (back panel height)
         thickness: T,
         role: panel.role,
       };
@@ -390,10 +433,10 @@ export function clamp(value: number, min: number, max: number): number {
  * Build System 32 positions along axis (fixed count).
  *
  * @param count - Number of connector positions
- * @param first - First hole position (default: 37mm)
+ * @param first - First hole position (default: 50mm)
  * @param pitch - Distance between holes (default: 32mm)
  */
-export function buildSystem32Positions(count: number, first: number = 37, pitch: number = 32): number[] {
+export function buildSystem32Positions(count: number, first: number = 50, pitch: number = 32): number[] {
   const positions: number[] = [];
   for (let i = 0; i < count; i++) {
     positions.push(first + i * pitch);
@@ -743,6 +786,311 @@ export function boltEntryEdgePointFromHorizAABB(
   // LEFT corner: drill toward maxX = [+1, 0, 0]
   // RIGHT corner: drill toward minX = [-1, 0, 0]
   const normal: Vec3Tuple = isLeftCorner ? [1, 0, 0] : [-1, 0, 0];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+// ============================================
+// OVERLAY CONSTRUCTION HELPERS (v4.5)
+// ============================================
+// OVERLAY = Top/Bottom panels sit ON TOP of Side panels
+// Bolt & Cam panels SWAP compared to INSET:
+// - BOLT: face bore into HORIZONTAL panel (±Y axis)
+// - CAM: face bore into SIDE panel inner face (±X axis)
+// - BOLT_ENTRY: edge bore into SIDE panel top/bottom edge (±Y axis)
+
+/**
+ * Calculate BOLT face bore on HORIZONTAL panel (TOP/BOTTOM) for OVERLAY construction.
+ *
+ * In OVERLAY, the bolt screws INTO the horizontal panel face (which covers the side panel).
+ * The bolt shaft exits through the horizontal panel face and enters the side panel edge.
+ *
+ * For TOP panel at LEFT corner:
+ * - Drill from bottom face (y = minY) upward into panel
+ * - X at Distance B from LEFT edge
+ * - normal = [0, +1, 0]
+ *
+ * For BOTTOM panel at LEFT corner:
+ * - Drill from top face (y = maxY) downward into panel
+ * - normal = [0, -1, 0]
+ */
+export function boltFacePointFromHorizAABB_overlay(
+  corner: CornerType,
+  horizAabb: Box3Like,
+  sys32Z: number,
+  distanceB: number = 24
+): BoltEdgePoint {
+  const [minX, minY, ] = horizAabb.min;
+  const [maxX, maxY, maxZ] = horizAabb.max;
+
+  const isLeftCorner = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+  const isTopPanel = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+
+  // X = Distance B from mating edge (left or right edge of horizontal panel)
+  const x = isLeftCorner ? minX + distanceB : maxX - distanceB;
+
+  // Y = face of horizontal panel (mating surface toward side panel)
+  // TOP panel: bolt entry from bottom face (minY)
+  // BOTTOM panel: bolt entry from top face (maxY)
+  const y = isTopPanel ? minY : maxY;
+
+  // Z = System32 depth from front (front = maxZ)
+  const z = maxZ - sys32Z;
+
+  // Normal = drill direction INTO horizontal panel
+  // TOP panel: drill upward [0, +1, 0] (from bottom face into panel)
+  // BOTTOM panel: drill downward [0, -1, 0] (from top face into panel)
+  const normal: Vec3Tuple = isTopPanel ? [0, 1, 0] : [0, -1, 0];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+/**
+ * Calculate BOLT_ENTRY edge bore on SIDE panel (top/bottom edge) for OVERLAY construction.
+ *
+ * In OVERLAY, the bolt shaft passes THROUGH the side panel edge (top or bottom).
+ * This is the counterpart to the INSET `boltEntryEdgePointFromHorizAABB`.
+ *
+ * For LEFT_SIDE at TOP corner:
+ * - Drill from top edge (y = maxY) downward into side panel
+ * - normal = [0, -1, 0]
+ *
+ * For LEFT_SIDE at BOTTOM corner:
+ * - Drill from bottom edge (y = minY) upward into side panel
+ * - normal = [0, +1, 0]
+ */
+export function boltEntryEdgePointFromSideAABB_overlay(
+  corner: CornerType,
+  sideAabb: Box3Like,
+  sys32Z: number,
+  distanceB: number = 24
+): BoltEdgePoint {
+  const [minX, minY, ] = sideAabb.min;
+  const [maxX, maxY, maxZ] = sideAabb.max;
+
+  const isLeftSide = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+  const isTopCorner = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+
+  // X = center of side panel thickness
+  const x = (minX + maxX) / 2;
+
+  // Y = edge of side panel (where bolt enters)
+  // TOP corner: top edge (maxY)
+  // BOTTOM corner: bottom edge (minY)
+  const y = isTopCorner ? maxY : minY;
+
+  // Z = System32 depth from front (front = maxZ)
+  const z = maxZ - sys32Z;
+
+  // Normal = drill direction INTO side panel edge
+  // TOP corner: drill downward [0, -1, 0] (from top edge into panel)
+  // BOTTOM corner: drill upward [0, +1, 0] (from bottom edge into panel)
+  const normal: Vec3Tuple = isTopCorner ? [0, -1, 0] : [0, 1, 0];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+/**
+ * Calculate CAM face bore on SIDE panel inner face for OVERLAY construction.
+ *
+ * In OVERLAY, the CAM housing sits in the SIDE panel inner face (instead of horizontal panel).
+ *
+ * For LEFT_SIDE at TOP corner:
+ * - CAM on inner face (x = maxX)
+ * - Y at Distance B from top edge (mating edge)
+ * - normal = [-1, 0, 0] (drill into LEFT panel toward minX)
+ *
+ * For RIGHT_SIDE at TOP corner:
+ * - CAM on inner face (x = minX)
+ * - Y at Distance B from top edge
+ * - normal = [+1, 0, 0] (drill into RIGHT panel toward maxX)
+ */
+export function camFacePointFromSideAABB_overlay(
+  corner: CornerType,
+  sideAabb: Box3Like,
+  sys32Z: number,
+  distanceB: number = 24
+): BoltEdgePoint {
+  const [minX, minY, ] = sideAabb.min;
+  const [maxX, maxY, maxZ] = sideAabb.max;
+
+  const isLeftSide = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+  const isTopCorner = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+
+  // X = inner face of SIDE panel (drilling entry for CAM)
+  // LEFT panel: inner face at maxX
+  // RIGHT panel: inner face at minX
+  const x = isLeftSide ? maxX : minX;
+
+  // Y = Distance B from mating edge (top or bottom edge)
+  // TOP corner: Distance B from top edge (maxY)
+  // BOTTOM corner: Distance B from bottom edge (minY)
+  const y = isTopCorner
+    ? maxY - distanceB
+    : minY + distanceB;
+
+  // Z = System32 depth from front (front = maxZ)
+  const z = maxZ - sys32Z;
+
+  // Normal = drill direction INTO side panel face
+  // LEFT panel: drill toward minX = [-1, 0, 0]
+  // RIGHT panel: drill toward maxX = [+1, 0, 0]
+  const normal: Vec3Tuple = isLeftSide ? [-1, 0, 0] : [1, 0, 0];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+// ============================================
+// BACK PANEL OVERLAY CONSTRUCTION HELPERS
+// ============================================
+// BACK PANEL OVERLAY = Back panel sits ON TOP of side panels from behind.
+// Connectors join BACK panel to LEFT_SIDE and RIGHT_SIDE along Y axis (height).
+//
+// Panel assignments:
+// - BOLT: face bore into BACK panel inner face (z = maxZ, drill [0, 0, -1])
+// - BOLT_ENTRY: edge bore into SIDE panel back edge (z = minZ, drill [0, 0, +1])
+// - CAM: face bore into SIDE panel inner face (x = maxX for LEFT, minX for RIGHT)
+// - DOWEL face: same face as CAM on SIDE panel
+// - DOWEL edge: left/right edge of BACK panel
+
+/**
+ * Calculate BOLT face bore on BACK panel for OVERLAY construction.
+ *
+ * The bolt screws INTO the back panel inner face (which covers the side panel back edge).
+ * The bolt shaft exits through the back panel and enters the side panel back edge.
+ *
+ * For BACK_LEFT:
+ * - Drill from inner face (z = maxZ) backward into panel [0, 0, -1]
+ * - X at camCenterOffset from LEFT edge of back panel
+ *
+ * For BACK_RIGHT:
+ * - Drill from inner face (z = maxZ) backward into panel [0, 0, -1]
+ * - X at camCenterOffset from RIGHT edge of back panel
+ *
+ * @param isLeft - true for BACK_LEFT, false for BACK_RIGHT
+ * @param backAabb - AABB of the back panel
+ * @param sys32Y - System32 position along Y axis (from bottom edge of back panel)
+ * @param camCenterOffset - Offset from edge for bolt (typically camDepth/2)
+ */
+export function boltFacePointFromBackAABB(
+  isLeft: boolean,
+  backAabb: Box3Like,
+  sys32Y: number,
+  camCenterOffset: number,
+  sideAabb?: Box3Like,
+): BoltEdgePoint {
+  const [, minY, ] = backAabb.min;
+  const [, , maxZ] = backAabb.max;
+
+  // X = side panel thickness center (joint axis), matching BOLT_ENTRY position.
+  // This ensures bolt shaft on back panel is colinear with bolt_entry on side panel.
+  // Falls back to camCenterOffset from back panel edge if sideAabb not provided.
+  let x: number;
+  if (sideAabb) {
+    x = (sideAabb.min[0] + sideAabb.max[0]) / 2;
+  } else {
+    x = isLeft ? backAabb.min[0] + camCenterOffset : backAabb.max[0] - camCenterOffset;
+  }
+
+  // Y = System32 position from bottom edge of back panel
+  const y = minY + sys32Y;
+
+  // Z = inner face of back panel (facing cabinet interior)
+  const z = maxZ;
+
+  // Normal = drill direction INTO back panel [0, 0, -1]
+  const normal: Vec3Tuple = [0, 0, -1];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+/**
+ * Calculate BOLT_ENTRY edge bore on SIDE panel back edge for OVERLAY construction.
+ *
+ * The bolt shaft passes THROUGH the side panel back edge (z = minZ).
+ * X = center of side panel thickness. Drill direction = [0, 0, +1] (forward into panel).
+ *
+ * @param isLeft - true for LEFT_SIDE, false for RIGHT_SIDE (unused, X always center)
+ * @param sideAabb - AABB of the side panel
+ * @param worldY - World Y position (already computed by caller)
+ */
+export function boltEntryEdgePointFromSideAABB_back(
+  isLeft: boolean,
+  sideAabb: Box3Like,
+  worldY: number,
+): BoltEdgePoint {
+  const [minX, , ] = sideAabb.min;
+  const [maxX, , ] = sideAabb.max;
+
+  // X = center of side panel thickness
+  const x = (minX + maxX) / 2;
+
+  // Y = world Y (already computed by caller)
+  const y = worldY;
+
+  // Z = back edge of side panel
+  const z = sideAabb.min[2];
+
+  // Normal = drill direction INTO side panel from back edge [0, 0, +1]
+  const normal: Vec3Tuple = [0, 0, 1];
+
+  return {
+    position: [x, y, z],
+    normal,
+  };
+}
+
+/**
+ * Calculate CAM face bore on SIDE panel inner face for BACK panel OVERLAY construction.
+ *
+ * The CAM housing sits in the SIDE panel inner face, at Distance B from the back edge.
+ *
+ * For LEFT_SIDE:
+ * - CAM on inner face (x = maxX), Z at distanceB from back edge, normal [-1, 0, 0]
+ *
+ * For RIGHT_SIDE:
+ * - CAM on inner face (x = minX), Z at distanceB from back edge, normal [+1, 0, 0]
+ *
+ * @param isLeft - true for LEFT_SIDE, false for RIGHT_SIDE
+ * @param sideAabb - AABB of the side panel
+ * @param worldY - World Y position (already computed by caller)
+ * @param distanceB - Distance B from back edge to CAM center (default 24mm)
+ */
+export function camFacePointFromSideAABB_back(
+  isLeft: boolean,
+  sideAabb: Box3Like,
+  worldY: number,
+  distanceB: number = 24,
+): BoltEdgePoint {
+  const [minX, , ] = sideAabb.min;
+  const [maxX, , ] = sideAabb.max;
+
+  // X = inner face of SIDE panel
+  const x = isLeft ? maxX : minX;
+
+  // Y = world Y
+  const y = worldY;
+
+  // Z = Distance B from back edge (minZ = back edge of side panel)
+  const z = sideAabb.min[2] + distanceB;
+
+  // Normal = drill direction INTO side panel face
+  const normal: Vec3Tuple = isLeft ? [-1, 0, 0] : [1, 0, 0];
 
   return {
     position: [x, y, z],

@@ -154,8 +154,8 @@ export function AdminOverrideDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="w-[560px] max-w-[92vw] bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-2xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+      <div className="pointer-events-auto w-[560px] max-w-[92vw] bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

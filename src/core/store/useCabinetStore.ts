@@ -41,6 +41,7 @@ import {
   type DoorPanelConfig,
   type DoorOverlayType,
   type DoorOpeningDirection,
+  type GrainDirection,
 } from '../types/Cabinet';
 import {
   generateDrawerPanels,
@@ -60,6 +61,9 @@ import {
   computePanelTotalThickness,
   computeBackDepthReduction,
 } from '../materials/materialThickness';
+import {
+  CORE_MATERIALS_CATALOG as FULL_CORE_CATALOG,
+} from '../materials/PanelMaterialSystem';
 import {
   recomputeCabinetDerived,
   type CabinetForDerivation,
@@ -139,68 +143,22 @@ const MANUFACTURING_PARAMS = {
 };
 
 // ============================================
-// MATERIAL CATALOGS (Inline - Single Source of Truth)
+// MATERIAL CATALOGS — imported from PanelMaterialSystem.ts (Single Source of Truth)
 // ============================================
 
-// === CORE MATERIALS ===
-const CORE_MATERIALS_CATALOG = {
-  'core-pb-16': {
-    id: 'core-pb-16',
-    name: 'Particle Board 16mm',
-    thickness: 16,
-    costPerSqm: 250,
-    co2PerSqm: 8.2,
-  },
-  'core-pb-18': {
-    id: 'core-pb-18',
-    name: 'Particle Board 18mm',
-    thickness: 18,
-    costPerSqm: 280,
-    co2PerSqm: 9.0,
-  },
-  'core-mdf-6': {
-    id: 'core-mdf-6',
-    name: 'MDF 6mm (Backing)',
-    thickness: 6,
-    costPerSqm: 180,
-    co2PerSqm: 5.0,
-  },
-  'core-mdf-16': {
-    id: 'core-mdf-16',
-    name: 'MDF 16mm',
-    thickness: 16,
-    costPerSqm: 320,
-    co2PerSqm: 9.5,
-  },
-  'core-mdf-18': {
-    id: 'core-mdf-18',
-    name: 'MDF 18mm',
-    thickness: 18,
-    costPerSqm: 360,
-    co2PerSqm: 10.2,
-  },
-  'core-hmr-16': {
-    id: 'core-hmr-16',
-    name: 'HMR Green 16mm',
-    thickness: 16,
-    costPerSqm: 420,
-    co2PerSqm: 9.8,
-  },
-  'core-hmr-18': {
-    id: 'core-hmr-18',
-    name: 'HMR Green 18mm',
-    thickness: 18,
-    costPerSqm: 450,
-    co2PerSqm: 10.2,
-  },
-  'core-ply-18': {
-    id: 'core-ply-18',
-    name: 'Marine Plywood 18mm',
-    thickness: 18,
-    costPerSqm: 850,
-    co2PerSqm: 12.5,
-  },
-};
+// === CORE MATERIALS (mapped from full catalog to store-compatible format) ===
+const CORE_MATERIALS_CATALOG = Object.fromEntries(
+  Object.entries(FULL_CORE_CATALOG).map(([id, mat]) => [
+    id,
+    {
+      id: mat.id,
+      name: mat.name,
+      thickness: mat.thickness,
+      costPerSqm: mat.costPerSqm,
+      co2PerSqm: mat.co2PerSqm,
+    },
+  ])
+);
 
 // === SURFACE MATERIALS ===
 // Texture Size: 1523 x 3070 mm (real-world laminate sheet size)
@@ -1527,6 +1485,35 @@ function withActiveCabinet(
  * - Panel Finish Size does NOT include edge thickness
  * - Panel + Edge Band = Cabinet Dimension
  */
+
+/**
+ * Find the best matching core material ID for a given back panel thickness.
+ * Searches MDF first, then HMR, then any core material with exact thickness match.
+ * Falls back to 'core-mdf-6' if no match found.
+ */
+function findBackPanelCoreId(backThickness: number): string {
+  // Preferred search order: MDF → HMR → Plywood → Particleboard
+  const preferredPrefixes = ['core-mdf-', 'core-hmr-', 'core-ply-', 'core-pb-'];
+
+  for (const prefix of preferredPrefixes) {
+    for (const [id, mat] of Object.entries(CORE_MATERIALS)) {
+      if (id.startsWith(prefix) && mat.thickness === backThickness) {
+        return id;
+      }
+    }
+  }
+
+  // Fallback: any core with matching thickness
+  for (const [id, mat] of Object.entries(CORE_MATERIALS)) {
+    if (mat.thickness === backThickness) {
+      return id;
+    }
+  }
+
+  // Ultimate fallback: core-mdf-6
+  return 'core-mdf-6';
+}
+
 function generatePanels(
   dimensions: CabinetDimensions,
   structure: CabinetStructure,
@@ -1539,11 +1526,15 @@ function generatePanels(
     overrides?: PanelPositionOverrides;
     useCustomPosition?: boolean;
     xPosition?: number; // Custom X position for dividers
-  }>
+  }>,
+  mfgParams?: ManufacturingParams
 ): CabinetPanel[] {
   const panels: CabinetPanel[] = [];
   const { width: W, height: H, depth: D, toeKickHeight: Leg } = dimensions;
-  
+
+  // Use user-configurable manufacturing params if provided, otherwise fallback to const
+  const MFG = mfgParams ?? MANUFACTURING_PARAMS;
+
   // Get material properties
   const core = CORE_MATERIALS[defaultCoreId as keyof typeof CORE_MATERIALS] || CORE_MATERIALS['core-pb-16'];
   const surface = SURFACE_MATERIALS[defaultSurfaceId as keyof typeof SURFACE_MATERIALS] || SURFACE_MATERIALS['surf-mel-white'];
@@ -1552,7 +1543,7 @@ function generatePanels(
   const edgeFromSurfaceMats = SURFACE_MATERIALS[defaultEdgeId as keyof typeof SURFACE_MATERIALS];
   const edge = edgeFromEdgeMats || edgeFromSurfaceMats || EDGE_MATERIALS['edge-pvc-white-10'];
   const ET = edge.thickness; // Edge thickness (from actual selected material)
-  
+
   // 1. MATERIAL PHYSICS: Calculate real thickness (no glue in displayed thickness)
   const T_real = calculateRealThickness(
     core.thickness,
@@ -1561,21 +1552,21 @@ function generatePanels(
     0 // No glue in displayed thickness: e.g., 18 + 0.3 + 0.3 = 18.6mm
   );
   const T = T_real; // Use real thickness for position calculations
-  
+
   // 2. BACK PANEL LOGIC: Calculate BackObstruction
-  // Use structure.backPanelConstruction (per-cabinet setting) instead of global MANUFACTURING_PARAMS
+  // Use structure.backPanelConstruction (per-cabinet setting) with user-configurable MFG params
   const backObstruction = (structure.backPanelConstruction === 'inset')
-    ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness  // Groove: offset + thickness
-    : MANUFACTURING_PARAMS.backThickness;  // Overlay: just thickness
-  
+    ? MFG.backVoid + MFG.backThickness  // Groove: offset + thickness
+    : MFG.backThickness;  // Overlay: just thickness
+
   // 3. ANTI-COLLISION: Calculate internal depth
-  const depthInternal = D - backObstruction - MANUFACTURING_PARAMS.safetyGap;
+  const depthInternal = D - backObstruction - MFG.safetyGap;
   
   // Helper to compute panel manufacturing data
   const computePanel = (finishW: number, finishH: number, edgeTop: number, edgeBottom: number, edgeLeft: number, edgeRight: number) => {
     // 4. FINISH TO CUT transformation
-    const cutW = calculateCutSize(finishW, edgeLeft, edgeRight, MANUFACTURING_PARAMS.preMilling);
-    const cutH = calculateCutSize(finishH, edgeTop, edgeBottom, MANUFACTURING_PARAMS.preMilling);
+    const cutW = calculateCutSize(finishW, edgeLeft, edgeRight, MFG.preMilling);
+    const cutH = calculateCutSize(finishH, edgeTop, edgeBottom, MFG.preMilling);
     const area = (finishW * finishH) / 1000000; // m² (single face)
     const edgeLen = ((edgeTop > 0 ? finishW : 0) + (edgeBottom > 0 ? finishW : 0) +
                      (edgeLeft > 0 ? finishH : 0) + (edgeRight > 0 ? finishH : 0)) / 1000; // meters
@@ -1620,7 +1611,8 @@ function generatePanels(
 
   // Back panel thickness (needed for depth calculation when OVERLAY)
   // TRUTH MODULE: Use calcPanelTotalThickness for consistent thickness calculation
-  const backCoreId = 'core-mdf-6'; // Default back panel core
+  // Find best matching core material for MFG.backThickness
+  const backCoreId = findBackPanelCoreId(MFG.backThickness);
   const backPanelForCalc = {
     coreMaterialId: backCoreId,
     faces: { faceA: defaultSurfaceId, faceB: defaultSurfaceId } // 2-side finish
@@ -1790,8 +1782,8 @@ function generatePanels(
   // ========== BACK PANEL ==========
   if (structure.hasBackPanel) {
     // backTotalT calculated above using Truth Module
-    const groove = MANUFACTURING_PARAMS.grooveDepth;
-    const clearance = MANUFACTURING_PARAMS.clearance;
+    const groove = MFG.grooveDepth;
+    const clearance = MFG.clearance;
 
     // Calculate back panel dimensions based on construction type
     let backW: number;
@@ -1812,8 +1804,11 @@ function generatePanels(
       // INSET (default): Back panel fits into grooves
       backW = (W - 2*T) + (2*groove) - clearance;
       backH = (bodyH - 2*T) + (2*groove) - clearance;
-      // Position: recessed into grooves
-      backZ = -D/2 + structure.backPanelInset;
+      // Position: groove starts at backVoid from back edge, panel center is at backVoid + backTotalT/2
+      // Formula: backVoid = distance from back edge to groove start (20mm default)
+      //          backTotalT = total finished thickness of back panel (core + 2×surface)
+      //          Center of back panel = backVoid + backTotalT/2 from back edge
+      backZ = -D/2 + MFG.backVoid + backTotalT/2;
     }
 
     panels.push({
@@ -1822,7 +1817,7 @@ function generatePanels(
       name: 'Back Panel',
       finishWidth: backW,
       finishHeight: backH,
-      coreMaterialId: 'core-mdf-6',
+      coreMaterialId: backCoreId, // Dynamic: matches MFG.backThickness
       faces: { faceA: defaultSurfaceId, faceB: defaultSurfaceId }, // 2-side finish
       edges: { top: null, bottom: null, left: null, right: null },
       grainDirection: 'HORIZONTAL',
@@ -2110,11 +2105,15 @@ interface CabinetActions {
 
   // Structure actions
   setJointType: (position: 'top' | 'bottom', type: JointType) => void;
+  setShelfConnectorConfig: (shelfIndex: number, config: import('../../core/types/Cabinet').ShelfConnectorConfig) => void;
   setShelfCount: (count: number) => void;
   setDividerCount: (count: number) => void;
   toggleBackPanel: () => void;
   setBackPanelConstruction: (type: 'inset' | 'overlay') => void;
-  
+  setBackPanelConnectorConfig: (config: import('../../core/types/Cabinet').BackPanelConnectorConfig) => void;
+  setTopConnectorConfig: (config: import('../../core/types/Cabinet').StructuralConnectorConfig) => void;
+  setBottomConnectorConfig: (config: import('../../core/types/Cabinet').StructuralConnectorConfig) => void;
+
   // Material actions
   setDefaultCore: (materialId: string) => void;
   setDefaultSurface: (materialId: string) => void;
@@ -2143,6 +2142,7 @@ interface CabinetActions {
   
   // Per-panel material actions
   updatePanelMaterial: (panelId: string, target: 'core' | 'faceA' | 'faceB', materialId: string) => void;
+  updateGrainDirection: (panelId: string, direction: GrainDirection) => void;
   updatePanelEdge: (panelId: string, side: 'top' | 'bottom' | 'left' | 'right', edgeId: string | null) => void;
 
   // Per-panel position actions
@@ -2249,9 +2249,11 @@ export const useCabinetStore = create<CabinetStore>()(
         DEFAULT_STRUCTURE,
         defaultCoreId,
         defaultSurfaceId,
-        defaultEdgeId
+        defaultEdgeId,
+        undefined,
+        get().manufacturingParams
       );
-      
+
       // Get wood thickness from core material for auto-applying Minifix config
       const coreMaterial = CORE_MATERIALS[defaultCoreId as keyof typeof CORE_MATERIALS];
       const woodThickness = coreMaterial?.thickness || 18;
@@ -2315,7 +2317,9 @@ export const useCabinetStore = create<CabinetStore>()(
         structure,
         defaultCoreId,
         defaultSurfaceId,
-        defaultEdgeId
+        defaultEdgeId,
+        undefined,
+        get().manufacturingParams
       );
 
       // Get wood thickness from core material for auto-applying Minifix config
@@ -2666,7 +2670,68 @@ export const useCabinetStore = create<CabinetStore>()(
           } else {
             cabinet.structure.bottomJoint = type;
           }
+          // Clear stale hardware overrides: rotation/flip states are
+          // joint-type-specific and become invalid when switching between
+          // INSET ↔ OVERLAY. Without this, the previous joint type's
+          // rotation overrides (e.g., OVERLAY bolt-up) get restored onto
+          // INSET points via setDrillMap → savedOverrides, causing wrong
+          // hardware orientation.
+          cabinet.hardwareOverrides = {};
         }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
+      });
+      get().recalculate();
+    },
+
+    setShelfConnectorConfig: (shelfIndex, config) => {
+      if (!guardMutation('setShelfConnectorConfig')) return;
+
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          if (!cabinet.structure.shelfConnectors) {
+            cabinet.structure.shelfConnectors = {};
+          }
+          cabinet.structure.shelfConnectors[String(shelfIndex)] = config;
+          // Clear stale hardware overrides when switching connection types
+          // to prevent old rotation data from applying to new connector positions
+          cabinet.hardwareOverrides = {};
+        }, { skipRecompute: true });
+      });
+      get().recalculate();
+    },
+
+    setBackPanelConnectorConfig: (config) => {
+      if (!guardMutation('setBackPanelConnectorConfig')) return;
+
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.backPanelConnectors = config;
+          // Clear stale hardware overrides when changing back panel connector config
+          cabinet.hardwareOverrides = {};
+        }, { skipRecompute: true });
+      });
+      get().recalculate();
+    },
+
+    setTopConnectorConfig: (config) => {
+      if (!guardMutation('setTopConnectorConfig')) return;
+
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.topConnectors = config;
+          cabinet.hardwareOverrides = {};
+        }, { skipRecompute: true });
+      });
+      get().recalculate();
+    },
+
+    setBottomConnectorConfig: (config) => {
+      if (!guardMutation('setBottomConnectorConfig')) return;
+
+      set((state) => {
+        withActiveCabinet(state, (cabinet) => {
+          cabinet.structure.bottomConnectors = config;
+          cabinet.hardwareOverrides = {};
+        }, { skipRecompute: true });
       });
       get().recalculate();
     },
@@ -2718,6 +2783,20 @@ export const useCabinetStore = create<CabinetStore>()(
         // PHASE 3: Use withActiveCabinet for reactive mutations
         withActiveCabinet(state, (cabinet) => {
           cabinet.structure.backPanelConstruction = type;
+          // Auto-enable back panel connectors when switching to overlay
+          if (type === 'overlay' && !cabinet.structure.backPanelConnectors) {
+            cabinet.structure.backPanelConnectors = {
+              enabled: true,
+              left: { enabled: true, includeDowels: true },
+              right: { enabled: true, includeDowels: true },
+            };
+          }
+          // Auto-disable when switching to inset
+          if (type === 'inset' && cabinet.structure.backPanelConnectors) {
+            cabinet.structure.backPanelConnectors.enabled = false;
+          }
+          // Clear stale hardware overrides
+          cabinet.hardwareOverrides = {};
         }, { skipRecompute: true }); // Skip because recalculate() regenerates panels
       });
       get().recalculate();
@@ -2957,6 +3036,24 @@ export const useCabinetStore = create<CabinetStore>()(
       });
     },
     
+    updateGrainDirection: (panelId, direction) => {
+      set((state) => {
+        if (!state.activeCabinetId) return;
+
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+
+        const cabinet = state.cabinets[cabinetIndex];
+        const panel = cabinet.panels.find(p => p.id === panelId);
+        if (!panel) return;
+
+        panel.grainDirection = direction;
+
+        cabinet.updatedAt = Date.now();
+        state.cabinet = cabinet;
+      });
+    },
+
     updatePanelEdge: (panelId, side, edgeId) => {
       set((state) => {
         if (!state.activeCabinetId) return;
@@ -2997,8 +3094,8 @@ export const useCabinetStore = create<CabinetStore>()(
         const edgeR = getEdgeThickness(panel.edges.right);
 
         // Cut size = Finish - edges + pre-milling (only for sides WITH edges)
-        // preMilling is configurable per machine - use MANUFACTURING_PARAMS
-        const preMilling = MANUFACTURING_PARAMS.preMilling;
+        // preMilling is configurable per machine - use state.manufacturingParams
+        const preMilling = state.manufacturingParams.preMilling;
         const preMillWidth = (edgeL > 0 ? preMilling : 0) + (edgeR > 0 ? preMilling : 0);
         const preMillHeight = (edgeT > 0 ? preMilling : 0) + (edgeB > 0 ? preMilling : 0);
         panel.computed.cutWidth = panel.finishWidth - edgeL - edgeR + preMillWidth;
@@ -3046,11 +3143,12 @@ export const useCabinetStore = create<CabinetStore>()(
         const T = 18; // Panel thickness
         const ET = 1; // Edge thickness approximation
 
-        // Back panel calculations (use per-cabinet setting)
+        // Back panel calculations (use per-cabinet setting with user-configurable params)
+        const mfg = state.manufacturingParams;
         const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
-          ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
-          : MANUFACTURING_PARAMS.backThickness;
-        const depthInternal = D - backObstruction - MANUFACTURING_PARAMS.safetyGap;
+          ? mfg.backVoid + mfg.backThickness
+          : mfg.backThickness;
+        const depthInternal = D - backObstruction - mfg.safetyGap;
 
         // Get current overrides
         const frontSetback = panel.positionOverrides.frontSetback ?? MANUFACTURING_PARAMS.shelfSetbackFront;
@@ -3166,11 +3264,12 @@ export const useCabinetStore = create<CabinetStore>()(
         const { depth: D } = cabinet.dimensions;
         const ET = 1; // Edge thickness approximation
 
-        // Back panel calculations (use per-cabinet setting)
+        // Back panel calculations (use per-cabinet setting with user-configurable params)
+        const mfg = state.manufacturingParams;
         const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
-          ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
-          : MANUFACTURING_PARAMS.backThickness;
-        const depthInternal = D - backObstruction - MANUFACTURING_PARAMS.safetyGap;
+          ? mfg.backVoid + mfg.backThickness
+          : mfg.backThickness;
+        const depthInternal = D - backObstruction - mfg.safetyGap;
 
         // Use default setbacks
         const frontSetback = MANUFACTURING_PARAMS.shelfSetbackFront;
@@ -3674,17 +3773,33 @@ export const useCabinetStore = create<CabinetStore>()(
 
     // ========== MANUFACTURING PARAMETERS ==========
     setManufacturingParam: (key, value) => {
+      // Geometry-affecting params that require full panel regeneration
+      const geometryParams: (keyof ManufacturingParams)[] = [
+        'backThickness', 'backVoid', 'grooveDepth', 'clearance', 'safetyGap'
+      ];
+
+      // Keys shared between ManufacturingParams and CabinetManufacturing
+      const sharedKeys: string[] = [
+        'glueThickness', 'preMilling', 'grooveDepth', 'clearance',
+        'shelfSetbackFront', 'backVoid', 'backThickness', 'safetyGap'
+      ];
+
       set((state) => {
         state.manufacturingParams[key] = value;
 
-        // Note: Cut size calculation no longer uses preMilling
-        // Cut Size = Finish Size - Edge Thicknesses (preMilling is machine operation only)
-        // Manufacturing params like preMilling are for reference/display only
-        // PHASE 3: Use withActiveCabinet for reactive mutations
+        // PHASE 3: Sync to cabinet.manufacturing so DXF/CNC views stay in sync
         withActiveCabinet(state, (cabinet) => {
-          // Just mark as updated (no other changes needed)
+          if (sharedKeys.includes(key as string) && cabinet.manufacturing) {
+            (cabinet.manufacturing as unknown as Record<string, unknown>)[key as string] = value;
+          }
         }, { skipRecompute: true });
       });
+
+      // Trigger full recalculate for geometry-affecting params
+      // This regenerates all panels with the updated manufacturing params
+      if (geometryParams.includes(key)) {
+        get().recalculate();
+      }
     },
 
     resetManufacturingParams: () => {
@@ -4157,7 +4272,8 @@ export const useCabinetStore = create<CabinetStore>()(
           cabinet.materials.defaultCore,
           cabinet.materials.defaultSurface,
           cabinet.materials.defaultEdge,
-          existingOverrides
+          existingOverrides,
+          state.manufacturingParams
         );
 
         // Recalculate partial panel dimensions based on new compartment boundaries
@@ -4273,9 +4389,10 @@ export const useCabinetStore = create<CabinetStore>()(
             0
           );
 
+          const mfg = state.manufacturingParams;
           const backObstruction = (cabinet.structure.backPanelConstruction === 'inset')
-            ? MANUFACTURING_PARAMS.backVoid + MANUFACTURING_PARAMS.backThickness
-            : MANUFACTURING_PARAMS.backThickness;
+            ? mfg.backVoid + mfg.backThickness
+            : mfg.backThickness;
 
           const materialProps: DrawerMaterialProps = {
             edgeThickness: edgeMaterial.thickness,

@@ -11,6 +11,25 @@ export default defineConfig({
   },
   test: {
     setupFiles: ['./vitest.setup.ts'],
+    // Exclude Playwright e2e specs (they import @playwright/test and must run via
+    // `playwright test`, not vitest). Keep the standard vitest default excludes.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
+      'e2e/**',
+      // Foreign project snapshots / file dumps that live inside this folder but
+      // are not part of the MONOLITH workspace — their tests must not run here.
+      'cp06-clean-cowork_dev-complete_20260616/**',
+      'Furniture_Hardware_Specs/**',
+      'north-star-foundation/**',
+      'daph-second-brain/**',
+      '_daph_extract/**',
+      'minifix-skill-pack/**',
+      'furniture-hardware-vault/**',
+    ],
   },
   server: {
     proxy: {

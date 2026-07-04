@@ -26,10 +26,10 @@ import { useCabinetStore } from './useCabinetStore';
 // ============================================
 
 /** Default rotation settings by corner type (persisted to localStorage) */
-export type RotationDefaults = Record<CornerType, RotationOverride>;
+export type RotationDefaults = Partial<Record<CornerType, RotationOverride>>;
 
 /** Default position settings by corner type (persisted to localStorage) */
-export type PositionDefaults = Record<CornerType, PositionOverride>;
+export type PositionDefaults = Partial<Record<CornerType, PositionOverride>>;
 
 /** Context menu state for hardware */
 export interface HardwareContextMenuState {
@@ -92,6 +92,10 @@ interface DrillMapState {
   // Version counter for triggering drill map regeneration
   // Incremented when regenerateDrillMap() is called
   drillMapVersion: number;
+
+  // Per-group connector count overrides
+  // Keys: "main" (TOP/BOTTOM corners), "shelf_0"/"shelf_1"/... (shelves), "back" (back panel)
+  connectorCountOverrides: Record<string, number>;
 }
 
 interface DrillMapActions {
@@ -163,6 +167,11 @@ interface DrillMapActions {
 
   // Trigger drill map regeneration (clears map and bumps version)
   regenerateDrillMap: () => void;
+
+  // Per-group connector count overrides (Add/Del buttons in ConnectorList)
+  setConnectorCountOverride: (group: string, count: number) => void;
+  clearConnectorCountOverride: (group: string) => void;
+  getConnectorCountOverride: (group: string) => number | undefined;
 }
 
 // ============================================
@@ -280,6 +289,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       positionDefaults: DEFAULT_POSITION_DEFAULTS,
       cabinetBoundsWorld: FALLBACK_BOUNDS,
       drillMapVersion: 0,
+      connectorCountOverrides: {},
 
       // Actions
       setDrillMap: (drillMap) => {
@@ -428,7 +438,9 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       // Rotation overrides
       setPointRotationOverride: (pointId, rotation) => {
         const state = get();
-        if (!state.drillMap) return;
+        if (!state.drillMap) {
+          return;
+        }
 
         // Find and update the point
         const updatedPanels = state.drillMap.panels.map(panel => ({
@@ -506,7 +518,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           })(),
           // Update context menu to show default rotation after clearing override
           hardwareContextMenu: state.hardwareContextMenu.pointId === pointId
-            ? { ...state.hardwareContextMenu, currentRotation: defaultRotation }
+            ? { ...state.hardwareContextMenu, currentRotation: defaultRotation ?? null }
             : state.hardwareContextMenu,
         });
 
@@ -541,6 +553,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       applyRotationToPoint: (pointId, action) => {
         const state = get();
         const hasDrillMap = !!state.drillMap;
+        const menuRot = state.hardwareContextMenu.currentRotation;
 
         // ── CASE-2 lightweight path: drillMap null ──
         // Allow preview overrides (especially flipX) even before drillMap is generated.
@@ -576,7 +589,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             if (point) {
               // Use context menu cornerType if available, else point.cornerType, else fallback
               const cornerType = state.hardwareContextMenu.cornerType || point.cornerType || 'TOP_RIGHT';
-              currentRotation = point.rotationOverride || state.rotationDefaults[cornerType];
+              currentRotation = point.rotationOverride || state.rotationDefaults[cornerType] || null;
               break;
             }
           }
@@ -770,7 +783,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       getRotationForPoint: (pointId, cornerType, calculatedRotation) => {
         const state = get();
 
-        // Priority 1: Point-specific override
+        // Priority 1: Point-specific override (set via HardwareContextMenu on individual connectors)
         if (state.drillMap) {
           for (const panel of state.drillMap.panels) {
             const point = panel.points.find(p => p.id === pointId);
@@ -780,20 +793,12 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           }
         }
 
-        // Priority 2: Corner default (user-set)
-        const cornerDefault = state.rotationDefaults[cornerType];
-        const systemDefault = DEFAULT_ROTATION_DEFAULTS[cornerType];
-
-        // Check if user has customized this corner
-        if (
-          cornerDefault.rotX !== systemDefault.rotX ||
-          cornerDefault.rotY !== systemDefault.rotY ||
-          cornerDefault.rotZ !== systemDefault.rotZ
-        ) {
-          return cornerDefault;
-        }
-
-        // Priority 3: Calculated rotation (from algorithm)
+        // Priority 2: Calculated rotation (from bolt orientation pipeline)
+        // The calculated rotation is dynamically computed from getDrillingAxis +
+        // computeBoltQuatWithTwist, which correctly handles both INSET and OVERLAY.
+        // Corner-level stored defaults (rotationDefaults) are skipped because they
+        // don't account for joint type changes and cause stale-state bugs when
+        // switching between INSET ↔ OVERLAY.
         return calculatedRotation;
       },
 
@@ -831,7 +836,26 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         set({
           drillMap: null,
           drillMapVersion: currentVersion + 1,
+          flipXStateByPointId: {},  // Clear legacy V-Flip state too
         });
+      },
+
+      setConnectorCountOverride: (group, count) => {
+        const prev = get().connectorCountOverrides;
+        const next = { ...prev, [group]: Math.max(1, count) };
+        // Don't clear drillMap — keep old data visible while regenerating
+        // Cabinet3D watches connectorCountOverrides and regenerates immediately
+        set({ connectorCountOverrides: next });
+      },
+
+      clearConnectorCountOverride: (group) => {
+        const prev = get().connectorCountOverrides;
+        const { [group]: _, ...rest } = prev;
+        set({ connectorCountOverrides: rest });
+      },
+
+      getConnectorCountOverride: (group) => {
+        return get().connectorCountOverrides[group];
       },
 
       getClampRangesForPoint: (baseWorldPos) => {
@@ -940,7 +964,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
           },
           // Update context menu to show default position after clearing override
           hardwareContextMenu: state.hardwareContextMenu.pointId === pointId
-            ? { ...state.hardwareContextMenu, currentPosition: defaultPosition }
+            ? { ...state.hardwareContextMenu, currentPosition: defaultPosition ?? null }
             : state.hardwareContextMenu,
         });
 
@@ -1057,14 +1081,17 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         }
 
         // Priority 2: Corner default (user-set)
-        const cornerDefault = state.positionDefaults[cornerType];
+        // Note: positionDefaults only has cabinet corners (TOP_LEFT, etc.)
+        // Shelf corners (SHELF_N_LEFT/RIGHT) won't have entries, so fallback to zero
+        const cornerDefault = state.positionDefaults[cornerType as keyof typeof state.positionDefaults];
         const zeroPosition = { dx: 0, dy: 0, dz: 0 };
 
         // Check if user has customized this corner
         if (
-          cornerDefault.dx !== 0 ||
+          cornerDefault &&
+          (cornerDefault.dx !== 0 ||
           cornerDefault.dy !== 0 ||
-          cornerDefault.dz !== 0
+          cornerDefault.dz !== 0)
         ) {
           return cornerDefault;
         }
@@ -1125,6 +1152,7 @@ export const selectFlipXStateByPointId = (state: DrillMapState) => state.flipXSt
 export const selectPositionDefaults = (state: DrillMapState) => state.positionDefaults;
 export const selectCabinetBounds = (state: DrillMapState) => state.cabinetBoundsWorld;
 export const selectDrillMapVersion = (state: DrillMapState) => state.drillMapVersion;
+export const selectConnectorCountOverrides = (state: DrillMapState) => state.connectorCountOverrides;
 
 // ============================================
 // SELECTOR HOOKS

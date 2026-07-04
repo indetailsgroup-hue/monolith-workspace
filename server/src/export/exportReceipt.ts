@@ -78,8 +78,12 @@ export function buildExportReceipt(input: BuildReceiptInput): ExportReceipt {
     signature: { alg: 'none' as const },
   };
 
-  // Compute receiptId from canonical representation
-  const canonical = stableStringify(baseReceipt);
+  // Compute receiptId from canonical representation.
+  // EXCLUDE the signature field: the signature is applied AFTER the receiptId
+  // (see signReceipt), so it must not be part of the canonical id content —
+  // otherwise a signed receipt's id never matches on verification.
+  const { signature: _sigForId, ...idBase } = baseReceipt;
+  const canonical = stableStringify(idBase);
   const receiptId = sha256Hex(canonical);
 
   // Return complete receipt
@@ -101,8 +105,10 @@ export function serializeReceipt(receipt: ExportReceipt): string {
  * Verify a receipt's receiptId matches its canonical content.
  */
 export function verifyReceiptId(receipt: ExportReceipt): boolean {
-  // Reconstruct base without receiptId
-  const { receiptId, ...base } = receipt;
+  // Reconstruct base without receiptId AND without signature.
+  // The signature is applied after the receiptId is computed (see signReceipt),
+  // so it is excluded from the canonical id content on both build and verify.
+  const { receiptId, signature: _sigForId, ...base } = receipt;
 
   // Compute expected receiptId
   const canonical = stableStringify(base);

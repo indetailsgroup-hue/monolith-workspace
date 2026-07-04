@@ -53,6 +53,7 @@ import { MeasureLayer } from './components/tools/MeasureLayer';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { useDrillMapStore } from './core/store/useDrillMapStore';
 import { useViewStore } from './core/store/useViewStore';
+import { useSelectionStore } from './core/store/useSelectionStore';
 import { usePreloadTextures } from './core/materials/useMaterialStore';
 import { readTheme, writeTheme, type AppTheme } from './core/persistence/appPrefs';
 
@@ -416,7 +417,9 @@ export function App() {
   // Use Zustand store for view state (syncs with Cabinet3D dimensions filtering)
   const currentView = useViewStore((s) => s.currentView);
   const setCurrentView = useViewStore((s) => s.setView);
-  const [showPanelModal, setShowPanelModal] = useState(false);
+  const showPanelModal = useSelectionStore((s) => s.showPanelConfigModal);
+  const openPanelConfigModal = useSelectionStore((s) => s.openPanelConfigModal);
+  const closePanelConfigModal = useSelectionStore((s) => s.closePanelConfigModal);
   const [showDimensions, setShowDimensions] = useState(false);
   const [theme, setTheme] = useState<AppTheme>(() => getPreferredTheme());
 
@@ -609,14 +612,14 @@ export function App() {
 
       // Press 'E' to edit selected panel
       if (e.key === 'e' && selectedPanelId) {
-        setShowPanelModal(true);
+        openPanelConfigModal();
         return;
       }
 
       // Press 'Escape' to close modal or deselect panel/cabinet
       if (e.key === 'Escape') {
         if (showPanelModal) {
-          setShowPanelModal(false);
+          closePanelConfigModal();
         } else if (selectedPanelId) {
           useCabinetStore.getState().selectPanel(null);
         } else if (activeCabinetId) {
@@ -685,7 +688,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPanelId, activeCabinetId, navigate, saveProject, showPanelModal, removeCabinet, duplicateCabinet]);
+  }, [selectedPanelId, activeCabinetId, navigate, saveProject, showPanelModal, openPanelConfigModal, closePanelConfigModal, removeCabinet, duplicateCabinet]);
 
   const handleExport = async () => {
     console.log('[Export] Starting factory packet export...');
@@ -815,7 +818,7 @@ export function App() {
       <GizmoHUDContainer />
 
       {/* Viewport */}
-      <Viewport currentView={currentView} showDimensions={showDimensions} hideTooltip={showPanelModal} onDoubleClickPanel={() => setShowPanelModal(true)} />
+      <Viewport currentView={currentView} showDimensions={showDimensions} hideTooltip={showPanelModal} onDoubleClickPanel={() => openPanelConfigModal()} />
     </div>
   );
 
@@ -842,7 +845,7 @@ export function App() {
         <PanelConfigModal
           panelId={selectedPanelId}
           isOpen={showPanelModal}
-          onClose={() => setShowPanelModal(false)}
+          onClose={() => closePanelConfigModal()}
         />
       </Suspense>
 
@@ -851,8 +854,8 @@ export function App() {
 
       {/* T018: CAD Drill Map View Overlay - Lazy loaded */}
       {showCADView && drillMap && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden max-w-[95vw] max-h-[95vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto relative bg-white rounded-xl shadow-2xl overflow-hidden max-w-[95vw] max-h-[95vh]">
             {/* Close button */}
             <button
               onClick={toggleShowCADView}

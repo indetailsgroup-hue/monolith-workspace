@@ -9,7 +9,7 @@
 
 import { useRef, useMemo, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import * as THREE from 'three';
-import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping, Group, EdgesGeometry, LineSegments, Texture } from 'three';
+import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping, Group, EdgesGeometry, LineSegments, Texture, DoubleSide, FrontSide } from 'three';
 import { ThreeEvent, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 // NO ALIAS IMPORTS - Use relative paths only (North Star Rule #3)
@@ -37,6 +37,7 @@ import type { Vec3 } from '../../core/types/SnapTypes';
 import { calculateSnap, type SnapTarget } from '../../core/utils/snapSystem';
 import { DrillMapOverlay } from './DrillMapOverlay';
 import { CSGDrillOverlay } from './CSGDrillOverlay';
+import { useCSGPanelGeometry } from './hooks/useCSGPanelGeometry';
 import { DrillGuideLayer } from './DrillGuideLayer';
 import { CADDrillIndicators } from './CADDrillIndicators';
 import { useDrillMapStore, getCornerType } from '../../core/store/useDrillMapStore';
@@ -62,6 +63,7 @@ import {
   type Corner,
 } from '../../core/manufacturing/hardware/boltOrientationUtils';
 import { HardwareSmartDimensions } from './HardwareSmartDimensions';
+import { useConnectorVisibilityStore } from '../ui/ConnectorList';
 import { useMaterialStore } from '../../core/materials/useMaterialStore';
 import { useObjectUrlTexture } from '../../core/materials/useObjectUrlTexture';
 
@@ -155,8 +157,8 @@ function HardwareHitSphere({ position, onRightClick, onClick }: HardwareHitSpher
         onRightClick(e as unknown as ThreeEvent<PointerEvent>);
       }}
     >
-      {/* Radius 70mm to ensure coverage of scaled hardware (cam + bolt) after rotation */}
-      <sphereGeometry args={[70, 16, 16]} />
+      {/* Radius 12mm — slightly smaller than Cam housing (Ø15mm) to avoid overlap */}
+      <sphereGeometry args={[12, 16, 16]} />
       {/* Invisible in production - set opacity > 0 for debugging */}
       <meshBasicMaterial
         transparent
@@ -185,6 +187,9 @@ interface Hardware3DOverlayProps {
   bottomJoint?: 'INSET' | 'OVERLAY';  // Joint style for bottom panel
   showDimensions?: boolean;  // Show CAD-style dimension lines
   currentView?: 'Perspective' | 'Front' | 'Left' | 'Top' | 'Install' | 'Factory' | 'CNC';  // Controls which dimensions to show
+  toeKickHeight?: number;  // Toe kick height for back panel Y-axis dimension calculation
+  /** Set of panel IDs that are hidden — drill points from these panels will be filtered out */
+  hiddenPanelIds?: Set<string>;
 }
 
 /**
@@ -209,7 +214,7 @@ function Hardware3DOverlay(props: Hardware3DOverlayProps) {
   return <Hardware3DOverlayInner {...props} drillMap={props.drillMap} />;
 }
 
-function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth = 600, cabinetHeight = 720, cabinetDepth = 560, topJoint = 'INSET', bottomJoint = 'INSET', showDimensions = false, currentView = 'Perspective' }: Hardware3DOverlayProps & { drillMap: DrillMap }) {
+function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth = 600, cabinetHeight = 720, cabinetDepth = 560, topJoint = 'INSET', bottomJoint = 'INSET', showDimensions = false, currentView = 'Perspective', toeKickHeight = 0, hiddenPanelIds }: Hardware3DOverlayProps & { drillMap: DrillMap }) {
   // No-op handler since we don't need editing in cabinet view
   const handleUpdateConfig = useCallback(() => {}, []);
 
@@ -230,11 +235,24 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
   // Find all BOLT, CAM_LOCK, and DOWEL points from drill map
   // v4.1: Drill map generation (selectConnectorPositions) now limits positions
   // per HÃ¤fele CAD spec, so no hardcoded position filter needed here.
+  //
+  // ConnectorList visibility: filter out hardware whose base pairKeyV2 is hidden.
+  // Dowel pairKeyV2 has suffix (e.g. "-dowel-side"), strip to match base key.
+  const hiddenHardware = useConnectorVisibilityStore((s) => s.hiddenHardware);
+  const isHwHidden = useCallback((pk?: string) => {
+    if (!pk || hiddenHardware.size === 0) return false;
+    const base = pk.replace(/-dowel-(brun-)?(side|horiz|shelf|back)$/, '');
+    return hiddenHardware.has(base);
+  }, [hiddenHardware]);
+
   const boltPoints: DrillMapPoint[] = [];
   const camPoints: DrillMapPoint[] = [];
   const dowelPoints: DrillMapPoint[] = [];
   drillMap.panels.forEach(panel => {
     panel.points.forEach(point => {
+      if (isHwHidden(point.pairKeyV2)) return; // Skip hidden connectors
+      // Panel visibility filter: skip drill points from hidden panels
+      if (hiddenPanelIds && hiddenPanelIds.size > 0 && hiddenPanelIds.has(point.panelId)) return;
       if (point.purpose === 'BOLT') {
         boltPoints.push(point);
       } else if (point.purpose === 'CAM_LOCK' || point.purpose === 'MINIFIX') {
@@ -266,10 +284,18 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
     return boltPoints.map((boltPoint) => {
       const [x, y] = boltPoint.position;
       const cornerType: CornerType = boltPoint.cornerType || getCornerType([x, y, 0], cabinetWidth, cabinetHeight);
+      const isBackCorner = cornerType === 'BACK_LEFT' || cornerType === 'BACK_RIGHT';
       const isTopPanel = cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT';
 
-      const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
-      const mountType: MountType = jointMode;
+      let mountType: MountType;
+      if (isBackCorner) {
+        mountType = 'OVERLAY';
+      } else if (typeof cornerType === 'string' && cornerType.startsWith('SHELF_')) {
+        mountType = 'INSET';
+      } else {
+        const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
+        mountType = jointMode;
+      }
       const boltDirWorld = getDrillingAxis(cornerType as Corner, mountType);
       const boltPanelNormalWorld = selectBoltPanelNormalWorld(cornerType as Corner);
 
@@ -350,24 +376,22 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         const cornerType: CornerType = boltPoint.cornerType || getCornerType([x, y, z], cabinetWidth, cabinetHeight);
 
         // Derive isLeftSide and isTopPanel from cornerType (avoids coordinate system issues)
-        const isLeftSide = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT';
+        const isBackCorner = cornerType === 'BACK_LEFT' || cornerType === 'BACK_RIGHT';
+        const isLeftSide = cornerType === 'TOP_LEFT' || cornerType === 'BOTTOM_LEFT' || cornerType === 'BACK_LEFT';
         const isTopPanel = cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT';
 
-        // âœ… UNIFIED BOLT ORIENTATION (v2.1)
-        // Uses single source of truth: drilling axis + panel normal
-        //
-        // KEY INSIGHT:
-        // - boltDir = drilling axis ONLY (NOT boltâ†’cam vector!)
-        // - boltPanelNormal = SIDE panel normal (Â±X), NOT TOP/BOTTOM (Â±Y)
-        // - seamDir = cross(boltPanelNormal, boltDir) â†’ joint edge direction
-        //
-        // DRILLING AXES (depends on joint type):
-        // - INSET: X-axis drilling into FACE of side panel (Â±X)
-        // - OVERLAY: Y-axis drilling into EDGE of side panel (Â±Y)
-
         // Determine mount type from joint mode
-        const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
-        const mountType: MountType = jointMode;
+        // Back panel overlay connectors always use OVERLAY mode
+        // Shelf corners use INSET mode (bolt on side panel face)
+        let mountType: MountType;
+        if (isBackCorner) {
+          mountType = 'OVERLAY'; // Back panel overlay: bolt on back panel face
+        } else if (typeof cornerType === 'string' && cornerType.startsWith('SHELF_')) {
+          mountType = 'INSET';   // Shelf: bolt on side panel face
+        } else {
+          const jointMode: JointMode = isTopPanel ? topJoint : bottomJoint;
+          mountType = jointMode;
+        }
 
         // âœ… FIX: Use getDrillingAxis with jointMode to get correct drilling direction
         // INSET: horizontal X-axis drilling into face
@@ -579,15 +603,17 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         // We render from the SIDE point and position to span the joint.
         .filter((dp) => dp.pairId?.endsWith('-dowel-side'))
         .map((dp) => {
-        // Calculate rotation from drill normal â†’ Dowel3D Y-axis
+        // Calculate rotation from drill normal â†' Dowel3D Y-axis
         const rotation = quatFromYTo(dp.normal);
 
-        // Dowel spans joint: 12mm into SIDE panel (along normal) + 18mm into HORIZ panel (opposite).
-        // Drill point is at SIDE inner face, normal points INTO side panel.
-        // Center offset = (sideFaceDepth - horizEdgeDepth) / 2 = (12 - 18) / 2 = -3mm along normal
-        const SIDE_FACE_DEPTH = 12;   // mm - HÃ¤fele spec FACE_BORE
-        const HORIZ_EDGE_DEPTH = 18;  // mm - HÃ¤fele spec EDGE_BORE
-        const centerOffset = (SIDE_FACE_DEPTH - HORIZ_EDGE_DEPTH) / 2;
+        // Dowel spans joint between SIDE panel and HORIZ panel.
+        // The drill point depth tells us how far this bore goes INTO the side panel.
+        // The complementary depth = totalLength - thisDepth goes into the other panel.
+        // Center offset = (thisDepth - complementaryDepth) / 2 = thisDepth - totalLength/2
+        //   INSET  side (face bore  12mm): offset = 12 - 15 = -3mm (shift toward horiz panel)
+        //   OVERLAY side (edge bore 18mm): offset = 18 - 15 = +3mm (shift into side panel)
+        const totalLength = config.dowelLength || 30;
+        const centerOffset = dp.depth - totalLength / 2;
         const pos: [number, number, number] = [
           dp.position[0] + dp.normal[0] * centerOffset,
           dp.position[1] + dp.normal[1] * centerOffset,
@@ -610,6 +636,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
       <HardwareSmartDimensions
         boltPoints={boltPoints}
         camPoints={camPoints}
+        dowelPoints={dowelPoints}
         cabinetWidth={cabinetWidth}
         cabinetHeight={cabinetHeight}
         cabinetDepth={cabinetDepth}
@@ -619,6 +646,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         currentView={currentView}
         distanceB={config.drillingDistanceB}
         boltRotations={boltRotations}
+        toeKickHeight={toeKickHeight}
       />
     </group>
   );
@@ -740,11 +768,13 @@ interface SingleCabinetProps {
   xRayMode?: boolean;
   /** Render mode from Indetails Smart patterns */
   renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
-  /** Hide panels for CSG holes rendering (CSGDrillOverlay will render them instead) */
-  hideForCSGHoles?: boolean;
+  /** Drill points grouped by panel ID for CSG Boolean mode */
+  drillPointsByPanelId?: Map<string, import('../../core/manufacturing/drillMap/types').DrillMapPoint[]>;
+  /** Whether CSG Boolean drill holes mode is active */
+  useCSGHoles?: boolean;
 }
 
-function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showDimensions, hideTooltip, onDoubleClickPanel, onSelect, xRayMode = false, renderMode = 'NORMAL', hideForCSGHoles = false }: SingleCabinetProps) {
+function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showDimensions, hideTooltip, onDoubleClickPanel, onSelect, xRayMode = false, renderMode = 'NORMAL', drillPointsByPanelId, useCSGHoles = false }: SingleCabinetProps) {
   const groupRef = useRef<Group>(null);
   const hasInitializedPosition = useRef(false);
   const selectedPanelId = useCabinetStore((s) => s.selectedPanelId);
@@ -1014,26 +1044,25 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
       )}
       */}
 
-      {/* Render panels with shared texture */}
-      {/* Skip panel rendering if CSG holes mode is active - CSGDrillOverlay renders them */}
-      {!hideForCSGHoles && (
-        <PanelsWithTexture
-          panels={cabinetPanels}
-          baseColor={baseColor}
-          cabinetDefaultSurface={surfaceMaterialId}
-          edgeColor={edgeColor}
-          edgeThickness={edgeThickness}
-          cabinetDefaultEdge={edgeMaterialId}
-          edgeMaterials={edgeMaterials}
-          selectedPanelId={isActive ? selectedPanelId : null}
-          onSelectPanel={isActive ? selectPanel : () => {}}
-          hideTooltip={hideTooltip}
-          onDoubleClickPanel={isActive ? onDoubleClickPanel : undefined}
-          isParentCabinetActive={isActive}
-          xRayMode={xRayMode}
-          renderMode={renderMode}
-        />
-      )}
+      {/* Render panels with shared texture (CSG Boolean mode uses same panels with subtracted geometry) */}
+      <PanelsWithTexture
+        panels={cabinetPanels}
+        baseColor={baseColor}
+        cabinetDefaultSurface={surfaceMaterialId}
+        edgeColor={edgeColor}
+        edgeThickness={edgeThickness}
+        cabinetDefaultEdge={edgeMaterialId}
+        edgeMaterials={edgeMaterials}
+        selectedPanelId={isActive ? selectedPanelId : null}
+        onSelectPanel={isActive ? selectPanel : () => {}}
+        hideTooltip={hideTooltip}
+        onDoubleClickPanel={isActive ? onDoubleClickPanel : undefined}
+        isParentCabinetActive={isActive}
+        xRayMode={xRayMode}
+        renderMode={renderMode}
+        drillPointsByPanelId={drillPointsByPanelId}
+        useCSGHoles={useCSGHoles}
+      />
 
       {/* Glue Face Highlights - inside group for correct positioning */}
       {/* Use shouldShowGlueFaces (not isGlueMode) to let GlueFaceHighlights handle delayed unmount */}
@@ -1084,6 +1113,16 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   // This prevents re-renders when OTHER cabinets change
   const activeCabinetFromArray = useActiveCabinetFromArray();
 
+  // Hidden panel IDs for drill overlay filtering (panels with visible=false)
+  const hiddenPanelIdsForDrill = useMemo(() => {
+    if (!activeCabinetFromArray?.panels) return undefined;
+    const hidden = new Set<string>();
+    for (const p of activeCabinetFromArray.panels) {
+      if (!p.visible) hidden.add(p.id);
+    }
+    return hidden.size > 0 ? hidden : undefined;
+  }, [activeCabinetFromArray?.panels]);
+
   const activeTool = useToolStore((s) => s.activeTool);
   const glueMode = useGlueStore((s) => s.mode);
   const draggingCabinetId = useToolStore((s) => s.draggingCabinetId);
@@ -1095,6 +1134,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   const ghostCabinetIds = useViewStore((s) => s.ghostCabinetIds);
   const previewCabinetIds = useViewStore((s) => s.previewCabinetIds);
   const currentView = useViewStore((s) => s.currentView);
+  const useCSGHoles = useViewStore((s) => s.useCSGHoles);
 
   // Drill map visualization - FIXED: Use correct selector names from useDrillMapStore
   const drillMapVisible = useDrillMapStore((s) => s.showDrillMap);
@@ -1121,18 +1161,24 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     };
   }, [drillMapDataRaw]);
 
-  // ── V-FLIP DRILL POSITION TRANSFORM ──────────────────────────────
-  // When V-Flip is active for a connector, the 3D hardware model rotates
-  // 180° around the bolt axis.  The drill indicators (CADDrillIndicators +
-  // CSGDrillOverlay) must follow — otherwise the circles/labels stay at
-  // the un-flipped position while the 3D cam moves away.
+  // ── V-FLIP + H-FLIP DRILL POSITION TRANSFORM ────────────────────
+  // When V-Flip or H-Flip is active for a connector, the 3D hardware
+  // model rotates 180° around an axis.  The drill indicators
+  // (CADDrillIndicators + CSGDrillOverlay) must follow — otherwise the
+  // circles/labels stay at the un-flipped position while the 3D cam
+  // moves away.
   //
-  // Algorithm:
-  //   1. Group drill points by pairId → find the BOLT point per connector
-  //   2. Resolve V-Flip state via resolvePreviewState (same as Hardware3DOverlay)
-  //   3. For each NON-BOLT point in a flipped connector, rotate its position
-  //      180° around the bolt axis through the bolt position (Rodrigues 180°):
-  //        v = P − C,  P′ = C + 2·(v·n̂)·n̂ − v
+  // V-Flip: 180° around bolt shaft direction (boltDirection)
+  //   → cam swaps from one side to the other along the bolt axis
+  //
+  // H-Flip: 180° around global Y axis (0, 1, 0)
+  //   → Adding π to Euler rotY produces rotation around Rx(α)·Ŷ.
+  //     For all standard bolt orientations (INSET: ±X, OVERLAY: ±Y),
+  //     this reduces to (0, ±1, 0). Since it's 180°, sign is irrelevant.
+  //     Effect: reflects X and Z through bolt position, keeps Y unchanged.
+  //
+  // Both transforms use Rodrigues 180°:
+  //   v = P − C,  P′ = C + 2·(v·n̂)·n̂ − v
   // ─────────────────────────────────────────────────────────────────
   const drillMapFlipped = useMemo(() => {
     if (!drillMapData) return drillMapData;
@@ -1148,20 +1194,52 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     }
     if (boltByPairId.size === 0) return drillMapData;
 
-    // 2. Check if ANY connector is flipped (quick bail-out)
+    // 2. Check if ANY connector is V-Flipped or H-Flipped (quick bail-out)
     let anyFlipped = false;
     for (const [, bolt] of boltByPairId) {
       const ps = resolvePreviewState(bolt.pairKeyV2, bolt.pairId, hardwareOverrides, null);
-      const flipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
-      if (flipped) { anyFlipped = true; break; }
+      const vFlipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
+      const hFlipped = ps?.flipHorizontal ?? false;
+      if (vFlipped || hFlipped) { anyFlipped = true; break; }
     }
     if (!anyFlipped) return drillMapData;
+
+    // Helper: Rodrigues 180° reflection around axis n̂ through center C
+    // Formula: P' = C + 2·(v·n̂)·n̂ − v  where v = P − C
+    const rodrigues180 = (
+      pos: [number, number, number],
+      C: [number, number, number],
+      nx: number, ny: number, nz: number,
+    ): [number, number, number] => {
+      const vx = pos[0] - C[0];
+      const vy = pos[1] - C[1];
+      const vz = pos[2] - C[2];
+      const dot = vx * nx + vy * ny + vz * nz;
+      return [
+        C[0] + 2 * dot * nx - vx,
+        C[1] + 2 * dot * ny - vy,
+        C[2] + 2 * dot * nz - vz,
+      ];
+    };
+
+    // Helper: Rodrigues 180° on a direction vector (no translation)
+    const rodrigues180Dir = (
+      dir: [number, number, number],
+      nx: number, ny: number, nz: number,
+    ): [number, number, number] => {
+      const dot = dir[0] * nx + dir[1] * ny + dir[2] * nz;
+      return [
+        2 * dot * nx - dir[0],
+        2 * dot * ny - dir[1],
+        2 * dot * nz - dir[2],
+      ];
+    };
 
     // 3. Build a flipped copy
     const newPanels = drillMapData.panels.map(panel => ({
       ...panel,
       points: panel.points.map(point => {
-        // Bolts sit on the rotation axis → position unchanged
+        // Bolts sit on the rotation center → position unchanged for both flips
         if (point.purpose === 'BOLT') return point;
         // Points without pairId can't be associated with a connector
         if (!point.pairId) return point;
@@ -1169,43 +1247,40 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
         const bolt = boltByPairId.get(point.pairId);
         if (!bolt || !bolt.boltDirection) return point;
 
-        // Resolve flip for THIS connector
+        // Resolve flip states for THIS connector
         const ps = resolvePreviewState(bolt.pairKeyV2, bolt.pairId, hardwareOverrides, null);
-        const isFlipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
-        if (!isFlipped) return point;
+        const isVFlipped = ps?.flipVertical ?? flipXStateByPointId[bolt.id] ?? false;
+        const isHFlipped = ps?.flipHorizontal ?? false;
+        if (!isVFlipped && !isHFlipped) return point;
 
-        // Rodrigues 180° rotation: P' = C + 2·(v·n̂)·n̂ − v
         const C = bolt.position;
-        const d = bolt.boltDirection;
-        const len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
-        if (len < 1e-6) return point;
-        const nx = d[0] / len, ny = d[1] / len, nz = d[2] / len;
+        let pos = point.position as [number, number, number];
+        let nrm = point.normal as [number, number, number];
 
-        const vx = point.position[0] - C[0];
-        const vy = point.position[1] - C[1];
-        const vz = point.position[2] - C[2];
+        // V-Flip: Rodrigues 180° around bolt shaft direction
+        if (isVFlipped) {
+          const d = bolt.boltDirection;
+          const len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+          if (len > 1e-6) {
+            const nx = d[0] / len, ny = d[1] / len, nz = d[2] / len;
+            pos = rodrigues180(pos, C, nx, ny, nz);
+            nrm = rodrigues180Dir(nrm, nx, ny, nz);
+          }
+        }
 
-        const dot = vx * nx + vy * ny + vz * nz;
-
-        const newPos: [number, number, number] = [
-          C[0] + 2 * dot * nx - vx,
-          C[1] + 2 * dot * ny - vy,
-          C[2] + 2 * dot * nz - vz,
-        ];
-
-        // Also flip the drill normal (180° around same axis)
-        const nvx = point.normal[0], nvy = point.normal[1], nvz = point.normal[2];
-        const ndot = nvx * nx + nvy * ny + nvz * nz;
-        const newNormal: [number, number, number] = [
-          2 * ndot * nx - nvx,
-          2 * ndot * ny - nvy,
-          2 * ndot * nz - nvz,
-        ];
+        // H-Flip: Rodrigues 180° around global Y axis through bolt position
+        // Euler rotY += π ≡ rotation by π around Rx(α)·Ŷ.
+        // For standard bolt dirs (±X, ±Y), this is always (0, ±1, 0).
+        // Effect: reflects X and Z through bolt center, Y unchanged.
+        if (isHFlipped) {
+          pos = rodrigues180(pos, C, 0, 1, 0);
+          nrm = rodrigues180Dir(nrm, 0, 1, 0);
+        }
 
         return {
           ...point,
-          position: newPos,
-          normal: newNormal,
+          position: pos,
+          normal: nrm,
         };
       }),
     }));
@@ -1226,7 +1301,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   const drillPurposeFilter = useMemo<DrillPurpose[] | undefined>(() => {
     if (!drillMapPurpose || drillMapPurpose === 'ALL') return undefined;
     if (drillMapPurpose === 'CAM') return ['CAM_LOCK', 'MINIFIX'];
-    if (drillMapPurpose === 'BOLT') return ['BOLT', 'BOLT_ENTRY'];
+    if (drillMapPurpose === 'BOLT') return ['BOLT_ENTRY'];
     if (drillMapPurpose === '\u00D85' || drillMapPurpose === 'Ã˜5') return ['BOLT_THREAD'];
     return [drillMapPurpose as DrillPurpose];
   }, [drillMapPurpose]);
@@ -1235,6 +1310,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   const setDrillMap = useDrillMapStore((s) => s.setDrillMap);
   const setCabinetBounds = useDrillMapStore((s) => s.setCabinetBounds);
   const drillMapVersion = useDrillMapStore((s) => s.drillMapVersion);
+  const connectorCountOverrides = useDrillMapStore((s) => s.connectorCountOverrides);
 
   // Force regenerate drill map on mount to apply any config fixes
   const regenerateDrillMap = useDrillMapStore((s) => s.regenerateDrillMap);
@@ -1258,8 +1334,8 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
       return;
     }
 
-    // Only generate if X-Ray or 3D Hardware view is enabled
-    if (!(xRayMode || show3DHardware)) return;
+    // Only generate if X-Ray, 3D Hardware view, or CSG Boolean mode is enabled
+    if (!(xRayMode || show3DHardware || useCSGHoles)) return;
 
     // Synchronous update - no debounce, no RAF
     // Get minifixConfig from cabinet's hardware settings (if set via HardwareLibrary)
@@ -1271,18 +1347,41 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
       : null; // null → generateMinifixDrillMap will use DEFAULT_MINIFIX_CONFIG (which has includeDowel: true)
     // Pass config as second arg, drillingParams as third arg
     // Let selectConnectorPositions() determine count per HÃ¤fele CAD spec:
-    // Depth < 400mm â†’ 2 corners, Depth >= 400mm â†’ 2 corners + 1 middle
+    // Depth < 400mm â†' 2 corners, Depth >= 400mm â†' 2 corners + 1 middle
     const drillMap = generateMinifixDrillMap(
       activeCabinetFromArray,
       minifixConfig || {},
-      drillingParams
+      drillingParams,
+      Object.keys(connectorCountOverrides).length > 0
+        ? { connectorCountOverrides }
+        : undefined
     );
     setDrillMap(drillMap);
 
     // Compute bounds from drill map (uses same coordinate system as hardware positions)
     const bounds = computeBoundsFromDrillMap(drillMap, 50);
     setCabinetBounds(bounds);
-  }, [xRayMode, show3DHardware, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion]);
+  }, [xRayMode, show3DHardware, useCSGHoles, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion, connectorCountOverrides]);
+
+  // Build drill points grouped by panelId for CSG Boolean / X-Ray mode
+  // X-Ray mode implies CSG holes so bore geometry is visible on transparent panels
+  const drillPointsByPanelId = useMemo(() => {
+    if (!drillMapFlipped || !(useCSGHoles || xRayMode)) return undefined;
+    const map = new Map<string, import('../../core/manufacturing/drillMap/types').DrillMapPoint[]>();
+    for (const panel of drillMapFlipped.panels) {
+      if (panel.points?.length) {
+        map.set(panel.panelId, panel.points);
+      }
+    }
+    // Warn if any drill map panel IDs don't match cabinet panel IDs
+    if (map.size > 0 && activeCabinetFromArray?.panels) {
+      for (const [panelId] of map) {
+        const found = activeCabinetFromArray.panels.some((p: any) => p.id === panelId);
+        if (!found) console.warn(`[CSG] ⚠️ DrillMap panelId "${panelId}" NOT FOUND in cabinet panels!`);
+      }
+    }
+    return map.size > 0 ? map : undefined;
+  }, [drillMapFlipped, useCSGHoles, xRayMode]);
 
   // Check if glue mode is active at parent level
   const isGlueModeActive = activeTool === 'glue' && glueMode !== 'idle';
@@ -1319,10 +1418,9 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           previewCabinetIds.includes(cab.id) ? 'PREVIEW' :
           'NORMAL';
 
-        // CSG Holes mode - DISABLED: CSGDrillOverlay only renders holes, not panels
-        // Setting this to true would hide panels with nothing to replace them
-        // Instead, we keep panels visible and render drill holes as overlay
-        const useCSGHoles = false;
+        // CSG Boolean drill holes mode — read from useViewStore (reactive subscription above)
+        // When true, Panel3DComponent uses three-bvh-csg to subtract actual drill geometry
+        // useCSGHoles comes from the reactive subscription in the parent component
 
         return (
           <SingleCabinet
@@ -1338,7 +1436,8 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
             onSelect={() => selectCabinet(cab.id)}
             xRayMode={xRayMode}
             renderMode={cabinetRenderMode}
-            hideForCSGHoles={useCSGHoles}
+            drillPointsByPanelId={drillPointsByPanelId}
+            useCSGHoles={useCSGHoles || xRayMode}
           />
         );
       })}
@@ -1376,6 +1475,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           filterPurpose={drillPurposeFilter}
           selectedId={selectedPoint?.id ?? null}
           onPointClick={(point) => setSelectedPoint(point)}
+          hiddenPanelIds={hiddenPanelIdsForDrill}
         />
       </group>
 
@@ -1397,15 +1497,19 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
           bottomJoint={activeCabinetFromArray?.structure?.bottomJoint || cabinet?.structure?.bottomJoint || 'INSET'}
           showDimensions={showHardwareDimensions}
           currentView={currentView}
+          toeKickHeight={activeCabinetFromArray?.dimensions?.toeKickHeight || cabinet?.dimensions?.toeKickHeight || 0}
+          hiddenPanelIds={hiddenPanelIdsForDrill}
         />
 
-        {/* CSG Drill Holes Overlay - shows drill holes as cylinders in X-Ray mode */}
+        {/* CSG Drill Holes Overlay - shows drill holes as cylinders */}
+        {/* Visible in X-Ray mode OR Boolean CSG mode — opaque cylinders for hole visibility */}
         <CSGDrillOverlay
           drillMap={drillMapFlipped}
-          visible={xRayMode && showDrillMap}
+          visible={(xRayMode || useCSGHoles) && showDrillMap}
           colorByPurpose={true}
-          opacity={0.8}
+          opacity={1.0}
           filterPurpose={drillPurposeFilter}
+          hiddenPanelIds={hiddenPanelIdsForDrill}
         />
 
         {/* Red Drill Guide Lines - shows drill guide lines at joints */}
@@ -1476,9 +1580,13 @@ interface PanelsWithTextureProps {
   xRayMode?: boolean;
   /** Render mode from Indetails Smart patterns */
   renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
+  /** Drill points grouped by panel ID for CSG Boolean mode */
+  drillPointsByPanelId?: Map<string, import('../../core/manufacturing/drillMap/types').DrillMapPoint[]>;
+  /** Whether CSG Boolean drill holes mode is active */
+  useCSGHoles?: boolean;
 }
 
-function PanelsWithTexture({ panels, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, selectedPanelId, onSelectPanel, hideTooltip, onDoubleClickPanel, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL' }: PanelsWithTextureProps) {
+function PanelsWithTexture({ panels, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, selectedPanelId, onSelectPanel, hideTooltip, onDoubleClickPanel, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL', drillPointsByPanelId, useCSGHoles = false }: PanelsWithTextureProps) {
   // Guard against undefined panels
   if (!panels || panels.length === 0) return null;
 
@@ -1501,6 +1609,8 @@ function PanelsWithTexture({ panels, baseColor, cabinetDefaultSurface, edgeColor
           isParentCabinetActive={isParentCabinetActive}
           xRayMode={xRayMode}
           renderMode={renderMode}
+          drillPoints={drillPointsByPanelId?.get(panel.id)}
+          useCSG={useCSGHoles}
         />
       ))}
     </>
@@ -1514,7 +1624,7 @@ function PanelsWithTexture({ panels, baseColor, cabinetDefaultSurface, edgeColor
 // X-Ray mode colors - white/cyan wireframe for professional CAD look
 const XRAY_WIRE_COLOR = '#66ccff';  // Cyan wireframe
 const XRAY_FILL_COLOR = '#1a2a3a';  // Dark fill for contrast
-const XRAY_OPACITY = 0.35;          // Semi-transparent
+const XRAY_OPACITY = 0.15;          // Low opacity — line-based drill overlay draws on top
 
 // Ghost mode colors - semi-transparent dimmed (Indetails Smart pattern)
 const GHOST_COLOR = '#d6d3d1';      // Light gray ghost
@@ -1599,9 +1709,13 @@ interface Panel3DProps {
   xRayMode?: boolean;
   /** Render mode from Indetails Smart patterns */
   renderMode?: 'NORMAL' | 'GHOST' | 'PREVIEW' | 'XRAY';
+  /** Drill points for CSG Boolean subtraction */
+  drillPoints?: import('../../core/manufacturing/drillMap/types').DrillMapPoint[];
+  /** Whether CSG Boolean mode is active */
+  useCSG?: boolean;
 }
 
-function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, isSelected, onSelect, hideTooltip, onDoubleClick, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL' }: Panel3DProps) {
+function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, edgeThickness, cabinetDefaultEdge, edgeMaterials, isSelected, onSelect, hideTooltip, onDoubleClick, isParentCabinetActive = true, xRayMode = false, renderMode = 'NORMAL', drillPoints, useCSG = false }: Panel3DProps) {
   const meshRef = useRef<Mesh>(null);
   const edgesRef = useRef<LineSegments>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -1874,19 +1988,43 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
     }
   };
   
-  // Show texture only when not selected/hovered
-  // Note: BACK panel now shows texture (has 2-side surface finish)
-  const showTexture = texture && !isSelected && !hovered;
+  // Show texture always when available (including selected/hovered)
+  // Selection/hover feedback is via emissive overlay, not texture removal
+  // This allows grain direction changes to be visible in real-time
+  const showTexture = !!texture;
 
-  // Create geometry
-  const geometry = useMemo(() => {
+  // CSG Boolean geometry (drill holes subtracted from panel)
+  // DIAGNOSTIC: Enable CSG for ALL panels when useCSG is true (even without drill points)
+  // Panels without drill points will get a diagnostic center hole to verify CSG rendering works
+  const csgEnabled = useCSG; // was: useCSG && (drillPoints?.length ?? 0) > 0
+  const csgGeometry = useCSGPanelGeometry({
+    sizeX,
+    sizeY,
+    sizeZ,
+    drillPoints: drillPoints ?? [],
+    panelPosition: panel.position as [number, number, number],
+    panelRotation: panel.rotation as [number, number, number],
+    enabled: csgEnabled,
+  });
+
+  // Debug: Log CSG status for each panel
+  // Create geometry — use CSG result if available, otherwise plain box
+  const boxGeometry = useMemo(() => {
     return new BoxGeometry(sizeX, sizeY, sizeZ);
   }, [sizeX, sizeY, sizeZ]);
 
-  // Create edges geometry for X-Ray mode (no diagonals, only box edges)
+  const geometry = csgGeometry ?? boxGeometry;
+
+  // When CSG geometry is active, use DoubleSide so drill hole interior walls are visible
+  const materialSide = csgGeometry ? DoubleSide : FrontSide;
+
+  // Create edges geometry for X-Ray wireframe
+  // Always use BoxGeometry for edges — clean panel outlines without CSG triangulation noise.
+  // CSG drill holes are visible through the solid geometry (DoubleSide material shows
+  // hole interior walls). No need to show CSG triangulation in wireframe.
   const edgesGeometry = useMemo(() => {
-    return new EdgesGeometry(geometry);
-  }, [geometry]);
+    return new EdgesGeometry(boxGeometry);
+  }, [boxGeometry]);
   
   // T016: Create per-panel texture with unique repeat settings
   // FIX: Use new Texture() with shared source instead of clone() which doesn't work reliably in r3f
@@ -1912,7 +2050,18 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
     // Calculate repeat based on panel dimensions (World-Scale UV)
     const repeatX = panel.finishWidth / TEXTURE_WIDTH_MM;
     const repeatY = panel.finishHeight / TEXTURE_HEIGHT_MM;
-    panelTex.repeat.set(repeatX, repeatY);
+
+    // Grain Direction: rotate texture 90° for HORIZONTAL grain
+    // Default texture has grain running along V (vertical in UV space)
+    if (panel.grainDirection === 'HORIZONTAL') {
+      panelTex.rotation = Math.PI / 2;
+      panelTex.center.set(0.5, 0.5);
+      panelTex.repeat.set(repeatX, repeatY);
+    } else {
+      panelTex.rotation = 0;
+      panelTex.center.set(0, 0);
+      panelTex.repeat.set(repeatX, repeatY);
+    }
 
     // Critical: Mark for GPU upload
     panelTex.needsUpdate = true;
@@ -1923,7 +2072,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
     return () => {
       panelTex.dispose();
     };
-  }, [texture, showTexture, panel.finishWidth, panel.finishHeight]);
+  }, [texture, showTexture, panel.finishWidth, panel.finishHeight, panel.grainDirection]);
 
   // Force material update when panelTexture changes (r3f texture binding fix)
   useEffect(() => {
@@ -1964,12 +2113,13 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
         geometry={geometry}
       >
         {effectiveMode === 'XRAY' ? (
-          // X-Ray mode: transparent dark fill
+          // X-Ray mode: transparent dark fill — drill holes visible via CSGDrillOverlay
           <meshBasicMaterial
             color={XRAY_FILL_COLOR}
             transparent
             opacity={XRAY_OPACITY}
             depthWrite={false}
+            side={materialSide}
           />
         ) : effectiveMode === 'GHOST' ? (
           // Ghost mode: semi-transparent, dimmed (Indetails Smart pattern)
@@ -1980,6 +2130,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
             depthWrite={false}
             roughness={1}
             metalness={0}
+            side={materialSide}
           />
         ) : effectiveMode === 'PREVIEW' ? (
           // Preview mode: highlighted with glow (Indetails Smart pattern)
@@ -1991,6 +2142,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
             metalness={0.2}
             emissive={PREVIEW_COLOR}
             emissiveIntensity={0.4}
+            side={materialSide}
           />
         ) : (
           // Normal mode: textured/colored material
@@ -2002,6 +2154,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
             metalness={0.1}
             emissive={isSelected ? '#2244aa' : hovered ? '#223366' : '#000000'}
             emissiveIntensity={isSelected ? 0.3 : hovered ? 0.15 : 0}
+            side={materialSide}
           />
         )}
       </mesh>
@@ -2043,7 +2196,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
           <lineBasicMaterial
             color={hovered ? '#aaddff' : XRAY_WIRE_COLOR}
             transparent
-            opacity={hovered ? 0.9 : 0.6}
+            opacity={hovered ? 0.7 : 0.4}
             depthTest={true}
             depthWrite={false}
           />
@@ -2062,7 +2215,8 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
       )}
 
       {/* C) Edge Band Strips - per-edge texture via EdgeBandStripMesh */}
-      {effectiveMode === 'NORMAL' && edgeBandStrips.map((strip, idx) => (
+      {/* Skip edge banding when CSG is active — the separate box meshes cover drill holes */}
+      {effectiveMode === 'NORMAL' && !csgGeometry && edgeBandStrips.map((strip, idx) => (
         <EdgeBandStripMesh
           key={`edge-${panel.id}-${strip.edge}-${idx}`}
           panel={panel}
@@ -2255,7 +2409,7 @@ function DimensionLine({ points, color }: { points: [number, number, number][]; 
 }
 
 // Compartment dimension labels - Per-column compartment heights
-// Shows the gap between: Bottomâ†’Shelf1, Shelf1â†’Shelf2, Shelf2â†’Top
+// Shows the gap between: Bottomâ†'Shelf1, Shelf1â†'Shelf2, Shelf2â†'Top
 // Each column shows its own shelves (columns may have different shelf counts)
 function CompartmentDimensionLabels() {
   // Subscribe directly to cabinet from store for reactive updates

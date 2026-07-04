@@ -32,6 +32,9 @@ interface SelectionState {
 
   /** T015: Current index in overlap cycle */
   overlapIndex: number;
+
+  /** Panel Configuration modal open state */
+  showPanelConfigModal: boolean;
 }
 
 interface SelectionActions {
@@ -64,6 +67,12 @@ interface SelectionActions {
 
   /** T015: Clear overlap state */
   clearOverlap: () => void;
+
+  /** Open Panel Configuration modal */
+  openPanelConfigModal: () => void;
+
+  /** Close Panel Configuration modal */
+  closePanelConfigModal: () => void;
 }
 
 // ============================================================================
@@ -76,6 +85,7 @@ export const useSelectionStore = create<SelectionState & SelectionActions>((set,
   hoveredPanelId: null,
   overlapCandidates: [],
   overlapIndex: 0,
+  showPanelConfigModal: false,
 
   setKind: (kind) => {
     set({ kind });
@@ -141,6 +151,14 @@ export const useSelectionStore = create<SelectionState & SelectionActions>((set,
   // T015: Clear overlap state
   clearOverlap: () => {
     set({ overlapCandidates: [], overlapIndex: 0 });
+  },
+
+  // Panel Configuration modal
+  openPanelConfigModal: () => {
+    set({ showPanelConfigModal: true });
+  },
+  closePanelConfigModal: () => {
+    set({ showPanelConfigModal: false });
   },
 }));
 

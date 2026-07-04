@@ -83,7 +83,7 @@ export interface HardwareCtx {
 export interface CamSpec {
   // System 32 settings
   system32Pitch: number;           // 32mm
-  system32StartOffset: number;     // Typically 37mm from front
+  system32StartOffset: number;     // Typically 50mm from front
 
   // Shelf pin settings
   shelfPinDia: number;             // 5mm
@@ -129,7 +129,7 @@ export interface CamSpec {
 export const DEFAULT_CAM_SPEC: CamSpec = {
   // System 32
   system32Pitch: 32,
-  system32StartOffset: 37,
+  system32StartOffset: 50,
 
   // Shelf pins
   shelfPinDia: 5,
@@ -230,7 +230,7 @@ export function hasTag(tags: string[], val: string): boolean {
 /**
  * Snap a position to System 32 grid
  */
-export function snapToSystem32(pos: number, startOffset: number = 37): number {
+export function snapToSystem32(pos: number, startOffset: number = 50): number {
   const pitch = 32;
   const relativePos = pos - startOffset;
   const gridIndex = Math.round(relativePos / pitch);

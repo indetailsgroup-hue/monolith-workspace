@@ -127,15 +127,13 @@ export function CommandPalette() {
 
   return (
     <>
-      {/* Backdrop - black/50 with blur */}
+      {/* Backdrop — pointer-events-none so 3D scene stays interactive */}
       <div
-        onClick={handleClose}
         className="command-palette-backdrop"
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
+          pointerEvents: 'none',
           zIndex: 9998,
           animation: 'fadeIn 120ms ease-out',
         }}

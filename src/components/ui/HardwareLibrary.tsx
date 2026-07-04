@@ -696,16 +696,12 @@ function FullscreenModal({ isOpen, onClose, title, children }: FullscreenModalPr
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop - fully transparent to see 3D scene */}
-      <div
-        className="absolute inset-0"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+      {/* No backdrop — 3D scene remains interactive behind */}
 
       {/* Modal Content - Draggable */}
       <div
-        className="relative w-[95vw] h-[90vh] max-w-[1600px] bg-[#1a2535] rounded-xl shadow-2xl border border-[#3a4a5a] overflow-hidden flex flex-col"
+        className="pointer-events-auto relative w-[95vw] h-[90vh] max-w-[1600px] bg-[#1a2535] rounded-xl shadow-2xl border border-[#3a4a5a] overflow-hidden flex flex-col"
         style={{
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? 'grabbing' : 'default',

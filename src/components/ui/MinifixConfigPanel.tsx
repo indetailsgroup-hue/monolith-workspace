@@ -167,11 +167,11 @@ export const CAM_SPECS_BY_WOOD_THICKNESS: Record<number, { drillingDepth: number
 // CNC DRILLING SPEC LABELS (from Connector OS catalog)
 // These differ from assembly physical dimensions:
 //   Assembly: Ø10 sleeve, 14.25mm sleeve length, 17.5mm bore
-//   CNC Spec: Ø7.5 bolt bore, 24mm bore depth (per Häfele S200 B=24)
+//   CNC Spec: Ø10 bolt bore (same as bolt shaft), 24mm bore depth (per Häfele S200 B=24)
 // ============================================
 
-/** CNC bolt bore diameter — Ø7.5mm sleeve per Häfele S200 catalog */
-const CNC_BOLT_BORE_DIA = 7.5;
+/** CNC bolt bore diameter — Ø10mm (same diameter as bolt shaft) */
+const CNC_BOLT_BORE_DIA = 10;
 
 /** CNC bolt bore depth — 24mm (Distance B) per Häfele S200 B=24 variant */
 const CNC_BOLT_BORE_DEPTH = 24;

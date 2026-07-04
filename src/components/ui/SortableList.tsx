@@ -180,6 +180,7 @@ interface PanelSortableListProps {
   onDeletePanel?: (id: string, role: string) => void
   onExpandPanel?: (id: string) => void
   expandedId?: string | null
+  onDoubleClickPanel?: (id: string) => void
 }
 
 export function PanelSortableList({
@@ -187,6 +188,7 @@ export function PanelSortableList({
   selectedId,
   onSelectPanel,
   onDeletePanel,
+  onDoubleClickPanel,
 }: PanelSortableListProps) {
   const [items, setItems] = React.useState(panels)
 
@@ -210,6 +212,7 @@ export function PanelSortableList({
           isSelected={selectedId === panel.id}
           onSelect={() => onSelectPanel(panel.id)}
           onDelete={onDeletePanel ? () => onDeletePanel(panel.id, panel.role) : undefined}
+          onDoubleClick={onDoubleClickPanel ? () => onDoubleClickPanel(panel.id) : undefined}
         />
       ))}
     </Reorder.Group>
@@ -222,13 +225,15 @@ function PanelReorderItem({
   index,
   isSelected,
   onSelect,
-  onDelete
+  onDelete,
+  onDoubleClick
 }: {
   panel: PanelItem
   index: number
   isSelected: boolean
   onSelect: () => void
   onDelete?: () => void
+  onDoubleClick?: () => void
 }) {
   const dragControls = useDragControls()
 
@@ -250,6 +255,7 @@ function PanelReorderItem({
         delay: index * 0.02
       }}
       onClick={onSelect}
+      onDoubleClick={onDoubleClick}
       className={cn(
         "relative rounded border cursor-pointer transition-all duration-200 group",
         isSelected

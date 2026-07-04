@@ -77,7 +77,7 @@ export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
       offsetPrimaryMm: 24, // Distance B
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37, // System 32 first hole
+      offsetSecondaryMm: 50, // System 32 first hole
       axisSecondary: 'V',
     },
     {
@@ -92,7 +92,7 @@ export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
       offsetPrimaryMm: 0,
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37,
+      offsetSecondaryMm: 50,
       axisSecondary: 'V',
     },
   ],
@@ -115,7 +115,7 @@ export const IF_TARGET_J10: ConnectorSpec = {
       offsetPrimaryMm: 9.5,
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37,
+      offsetSecondaryMm: 50,
       axisSecondary: 'V',
       transform: { type: 'OFFSET_DELTA', deltaMm: -25 }, // B = A - 25
     },
@@ -131,7 +131,7 @@ export const IF_TARGET_J10: ConnectorSpec = {
       offsetPrimaryMm: 0,
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37,
+      offsetSecondaryMm: 50,
       axisSecondary: 'V',
     },
   ],
@@ -163,7 +163,7 @@ export const HAFELE_WOOD_DOWEL_8x30: ConnectorSpec = {
       offsetPrimaryMm: 0,
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37, // System 32 first hole
+      offsetSecondaryMm: 50, // System 32 first hole
       axisSecondary: 'V',
     },
     {
@@ -178,7 +178,7 @@ export const HAFELE_WOOD_DOWEL_8x30: ConnectorSpec = {
       offsetPrimaryMm: 0,
       axisPrimary: 'U',
       refEdgeSecondary: 'FRONT_EDGE',
-      offsetSecondaryMm: 37,
+      offsetSecondaryMm: 50,
       axisSecondary: 'V',
     },
   ],

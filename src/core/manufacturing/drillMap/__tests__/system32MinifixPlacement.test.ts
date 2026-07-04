@@ -2,7 +2,7 @@
  * Unit tests for System 32 Minifix Placement Algorithm
  *
  * Verifies:
- * 1. System 32 positions calculated correctly (37, 69, 101, ...)
+ * 1. System 32 positions calculated correctly (50, 82, 114, ...)
  * 2. Dimension B is properly separated from pitch
  * 3. Bolt and housing X positions are aligned
  * 4. Dowel positions are on 32mm pitch from bolt
@@ -20,15 +20,15 @@ import {
 } from '../system32MinifixPlacement';
 
 describe('System 32 Position Calculation', () => {
-    it('calculates first position at setback (37mm)', () => {
+    it('calculates first position at setback (50mm)', () => {
         const pos = calculateSystem32Position(0);
-        expect(pos).toBe(37);
+        expect(pos).toBe(50);
     });
 
     it('calculates subsequent positions at 32mm pitch', () => {
-        expect(calculateSystem32Position(1)).toBe(69);   // 37 + 32
-        expect(calculateSystem32Position(2)).toBe(101);  // 37 + 64
-        expect(calculateSystem32Position(3)).toBe(133);  // 37 + 96
+        expect(calculateSystem32Position(1)).toBe(82);   // 50 + 32
+        expect(calculateSystem32Position(2)).toBe(114);  // 50 + 64
+        expect(calculateSystem32Position(3)).toBe(146);  // 50 + 96
     });
 
     it('respects custom setback and pitch', () => {
@@ -43,8 +43,8 @@ describe('All System 32 Positions', () => {
     it('generates positions for 500mm depth panel', () => {
         const positions = calculateAllSystem32Positions(500);
 
-        expect(positions[0]).toBe(37);      // First position
-        expect(positions[1]).toBe(69);      // 37 + 32
+        expect(positions[0]).toBe(50);      // First position
+        expect(positions[1]).toBe(82);      // 50 + 32
         expect(positions[positions.length - 1]).toBeLessThanOrEqual(490);  // Within margin
 
         // Verify all positions are on 32mm grid
@@ -77,8 +77,8 @@ describe('Minifix Joint Positions', () => {
             // Housing Y should be exactly Dimension B (24mm)
             expect(positions.horizontalPanel.housing.y).toBe(24);
 
-            // Bolt Z should be System 32 first position (37mm)
-            expect(positions.sidePanel.bolt.z).toBe(37);
+            // Bolt Z should be System 32 first position (50mm)
+            expect(positions.sidePanel.bolt.z).toBe(50);
 
             // These are DIFFERENT values - that's the key!
             expect(positions.horizontalPanel.housing.y).not.toBe(positions.sidePanel.bolt.z);
@@ -205,7 +205,7 @@ describe('Validation', () => {
         const positions = calculateMinifixJointPositions(720, 500, 'TOP', 0);
 
         // Corrupt the dowel Z position
-        positions.sidePanel.dowel.z = 50;  // Not on 32mm grid from bolt
+        positions.sidePanel.dowel.z = 55;  // Not on 32mm grid from bolt
 
         const result = validateMinifixJoint(positions);
 

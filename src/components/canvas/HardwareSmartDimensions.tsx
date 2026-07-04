@@ -50,6 +50,7 @@ export interface BoltRotation {
 export interface HardwareSmartDimensionsProps {
   boltPoints: DrillMapPoint[];
   camPoints?: DrillMapPoint[];
+  dowelPoints?: DrillMapPoint[];
   cabinetWidth: number;
   cabinetHeight: number;
   cabinetDepth: number;
@@ -65,6 +66,7 @@ export interface HardwareSmartDimensionsProps {
   };
   currentView?: 'Perspective' | 'Front' | 'Left' | 'Top' | 'Install' | 'Factory' | 'CNC';
   boltRotations?: BoltRotation[];
+  toeKickHeight?: number;
 }
 
 interface DimensionData {
@@ -152,7 +154,8 @@ function TechnicalDimLine({ start, end, offsetVector, color, label, isDatumStart
 interface GroupedDimensionRendererProps {
   groupBolts: DrillMapPoint[];
   groupCams: DrillMapPoint[];
-  bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number };
+  groupDowels: DrillMapPoint[];
+  bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number; backPanelMinY: number; backPanelMaxY: number };
   jointType: MountType;
   showTypes: { frontDistance: boolean; sideDistance: boolean; verticalDistance: boolean };
   distanceB: number;
@@ -163,6 +166,7 @@ interface GroupedDimensionRendererProps {
 function GroupedDimensionRenderer({
   groupBolts,
   groupCams,
+  groupDowels,
   bounds,
   jointType,
   showTypes,
@@ -242,42 +246,195 @@ function GroupedDimensionRenderer({
     }
 
     // --------------------------------------------------------------------------
-    // PART B: Front Distance (System 32)
+    // PART B: Front Distance — CAD-style point-to-point dimensions
+    // Shows individual spacing between ALL hardware points (bolts + dowels)
+    // sorted by Z position. Pattern: 50, 32, 199, 32, 32, 199, 32, 50
     // --------------------------------------------------------------------------
     if (showTypes.frontDistance) {
-      const sortedByZ = [...groupBolts].sort((a, b) => b.position[2] - a.position[2]);
-      const frontMostBolt = sortedByZ[0];
-      const panelFrontZ = frontMostBolt.position[2] + 37;
+      const firstCorner = groupBolts[0]?.cornerType ?? '';
+      const isStandardCorner = firstCorner.startsWith('TOP_') || firstCorner.startsWith('BOTTOM_');
+      const isBackCorner = firstCorner.startsWith('BACK_');
 
-      sortedByZ.forEach((bolt, index) => {
-        const currentPos = new THREE.Vector3(bolt.position[0], bolt.position[1], bolt.position[2]);
+      // --------------------------------------------------------------------------
+      // PART C: BACK panel connector dimensions (Y-axis)
+      // Shows point-to-point spacing along HEIGHT for BACK_LEFT/BACK_RIGHT groups.
+      // --------------------------------------------------------------------------
+      if (isBackCorner) {
+        // CAD Reference Pattern (Y-axis, top → bottom):
+        // 50, 32, 377, 32, 32, 377, 32, 50
+        // Same structure as Z-axis: edge → bolt → dowel → gap → dowel → bolt → edge
+        const isLeftBack = firstCorner === 'BACK_LEFT';
+
+        const cornerTypes = new Set(groupBolts.map(b => b.cornerType));
+        const relevantDowels = groupDowels.filter(d =>
+          cornerTypes.has(d.cornerType)
+        );
+
+        const allPoints = [...groupBolts, ...relevantDowels];
+        if (allPoints.length === 0) return dims;
+
+        // Sort by Y descending (top → bottom)
+        const sortedByY = allPoints.sort((a, b) => b.position[1] - a.position[1]);
+
+        // Deduplicate by Y (within 0.5mm)
+        const uniqueByY: typeof sortedByY = [];
+        for (const pt of sortedByY) {
+          if (uniqueByY.length === 0 || Math.abs(pt.position[1] - uniqueByY[uniqueByY.length - 1].position[1]) > 0.5) {
+            uniqueByY.push(pt);
+          }
+        }
+        if (uniqueByY.length === 0) return dims;
+
+        const refBolt = groupBolts.sort((a, b) => b.position[1] - a.position[1])[0];
+        if (!refBolt) return dims;
+        const refX = refBolt.position[0];
+        const refZ = refBolt.position[2];
+
+        // Offset direction: pull toward BACK (-Z) so dimensions are visible in Left view
+        const pullSideVector = new THREE.Vector3(0, 0, -1);
+        const offsetMag = CAD_THEME.baseHeight + CAD_THEME.layerStep;
+
+        // Back panel Y extent: panels sit on toe kick, so use backPanel bounds
+        const panelTopY = bounds.backPanelMaxY;
+        const panelBottomY = bounds.backPanelMinY;
+
+
+
+        // Top edge → first point
+        const topEdgeDist = Math.abs(panelTopY - uniqueByY[0].position[1]);
+        if (topEdgeDist > 0.5) {
+          dims.push({
+            start: new THREE.Vector3(refX, panelTopY, refZ),
+            end: new THREE.Vector3(refX, uniqueByY[0].position[1], refZ),
+            color: CAD_THEME.colorZ,  // Green - same as TOP/BOTTOM Z-axis
+            offsetVector: pullSideVector.clone().multiplyScalar(offsetMag),
+            label: Math.round(topEdgeDist).toString(),
+            isDatumStart: true,
+          });
+        }
+
+        // Point-to-point dimensions between consecutive Y levels
+        for (let i = 1; i < uniqueByY.length; i++) {
+          const prevY = uniqueByY[i - 1].position[1];
+          const currY = uniqueByY[i].position[1];
+          const dist = Math.abs(prevY - currY);
+          if (dist > 0.5) {
+            dims.push({
+              start: new THREE.Vector3(refX, prevY, refZ),
+              end: new THREE.Vector3(refX, currY, refZ),
+              color: CAD_THEME.colorZ,
+              offsetVector: pullSideVector.clone().multiplyScalar(offsetMag),
+              label: Math.round(dist).toString(),
+              isDatumStart: false,
+            });
+          }
+        }
+
+        // Last point → bottom edge
+        const lastPtY = uniqueByY[uniqueByY.length - 1];
+        const bottomDist = Math.abs(lastPtY.position[1] - panelBottomY);
+        if (bottomDist > 0.5) {
+          dims.push({
+            start: new THREE.Vector3(refX, lastPtY.position[1], refZ),
+            end: new THREE.Vector3(refX, panelBottomY, refZ),
+            color: CAD_THEME.colorZ,
+            offsetVector: pullSideVector.clone().multiplyScalar(offsetMag),
+            label: Math.round(bottomDist).toString(),
+            isDatumStart: false,
+          });
+        }
+
+        return dims;
+      }
+
+      // Skip SHELF groups — their bolts are at different Y/Z levels
+      if (!isStandardCorner) return dims;
+
+      // Collect all hardware Z positions (bolts + side-panel dowels only)
+      // Side-panel dowels share the same Y as bolts (drilled into side panel face)
+      // Filter dowels that belong to this corner group by matching cornerType
+      const cornerTypes = new Set(groupBolts.map(b => b.cornerType));
+      const relevantDowels = groupDowels.filter(d =>
+        cornerTypes.has(d.cornerType) && d.connectedPanelRole !== 'SHELF'
+      );
+
+      // Combine bolts + side-panel dowels, deduplicate by Z position (within 0.5mm tolerance)
+      const allPoints = [...groupBolts, ...relevantDowels];
+      if (allPoints.length === 0) return dims;
+
+      // Sort by Z descending (front → back, since front = maxZ)
+      const sortedByZ = allPoints.sort((a, b) => b.position[2] - a.position[2]);
+
+      // Deduplicate points that are at the same Z (within 0.5mm)
+      const uniqueByZ: typeof sortedByZ = [];
+      for (const pt of sortedByZ) {
+        if (uniqueByZ.length === 0 || Math.abs(pt.position[2] - uniqueByZ[uniqueByZ.length - 1].position[2]) > 0.5) {
+          uniqueByZ.push(pt);
+        }
+      }
+
+      // Reference Y and X from the frontmost bolt for consistent dimension line placement
+      const refBolt = groupBolts.sort((a, b) => b.position[2] - a.position[2])[0];
+      if (!refBolt) return dims;
+      const refX = refBolt.position[0];
+      const refY = refBolt.position[1];
+
+      // Panel front edge = actual cabinet front boundary (from bounds)
+      const panelFrontZ = bounds.maxZ;
+
+      uniqueByZ.forEach((pt, index) => {
+        const currentZ = pt.position[2];
+        const currentPos = new THREE.Vector3(refX, refY, currentZ);
         let startPoint: THREE.Vector3;
         let labelValue: number;
 
         if (index === 0) {
-          startPoint = new THREE.Vector3(currentPos.x, currentPos.y, panelFrontZ);
-          labelValue = Math.abs(panelFrontZ - currentPos.z);
+          // First point: dimension from panel front edge
+          startPoint = new THREE.Vector3(refX, refY, panelFrontZ);
+          labelValue = Math.abs(panelFrontZ - currentZ);
         } else {
-          const prevPos = sortedByZ[index - 1].position;
-          startPoint = new THREE.Vector3(currentPos.x, currentPos.y, prevPos[2]);
-          labelValue = Math.abs(prevPos[2] - currentPos.z);
+          // Subsequent points: dimension from previous point
+          const prevZ = uniqueByZ[index - 1].position[2];
+          startPoint = new THREE.Vector3(refX, refY, prevZ);
+          labelValue = Math.abs(prevZ - currentZ);
         }
 
-        if (labelValue > 1) {
+        if (labelValue > 0.5) {
           dims.push({
             start: startPoint,
             end: currentPos.clone(),
             color: CAD_THEME.colorZ,
             offsetVector: pullUpVector.clone().multiplyScalar(CAD_THEME.baseHeight + CAD_THEME.layerStep),
-            label: labelValue.toFixed(1),
+            label: Math.round(labelValue).toString(),
             isDatumStart: index === 0,
           });
         }
       });
+
+      // Back edge dimension: from last (backmost) point to TOP/BOTTOM panel back edge.
+      // System32 pattern is symmetric: firstHole distance from both front and back edges.
+      // Compute panel back edge from bolt positions (not cabinet bounds which includes back panel).
+      const frontBolt = groupBolts.reduce((a, b) => a.position[2] > b.position[2] ? a : b);
+      const backBolt = groupBolts.reduce((a, b) => a.position[2] < b.position[2] ? a : b);
+      const frontDist = panelFrontZ - frontBolt.position[2]; // firstHole distance from front
+      const panelBackZ = backBolt.position[2] - frontDist;   // symmetric: same distance from back bolt to back edge
+      const lastPt = uniqueByZ[uniqueByZ.length - 1];
+      const backDistance = Math.abs(lastPt.position[2] - panelBackZ);
+      if (backDistance > 0.5) {
+        dims.push({
+          start: new THREE.Vector3(refX, refY, lastPt.position[2]),
+          end: new THREE.Vector3(refX, refY, panelBackZ),
+          color: CAD_THEME.colorZ,
+          offsetVector: pullUpVector.clone().multiplyScalar(CAD_THEME.baseHeight + CAD_THEME.layerStep),
+          label: Math.round(backDistance).toString(),
+          isDatumStart: false,
+        });
+      }
+
     }
 
     return dims;
-  }, [groupBolts, groupCams, bounds, jointType, showTypes, pullUpVector, distanceB, panelThickness, boltRotationsMap]);
+  }, [groupBolts, groupCams, groupDowels, bounds, jointType, showTypes, pullUpVector, distanceB, panelThickness, boltRotationsMap]);
 
   return (
     <group>
@@ -293,7 +450,7 @@ function GroupedDimensionRenderer({
 // ============================================
 
 export function HardwareSmartDimensions(props: HardwareSmartDimensionsProps) {
-  const { boltPoints, camPoints = [], cabinetWidth, cabinetHeight, cabinetDepth, visible, boltRotations = [] } = props;
+  const { boltPoints, camPoints = [], dowelPoints = [], cabinetWidth, cabinetHeight, cabinetDepth, visible, boltRotations = [], toeKickHeight = 0 } = props;
 
   // Create Map for fast lookup
   const boltRotationsMap = useMemo(() => {
@@ -306,7 +463,11 @@ export function HardwareSmartDimensions(props: HardwareSmartDimensionsProps) {
     minX: -cabinetWidth / 2, maxX: cabinetWidth / 2,
     minY: 0, maxY: cabinetHeight,
     minZ: -cabinetDepth / 2, maxZ: cabinetDepth / 2,
-  }), [cabinetWidth, cabinetHeight, cabinetDepth]);
+    // Back panel Y extent (accounts for toe kick offset)
+    // cabinetHeight = panel height, panels sit on top of toe kick
+    backPanelMinY: toeKickHeight,
+    backPanelMaxY: toeKickHeight + cabinetHeight,
+  }), [cabinetWidth, cabinetHeight, cabinetDepth, toeKickHeight]);
 
   const normalizedShowTypes = useMemo(() => {
     const baseTypes = { frontDistance: props.showTypes?.frontDistance ?? true, sideDistance: props.showTypes?.sideDistance ?? true, verticalDistance: props.showTypes?.verticalDistance ?? true };
@@ -315,13 +476,14 @@ export function HardwareSmartDimensions(props: HardwareSmartDimensionsProps) {
     return baseTypes;
   }, [props.showTypes, props.currentView]);
 
-  const boltGroups = useMemo(() => {
-    const groups: Record<string, { bolts: DrillMapPoint[]; cams: DrillMapPoint[]; jointType: MountType }> = {};
+  // Group bolts, cams, and dowels by corner type
+  const hardwareGroups = useMemo(() => {
+    const groups: Record<string, { bolts: DrillMapPoint[]; cams: DrillMapPoint[]; dowels: DrillMapPoint[]; jointType: MountType }> = {};
     boltPoints.forEach((bolt) => {
       const isTopCorner = bolt.cornerType === 'TOP_LEFT' || bolt.cornerType === 'TOP_RIGHT';
       const jointType = isTopCorner ? props.topJoint : props.bottomJoint;
       const key = `${bolt.cornerType}_${jointType}`;
-      if (!groups[key]) groups[key] = { bolts: [], cams: [], jointType };
+      if (!groups[key]) groups[key] = { bolts: [], cams: [], dowels: [], jointType };
       groups[key].bolts.push(bolt);
     });
     camPoints.forEach((cam) => {
@@ -330,18 +492,25 @@ export function HardwareSmartDimensions(props: HardwareSmartDimensionsProps) {
       const key = `${cam.cornerType}_${jointType}`;
       if (groups[key]) groups[key].cams.push(cam);
     });
+    dowelPoints.forEach((dowel) => {
+      const isTopCorner = dowel.cornerType === 'TOP_LEFT' || dowel.cornerType === 'TOP_RIGHT';
+      const jointType = isTopCorner ? props.topJoint : props.bottomJoint;
+      const key = `${dowel.cornerType}_${jointType}`;
+      if (groups[key]) groups[key].dowels.push(dowel);
+    });
     return groups;
-  }, [boltPoints, camPoints, props.topJoint, props.bottomJoint]);
+  }, [boltPoints, camPoints, dowelPoints, props.topJoint, props.bottomJoint]);
 
   if (!visible || boltPoints.length === 0) return null;
 
   return (
     <group name="hardware-technical-dimensions">
-      {Object.entries(boltGroups).map(([key, group]) => (
+      {Object.entries(hardwareGroups).map(([key, group]) => (
         <GroupedDimensionRenderer
           key={key}
           groupBolts={group.bolts}
           groupCams={group.cams}
+          groupDowels={group.dowels}
           bounds={bounds}
           jointType={group.jointType}
           showTypes={normalizedShowTypes}
@@ -350,6 +519,7 @@ export function HardwareSmartDimensions(props: HardwareSmartDimensionsProps) {
           boltRotationsMap={boltRotationsMap}
         />
       ))}
+
     </group>
   );
 }

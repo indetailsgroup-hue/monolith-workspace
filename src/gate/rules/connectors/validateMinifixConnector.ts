@@ -397,17 +397,25 @@ function validateDistanceB(
 ): void {
   if (camPoint.drillingDistanceB === undefined) return;
 
-  const expectedB = DISTANCE_B_BY_THICKNESS[panelThickness] ?? DISTANCE_B_DEFAULT_MM;
-  const delta = Math.abs(camPoint.drillingDistanceB - expectedB);
+  // Check against standard B value for this panel thickness
+  const standardB = DISTANCE_B_BY_THICKNESS[panelThickness] ?? DISTANCE_B_DEFAULT_MM;
+  const deltaStandard = Math.abs(camPoint.drillingDistanceB - standardB);
 
-  if (delta > MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM) {
+  // Also check against B=34 variant (Häfele catalog supports both B=24 and B=34 bolts)
+  const deltaB34 = Math.abs(camPoint.drillingDistanceB - 34);
+
+  // Accept if within tolerance of EITHER standard B OR B=34 variant
+  const bestDelta = Math.min(deltaStandard, deltaB34);
+  const bestExpected = deltaStandard <= deltaB34 ? standardB : 34;
+
+  if (bestDelta > MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM) {
     findings.push({
       severity: 'WARNING',
       code: 'MONO_MINIFIX_DISTANCE_B_OUT_OF_RANGE',
       entityIds: [camPoint.id],
-      message: `Distance B (${camPoint.drillingDistanceB}mm) deviates ${delta.toFixed(1)}mm from expected ${expectedB}mm (for ${panelThickness}mm panel).`,
-      measured: { distance_b_mm: camPoint.drillingDistanceB, expected_b_mm: expectedB, delta_mm: delta, panel_thickness_mm: panelThickness },
-      tolerance: { expected_mm: expectedB, tolerance_mm: MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM },
+      message: `Distance B (${camPoint.drillingDistanceB}mm) deviates ${bestDelta.toFixed(1)}mm from nearest standard (${bestExpected}mm for ${panelThickness}mm panel). Accepted: B=${standardB}mm (standard) or B=34mm (extended).`,
+      measured: { distance_b_mm: camPoint.drillingDistanceB, expected_b_mm: bestExpected, delta_mm: bestDelta, panel_thickness_mm: panelThickness },
+      tolerance: { expected_mm: bestExpected, tolerance_mm: MINIFIX_TOLERANCES.DISTANCE_B_TOLERANCE_MM },
       suggestedFix: {
         strategy: 'SET_DISTANCE_B',
       },

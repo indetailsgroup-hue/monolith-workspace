@@ -149,7 +149,7 @@ export const ShelfPinConfigSchema = z.object({
   /** System 32 pitch (32mm standard) */
   pitchMm: PositiveMmSchema.default(32),
   /** First hole distance from edge */
-  firstHoleOffsetMm: PositiveMmSchema.default(37),
+  firstHoleOffsetMm: PositiveMmSchema.default(50),
 });
 
 // ============================================

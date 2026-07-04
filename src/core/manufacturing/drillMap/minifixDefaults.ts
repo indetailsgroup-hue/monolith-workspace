@@ -38,10 +38,11 @@ export const DEFAULT_MINIFIX_S200_CONFIG: MinifixConfig = {
   neckShaftOffset: 0,
 
   // Sleeve (ปลอก) - BOLT HOLE
-  sleeveDia: 10,                // Ø10mm - รู Bolt
+  sleeveDia: 10,                // Ø10mm - รู Bolt (face bore on SIDE panel)
   sleeveLength: 17.5,           // 17.5mm - ความลึก Bolt (kept for backward compat)
   sleeveOffset: 0,
   boltBoreDepth: 17.5,          // 17.5mm - authoritative bolt drilling depth (Häfele S200)
+  boltEntryDia: 7.5,            // Ø7.5mm - bolt ENTRY bore (edge bore, bolt passage)
 
   // Shaft (ก้านเกลียว)
   shaftDia: 5,                  // Ø5mm
@@ -59,9 +60,9 @@ export const DEFAULT_MINIFIX_S200_CONFIG: MinifixConfig = {
   // Dowel (enabled per CAD reference - System 32 offset)
   includeDowel: true,
   dowelDia: 8,                  // Ø8mm
-  dowelLength: 30,              // 30mm (รวม: edge + face = 18 + 12)
+  dowelLength: 30,              // 30mm (รวม: edge + face = 19 + 11)
   dowelOffset: 32,              // 32mm (System 32)
-  // HÄFELE STANDARD: Split depth ป้องกันไม้ปูดในแผ่นหนา 16-19mm
-  dowelDepthEdge: 18,           // 18mm เจาะเข้าขอบแผงข้าง (EDGE_BORE)
-  dowelDepthFace: 12,           // 12mm เจาะเข้าพื้นผิว TOP/BOTTOM (FACE_BORE)
+  // Split depth: ป้องกันไม้ปูดในแผ่นหนา 16-19mm
+  dowelDepthEdge: 19,           // 19mm เจาะเข้าขอบ TOP/BOTTOM (EDGE_BORE, ฝั่ง Cam/B)
+  dowelDepthFace: 11,           // 11mm เจาะเข้าพื้นผิว SIDE (FACE_BORE, ฝั่ง L)
 };

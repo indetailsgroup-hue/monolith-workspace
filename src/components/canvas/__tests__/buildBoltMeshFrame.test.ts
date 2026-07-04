@@ -4,7 +4,7 @@
  * Tests the truth-chain bolt positioning helper function.
  * Ensures correct geometry for:
  * - Ball position at cam pocket center (B=C)
- * - Thread inside bolt panel (+axis direction)
+ * - Thread inside bolt panel (-axis direction, opposite to boltDirection)
  * - Neck/sleeve anchored to ball position
  */
 
@@ -107,25 +107,26 @@ describe('buildBoltMeshFrame: B=C positioning', () => {
 // ============================================
 
 describe('buildBoltMeshFrame: thread sign correctness', () => {
-  it('threadPos is along +axis (into material), not -axis', () => {
+  it('threadPos is along -axis (into bolt panel, opposite to boltDirection)', () => {
     const A: Vec3Tuple = [0, 0, 0];
     const C: Vec3Tuple = [10, 0, 0];
     const point = mkPoint({
       position: A,
-      boltDirection: [1, 0, 0], // +X axis
+      boltDirection: [1, 0, 0], // +X axis (toward cam)
       targetPocketCenter: C,
     });
 
     const L = 11;
     const frame = buildBoltMeshFrame({ point, L });
 
-    // Thread center should be at +axis * (L/2) = [5.5, 0, 0]
-    expect(frame.threadPos[0]).toBeCloseTo(L / 2, 6);
+    // Thread center should be at -axis * (L/2) = [-5.5, 0, 0]
+    // Thread screws into the bolt panel (side panel), opposite to boltDirection
+    expect(frame.threadPos[0]).toBeCloseTo(-L / 2, 6);
     expect(frame.threadPos[1]).toBeCloseTo(0, 6);
     expect(frame.threadPos[2]).toBeCloseTo(0, 6);
   });
 
-  it('threadPos dot axis > 0 (thread in same direction as axis)', () => {
+  it('threadPos dot axis < 0 (thread opposite to boltDirection, into panel)', () => {
     // Test with arbitrary axis direction
     const A: Vec3Tuple = [24, 700, 37];
     const C: Vec3Tuple = [0, 693.75, 37];
@@ -145,9 +146,9 @@ describe('buildBoltMeshFrame: thread sign correctness', () => {
 
     const frame = buildBoltMeshFrame({ point, L: 11 });
 
-    // threadPos should have positive dot product with axis
+    // threadPos should have negative dot product with axis (into panel, away from cam)
     const dotProduct = dot(frame.threadPos, frame.axis);
-    expect(dotProduct).toBeGreaterThan(0);
+    expect(dotProduct).toBeLessThan(0);
   });
 
   it('threadPos length matches L/2', () => {

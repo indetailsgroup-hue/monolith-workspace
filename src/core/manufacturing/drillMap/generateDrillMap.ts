@@ -7,7 +7,7 @@
  * v4.0 MAJOR REFACTOR - SIDE-COVERS-TOP CONSTRUCTION:
  * - BOLT: Changed from EDGE drilling to FACE drilling on SIDE panels
  * - BOLT_ENTRY: Added edge bore on TOP/BOTTOM for bolt shaft passage
- * - DOWEL: Swapped depths (SIDE=12mm face, HORIZ=18mm edge)
+ * - DOWEL: Swapped depths (SIDE=11mm face, HORIZ=19mm edge)
  *
  * CONSTRUCTION TYPE: "Side-covers-Top/Bottom" (European/System32 Standard)
  * - SIDE panels cover the ends of TOP/BOTTOM panels
@@ -34,15 +34,16 @@
  * |------------------|--------------------------|
  * | CAM              | Ø15 (face bore on HORIZ) |
  * | Bolt sleeve      | Ø10 (face bore on SIDE)  |
- * | Bolt entry       | Ø10 (edge bore on HORIZ) |
- * | Dowel SIDE       | Ø8, 12mm (FACE_BORE)     |
- * | Dowel HORIZONTAL | Ø8, 18mm (EDGE_BORE)     |
+ * | Bolt entry       | config.boltEntryDia ?? 7.5 (edge bore on HORIZ) |
+ * | Dowel SIDE       | Ø8, 11mm (FACE_BORE)     |
+ * | Dowel HORIZONTAL | Ø8, 19mm (EDGE_BORE)     |
  * | Distance B       | 24mm from MATING EDGE    |
  * | Spacing          | System32                 |
  * | Mating Tolerance | 0.1mm                    |
  */
 
-import type { Cabinet, CabinetPanel, PanelRole } from '../../types/Cabinet';
+import type { Cabinet, CabinetPanel, PanelRole, JointType, ShelfConnectorConfig, BackPanelConnectorConfig } from '../../types/Cabinet';
+import { DEFAULT_SHELF_CONNECTOR_CONFIG, DEFAULT_BACK_PANEL_CONNECTOR_CONFIG } from '../../types/Cabinet';
 import type {
   DrillMap,
   DrillMapPanel,
@@ -52,8 +53,10 @@ import type {
   Vec3Tuple,
   DrillPurpose,
   CornerType,
+  ShelfCornerType,
+  BackCornerType,
 } from './types';
-import { DEFAULT_DRILLING_PARAMS } from './types';
+import { DEFAULT_DRILLING_PARAMS, isShelfCorner } from './types';
 import { resolveSeamDrivenTwist } from '../hardware/boltOrientationPolicy';
 import {
   validateCornerAngle,
@@ -74,6 +77,12 @@ import {
   boltEdgePointFromSideAABB,
   boltFacePointFromSideAABB_v4,
   boltEntryEdgePointFromHorizAABB,
+  boltFacePointFromHorizAABB_overlay,
+  boltEntryEdgePointFromSideAABB_overlay,
+  camFacePointFromSideAABB_overlay,
+  boltFacePointFromBackAABB,
+  boltEntryEdgePointFromSideAABB_back,
+  camFacePointFromSideAABB_back,
   type PanelWorldBasis,
   type Box3Like,
   type System32AutoParams,
@@ -86,6 +95,7 @@ import {
 } from '../../../components/ui/MinifixConfigPanel';
 import { buildDrillMapMeta } from './traceability';
 import { buildPairKeyV2 } from './pairKeyV2';
+import { lookupHardwareCatalog } from './hardwareCatalog';
 
 // ============================================
 // CONSTANTS
@@ -140,12 +150,20 @@ function buildCadConnectorRunPositions(
     return far > near ? [near, far] : [runLength / 2];
   }
 
-  const center = runLength / 2;
-  const positions = [near, center, far]
-    .filter((pos, idx, arr) => idx === 0 || Math.abs(pos - arr[idx - 1]) > 0.01)
-    .sort((a, b) => a - b);
+  // For 3+: distribute evenly between near and far
+  // e.g. count=3 → [near, center, far]
+  //      count=4 → [near, near+1/3*(far-near), near+2/3*(far-near), far]
+  //      count=5 → [near, near+1/4*span, near+2/4*span, near+3/4*span, far]
+  const span = far - near;
+  const positions: number[] = [];
+  for (let i = 0; i < connectorCount; i++) {
+    positions.push(near + (i / (connectorCount - 1)) * span);
+  }
 
-  return positions;
+  // Deduplicate positions too close together (<1mm)
+  return positions.filter(
+    (pos, idx, arr) => idx === 0 || Math.abs(pos - arr[idx - 1]) > 0.5
+  );
 }
 
 /** Default Minifix S200 config for 18mm panels (project default) */
@@ -164,6 +182,7 @@ const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
   sleeveDia: 10,
   sleeveLength: 17.5,
   sleeveOffset: 0,
+  boltEntryDia: 7.5,          // Ø7.5mm entry bore (bolt passage, smaller than sleeve)
   // Shaft
   shaftDia: 5,
   shaftLength: 11,
@@ -181,10 +200,10 @@ const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
   dowelLength: 30,        // Total length (12 + 18 = 30mm)
   dowelOffset: 32,        // System 32 offset
   // v4.0 Split depth for Side-covers-Top construction:
-  // - SIDE panel: FACE bore (shallow, avoids outer face)
-  // - HORIZ panel: EDGE bore (deeper, into end grain)
-  dowelDepthSideFace: 12,   // 12mm face bore into SIDE panel inner face
-  dowelDepthHorizEdge: 18,  // 18mm edge bore into TOP/BOTTOM panel edge
+  // - SIDE panel: FACE bore (shallow, same side as bolt thread L)
+  // - HORIZ panel: EDGE bore (deeper, same side as Cam + bolt entry B)
+  dowelDepthSideFace: 12,   // 12mm face bore into SIDE panel inner face (ฝั่ง L)
+  dowelDepthHorizEdge: 18,  // 18mm edge bore into TOP/BOTTOM panel edge (ฝั่ง Cam/B)
   // Legacy fields (for backward compatibility, same as v3.5 naming)
   dowelDepthEdge: 18,       // @deprecated - use dowelDepthHorizEdge
   dowelDepthFace: 12,       // @deprecated - use dowelDepthSideFace
@@ -192,7 +211,7 @@ const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
 
 /** System 32 parameters */
 const SYSTEM32: System32AutoParams = {
-  firstHole: 37,      // First hole from front edge (mm)
+  firstHole: 50,      // First hole from front edge (mm)
   pitch: 32,          // Distance between holes (mm)
   endOffset: 40,      // Distance from end edge (mm)
   maxConnectors: undefined, // No limit - auto-calculate based on run length
@@ -299,7 +318,7 @@ function getCornerPanels(
  * @param faceH - Face height (cabinet depth, Z span)
  * @param corner - Corner type
  * @param endOffset - Distance from left/right edge (typically 40mm)
- * @param sys32Z - System 32 position from front (37, 69, 101, ...)
+ * @param sys32Z - System 32 position from front (50, 82, 114, ...)
  */
 function cornerToLocalXY_TopBottom(
   faceW: number,
@@ -334,7 +353,7 @@ function cornerToLocalXY_TopBottom(
  * @param faceH - Face height (cabinet height, Y span)
  * @param corner - Corner type
  * @param endOffset - Distance from top/bottom edge (typically 40mm)
- * @param sys32Z - System 32 position from front (37, 69, 101, ...)
+ * @param sys32Z - System 32 position from front (50, 82, 114, ...)
  */
 function cornerToLocalXY_Side(
   faceW: number,
@@ -372,6 +391,9 @@ interface CreateDrillPointParams {
   cornerType: CornerType;
   cornerAngleDeg?: number;  // Corner angle in degrees (for angled joints)
   connectedPanelRole?: string;  // Panel role (LEFT_SIDE, RIGHT_SIDE, TOP, BOTTOM)
+  specLength?: number;  // Display-only: total component length (e.g. dowelLength=30)
+  hardwareName?: string;   // Catalog hardware name
+  catalogNo?: string;      // Catalog part number
 }
 
 function createDrillPoint(params: CreateDrillPointParams): DrillMapPoint {
@@ -383,6 +405,7 @@ function createDrillPoint(params: CreateDrillPointParams): DrillMapPoint {
     normal: params.normal,
     diameter: params.diameter,
     depth: params.depth,
+    specLength: params.specLength,
     purpose: params.purpose,
     componentType:
       params.purpose === 'CAM_LOCK'
@@ -400,6 +423,8 @@ function createDrillPoint(params: CreateDrillPointParams): DrillMapPoint {
     cornerType: params.cornerType,
     cornerAngleDeg: params.cornerAngleDeg,  // Store corner angle for reference
     connectedPanelRole: params.connectedPanelRole,  // G11.5: Required for panel role inference
+    hardwareName: params.hardwareName,
+    catalogNo: params.catalogNo,
   };
 }
 
@@ -423,7 +448,7 @@ interface CornerJointResult {
  * - BOLT → vertical panel (LEFT_SIDE or RIGHT_SIDE) edge drilling
  *
  * @param corner - Corner type
- * @param sys32Z - System 32 position from front (e.g., 37, 69, 101, ...)
+ * @param sys32Z - System 32 position from front (e.g., 50, 82, 114, ...)
  * @param positionIndex - Index for unique ID generation
  * @param panelsByRole - Panel lookup map
  * @param config - Minifix config
@@ -436,7 +461,8 @@ function generateCornerJointPoints(
   panelsByRole: PanelsByRole,
   config: MinifixConfig,
   params: DrillingParams,
-  angleDeg = 90  // Corner angle in degrees (30-150, default 90)
+  angleDeg = 90,  // Corner angle in degrees (30-150, default 90)
+  jointMode: JointType = 'INSET'  // Joint construction type
 ): CornerJointResult {
   const result: CornerJointResult = {
     camPoint: null,
@@ -474,6 +500,233 @@ function generateCornerJointPoints(
   const pairId = `pair-${corner}-${positionIndex}`;
   const pairKeyV2 = buildPairKeyV2(corner, sys32Z);
 
+  const verticalAabb = calculatePanelAABB(vertical);
+  const horizontalAabb = calculatePanelAABB(horizontal);
+  const isTopCorner = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+  const isLeftSide = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+
+  // ========================================
+  // OVERLAY BRANCH — Top/Bottom covers Side
+  // ========================================
+  if (jointMode === 'OVERLAY') {
+    // OVERLAY construction: bolt/cam panels SWAP
+    // - BOLT: face bore into HORIZONTAL panel (±Y drilling axis)
+    // - CAM: face bore into SIDE panel inner face (±X drilling axis)
+    // - BOLT_ENTRY: edge bore into SIDE panel top/bottom edge (±Y axis)
+
+    // Joint axis X = side panel thickness center (all horiz-panel points share this axis)
+    const jointAxisX = (verticalAabb.min[0] + verticalAabb.max[0]) / 2;
+
+    // --- BOLT on HORIZONTAL panel face ---
+    const boltPoint = boltFacePointFromHorizAABB_overlay(
+      corner, horizontalAabb, sys32Z, effectiveDistanceB
+    );
+    // Override X to use joint axis (side panel thickness center)
+    boltPoint.position[0] = jointAxisX;
+
+    const boltPanelRole = isTopCorner ? 'TOP' : 'BOTTOM';
+    result.boltPoint = createDrillPoint({
+      panelId: horizontal.id,
+      position: boltPoint.position,
+      normal: boltPoint.normal,
+      diameter: config.sleeveDia,
+      depth: config.boltBoreDepth ?? 17.5,  // Häfele S200: 17.5mm (NOT sleeveLength which is assembly 14.25mm)
+      purpose: 'BOLT',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: corner,
+      cornerAngleDeg: angleDeg,
+      connectedPanelRole: boltPanelRole,
+    });
+
+    // --- BOLT_THREAD on HORIZONTAL panel (same position as BOLT) ---
+    result.boltThreadPoint = createDrillPoint({
+      panelId: horizontal.id,
+      position: boltPoint.position,
+      normal: boltPoint.normal,
+      diameter: config.shaftDia,
+      depth: config.shaftLength,
+      purpose: 'BOLT_THREAD',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: corner,
+      cornerAngleDeg: angleDeg,
+      connectedPanelRole: boltPanelRole,
+    });
+
+    // --- BOLT_ENTRY on SIDE panel edge (top/bottom edge) ---
+    const edgeEntryPoint = boltEntryEdgePointFromSideAABB_overlay(
+      corner, verticalAabb, sys32Z, effectiveDistanceB
+    );
+    const entryPanelRole = isLeftSide ? 'LEFT_SIDE' : 'RIGHT_SIDE';
+    result.boltEntryPoint = createDrillPoint({
+      panelId: vertical.id,
+      position: edgeEntryPoint.position,
+      normal: edgeEntryPoint.normal,
+      diameter: config.boltEntryDia ?? 7.5,
+      depth: effectiveDistanceB,
+      purpose: 'BOLT_ENTRY',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: corner,
+      cornerAngleDeg: angleDeg,
+      connectedPanelRole: entryPanelRole,
+    });
+
+    // --- CAM on SIDE panel inner face ---
+    const camPoint = camFacePointFromSideAABB_overlay(
+      corner, verticalAabb, sys32Z, effectiveDistanceB
+    );
+    const camPanelRole = isLeftSide ? 'LEFT_SIDE' : 'RIGHT_SIDE';
+    result.camPoint = createDrillPoint({
+      panelId: vertical.id,
+      position: camPoint.position,
+      normal: camPoint.normal,
+      diameter: config.camDia,
+      depth: config.camDepth,
+      purpose: 'CAM_LOCK',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: corner,
+      cornerAngleDeg: angleDeg,
+      connectedPanelRole: camPanelRole,
+    });
+
+    // --- CAM ↔ BOLT Linkage ---
+    if (result.camPoint && result.boltPoint) {
+      result.camPoint.pairedHoleId = result.boltPoint.id;
+      result.boltPoint.pairedHoleId = result.camPoint.id;
+      if (result.boltEntryPoint) result.boltEntryPoint.pairedHoleId = result.boltPoint.id;
+      if (result.boltThreadPoint) result.boltThreadPoint.pairedHoleId = result.boltPoint.id;
+
+      // Pocket center: offset from CAM position along CAM normal by side panel thickness/2
+      const sideThicknessHalf = Math.abs(verticalAabb.max[0] - verticalAabb.min[0]) / 2;
+      const camPos = result.camPoint.position;
+      const camNormal = result.camPoint.normal;
+      const camPocketCenter: Vec3Tuple = [
+        camPos[0] + camNormal[0] * sideThicknessHalf,
+        camPos[1] + camNormal[1] * sideThicknessHalf,
+        camPos[2] + camNormal[2] * sideThicknessHalf,
+      ];
+      result.boltPoint.targetPocketCenter = camPocketCenter;
+
+      const boltPos = result.boltPoint.position;
+      const boltDrillingAxis = result.boltPoint.normal;
+      result.boltPoint.boltDirection = vecNorm(vecSub(camPocketCenter, boltPos));
+
+      // OVERLAY twist: boltPanelNormal = horizontal panel face normal (±Y)
+      const boltPanelNormal = isTopCorner
+        ? { x: 0, y: -1, z: 0 }   // TOP panel: normal pointing down (toward side)
+        : { x: 0, y: 1, z: 0 };   // BOTTOM panel: normal pointing up (toward side)
+
+      const twistResult = resolveSeamDrivenTwist({
+        jointPosition: isTopCorner ? 'TOP' : 'BOTTOM',
+        jointMode: 'OVERLAY',
+        panelSide: isLeftSide ? 'LEFT' : 'RIGHT',
+        cornerType: corner,
+        boltDir: {
+          x: boltDrillingAxis[0],
+          y: boltDrillingAxis[1],
+          z: boltDrillingAxis[2],
+        },
+        boltPanelNormal,
+        position: {
+          x: boltPos[0],
+          y: boltPos[1],
+          z: boltPos[2],
+        },
+        targetPocketCenter: {
+          x: camPocketCenter[0],
+          y: camPocketCenter[1],
+          z: camPocketCenter[2],
+        },
+      });
+      result.boltPoint.boltTwistDeg = twistResult.twistDeg;
+    }
+
+    // --- OVERLAY DOWELS ---
+    // OVERLAY swaps depths: SIDE=edge bore 19mm, HORIZONTAL=face bore 11mm
+    if (config.includeDowel) {
+      const [, , maxZ] = verticalAabb.max;
+
+      // Edge margin = firstHoleZ so dowels don't get placed closer to panel edge than the bolt.
+      // CAD reference: dowels only on CENTER side of each bolt, not toward the edge.
+      // e.g., bolt at 50mm → dowel at 82mm (50+32) only, NOT at 18mm (50-32)
+      const overlayEdgeMargin = params.firstHoleZ ?? 37;
+      const dowelZPositions = [
+        maxZ - sys32Z - config.dowelOffset,
+        maxZ - sys32Z + config.dowelOffset,
+      ].filter(z => z >= verticalAabb.min[2] + overlayEdgeMargin && z <= verticalAabb.max[2] - overlayEdgeMargin);
+
+      // DOWEL on SIDE panel EDGE (top/bottom edge bore) — 19mm depth
+      for (const dowelZ of dowelZPositions) {
+        const sideDowelPos: Vec3Tuple = [
+          edgeEntryPoint.position[0],  // X = side panel thickness center
+          edgeEntryPoint.position[1],  // Y = top/bottom edge
+          dowelZ,
+        ];
+        const sideDowelNormal: Vec3Tuple = isTopCorner ? [0, -1, 0] : [0, 1, 0];
+
+        result.dowelPoints.push(createDrillPoint({
+          panelId: vertical.id,
+          position: sideDowelPos,
+          normal: sideDowelNormal,
+          diameter: config.dowelDia,
+          depth: config.dowelDepthHorizEdge ?? 19,  // Edge bore = deeper (19mm)
+          specLength: config.dowelLength,
+          purpose: 'DOWEL',
+          pairId: `${pairId}-dowel-side`,
+          pairKeyV2: `${pairKeyV2}-dowel-side`,
+          edgeDistance: effectiveDistanceB,
+          depthPosition: sys32Z,
+          cornerType: corner,
+          connectedPanelRole: isLeftSide ? 'LEFT_SIDE' : 'RIGHT_SIDE',
+        }));
+      }
+
+      // DOWEL on HORIZONTAL panel FACE (face bore) — 11mm depth
+      for (const dowelZ of dowelZPositions) {
+        const horizDowelPos: Vec3Tuple = [
+          boltPoint.position[0],  // X = joint axis (side panel thickness center)
+          boltPoint.position[1],  // Y = horizontal panel face
+          dowelZ,
+        ];
+
+        result.dowelPoints.push(createDrillPoint({
+          panelId: horizontal.id,
+          position: horizDowelPos,
+          normal: boltPoint.normal,  // Same drilling direction as BOLT (±Y)
+          diameter: config.dowelDia,
+          depth: config.dowelDepthSideFace ?? 11,  // Face bore = shallower (11mm)
+          specLength: config.dowelLength,
+          purpose: 'DOWEL',
+          pairId: `${pairId}-dowel-horiz`,
+          pairKeyV2: `${pairKeyV2}-dowel-horiz`,
+          edgeDistance: effectiveDistanceB,
+          depthPosition: sys32Z,
+          cornerType: corner,
+          connectedPanelRole: isTopCorner ? 'TOP' : 'BOTTOM',
+        }));
+      }
+    }
+
+    // NOTE: Hardware catalog enrichment is done centrally in generateMinifixDrillMap()
+    // after all points are collected, so ALL branches (OVERLAY, INSET, shelf, B-run, back) get enriched.
+
+    return result;
+  }
+
+  // ========================================
+  // INSET BRANCH — Side covers Top/Bottom (v4.0)
+  // ========================================
 
   // ========================================
   // BOLT POINT on VERTICAL panel (FACE drilling) - v4.0
@@ -482,15 +735,12 @@ function generateCornerJointPoints(
   // BOLT is drilled INTO the INNER FACE of the SIDE panel (face bore)
   // The bolt shaft passes through an edge bore in the TOP/BOTTOM panel
   // CRITICAL: Calculate BOLT first, then align CAM with BOLT position
-  const verticalAabb = calculatePanelAABB(vertical);
-  const horizontalAabb = calculatePanelAABB(horizontal);
 
   // Use v4.0 face drilling function
   // MERGED FIX (wonderful-leakey + keen-jepsen):
   // - matingSurfaceY = real world Y from horizontal panel AABB (construction-agnostic)
   // - camCenterOffset = camDepth/2 for pocket center alignment
   const camCenterOffset = config.camDepth / 2;
-  const isTopCorner = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
   const matingSurfaceY = isTopCorner
     ? horizontalAabb.min[1]   // TOP panel: mating surface is bottom face (minY)
     : horizontalAabb.max[1];  // BOTTOM panel: mating surface is top face (maxY)
@@ -523,7 +773,7 @@ function generateCornerJointPoints(
     position: facePoint.position,
     normal: facePoint.normal,
     diameter: config.sleeveDia,
-    depth: config.sleeveLength,
+    depth: config.boltBoreDepth ?? 17.5,  // Häfele S200: 17.5mm (NOT sleeveLength which is assembly 14.25mm)
     purpose: 'BOLT',
     pairId,
     pairKeyV2,
@@ -562,7 +812,7 @@ function generateCornerJointPoints(
     panelId: horizontal.id,
     position: edgeEntryPoint.position,
     normal: edgeEntryPoint.normal,
-    diameter: 7.5,
+    diameter: config.boltEntryDia ?? 7.5,
     depth: effectiveDistanceB,
     purpose: 'BOLT_ENTRY',
     pairId,
@@ -727,8 +977,8 @@ function generateCornerJointPoints(
     // DOWEL POINTS - v4.0 Side-covers-Top Construction
     // ========================================
     // v4.0 Split depth:
-    // - SIDE panel: FACE bore 12mm (into inner face)
-    // - TOP/BOTTOM panel: EDGE bore 18mm (into left/right edge)
+    // - SIDE panel: FACE bore 11mm (into inner face)
+    // - TOP/BOTTOM panel: EDGE bore 19mm (into left/right edge)
     if (config.includeDowel) {
       const [, , maxZ] = verticalAabb.max;
       const isLeft = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
@@ -738,10 +988,14 @@ function generateCornerJointPoints(
       const sideBasis = getPanelBasisFromAABB(vertical, verticalAabb);
 
       // Dowels at ±32mm from BOLT position along Z axis (System 32 spacing)
+      // Edge margin = firstHoleZ so dowels don't get placed closer to panel edge than the bolt.
+      // CAD reference: dowels only on CENTER side of each bolt, not toward the edge.
+      // e.g., bolt at 50mm → dowel at 82mm (50+32) only, NOT at 18mm (50-32)
+      const insetEdgeMargin = params.firstHoleZ ?? 37;
       const dowelZPositions = [
         maxZ - sys32Z - config.dowelOffset,
         maxZ - sys32Z + config.dowelOffset,
-      ].filter(z => z >= verticalAabb.min[2] + 10 && z <= verticalAabb.max[2] - 10);
+      ].filter(z => z >= verticalAabb.min[2] + insetEdgeMargin && z <= verticalAabb.max[2] - insetEdgeMargin);
 
       // ========================================
       // DOWEL on SIDE panel (FACE_BORE) - v4.0
@@ -757,13 +1011,14 @@ function generateCornerJointPoints(
           dowelZ,                 // Z = ±32mm from bolt
         ];
 
-        // SIDE panel: Use dowelDepthSideFace (12mm) for FACE_BORE
+        // SIDE panel: Use dowelDepthSideFace (11mm) for FACE_BORE
         result.dowelPoints.push(createDrillPoint({
           panelId: vertical.id,
           position: sideDowelPos,
           normal: facePoint.normal,  // Same drilling direction as BOLT (horizontal X)
           diameter: config.dowelDia,
-          depth: config.dowelDepthSideFace ?? 12,  // 12mm face bore
+          depth: config.dowelDepthSideFace ?? 11,  // 11mm face bore
+          specLength: config.dowelLength,
           purpose: 'DOWEL',
           pairId: `${pairId}-dowel-side`,
           pairKeyV2: `${pairKeyV2}-dowel-side`,
@@ -778,7 +1033,7 @@ function generateCornerJointPoints(
       // DOWEL on HORIZONTAL panel (EDGE_BORE) - v4.0
       // ========================================
       // Drill into TOP/BOTTOM panel LEFT/RIGHT EDGE (end grain)
-      // This is the deeper bore (18mm) for the split depth
+      // This is the deeper bore (19mm) for the split depth
       const horizBasis = getPanelBasisFromAABB(horizontal, horizontalAabb);
 
       for (let i = 0; i < dowelZPositions.length; i++) {
@@ -804,13 +1059,14 @@ function generateCornerJointPoints(
         // Determine HORIZONTAL panel role for dowel
         const dowelHorizPanelRole = isTopCorner ? 'TOP' : 'BOTTOM';
 
-        // HORIZONTAL panel: Use dowelDepthHorizEdge (18mm) for EDGE_BORE
+        // HORIZONTAL panel: Use dowelDepthHorizEdge (19mm) for EDGE_BORE
         result.dowelPoints.push(createDrillPoint({
           panelId: horizontal.id,
           position: horizDowelPos,
           normal: horizDowelNormal,
           diameter: config.dowelDia,
-          depth: config.dowelDepthHorizEdge ?? 18,  // 18mm edge bore
+          depth: config.dowelDepthHorizEdge ?? 19,  // 19mm edge bore
+          specLength: config.dowelLength,
           purpose: 'DOWEL',
           pairId: `${pairId}-dowel-horiz`,
           pairKeyV2: `${pairKeyV2}-dowel-horiz`,
@@ -835,8 +1091,8 @@ function generateCornerJointPoints(
  *
  * B-run = width axis (X direction) for lateral alignment / anti-rack.
  * Each position produces a dowel pair:
- *   - HORIZ panel FACE bore (Ø8 × 12mm) — drills into TOP/BOTTOM inner face
- *   - SIDE panel EDGE bore (Ø8 × 18mm)  — drills into LEFT_SIDE/RIGHT_SIDE top/bottom edge
+ *   - HORIZ panel FACE bore (Ø8 × 11mm) — drills into TOP/BOTTOM inner face
+ *   - SIDE panel EDGE bore (Ø8 × 19mm)  — drills into LEFT_SIDE/RIGHT_SIDE top/bottom edge
  *
  * Construction: Side-covers-Top
  *   TOP corners: SIDE panel top edge ↔ TOP panel bottom face
@@ -852,8 +1108,8 @@ function generateCornerJointPoints(
 // B-RUN DOWEL CONTRACT (LOCKED — see bRunDowelGeneration.test.ts)
 // ========================================
 // Each B-run position produces EXACTLY 2 points (1 pair):
-//   1. HORIZ face bore  — panel=TOP/BOTTOM, depth=dowelDepthSideFace(12mm)
-//   2. SIDE edge bore   — panel=LEFT_SIDE/RIGHT_SIDE, depth=dowelDepthHorizEdge(18mm)
+//   1. HORIZ face bore  — panel=TOP/BOTTOM, depth=dowelDepthSideFace(11mm)
+//   2. SIDE edge bore   — panel=LEFT_SIDE/RIGHT_SIDE, depth=dowelDepthHorizEdge(19mm)
 //
 // Invariants:
 //   a) Both bores share the same Ø (config.dowelDia, default 8mm)
@@ -898,12 +1154,12 @@ function generateBRunDowelPoints(
   const horizPanelRole = isTop ? 'TOP' : 'BOTTOM';
   const sidePanelRole = isLeft ? 'LEFT_SIDE' : 'RIGHT_SIDE';
 
-  // ---- HORIZ panel face bore (Ø8 × 12mm) ----
+  // ---- HORIZ panel face bore (Ø8 × 11mm) ----
   // Drill into inner face of TOP/BOTTOM panel
   const horizFaceY = isTop ? horizAabb.min[1] : horizAabb.max[1]; // inner face
   const horizNormal: Vec3Tuple = isTop ? [0, 1, 0] : [0, -1, 0]; // drill into face
 
-  // ---- SIDE panel edge bore (Ø8 × 18mm) ----
+  // ---- SIDE panel edge bore (Ø8 × 19mm) ----
   // Drill into top/bottom edge of SIDE panel
   const sideEdgeY = isTop ? sideAabb.max[1] : sideAabb.min[1]; // top or bottom edge
   const sideNormal: Vec3Tuple = isTop ? [0, -1, 0] : [0, 1, 0]; // opposing direction
@@ -921,7 +1177,8 @@ function generateBRunDowelPoints(
     position: [worldX, horizFaceY, worldZ],
     normal: horizNormal,
     diameter: config.dowelDia,
-    depth: config.dowelDepthSideFace ?? 12,  // face bore = 12mm (shallow)
+    depth: config.dowelDepthSideFace ?? 11,  // face bore = 11mm (shallow)
+    specLength: config.dowelLength,
     purpose: 'DOWEL',
     pairId: `${pairId}-dowel-brun-horiz`,
     pairKeyV2: `${pairKeyV2}-dowel-brun-horiz`,
@@ -936,7 +1193,8 @@ function generateBRunDowelPoints(
     position: [worldX, sideEdgeY, worldZ],
     normal: sideNormal,
     diameter: config.dowelDia,
-    depth: config.dowelDepthHorizEdge ?? 18,  // edge bore = 18mm (deep)
+    depth: config.dowelDepthHorizEdge ?? 19,  // edge bore = 19mm (deep)
+    specLength: config.dowelLength,
     purpose: 'DOWEL',
     pairId: `${pairId}-dowel-brun-side`,
     pairKeyV2: `${pairKeyV2}-dowel-brun-side`,
@@ -947,6 +1205,576 @@ function generateBRunDowelPoints(
   }));
 
   return points;
+}
+
+// ============================================
+// SHELF JUNCTION GENERATION
+// ============================================
+
+/**
+ * Generate Minifix drill points for a shelf-to-side-panel junction.
+ *
+ * Shelf connectors are geometrically identical to INSET cabinet corners:
+ * - BOLT: face bore into SIDE panel inner face (±X drilling axis)
+ * - CAM: face bore into SHELF panel face (±Y drilling axis)
+ * - BOLT_ENTRY: edge bore into SHELF panel edge (±X axis)
+ *
+ * The shelf acts as the "horizontal" panel, and the side panel is the "vertical" panel.
+ *
+ * @param shelfCorner - Shelf corner type (e.g., 'SHELF_0_LEFT')
+ * @param sys32Z - System 32 Z position from front
+ * @param positionIndex - Index for unique ID generation
+ * @param shelfPanel - The shelf CabinetPanel
+ * @param sidePanel - The side CabinetPanel (LEFT_SIDE or RIGHT_SIDE)
+ * @param config - Minifix config
+ * @param params - Drilling parameters
+ */
+function generateShelfJointPoints(
+  shelfCorner: ShelfCornerType,
+  sys32Z: number,
+  positionIndex: number,
+  shelfPanel: CabinetPanel,
+  sidePanel: CabinetPanel,
+  config: MinifixConfig,
+  params: DrillingParams,
+): CornerJointResult {
+  const result: CornerJointResult = {
+    camPoint: null,
+    boltPoint: null,
+    boltEntryPoint: null,
+    boltThreadPoint: null,
+    dowelPoints: [],
+  };
+
+  const isLeft = shelfCorner.endsWith('_LEFT');
+
+  const shelfAabb = calculatePanelAABB(shelfPanel);
+  const sideAabb = calculatePanelAABB(sidePanel);
+
+  const pairId = `pair-${shelfCorner}-${positionIndex}`;
+  const pairKeyV2 = buildPairKeyV2(shelfCorner, sys32Z);
+
+  const effectiveDistanceB = config.drillingDistanceB;
+  const camCenterOffset = config.camDepth / 2;
+
+  // v4.4 FIX: Joint axis Y = shelf panel thickness CENTER (matching INSET pattern).
+  // All points (BOLT, BOLT_ENTRY, BOLT_THREAD, DOWEL) must share this Y axis
+  // so they align with the shelf panel edge bore and CAM pocket center.
+  const jointAxisY = (shelfAabb.min[1] + shelfAabb.max[1]) / 2;
+
+  const facePoint = boltFacePointFromSideAABB_v4(
+    // Map shelf corner to equivalent cabinet corner for the helper
+    // SHELF_N_LEFT → behaves like BOTTOM_LEFT (bolt into left side, Y = shelf center)
+    // SHELF_N_RIGHT → behaves like BOTTOM_RIGHT (bolt into right side, Y = shelf center)
+    isLeft ? 'BOTTOM_LEFT' : 'BOTTOM_RIGHT',
+    sideAabb,
+    sys32Z,
+    camCenterOffset,
+  );
+
+  // Override Y to use shelf panel thickness center (joint axis)
+  facePoint.position[1] = jointAxisY;
+
+  // Override Z to use SHELF panel front edge (not side panel front edge).
+  // In INSET mode, side and horizontal panels share the same maxZ, but shelves
+  // may be set back from the front edge. The bolt enters through the shelf edge,
+  // so both BOLT and BOLT_ENTRY must share the shelf's Z coordinate.
+  facePoint.position[2] = shelfAabb.max[2] - sys32Z;
+
+  const boltPanelRole: PanelRole = isLeft ? 'LEFT_SIDE' : 'RIGHT_SIDE';
+
+  result.boltPoint = createDrillPoint({
+    panelId: sidePanel.id,
+    position: facePoint.position,
+    normal: facePoint.normal,
+    diameter: config.sleeveDia,
+    depth: config.boltBoreDepth ?? 17.5,  // Häfele S200: 17.5mm (NOT sleeveLength which is assembly 14.25mm)
+    purpose: 'BOLT',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Z,
+    cornerType: shelfCorner,
+    connectedPanelRole: boltPanelRole,
+  });
+
+  // BOLT_THREAD pilot on side panel face (same axis as BOLT)
+  result.boltThreadPoint = createDrillPoint({
+    panelId: sidePanel.id,
+    position: facePoint.position,
+    normal: facePoint.normal,
+    diameter: config.shaftDia,
+    depth: config.shaftLength,
+    purpose: 'BOLT_THREAD',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Z,
+    cornerType: shelfCorner,
+    connectedPanelRole: boltPanelRole,
+  });
+
+  // ========================================
+  // BOLT_ENTRY on SHELF panel edge (±X axis, toward side panel)
+  // ========================================
+  // The bolt shaft passes through the shelf panel edge bore
+  // For LEFT: bolt enters from left edge of shelf, drill toward right → normal = [+1, 0, 0]
+  // For RIGHT: bolt enters from right edge of shelf, drill toward left → normal = [-1, 0, 0]
+  {
+    const edgeX = isLeft ? shelfAabb.min[0] : shelfAabb.max[0];
+    // Drill direction INTO shelf edge (toward the interior of the panel)
+    const edgeNormal: Vec3Tuple = isLeft ? [1, 0, 0] : [-1, 0, 0];
+    // Z = depth from front: front = maxZ, so world Z = maxZ - sys32Z
+    const entryPos: Vec3Tuple = [
+      edgeX,
+      jointAxisY,
+      shelfAabb.max[2] - sys32Z,
+    ];
+
+    result.boltEntryPoint = createDrillPoint({
+      panelId: shelfPanel.id,
+      position: entryPos,
+      normal: edgeNormal,
+      diameter: config.boltEntryDia ?? 7.5,
+      depth: effectiveDistanceB,
+      purpose: 'BOLT_ENTRY',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: shelfCorner,
+      connectedPanelRole: 'SHELF',
+    });
+  }
+
+  // ========================================
+  // CAM on SHELF panel face (±Y drilling)
+  // ========================================
+  // CAM is drilled into the shelf panel face, at Distance B from the mating edge (left or right)
+  {
+    const shelfBasis = getPanelBasisFromAABB(shelfPanel, shelfAabb);
+
+    // Distance B from mating edge (left or right edge of shelf)
+    let camLocalX: number;
+    if (isLeft) {
+      camLocalX = effectiveDistanceB;
+    } else {
+      camLocalX = shelfBasis.faceWidth - effectiveDistanceB;
+    }
+
+    // Clamp within shelf bounds
+    const camMargin = config.camDia / 2 + 2;
+    camLocalX = clamp(camLocalX, camMargin, shelfBasis.faceWidth - camMargin);
+
+    const camLocalY = sys32Z;
+    const clampedY = clamp(camLocalY, 10, shelfBasis.faceHeight - 10);
+
+    const worldPos = panelLocalToWorld(shelfBasis, camLocalX, clampedY);
+
+    result.camPoint = createDrillPoint({
+      panelId: shelfPanel.id,
+      position: worldPos,
+      normal: shelfBasis.uAxis,
+      diameter: config.camDia,
+      depth: config.camDepth,
+      purpose: 'CAM_LOCK',
+      pairId,
+      pairKeyV2,
+      edgeDistance: effectiveDistanceB,
+      depthPosition: sys32Z,
+      cornerType: shelfCorner,
+      connectedPanelRole: 'SHELF',
+    });
+  }
+
+  // ========================================
+  // LINK CAM ↔ BOLT and compute twist
+  // ========================================
+  if (result.camPoint && result.boltPoint) {
+    result.camPoint.pairedHoleId = result.boltPoint.id;
+    result.boltPoint.pairedHoleId = result.camPoint.id;
+    if (result.boltEntryPoint) result.boltEntryPoint.pairedHoleId = result.boltPoint.id;
+    if (result.boltThreadPoint) result.boltThreadPoint.pairedHoleId = result.boltPoint.id;
+
+    // Use the shelf panel thickness center as the shared pivot for
+    // CAM/BOLT/THREAD alignment (matching INSET pattern exactly).
+    const boltAxisOffset = Math.abs(shelfAabb.max[1] - shelfAabb.min[1]) / 2;
+    const camPos = result.camPoint.position;
+    const camNormal = result.camPoint.normal;
+    const pocketOffset = boltAxisOffset;
+    const camPocketCenter: Vec3Tuple = [
+      camPos[0] + camNormal[0] * pocketOffset,
+      camPos[1] + camNormal[1] * pocketOffset,
+      camPos[2] + camNormal[2] * pocketOffset,
+    ];
+
+    result.boltPoint.targetPocketCenter = camPocketCenter;
+
+    // Bolt direction = entry → cam pocket center
+    const boltPos = result.boltPoint.position;
+    const boltDrillingAxis = result.boltPoint.normal;
+    result.boltPoint.boltDirection = vecNorm(vecSub(camPocketCenter, boltPos));
+
+    // Compute twist for shelf corner (INSET mode — bolt on side panel face)
+    const boltPanelNormal = isLeft
+      ? { x: 1, y: 0, z: 0 }   // LEFT_SIDE inner face
+      : { x: -1, y: 0, z: 0 }; // RIGHT_SIDE inner face
+
+    const twistResult = resolveSeamDrivenTwist({
+      jointPosition: 'BOTTOM',  // Shelf acts like a "bottom" panel relative to bolt position
+      jointMode: 'INSET',
+      panelSide: isLeft ? 'LEFT' : 'RIGHT',
+      cornerType: shelfCorner,
+      boltDir: {
+        x: boltDrillingAxis[0],
+        y: boltDrillingAxis[1],
+        z: boltDrillingAxis[2],
+      },
+      boltPanelNormal,
+      position: {
+        x: boltPos[0],
+        y: boltPos[1],
+        z: boltPos[2],
+      },
+      targetPocketCenter: {
+        x: camPocketCenter[0],
+        y: camPocketCenter[1],
+        z: camPocketCenter[2],
+      },
+    });
+
+    result.boltPoint.boltTwistDeg = twistResult.twistDeg;
+  }
+
+  // ========================================
+  // DOWEL POINTS — Side-covers-Shelf (same as INSET cabinet corners)
+  // ========================================
+  if (config.includeDowel) {
+    // Dowels at ±32mm from bolt position along Z axis (System 32 spacing)
+    // Use shelfAabb.max[2] (shelf front edge) as Z base — same correction as BOLT Z
+    // Edge margin = firstHoleZ so dowels don't get placed closer to panel edge than the bolt.
+    const shelfMaxZ = shelfAabb.max[2];
+    const shelfEdgeMargin = params.firstHoleZ ?? 37;
+    const dowelZPositions = [
+      shelfMaxZ - sys32Z - config.dowelOffset,
+      shelfMaxZ - sys32Z + config.dowelOffset,
+    ].filter(z => z >= shelfAabb.min[2] + shelfEdgeMargin && z <= shelfAabb.max[2] - shelfEdgeMargin);
+
+    for (const dowelZ of dowelZPositions) {
+      // DOWEL on SIDE panel FACE (face bore, 11mm depth)
+      const sideDowelPos: Vec3Tuple = [
+        facePoint.position[0],  // X = side panel inner face
+        jointAxisY,             // Y = shelf thickness center
+        dowelZ,                 // Z = ±32mm from bolt (world Z)
+      ];
+
+      result.dowelPoints.push(createDrillPoint({
+        panelId: sidePanel.id,
+        position: sideDowelPos,
+        normal: facePoint.normal,
+        diameter: config.dowelDia,
+        depth: config.dowelDepthSideFace ?? 11,
+        specLength: config.dowelLength,
+        purpose: 'DOWEL',
+        pairId: `${pairId}-dowel-side`,
+        pairKeyV2: `${pairKeyV2}-dowel-side`,
+        edgeDistance: effectiveDistanceB,
+        depthPosition: sys32Z,
+        cornerType: shelfCorner,
+        connectedPanelRole: boltPanelRole,
+      }));
+
+      // DOWEL on SHELF panel EDGE (edge bore, 19mm depth)
+      const shelfEdgeX = isLeft ? shelfAabb.min[0] : shelfAabb.max[0];
+      // Edge drilling normal: drill INTO shelf edge (same as INSET horizontal edge)
+      // LEFT corner: drill toward right (+X), RIGHT corner: drill toward left (-X)
+      const shelfEdgeNormal: Vec3Tuple = isLeft ? [1, 0, 0] : [-1, 0, 0];
+      const shelfDowelPos: Vec3Tuple = [
+        shelfEdgeX,
+        jointAxisY,
+        dowelZ,  // Same world Z as side panel dowel
+      ];
+
+      result.dowelPoints.push(createDrillPoint({
+        panelId: shelfPanel.id,
+        position: shelfDowelPos,
+        normal: shelfEdgeNormal,
+        diameter: config.dowelDia,
+        depth: config.dowelDepthHorizEdge ?? 19,
+        specLength: config.dowelLength,
+        purpose: 'DOWEL',
+        pairId: `${pairId}-dowel-shelf`,
+        pairKeyV2: `${pairKeyV2}-dowel-shelf`,
+        edgeDistance: effectiveDistanceB,
+        depthPosition: sys32Z,
+        cornerType: shelfCorner,
+        connectedPanelRole: 'SHELF',
+      }));
+    }
+  }
+
+  return result;
+}
+
+// ============================================
+// BACK PANEL OVERLAY JOINT GENERATION
+// ============================================
+
+/**
+ * Generate Minifix S200 + Dowel drill points for a BACK panel ↔ SIDE panel junction
+ * in OVERLAY construction.
+ *
+ * BACK panel overlay: back panel covers side panel back edges.
+ * - BOLT: face bore into BACK panel inner face (z = maxZ, drill [0, 0, -1])
+ * - BOLT_ENTRY: edge bore into SIDE panel back edge (z = minZ, drill [0, 0, +1])
+ * - CAM: face bore into SIDE panel inner face (x = maxX/minX)
+ * - DOWEL: ±32mm from bolt along Y axis
+ *
+ * Run axis = Y (height direction). System 32 positions along Y.
+ *
+ * @param backCorner - BACK_LEFT or BACK_RIGHT
+ * @param sys32Y - System32 position along Y axis (from bottom edge of back panel)
+ * @param positionIndex - Index for unique ID generation
+ * @param backPanel - Back panel
+ * @param sidePanel - Side panel (LEFT_SIDE or RIGHT_SIDE)
+ * @param config - Minifix config
+ * @param params - Drilling params
+ */
+function generateBackPanelJointPoints(
+  backCorner: BackCornerType,
+  sys32Y: number,
+  positionIndex: number,
+  backPanel: CabinetPanel,
+  sidePanel: CabinetPanel,
+  config: MinifixConfig,
+  params: DrillingParams,
+): CornerJointResult {
+  const result: CornerJointResult = {
+    camPoint: null,
+    boltPoint: null,
+    boltEntryPoint: null,
+    boltThreadPoint: null,
+    dowelPoints: [],
+  };
+
+  const isLeft = backCorner === 'BACK_LEFT';
+
+  const backAabb = calculatePanelAABB(backPanel);
+  const sideAabb = calculatePanelAABB(sidePanel);
+
+  const pairId = `pair-${backCorner}-${positionIndex}`;
+  const pairKeyV2 = buildPairKeyV2(backCorner, sys32Y);
+
+  const effectiveDistanceB = config.drillingDistanceB;
+  const camCenterOffset = config.camDepth / 2;
+
+  // World Y = back panel bottom edge + sys32Y offset
+  const worldY = backAabb.min[1] + sys32Y;
+
+  // ========================================
+  // BOLT on BACK panel (face bore, inner face z=maxZ)
+  // ========================================
+  const boltPoint = boltFacePointFromBackAABB(isLeft, backAabb, sys32Y, camCenterOffset, sideAabb);
+
+  const boltPanelRole: PanelRole = 'BACK';
+
+  result.boltPoint = createDrillPoint({
+    panelId: backPanel.id,
+    position: boltPoint.position,
+    normal: boltPoint.normal,
+    diameter: config.sleeveDia,
+    depth: config.boltBoreDepth ?? 17.5,  // Häfele S200: 17.5mm (NOT sleeveLength which is assembly 14.25mm)
+    purpose: 'BOLT',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Y,
+    cornerType: backCorner,
+    connectedPanelRole: boltPanelRole,
+  });
+
+  // BOLT_THREAD pilot on back panel face (same axis as BOLT)
+  result.boltThreadPoint = createDrillPoint({
+    panelId: backPanel.id,
+    position: boltPoint.position,
+    normal: boltPoint.normal,
+    diameter: config.shaftDia,
+    depth: config.shaftLength,
+    purpose: 'BOLT_THREAD',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Y,
+    cornerType: backCorner,
+    connectedPanelRole: boltPanelRole,
+  });
+
+  // ========================================
+  // BOLT_ENTRY on SIDE panel back edge (edge bore, z=minZ)
+  // ========================================
+  const entryPoint = boltEntryEdgePointFromSideAABB_back(isLeft, sideAabb, worldY);
+
+  const sidePanelRole: PanelRole = isLeft ? 'LEFT_SIDE' : 'RIGHT_SIDE';
+
+  result.boltEntryPoint = createDrillPoint({
+    panelId: sidePanel.id,
+    position: entryPoint.position,
+    normal: entryPoint.normal,
+    diameter: config.boltEntryDia ?? 7.5,  // Entry bore (bolt passage), smaller than sleeve bore
+    depth: effectiveDistanceB,
+    purpose: 'BOLT_ENTRY',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Y,
+    cornerType: backCorner,
+    connectedPanelRole: sidePanelRole,
+  });
+
+  // ========================================
+  // CAM on SIDE panel inner face
+  // ========================================
+  const camPoint = camFacePointFromSideAABB_back(isLeft, sideAabb, worldY, effectiveDistanceB);
+
+  result.camPoint = createDrillPoint({
+    panelId: sidePanel.id,
+    position: camPoint.position,
+    normal: camPoint.normal,
+    diameter: config.camDia,
+    depth: config.camDepth,
+    purpose: 'CAM_LOCK',
+    pairId,
+    pairKeyV2,
+    edgeDistance: effectiveDistanceB,
+    depthPosition: sys32Y,
+    cornerType: backCorner,
+    connectedPanelRole: sidePanelRole,
+  });
+
+  // ========================================
+  // LINK CAM ↔ BOLT and compute twist
+  // ========================================
+  if (result.camPoint && result.boltPoint) {
+    result.camPoint.pairedHoleId = result.boltPoint.id;
+    result.boltPoint.pairedHoleId = result.camPoint.id;
+    if (result.boltEntryPoint) result.boltEntryPoint.pairedHoleId = result.boltPoint.id;
+    if (result.boltThreadPoint) result.boltThreadPoint.pairedHoleId = result.boltPoint.id;
+
+    // Pocket center = CAM position + normal * (side panel thickness / 2)
+    const boltAxisOffset = Math.abs(sideAabb.max[0] - sideAabb.min[0]) / 2;
+    const camPos = result.camPoint.position;
+    const camNormal = result.camPoint.normal;
+    const pocketOffset = boltAxisOffset;
+    const camPocketCenter: Vec3Tuple = [
+      camPos[0] + camNormal[0] * pocketOffset,
+      camPos[1] + camNormal[1] * pocketOffset,
+      camPos[2] + camNormal[2] * pocketOffset,
+    ];
+
+    result.boltPoint.targetPocketCenter = camPocketCenter;
+
+    const boltPos = result.boltPoint.position;
+    const boltDrillingAxis = result.boltPoint.normal;
+    result.boltPoint.boltDirection = vecNorm(vecSub(camPocketCenter, boltPos));
+
+    // Compute twist for back panel corner
+    const boltPanelNormal = { x: 0, y: 0, z: -1 }; // Back panel inner face normal
+
+    const twistResult = resolveSeamDrivenTwist({
+      jointPosition: 'BOTTOM',  // Back panel acts like a covering panel
+      jointMode: 'OVERLAY',
+      panelSide: isLeft ? 'LEFT' : 'RIGHT',
+      cornerType: backCorner,
+      boltDir: {
+        x: boltDrillingAxis[0],
+        y: boltDrillingAxis[1],
+        z: boltDrillingAxis[2],
+      },
+      boltPanelNormal,
+      position: {
+        x: boltPos[0],
+        y: boltPos[1],
+        z: boltPos[2],
+      },
+      targetPocketCenter: {
+        x: camPocketCenter[0],
+        y: camPocketCenter[1],
+        z: camPocketCenter[2],
+      },
+    });
+
+    result.boltPoint.boltTwistDeg = twistResult.twistDeg;
+  }
+
+  // ========================================
+  // DOWEL POINTS — Back panel ↔ Side panel
+  // ========================================
+  // Dowels are PARALLEL to BOLT direction (Z axis), NOT parallel to CAM (X axis).
+  // Same pattern as INSET: dowels at ±offset along RUN AXIS from bolt position.
+  //
+  // Back panel overlay joint:
+  //   - BACK panel FACE bore (11mm) — drills [0,0,-1] into back panel inner face
+  //   - SIDE panel EDGE bore (19mm) — drills [0,0,+1] into side panel back edge
+  //   Both bores are colinear along Z, meeting at the joint interface.
+  if (config.includeDowel) {
+    // Dowels at ±32mm from bolt position along Y axis (run axis)
+    const dowelYPositions = [
+      worldY - config.dowelOffset,
+      worldY + config.dowelOffset,
+    ].filter(y => y >= backAabb.min[1] + (params.firstHoleZ ?? 37) && y <= backAabb.max[1] - (params.firstHoleZ ?? 37));
+
+    for (const dowelY of dowelYPositions) {
+      // DOWEL on BACK panel FACE (face bore, 11mm depth)
+      // Same face and normal as BOLT — drills into back panel inner face [0,0,-1]
+      const backDowelPos: Vec3Tuple = [
+        boltPoint.position[0],  // X = same as bolt (side panel thickness center)
+        dowelY,                 // Y = ±32mm from bolt
+        backAabb.max[2],        // Z = back panel inner face (same as BOLT)
+      ];
+
+      result.dowelPoints.push(createDrillPoint({
+        panelId: backPanel.id,
+        position: backDowelPos,
+        normal: [0, 0, -1],  // Same direction as BOLT (into back panel face)
+        diameter: config.dowelDia,
+        depth: config.dowelDepthSideFace ?? 11,  // 11mm face bore (shallow)
+        specLength: config.dowelLength,
+        purpose: 'DOWEL',
+        pairId: `${pairId}-dowel-back`,
+        pairKeyV2: `${pairKeyV2}-dowel-back`,
+        edgeDistance: effectiveDistanceB,
+        depthPosition: sys32Y,
+        cornerType: backCorner,
+        connectedPanelRole: 'BACK',
+      }));
+
+      // DOWEL on SIDE panel EDGE (edge bore, 19mm depth)
+      // Same edge and normal as BOLT_ENTRY — drills into side panel back edge [0,0,+1]
+      const sideDowelPos: Vec3Tuple = [
+        entryPoint.position[0],  // X = center of side panel thickness (same as BOLT_ENTRY)
+        dowelY,                  // Y = ±32mm from bolt
+        sideAabb.min[2],         // Z = side panel back edge (same as BOLT_ENTRY)
+      ];
+
+      result.dowelPoints.push(createDrillPoint({
+        panelId: sidePanel.id,
+        position: sideDowelPos,
+        normal: [0, 0, 1],  // Same direction as BOLT_ENTRY (into side panel back edge)
+        diameter: config.dowelDia,
+        depth: config.dowelDepthHorizEdge ?? 19,  // 19mm edge bore (deep)
+        specLength: config.dowelLength,
+        purpose: 'DOWEL',
+        pairId: `${pairId}-dowel-side`,
+        pairKeyV2: `${pairKeyV2}-dowel-side`,
+        edgeDistance: effectiveDistanceB,
+        depthPosition: sys32Y,
+        cornerType: backCorner,
+        connectedPanelRole: sidePanelRole,
+      }));
+    }
+  }
+
+  return result;
 }
 
 // ============================================
@@ -970,6 +1798,9 @@ export function generateMinifixDrillMap(
   params?: Partial<DrillingParams>,
   options?: {
     connectorCount?: number;
+    /** Per-group connector count overrides from ConnectorList Add/Del buttons.
+     *  Keys: "main" (TOP/BOTTOM corners), "shelf_0"/"shelf_1"/... (shelves), "back" (back panel) */
+    connectorCountOverrides?: Record<string, number>;
   }
 ): DrillMap {
   if (!cabinet || !cabinet.panels || cabinet.panels.length === 0) {
@@ -1033,7 +1864,10 @@ export function generateMinifixDrillMap(
 
   // CAD pattern baseline (A/B threshold rule): 2 placements for <=400mm, 3 for >400mm.
   // If caller explicitly requests connectorCount, honor it.
-  const connectorCount = maxConnectors ?? computeConnectorCount(sys32RunLength);
+  // Per-group overrides take priority over global connectorCount.
+  const perGroupOverrides = options?.connectorCountOverrides;
+  const mainOverride = perGroupOverrides?.['main'];
+  const connectorCount = mainOverride ?? maxConnectors ?? computeConnectorCount(sys32RunLength);
   const sys32Positions = buildCadConnectorRunPositions(
     sys32RunLength,
     fullParams.firstHoleZ,
@@ -1056,14 +1890,44 @@ export function generateMinifixDrillMap(
     }
   };
 
+  // Resolve joint mode per corner from cabinet structure
+  const getJointMode = (corner: CornerType): JointType => {
+    const isTop = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+    const mode = isTop ? cabinet.structure?.topJoint : cabinet.structure?.bottomJoint;
+    return mode ?? 'INSET';
+  };
+
+  // Resolve top/bottom connector configs (default = minifix enabled)
+  const topConnectors = cabinet.structure?.topConnectors;
+  const bottomConnectors = cabinet.structure?.bottomConnectors;
+
+  // Check if a corner is enabled based on top/bottom connector configs
+  const isCornerEnabled = (corner: CornerType): boolean => {
+    const isTop = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+    const isLeft = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+    const cfg = isTop ? topConnectors : bottomConnectors;
+
+    // Default: minifix enabled on both sides (backward compatible)
+    if (!cfg || cfg.connectionType === 'minifix') {
+      const side = isLeft ? cfg?.left : cfg?.right;
+      return side?.enabled !== false; // default true
+    }
+    // connectionType === 'none' → skip this corner
+    return false;
+  };
+
   // Process each corner
   for (const corner of CORNERS) {
+    // Skip corners disabled by top/bottom connector config
+    if (!isCornerEnabled(corner)) continue;
+
     const cornerAngle = getCornerAngle(corner);
+    const cornerJointMode = getJointMode(corner);
 
     // Generate points for each System32 position (AUTO-CALCULATED)
     for (let i = 0; i < sys32Positions.length; i++) {
       const sys32Z = sys32Positions[i];
-      const result = generateCornerJointPoints(corner, sys32Z, i, panelsByRole, fullConfig, fullParams, cornerAngle);
+      const result = generateCornerJointPoints(corner, sys32Z, i, panelsByRole, fullConfig, fullParams, cornerAngle, cornerJointMode);
 
       // Add CAM point
       if (result.camPoint) {
@@ -1103,6 +1967,223 @@ export function generateMinifixDrillMap(
   }
 
   // ========================================
+  // SHELF JUNCTION CONNECTORS
+  // ========================================
+  // Generate Minifix drill points at shelf-to-side-panel junctions
+  // Only for shelves configured with connectionType = 'minifix'
+  {
+    const shelfConnectors = cabinet.structure?.shelfConnectors;
+    const leftSide = panelsByRole['LEFT_SIDE'];
+    const rightSide = panelsByRole['RIGHT_SIDE'];
+
+    if (shelfConnectors && (leftSide || rightSide)) {
+      // Find all SHELF panels sorted by Y position (bottom to top)
+      const shelfPanels = cabinet.panels
+        .filter(p => p.role === 'SHELF')
+        .sort((a, b) => a.position[1] - b.position[1]);
+
+      for (let shelfIdx = 0; shelfIdx < shelfPanels.length; shelfIdx++) {
+        const shelfPanel = shelfPanels[shelfIdx];
+        const shelfKey = String(shelfIdx);
+        const shelfConfig = shelfConnectors[shelfKey];
+
+        // Skip shelves that don't have minifix connectors configured
+        if (!shelfConfig || shelfConfig.connectionType !== 'minifix') continue;
+
+        const shelfAabb = calculatePanelAABB(shelfPanel);
+        const shelfRunLength = shelfAabb.max[2] - shelfAabb.min[2]; // Z span = depth run
+
+        // Calculate System 32 positions for this shelf's depth
+        // ALWAYS auto-calculate from shelf depth — same algorithm as TOP/BOTTOM corners.
+        // This ensures shelf connector count and spacing matches TOP/BOTTOM exactly.
+        const shelfGroupKey = `shelf_${shelfIdx}`;
+        const shelfCountOverride = perGroupOverrides?.[shelfGroupKey];
+        const shelfSys32Positions = buildCadConnectorRunPositions(
+            shelfRunLength,
+            fullParams.firstHoleZ,
+            shelfCountOverride ?? computeConnectorCount(shelfRunLength),
+          );
+
+        // LEFT side junction
+        if (shelfConfig.left?.enabled && leftSide) {
+          const shelfCornerLeft: ShelfCornerType = `SHELF_${shelfIdx}_LEFT`;
+
+          for (let i = 0; i < shelfSys32Positions.length; i++) {
+            const sys32Z = shelfSys32Positions[i];
+            const result = generateShelfJointPoints(
+              shelfCornerLeft, sys32Z, i, shelfPanel, leftSide, fullConfig, fullParams,
+            );
+
+            // Add all points to panel map
+            if (result.camPoint) {
+              const points = panelPointsMap.get(result.camPoint.panelId) || [];
+              points.push(result.camPoint);
+              panelPointsMap.set(result.camPoint.panelId, points);
+            }
+            if (result.boltPoint) {
+              const points = panelPointsMap.get(result.boltPoint.panelId) || [];
+              points.push(result.boltPoint);
+              panelPointsMap.set(result.boltPoint.panelId, points);
+            }
+            if (result.boltEntryPoint) {
+              const points = panelPointsMap.get(result.boltEntryPoint.panelId) || [];
+              points.push(result.boltEntryPoint);
+              panelPointsMap.set(result.boltEntryPoint.panelId, points);
+            }
+            if (result.boltThreadPoint) {
+              const points = panelPointsMap.get(result.boltThreadPoint.panelId) || [];
+              points.push(result.boltThreadPoint);
+              panelPointsMap.set(result.boltThreadPoint.panelId, points);
+            }
+            for (const dowel of result.dowelPoints) {
+              const points = panelPointsMap.get(dowel.panelId) || [];
+              points.push(dowel);
+              panelPointsMap.set(dowel.panelId, points);
+            }
+          }
+        }
+
+        // RIGHT side junction
+        if (shelfConfig.right?.enabled && rightSide) {
+          const shelfCornerRight: ShelfCornerType = `SHELF_${shelfIdx}_RIGHT`;
+
+          // Use same auto-calculated positions for right side (matching TOP/BOTTOM symmetry)
+          const rightSys32Positions = shelfSys32Positions;
+
+          for (let i = 0; i < rightSys32Positions.length; i++) {
+            const sys32Z = rightSys32Positions[i];
+            const result = generateShelfJointPoints(
+              shelfCornerRight, sys32Z, i, shelfPanel, rightSide, fullConfig, fullParams,
+            );
+
+            if (result.camPoint) {
+              const points = panelPointsMap.get(result.camPoint.panelId) || [];
+              points.push(result.camPoint);
+              panelPointsMap.set(result.camPoint.panelId, points);
+            }
+            if (result.boltPoint) {
+              const points = panelPointsMap.get(result.boltPoint.panelId) || [];
+              points.push(result.boltPoint);
+              panelPointsMap.set(result.boltPoint.panelId, points);
+            }
+            if (result.boltEntryPoint) {
+              const points = panelPointsMap.get(result.boltEntryPoint.panelId) || [];
+              points.push(result.boltEntryPoint);
+              panelPointsMap.set(result.boltEntryPoint.panelId, points);
+            }
+            if (result.boltThreadPoint) {
+              const points = panelPointsMap.get(result.boltThreadPoint.panelId) || [];
+              points.push(result.boltThreadPoint);
+              panelPointsMap.set(result.boltThreadPoint.panelId, points);
+            }
+            for (const dowel of result.dowelPoints) {
+              const points = panelPointsMap.get(dowel.panelId) || [];
+              points.push(dowel);
+              panelPointsMap.set(dowel.panelId, points);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ========================================
+  // BACK PANEL OVERLAY CONNECTORS
+  // ========================================
+  // Generate Minifix + Dowel drill points at back panel ↔ side panel junctions.
+  // Only for overlay construction where back panel covers side panel back edges.
+  {
+    const backPanel = panelsByRole['BACK'];
+    const leftSide = panelsByRole['LEFT_SIDE'];
+    const rightSide = panelsByRole['RIGHT_SIDE'];
+    const backPanelConstruction = cabinet.structure?.backPanelConstruction;
+
+    // Auto-enable: if overlay construction with back panel, default to enabled
+    // This handles both explicit config AND legacy cabinets without backPanelConnectors
+    const backPanelConnectors = cabinet.structure?.backPanelConnectors
+      ?? (backPanelConstruction === 'overlay'
+        ? DEFAULT_BACK_PANEL_CONNECTOR_CONFIG  // fallback: use default (enabled=false→true below)
+        : undefined);
+    const backConnectorsEnabled = backPanelConstruction === 'overlay'
+      && backPanel
+      && (leftSide || rightSide)
+      && (backPanelConnectors?.enabled !== false);  // enabled unless explicitly disabled
+
+    if (backConnectorsEnabled && backPanelConnectors && backPanel) {
+      const backAabb = calculatePanelAABB(backPanel);
+      const backRunLength = backAabb.max[1] - backAabb.min[1]; // Y span = height run
+
+      const backCountOverride = perGroupOverrides?.['back'];
+      const backSys32Positions = buildCadConnectorRunPositions(
+        backRunLength,
+        fullParams.firstHoleZ,
+        backCountOverride ?? computeConnectorCount(backRunLength),
+      );
+
+      // Helper to push all result points into panelPointsMap
+      const pushResult = (result: CornerJointResult) => {
+        if (result.camPoint) {
+          const points = panelPointsMap.get(result.camPoint.panelId) || [];
+          points.push(result.camPoint);
+          panelPointsMap.set(result.camPoint.panelId, points);
+        }
+        if (result.boltPoint) {
+          const points = panelPointsMap.get(result.boltPoint.panelId) || [];
+          points.push(result.boltPoint);
+          panelPointsMap.set(result.boltPoint.panelId, points);
+        }
+        if (result.boltEntryPoint) {
+          const points = panelPointsMap.get(result.boltEntryPoint.panelId) || [];
+          points.push(result.boltEntryPoint);
+          panelPointsMap.set(result.boltEntryPoint.panelId, points);
+        }
+        if (result.boltThreadPoint) {
+          const points = panelPointsMap.get(result.boltThreadPoint.panelId) || [];
+          points.push(result.boltThreadPoint);
+          panelPointsMap.set(result.boltThreadPoint.panelId, points);
+        }
+        for (const dowel of result.dowelPoints) {
+          const points = panelPointsMap.get(dowel.panelId) || [];
+          points.push(dowel);
+          panelPointsMap.set(dowel.panelId, points);
+        }
+      };
+
+      // LEFT side junction (BACK ↔ LEFT_SIDE)
+      if (backPanelConnectors.left.enabled && leftSide) {
+        for (let i = 0; i < backSys32Positions.length; i++) {
+          const sys32Y = backSys32Positions[i];
+          const backCorner: BackCornerType = 'BACK_LEFT';
+          const configWithDowels = {
+            ...fullConfig,
+            includeDowel: backPanelConnectors.left.includeDowels && fullConfig.includeDowel,
+          };
+          const result = generateBackPanelJointPoints(
+            backCorner, sys32Y, i, backPanel, leftSide, configWithDowels, fullParams,
+          );
+          pushResult(result);
+        }
+      }
+
+      // RIGHT side junction (BACK ↔ RIGHT_SIDE)
+      if (backPanelConnectors.right.enabled && rightSide) {
+        for (let i = 0; i < backSys32Positions.length; i++) {
+          const sys32Y = backSys32Positions[i];
+          const backCorner: BackCornerType = 'BACK_RIGHT';
+          const configWithDowels = {
+            ...fullConfig,
+            includeDowel: backPanelConnectors.right.includeDowels && fullConfig.includeDowel,
+          };
+          const result = generateBackPanelJointPoints(
+            backCorner, sys32Y, i, backPanel, rightSide, configWithDowels, fullParams,
+          );
+          pushResult(result);
+        }
+      }
+    }
+  }
+
+  // ========================================
   // B-RUN: WIDTH AXIS DOWEL POSITIONS
   // ========================================
   // B-run = dowel-only along width (X) for lateral alignment / anti-rack.
@@ -1117,6 +2198,9 @@ export function generateMinifixDrillMap(
       const sys32WidthPositions = buildCadConnectorRunPositions(widthSpan, fullParams.firstHoleZ, 2); // B-run always 2
 
       for (const corner of CORNERS) {
+        // Skip B-run dowels for corners disabled by connector config
+        if (!isCornerEnabled(corner)) continue;
+
         for (let i = 0; i < sys32WidthPositions.length; i++) {
           const sys32X = sys32WidthPositions[i]!;
           const bRunPoints = generateBRunDowelPoints(corner, sys32X, i, panelsByRole, fullConfig);
@@ -1131,6 +2215,24 @@ export function generateMinifixDrillMap(
       console.warn(
         `[DrillMap] B-run skipped: widthSpan ${widthSpan.toFixed(1)}mm < ${minSpanForBRun}mm minimum`,
       );
+    }
+  }
+
+  // ========================================
+  // CENTRALIZED HARDWARE CATALOG ENRICHMENT
+  // ========================================
+  // Enrich ALL drill points with hardware name + catalog number.
+  // Done here (after all generation) so every branch benefits:
+  // OVERLAY corners, INSET corners, shelf junctions, B-run dowels, back panel.
+  for (const [, pts] of panelPointsMap) {
+    for (const pt of pts) {
+      if (pt.hardwareName && pt.catalogNo) continue; // already enriched (shouldn't happen, but safe)
+      const catalog = lookupHardwareCatalog(pt.purpose, pt.diameter, pt.depth, fullConfig, {
+        specLength: pt.specLength,
+        model: 'S200',  // TODO: derive from cabinet hardware config
+      });
+      pt.hardwareName = catalog.hardwareName;
+      pt.catalogNo = catalog.catalogNo;
     }
   }
 

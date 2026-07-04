@@ -78,8 +78,8 @@ export function UnwaiveModal({
   const reasonColor = reasonLength >= UNWAIVE_REASON_MIN_LENGTH ? 'text-green-400' : 'text-gray-500';
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="w-[560px] max-w-[92vw] bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+      <div className="pointer-events-auto w-[560px] max-w-[92vw] bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-white">UNWAIVE Issue (Reopen)</h3>

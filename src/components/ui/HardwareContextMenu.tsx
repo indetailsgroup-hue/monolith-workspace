@@ -382,7 +382,11 @@ export function HardwareContextMenu() {
   const x = baseX + dragOffset.x;
   const y = baseY + dragOffset.y;
 
-  const cornerLabel = cornerType?.replace('_', ' ') || 'Unknown';
+  const cornerLabel = cornerType
+    ? (cornerType === 'BACK_LEFT' || cornerType === 'BACK_RIGHT')
+      ? 'Side ' + cornerType.replace('_', ' ')
+      : cornerType.replace('_', ' ')
+    : 'Unknown';
 
   return createPortal(
     <div

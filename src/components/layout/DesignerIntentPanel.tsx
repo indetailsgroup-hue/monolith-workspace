@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
+import { useSelectionStore } from '../../core/store/useSelectionStore';
 import { useIntentPanelStore } from '../../designer/state/useIntentPanelStore';
 import { HardwarePanel } from '../ui/HardwarePanel';
 import { HardwareConfigSelector } from '../ui/HardwareConfigSelector';
@@ -14,6 +15,7 @@ import { MaterialSelector } from '../ui/MaterialSelector';
 import { PanelSortableList } from '../ui/SortableList';
 import { ConstructionTypeSelector } from '../ui/ConstructionTypeSelector';
 import { BIMClassificationBadge } from '../ui/BIMClassificationBadge';
+import { ConnectorList } from '../ui/ConnectorList';
 import {
   KerfBendingCalculator,
   HiddenDoorHingeCalculator,
@@ -209,6 +211,7 @@ function PanelList() {
   const removePanel = useCabinetStore((s) => s.removePanel);
   const setShelfCount = useCabinetStore((s) => s.setShelfCount);
   const setDividerCount = useCabinetStore((s) => s.setDividerCount);
+  const openPanelConfigModal = useSelectionStore((s) => s.openPanelConfigModal);
 
   if (!cabinet) return null;
 
@@ -249,6 +252,10 @@ function PanelList() {
         selectedId={selectedPanelId}
         onSelectPanel={selectPanel}
         onDeletePanel={handleDeletePanel}
+        onDoubleClickPanel={(id) => {
+          selectPanel(id);
+          openPanelConfigModal();
+        }}
       />
     </div>
   );
@@ -330,6 +337,19 @@ function CatalogContent() {
           <h4 className="text-xs font-medium text-white">Panel List</h4>
         </div>
         <PanelList />
+      </div>
+
+      {/* Connectors List Section */}
+      <div className="border-t border-[#333] pt-2">
+        <div className="flex items-center gap-1.5 mb-2">
+          <div className="w-5 h-5 rounded bg-purple-500/20 flex items-center justify-center">
+            <svg className="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+          <h4 className="text-xs font-medium text-white">Connectors List</h4>
+        </div>
+        <ConnectorList />
       </div>
     </div>
   );

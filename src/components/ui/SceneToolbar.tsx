@@ -29,6 +29,7 @@ import {
   Wrench,
   Ruler,
   FileText,
+  Circle,
 } from 'lucide-react';
 import { useToolStore, ToolId, TOOL_INFO } from '../../core/store/useToolStore';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
@@ -96,6 +97,10 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
   // X-Ray mode (Plasticity-style Alt+Z)
   const xRayMode = useViewStore((s) => s.xRayMode);
   const toggleXRay = useViewStore((s) => s.toggleXRay);
+
+  // CSG Boolean drill holes (Ctrl+Shift+H)
+  const useCSGHoles = useViewStore((s) => s.useCSGHoles);
+  const toggleCSGHoles = useViewStore((s) => s.toggleCSGHoles);
 
   const activeCabinetId = useCabinetStore((s) => s.activeCabinetId);
   const rotateCabinet90 = useCabinetStore((s) => s.rotateCabinet90);
@@ -280,6 +285,22 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
             <FileText size={14} />
             <span className="text-[10px] font-medium">
               {showCADView ? 'CAD View' : '2D CAD'}
+            </span>
+          </button>
+
+          {/* CSG Boolean Drill Holes Toggle */}
+          <button
+            onClick={toggleCSGHoles}
+            className={`p-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5
+              ${useCSGHoles
+                ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-500/40'
+                : 'bg-surface-3 text-gray-400 border border-transparent hover:text-cyan-300'
+              }`}
+            title={`Boolean Holes ${useCSGHoles ? 'ON' : 'OFF'} (Ctrl+Shift+H) - True geometry subtraction`}
+          >
+            <Circle size={14} />
+            <span className="text-[10px] font-medium">
+              {useCSGHoles ? 'Boolean' : 'Overlay'}
             </span>
           </button>
 

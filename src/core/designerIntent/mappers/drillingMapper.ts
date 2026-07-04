@@ -134,7 +134,7 @@ export function drillingMapper(
   const notesTH: string[] = [];
 
   // ---- System 32 Parameters ----
-  const firstHole = (getDerived(derived, 'system32FirstHole') as number) || 37;
+  const firstHole = (getDerived(derived, 'system32FirstHole') as number) || 50;
   const pitch = (getDerived(derived, 'system32Pitch') as number) || 32;
 
   notesTH.push(`System 32: รูแรกที่ ${firstHole}mm, ระยะห่าง ${pitch}mm`);

@@ -346,6 +346,103 @@ export interface CabinetDimensions {
   toeKickHeight: number;  // Leg height for base cabinets (mm)
 }
 
+// ============================================
+// SHELF CONNECTOR CONFIGURATION
+// ============================================
+
+/**
+ * Connection type for how a shelf attaches to side panels.
+ * - 'shelf-pins': Adjustable System 32 shelf pins (default)
+ * - 'minifix': Fixed Minifix bolt+cam connectors (structural)
+ */
+export type ShelfConnectionType = 'shelf-pins' | 'minifix';
+
+/**
+ * Per-side connector configuration for a shelf junction.
+ */
+export interface ShelfSideConnectorConfig {
+  /** Whether this side has a connector enabled */
+  enabled: boolean;
+  /** Joint type for this shelf-side connection */
+  jointType: JointType;  // 'INSET' | 'OVERLAY'
+  /** System 32 Z positions where connectors are placed (mm from front) */
+  sys32Positions: number[];  // e.g., [64, 128]
+  /** Distance B from shelf edge to bolt center (mm) */
+  distanceB: number;
+  /** Include wooden dowels alongside Minifix */
+  includeDowels: boolean;
+}
+
+/**
+ * Complete connector configuration for one shelf.
+ */
+export interface ShelfConnectorConfig {
+  /** Connection mode: shelf-pins (adjustable) or minifix (fixed) */
+  connectionType: ShelfConnectionType;
+  /** Left side connector config */
+  left: ShelfSideConnectorConfig;
+  /** Right side connector config */
+  right: ShelfSideConnectorConfig;
+}
+
+export const DEFAULT_SHELF_SIDE_CONNECTOR: ShelfSideConnectorConfig = {
+  enabled: true,
+  jointType: 'INSET',    // Side covers shelf edge (standard)
+  sys32Positions: [],     // Empty = auto-calculate from shelf depth (same algorithm as TOP/BOTTOM)
+  distanceB: 24,          // Häfele standard Distance B
+  includeDowels: true,
+};
+
+export const DEFAULT_SHELF_CONNECTOR_CONFIG: ShelfConnectorConfig = {
+  connectionType: 'shelf-pins',  // Default: adjustable
+  left: { ...DEFAULT_SHELF_SIDE_CONNECTOR },
+  right: { ...DEFAULT_SHELF_SIDE_CONNECTOR },
+};
+
+/**
+ * Back panel connector configuration for Minifix + Dowel joints.
+ * Connects back panel (overlay) to side panels along Y axis (height).
+ */
+export interface BackPanelConnectorConfig {
+  /** Master enable for back panel connectors */
+  enabled: boolean;
+  /** Left side (back panel ↔ LEFT_SIDE) */
+  left: { enabled: boolean; includeDowels: boolean };
+  /** Right side (back panel ↔ RIGHT_SIDE) */
+  right: { enabled: boolean; includeDowels: boolean };
+}
+
+export const DEFAULT_BACK_PANEL_CONNECTOR_CONFIG: BackPanelConnectorConfig = {
+  enabled: true,
+  left: { enabled: true, includeDowels: true },
+  right: { enabled: true, includeDowels: true },
+};
+
+/**
+ * Connection type for structural panels (TOP, BOTTOM).
+ * - 'none': No Minifix connectors (panel held by other means: screws, glue, etc.)
+ * - 'minifix': Minifix S200 cam+bolt connectors (standard for cabinet construction)
+ */
+export type StructuralConnectionType = 'none' | 'minifix';
+
+/**
+ * Connector configuration for structural panels (TOP/BOTTOM).
+ * Controls whether Minifix drill points are generated at corner junctions.
+ */
+export interface StructuralConnectorConfig {
+  connectionType: StructuralConnectionType;
+  /** Left side (panel ↔ LEFT_SIDE) */
+  left: { enabled: boolean; includeDowels: boolean };
+  /** Right side (panel ↔ RIGHT_SIDE) */
+  right: { enabled: boolean; includeDowels: boolean };
+}
+
+export const DEFAULT_STRUCTURAL_CONNECTOR_CONFIG: StructuralConnectorConfig = {
+  connectionType: 'minifix',
+  left: { enabled: true, includeDowels: true },
+  right: { enabled: true, includeDowels: true },
+};
+
 export interface CabinetStructure {
   topJoint: JointType;
   bottomJoint: JointType;
@@ -358,6 +455,33 @@ export interface CabinetStructure {
   drawerConfig?: DrawerConfig;
   /** Door system configuration (optional) */
   doorConfig?: DoorConfig;
+
+  /**
+   * Per-shelf connector configuration.
+   * Key = shelf index (0-based), e.g., "0" for first shelf.
+   * When a shelf's connectionType is 'minifix', Minifix drill points
+   * are generated at the shelf-to-side-panel junctions.
+   */
+  shelfConnectors?: Record<string, ShelfConnectorConfig>;
+
+  /**
+   * Top panel connector configuration (Minifix vs None).
+   * Controls Minifix generation at TOP_LEFT and TOP_RIGHT corners.
+   */
+  topConnectors?: StructuralConnectorConfig;
+
+  /**
+   * Bottom panel connector configuration (Minifix vs None).
+   * Controls Minifix generation at BOTTOM_LEFT and BOTTOM_RIGHT corners.
+   */
+  bottomConnectors?: StructuralConnectorConfig;
+
+  /**
+   * Back panel connector configuration (Minifix + Dowel).
+   * Only applies when backPanelConstruction is 'overlay'.
+   * Connects back panel to LEFT_SIDE and RIGHT_SIDE panels.
+   */
+  backPanelConnectors?: BackPanelConnectorConfig;
 
   /**
    * Corner angles for angled cabinet joints (optional).

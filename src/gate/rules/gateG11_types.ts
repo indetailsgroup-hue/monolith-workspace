@@ -36,7 +36,7 @@ export const G11_CONSTANTS = {
   // System 32 parameters
   SYSTEM32_PITCH: 32,           // mm - grid spacing
   SYSTEM32_FIRST_HOLE: 37,      // mm - from FRONT edge
-  SYSTEM32_REAR_MARGIN: 37,     // mm - from BACK edge
+  SYSTEM32_REAR_MARGIN: 50,     // mm - from BACK edge
 
   // Distance B
   DIMENSION_B_STANDARD: 24,     // mm - standard offset from mate edge

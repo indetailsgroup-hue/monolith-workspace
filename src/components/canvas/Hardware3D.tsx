@@ -180,8 +180,9 @@ export function buildBoltMeshFrame(args: BuildBoltMeshFrameArgs): BoltMeshFrame 
   const neckPos: Vec3Tuple = tupleAdd(ballPos, tupleScale(axis, -neckOffset));
   const sleevePos: Vec3Tuple = tupleAdd(ballPos, tupleScale(axis, -sleeveOffset));
 
-  // IMPORTANT: thread goes INTO bolt panel from A along +axis
-  const threadPos: Vec3Tuple = tupleScale(axis, L / 2);
+  // Thread screws INTO the bolt panel (side panel) from entry point A.
+  // Direction is OPPOSITE to boltDirection (axis points A→cam, thread goes A→deep into panel).
+  const threadPos: Vec3Tuple = tupleScale(axis, -L / 2);
 
   return {
     axis,

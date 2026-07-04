@@ -59,8 +59,23 @@ export const BOLT_MODEL = {
   FINS_AXIS: new THREE.Vector3(1, 0, 0),
 } as const;
 
-export type Corner = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+export type CabinetCorner = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+export type ShelfCorner = `SHELF_${number}_${'LEFT' | 'RIGHT'}`;
+export type BackCorner = 'BACK_LEFT' | 'BACK_RIGHT';
+export type Corner = CabinetCorner | ShelfCorner | BackCorner;
 export type MountType = 'INSET' | 'OVERLAY';
+
+/** Type guard: is this a shelf junction corner? */
+export function isShelfCornerType(corner: Corner): corner is ShelfCorner {
+  return typeof corner === 'string' && corner.startsWith('SHELF_');
+}
+
+/** Parse shelf corner → { shelfIndex, side } */
+export function parseShelfCornerType(corner: ShelfCorner): { shelfIndex: number; side: 'LEFT' | 'RIGHT' } {
+  const match = corner.match(/^SHELF_(\d+)_(LEFT|RIGHT)$/);
+  if (!match) throw new Error(`[parseShelfCornerType] Invalid shelf corner: ${corner}`);
+  return { shelfIndex: parseInt(match[1], 10), side: match[2] as 'LEFT' | 'RIGHT' };
+}
 
 // ============================================
 // HELPER FUNCTIONS
@@ -137,10 +152,29 @@ export function signedAngleAroundAxis(
  * - LEFT side panel inner face normal = +X (pointing right, into cabinet)
  * - RIGHT side panel inner face normal = -X (pointing left, into cabinet)
  *
- * IMPORTANT: This is the normal of the SIDE panel, NOT TOP/BOTTOM!
+ * For shelf corners (SHELF_N_LEFT/RIGHT), the bolt panel is still the
+ * side panel, so the same logic applies.
+ *
+ * IMPORTANT: This is the normal of the SIDE panel, NOT TOP/BOTTOM/SHELF!
  */
 export function selectBoltPanelNormalWorld(corner: Corner): THREE.Vector3 {
-  // Bolt on LEFT/RIGHT side panel (not top/bottom face)
+  // Shelf corners: extract side from corner name
+  if (isShelfCornerType(corner)) {
+    const { side } = parseShelfCornerType(corner);
+    return side === 'LEFT' ? WORLD.X_POS.clone() : WORLD.X_NEG.clone();
+  }
+
+  // Back panel overlay corners: CAM is on SIDE panel, so return SIDE panel normal
+  // BACK_LEFT = back panel ↔ LEFT_SIDE → LEFT_SIDE inner face normal = +X
+  // BACK_RIGHT = back panel ↔ RIGHT_SIDE → RIGHT_SIDE inner face normal = -X
+  if (corner === 'BACK_LEFT') {
+    return WORLD.X_POS.clone(); // LEFT_SIDE inner face → +X
+  }
+  if (corner === 'BACK_RIGHT') {
+    return WORLD.X_NEG.clone(); // RIGHT_SIDE inner face → -X
+  }
+
+  // Cabinet corners: bolt on LEFT/RIGHT side panel
   if (corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT') {
     return WORLD.X_POS.clone(); // LEFT side inner face → +X
   }
@@ -284,6 +318,8 @@ export function computeBoltQuatWithTwist(params: {
   }
 
   // 2. Compute target direction based on mount type
+  // INSET:   fins align with seamDir (along joint edge) → clockface faces ±X
+  // OVERLAY: fins align with seam-perpendicular → clockface faces ±X (toward cabinet width)
   const targetDir =
     params.mountType === 'INSET'
       ? seamDir.clone()
@@ -535,29 +571,70 @@ export function validateSideViewOrientation(
 }
 
 /**
- * Get drilling axis for a corner based on joint type and position.
+ * Get bolt SHAFT direction for a corner based on joint type.
+ *
+ * Returns the direction the bolt shaft extends INTO the panel it sits in.
+ * This is also the direction used to orient the 3D hardware model
+ * (BOLT_MODEL.SHAFT_AXIS is aligned to this vector).
  *
  * INSET (shelves between side panels):
- *   - Bolt drilled HORIZONTALLY (X-axis) into FACE of side panel
- *   - LEFT corners: drill RIGHT (+X) into left panel face
- *   - RIGHT corners: drill LEFT (-X) into right panel face
+ *   - Bolt sits in SIDE panel face → shaft drilled HORIZONTALLY (±X)
+ *   - LEFT corners: shaft goes LEFT (-X) into left side panel
+ *   - RIGHT corners: shaft goes RIGHT (+X) into right side panel
  *
- * OVERLAY (side panels on top/bottom of shelves):
- *   - Bolt drilled VERTICALLY (Y-axis) into EDGE of side panel
- *   - TOP corners: drill DOWN (-Y) into top edge
- *   - BOTTOM corners: drill UP (+Y) into bottom edge
+ * OVERLAY (top/bottom covers side panels):
+ *   - Bolt sits in HORIZONTAL panel face → shaft drilled VERTICALLY (±Y)
+ *   - TOP corners: shaft goes UP (+Y) into top horizontal panel
+ *   - BOTTOM corners: shaft goes DOWN (-Y) into bottom horizontal panel
+ *
+ * NOTE: For OVERLAY, the bolt ENTRY bore (on side panel edge) goes the
+ * OPPOSITE direction. This function returns the SHAFT direction, not
+ * the entry bore direction.
  */
 export function getDrillingAxis(corner: Corner, jointType: MountType = 'OVERLAY'): THREE.Vector3 {
+  // ========================================
+  // SHELF JUNCTION CORNERS
+  // ========================================
+  // Shelf connectors: same logic as cabinet corners
+  // INSET: bolt shaft into SIDE panel face (±X)
+  // OVERLAY: bolt shaft into SHELF face (±Y, typically -Y = down into shelf top)
+  if (isShelfCornerType(corner)) {
+    const { side } = parseShelfCornerType(corner);
+    const isLeft = side === 'LEFT';
+
+    if (jointType === 'INSET') {
+      // Bolt shaft extends into SIDE panel face
+      return isLeft ? WORLD.X_NEG.clone() : WORLD.X_POS.clone();
+    } else {
+      // OVERLAY: bolt shaft extends DOWN into shelf top face
+      // (shelf is always below the bolt in standard construction)
+      return WORLD.Y_NEG.clone();
+    }
+  }
+
+  // ========================================
+  // BACK PANEL OVERLAY CORNERS
+  // ========================================
+  // Back panel overlay: bolt shaft extends INTO back panel face (-Z direction)
+  if (corner === 'BACK_LEFT' || corner === 'BACK_RIGHT') {
+    return WORLD.Z_NEG.clone();
+  }
+
+  // ========================================
+  // CABINET CORNER JOINTS
+  // ========================================
   const isTop = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
   const isLeft = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
 
   if (jointType === 'INSET') {
-    // INSET FIX: Origin is at Cam (in Shelf) → bolt head points OUT toward Side Panel
-    // Left Panel: bolt head points LEFT (-X)
-    // Right Panel: bolt head points RIGHT (+X)
+    // INSET: Bolt shaft extends into SIDE panel face
+    // Left Panel: shaft goes LEFT (-X)
+    // Right Panel: shaft goes RIGHT (+X)
     return isLeft ? WORLD.X_NEG.clone() : WORLD.X_POS.clone();
   } else {
-    // OVERLAY: Bolt drilled VERTICALLY into edge of Side Panel
+    // OVERLAY: Bolt shaft extends into HORIZONTAL panel face
+    // TOP corners: shaft goes DOWN (-Y) into top panel (drill down from above)
+    // BOTTOM corners: shaft goes UP (+Y) into bottom panel (drill up from below)
     return isTop ? WORLD.Y_NEG.clone() : WORLD.Y_POS.clone();
   }
 }

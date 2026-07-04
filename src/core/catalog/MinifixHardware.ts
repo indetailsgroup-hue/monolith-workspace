@@ -122,7 +122,7 @@ export const MINIFIX_HOUSINGS: Record<MinifixHousingType, MinifixHousingSpec> = 
     drillingDepth: 12.5,
     minWoodThickness: 16,
     maxWoodThickness: 50,
-    edgeDistance: 37,
+    edgeDistance: 50,
     boltHoleDiameter: 10,
     maxPullForce: 2500,
     maxShearForce: 1500,
@@ -700,7 +700,7 @@ export function generateMinifixArrayPattern(
   // Can be overridden by user for custom configurations
   const drillingDistanceB = overrides?.drillingDistanceB ?? housing.edgeDistance;
 
-  // SYSTEM 32 STANDARD: First hole at 37mm from front/back edges
+  // SYSTEM 32 STANDARD: First hole at 50mm from front/back edges
   // This is the industry standard for European 32mm cabinet construction
   // Allows proper clearance for door hinges and drawer systems
   // Can be overridden by user for custom configurations
@@ -708,7 +708,7 @@ export function generateMinifixArrayPattern(
   const firstHoleDistance = overrides?.firstHoleZ ?? SYSTEM_32_FIRST_HOLE;
 
   // Calculate number of Minifix points
-  // First and last holes are positioned at 37mm from panel edges (System 32)
+  // First and last holes are positioned at 50mm from panel edges (System 32)
   const usableLength = panelLength - (2 * firstHoleDistance);
   const count = Math.max(2, Math.floor(usableLength / spacing) + 1);
 

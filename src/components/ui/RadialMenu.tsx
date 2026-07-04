@@ -167,9 +167,8 @@ export function RadialMenu() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — pointer-events-none so 3D scene stays interactive */}
       <div
-        onClick={handleBackdropClick}
         onContextMenu={(e) => {
           e.preventDefault();
           closeRadialMenu();
@@ -177,9 +176,8 @@ export function RadialMenu() {
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.25)',
+          pointerEvents: 'none',
           zIndex: 9990,
-          animation: 'fadeIn 80ms ease-out',
         }}
       />
 

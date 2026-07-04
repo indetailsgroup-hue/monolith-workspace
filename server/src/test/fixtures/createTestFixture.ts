@@ -194,8 +194,10 @@ export async function createTestFixture(options: FixtureOptions = {}): Promise<F
     signature: { alg: 'none' as const } as ExportReceiptSignature,
   };
 
-  // Compute receiptId
-  const canonical = stableStringify(baseReceipt);
+  // Compute receiptId — EXCLUDE the signature field so it matches the verifier
+  // (signReceipt replaces signature after the id is computed; see exportReceipt.ts).
+  const { signature: _sigForId, ...idBase } = baseReceipt;
+  const canonical = stableStringify(idBase);
   const receiptId = sha256Hex(canonical);
 
   let receipt: ExportReceipt = {

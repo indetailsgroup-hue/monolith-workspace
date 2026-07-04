@@ -85,7 +85,7 @@ export interface PlacementConfig {
  * Default System 32 configuration
  */
 export const DEFAULT_SYSTEM32: System32Config = {
-    setback: 37,
+    setback: 50,
     pitch: 32,
 };
 
@@ -169,9 +169,9 @@ export interface MinifixJointPositions {
  * Calculate the System 32 Z position for a given position index.
  *
  * Position indices:
- * - 0 → 37mm (first hole at setback)
- * - 1 → 69mm (37 + 32)
- * - 2 → 101mm (37 + 64)
+ * - 0 → 50mm (first hole at setback)
+ * - 1 → 82mm (50 + 32)
+ * - 2 → 114mm (50 + 64)
  * - n → setback + n × pitch
  *
  * @param index - Position index (0-based)

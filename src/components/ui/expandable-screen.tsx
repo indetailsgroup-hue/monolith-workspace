@@ -117,10 +117,10 @@ export function ExpandableScreenContent({ children }: ExpandableScreenContentPro
     <>
       {isExpanded && (
         <>
-          {/* Content */}
+          {/* Content — pointer-events-auto so panel is interactive, wrapper is passthrough */}
           <motion.div
             layoutId={layoutId}
-            className="fixed inset-0 z-50 overflow-hidden pointer-events-auto"
+            className="fixed inset-0 z-50 overflow-hidden pointer-events-none"
             style={{
               borderRadius: contentRadius,
             }}
@@ -130,19 +130,17 @@ export function ExpandableScreenContent({ children }: ExpandableScreenContentPro
               damping: 30,
             }}
           >
-            {content}
+            <div className="pointer-events-auto w-full h-full">
+              {content}
+            </div>
           </motion.div>
 
-          {/* Backdrop */}
+          {/* Backdrop — pointer-events-none so 3D scene stays interactive */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsExpanded(false)
-            }}
-            className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm pointer-events-auto"
+            className="fixed inset-0 z-40 pointer-events-none"
           />
         </>
       )}

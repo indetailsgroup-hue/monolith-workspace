@@ -257,7 +257,7 @@ export const SYSTEM_32 = {
   HOLE_SPACING: 32,       // mm between holes
   HOLE_DIAMETER: 5,       // mm
   HOLE_DEPTH: 13,         // mm
-  EDGE_OFFSET_FRONT: 37,  // mm from front edge
+  EDGE_OFFSET_FRONT: 50,  // mm from front edge
   EDGE_OFFSET_BACK: 50,   // mm from back edge
   START_HEIGHT: 64,       // mm from bottom (2 × 32)
 };

@@ -211,7 +211,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
   
   saveProject: () => {
-    const { metadata, autoSaveEnabled } = get();
+    const { metadata, autoSaveEnabled, isDirty } = get();
     const cabinetStore = useCabinetStore.getState();
     const cabinet = cabinetStore.cabinet;
     const cabinets = cabinetStore.cabinets;
@@ -221,10 +221,13 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       return;
     }
 
-    // Update metadata timestamp
+    // Update metadata timestamp.
+    // Preserve updatedAt on a clean save (e.g. the initial auto-save right after
+    // creation, where no edits have been made) so a brand-new project keeps
+    // updatedAt === createdAt. Only advance it when there are unsaved edits.
     const updatedMetadata: ProjectMetadata = {
       ...metadata,
-      updatedAt: Date.now(),
+      updatedAt: isDirty ? Date.now() : metadata.updatedAt,
     };
 
     // Serialize cabinets with scenePosition/sceneRotation

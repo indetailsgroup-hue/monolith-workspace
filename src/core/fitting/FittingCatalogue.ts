@@ -331,9 +331,9 @@ export const DRILLING_PATTERNS: Record<string, DrillingPattern> = {
     name: 'Blum LEGRABOX Side Mount',
     system: 'SYSTEM_32',
     holes: [
-      { x: 0, y: 37, diameter: 5, depth: 12 },
-      { x: 0, y: 69, diameter: 5, depth: 12 },
-      { x: 0, y: 101, diameter: 5, depth: 12 },
+      { x: 0, y: 50, diameter: 5, depth: 12 },
+      { x: 0, y: 82, diameter: 5, depth: 12 },
+      { x: 0, y: 114, diameter: 5, depth: 12 },
     ],
   },
   'SYSTEM_32_5MM': {

@@ -112,6 +112,9 @@ interface ViewState {
   // Render mode for Ghost/Preview (Indetails Smart patterns)
   renderMode: RenderMode;  // NORMAL, GHOST, PREVIEW, XRAY
 
+  // CSG Boolean drill holes mode
+  useCSGHoles: boolean;    // True geometry subtraction (Ctrl+Shift+H)
+
   // Ghost cabinet IDs (for showing original before change)
   ghostCabinetIds: string[];
 
@@ -149,6 +152,10 @@ interface ViewActions {
   setGhostCabinets: (cabinetIds: string[]) => void;
   setPreviewCabinets: (cabinetIds: string[]) => void;
   clearRenderOverrides: () => void;
+
+  // CSG Boolean drill holes
+  toggleCSGHoles: () => void;
+  setCSGHoles: (enabled: boolean) => void;
 }
 
 // ============================================================================
@@ -164,6 +171,7 @@ export const useViewStore = create<ViewState & ViewActions>((set, get) => ({
   xRayMode: false,
   isOrthographic: false,
   renderMode: 'NORMAL' as RenderMode,
+  useCSGHoles: false,
   ghostCabinetIds: [],
   previewCabinetIds: [],
 
@@ -322,6 +330,23 @@ export const useViewStore = create<ViewState & ViewActions>((set, get) => ({
       version: get().version + 1,
     });
   },
+
+  // CSG Boolean Drill Holes
+  toggleCSGHoles: () => {
+    set({
+      useCSGHoles: !get().useCSGHoles,
+      version: get().version + 1,
+    });
+  },
+
+  setCSGHoles: (enabled) => {
+    if (get().useCSGHoles !== enabled) {
+      set({
+        useCSGHoles: enabled,
+        version: get().version + 1,
+      });
+    }
+  },
 }));
 
 // ============================================================================
@@ -336,6 +361,7 @@ export const selectIsOrthographic = (state: ViewState & ViewActions) => state.is
 export const selectRenderMode = (state: ViewState & ViewActions) => state.renderMode;
 export const selectGhostCabinetIds = (state: ViewState & ViewActions) => state.ghostCabinetIds;
 export const selectPreviewCabinetIds = (state: ViewState & ViewActions) => state.previewCabinetIds;
+export const selectUseCSGHoles = (state: ViewState & ViewActions) => state.useCSGHoles;
 
 // ============================================================================
 // Export type

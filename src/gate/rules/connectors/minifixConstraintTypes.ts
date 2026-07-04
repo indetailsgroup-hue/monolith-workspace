@@ -222,12 +222,32 @@ export const MINIFIX_TOLERANCES = {
 /**
  * Häfele Distance B by panel thickness (mm → mm).
  * Distance B = distance from panel edge to bolt axis center.
+ *
+ * Standard B (bolt variant S200):
+ *   B = panelThickness / 2 + camHeight → centered on cam pocket
+ *
+ * Extended B=34 variant (bolt variant S200 with longer neck):
+ *   Used for thicker panels or special mounting configurations.
+ *   Häfele catalog includes both B=24 and B=34 bolt lengths.
  */
 export const DISTANCE_B_BY_THICKNESS: Record<number, number> = {
   16: 22,   // 16mm wood → B = 22mm
   18: 24,   // 18mm wood → B = 24mm (default)
   19: 25,   // 19mm wood → B = 25mm
 };
+
+/**
+ * Häfele Distance B for extended B=34 bolt variant.
+ * Used when user explicitly selects B=34 configuration.
+ */
+export const DISTANCE_B_BY_THICKNESS_B34: Record<number, number> = {
+  16: 34,   // 16mm wood → B = 34mm (B=34 variant)
+  18: 34,   // 18mm wood → B = 34mm (B=34 variant)
+  19: 34,   // 19mm wood → B = 34mm (B=34 variant)
+};
+
+/** Standard accepted Distance B values per Häfele catalog */
+export const ACCEPTED_DISTANCE_B_VALUES = [22, 24, 25, 34] as const;
 
 /** Default Distance B when panel thickness not in lookup table */
 export const DISTANCE_B_DEFAULT_MM = 24;

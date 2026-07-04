@@ -270,6 +270,7 @@ function ContractContent() {
   const setDividerCount = useCabinetStore((s) => s.setDividerCount);
   const toggleBackPanel = useCabinetStore((s) => s.toggleBackPanel);
   const setBackPanelConstruction = useCabinetStore((s) => s.setBackPanelConstruction);
+  const setBackPanelConnectorConfig = useCabinetStore((s) => s.setBackPanelConnectorConfig);
   const setJointType = useCabinetStore((s) => s.setJointType);
   const coreMaterials = useCabinetStore((s) => s.coreMaterials);
   const surfaceMaterials = useCabinetStore((s) => s.surfaceMaterials);
@@ -386,6 +387,52 @@ function ContractContent() {
             </select>
           </div>
         )}
+        {cabinet.structure.hasBackPanel && cabinet.structure.backPanelConstruction === 'overlay' && (() => {
+          const bpc = cabinet.structure.backPanelConnectors || { enabled: false, left: { enabled: true, includeDowels: true }, right: { enabled: true, includeDowels: true } };
+          return (
+            <div className="ml-3 space-y-1">
+              <div className="flex items-center justify-between py-1">
+                <label className="text-[10px] text-gray-500">Minifix Connectors</label>
+                <button
+                  onClick={() => setBackPanelConnectorConfig({ ...bpc, enabled: !bpc.enabled })}
+                  className={`w-8 h-4 rounded-full transition-all duration-200 relative ${bpc.enabled ? 'bg-green-500' : 'bg-surface-3 border border-[#333]'}`}
+                >
+                  <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all duration-200 ${bpc.enabled ? 'left-4' : 'left-0.5'}`} />
+                </button>
+              </div>
+              {bpc.enabled && (
+                <div className="space-y-0.5 text-[10px]">
+                  <div className="flex items-center justify-between py-0.5 ml-2">
+                    <span className="text-gray-500">Left Side</span>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-gray-400">
+                        <input type="checkbox" checked={bpc.left.enabled} onChange={(e) => setBackPanelConnectorConfig({ ...bpc, left: { ...bpc.left, enabled: e.target.checked } })} className="w-3 h-3 rounded bg-surface-2 border-[#333]" />
+                        On
+                      </label>
+                      <label className="flex items-center gap-1 text-gray-400">
+                        <input type="checkbox" checked={bpc.left.includeDowels} onChange={(e) => setBackPanelConnectorConfig({ ...bpc, left: { ...bpc.left, includeDowels: e.target.checked } })} className="w-3 h-3 rounded bg-surface-2 border-[#333]" />
+                        +Dowel
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-0.5 ml-2">
+                    <span className="text-gray-500">Right Side</span>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-gray-400">
+                        <input type="checkbox" checked={bpc.right.enabled} onChange={(e) => setBackPanelConnectorConfig({ ...bpc, right: { ...bpc.right, enabled: e.target.checked } })} className="w-3 h-3 rounded bg-surface-2 border-[#333]" />
+                        On
+                      </label>
+                      <label className="flex items-center gap-1 text-gray-400">
+                        <input type="checkbox" checked={bpc.right.includeDowels} onChange={(e) => setBackPanelConnectorConfig({ ...bpc, right: { ...bpc.right, includeDowels: e.target.checked } })} className="w-3 h-3 rounded bg-surface-2 border-[#333]" />
+                        +Dowel
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <div className="pt-1.5 border-t border-[#333] mt-1.5">
           <div className="flex items-center justify-between py-1.5">
             <label className="text-[10px] text-gray-500">Top Joint</label>

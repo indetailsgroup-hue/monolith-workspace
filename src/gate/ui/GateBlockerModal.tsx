@@ -152,12 +152,10 @@ export function GateBlockerModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-      onClick={onClose}
+      className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
     >
       <div
-        className="w-full max-w-lg bg-surface-1 rounded-2xl shadow-2xl border border-red-500/30 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+        className="pointer-events-auto w-full max-w-lg bg-surface-1 rounded-2xl shadow-2xl border border-red-500/30 overflow-hidden"
       >
         {/* Header */}
         <div className="p-6 border-b border-white/10 bg-gradient-to-r from-red-900/20 to-transparent">

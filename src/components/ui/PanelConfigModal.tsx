@@ -10,7 +10,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { X, Settings2, Layers, Move, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Settings2, Layers, Move, ArrowRight, ArrowLeft, Ruler } from 'lucide-react';
 import { useCabinetStore, useCabinet } from '@/core/store/useCabinetStore';
 import { clsx } from 'clsx';
 import {
@@ -29,12 +29,14 @@ interface PanelConfigModalProps {
 
 export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
   const cabinet = useCabinet();
-  const { 
-    coreMaterials, 
-    surfaceMaterials, 
+  const {
+    coreMaterials,
+    surfaceMaterials,
     edgeMaterials,
     updatePanelMaterial,
     updatePanelEdge,
+    manufacturingParams,
+    setManufacturingParam,
   } = useCabinetStore();
   
   // Find the panel
@@ -148,8 +150,8 @@ export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
   };
   
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-lg w-[420px] max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+      <div className="pointer-events-auto bg-[#1a1a1a] border border-white/10 rounded-lg w-[420px] max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -231,6 +233,101 @@ export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
             </section>
           )}
           
+          {/* Groove Settings - Only for BACK panel in INSET mode */}
+          {panel.role === 'BACK' && cabinet.structure?.backPanelConstruction !== 'overlay' && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <Ruler className="w-4 h-4 text-purple-400" />
+                <span className="text-xs text-white/60 uppercase tracking-wider">Groove Settings</span>
+              </div>
+
+              {/* Back Void */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-white/80">Back Void (ระยะเว้นหลังตู้)</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={5}
+                      max={50}
+                      step={1}
+                      value={manufacturingParams.backVoid}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v >= 5 && v <= 50) setManufacturingParam('backVoid', v);
+                      }}
+                      className="w-16 bg-surface-2 border border-[#333] rounded px-2 py-1 text-sm text-white font-mono text-right focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none"
+                    />
+                    <span className="text-xs text-white/40">mm</span>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={50}
+                  step={1}
+                  value={manufacturingParams.backVoid}
+                  onChange={(e) => setManufacturingParam('backVoid', Number(e.target.value))}
+                  className="w-full accent-purple-500"
+                />
+                <div className="flex justify-between text-[10px] text-white/30 mt-1">
+                  <span>5mm</span>
+                  <span>50mm</span>
+                </div>
+              </div>
+
+              {/* Groove Depth */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-white/80">Groove Depth (ความลึกร่อง)</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={3}
+                      max={15}
+                      step={0.5}
+                      value={manufacturingParams.grooveDepth}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v >= 3 && v <= 15) setManufacturingParam('grooveDepth', v);
+                      }}
+                      className="w-16 bg-surface-2 border border-[#333] rounded px-2 py-1 text-sm text-white font-mono text-right focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 focus:outline-none"
+                    />
+                    <span className="text-xs text-white/40">mm</span>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={3}
+                  max={15}
+                  step={0.5}
+                  value={manufacturingParams.grooveDepth}
+                  onChange={(e) => setManufacturingParam('grooveDepth', Number(e.target.value))}
+                  className="w-full accent-purple-500"
+                />
+                <div className="flex justify-between text-[10px] text-white/30 mt-1">
+                  <span>3mm</span>
+                  <span>15mm</span>
+                </div>
+              </div>
+
+              {/* Groove Summary */}
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded p-3">
+                <div className="text-[10px] text-purple-300/60 uppercase tracking-wider mb-2">Groove Position Summary</div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="text-white/60">เริ่มเซาะร่อง:</div>
+                  <div className="text-purple-300 font-mono text-right">{manufacturingParams.backVoid} mm</div>
+                  <div className="text-white/60">ความกว้างร่อง:</div>
+                  <div className="text-purple-300 font-mono text-right">{manufacturingParams.backThickness} mm</div>
+                  <div className="text-white/60">ความลึกร่อง:</div>
+                  <div className="text-purple-300 font-mono text-right">{manufacturingParams.grooveDepth} mm</div>
+                  <div className="text-white/60">จุดสิ้นสุดร่อง:</div>
+                  <div className="text-purple-300 font-mono text-right">{manufacturingParams.backVoid + manufacturingParams.backThickness} mm</div>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Core Structure */}
           <section>
             <h3 className="text-xs text-white/60 uppercase tracking-wider mb-3">Core Structure</h3>

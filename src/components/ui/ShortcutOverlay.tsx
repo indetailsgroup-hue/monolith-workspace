@@ -129,14 +129,12 @@ export function ShortcutOverlay() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — pointer-events-none so 3D scene stays interactive */}
       <div
-        onClick={closeOverlay}
         style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          backdropFilter: 'blur(8px)',
+          pointerEvents: 'none',
           zIndex: 9998,
           animation: 'fadeIn 120ms ease-out',
         }}

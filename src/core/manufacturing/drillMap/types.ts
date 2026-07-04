@@ -14,7 +14,7 @@ export type Vec3Tuple = [number, number, number];
 export type DrillPurpose =
   | 'CAM_LOCK'      // Cam housing (Ø15, depth varies by wood thickness)
   | 'BOLT'          // Connecting bolt hole (Ø10, depth 17.5mm)
-  | 'BOLT_ENTRY'    // Horizontal edge entry bore (Ø7.5, depth B)
+  | 'BOLT_ENTRY'    // Horizontal edge entry bore (Ø10, same as BOLT, depth B)
   | 'BOLT_THREAD'   // Thread pilot hole (Ø5, depth 11mm)
   | 'DOWEL'         // Wooden dowel (Ø8, depth varies)
   | 'SHELF_PIN'     // Shelf pin hole (Ø5)
@@ -50,7 +50,56 @@ export type DrillFace6 = 'A' | 'B' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
 // HARDWARE TRANSFORM OVERRIDES (User-adjustable)
 // ============================================
 
-export type CornerType = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+export type CabinetCornerType = 'TOP_LEFT' | 'TOP_RIGHT' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+
+/**
+ * Shelf junction corner type: `SHELF_{index}_{side}`
+ * - index: 0-based shelf index
+ * - side: LEFT or RIGHT (which side panel the shelf connects to)
+ *
+ * Examples: 'SHELF_0_LEFT', 'SHELF_0_RIGHT', 'SHELF_1_LEFT'
+ */
+export type ShelfCornerType = `SHELF_${number}_${'LEFT' | 'RIGHT'}`;
+
+/**
+ * Back panel junction corner type: `BACK_LEFT` or `BACK_RIGHT`
+ * - LEFT: back panel connects to LEFT_SIDE
+ * - RIGHT: back panel connects to RIGHT_SIDE
+ */
+export type BackCornerType = 'BACK_LEFT' | 'BACK_RIGHT';
+
+/**
+ * All corner types: cabinet corners + shelf junction corners + back panel corners
+ */
+export type CornerType = CabinetCornerType | ShelfCornerType | BackCornerType;
+
+/**
+ * Type guard: is this a shelf junction corner?
+ */
+export function isShelfCorner(corner: CornerType): corner is ShelfCornerType {
+  return corner.startsWith('SHELF_');
+}
+
+/**
+ * Type guard: is this a back panel junction corner?
+ */
+export function isBackCorner(corner: CornerType): corner is BackCornerType {
+  return corner === 'BACK_LEFT' || corner === 'BACK_RIGHT';
+}
+
+/**
+ * Parse shelf corner type into index and side.
+ * Returns null if not a valid shelf corner.
+ */
+export function parseShelfCorner(corner: CornerType): { shelfIndex: number; side: 'LEFT' | 'RIGHT' } | null {
+  if (!isShelfCorner(corner)) return null;
+  const match = corner.match(/^SHELF_(\d+)_(LEFT|RIGHT)$/);
+  if (!match) return null;
+  return {
+    shelfIndex: parseInt(match[1], 10),
+    side: match[2] as 'LEFT' | 'RIGHT',
+  };
+}
 
 /** User-specified rotation override for 3D hardware visualization */
 export interface RotationOverride {
@@ -108,7 +157,8 @@ export interface DrillMapPoint {
 
   // Drill specs
   diameter: number;         // mm
-  depth: number;            // mm
+  depth: number;            // mm (individual bore depth for CNC)
+  specLength?: number;      // mm (display-only: total component length, e.g. dowelLength=30)
 
   // Classification
   purpose: DrillPurpose;
@@ -146,6 +196,10 @@ export interface DrillMapPoint {
   operationId?: string;                 // Operation identifier
   throughHole?: boolean;                // Whether it's a through hole
   cornerAngleDeg?: number;              // Corner angle for angled joints (30-150°)
+
+  // Hardware catalog metadata (for labels / BOM)
+  hardwareName?: string;                // e.g. "Minifix® 15 with rim", "S200 Connecting bolt", "Wood Dowel"
+  catalogNo?: string;                   // Häfele catalog number e.g. "262.25.033", "262.27.680", "267.83.232"
 }
 
 // ============================================
@@ -408,10 +462,11 @@ export interface MinifixConfig {
   neckShaftOffset: number;
 
   // Sleeve (Bolt hole)
-  sleeveDia: number;          // 10mm
+  sleeveDia: number;          // 10mm (bolt housing bore on SIDE panel face)
   sleeveLength: number;       // 17.5mm
   sleeveOffset: number;
   boltBoreDepth?: number;     // authoritative bolt drilling depth (Häfele S200: 17.5mm)
+  boltEntryDia?: number;      // bolt ENTRY bore diameter (edge bore where bolt passes through, default 7.5mm)
 
   // Shaft (Threaded)
   shaftDia: number;           // 5mm
@@ -435,8 +490,8 @@ export interface MinifixConfig {
   // v4.0 Side-covers-Top construction:
   // - SIDE panel: FACE bore (shallow, into inner face)
   // - HORIZ panel: EDGE bore (deeper, into end grain)
-  dowelDepthSideFace?: number;   // 12mm - depth into SIDE panel face (FACE_BORE)
-  dowelDepthHorizEdge?: number;  // 18mm - depth into TOP/BOTTOM panel edge (EDGE_BORE)
+  dowelDepthSideFace?: number;   // 11mm - depth into SIDE panel face (FACE_BORE, ฝั่ง L)
+  dowelDepthHorizEdge?: number;  // 19mm - depth into TOP/BOTTOM panel edge (EDGE_BORE, ฝั่ง Cam/B)
 
   // Legacy v3.x fields (for backward compatibility):
   // - dowelDepthEdge was for SIDE panel edge bore (Top-on-Side construction)

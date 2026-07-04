@@ -53,6 +53,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.3",
     "three": "^0.159.0",
+    "three-bvh-csg": "^0.0.16",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.29",
     "zod": "^4.3.6",

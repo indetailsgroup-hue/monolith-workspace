@@ -27,9 +27,11 @@ import {
   Rows,
 } from 'lucide-react';
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
-import { CabinetType, JointType } from '../../core/types/Cabinet';
+import { CabinetType, JointType, DEFAULT_SHELF_CONNECTOR_CONFIG } from '../../core/types/Cabinet';
+import type { ShelfConnectorConfig } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
 import { DrawerConfigPanel } from './DrawerConfigPanel';
+import { ShelfMinifixConfigPanel } from './connectors/ShelfMinifixConfigPanel';
 
 interface ConfiguratorPanelProps {
   onOpenRegistry?: () => void;
@@ -45,6 +47,7 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
     setDefaultCore,
     setDefaultEdge,
     setJointType,
+    setShelfConnectorConfig,
     toggleBackPanel,
     surfaceMaterials,
     coreMaterials,
@@ -407,6 +410,30 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
               />
             </div>
           </div>
+
+          {/* Shelf Connector Config — one per shelf */}
+          {cabinet.structure.shelfCount > 0 && (
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: cabinet.structure.shelfCount }, (_, i) => {
+                const shelfConfig = cabinet.structure?.shelfConnectors?.[String(i)]
+                  || { ...DEFAULT_SHELF_CONNECTOR_CONFIG };
+                const shelfPanel = cabinet.panels
+                  .filter(p => p.role === 'SHELF')
+                  .sort((a, b) => a.position[1] - b.position[1])[i];
+
+                return (
+                  <ShelfMinifixConfigPanel
+                    key={`shelf-connector-${i}`}
+                    shelfIndex={i}
+                    shelfName={shelfPanel?.name || `Shelf ${i + 1}`}
+                    config={shelfConfig}
+                    onConfigChange={(config) => setShelfConnectorConfig(i, config)}
+                    cabinetDepth={cabinet.dimensions.depth}
+                  />
+                );
+              })}
+            </div>
+          )}
         </MonolithSection>
         
         {/* Manufacturing Export */}

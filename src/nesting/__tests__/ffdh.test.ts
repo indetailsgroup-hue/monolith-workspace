@@ -539,8 +539,8 @@ describe('resolveSheetConfig', () => {
   it('should look up material dimensions from catalog', () => {
     const config = resolveSheetConfig('core-pb-18');
 
-    expect(config.sheetWidth).toBe(1220);
-    expect(config.sheetHeight).toBe(2440);
+    expect(config.sheetWidth).toBe(1230);
+    expect(config.sheetHeight).toBe(2450);
     expect(config.sheetThickness).toBe(18);
   });
 
@@ -555,7 +555,7 @@ describe('resolveSheetConfig', () => {
     const config = resolveSheetConfig('core-pb-18', { kerfWidth: 5 });
 
     expect(config.kerfWidth).toBe(5);
-    expect(config.sheetWidth).toBe(1220); // from catalog, not overridden
+    expect(config.sheetWidth).toBe(1230); // from catalog, not overridden
   });
 });
 
