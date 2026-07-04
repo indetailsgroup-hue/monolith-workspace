@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DAPH Monolith — รอบ 2: ปลดล็อกแผนกบัญชี (Ledger) + รายการที่เหลือ</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --ink:#e8eaed; --muted:#9aa0ab; --line:#2a2f3a; --blue:#5da9ff; --green:#2ecc71; --amber:#f5b041; --red:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.6; font-size:15px; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 18px 120px; }
+  h1 { font-size:22px; color:#fff; margin:6px 0 4px; }
+  .sub { color:var(--muted); font-size:13.5px; margin-bottom:18px; }
+  .sec { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0; }
+  .sec.crit { border-color:var(--amber); }
+  .sec h2 { font-size:16px; color:var(--blue); margin:0 0 4px; }
+  .sec.crit h2 { color:var(--amber); }
+  .sec .secnote { color:var(--muted); font-size:12.5px; margin:0 0 10px; border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .q { margin:14px 0; }
+  .q > label.qt { display:block; font-weight:600; margin-bottom:6px; }
+  .q .help { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+  .opt { display:block; padding:6px 10px; margin:4px 0; background:#11141a; border:1px solid var(--line); border-radius:8px; cursor:pointer; }
+  .opt:hover { border-color:var(--blue); }
+  .opt input { margin-right:8px; }
+  textarea, input[type=text] { width:100%; background:#11141a; border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:14px; }
+  textarea { min-height:64px; resize:vertical; }
+  .req { color:var(--amber); font-size:12px; }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(15,17,21,.97); border-top:1px solid var(--line); padding:12px 18px; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  button { background:var(--blue); color:#04101f; border:0; border-radius:8px; padding:10px 18px; font-weight:700; font-size:14px; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--blue); border:1px solid var(--blue); }
+  .msg { color:var(--green); font-size:13px; }
+  .warn { color:var(--amber); font-size:13px; }
+  pre { background:#11141a; border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; font-size:12px; color:#cfe3ff; max-height:240px; }
+  details { margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DAPH Monolith — รอบ 2 · ปลดล็อกแผนกบัญชี + รายการที่เหลือ</h1>
+  <div class="sub">
+    รอบแรกเลือก "บัญชีก่อน" + สร้าง vendor master แล้ว (ทำเสร็จ ✓) · รอบนี้เก็บที่เหลือ
+    โดยเฉพาะ <b style="color:var(--amber)">วิธี commit ค่าใช้จ่ายเข้า Ledger</b> ที่ยังไม่ได้ตอบ — เป็นตัวสุดท้ายที่ block แผนกบัญชี
+    <br />ทำงานในเครื่อง ไม่ส่งออกนอก · กรอกเสร็จกด "บันทึก → ดาวน์โหลด answers2.json" · ความคืบหน้า autosave
+  </div>
+  <form id="f"></form>
+  <details id="out" style="display:none"><summary>ดู JSON ที่จะส่ง</summary><pre id="json"></pre></details>
+</div>
+
+<div class="bar">
+  <span id="status" class="warn"></span>
+  <button type="button" class="ghost" onclick="saveDraft()">บันทึกร่าง</button>
+  <button type="button" class="ghost" onclick="copyJson()">คัดลอก JSON</button>
+  <button type="button" onclick="submitForm()">บันทึก → ดาวน์โหลด answers2.json</button>
+</div>
+
+<script>
+const SCHEMA = [
+  { sec:"A. Ledger — วิธี commit ค่าใช้จ่ายเข้าบัญชี (ปลดล็อกแผนกบัญชี)", crit:true,
+    note:"expense_document เมื่ออนุมัติแล้ว ต้อง 'ลง' ที่ไหน — ข้อนี้กำหนด schema ของ commit-target adapter",
+    items:[
+      { id:"ledger_target", type:"radio", required:true, q:"A1. ปลายทางการบันทึกค่าใช้จ่าย",
+        opts:[
+          "สร้างตาราง ledger ใน Monolith เอง",
+          "ส่งออกไประบบบัญชีภายนอก (ระบุชื่อใน A4)",
+          "สร้าง ledger ใน Monolith + ส่งออกภายนอกทีหลัง",
+          "ยังไม่ commit ใน core (เก็บ artifact ไว้ก่อน)",
+          "ยังไม่ตัดสินใจ"
+        ] },
+      { id:"ledger_entry_style", type:"radio", q:"A2. รูปแบบการลงบัญชี (ถ้าสร้าง ledger เอง)",
+        opts:["Double-entry (เดบิต/เครดิต)","Single-entry (รายการเดียว/หมวด)","ยังไม่แน่ใจ — ให้แนะนำ"] },
+      { id:"ledger_fields", type:"text", multiline:true, q:"A3. field ที่ต้องเก็บต่อรายการ ledger",
+        help:"เช่น วันที่, vendor, หมวด/บัญชี (account code), จำนวนเงิน, vat, wht, เลขเอกสาร, อ้างอิง work_item/project" },
+      { id:"chart_of_accounts", type:"radio", q:"A3b. ผังบัญชี (chart of accounts)",
+        opts:["มีผังบัญชี/รหัสบัญชีอยู่แล้ว (จะส่งไฟล์ให้)","ใช้หมวดอิสระไปก่อน (category text)","ยังไม่ตัดสินใจ"] },
+      { id:"ext_system", type:"text", multiline:false, q:"A4. ถ้าส่งออกภายนอก — ชื่อระบบบัญชี",
+        help:"เช่น Express / PEAK / FlowAccount / QuickBooks / SAP — และวิธีเชื่อม (API / CSV / กรอกมือ)" },
+      { id:"posting_grain", type:"radio", q:"A5. ลงบัญชีระดับใด",
+        opts:["ต่อใบ (per document) ทันทีเมื่ออนุมัติ","รวม batch รายวัน","ยังไม่ตัดสินใจ"] },
+      { id:"wht_handling", type:"radio", q:"A6. ภาษีหัก ณ ที่จ่าย (WHT) — ต้องแยกบรรทัด/คำนวณไหม",
+        opts:["แยกบรรทัด WHT + คำนวณ","ไม่ใช้ WHT","ยังไม่ตัดสินใจ"] },
+    ]},
+
+  { sec:"B. Material Master (วัสดุ/สเปค)", note:"สำหรับ material_receipt 'ตรงสเปค' (รอบแรกตอบ null)",
+    items:[
+      { id:"material_exists", type:"radio", q:"B1. มีฐานข้อมูลวัสดุอยู่แล้วหรือไม่",
+        opts:["มีอยู่แล้ว (ส่งไฟล์ให้)","ยังไม่มี — ให้สร้างใหม่","ยังไม่ตัดสินใจ"] },
+      { id:"material_fields", type:"text", multiline:true, q:"B2. field ของวัสดุ",
+        help:"เช่น material_code, ชื่อ, หน่วย, สเปค, ราคาอ้างอิง/เพดาน, ผู้ขายที่อนุมัติ" },
+      { id:"material_key", type:"radio", q:"B3. matching key เวลาตรวจ 'ตรงสเปค'",
+        opts:["material_code","ชื่อวัสดุ","ยังไม่ตัดสินใจ"] },
+    ]},
+
+  { sec:"C. ราคาซื้อจริง + PO (material_receipt)", note:"commit-target ของ material_receipt",
+    items:[
+      { id:"costing_exists", type:"radio", q:"C1. มีตาราง/seam 'ราคาซื้อจริง' อยู่แล้วหรือไม่",
+        opts:["มีอยู่แล้ว","ยังไม่มี — ให้สร้าง","ยังไม่ตัดสินใจ"] },
+      { id:"has_po", type:"radio", q:"C2. มีระบบ PO ให้เทียบราคาหรือไม่",
+        opts:["มี PO ในระบบ (เทียบได้)","ไม่มี PO — รับเข้าโดยไม่เทียบ","ยังไม่ตัดสินใจ"] },
+    ]},
+
+  { sec:"D. Released_Spec (spec_draft)", note:"commit-target ของ spec_draft",
+    items:[
+      { id:"spec_flow", type:"radio", q:"D1. flow ของแบบ",
+        opts:["DRAFT → Gate → FROZEN → RELEASED (ตามออกแบบ)","flow อื่น (ระบุใน D2)","ยังไม่ตัดสินใจ"] },
+      { id:"bible_code", type:"text", multiline:true, q:"D2. 'Bible code' คืออะไร + ใครยืนยัน gate (role)",
+        help:"เพื่อผูก gate_confirmed กับผู้มีสิทธิ์จริง" },
+    ]},
+
+  { sec:"E. AI ภายนอก (MCP Write_Tool)", note:"เปิดให้ AI agent ภายนอกเสนองานผ่าน MCP หรือไม่",
+    items:[
+      { id:"mcp_open", type:"radio", q:"E1. เปิดให้ AI ภายนอกเสนอ 'สร้างงาน/capture' ได้ไหม",
+        help:"ถ้าเปิด: AI เสนอ → มนุษย์อนุมัติผ่าน MCP gate → ทำจริง (human-in-the-loop เสมอ)",
+        opts:["เปิด","ยังไม่เปิด — ใช้ภายในก่อน","ยังไม่ตัดสินใจ"] },
+    ]},
+
+  { sec:"F. Auto-approve & OCR infra", note:"OQ-CS-2 / OQ-CS-3",
+    items:[
+      { id:"auto_approve", type:"radio", q:"F1. ช่วงแรกให้มนุษย์ตรวจทุกใบไหม",
+        opts:["มนุษย์ตรวจทุกใบ (แนะนำ)","เปิด auto-approve เมื่อ confidence สูง+เสี่ยงต่ำ","ยังไม่ตัดสินใจ"] },
+      { id:"ocr_ready", type:"radio", q:"F2. Typhoon OCR self-host พร้อมหรือยัง",
+        opts:["พร้อม","ยังไม่พร้อม — ต้องจัดหา","ต้องให้ทนายตรวจ license ก่อน","ยังไม่ตัดสินใจ"] },
+      { id:"notes", type:"text", multiline:true, q:"F3. หมายเหตุเพิ่มเติม", help:"เช่น เอกสารการเงินต้องผ่านผู้สอบบัญชี" },
+    ]},
+];
+
+const KEY = "daph_owner_decisions_v2";
+const f = document.getElementById("f");
+
+SCHEMA.forEach(sec => {
+  const d = document.createElement("div"); d.className = "sec" + (sec.crit ? " crit" : "");
+  d.innerHTML = `<h2>${sec.sec}</h2>` + (sec.note ? `<div class="secnote">${sec.note}</div>` : "");
+  sec.items.forEach(it => {
+    const q = document.createElement("div"); q.className = "q";
+    q.innerHTML = `<label class="qt">${it.q} ${it.required ? '<span class="req">*จำเป็น</span>' : ''}</label>` +
+      (it.help ? `<div class="help">${it.help}</div>` : "");
+    if (it.type === "text") {
+      q.innerHTML += it.multiline ? `<textarea name="${it.id}"></textarea>` : `<input type="text" name="${it.id}" />`;
+    } else {
+      it.opts.forEach(o => {
+        const inp = it.type === "checkbox" ? "checkbox" : "radio";
+        q.innerHTML += `<label class="opt"><input type="${inp}" name="${it.id}" value="${o.replace(/"/g,'&quot;')}" />${o}</label>`;
+      });
+    }
+    d.appendChild(q);
+  });
+  f.appendChild(d);
+});
+
+function collect() {
+  const ans = {};
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    if (it.type === "checkbox") ans[it.id] = [...f.querySelectorAll(`[name="${it.id}"]:checked`)].map(e => e.value);
+    else if (it.type === "radio") { const c = f.querySelector(`[name="${it.id}"]:checked`); ans[it.id] = c ? c.value : null; }
+    else ans[it.id] = (f.querySelector(`[name="${it.id}"]`).value || "").trim();
+  }));
+  return ans;
+}
+function missingRequired(ans) {
+  const miss = [];
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    if (it.required && (ans[it.id] === null || ans[it.id] === "" || (Array.isArray(ans[it.id]) && !ans[it.id].length))) miss.push(it.q);
+  }));
+  return miss;
+}
+function buildPayload(ans) { return { form:"daph-owner-decisions", version:"v2", submitted_at:new Date().toISOString(), answers:ans }; }
+function saveDraft() { localStorage.setItem(KEY, JSON.stringify(collect())); setStatus("บันทึกร่างแล้ว ✓", true); }
+function restore() {
+  const raw = localStorage.getItem(KEY); if (!raw) return;
+  let ans; try { ans = JSON.parse(raw); } catch (e) { return; }
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    const v = ans[it.id]; if (v == null) return;
+    if (it.type === "checkbox") (Array.isArray(v)?v:[]).forEach(val => { const e = f.querySelector(`[name="${it.id}"][value="${CSS.escape(val)}"]`); if (e) e.checked = true; });
+    else if (it.type === "radio") { const e = f.querySelector(`[name="${it.id}"][value="${CSS.escape(v)}"]`); if (e) e.checked = true; }
+    else { const e = f.querySelector(`[name="${it.id}"]`); if (e) e.value = v; }
+  }));
+}
+function copyJson() {
+  const txt = JSON.stringify(buildPayload(collect()), null, 2);
+  document.getElementById("json").textContent = txt; document.getElementById("out").style.display = "block";
+  navigator.clipboard.writeText(txt).then(() => setStatus("คัดลอก JSON แล้ว ✓", true), () => setStatus("คัดลอกไม่สำเร็จ — ใช้ดาวน์โหลด", false));
+}
+function submitForm() {
+  const ans = collect(); const miss = missingRequired(ans);
+  if (miss.length) { setStatus("ยังไม่ครบข้อจำเป็น: " + miss[0], false); return; }
+  const txt = JSON.stringify(buildPayload(ans), null, 2);
+  document.getElementById("json").textContent = txt; document.getElementById("out").style.display = "block";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type:"application/json"})); a.download = "answers2.json"; a.click();
+  localStorage.setItem(KEY, JSON.stringify(ans));
+  setStatus("ดาวน์โหลด answers2.json แล้ว ✓ ส่งกลับให้ทีมพัฒนา", true);
+}
+function setStatus(msg, ok) { const s = document.getElementById("status"); s.textContent = msg; s.className = ok ? "msg" : "warn"; }
+f.addEventListener("change", () => localStorage.setItem(KEY, JSON.stringify(collect())));
+restore();
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DAPH Monolith — การตัดสินใจเชิงธุรกิจก่อนสร้างต่อ (Phase 2)</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --ink:#e8eaed; --muted:#9aa0ab; --line:#2a2f3a; --blue:#5da9ff; --green:#2ecc71; --amber:#f5b041; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.6; font-size:15px; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 18px 120px; }
+  h1 { font-size:23px; color:#fff; margin:6px 0 4px; }
+  .sub { color:var(--muted); font-size:13.5px; margin-bottom:18px; }
+  .sec { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0; }
+  .sec h2 { font-size:16px; color:var(--blue); margin:0 0 12px; border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .q { margin:14px 0; }
+  .q > label.qt { display:block; font-weight:600; margin-bottom:6px; }
+  .q .help { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+  .opt { display:block; padding:6px 10px; margin:4px 0; background:#11141a; border:1px solid var(--line); border-radius:8px; cursor:pointer; }
+  .opt:hover { border-color:var(--blue); }
+  .opt input { margin-right:8px; }
+  textarea, input[type=text] { width:100%; background:#11141a; border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:14px; }
+  textarea { min-height:64px; resize:vertical; }
+  .req { color:var(--amber); font-size:12px; }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(15,17,21,.97); border-top:1px solid var(--line); padding:12px 18px; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  button { background:var(--blue); color:#04101f; border:0; border-radius:8px; padding:10px 18px; font-weight:700; font-size:14px; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--blue); border:1px solid var(--blue); }
+  .msg { color:var(--green); font-size:13px; }
+  .warn { color:var(--amber); font-size:13px; }
+  pre { background:#11141a; border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; font-size:12px; color:#cfe3ff; max-height:240px; }
+  details { margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DAPH Monolith — การตัดสินใจเชิงธุรกิจก่อนสร้างต่อ</h1>
+  <div class="sub">
+    เก็บการตัดสินใจ/schema ที่ค้าง (master tables, commit-target adapters, การเปิดให้ AI ภายนอก) เพื่อสร้างส่วนที่เหลือ
+    · ฟอร์มนี้ทำงานในเครื่อง ไม่ส่งข้อมูลออกนอก (on-prem) · กรอกเสร็จกด "บันทึก" เพื่อดาวน์โหลด <code>answers.json</code> ส่งกลับ
+    <br />ข้อที่ยังไม่ชัด เลือก "ยังไม่ตัดสินใจ" ได้ · ความคืบหน้าถูกเก็บอัตโนมัติในเบราว์เซอร์
+  </div>
+
+  <form id="f"></form>
+
+  <details id="out" style="display:none">
+    <summary>ดู JSON ที่จะส่ง</summary>
+    <pre id="json"></pre>
+  </details>
+</div>
+
+<div class="bar">
+  <span id="status" class="warn"></span>
+  <button type="button" class="ghost" onclick="saveDraft()">บันทึกร่าง</button>
+  <button type="button" class="ghost" onclick="copyJson()">คัดลอก JSON</button>
+  <button type="button" onclick="submitForm()">บันทึก → ดาวน์โหลด answers.json</button>
+</div>
+
+<script>
+// ─── โครงคำถาม (ตรงกับ generate-owner-form.gs) ───
+const SCHEMA = [
+  { sec: "0. ภาพรวมและลำดับความสำคัญ", items: [
+    { id:"first_dept", type:"radio", required:true, q:"แผนกแรกที่อยากเปิดใช้ Capture Spine จริง (OQ-CS-1)",
+      help:"กำหนดว่า adapter/master ตัวไหนต้องสร้างก่อน",
+      opts:["บัญชี/การเงิน (expense→ledger) — ROI ชัด","ติดตั้ง (installation_proof→Work_Item) — พร้อมแล้ว","จัดซื้อ (material_receipt→ราคาซื้อจริง)","ออกแบบ (spec_draft→Released_Spec)","หน้างาน/สำรวจ (site_survey→SiteSurveyZone)","ยังไม่ตัดสินใจ"] },
+    { id:"want_build", type:"checkbox", q:"ต้องการให้สร้าง adapter/master ตัวไหนในรอบถัดไป (เลือกได้หลายข้อ)",
+      opts:["Vendor master","Material master","Ledger / ผังบัญชี","Costing/ราคาซื้อจริง","Released_Spec / Spec gate","SiteSurveyZone"] },
+  ]},
+  { sec: "1. Vendor Master (ผู้ขาย) — fraud check 'vendor not in master'", items: [
+    { id:"vendor_exists", type:"radio", required:true, q:"มีฐานข้อมูล vendor อยู่แล้วหรือไม่",
+      opts:["มีอยู่แล้ว (จะส่ง schema/ไฟล์ให้)","ยังไม่มี — ให้สร้างใหม่","ยังไม่ตัดสินใจ"] },
+    { id:"vendor_fields", type:"text", multiline:true, q:"field ของ vendor ที่ต้องเก็บ (ชื่อ field + ชนิด)",
+      help:"เช่น vendor_code, ชื่อ, เลขผู้เสียภาษี, ที่อยู่, สถานะ active" },
+    { id:"vendor_key", type:"radio", q:"ใช้ field ใดเป็น matching key เวลาตรวจ vendor not-in-master",
+      opts:["เลขผู้เสียภาษี (tax_id)","ชื่อผู้ขาย","vendor_code","อื่น ๆ (ระบุในหมายเหตุ)"] },
+  ]},
+  { sec: "2. Material Master (วัสดุ/สเปค) — material_receipt 'ตรงสเปค'", items: [
+    { id:"material_exists", type:"radio", required:true, q:"มีฐานข้อมูลวัสดุ/สเปคอยู่แล้วหรือไม่",
+      opts:["มีอยู่แล้ว","ยังไม่มี — ให้สร้างใหม่","ยังไม่ตัดสินใจ"] },
+    { id:"material_fields", type:"text", multiline:true, q:"field ของวัสดุที่ต้องเก็บ",
+      help:"เช่น material_code, ชื่อ, หน่วย, สเปค, ราคาอ้างอิง/เพดาน, ผู้ขายที่อนุมัติ" },
+  ]},
+  { sec: "3. Ledger / บัญชี — commit-target ของ expense_document", items: [
+    { id:"ledger_target", type:"radio", required:true, q:"ปลายทางการบันทึกค่าใช้จ่ายเมื่ออนุมัติแล้ว",
+      opts:["สร้างตาราง ledger ใน Monolith เอง","ส่งออกไประบบบัญชีภายนอก (ระบุชื่อในหมายเหตุ)","ยังไม่ commit ใน core (เก็บ artifact ไว้ก่อน)","ยังไม่ตัดสินใจ"] },
+    { id:"ledger_fields", type:"text", multiline:true, q:"ถ้าสร้าง ledger เอง — ต้องการ field/หมวด (chart of accounts) อะไรบ้าง",
+      help:"เช่น บัญชี/หมวด, เดบิต/เครดิต, vat, wht, vendor, เลขเอกสาร, วันที่" },
+  ]},
+  { sec: "4. ราคาซื้อจริง (actual_purchase_price) — commit-target ของ material_receipt", items: [
+    { id:"costing_exists", type:"radio", required:true, q:"มีตาราง/seam สำหรับ 'ราคาซื้อจริง' + เทียบ PO อยู่แล้วหรือไม่",
+      opts:["มีอยู่แล้ว","ยังไม่มี — ให้สร้าง","ยังไม่ตัดสินใจ"] },
+    { id:"has_po", type:"radio", q:"มีระบบ PO (ใบสั่งซื้อ) ให้เทียบราคาหรือไม่",
+      opts:["มี PO ในระบบ (เทียบได้)","ไม่มี PO — รับเข้าโดยไม่เทียบ","ยังไม่ตัดสินใจ"] },
+  ]},
+  { sec: "5. Released_Spec / Spec gate — commit-target ของ spec_draft", items: [
+    { id:"spec_flow", type:"radio", q:"flow ของแบบ (spec) เป็นอย่างไร",
+      opts:["DRAFT → Gate ยืนยัน → FROZEN → RELEASED (ตามที่ออกแบบ)","flow อื่น (ระบุในหมายเหตุ)","ยังไม่ตัดสินใจ"] },
+    { id:"bible_code", type:"text", multiline:true, q:"'Bible code' คืออะไร + ใครเป็นผู้ยืนยัน gate (role)",
+      help:"เพื่อผูก gate_confirmed กับผู้มีสิทธิ์จริง" },
+  ]},
+  { sec: "6. เปิดให้ AI ภายนอกใช้งาน (MCP Write_Tool)", items: [
+    { id:"mcp_open", type:"radio", required:true, q:"ต้องการให้ AI agent ภายนอก (ผ่าน MCP) เสนอ 'สร้างงาน/capture' ได้หรือไม่",
+      help:"ถ้าเปิด: AI เสนอ → มนุษย์อนุมัติผ่าน MCP gate → ระบบทำจริง (human-in-the-loop เสมอ)",
+      opts:["เปิด — อยากให้ AI ช่วยเสนองานได้","ยังไม่เปิด — ใช้ภายใน (LINE/Gmail) ก่อน","ยังไม่ตัดสินใจ"] },
+    { id:"mcp_human", type:"radio", q:"ถ้าเปิด — ยอมรับว่าต้องมีมนุษย์อนุมัติทุกครั้งก่อนมีผลจริงหรือไม่",
+      opts:["ใช่ มนุษย์อนุมัติทุกครั้ง","อยากให้ auto บางเคส (ดูข้อ 7)","ยังไม่ตัดสินใจ"] },
+  ]},
+  { sec: "7. Auto-approve & Typhoon OCR (infra)", items: [
+    { id:"auto_approve", type:"radio", required:true, q:"ช่วงแรก ให้ทุก capture ผ่านมนุษย์ตรวจหรือไม่ (OQ-CS-2)",
+      opts:["มนุษย์ตรวจทุกใบ (ปลอดภัยสุด — แนะนำ)","เปิด auto-approve เมื่อ confidence สูง + ความเสี่ยงต่ำ","ยังไม่ตัดสินใจ"] },
+    { id:"ocr_ready", type:"radio", q:"Typhoon OCR self-host (on-prem) พร้อมหรือยัง (OQ-CS-3)",
+      help:"จำเป็นต่อ PDPA — OCR ต้องอยู่ใน infra องค์กร",
+      opts:["พร้อม (มี GPU/server)","ยังไม่พร้อม — ต้องจัดหา","ต้องให้ทนายตรวจ license ก่อน","ยังไม่ตัดสินใจ"] },
+    { id:"notes", type:"text", multiline:true, q:"ข้อกังวล/หมายเหตุเพิ่มเติม",
+      help:"เช่น เอกสารการเงิน/ภาษีต้องผ่านผู้สอบบัญชี; ระบุชื่อระบบบัญชีภายนอก ฯลฯ" },
+  ]},
+];
+
+const KEY = "daph_owner_decisions_v1";
+const f = document.getElementById("f");
+
+// render
+SCHEMA.forEach(sec => {
+  const d = document.createElement("div"); d.className = "sec";
+  d.innerHTML = `<h2>${sec.sec}</h2>`;
+  sec.items.forEach(it => {
+    const q = document.createElement("div"); q.className = "q";
+    q.innerHTML = `<label class="qt">${it.q} ${it.required ? '<span class="req">*จำเป็น</span>' : ''}</label>` +
+      (it.help ? `<div class="help">${it.help}</div>` : "");
+    if (it.type === "text") {
+      q.innerHTML += it.multiline
+        ? `<textarea name="${it.id}"></textarea>`
+        : `<input type="text" name="${it.id}" />`;
+    } else {
+      it.opts.forEach((o, i) => {
+        const inp = it.type === "checkbox" ? "checkbox" : "radio";
+        q.innerHTML += `<label class="opt"><input type="${inp}" name="${it.id}" value="${o.replace(/"/g,'&quot;')}" />${o}</label>`;
+      });
+    }
+    d.appendChild(q);
+  });
+  f.appendChild(d);
+});
+
+function collect() {
+  const ans = {};
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    if (it.type === "checkbox") {
+      ans[it.id] = [...f.querySelectorAll(`[name="${it.id}"]:checked`)].map(e => e.value);
+    } else if (it.type === "radio") {
+      const c = f.querySelector(`[name="${it.id}"]:checked`);
+      ans[it.id] = c ? c.value : null;
+    } else {
+      ans[it.id] = (f.querySelector(`[name="${it.id}"]`).value || "").trim();
+    }
+  }));
+  return ans;
+}
+
+function missingRequired(ans) {
+  const miss = [];
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    if (it.required && (ans[it.id] === null || ans[it.id] === "" || (Array.isArray(ans[it.id]) && !ans[it.id].length))) miss.push(it.q);
+  }));
+  return miss;
+}
+
+function saveDraft() {
+  localStorage.setItem(KEY, JSON.stringify(collect()));
+  setStatus("บันทึกร่างในเบราว์เซอร์แล้ว ✓", true);
+}
+
+function restore() {
+  const raw = localStorage.getItem(KEY); if (!raw) return;
+  let ans; try { ans = JSON.parse(raw); } catch (e) { return; }
+  SCHEMA.forEach(sec => sec.items.forEach(it => {
+    const v = ans[it.id];
+    if (v == null) return;
+    if (it.type === "checkbox") {
+      (Array.isArray(v) ? v : []).forEach(val => { const e = f.querySelector(`[name="${it.id}"][value="${CSS.escape(val)}"]`); if (e) e.checked = true; });
+    } else if (it.type === "radio") {
+      const e = f.querySelector(`[name="${it.id}"][value="${CSS.escape(v)}"]`); if (e) e.checked = true;
+    } else {
+      const e = f.querySelector(`[name="${it.id}"]`); if (e) e.value = v;
+    }
+  }));
+}
+
+function buildPayload(ans) {
+  return {
+    form: "daph-owner-decisions",
+    version: "v1",
+    submitted_at: new Date().toISOString(),
+    answers: ans
+  };
+}
+
+function copyJson() {
+  const payload = buildPayload(collect());
+  const txt = JSON.stringify(payload, null, 2);
+  document.getElementById("json").textContent = txt;
+  document.getElementById("out").style.display = "block";
+  navigator.clipboard.writeText(txt).then(
+    () => setStatus("คัดลอก JSON แล้ว ✓ วางส่งกลับได้เลย", true),
+    () => setStatus("คัดลอกไม่สำเร็จ — ใช้ปุ่มดาวน์โหลดแทน", false)
+  );
+}
+
+function submitForm() {
+  const ans = collect();
+  const miss = missingRequired(ans);
+  if (miss.length) { setStatus("ยังไม่ครบข้อจำเป็น: " + miss[0], false); return; }
+  const payload = buildPayload(ans);
+  const txt = JSON.stringify(payload, null, 2);
+  document.getElementById("json").textContent = txt;
+  document.getElementById("out").style.display = "block";
+  const blob = new Blob([txt], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "answers.json";
+  a.click();
+  localStorage.setItem(KEY, JSON.stringify(ans));
+  setStatus("ดาวน์โหลด answers.json แล้ว ✓ ส่งไฟล์นี้กลับให้ทีมพัฒนา", true);
+}
+
+function setStatus(msg, ok) {
+  const s = document.getElementById("status");
+  s.textContent = msg; s.className = ok ? "msg" : "warn";
+}
+
+f.addEventListener("change", () => localStorage.setItem(KEY, JSON.stringify(collect())));
+restore();
+</script>
+</body>
+</html>
