@@ -24,7 +24,11 @@
 - **Developed_Length**: ความยาวคลี่แบน (arc length ด้านนอก) ที่ใช้ตัดจริง — ไม่ใช่ bounding box
 - **Min_Bend_Radius**: รัศมีดัดต่ำสุดต่อ (วัสดุ, ความหนา) จาก `getMinimumBendRadius`
 - **Kerf_Margin**: ระยะกันชนรอบ Kerf_Zone ที่ห้ามมี fitting/รูเจาะ
+- **Kerf_Tool_Profile**: เครื่องมือที่ใช้ซอย kerf — `ROUTER` (end mill, ร่องกว้าง = Ø ดอก) | `SAW` (ใบเลื่อย, ร่องกว้าง = kerf ใบ) เลือกได้ต่องาน (มติ grilling: โรงงานใช้ทั้งสองแบบ)
+- **Mating_Slot_Pattern**: ร่อง slot ซี่ ๆ บนขอบชิ้นโค้ง + ร่องรับบนแผ่นประกบ สำหรับต่อชิ้นโค้งเข้ากับแผ่นข้างเคียง (ตามชิ้นงานจริง) — ต้องจับคู่กันแบบ deterministic
 - **G12**: Safety Gate ใหม่ — Curve Manufacturability validation
+
+> **มติ grilling spec (2026-07-04):** (1) รองรับ kerf tool 2 แบบเลือกต่องาน (2) ข้อมูล Min_Bend_Radius ต้องครบทุกวัสดุใน catalog ตั้งแต่ v1 เพราะงานจริงใช้วัสดุหลากหลาย (3) Skin มี 2 โหมด: แผ่นแยก HDF/MDF 3–4mm และวีเนียร์/laminate ใน material stack (4) Mating Slot ต้องอยู่ใน v1
 
 ## Requirements
 
@@ -51,6 +55,8 @@
 3. THE ความลึกร่อง SHALL เหลือเนื้อวัสดุ ≥ ความหนา skin ขั้นต่ำของวัสดุนั้น และเคารพ thickness safety margin 0.5mm (ค่าเดียวกับระบบเจาะ)
 4. IF วัสดุไม่มีข้อมูลใน `getMinimumBendRadius`, THEN THE ระบบ SHALL fail-safe block (ไม่เดาค่า) พร้อมข้อความให้เพิ่มข้อมูลวัสดุ
 5. WHEN ผู้ใช้แก้รัศมี/วัสดุ/ความหนา THE Kerf_Pattern SHALL regenerate อัตโนมัติ (ไม่มี stale state — skill: zustand-reactivity)
+6. THE ผู้ใช้ SHALL เลือก Kerf_Tool_Profile (`ROUTER` | `SAW`) ต่อ panel ได้ และความกว้างร่อง/ระยะห่างขั้นต่ำ SHALL คิดจาก tool ที่เลือก (มติ grilling #1)
+7. THE v1 SHALL มีตาราง Min_Bend_Radius ครบทุกวัสดุ×ความหนาใน `PanelMaterialSystem` catalog (MDF/PB/plywood) ก่อนปล่อยใช้ — เพราะงานจริงใช้วัสดุหลากหลาย (มติ grilling #2)
 
 ### Requirement 3: Gate G12 — Curve Manufacturability
 
@@ -94,7 +100,7 @@
 1. THE OperationGraph SHALL แทนร่อง kerf เป็น SLOT operations และขอบโค้งเป็น arc segments (ผ่าน IR `ARC_CW/ARC_CCW` เดิม)
 2. THE DXF export SHALL ปล่อยขอบโค้ง (ARC entity หรือ POLYLINE + bulge ตาม R12) และผ่าน G10.1/10.2/10.3 ครบ
 3. THE Cut List SHALL แสดง Developed_Length (คลี่แบน) เป็นขนาดตัด และระบุ kerfCount ต่อชิ้น
-4. WHEN panel มี Skin_Panel THE BOM SHALL มี skin เป็นชิ้นแยก (วัสดุ/ความหนา/ขนาดคลี่)
+4. WHEN panel มี skin โหมดแผ่นแยก (HDF/MDF 3–4mm) THE BOM SHALL มี skin เป็นชิ้นแยก (วัสดุ/ความหนา/ขนาดคลี่); WHEN ใช้โหมดวีเนียร์/laminate THE ระบบ SHALL บันทึกใน material stack ของแผ่นโค้ง (surface layer) โดยไม่สร้างชิ้นแยก (มติ grilling #3)
 5. THE export ทั้งหมด SHALL deterministic (hash เดิมต่อ input เดิม) และเข้า Factory Packet + signed receipt ตามปกติ
 6. THE Nesting (v1) SHALL ใช้ bounding box ของชิ้นโค้ง และ manifest SHALL ระบุว่าเป็น approximate (no silent caps)
 
@@ -108,6 +114,18 @@
 2. WHEN load โปรเจกต์ที่ไม่มี field profile THE ระบบ SHALL default เป็น RECT โดยไม่มี migration error
 3. THE golden fixtures SHALL ครอบคลุมอย่างน้อย: rounded corner R เดียว, ARC 90°, S_CURVE — เทียบ DrillMap/Packet hash
 
+### Requirement 8: Mating Slot Joint (ร่องประกบชิ้นโค้ง) — v1 บังคับ (มติ grilling #4)
+
+**User Story:** As a Factory Operator, I want ร่อง slot บนขอบชิ้นโค้งและร่องรับบนแผ่นประกบที่ generate อัตโนมัติและจับคู่กันพอดี, so that ประกอบชิ้นโค้งเข้ากับโครงตู้ได้แม่นเหมือนชิ้นงานอ้างอิง
+
+#### Acceptance Criteria
+
+1. WHEN ขอบของ curved panel ประกบกับแผ่นข้างเคียง THE ระบบ SHALL generate Mating_Slot_Pattern คู่กัน: ซี่ slot บนขอบชิ้นโค้ง + ร่องรับ (dado/slot) บนแผ่นรับ — จำนวน/ระยะ/ความลึกเป็น deterministic จากพารามิเตอร์
+2. THE slot คู่ SHALL ผูกกันด้วย pair key แบบเดียวกับระบบ CAM↔BOLT (content-addressed) เพื่อ traceability และ override ได้ต่อคู่
+3. THE ความลึก slot SHALL เคารพ thickness safety margin 0.5mm ของแผ่นรับ และร่อง slot SHALL ไม่ทับ Kerf_Zone/รูเจาะ (ตรวจใน G12)
+4. IF ระยะขอบของแผ่นรับไม่พอสำหรับร่องรับ, THEN THE G12 SHALL BLOCK (`G12_SLOT_EDGE_INSUFFICIENT`)
+5. THE slot ทั้งสองฝั่ง SHALL ออกเป็น SLOT/DADO operations ใน OperationGraph และปรากฏใน DXF ครบทั้งชิ้นโค้งและแผ่นรับ
+
 ## Correctness Properties (PBT — fast-check)
 
 1. **Determinism**: พารามิเตอร์โค้งเดิม → Kerf_Pattern + Packet hash เดิมเสมอ
@@ -117,3 +135,5 @@
 5. **Tangency**: S_CURVE สองโค้งต่อกันด้วยความชันเท่ากันที่จุดต่อเสมอ
 6. **Round-trip**: profile serialize → parse → serialize เท่าเดิม
 7. **Backward compat**: panel ไม่มี profile ≡ RECT ทุก pipeline (DrillMap/DXF/CutList เท่าเดิม byte-identical)
+8. **Slot pairing**: ∀ mating joint: จำนวนซี่ฝั่งชิ้นโค้ง = จำนวนร่องฝั่งแผ่นรับ และตำแหน่ง world-space ตรงกัน ≤ 0.1mm (ค่าเดียวกับ MATING_TOLERANCE ของ G11)
+9. **Tool invariance**: เปลี่ยน Kerf_Tool_Profile → kerfCount/ตำแหน่งเปลี่ยนได้ แต่ geometry โค้งปลายทาง (developed length, มุม) ต้องเท่าเดิม

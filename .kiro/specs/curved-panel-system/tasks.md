@@ -14,13 +14,20 @@
 
 ## Phase 2: Kerf Pattern Generator (Req 2)
 
-- [ ] 4. `kerfPatternGenerator.ts` — เรียก `calculateKerfBending` เดิม → KerfPattern deterministic
+- [ ] 4. `kerfPatternGenerator.ts` — เรียก `calculateKerfBending` เดิม → KerfPattern deterministic รองรับ Kerf_Tool_Profile (ROUTER/SAW — มติ #1)
 - [ ] 4.1* unit: ทุกวัสดุใน catalog; fail-safe block เมื่อไม่มี min bend radius
-- [ ] 4.2* PBT: determinism (Property 1), radius monotonicity (Property 3), depth safety (Property 4)
+- [ ] 4.2* PBT: determinism (Property 1), radius monotonicity (Property 3), depth safety (Property 4), tool invariance (Property 9)
+- [ ] 4.3 เติมตาราง Min_Bend_Radius ครบทุกวัสดุ×ความหนาใน catalog (MDF/PB/plywood — มติ #2) พร้อม source อ้างอิงต่อค่า
+
+## Phase 2.5: Mating Slot Generator (Req 8 — มติ #4)
+
+- [ ] 4.5 `matingSlotGenerator.ts` — ซี่ฝั่งโค้ง + ร่องฝั่งรับ, pairKey content-addressed (pattern เดียวกับ pairKeyV2)
+- [ ] 4.6* PBT: slot pairing ≤ 0.1mm (Property 8); ไม่ทับ Kerf_Zone/รูเจาะ
+- [ ] 4.7* multi-pair: ชิ้นโค้ง 1 ชิ้นประกบ 2 แผ่น (บน+ล่าง ตามรูปอ้างอิง)
 
 ## Phase 3: Gate G12 (Req 3)
 
-- [ ] 5. `gateG12_curveManufacturability.ts` + types — error codes G12_* ทั้ง 7 ตาม design
+- [ ] 5. `gateG12_curveManufacturability.ts` + types — error codes G12_* ทั้ง 10 ตาม design (รวม slot 3 ตัว)
 - [ ] 5.1* unit + multi-pair: ทุก severity, waive semantics ตรง gate เดิม
 - [ ] 6. อัปเดต `docs/SAFETY_GATE.md` (Golden Rule 6) + ผูก G12 เข้า gate runner/SafetyPanel
 
@@ -40,7 +47,7 @@
 
 - [ ] 11. OperationGraph: KerfPattern → SLOT ops; ขอบโค้ง → arc path segments (IR ARC_CW/CCW เดิม)
 - [ ] 12. DXF: POLYLINE bulge / ARC สำหรับขอบโค้ง + kerf slots — ผ่าน G10.1/10.2/10.3
-- [ ] 13. Cut List: Developed_Length + kerfCount; BOM: Skin_Panel แยกชิ้น
+- [ ] 13. Cut List: Developed_Length + kerfCount; BOM: skin โหมด SKIN_PANEL เป็นชิ้นแยก / โหมด SURFACE_FINISH ลง material stack (มติ #3); slot ops ทั้งฝั่งโค้งและแผ่นรับลง DXF ครบ
 - [ ] 14. Nesting: bounding box + ระบุ approximate ใน manifest
 - [ ] 14.1* golden fixtures 3 ชุด (rounded R / ARC 90° / S_CURVE): DrillMap + Packet + DXF hash
 - [ ] 14.2* PBT: export determinism ครบวงจร
