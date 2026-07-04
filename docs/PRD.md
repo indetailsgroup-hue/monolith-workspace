@@ -112,9 +112,9 @@ Non-goal คือ "ฟีเจอร์ที่คนอาจคาดหว
 
 | # | ไม่ทำ | เหตุผล |
 |---|-------|--------|
-| N-1 | ไม่เป็น CAD สำหรับงาน freeform/solid modeling ทั่วไป | โฟกัสตู้เฟอร์นิเจอร์แผ่น (panel-based) — ความแม่นการผลิตมาก่อนความยืดหยุ่นการวาด |
+| N-1 | ไม่เป็น CAD สำหรับงาน freeform/solid modeling ทั่วไป | ระบบรองรับ **parametric panel-based furniture** รวมถึงชิ้นงานโค้งแบบกำหนดพารามิเตอร์ได้ เช่น circular arc / S-curve / kerf-bending panel แต่ไม่รองรับ solid modeling อิสระแบบ Rhino/Fusion เพราะ freeform ต้องใช้ geometry kernel, feature tree, boolean history, tolerance healing และ CAM validation คนละชุด ซึ่งอยู่นอก scope ของ manufacturing pipeline ปัจจุบัน |
 | N-2 | ไม่สร้างโหมด AI auto-execute (ให้ AI กดอนุมัติ/สั่งงานเองโดยไม่มีมนุษย์) | Copilot เป็น advisory-only ตาม D2 Autonomy Ladder — แม้ในอนาคต tier จะสูงขึ้น Write/Approval ก็ยังต้องผ่าน human gate |
-| N-3 | ไม่ทำ e-commerce checkout/ตะกร้าสินค้า | Order model คือ quote → order → ship ของงานสั่งผลิต ไม่ใช่ retail cart |
+| N-3 | ไม่ทำ **generic retail cart** เป็นแกนหลักของ MVP CAD/CAM | ระบบมี commerce/order flow เป็น **in-scope** ผ่าน LINE OA Commerce และ Design Hub Phase 2 แต่ต้องเป็น checkout ที่ผูกกับ quote, spec, approval, production readiness, seller/vendor responsibility และ manufacturing handoff ไม่ใช่ตะกร้าสินค้าทั่วไปที่แยกจากกระบวนการผลิต |
 | N-4 | ยังไม่ทำลายเซ็น e-Tax (XAdES + X.509) **จนกว่าจะได้ CA ที่ ETDA รับรอง** | เป็นงานจัดหา/governance ไม่ใช่งานเขียนโค้ด (ADR-025) — โครง XML มีรอแล้ว อยู่ใน roadmap ข้อ 5 |
 
 > ข้อจำกัดสถาปัตยกรรมและแนวปฏิบัติวิศวกรรมที่เคยปนอยู่ในตารางนี้ (ไม่ใช้ cloud OCR กับ PII, reuse-not-fork, UI ≠ ความจริงการผลิต) **ไม่ใช่ non-goal** — เป็นหลักการที่มีผลบังคับตลอดเวลา ดู [§5.3 หลักการสถาปัตยกรรม](#53-หลักการสถาปัตยกรรม-architectural-principles) และ SG-6
@@ -275,6 +275,10 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 #### 6.1.7 เครื่องคิดเลขงานตกแต่ง (Decor Calculators) [P1] ✅
 
 - Hidden Door Hinge Calculator (แขนบานพับ/มุมเปิด), Kerf Bending (ระยะ kerf ดัดโค้ง), Wainscoting (ตีตาราง), Slat Calculator (ระแนง)
+- **Curved / Arc Panel System [P1] 🔵** — งานโค้งแบบพารามิเตอร์เป็น **in-scope** (มติ grilling 2026-07-04: สินค้าจริงของ DAPH มีชิ้นงานโค้ง) สถานะจริงต่อชั้น:
+  - ✅ **Toolpath/G-code**: IR รองรับ `ARC_CW/ARC_CCW`, dialect Biesse/HOMAG ปล่อย G2/G3 + I/J center, arc lead-in/lead-out, verifier + simulator ตรวจ arc ได้ (`src/core/manufacturing/gcode/`, `toolpath/geom/entryExitEmitter.ts`)
+  - ✅ **Kerf Bending engine**: คำนวณ bendRadius/bendAngle/arc length/kerfCount/spacing/minimum bend radius ต่อวัสดุ (`src/core/catalog/KerfBending.ts` + calculator UI)
+  - ⏳ **Cabinet model**: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — `Cabinet.ts` ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF — เป็นงานถัดไปของฟีเจอร์นี้
 
 #### 6.1.8 Persistence และ Versions [P0] ✅
 
@@ -761,6 +765,7 @@ npm run gate:bypass-scan            # CI gate bypass scan
 | Sketch Mode | Construction plane, line/rect/point, preview, snap glyphs, HUD | `src/core/sketch/`, `src/components/canvas/SketchInputLayer.tsx`, `SketchPreview.tsx` | P1 | ✅ |
 | Command UX | Command palette, radial menu, context toolbar, shortcut overlay, toast | `src/components/ui/CommandPalette.tsx`, `RadialMenu.tsx`, `ShortcutOverlay.tsx`, `ToastContainer.tsx` | P1 | ✅ |
 | Theme & Preferences | Dark/light theme persistence, app preferences boundary | `src/core/persistence/appPrefs.ts`, `src/App.tsx` | P1 | ✅ |
+| Curved / Arc Panels | ✅ arc toolpath/G-code (G2/G3, lead-in/out, verifier/sim) + ✅ kerf-bending engine; ⏳ curved panel ใน Cabinet model + auto groove → DXF | `src/core/manufacturing/gcode/`, `src/core/manufacturing/toolpath/`, `src/core/catalog/KerfBending.ts`, `src/components/calculators/` | P1 | 🔵 |
 | Decor Calculators | Hidden door hinge, kerf bending, wainscoting, slat calculator | `src/components/calculators/` | P2 | ✅ |
 
 #### 13.3.2 Project, State, Persistence และ Traceability
