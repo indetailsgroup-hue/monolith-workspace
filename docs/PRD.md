@@ -279,7 +279,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
   - ✅ **Toolpath/G-code**: IR รองรับ `ARC_CW/ARC_CCW`, dialect Biesse/HOMAG ปล่อย G2/G3 + I/J center, arc lead-in/lead-out, verifier + simulator ตรวจ arc ได้ (`src/core/manufacturing/gcode/`, `toolpath/geom/entryExitEmitter.ts`)
   - ✅ **Kerf Bending engine**: คำนวณ bendRadius/bendAngle/arc length/kerfCount/spacing/minimum bend radius ต่อวัสดุ (`src/core/catalog/KerfBending.ts` + calculator UI)
   - ⏳ **Cabinet model**: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — `Cabinet.ts` ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF
-  - 📋 **Spec พร้อมแล้ว**: `.kiro/specs/curved-panel-system/` (requirements 7 ข้อ + design + tasks 7 phases) — Panel_Profile model, Kerf_Pattern generator, Gate G12, drill map exclusion, 3D overlay, export ครบวงจร
+  - 📋 **Spec พร้อมแล้ว**: `.kiro/specs/curved-panel-system/` (requirements 9 ข้อ + design + tasks 8 phases) — Panel_Profile model, Kerf_Pattern generator, Gate G12, mating slots, drill map exclusion, 3D overlay, export, spring-back/calibration
+  - 📐 **เอกสารวิศวกรรมหลัก**: `specs/manufacturing/kerf-bending-algorithms.md` (สูตร variable-curvature spacing, spring-back γ, calibration k_eff, ตารางพารามิเตอร์ plywood/MDF, KPI คลาดรัศมี ≤5% / FTY ≥95%) — spec และ engine ต้อง reconcile กับเอกสารนี้ (task Phase 0)
 
 #### 6.1.8 Persistence และ Versions [P0] ✅
 
@@ -352,6 +353,20 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 #### 6.2.7 Tool Wear Intelligence (D6) [P1] ✅
 
 - toolUsageObserver ติดตามการใช้ต่อ operation, wear model (อายุเครื่องมือ vs ชั่วโมง/จำนวนรู), threshold + maintenance UX, IndexedDB store
+
+#### 6.2.8 Engineering Specs ระบบผลิต (specs/ — เอกสารกำหนดมาตรฐานที่ implement อ้างอิง)
+
+เอกสารวิศวกรรมชุด `specs/` (7 หมวด, 27 ไฟล์) คือแหล่งสูตร/ค่ามาตรฐานที่โค้ดผลิตยึดตาม — สาระสำคัญ:
+
+- **Export Profiles ต่อโรงงาน**: `DEFAULT` / `KDT` (CSV delimiter `;`, โฟลเดอร์ dxf/) / `HOMAG` (DXF 2000) / `BIESSE` — กำหนดใน trust-chain-export-pipeline.md
+- **Cut List format SPEC-08 v8.2**: `PART_ID, FINISH_W/H, EDGE_L/R/T/B, PREMILL_L/R/T/B (ต่อด้าน — ไม่ใช่ค่า global!), CUT_W/H, QTY, GRAIN, NOTE`
+- **Door Engineering** (door-drawer-complete-guide.md): Full Overlay (overlay 16–19mm, reveal 3mm) / Half Overlay (9mm, crank −9) / Inset (gap 2mm, crank −4) + สูตรตำแหน่งบานพับ (offset บน-ล่าง 80–100mm, ระยะระหว่างบาน 300–500mm)
+- **Drawer Systems** (master-hardware-database.md): BLUM MOVENTO (40/60kg), TANDEM, LEGRABOX (40/70kg) ความยาว 270–600mm; ความหนาข้างลิ้นชัก MOVENTO 42mm vs standard 26mm
+- **Parametric Calculations** (parametric-cabinet-calculations.md): สูตรความสูง/ลึกแผ่นข้างต่อประเภทตู้, deck width (dowel vs dado), shelf span สูงสุด 900mm, setback หน้า 20mm/หลัง 10mm
+- **Cabinet Snap System** (cabinet-snap-system.md): 6 anchors, 4 snap types (SIDE_JOIN/FLUSH_FRONT/BACK_ALIGN/STACK), scoring = ระยะ 60% + มุม 25% + priority 15%, threshold 50mm
+- **Kerf Bending** (kerf-bending-algorithms.md): ดู §6.1.7 — เอกสารหลักของ curved-panel-system spec
+- **Kernel Truth Service (SPEC-08 "Plasticity-DNA")**: สัญญา TS ↔ Python/PyOCC ใน `contracts/kernel/types.ts` — B-Rep เป็น geometric truth, KernelDelta chain (SHA-256 ต่อ delta), canonical JSON — **สถานะ: contract พร้อม, ตัว service เป็นงาน design-hub phase 2 (รอ owner decisions)**
+- **Runtime Modes**: DESIGNER (ยืดหยุ่น — เช่น G10 fail แบบ allowing) vs FACTORY (เข้มงวด) — เห็นพฤติกรรมในโค้ด gate
 
 ---
 
@@ -680,6 +695,11 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | 6 | MCP exposure — เปิด tool ไหนให้ AI client ภายนอก | Owner + governance |
 | 7 | Auto-approve policy — งานประเภทไหน (ถ้ามี) อนุญาต tier สูงขึ้น | Owner + governance |
 
+**Docs drift ที่ตรวจพบ (2026-07-04) — ต้อง reconcile:**
+- `docs/SAFETY_GATE.md` อธิบาย state machine 4 สถานะ (DRAFT→FROZEN→**GATED**→RELEASED) แต่โค้ดจริงมี 3 สถานะ (GATED ปรากฏแค่ใน comment) — ต้องตัดสินว่าอัปเดตเอกสารหรือเพิ่มสถานะจริง (Engineering)
+- `docs/README.md` (root repo) เป็นคู่มือติดตั้ง Material Selector ไม่ใช่ README หลักของโปรเจกต์ — ควรเขียน README จริง (Engineering)
+- สูตรความหนาข้างลิ้นชักขัดกันระหว่างแหล่ง (MOVENTO 42mm vs standard 26mm) — formula-reference.md ชี้ขาดแล้ว แต่ผู้ใช้เอกสารอื่นอาจสับสน (Engineering)
+
 **คำถามทางเทคนิคที่ไม่ blocking:**
 - (Engineering) กลยุทธ์ sync cloud ของโปรเจกต์ CAD (ปัจจุบัน localStorage; มี design doc `CLOUD_SYNC_ARCHITECTURE` แล้ว)
 - (Engineering) การรวม repo history — branch ปัจจุบันเป็นคนละสายกับ main เดิม (ก.พ. 2026) ที่เก็บไว้ใน `legacy/main-2026-02`
@@ -899,6 +919,8 @@ npm run gate:bypass-scan            # CI gate bypass scan
 ### 13.4 เอกสารอ้างอิงภายใน
 
 - `REQUIREMENTS-OVERVIEW.md` — requirements ครบ 8 spec + ADR-001..027
+- **`specs/` (7 หมวด, 27 ไฟล์) — เอกสารวิศวกรรมระบบผลิต**: main (spec/plan/tasks), manufacturing (kerf-bending, cut-optimization, door-drawer, dxf-export, hardware-drilling), reference (formula-reference, master-hardware-database, api-documentation, cross-reference-index), technical (parametric-cabinet-calculations, snap, collision, trust-chain, r3f, verifier-golden-strings, webgpu-roadmap ฯลฯ), strategy (web-first-r3f), testing, templates
+- `contracts/` — kernel contract (SPEC-08 Plasticity-DNA, TS↔PyOCC), command registry, stable-hash vectors
 - `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec
 - `.kiro/steering/` — architecture-decisions.md, ubiquitous-language.md
 - `CHANGELOG.md` — v2.1.0 (D1–D3.3 CNC trust chain), v2.0.0

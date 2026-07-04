@@ -6,8 +6,10 @@
 
 **ขอบเขต v1 (สำคัญ):** โค้งแกนเดียว (single-axis bend) บนแผ่น panel เท่านั้น — ไม่รวม compound curve 3 มิติ / freeform solid modeling (ยังคงเป็น Non-Goal N-1 ของ PRD เพราะต้องใช้ geometry kernel คนละชุด)
 
+**เอกสารวิศวกรรมหลัก (authoritative):** `specs/manufacturing/kerf-bending-algorithms.md` (v1.0, 2026-01-10) — สูตรครบ: `θ_allow = C_mat × atan(k/t_web)`, `p(s) = θ_allow/κ(s)` (variable curvature), spring-back `κ' = κ×(1+γ)`, กฎ `t_web ≥ 15%T`, `p_min ≥ 1.8k`, `edge_margin ≥ 8mm`, ตารางพารามิเตอร์ plywood/MDF, calibration k_eff/γ, toolpath strategy, KPI (คลาดรัศมี ≤5%, FTY ≥95%) — **requirement ทุกข้อในเอกสารนี้ต้องสอดคล้องกับเอกสารนั้น ห้ามกำหนดสูตรใหม่**
+
 **Reuse-not-fork (ข้อบังคับ):**
-- **Kerf engine** = `src/core/catalog/KerfBending.ts` (bendRadius, bendAngle, arcLength in/out, kerfCount, kerfSpacing, `getMinimumBendRadius(material, thickness)`) — proven แล้ว ห้ามเขียนสูตรซ้ำ
+- **Kerf engine** = `src/core/catalog/KerfBending.ts` (bendRadius, bendAngle, arcLength in/out, kerfCount, kerfSpacing, `getMinimumBendRadius(material, thickness)`) — **task แรกต้อง reconcile engine นี้กับ kerf-bending-algorithms.md** ว่า implement สูตรครบหรือยัง (variable curvature + spring-back อาจยังไม่มี)
 - **Arc toolpath** = G-code IR `ARC_CW/ARC_CCW` + planOps + dialect Biesse/HOMAG (G2/G3, I/J) + entry/exit arc leads + toolpath verifier + simulator (`src/core/manufacturing/gcode/`, `toolpath/`)
 - **SLOT operation** = ประเภท operation ที่มีอยู่ใน CNC ops สำหรับร่อง kerf
 - **Gate framework** = โครง G11 (`src/gate/rules/`) — เพิ่ม G12 ไม่แก้ G เดิม
@@ -125,6 +127,19 @@
 3. THE ความลึก slot SHALL เคารพ thickness safety margin 0.5mm ของแผ่นรับ และร่อง slot SHALL ไม่ทับ Kerf_Zone/รูเจาะ (ตรวจใน G12)
 4. IF ระยะขอบของแผ่นรับไม่พอสำหรับร่องรับ, THEN THE G12 SHALL BLOCK (`G12_SLOT_EDGE_INSUFFICIENT`)
 5. THE slot ทั้งสองฝั่ง SHALL ออกเป็น SLOT/DADO operations ใน OperationGraph และปรากฏใน DXF ครบทั้งชิ้นโค้งและแผ่นรับ
+
+### Requirement 9: Spring-back, Calibration และ Toolpath Strategy (จาก kerf-bending-algorithms.md)
+
+**User Story:** As a Factory Operator, I want ระบบชดเชย spring-back และรองรับค่า calibrate จริงของเครื่อง/วัสดุ, so that รัศมีหลังดัดคลาดไม่เกิน 5% ตาม KPI
+
+#### Acceptance Criteria
+
+1. THE Kerf_Pattern SHALL ชดเชย spring-back: `κ' = κ × (1 + γ)` โดย γ มาจากตารางวัสดุ (plywood 0.10–0.12, MDF 0.12–0.15) หรือค่าที่ calibrate จริง
+2. THE MachineSpec SHALL เก็บ `k_eff` (kerf width วัดจริงจาก coupon test) แยกจาก Ø เครื่องมือ — การคำนวณใช้ k_eff เสมอ
+3. THE spacing SHALL คิดตาม variable curvature `p(s) = clamp(θ_allow/κ(s), p_min, p_max)` โดย `θ_allow = C_mat × atan(k/t_web)` — S_CURVE จึงมีร่องถี่ตรงโค้งแคบและห่างตรงโค้งกว้างโดยอัตโนมัติ
+4. THE toolpath SHALL เรียงลำดับ: เจาะรู → kerf slots → profile cut-out สุดท้าย (กันชิ้นงานขยับ), ใช้ serpentine (ลด air move) และ depth ramping ตาม stepdown ต่อวัสดุ
+5. THE ปลายร่อง SHALL ทำโค้งรัศมี k/2 (ลด stress concentration)
+6. THE ระบบ SHALL รองรับ calibration workflow: generate coupon test (k_eff) และ spring-back test (γ) ตาม §6.1–6.2 ของเอกสารหลัก
 
 ## Correctness Properties (PBT — fast-check)
 

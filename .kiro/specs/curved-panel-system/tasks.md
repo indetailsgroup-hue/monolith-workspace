@@ -3,6 +3,12 @@
 > ลำดับตาม dependency: model → generator → gate → visualization → export → e2e
 > ทุก phase จบด้วยเทสต์เขียวก่อนไปต่อ (Golden Rule 5: ถ้าพังในโรงงานได้ ต้อง fail ใน CI)
 
+## Phase 0: Reconcile Engine กับเอกสารวิศวกรรม (Req 9)
+
+- [ ] 0.1 อ่าน `specs/manufacturing/kerf-bending-algorithms.md` เทียบกับ `src/core/catalog/KerfBending.ts` — ทำตารางว่าอะไร implement แล้ว/ยังขาด (คาดว่าขาด: variable curvature p(s), spring-back γ, C_mat, k_eff, web ≥15% rule)
+- [ ] 0.2 ต่อยอด KerfBending.ts ให้ครบตามเอกสาร (ห้าม fork สูตร) + MaterialSpec เพิ่ม c_mat/springback_gamma, MachineSpec เพิ่ม k_eff
+- [ ] 0.3* unit เทียบตารางพารามิเตอร์แนะนำในเอกสาร §6.3 ทุกแถว
+
 ## Phase 1: Profile Model (Req 1, 7)
 
 - [ ] 1. เพิ่ม `PanelProfile` + `SkinConfig` types ใน `Cabinet.ts` (optional fields — backward compatible)
