@@ -106,17 +106,18 @@
 | BG-1 | **ลดของเสียจากการผลิต** | Defect rate ต่อเดือนจาก `qc_capture` (Capture Spine) — โรงงานถ่ายภาพชิ้นงานเสีย/rework เข้าระบบ แยกสาเหตุว่ามาจากไฟล์/เครื่อง/คน | รอ baseline 30–60 วัน |
 | BG-2 | **งานจบตามกำหนด** | % work item ที่จบภายใน SLA ต่อขั้น (จากข้อมูล workflow) + ระบุขั้นคอขวด | รอ baseline 30–60 วัน |
 
-### Non-Goals (สิ่งที่ตั้งใจไม่ทำ) — [ของจริง: อิงจาก ADR/spec ยกเว้น N-1, N-3 ที่อนุมานจากสถาปัตยกรรม]
+### Non-Goals (ขอบเขตผลิตภัณฑ์ที่เลือกไม่ทำ) — [ของจริง: อิงจาก spec/ADR]
+
+Non-goal คือ "ฟีเจอร์ที่คนอาจคาดหวังแต่เราตั้งใจไม่สร้าง" — คัดเหลือเฉพาะขอบเขตผลิตภัณฑ์จริง (ปรับปรุงจาก grilling 2026-07-04):
 
 | # | ไม่ทำ | เหตุผล |
 |---|-------|--------|
-| N-1 | ไม่เป็น CAD สำหรับงาน freeform/solid modeling ทั่วไป | โฟกัสตู้เฟอร์นิเจอร์แผ่น (panel-based) เท่านั้น — ความแม่นการผลิตมาก่อนความยืดหยุ่นการวาด |
-| N-2 | ไม่ให้ AI ตัดสินใจแทนมนุษย์ (auto-execute) | Copilot เป็น advisory-only เสนอ 2–3 ตัวเลือก มนุษย์กดอนุมัติเสมอ (Human-in-the-loop) |
+| N-1 | ไม่เป็น CAD สำหรับงาน freeform/solid modeling ทั่วไป | โฟกัสตู้เฟอร์นิเจอร์แผ่น (panel-based) — ความแม่นการผลิตมาก่อนความยืดหยุ่นการวาด |
+| N-2 | ไม่สร้างโหมด AI auto-execute (ให้ AI กดอนุมัติ/สั่งงานเองโดยไม่มีมนุษย์) | Copilot เป็น advisory-only ตาม D2 Autonomy Ladder — แม้ในอนาคต tier จะสูงขึ้น Write/Approval ก็ยังต้องผ่าน human gate |
 | N-3 | ไม่ทำ e-commerce checkout/ตะกร้าสินค้า | Order model คือ quote → order → ship ของงานสั่งผลิต ไม่ใช่ retail cart |
-| N-4 | ไม่ใช้ cloud OCR/LLM ภายนอกกับเอกสาร PII | ขัด PDPA-by-architecture — ใช้ Typhoon OCR self-host |
-| N-5 | ไม่ implement ลายเซ็น e-Tax (XAdES + X.509) เอง | ต้องใช้ CA ที่ ETDA รับรอง เป็นงาน governance/lawyer ไม่ใช่ src/crypto (ADR-025) |
-| N-6 | ไม่ fork primitive ซ้ำ (reuse-not-fork) | ทุกโมดูลใหม่ต่อยอด C12 identity, audit, D2 autonomy ของเดิม ไม่สร้างซ้ำ |
-| N-7 | UI 3D ไม่ใช่ความจริงการผลิต | G-code มาจาก OperationGraph ใน Factory Packet เท่านั้น ไม่มาจากค่าบน UI (Truth Derivation) |
+| N-4 | ยังไม่ทำลายเซ็น e-Tax (XAdES + X.509) **จนกว่าจะได้ CA ที่ ETDA รับรอง** | เป็นงานจัดหา/governance ไม่ใช่งานเขียนโค้ด (ADR-025) — โครง XML มีรอแล้ว อยู่ใน roadmap ข้อ 5 |
+
+> ข้อจำกัดสถาปัตยกรรมและแนวปฏิบัติวิศวกรรมที่เคยปนอยู่ในตารางนี้ (ไม่ใช้ cloud OCR กับ PII, reuse-not-fork, UI ≠ ความจริงการผลิต) **ไม่ใช่ non-goal** — เป็นหลักการที่มีผลบังคับตลอดเวลา ดู [§5.3 หลักการสถาปัตยกรรม](#53-หลักการสถาปัตยกรรม-architectural-principles) และ SG-6
 
 ---
 
