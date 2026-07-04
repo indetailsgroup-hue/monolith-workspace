@@ -1,0 +1,13 @@
+{
+  "name": "customer-design-view",
+  "version": "0.0.0",
+  "exports": "./index.ts",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --watch index.ts",
+    "check": "deno check index.ts"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window", "esnext"]
+  }
+}

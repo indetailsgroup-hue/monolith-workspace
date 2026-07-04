@@ -1,0 +1,22 @@
+{
+  "name": "@daph/vault-builder",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Vault_Builder — builds the DAPH Obsidian second-brain vault from Hardware + Process sources",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "fast-check": "^4.5.3",
+    "typescript": "^5.2.2",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@daph/bible-code",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Bible_Code grammar parser/formatter (WO-3) — Counter/Cabinet/Wardrobe codes for DAPH Design Hub",
+  "main": "src/bible-code.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "fast-check": "^4.5.3",
+    "typescript": "^5.2.2",
+    "vitest": "^3.0.0"
+  }
+}

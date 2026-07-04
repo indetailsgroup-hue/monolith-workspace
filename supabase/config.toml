@@ -1,0 +1,39 @@
+# Supabase config — determined-williams (Monolith / DAPH) STANDALONE
+# Q1 decision: standalone DB (self-contained invariant; separate-monolith-tcck → no TCCK coupling).
+# C12 foundation (00000000000000_c12_foundation.sql) is applied first by `supabase db reset`.
+# For reference: https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "determined-williams"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+health_timeout = "2m"
+# ต้องตรงกับเวอร์ชัน remote (เท่ากับ cp06 platform เพื่อความเข้ากันของ C12)
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[auth]
+enabled = true
+# C12 helpers อ่าน auth.jwt() app_metadata.{roles, site_codes} และ auth.uid()
+# (Local dev: seed JWT app_metadata ให้มี roles/site_codes ตาม C12 — เช่น site_codes=["BKK-HQ-01"])
+site_url = "http://127.0.0.1:3000"
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
