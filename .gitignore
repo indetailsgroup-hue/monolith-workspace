@@ -1,1 +1,11 @@
 node_modules
+
+# Build / tool artifacts
+*.tsbuildinfo
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
