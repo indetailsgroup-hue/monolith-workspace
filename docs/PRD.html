@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD — MONOLITH Manufacturing OS (IIMOS Workspace)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>PRD — MONOLITH Manufacturing OS (IIMOS Workspace)</h1>
+<p><strong>Product Requirements Document ฉบับสมบูรณ์</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ชื่อผลิตภัณฑ์</strong></td>
+<td>MONOLITH Manufacturing OS (ชื่อ workspace: <code>monolith-workspace</code> / IIMOS)</td>
+</tr>
+<tr>
+<td><strong>เวอร์ชัน</strong></td>
+<td>2.1.0 (Factory-Ready CNC Pipeline)</td>
+</tr>
+<tr>
+<td><strong>วันที่จัดทำเอกสาร</strong></td>
+<td>4 กรกฎาคม 2026</td>
+</tr>
+<tr>
+<td><strong>Repository</strong></td>
+<td><a href="https://github.com/indetailsgroup-hue/iimos-workspace">https://github.com/indetailsgroup-hue/iimos-workspace</a></td>
+</tr>
+<tr>
+<td><strong>สถานะการทดสอบ</strong></td>
+<td>TypeScript 0 errors · Vitest 4,404 tests ผ่าน · E2E smoke ผ่าน</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>สารบัญ</h2>
+<ol>
+<li><a href="#1-%E0%B8%9A%E0%B8%97%E0%B8%AA%E0%B8%A3%E0%B8%B8%E0%B8%9B%E0%B8%9C%E0%B8%B9%E0%B9%89%E0%B8%9A%E0%B8%A3%E0%B8%B4%E0%B8%AB%E0%B8%B2%E0%B8%A3">บทสรุปผู้บริหาร (Executive Summary)</a></li>
+<li><a href="#2-%E0%B8%9B%E0%B8%B1%E0%B8%8D%E0%B8%AB%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B9%81%E0%B8%81%E0%B9%89">ปัญหาที่แก้ (Problem Statement)</a></li>
+<li><a href="#3-%E0%B9%80%E0%B8%9B%E0%B9%89%E0%B8%B2%E0%B8%AB%E0%B8%A1%E0%B8%B2%E0%B8%A2%E0%B9%81%E0%B8%A5%E0%B8%B0-non-goals">เป้าหมาย (Goals) และสิ่งที่ไม่ทำ (Non-Goals)</a></li>
+<li><a href="#4-%E0%B8%9C%E0%B8%B9%E0%B9%89%E0%B9%83%E0%B8%8A%E0%B9%89%E0%B9%81%E0%B8%A5%E0%B8%B0-user-stories">ผู้ใช้และ User Stories</a></li>
+<li><a href="#5-%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%9B%E0%B8%B1%E0%B8%95%E0%B8%A2%E0%B8%81%E0%B8%A3%E0%B8%A3%E0%B8%A1%E0%B8%A0%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%A7%E0%B8%A1">สถาปัตยกรรมภาพรวม 3 ชั้น</a></li>
+<li><a href="#6-%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%81%E0%B8%B3%E0%B8%AB%E0%B8%99%E0%B8%94%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5">ข้อกำหนดรายโมดูล (Functional Requirements)</a><ul>
+<li><a href="#61-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-cad--3d-cabinet-designer">6.1 โมดูล CAD — 3D Cabinet Designer</a></li>
+<li><a href="#62-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-cam--manufacturing-pipeline">6.2 โมดูล CAM — Drill Map, Gate, CNC, Nesting, DXF</a></li>
+<li><a href="#63-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-factory-server">6.3 โมดูล Factory Server — Backend โรงงาน</a></li>
+<li><a href="#64-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-knowledge--vault-builder">6.4 โมดูล Knowledge — DAPH Second Brain / Vault Builder</a></li>
+<li><a href="#65-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-workflow-copilot">6.5 โมดูล Workflow Copilot</a></li>
+<li><a href="#66-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-line-oa-commerce">6.6 โมดูล LINE OA Commerce</a></li>
+<li><a href="#67-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-mcp-layer">6.7 โมดูล MCP Layer</a></li>
+<li><a href="#68-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-capture-spine">6.8 โมดูล Capture Spine</a></li>
+<li><a href="#69-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-accounting">6.9 โมดูล Accounting — Ledger / Tax / Costing</a></li>
+<li><a href="#610-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-iam--c12-foundation">6.10 โมดูล IAM — Identity &amp; Access (C12)</a></li>
+</ul>
+</li>
+<li><a href="#7-invariants-%E0%B9%81%E0%B8%A5%E0%B8%B0-contracts">Invariants และ Contracts ของระบบ</a></li>
+<li><a href="#8-non-functional-requirements">ข้อกำหนดที่ไม่ใช่ฟังก์ชัน (Non-Functional Requirements)</a></li>
+<li><a href="#9-success-metrics">ตัวชี้วัดความสำเร็จ (Success Metrics)</a></li>
+<li><a href="#10-%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%99%E0%B8%B0%E0%B9%81%E0%B8%A5%E0%B8%B0-roadmap">สถานะปัจจุบันและ Roadmap</a></li>
+<li><a href="#11-open-questions">คำถามที่ยังเปิดอยู่ (Open Questions)</a></li>
+<li><a href="#12-glossary">อภิธานศัพท์ (Glossary)</a></li>
+<li><a href="#13-%E0%B8%A0%E0%B8%B2%E0%B8%84%E0%B8%9C%E0%B8%99%E0%B8%A7%E0%B8%81">ภาคผนวก: Tech Stack และคำสั่งตรวจสอบ</a></li>
+</ol>
+<hr>
+<h2>1. บทสรุปผู้บริหาร</h2>
+<p><strong>MONOLITH Manufacturing OS</strong> คือระบบปฏิบัติการธุรกิจครบวงจรสำหรับผู้ผลิตเฟอร์นิเจอร์บิลท์อิน (built-in furniture) ครอบคลุมตั้งแต่ <strong>การออกแบบตู้ 3 มิติ → การผลิตด้วยเครื่อง CNC → การบริหารงานสำนักงาน/โรงงาน/ติดตั้ง → การเงินและบัญชี</strong> ในระบบเดียว</p>
+<p>หัวใจของผลิตภัณฑ์คือหลักการ <strong>&quot;โรงงานก่อน ความสวยทีหลัง&quot; (Factory-First)</strong> — ทุกผลลัพธ์ที่ส่งเข้าโรงงาน (DXF, G-code, Cut List) ต้องผ่านด่านตรวจความปลอดภัย (Safety Gate) ต้องทำซ้ำได้ผลเดิมแบบ bit-identical (Deterministic) และต้องตรวจสอบย้อนกลับได้ด้วยลายเซ็นดิจิทัล (Signed Receipt) — <strong>ถ้ามันพังในโรงงานได้ มันต้อง fail ใน CI ก่อน</strong></p>
+<p>ระบบแบ่งเป็น 3 ชั้นสถาปัตยกรรม:</p>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+│  Engagement Layer     LINE OA Commerce · Customer Approval  │
+├─────────────────────────────────────────────────────────────┤
+│  Intelligence/Action  Workflow Copilot · MCP Layer          │
+│  Layer                Capture Spine · Accounting            │
+├─────────────────────────────────────────────────────────────┤
+│  Knowledge Layer      DAPH Second Brain (QMS Vault)         │
+│                       Knowledge_Export JSON                 │
+└─────────────────────────────────────────────────────────────┘
+        ▲ ทั้งหมดวางบนแกน CAD/CAM: Cabinet Designer → Gate →
+          Factory Packet → OperationGraph → G-code/DXF → Factory
+</code></pre>
+<hr>
+<h2>2. ปัญหาที่แก้</h2>
+<p>ธุรกิจเฟอร์นิเจอร์บิลท์อิน (เช่น DAPH) เผชิญปัญหาซ้ำ ๆ ที่ทำให้เสียทั้งเงิน เวลา และคุณภาพ:</p>
+<ol>
+<li><strong>แบบที่ออกไม่ตรงกับที่ผลิตได้</strong> — นักออกแบบวาดแบบใน CAD ทั่วไป โรงงานต้องตีความเอง เกิดของเสีย (เจาะทะลุแผ่น, รูไม่ตรงกัน, ระยะ Minifix ผิด) เพราะไม่มีระบบตรวจกฎการผลิตก่อนส่งไฟล์</li>
+<li><strong>ไฟล์ CNC ไม่น่าเชื่อถือ</strong> — ไม่รู้ว่า G-code/DXF ที่โรงงานได้รับตรงกับแบบเวอร์ชันไหน ใครแก้อะไร แก้เมื่อไหร่ ตรวจสอบย้อนกลับไม่ได้</li>
+<li><strong>ความรู้กระบวนการ (QMS) กระจัดกระจาย</strong> — เอกสาร SOS/JES/PFMEA อยู่ใน Excel หลายสิบไฟล์ ค้นหาไม่ได้ ไม่รู้ใครรับผิดชอบขั้นไหน (RACI) ความเสี่ยง (RPN) ไม่ถูกใช้จริง</li>
+<li><strong>งานไหลไม่เป็นระบบ</strong> — ไม่รู้ว่างานลูกค้าแต่ละรายอยู่ขั้นไหน (ขาย → วัดพื้นที่ → ออกแบบ → ผลิต → ติดตั้ง) การอนุมัติติดคอขวด ไม่มี SLA ไม่มี escalation</li>
+<li><strong>เอกสารการเงิน/หน้างานเข้าระบบแบบมั่ว</strong> — บิล/ใบเสร็จ/ผลสำรวจหน้างานถูกคีย์มือหรือ OCR โดยไม่มีคนตรวจ ข้อมูลผิดไหลเข้าบัญชีเงียบ ๆ และมีความเสี่ยง PDPA เมื่อส่งเอกสารไป cloud OCR ภายนอก</li>
+</ol>
+<p><strong>ต้นทุนของการไม่แก้:</strong> ของเสียจากการเจาะผิดคิดเป็นต้นทุนวัสดุ+เวลาโดยตรง, งานส่งช้าเพราะรออนุมัติ, ปิดบัญชีไม่ได้เพราะเอกสารไม่ครบ, และความเสี่ยงกฎหมายคุ้มครองข้อมูลส่วนบุคคล</p>
+<hr>
+<h2>3. เป้าหมายและ Non-Goals</h2>
+<h3>Goals (ผลลัพธ์ที่วัดได้)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>เป้าหมาย</th>
+<th>ตัวชี้วัด</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G-1</td>
+<td><strong>ของเสียจากไฟล์ผลิตผิดเป็นศูนย์</strong></td>
+<td>ทุกไฟล์ที่ออกจากระบบผ่าน Gate G1–G11 + G10 (DXF safety) 100%; ไฟล์ที่ waive ต้องมีบันทึกเหตุผล</td>
+</tr>
+<tr>
+<td>G-2</td>
+<td><strong>ผลลัพธ์การผลิตทำซ้ำได้ 100%</strong></td>
+<td>Cabinet เดิม → Packet/G-code/ZIP hash (SHA-256) เดิมทุกครั้ง</td>
+</tr>
+<tr>
+<td>G-3</td>
+<td><strong>ตรวจสอบย้อนกลับได้ทุกไฟล์</strong></td>
+<td>ทุก export มี signed receipt (Ed25519) ตรวจ offline ได้ด้วย CLI</td>
+</tr>
+<tr>
+<td>G-4</td>
+<td><strong>งานทุกออเดอร์รู้สถานะเสมอ</strong></td>
+<td>work item ทุกใบระบุขั้น canonical (0–7) + ผู้อนุมัติ + SLA; งานเกิน SLA ถูก escalate อัตโนมัติ</td>
+</tr>
+<tr>
+<td>G-5</td>
+<td><strong>เอกสารเข้าระบบต้องผ่านคนยืนยัน</strong></td>
+<td>Artifact ทุกชิ้น approve ก่อน emit; ไม่มีการเดาค่า (no-guess fail-safe)</td>
+</tr>
+<tr>
+<td>G-6</td>
+<td><strong>PDPA by architecture</strong></td>
+<td>OCR ทำ on-premises; ข้อมูล PII ไม่ออกนอกองค์กร; redaction ที่ MCP boundary</td>
+</tr>
+</tbody></table>
+<h3>Non-Goals (สิ่งที่ตั้งใจไม่ทำ)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>ไม่ทำ</th>
+<th>เหตุผล</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>N-1</td>
+<td>ไม่เป็น CAD สำหรับงาน freeform/solid modeling ทั่วไป</td>
+<td>โฟกัสตู้เฟอร์นิเจอร์แผ่น (panel-based) เท่านั้น — ความแม่นการผลิตมาก่อนความยืดหยุ่นการวาด</td>
+</tr>
+<tr>
+<td>N-2</td>
+<td>ไม่ให้ AI ตัดสินใจแทนมนุษย์ (auto-execute)</td>
+<td>Copilot เป็น advisory-only เสนอ 2–3 ตัวเลือก มนุษย์กดอนุมัติเสมอ (Human-in-the-loop)</td>
+</tr>
+<tr>
+<td>N-3</td>
+<td>ไม่ทำ e-commerce checkout/ตะกร้าสินค้า</td>
+<td>Order model คือ quote → order → ship ของงานสั่งผลิต ไม่ใช่ retail cart</td>
+</tr>
+<tr>
+<td>N-4</td>
+<td>ไม่ใช้ cloud OCR/LLM ภายนอกกับเอกสาร PII</td>
+<td>ขัด PDPA-by-architecture — ใช้ Typhoon OCR self-host</td>
+</tr>
+<tr>
+<td>N-5</td>
+<td>ไม่ implement ลายเซ็น e-Tax (XAdES + X.509) เอง</td>
+<td>ต้องใช้ CA ที่ ETDA รับรอง เป็นงาน governance/lawyer ไม่ใช่ src/crypto (ADR-025)</td>
+</tr>
+<tr>
+<td>N-6</td>
+<td>ไม่ fork primitive ซ้ำ (reuse-not-fork)</td>
+<td>ทุกโมดูลใหม่ต่อยอด C12 identity, audit, D2 autonomy ของเดิม ไม่สร้างซ้ำ</td>
+</tr>
+<tr>
+<td>N-7</td>
+<td>UI 3D ไม่ใช่ความจริงการผลิต</td>
+<td>G-code มาจาก OperationGraph ใน Factory Packet เท่านั้น ไม่มาจากค่าบน UI (Truth Derivation)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. ผู้ใช้และ User Stories</h2>
+<h3>Personas</h3>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>บทบาท</th>
+<th>โมดูลหลักที่ใช้</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Designer (นักออกแบบ)</strong></td>
+<td>ออกแบบตู้ 3D, กำหนดวัสดุ/ฮาร์ดแวร์, แก้ blocker จาก Gate</td>
+<td>CAD, Gate, Safety Panel</td>
+</tr>
+<tr>
+<td><strong>Technician (ช่างเทคนิค/วิศวกร)</strong></td>
+<td>ตรวจแบบ, อนุมัติ (Freeze/Release), เลือกเครื่อง CNC</td>
+<td>Gate, Export, CNC profiles</td>
+</tr>
+<tr>
+<td><strong>Factory Operator (โรงงาน)</strong></td>
+<td>รับ Factory Packet, ดาวน์โหลด G-code/DXF, ตรวจ receipt, ติดตาม tool wear</td>
+<td>Factory Server, CLI verify</td>
+</tr>
+<tr>
+<td><strong>Admin (ผู้ดูแลระบบ)</strong></td>
+<td>จัดการ role, override gate (มี audit), จัดการ signing keys</td>
+<td>AdminOverride, Key management</td>
+</tr>
+<tr>
+<td><strong>Office Staff (ฝ่ายสำนักงาน)</strong></td>
+<td>ขาย, วัดพื้นที่, วางแผนผลิต — ทำงานผ่าน work item + อนุมัติผ่าน LINE</td>
+<td>Workflow, LINE OA</td>
+</tr>
+<tr>
+<td><strong>Executive Owner (เจ้าของ)</strong></td>
+<td>รับ escalation ความเสี่ยงสูง (RPN/งบเกิน), ตัดสินใจ owner decisions</td>
+<td>Workflow escalation, Copilot</td>
+</tr>
+<tr>
+<td><strong>Customer (ลูกค้า)</strong></td>
+<td>ดูแบบ 3D, อนุมัติแบบผ่าน LINE Flex/เว็บ fallback</td>
+<td>customer-design-view, approval-postback</td>
+</tr>
+<tr>
+<td><strong>Accountant (บัญชี)</strong></td>
+<td>ตรวจ artifact ค่าใช้จ่าย, ปิดบัญชี, ภาษี VAT/WHT</td>
+<td>Capture, Ledger, Tax</td>
+</tr>
+<tr>
+<td><strong>AI Agent (ผ่าน MCP)</strong></td>
+<td>เรียกใช้ Read tools อัตโนมัติ; Write/Approval tools ต้องรอมนุษย์</td>
+<td>MCP Layer</td>
+</tr>
+</tbody></table>
+<h3>User Stories หลัก (เรียงตามความสำคัญ)</h3>
+<p><strong>การออกแบบและผลิต</strong></p>
+<ul>
+<li>ในฐานะ <strong>Designer</strong> ฉันต้องการปรับขนาดตู้ (กว้าง/สูง/ลึก/toe kick/จำนวนชั้น) ด้วย slider แล้วเห็นโครงสร้างแผ่นและรูเจาะอัปเดตแบบ real-time เพื่อออกแบบได้เร็วโดยไม่ต้องคำนวณเอง</li>
+<li>ในฐานะ <strong>Designer</strong> ฉันต้องการเห็นตำแหน่ง Minifix/เดือย/บานพับใน X-Ray mode พร้อมเส้นบอกระยะแบบ CAD เพื่อยืนยันว่าตรงกับมาตรฐาน System 32 ก่อนส่งผลิต</li>
+<li>ในฐานะ <strong>Designer</strong> เมื่อแบบละเมิดกฎการผลิต (เจาะชิดขอบเกิน, แผ่นซ้อนทับ, ระยะ B ผิด) ฉันต้องเห็น blocker พร้อมปุ่ม Focus ไปยังจุดปัญหาใน 3D และปุ่ม Fix อัตโนมัติเมื่อมี patch</li>
+<li>ในฐานะ <strong>Technician</strong> ฉันต้องการ Freeze spec เพื่อล็อกแบบก่อนส่งออก และ Release เมื่อพร้อมผลิตจริง โดยระบบห้าม export ตอนยังเป็น DRAFT</li>
+<li>ในฐานะ <strong>Factory Operator</strong> ฉันต้องการดาวน์โหลด CNC bundle (ZIP: G-code + manifest + checksums) ที่ระบุ dialect ตรงกับเครื่องของฉัน (Biesse/HOMAG/KDT/Fanuc ฯลฯ) และตรวจ receipt แบบ offline ได้</li>
+<li>ในฐานะ <strong>Admin</strong> ฉันต้องการ override gate ได้ในกรณีจำเป็น โดยระบบบังคับบันทึกเหตุผลและตัวตนลง audit log ที่แก้ไขไม่ได้</li>
+</ul>
+<p><strong>การบริหารงาน</strong></p>
+<ul>
+<li>ในฐานะ <strong>Office Staff</strong> ฉันต้องการเห็นว่างานลูกค้าแต่ละรายอยู่ขั้นไหนใน 8 ขั้น canonical และส่งต่อขั้นถัดไปได้เมื่องานขั้นปัจจุบันจบ (ข้ามขั้นไม่ได้)</li>
+<li>ในฐานะ <strong>ผู้อนุมัติ</strong> ฉันต้องการกดอนุมัติ/ปฏิเสธจาก LINE ได้ในคลิกเดียว และมีเว็บ fallback เมื่อ LINE ล่ม โดยผลตัดสินสองช่องทางต้องตรงกันเสมอ</li>
+<li>ในฐานะ <strong>Executive Owner</strong> เมื่องานมีความเสี่ยง RPN เกิน threshold หรืองบเกินเพดาน ฉันต้องได้รับ escalation ทันที ไม่ใช่รู้ทีหลัง</li>
+<li>ในฐานะ <strong>Customer</strong> ฉันต้องการดูแบบและกดอนุมัติผ่าน LINE โดยไม่ต้องสมัคร account ระบบ (ระบบไม่สร้าง DB principal ให้ลูกค้า — ทำผ่าน Edge Function)</li>
+</ul>
+<p><strong>ข้อมูลและการเงิน</strong></p>
+<ul>
+<li>ในฐานะ <strong>Accountant</strong> ฉันต้องการให้บิล/ใบเสร็จที่ถ่ายส่งเข้า LINE ถูก OCR แล้ว<strong>รอคนยืนยัน</strong>ก่อนลงบัญชี พร้อมธง fraud (VAT ไม่ตรง, vendor ไม่อยู่ใน master, เอกสารซ้ำ)</li>
+<li>ในฐานะ <strong>Accountant</strong> ฉันต้องการบัญชีคู่ (double-entry) หลายเล่ม (internal/statutory/tax) ที่ทุก entry สมดุลเสมอ และคิด VAT 7%/WHT ถูกต้องตามกฎไทย</li>
+<li>ในฐานะ <strong>AI Agent</strong> ฉันต้องการค้นหาเครื่องมือ (tool discovery) ตาม role ของ principal และเรียก Read tool ได้ทันที ส่วน Write tool ต้องเข้าคิวรอมนุษย์อนุมัติ (Pending_Invocation) พร้อม expiry</li>
+</ul>
+<hr>
+<h2>5. สถาปัตยกรรมภาพรวม</h2>
+<h3>5.1 แกน CAD/CAM — เส้นทางจากแบบสู่โรงงาน (Trust Chain)</h3>
+<pre><code>Cabinet (Zustand store)
+   │  B1: generateDrillMap — กำหนดจุดเจาะ Minifix/Dowel ตาม System 32
+   ▼
+DrillMap (จุดเจาะ ~100+ จุด/ตู้)
+   │  Gate G1–G11 — ตรวจกฎการผลิต → BLOCKER/WARNING/INFO
+   ▼
+FactoryPacket (JSON deterministic + SHA-256 content hash)     ← Freeze ที่นี่
+   │  B3: G9 assertValidPacket — ด่านตรวจ packet ภายนอก
+   ▼
+OperationGraph (DRILL/BORE/POCKET/PROFILE/SLOT operations)
+   │  B4: Post Processor ต่อ dialect เครื่อง
+   ▼
+G-code (Fanuc/BiesseISO/Heidenhain/CIX/MPR/XXL/Weeke)
+DXF R12 (ผ่าน Gate G10.1/10.2/10.3)
+   │  D5: Deterministic ZIP + Signed Receipt (Ed25519)
+   ▼
+Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
+</code></pre>
+<h3>5.2 ชั้นธุรกิจ — 3-Layer Business OS</h3>
+<table>
+<thead>
+<tr>
+<th>ชั้น</th>
+<th>Spec</th>
+<th>สถานะ</th>
+<th>หน้าที่</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Knowledge</strong></td>
+<td>daph-obsidian-second-brain</td>
+<td>✅ 100%</td>
+<td>QMS Vault (SOS/JES/PFMEA/RACI) → <code>_knowledge-export.json</code></td>
+</tr>
+<tr>
+<td><strong>Intelligence/Action</strong></td>
+<td>monolith-workflow-copilot</td>
+<td>✅ Phase 1 (113/134 tasks)</td>
+<td>Work item, approval, SLA, Copilot, notification</td>
+</tr>
+<tr>
+<td></td>
+<td>monolith-mcp-layer</td>
+<td>🔵 43/49 tasks</td>
+<td>MCP tool catalog + D2 gating + rate limit + audit</td>
+</tr>
+<tr>
+<td></td>
+<td>capture-spine</td>
+<td>✅ Wave 0+1 (42/43 tasks)</td>
+<td>Ingest → OCR → verify → commit (ledger/spec/survey)</td>
+</tr>
+<tr>
+<td></td>
+<td>monolith-accounting</td>
+<td>🟡 37/103 tasks (Phase 3)</td>
+<td>Ledger คู่, multi-book, VAT/WHT, BOM costing</td>
+</tr>
+<tr>
+<td><strong>Engagement</strong></td>
+<td>line-oa-commerce</td>
+<td>✅ 100% (20/20 tasks)</td>
+<td>LINE webhook, identity, order, template, outbound</td>
+</tr>
+<tr>
+<td></td>
+<td>design-hub-platform-phase2</td>
+<td>⏸ รอ owner decisions</td>
+<td>Design Hub (Phase 2)</td>
+</tr>
+</tbody></table>
+<h3>5.3 หลักการสถาปัตยกรรม (Architectural Principles)</h3>
+<ol>
+<li><strong>Human-in-the-loop</strong> — AI เสนอ (autonomy tier L0/L1) มนุษย์ตัดสิน; Write/Approval tool ผ่าน human gate เสมอ</li>
+<li><strong>Reuse-not-fork</strong> — C12 identity/role/site, audit, D2 Autonomy Ladder ใช้ร่วมทุกโมดูล</li>
+<li><strong>Append-only audit</strong> — ตาราง audit ทั้งหมด REVOKE UPDATE/DELETE</li>
+<li><strong>Fail-safe / No-guess</strong> — ข้อมูลไม่พร้อม → block ไม่ auto-pass; OCR สกัดไม่ได้ → null ไม่ใช่ &quot;N/A&quot;</li>
+<li><strong>PDPA by architecture</strong> — OCR on-prem (Typhoon), PII redaction ที่ boundary, ไม่มี egress</li>
+<li><strong>Determinism ทุกชั้น</strong> — stable JSON (sorted keys), deterministic ZIP (epoch mtime), FFDH sort ล็อกลำดับ</li>
+<li><strong>Truth Derivation</strong> — ความจริงการผลิตมาจาก Packet/OperationGraph ไม่ใช่ state บน UI</li>
+</ol>
+<hr>
+<h2>6. ข้อกำหนดรายโมดูล</h2>
+<blockquote>
+<p>รูปแบบ: <strong>[P0]</strong> = Must-Have (ระบบใช้ไม่ได้ถ้าขาด), <strong>[P1]</strong> = Nice-to-Have, <strong>[P2]</strong> = Future
+เครื่องหมาย ✅ = implement แล้วและมีเทสต์คุ้มครอง, 🔵 = บางส่วน, 📋 = ยังไม่เริ่ม</p>
+</blockquote>
+<h3>6.1 โมดูล CAD — 3D Cabinet Designer</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/App.tsx</code>, <code>src/components/canvas/</code>, <code>src/components/ui/</code>, <code>src/core/store/</code></p>
+<h4>6.1.1 Workspace และ Viewport [P0] ✅</h4>
+<ul>
+<li>Layout 3 แผง: ซ้าย = DesignerIntentPanel (Catalog/Materials/Hardware/Decor/Skills/Safety/Logic/Versions), กลาง = 3D Viewport, ขวา = ParametricContractPanel</li>
+<li>View presets 7 แบบ: Front/Left/Top (orthographic 2D), Perspective/Install (3D), Factory/CNC (top-down)</li>
+<li>WebGL context loss recovery (cooldown 2000ms)</li>
+<li>Dark/Light theme พร้อม persistence</li>
+<li>Infinite grid, lighting 2 directional + ambient, shadow map 2048²</li>
+</ul>
+<h4>6.1.2 Parametric Cabinet Modeling [P0] ✅</h4>
+<ul>
+<li>ประเภทตู้: BASE / WALL / TALL (CabinetTaxonomy)</li>
+<li>ปรับมิติผ่าน slider + input: Width, Height, Depth, Toe Kick, Shelf Count, Divider Count → <code>generatePanels()</code> สร้างแผ่นใหม่แบบ deterministic</li>
+<li>Construction type: <strong>INSET</strong> (บังใบ/เซาะร่อง) vs <strong>OVERLAY</strong> (วางทับ) — กระทบตำแหน่งรูเจาะทั้งระบบ</li>
+<li>Back panel: เปิด/ปิด, inset (เซาะร่อง <code>grooveDepth</code>, <code>backVoid</code>, <code>backThickness</code>) หรือ overlay; ตำแหน่ง <code>backZ = -D/2 + backVoid + backTotalT/2</code></li>
+<li>Grain Direction ต่อแผ่น (VERTICAL/HORIZONTAL) พร้อม default ตาม role (ข้าง=ตั้ง, พื้น/ชั้น=นอน) และหมุน texture 90° แบบ real-time</li>
+<li>Panel Config Modal (double-click ที่แผ่นใน 3D หรือใน Panel List): ตั้ง offset, วัสดุ core/surface A/B, edge banding 4 ด้าน, groove settings</li>
+<li>Glue Mode: จัดตู้ชิดกันแบบ face-to-face (Preview → Enter ยืนยัน)</li>
+<li>Collision highlight เมื่อตู้ซ้อนทับ</li>
+</ul>
+<h4>6.1.3 เครื่องมือแก้ไข (Tools) [P0] ✅</h4>
+<ul>
+<li>Select (V), Move (G/W), Rotate (R), Scale (S), UV/True-Grain (U), Measure (M)</li>
+<li>Gizmo แบบ Plasticity: ล็อกแกน X/Y/Z, plane drag, step 1/5/10mm, Fine mode (Shift), HUD แสดง delta</li>
+<li>Snap system: grid/edge/corner + visual guides + preview</li>
+<li>Sketch mode บน construction plane (XY/YZ/ZX): Line (L), Rect (T), Point (P) + snap endpoint/midpoint</li>
+<li>Command Palette (Space/Cmd+K) ค้นหาคำสั่งทั้งหมด, Radial Menu (right-click, 8 ช่อง), Shortcut overlay (?)</li>
+</ul>
+<h4>6.1.4 ระบบวัสดุ (Material Stack) [P0] ✅</h4>
+<ul>
+<li>โครงสร้าง: Core (PB-01 Particleboard / MDF-01 / PLY-01) + Surface A/B (HPL-01, VEN-01 Veneer) + Edge (PVC-01, ABS-01, WD-01)</li>
+<li>ความหนารวมคำนวณกลางที่เดียว (<code>materialThickness.ts</code>): core + 2×surface + 2×glue + edge (ต่อด้าน) — <strong>ห้ามกระจายสูตรความหนา</strong> (thickness-compliance skill)</li>
+<li>TriplanarMaterial สำหรับลายไม้สมจริง, preload เฉพาะ texture ที่ใช้</li>
+<li>BIM classification badge ต่อวัสดุ</li>
+</ul>
+<h4>6.1.5 ระบบฮาร์ดแวร์ (Hardware) [P0] ✅</h4>
+<ul>
+<li><strong>Minifix S200 (Häfele)</strong> — สเปคอ้างอิงจริง: CAM Ø15 ลึก 13.5mm (ไม้ 18mm), Bolt sleeve Ø10 ลึก 17.5mm, Shaft Ø5 ยาว 11mm, Dowel Ø8×30mm (19 edge + 11 face), Distance B = 24mm (มาตรฐาน) / 34mm (ทางเลือก)</li>
+<li>MinifixConfigPanel: เลือก Minifix 15/12, ปรับ depth ตามความหนาไม้ 16–19mm, Live 3D Preview ของชุดประกอบ</li>
+<li><strong>Minifix Transform</strong>: V-Flip / H-Flip / rotate ต่อ connector ผ่าน HardwareContextMenu (right-click ใน X-Ray) — 3 ระบบ sync กัน: 3D hardware model, cam ใน Preview3D (quaternion รอบแกน bolt), ตำแหน่งรูเจาะ (Rodrigues 180°)</li>
+<li>Override system: dual-key resolution <code>pairKeyV2 (content-addressed) → pairId (legacy) → globalConfig → null</code>; persist ต่อ connector</li>
+<li>Catalog อื่น: บานพับ (Blum/Hettich/Grass + overlay types), Shelf pins 5mm, Drawer systems (Tandembox/ArciTech), Handles, LED lighting</li>
+<li>Hardware Library: บันทึก preset ผู้ใช้ (เช่น S200/18mm)</li>
+<li>ConnectorList: toggle การแสดงผลต่อชนิด (Minifix/Hinges/Dowels/Shelf pins/Drawers)</li>
+</ul>
+<h4>6.1.6 Drill Map Visualization [P0] ✅</h4>
+<ul>
+<li>X-Ray mode (Alt+Z) → แสดงฮาร์ดแวร์ + จุดเจาะ</li>
+<li>CADDrillIndicators: annotation 2D สไตล์ CAD (วงกลม+label; แดง=CAM, เขียว=BOLT, น้ำเงิน=DOWEL)</li>
+<li>CSGDrillOverlay: เจาะรูจริงใน geometry ด้วย CSG boolean</li>
+<li>HardwareSmartDimensions: เส้นบอกระยะแบบ datum chain — PART A (Distance B, ส้ม), PART B (ระยะแกน Z, เขียว), PART C (ระยะแกน Y ของ BACK connectors, เขียว) เช่น pattern <code>50, 32, 246, 32, 32, 246, 32, 50 = 720mm</code></li>
+<li>CADDrillMapView: โมดอลแผนที่เจาะ 2D เต็มจอ</li>
+</ul>
+<h4>6.1.7 เครื่องคิดเลขงานตกแต่ง (Decor Calculators) [P1] ✅</h4>
+<ul>
+<li>Hidden Door Hinge Calculator (แขนบานพับ/มุมเปิด), Kerf Bending (ระยะ kerf ดัดโค้ง), Wainscoting (ตีตาราง), Slat Calculator (ระแนง)</li>
+</ul>
+<h4>6.1.8 Persistence และ Versions [P0] ✅</h4>
+<ul>
+<li>Save/Load โปรเจกต์ (localStorage, project-scoped), auto-save debounced, dirty tracking, Ctrl+S</li>
+<li>Project Lineage: commit history แบบ git-like (ChainViewer, LineageTimeline)</li>
+<li>Persist: theme, tool state, snap presets, hardware presets, drill map overrides</li>
+</ul>
+<p><strong>Acceptance criteria ตัวอย่าง (6.1):</strong></p>
+<ul>
+<li><input disabled="" type="checkbox"> เปลี่ยน Width ตู้ → แผ่นทุกชิ้น + DrillMap สร้างใหม่ภายใน debounce 300ms โดยไม่มี error</li>
+<li><input disabled="" type="checkbox"> V-Flip connector → โมเดล 3D, cam preview และจุดเจาะหมุนตามกันครบ 3 ระบบ</li>
+<li><input disabled="" type="checkbox"> เปลี่ยน grain direction ขณะเปิด Panel Config → texture หมุนให้เห็นทันที (selection ใช้ emissive ไม่ปิด texture)</li>
+</ul>
+<hr>
+<h3>6.2 โมดูล CAM — Manufacturing Pipeline</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/gate/</code>, <code>src/cnc/</code>, <code>src/factory/</code>, <code>src/nesting/</code>, <code>src/core/export/</code></p>
+<h4>6.2.1 Gate System (Safety Gates) [P0] ✅</h4>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>ตรวจอะไร</th>
+<th>ค่าคงที่สำคัญ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G1–G6</td>
+<td>ขนาดตัดไม่ติดลบ, edge allowance, ระยะขอบขั้นต่ำ, ความลึกเจาะปลอดภัย, ระยะ fitting, clearance หลังตู้</td>
+<td><code>minMarginToEdgeMm: 8</code>, <code>minFeatureSizeMm: 12</code>, <code>backPanelClearanceMm: 2</code>, <code>minFittingSpacingMm: 32</code></td>
+</tr>
+<tr>
+<td>G4</td>
+<td>เรขาคณิต: งบ OD (กว้าง/สูง/ลึก), แผ่นไม่ซ้อนทับ, ขอบประกอบเป็นไปได้</td>
+<td><code>odToleranceMm: 0.1</code>, block เมื่อ overlap ≥ 1mm³</td>
+</tr>
+<tr>
+<td>G9</td>
+<td>Packet Validation Boundary — packet ภายนอกต้องผ่าน <code>assertValidPacket()</code></td>
+<td>Branded type <code>ValidatedFactoryPacket</code></td>
+</tr>
+<tr>
+<td>G10/.2/.3</td>
+<td>DXF: boundary layer, semantic (contour ไม่ตัดตัวเอง/ปิดสนิท), machine dialect</td>
+<td>3 ชั้นก่อน download</td>
+</tr>
+<tr>
+<td>G11</td>
+<td>Minifix/System32: Distance B 24–34mm, ความลึกเดือย (SIDE 18 / TOP-BOTTOM 12), การจับคู่ CAM↔BOLT ≤0.1mm</td>
+<td><code>MATING_TOLERANCE: 0.1</code>, <code>DEPTH_TOLERANCE: 0.5</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>ผลตรวจ 3 ระดับ: <strong>BLOCKER</strong> (ห้าม export) / <strong>WARNING</strong> (waive ได้) / <strong>INFO</strong></li>
+<li>SafetyPanel: รายการ findings + ปุ่ม Focus (ซูมไปจุดปัญหาใน 3D) / Fix (apply patch อัตโนมัติ) / Copy</li>
+<li>Waive/Unwaive workflow พร้อมบันทึกเหตุผล; AdminOverrideDialog สำหรับ admin (audit บังคับ)</li>
+<li><strong>Spec state machine: DRAFT → FROZEN → RELEASED</strong> — export ได้เฉพาะ FROZEN/RELEASED</li>
+<li>CI bypass-scan (<code>scripts/gates/bypass-scan.ts</code>): สแกน pattern ต้องห้ามที่พยายามข้าม gate ใน source; exit 1 = BLOCK</li>
+</ul>
+<h4>6.2.2 Drill Map Generation [P0] ✅</h4>
+<ul>
+<li>Deterministic: มุม TOP/BOTTOM รับ CAM, แผ่นข้างรับ BOLT/DOWEL, จำแนก corner type (TOP_LEFT…, SHELF_n_*, BACK_*)</li>
+<li>System 32: pitch 32mm, first hole 50mm; dowel ที่ชิดขอบเกิน <code>firstHoleZ</code> ถูกกรองออก</li>
+<li>B-run dowel generation แบบ axis-tagged keys + pairing validator (<code>validateBRunDowelPairing</code>)</li>
+<li>Bolt orientation policy (seam-driven twist) + <code>validateBoltPocketLinkage</code> (ทิศ bolt ชี้เข้า cam pocket)</li>
+<li>Panel basis: AABB → local frame ต่อแผ่น เพื่อความ deterministic</li>
+<li>Golden fixtures (เช่น <code>A_RUN_INSET_600x720x560_18mm.golden.json</code>) ป้องกัน regression</li>
+</ul>
+<h4>6.2.3 CNC Pipeline [P0] ✅</h4>
+<ul>
+<li><code>mapDrillMapToOps</code>: Ø≤8mm → DRILL, Ø&gt;8mm → BORE; ประเภท operation ทั้งหมด: DRILL / BORE / POCKET / PROFILE / SLOT (+ PeckDrill, Counterbore, Countersink, Tap, HelicalMill ตาม CHANGELOG D1)</li>
+<li><code>buildOperationGraph</code>: ValidatedFactoryPacket + machine profile → OperationGraph + สถิติ</li>
+<li>Machine presets: KDT, Biesse, SCM, HOMAG, Generic; G-code dialects: Fanuc, Heidenhain, BiesseISO, CIX, MPR, XXL, Weeke</li>
+<li>GcodeBuilder: deterministic (เลขบรรทัด, comment, format คงที่)</li>
+<li>CNC Cache (IndexedDB): key = SHA-256(packetContentHash + machineId + dialect + postVersion); <strong>Re-verify on load</strong> ตรวจ tamper</li>
+<li>CNC Bundle ZIP: manifest schema <code>monolith.cnc.manifest@1.0</code> + opgraph.json + checksums</li>
+</ul>
+<h4>6.2.4 Factory Packet [P0] ✅</h4>
+<ul>
+<li>ส่วนประกอบ: <code>drillMap.json</code>, <code>connectors.json</code>, <code>cutList.json</code>, <code>gateResult.json</code>, <code>_manifest.json</code> (contentHash SHA-256)</li>
+<li>Deterministic serialization (sorted keys, stable pretty-print)</li>
+<li><strong>T008 Contract:</strong> DXF export ต้องมาจาก OperationGraph เท่านั้น (มี e2e test log ยืนยัน)</li>
+</ul>
+<h4>6.2.5 Nesting [P1] ✅</h4>
+<ul>
+<li>FFDH (First Fit Decreasing Height) guillotine: sort สูง desc → กว้าง desc → ID asc (deterministic)</li>
+<li>Multi-sheet (สูงสุด 1000 แผ่น), utilization % ต่อแผ่น, รองรับ kerf width + edge clearance + grain direction + canRotate</li>
+</ul>
+<h4>6.2.6 DXF Export [P0] ✅</h4>
+<ul>
+<li>DXF R12 (AC1009): HEADER/TABLES (layers: OUTLINE, CUTOUT, SHEET, PATH)/BLOCKS/ENTITIES (POLYLINE)</li>
+<li>Groove/back panel параметры อ่านจาก <code>cabinet.manufacturing</code> (dual manufacturing data — sync ผ่าน <code>setManufacturingParam</code>)</li>
+<li>Export policy: อนุญาตเฉพาะ FROZEN/RELEASED + gate ผ่าน/waived</li>
+</ul>
+<h4>6.2.7 Tool Wear Intelligence (D6) [P1] ✅</h4>
+<ul>
+<li>toolUsageObserver ติดตามการใช้ต่อ operation, wear model (อายุเครื่องมือ vs ชั่วโมง/จำนวนรู), threshold + maintenance UX, IndexedDB store</li>
+</ul>
+<hr>
+<h3>6.3 โมดูล Factory Server</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>server/src/</code> (Express + BullMQ + Redis; แยก API process กับ Worker process)</p>
+<h4>6.3.1 Bundle &amp; Export API [P0] ✅</h4>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>หน้าที่</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>POST /api/bundle/upload</code></td>
+<td>อัปโหลด artifact bundle + ตรวจ manifest signature ก่อนเก็บ (CAS)</td>
+</tr>
+<tr>
+<td><code>GET /api/bundle/list</code>, <code>GET /api/bundle/:id</code></td>
+<td>รายการ/รายละเอียด bundle</td>
+</tr>
+<tr>
+<td><code>POST /api/export/queue</code> → <code>GET /api/export/status/:jobId</code> → <code>GET /api/export/download/:jobId</code></td>
+<td>Async export ผ่าน BullMQ (attempts 3, exponential backoff)</td>
+</tr>
+<tr>
+<td><code>POST /api/export/direct</code></td>
+<td>Export เล็ก แบบ synchronous</td>
+</tr>
+<tr>
+<td><code>POST /api/export/zip</code></td>
+<td>Gated export: ตรวจ state = RELEASED → deterministic ZIP + SHA-256 header (P2.2a)</td>
+</tr>
+<tr>
+<td><code>GET /api/export/options</code></td>
+<td>Format/dialect ที่มี (KDT/BIESSE/HOMAG …)</td>
+</tr>
+<tr>
+<td><code>GET /factory/export/options</code>, <code>POST /factory/jobs/:jobId/export</code>, <code>GET .../download</code>, <code>GET .../history</code></td>
+<td>Factory job export + ประวัติ (สูงสุด 1000 รายการ)</td>
+</tr>
+<tr>
+<td><code>GET /api/health</code></td>
+<td>version, uptime, CAS stats, queue stats, key count</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Export formats:</strong> CUTLIST_CSV (dialect Excel/RFC4180/HOMAG/BIESSE/SCM), DXF_R12 (ต่อ sheet / ต่อ part + nesting), GCODE (GRBL/MACH3/LinuxCNC/Fanuc/HOMAG), PDF report (pdfkit: cutlist + BOM + material summary), STEP (3D CAD), BOM_JSON</li>
+</ul>
+<h4>6.3.2 Signed Export Receipt (P13) [P0] ✅</h4>
+<ul>
+<li>Receipt schema <code>MONOLITH_EXPORT_RECEIPT_V1</code>; <code>receiptId = SHA-256(canonical payload)</code>; บันทึก <code>zipSha256</code></li>
+<li>ลงนาม <strong>Ed25519</strong> (key จาก env/file, PKCS8); pinned public keys (<code>production.receipt.pubkeys.v1.json</code>) + validity window (validFrom/validUntil) + revocation (reason + timestamp)</li>
+<li>Key management API: <code>POST /api/keys/register</code>, <code>GET /api/keys</code>, <code>POST /api/keys/:id/revoke</code></li>
+<li><strong>CLI <code>monolith-receipt-verify</code></strong> ตรวจ ZIP แบบ offline — Golden Matrix P13.4: PASS baseline / unknown key / revoked key / not-yet-valid / expired; result codes <code>R_OK, R_SIG_INVALID, R_SIG_KEY_UNKNOWN, R_SIG_KEY_REVOKED, R_SIG_KEY_EXPIRED, …</code>; <code>--json</code>, <code>--strict</code> (warning = fail)</li>
+</ul>
+<h4>6.3.3 Audit / Activity / Proof / Lineage [P0] ✅</h4>
+<ul>
+<li>Audit log ค้นหาได้ (<code>GET /api/audit</code> + filters, <code>/api/audit/stats</code>): EXPORT_SUCCESS, VERIFY_FAIL, POLICY_DENIED, EXPORT_ERROR</li>
+<li>Activity timeline ต่อ job (P8, NDJSON): EXPORT_ATTEMPT, VERIFY_RUN, EXPORT_BLOCKED, EXPORT_SUCCESS + actor จาก headers</li>
+<li>Proof bundle (P12): <code>GET /factory/jobs/:jobId/proof</code> — server-authoritative state (specState, revisionId, hashes, latest verify/export) + proof warnings (<code>W_RELEASED_NO_REVISION</code>, <code>W_INVALID_ARTIFACT_HASH</code>)</li>
+<li>Lineage (P9.1): revision chain แบบ immutable ต่อ job</li>
+</ul>
+<h4>6.3.4 Server-side Post Processing [P1] ✅</h4>
+<ul>
+<li>FlatPart conversion (3D → sheet parts), DXF geometry builder, offset kernel (tabs, keepout, multi-tool), nest rotation, tool change planner, G-code writer + machine profiles</li>
+</ul>
+<hr>
+<h3>6.4 โมดูล Knowledge — Vault Builder</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>tools/vault-builder/src/</code>, output: <code>daph-second-brain/</code></p>
+<h4>ข้อกำหนด (16 ข้อ — ✅ ครบ, 7 correctness properties ผ่าน PBT)</h4>
+<ol>
+<li>สแกน 2 โดเมน (Process: <code>New folder/</code> Excel QMS 28 ไฟล์; Hardware: <code>furniture-hardware-vault/</code> + PDF catalog <code>New folder (2)/</code>) → จำแนก Domain/Group/Unit/Type/Status/Owner ด้วย keyword rules</li>
+<li>โมเดลกระบวนการ canonical: <strong>Office 6 หน่วย</strong> (Sale → Area Measurement → Designer → 3D_Presentation → Production Planning → 3D_Rendering_Final), <strong>Factory 6 สถานี</strong> (Laminate HPL → Cutting → Edging → CNC → Assembly → Packing), <strong>Installation 16 ขั้น</strong></li>
+<li>โครงสร้าง PARA (01-Projects / 02-Areas / 03-Resources / 04-Archives)</li>
+<li>Index_Note ต่อเอกสาร (frontmatter + embed ต้นฉบับ)</li>
+<li>Document_Set linking: SOS ↔ JES ↔ PFMEA ↔ Process Control Plan</li>
+<li>Master_Process_Matrix จาก Excel (RACI + เวลา + ต้นทุน)</li>
+<li>แปลง <code>.xls</code> BIFF ด้วย SheetJS/LibreOffice</li>
+<li>Home Dashboard + MOC (prev/next links) | 9. kebab-case naming | 10. duplicate/draft → Archives | 11. tag taxonomy | 12. glossary | 13. Mermaid | 14. templates | 15. plugin guides</li>
+<li><strong>Knowledge_Export</strong> (<code>_knowledge-export.json</code> 113KB): PFMEA 122 rows + process model 28 entries + RACI + approval_quorum — สัญญา read-only ให้ Workflow Copilot</li>
+</ol>
+<p><strong>Pipeline (idempotent, non-destructive):</strong> Scanner → Classifier → Inventory → FileMover → DocumentSetLinker → NoteGenerator → MOCGenerator → DashboardGenerator → StaticAssets → KnowledgeExport
+<strong>Invariant:</strong> รันซ้ำ = ผลเดิม (scan count คงที่ — มีเทสต์ยืนยัน); ไฟล์เก่าย้ายไป Archives ไม่ลบ; <code>_move-log.md</code> ย้อนกลับได้</p>
+<blockquote>
+<p>⚠️ <strong>ข้อจำกัดสำคัญ:</strong> โฟลเดอร์ <code>New folder</code>, <code>New folder (2)</code>, <code>_daph_extract</code>, <code>furniture-hardware-vault</code>, <code>daph-second-brain</code> เป็น data source/output ของ pipeline — ห้ามย้าย/ลบออกจาก workspace</p>
+</blockquote>
+<hr>
+<h3>6.5 โมดูล Workflow Copilot</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/workflow/</code>, <code>supabase/migrations/0001–0035</code>, Edge Functions: <code>sla-sweep-scheduler</code>, <code>approval-postback</code>, <code>notification-retry-worker</code>, <code>customer-design-view</code>, <code>web-fallback-api</code></p>
+<h4>ข้อกำหนด 21 ข้อ (Req 1–21) — ✅ Phase 1 เสร็จ, 🟡 Phase 1.5 (Req 21) ค้าง</h4>
+<p><strong>[P0] Process Model &amp; Work Items ✅</strong></p>
+<ul>
+<li>Canonical 8 ขั้น (order 0–7): Sale → Area Measurement → Designer → 3D_Presentation → Production Planning → 3D_Rendering_Final → Factory → Installation</li>
+<li>Identity ของขั้น = <code>canonical_order</code> (integer) ไม่ใช่ชื่อ (ADR-017 — ชื่อซ้ำได้); handoff เข้มงวดข้ามขั้นไม่ได้</li>
+<li>Work item status: in_progress, awaiting_approval, blocked, rework, awaiting_requote, awaiting_customer_acceptance, completed</li>
+<li>Knowledge Import: <code>rpc_import_knowledge(payload, source_version)</code> validate Knowledge_Export → <code>process_model</code> (is_current flag)</li>
+</ul>
+<p><strong>[P0] Approvals ✅</strong></p>
+<ul>
+<li>Quorum 3 แบบ: <strong>unanimous</strong> (ทุกคนอนุมัติ; reject = fail-fast), <strong>majority</strong> (&gt;ครึ่ง), <strong>first_response</strong></li>
+<li>Attempt-scoped: UNIQUE (work_item, gate_order, resolved_approver, attempt) — รอบใหม่เริ่ม attempt ใหม่ (0029 fresh cycle)</li>
+<li>Approver resolution จาก RACI: unanimous → approvers[]; อื่น → [accountable] (ADR-018)</li>
+<li>One-click approve ผ่าน <strong>LINE</strong> (Encrypted_Postback + HMAC verify) และ <strong>web fallback</strong> (JWT session) — idempotent ตาม webhook_event_id</li>
+<li><strong>Customer Approver (Req 20):</strong> ลูกค้าอนุมัติผ่าน LINE Flex / customer-design-view โดยไม่เป็น DB principal; Edge Function mediate; timeout → escalate ไป project_manager</li>
+<li>Delegation: มอบอำนาจอนุมัติ + revoke (0016/0017)</li>
+</ul>
+<p><strong>[P0] Notifications ✅</strong></p>
+<ul>
+<li>Dispatch state machine: queued → pending → sent/failed; channels: direct_push / group_message</li>
+<li>Quiet hours + mute category + <strong>daily digest</strong> (<code>notification_digest_pending</code>, no-orphan constraint); เร่งด่วน push ข้าม quiet hours</li>
+<li>Retry worker (backoff exponential); celebrate เมื่อจบขั้นสุดท้ายจริงเท่านั้น (ไม่ใช่ manual close) และเคารพ quiet hours (0034/0035)</li>
+</ul>
+<p><strong>[P0] SLA &amp; Escalation ✅</strong></p>
+<ul>
+<li>SLA sweep (cron): 50% ของ SLA → reminder, 100% → timeout + escalate (status=&#39;escalated&#39;)</li>
+<li>Escalation สู่ executive_owner เมื่อ <strong>RPN &gt; threshold</strong> หรือ <strong>budget &gt; ceiling</strong> (Req 13); RPN ยังไม่ประเมิน = fail-safe สู่ human review (ADR-011)</li>
+</ul>
+<p><strong>[P0] Copilot (advisory-only) ✅</strong></p>
+<ul>
+<li>เสนอ 2–3 ตัวเลือก + ข้อดี/ข้อเสีย + อ้างอิงแถว PFMEA/RPN; ไม่ auto-execute (Req 5.5/5.6); กลไกไม่พร้อม → block (Req 5.7)</li>
+<li>Action Type Registry (Req 19): {risk_class, max_allowed_tier, r02_bound} ธรรมาภิบาล D2</li>
+</ul>
+<p><strong>[P1 — Phase 1.5] Revision Discipline (Req 21) 🟡</strong></p>
+<ul>
+<li>Revision_Reason {daph_defect, customer_change, scope_change}; Design_Lock gates {G1–G4}; scope_change → <strong>re-quote FSM</strong>: awaiting_requote → internalAccepted ∧ customerAccepted → proceed (โครง code + migration 0024 มีแล้ว; ยังเหลือ task ปิด)</li>
+</ul>
+<p><strong>Audit:</strong> <code>workflow_audit_log</code> append-only; RLS site-scoped (governance | has_site_access)</p>
+<hr>
+<h3>6.6 โมดูล LINE OA Commerce</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>supabase/functions/line-webhook</code>, <code>line-outbound-sender</code>, migrations <code>00000000000000–62</code> — ✅ เสร็จ (13 req, 31 properties ผ่าน PBT)</p>
+<p><strong>[P0] ทั้งหมด ✅</strong></p>
+<ul>
+<li><strong>Webhook ingest:</strong> ตรวจ HMAC signature ด้วย per-channel secret จาก <strong>Vault</strong> (Edge Function ไม่ถือ secret); idempotent ตาม <code>webhook_event_id</code> UNIQUE</li>
+<li><strong>Multi-vertical:</strong> channel เดียวรองรับ 2 ธุรกิจ (Monolith furniture + TCCK food) ผ่าน <code>vertical_context</code></li>
+<li><strong>Identity resolution:</strong> LINE user_id → canonical customer; <code>match_confidence</code> + <code>manual_review_required</code> — <strong>ไม่ auto-merge</strong> (มนุษย์ตรวจ)</li>
+<li><strong>Conversation lifecycle:</strong> site_unresolved → open → closed; site resolve ผ่าน postback/manual; session timeout sweep (cron)</li>
+<li><strong>Outbound:</strong> staged pending → sent/failed; worker claim rows, resolve token จาก Vault, ส่งผ่าน LINE API (reply/push), scrub logs</li>
+<li><strong>Message templates:</strong> pre-approved + named slots (<code>{{order_id}}</code>), vertical-scoped, immutable version, <strong>ไม่มี free-text LLM</strong>; brand voice ≤200 ตัวอักษร</li>
+<li><strong>Order creation:</strong> canonical Order_Lifecycle (quote → order → ship), origin_channel=&#39;line_oa&#39;, idempotent</li>
+<li><strong>Forecast sync + query audit</strong>; RLS site-scoped; audit append-only</li>
+</ul>
+<p><strong>ตาราง:</strong> <code>line_oa_channels</code> (เก็บเฉพาะ Vault refs), <code>line_oa_conversations</code>, <code>line_oa_inbound_messages</code>, <code>line_oa_outbound_messages</code>, <code>line_oa_customer_identity</code>, <code>line_oa_message_templates</code>, <code>line_oa_orders</code>, <code>line_oa_audit_log</code></p>
+<hr>
+<h3>6.7 โมดูล MCP Layer</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/mcp/</code>, <code>supabase/functions/mcp-server</code>, <code>mcp-approval-callback</code>, <code>mcp-pending-cleanup</code>, migrations <code>0036–0048</code> — 🔵 43/49 tasks</p>
+<p><strong>[P0] Tool Catalog &amp; Classification ✅</strong></p>
+<ul>
+<li>Registry: <code>tool_name</code> PK, <code>tool_class</code> ∈ {Read_Tool, Write_Tool, Approval_Tool}; constraint: Read → requires_approval=false, Write/Approval → true</li>
+<li>Discovery (<code>GET /mcp</code>) กรองตาม role ของ Principal; input/output JSON schema ต่อ tool</li>
+</ul>
+<p><strong>[P0] Invocation Pipeline ✅</strong></p>
+<ul>
+<li>Read tool: execute ทันที (<code>rpc_mcp_invoke_read</code>)</li>
+<li>Write/Approval tool: สร้าง <strong>Pending_Invocation</strong> รอมนุษย์ → <code>mcp-approval-callback</code> resolve; <strong>expiry</strong> 1h–30d (default 72h) → <code>rpc_mcp_expire_pending</code> (cron <code>mcp-pending-cleanup</code>); expired ≠ rejected, ไม่มี side effect</li>
+<li>Idempotency: (idempotency_key, principal) PK + input_hash conflict detection</li>
+<li>Rate limit: scope Principal/MCP_Client/Tool_Class — count &quot;strictly exceed&quot;, cost budget &quot;reach-or-exceed&quot;; ไม่มี policy → fail-safe block</li>
+</ul>
+<p><strong>[P0] Governance &amp; PDPA ✅</strong></p>
+<ul>
+<li>Authorization: role + site_access + active site; governance ข้าม site ได้<strong>เฉพาะ Read</strong> (Req 3.3); RPC re-derive สิทธิ์เอง (กัน confused-deputy Req 19.3)</li>
+<li>Data_Minimization_Boundary: redact PII + filter allowedFields ก่อนส่งออก MCP client</li>
+<li>Audit: <code>tool_invocation</code> (Model_Provenance, autonomy_tier, result_ref) append-only; client input = data เท่านั้น ไม่ตีความเป็นคำสั่ง (Untrusted_Content)</li>
+</ul>
+<p><strong>[P1] 📋 คงเหลือ:</strong> unit tests เพิ่มเติม + งานตาม ADR-019 (MCP-native write gate)</p>
+<hr>
+<h3>6.8 โมดูล Capture Spine</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/capture/</code>, Edge Functions: <code>capture-ingest</code>, <code>capture-ocr-extract</code>, <code>field-capture</code>, migrations <code>0049–0080</code> — ✅ Wave 0+1 (11 req)</p>
+<p><strong>[P0] Ingest → OCR → Verify → Commit ✅</strong></p>
+<ul>
+<li>Ingest จาก LINE/Email/App (end-user JWT, <code>resolve_actor</code> = ผู้ส่งจริง); idempotency_key = <code>capture_type:SHA-256(content)</code></li>
+<li>OCR <strong>on-prem (Typhoon)</strong> Stage 1 + field extraction Stage 2; บันทึก ocr_text, ai_payload, confidence, ai_provider, model_version (provenance)</li>
+<li><strong>Lifecycle:</strong> proposed → approved/rejected → emitted → superseded; terminal + emitted = content immutable (แก้ = สร้างใหม่ + supersede link)</li>
+<li><strong>Human verify gate:</strong> บังคับ confirm เมื่อ (ก) critical field ขาด (ข) confidence &lt; threshold (ค) fraud suspicious; <strong>approve-before-emit เสมอ</strong></li>
+<li><strong>No-guess:</strong> ห้าม sentinel (N/A, unknown, TBD, &quot;-&quot;, null-string) — สกัดไม่ได้ = null</li>
+<li><strong>Fraud signals (config):</strong> VAT mismatch, vendor ไม่อยู่ใน master, total anomaly, เอกสารซ้ำ → flag (ไม่ auto-reject) + feedback loop; verify rules seed จาก PFMEA (pfmea_ref traceability)</li>
+<li><strong>Master validation:</strong> vendor_master / material_master lookup; ไม่เจอ → unverified_fields + suspicious (ไม่ block)</li>
+</ul>
+<p><strong>[P0] Commit Targets (config-driven ต่อ capture_type) ✅</strong></p>
+<table>
+<thead>
+<tr>
+<th>capture_type</th>
+<th>ปลายทาง</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>expense_document</td>
+<td>Ledger (journal posting ผ่าน <code>rpc_capture_ledger_adapter</code>)</td>
+</tr>
+<tr>
+<td>material_receipt</td>
+<td>ราคาซื้อจริง + moving average cost (<code>rpc_capture_costing_adapter</code>)</td>
+</tr>
+<tr>
+<td>site_survey</td>
+<td><code>site_survey_zone</code> (versioned ต่อ site+zone, supersede chain)</td>
+</tr>
+<tr>
+<td>spec_draft</td>
+<td>Released_Spec (CAM/BOM link, <code>rpc_capture_spec_adapter</code>)</td>
+</tr>
+<tr>
+<td>qc_capture / installation_proof</td>
+<td>QC record / POD</td>
+</tr>
+<tr>
+<td>work_item_complete</td>
+<td>ปิด work item (0063)</td>
+</tr>
+</tbody></table>
+<ul>
+<li>Receivables (ACC-12): <code>receivable</code> table + <code>rpc_find_overdue_receivables</code> + aged analysis (30/60/90/120+)</li>
+</ul>
+<p><strong>[P2] Wave 2 📋:</strong> e-Tax PDF/A-3 + XML signing (รอ ADR-025), email webhook, multi-dept cowork config</p>
+<hr>
+<h3>6.9 โมดูล Accounting</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/ledger/</code>, <code>src/tax/</code>, <code>src/manufacturing/</code>, <code>src/connectors/</code>, migrations <code>0066–0079</code> — 🟡 37/103 tasks (Phase 3)</p>
+<p><strong>[P0] Ledger Engine ✅ (รากฐาน)</strong></p>
+<ul>
+<li>Double-entry: <code>journal_entry</code> + <code>journal_line</code> (debit XOR credit ต่อบรรทัด); <strong>invariant: Σdebit = Σcredit ต่อ entry</strong> (<code>rpc_post_journal_entry</code> ตรวจ)</li>
+<li>COA: <code>ledger_account</code> (asset/liability/equity/revenue/expense) seed 20+ บัญชี</li>
+<li><strong>Multi-book</strong> (internal/statutory/tax): post/statement แยกเล่มเด็ดขาด; DB-first (RPC/RLS) ตาม ADR-024</li>
+<li>Expense category map (policy-driven allocation, 0067)</li>
+</ul>
+<p><strong>[P0] Tax ✅ (ตรรกะ) / 📋 (เอกสารทางการ)</strong></p>
+<ul>
+<li>VAT 7%: <code>composeFromNet</code>, <code>splitInclusive</code> (ปัดเศษ 2 ตำแหน่ง)</li>
+<li>Invoice number: strictly-increasing seq + duplicate = throw (fail-safe); format <code>PREFIX-YYYY-NNNN</code></li>
+<li>WHT: rate tables ต่อประเภทเงินได้ + RD prep format (ภ.ง.ด.3/53)</li>
+<li>e-Tax XML serialization มีโครง; <strong>ลายเซ็น XAdES + X.509 = Non-Goal จนกว่า owner จัดหา CA (ADR-025)</strong></li>
+</ul>
+<p><strong>[P1] Manufacturing Costing ✅ (ตรรกะ)</strong></p>
+<ul>
+<li>BOM: create/explode (qtyPerUnit × units); Job costing: material + labor + overhead → close → post to ledger (WIP/labor/overhead)</li>
+<li>Inventory issue: qty &gt; stock → InsufficientStockError; Moving Average Cost ต่อ material receipt</li>
+<li>FX: dual-standard rounding — ปัดต่อบรรทัด 2 ตำแหน่ง + plug residual เข้า rounding_difference account (ADR-022)</li>
+</ul>
+<p><strong>[P1] Connectors ✅ (บางส่วน)</strong></p>
+<ul>
+<li>PDM sync (part master, idempotent ตาม eventId, revision history append-only), BIM import, bank feed reconciliation (โครง)</li>
+</ul>
+<p><strong>[P2] 📋 คงเหลือ:</strong> bank feed connector จริง, multi-currency 160 สกุลเต็มรูป, รายงานงบการเงิน TFRS/NPAE, e-Tax production</p>
+<hr>
+<h3>6.10 โมดูล IAM — C12 Foundation</h3>
+<p><strong>ไฟล์หลัก:</strong> <code>src/iam/</code>, migration <code>00000000000000_c12_foundation.sql</code> — ✅</p>
+<ul>
+<li><strong>C12 helpers (ใช้ร่วมทุกโมดูล):</strong> <code>resolve_actor()</code>, <code>has_site_access(site_code)</code>, <code>is_governance_role()</code>, <code>has_any_app_role(roles[])</code>, <code>get_active_site_codes()</code>, <code>current_app_roles</code> view</li>
+<li>Roles: governance, site_admin, employee, customer_approver, sale, designer, production, finance</li>
+<li>RLS ทุกตารางธุรกิจ: fail-closed default; SELECT = governance | site_access; governance bypass เฉพาะที่กำหนด</li>
+<li>Scope enforcement ฝั่ง code: <code>isRowVisible</code>, <code>authorizeCrossDept</code> (fail-closed throw)</li>
+</ul>
+<hr>
+<h2>7. Invariants และ Contracts</h2>
+<h3>7.1 ค่าคงที่การผลิต (Manufacturing Constants)</h3>
+<table>
+<thead>
+<tr>
+<th>ชื่อ</th>
+<th>ค่า</th>
+<th>ละเมิดแล้วเกิดอะไร</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Thickness safety margin</td>
+<td>0.5 mm</td>
+<td>เจาะทะลุแผ่น → ของเสีย</td>
+</tr>
+<tr>
+<td>Min edge margin</td>
+<td>8 mm</td>
+<td>ขอบแตก → ข้อต่ออ่อน</td>
+</tr>
+<tr>
+<td>Min fitting spacing (System 32)</td>
+<td>32 mm</td>
+<td>รูชนกัน → ประกอบไม่ได้</td>
+</tr>
+<tr>
+<td>Distance B (Minifix)</td>
+<td>24 mm (standard) / 34 mm (alternate)</td>
+<td>CAM ประกอบเยื้อง</td>
+</tr>
+<tr>
+<td>Dowel depth</td>
+<td>SIDE 18 mm / FACE 12 mm</td>
+<td>เดือยยึดไม่พอ</td>
+</tr>
+<tr>
+<td>CAM depth (ไม้ 18mm)</td>
+<td>13.5 mm (Häfele FF 3.10)</td>
+<td>ล็อกไม่แน่น</td>
+</tr>
+<tr>
+<td>Mating tolerance</td>
+<td>≤ 0.1 mm</td>
+<td>ข้อต่อหลวม/สั่น</td>
+</tr>
+<tr>
+<td>OD tolerance</td>
+<td>0.1 mm</td>
+<td>ขนาดตู้เพี้ยน</td>
+</tr>
+</tbody></table>
+<h3>7.2 สัญญาความถูกต้องของข้อมูล (Data Contracts)</h3>
+<ol>
+<li><strong>Determinism end-to-end:</strong> Cabinet เดิม → DrillMap → Packet → OperationGraph → G-code → ZIP เดิมทุก byte (SHA-256 ยืนยัน)</li>
+<li><strong>G9 boundary:</strong> ทุก packet ภายนอกผ่าน <code>assertValidPacket()</code>; type-level enforce ด้วย branded type</li>
+<li><strong>T008:</strong> DXF มาจาก OperationGraph เท่านั้น ไม่ใช่ mesh/Cabinet cache</li>
+<li><strong>Journal balance:</strong> Σdebit = Σcredit ต่อ entry เสมอ</li>
+<li><strong>Approve-before-emit:</strong> capture artifact ไม่มีทาง emit โดยไม่ approve; business commit รอ emitted</li>
+<li><strong>Append-only audit:</strong> ทุกตาราง audit REVOKE UPDATE/DELETE</li>
+<li><strong>Idempotency ทุกทางเข้า:</strong> webhook_event_id (LINE), capture idempotency_key, MCP (key, principal), PDM eventId</li>
+<li><strong>Knowledge_Export → process_model:</strong> read-only import พร้อม source_version + is_current</li>
+</ol>
+<h3>7.3 Safety Gate Golden Rules (จาก CONTRIBUTING.md)</h3>
+<ol>
+<li>ห้าม bypass Safety Gate | 2. ห้ามหย่อน Gate เพื่อให้เทสต์ผ่าน | 3. เปลี่ยน Gate ต้องอัปเดตเทสต์ | 4. กฎการผลิตทุกข้อต้องเป็น Gate | 5. <strong>ถ้าพังในโรงงานได้ ต้อง fail ใน CI</strong> | 6. error code ใหม่ต้องลง docs</li>
+</ol>
+<hr>
+<h2>8. Non-Functional Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>หมวด</th>
+<th>ข้อกำหนด</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Security</strong></td>
+<td>Ed25519 signing + pinned keys + revocation; HMAC webhook verify; secrets ใน Vault เท่านั้น (Edge Function ไม่ถือ plaintext); RLS fail-closed ทุกตาราง; JWT end-user ต่อ request</td>
+</tr>
+<tr>
+<td><strong>Privacy (PDPA)</strong></td>
+<td>OCR on-prem; PII redaction ที่ MCP boundary; log scrubbing ใน outbound sender; ไม่มี egress เอกสารการเงิน (ADR-021)</td>
+</tr>
+<tr>
+<td><strong>Reliability</strong></td>
+<td>BullMQ retry 3 + exponential backoff; notification retry worker; WebGL context recovery; CNC cache re-verify on load (tamper detection)</td>
+</tr>
+<tr>
+<td><strong>Performance</strong></td>
+<td>Export เสร็จ &lt; 30 วินาที (e2e ยืนยัน); vendor chunk splitting (three ≈1MB แยก bundle); texture preload เฉพาะที่ใช้; drill map ใช้ useMemo + bail-out เร็ว</td>
+</tr>
+<tr>
+<td><strong>Testability</strong></td>
+<td>4 ระดับบังคับ: Unit + Snapshot + Property-based (fast-check) + Multi-pair; golden fixtures; ปัจจุบัน 4,404 tests + 7 e2e smoke</td>
+</tr>
+<tr>
+<td><strong>Auditability</strong></td>
+<td>ทุก export/approval/capture/invocation มี audit แบบค้นหาได้ + timeline ต่อ job + proof endpoint</td>
+</tr>
+<tr>
+<td><strong>i18n</strong></td>
+<td>โดเมนธุรกิจสองภาษา (ศัพท์ไทยในเอกสาร spec/QMS; UI อังกฤษเป็นหลัก)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. Success Metrics</h2>
+<h3>Leading Indicators (วัดได้ทันทีหลังใช้งาน)</h3>
+<ul>
+<li>% ไฟล์ export ที่ผ่าน gate โดยไม่มี BLOCKER ตั้งแต่ครั้งแรก (เป้า: เพิ่มขึ้นต่อเนื่อง — สะท้อนว่านักออกแบบเรียนรู้กฎ)</li>
+<li>จำนวน waive ต่อสัปดาห์ + สัดส่วนที่มีเหตุผลบันทึกครบ (เป้า: 100% มีเหตุผล)</li>
+<li>เวลาเฉลี่ยจาก Freeze → ดาวน์โหลดไฟล์โรงงาน (เป้า: &lt; 5 นาที)</li>
+<li>% การอนุมัติที่จบภายใน SLA (เป้า: &gt; 90%; timeout ทุกตัวมี escalation record)</li>
+<li>% capture artifact ที่ผ่าน human verify ก่อน emit (ต้อง = 100% โดยนิยาม; ตัวเลขที่ต่ำกว่าคือ bug)</li>
+</ul>
+<h3>Lagging Indicators (วัดรายเดือน/ไตรมาส)</h3>
+<ul>
+<li>ต้นทุนของเสียจากการเจาะ/ตัดผิด (เป้า: → 0)</li>
+<li>จำนวนงานที่ต้อง rework จาก revision ประเภท daph_defect (เป้า: ลดลงต่อเนื่อง)</li>
+<li>รอบเวลาปิดบัญชีรายเดือน (เป้า: ลดลงเมื่อ capture → ledger อัตโนมัติเต็มรูป)</li>
+<li>Utilization ของแผ่น (nesting) เฉลี่ย (เป้า: เพิ่มขึ้น)</li>
+</ul>
+<hr>
+<h2>10. สถานะและ Roadmap</h2>
+<h3>สถานะปัจจุบัน (2026-07-04)</h3>
+<table>
+<thead>
+<tr>
+<th>ระบบ</th>
+<th>สถานะ</th>
+<th>หลักฐาน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CAD/CAM แกนหลัก (v2.1.0)</td>
+<td>✅ Production-ready</td>
+<td>FIX_PLAN ปิดครบ; tsc 0 errors; 4,404 tests; e2e ผ่าน</td>
+</tr>
+<tr>
+<td>Knowledge Layer</td>
+<td>✅ 100%</td>
+<td>Vault 224 ไฟล์; pipeline idempotent (PBT)</td>
+</tr>
+<tr>
+<td>line-oa-commerce</td>
+<td>✅ 100%</td>
+<td>20/20 tasks; 31 properties</td>
+</tr>
+<tr>
+<td>workflow-copilot</td>
+<td>✅ Phase 1</td>
+<td>113/134 tasks; 42 properties</td>
+</tr>
+<tr>
+<td>capture-spine</td>
+<td>✅ Wave 0+1</td>
+<td>42/43 tasks; migrations ถึง 0080</td>
+</tr>
+<tr>
+<td>mcp-layer</td>
+<td>🔵 88%</td>
+<td>43/49 tasks</td>
+</tr>
+<tr>
+<td>accounting</td>
+<td>🟡 36%</td>
+<td>37/103 tasks (ตรรกะแกนมีแล้ว)</td>
+</tr>
+<tr>
+<td>design-hub phase2</td>
+<td>⏸</td>
+<td>รอ 7 owner decisions</td>
+</tr>
+</tbody></table>
+<h3>Roadmap ถัดไป (เรียงตาม dependency)</h3>
+<ol>
+<li><strong>[ตอนนี้]</strong> ปิด workflow-copilot Phase 1.5 — Req 21 revision/design-lock/re-quote + ADR-017/018 (order-key + multi-approver migration)</li>
+<li><strong>[ถัดไป]</strong> mcp-layer unit tests ที่เหลือ + ADR-019 write-gate</li>
+<li><strong>[Phase 3]</strong> accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม</li>
+<li><strong>[รอ owner]</strong> 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2</li>
+<li><strong>[รอ governance]</strong> e-Tax XAdES + X.509 (จัดหา ETDA CA)</li>
+</ol>
+<hr>
+<h2>11. Open Questions</h2>
+<p><strong>Owner Decisions ค้าง 7 ข้อ (จาก REQUIREMENTS-OVERVIEW §4.2) — blocking Phase 3/design-hub:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>คำถาม</th>
+<th>ใครตอบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>โครง Vendor Master สุดท้าย (field ไหนบังคับ, ใคร maintain)</td>
+<td>Owner + บัญชี</td>
+</tr>
+<tr>
+<td>2</td>
+<td>โครง Material Master + หน่วยนับมาตรฐาน</td>
+<td>Owner + โรงงาน</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Ledger schema เพิ่มเติม (เล่มไหนบ้าง, mapping ภาษี)</td>
+<td>Owner + บัญชี</td>
+</tr>
+<tr>
+<td>4</td>
+<td>นโยบายราคาซื้อจริง (MAC vs FIFO ต่อวัสดุ)</td>
+<td>Owner + บัญชี</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Released_Spec contract เวอร์ชันถัดไป (CAM ↔ capture)</td>
+<td>Owner + วิศวกรรม</td>
+</tr>
+<tr>
+<td>6</td>
+<td>MCP exposure — เปิด tool ไหนให้ AI client ภายนอก</td>
+<td>Owner + governance</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Auto-approve policy — งานประเภทไหน (ถ้ามี) อนุญาต tier สูงขึ้น</td>
+<td>Owner + governance</td>
+</tr>
+</tbody></table>
+<p><strong>คำถามทางเทคนิคที่ไม่ blocking:</strong></p>
+<ul>
+<li>(Engineering) กลยุทธ์ sync cloud ของโปรเจกต์ CAD (ปัจจุบัน localStorage; มี design doc <code>CLOUD_SYNC_ARCHITECTURE</code> แล้ว)</li>
+<li>(Engineering) การรวม repo history — branch ปัจจุบันเป็นคนละสายกับ main เดิม (ก.พ. 2026) ที่เก็บไว้ใน <code>legacy/main-2026-02</code></li>
+<li>(Design) Design Hub Phase 2 naming ตาม spec: ใช้ &quot;CAM/Manufacturing Engine (TS)&quot; — ห้ามใช้คำ &quot;north-star-foundation&quot;</li>
+</ul>
+<hr>
+<h2>12. Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>ศัพท์</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>SOS / JES / PFMEA</strong></td>
+<td>Standard Operation Sheet / Job Element Sheet / Process FMEA (เอกสาร QMS)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td>Risk Priority Number = SEV × OCC × DET — เชื้อเพลิงของ Copilot escalation</td>
+</tr>
+<tr>
+<td><strong>RACI</strong></td>
+<td>Responsible / Accountable / Consulted / Informed — แผนที่ผู้รับผิดชอบต่อขั้น</td>
+</tr>
+<tr>
+<td><strong>System 32</strong></td>
+<td>มาตรฐานรูเจาะเฟอร์นิเจอร์ยุโรป pitch 32mm, first hole 50mm</td>
+</tr>
+<tr>
+<td><strong>Minifix S200</strong></td>
+<td>ข้อต่อ cam-lock ของ Häfele (CAM Ø15 + Bolt + Dowel Ø8)</td>
+</tr>
+<tr>
+<td><strong>Distance B</strong></td>
+<td>ระยะจากขอบแผ่นถึงศูนย์ CAM (24/34mm)</td>
+</tr>
+<tr>
+<td><strong>INSET / OVERLAY</strong></td>
+<td>แบบข้อต่อ: ฝังใน / วางทับ — กระทบ drill map ทั้งระบบ</td>
+</tr>
+<tr>
+<td><strong>DrillMap</strong></td>
+<td>แผนที่จุดเจาะทุกจุดของตู้ (world position + normal + Ø + depth + purpose)</td>
+</tr>
+<tr>
+<td><strong>FactoryPacket</strong></td>
+<td>JSON deterministic มัดรวม drillMap/connectors/cutList/gateResult + manifest hash</td>
+</tr>
+<tr>
+<td><strong>OperationGraph</strong></td>
+<td>กราฟ operations CNC (DRILL/BORE/POCKET/PROFILE/SLOT) — ความจริงเดียวของ G-code/DXF</td>
+</tr>
+<tr>
+<td><strong>Gate (G1–G11)</strong></td>
+<td>ด่านตรวจกฎการผลิต; G9 = packet boundary, G10 = DXF safety, G11 = Minifix/System32</td>
+</tr>
+<tr>
+<td><strong>DRAFT / FROZEN / RELEASED</strong></td>
+<td>สถานะ spec; export ได้เมื่อ FROZEN ขึ้นไป</td>
+</tr>
+<tr>
+<td><strong>Waive</strong></td>
+<td>การยอมรับความเสี่ยง WARNING โดยบันทึกเหตุผล (BLOCKER waive ไม่ได้ ยกเว้น admin override)</td>
+</tr>
+<tr>
+<td><strong>Signed Receipt (P13)</strong></td>
+<td>ใบเสร็จ export ลงนาม Ed25519; ตรวจ offline ด้วย <code>monolith-receipt-verify</code></td>
+</tr>
+<tr>
+<td><strong>C12</strong></td>
+<td>Foundation กลาง: identity/role/site (<code>resolve_actor</code>, <code>has_site_access</code>, governance)</td>
+</tr>
+<tr>
+<td><strong>D2 Autonomy Ladder</strong></td>
+<td>ระดับความอิสระของ AI action (L0 เสนอเท่านั้น → สูงขึ้นตาม registry)</td>
+</tr>
+<tr>
+<td><strong>Knowledge_Export</strong></td>
+<td>JSON จาก Vault (PFMEA 122 แถว + 28 process steps + RACI) — สัญญา read-only</td>
+</tr>
+<tr>
+<td><strong>Canonical Order</strong></td>
+<td>ลำดับขั้นกระบวนการ 0–7; identity ของขั้น (ชื่อซ้ำได้)</td>
+</tr>
+<tr>
+<td><strong>Pending_Invocation</strong></td>
+<td>MCP tool call ที่รอมนุษย์อนุมัติ (มี expiry; expired ≠ rejected)</td>
+</tr>
+<tr>
+<td><strong>Capture Artifact</strong></td>
+<td>เอกสาร/ภาพที่ ingest เข้ามา; lifecycle proposed → approved → emitted → superseded</td>
+</tr>
+<tr>
+<td><strong>No-guess / Fail-safe</strong></td>
+<td>หลักการ: ไม่เดาค่า ไม่ auto-pass เมื่อข้อมูล/กลไกไม่พร้อม</td>
+</tr>
+<tr>
+<td><strong>PARA</strong></td>
+<td>Projects / Areas / Resources / Archives (โครง Vault)</td>
+</tr>
+<tr>
+<td><strong>MOC</strong></td>
+<td>Map of Contents (หน้า index ต่อกลุ่ม/หน่วยใน Vault)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>13. ภาคผนวก</h2>
+<h3>13.1 Tech Stack</h3>
+<table>
+<thead>
+<tr>
+<th>ชั้น</th>
+<th>เทคโนโลยี</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend</td>
+<td>React 18, TypeScript 5.2, Vite 5, Three.js 0.159 + React Three Fiber + Drei, Zustand 4 (immer + persist), Tailwind CSS 3, framer-motion, three-bvh-csg</td>
+</tr>
+<tr>
+<td>Factory Server</td>
+<td>Node.js + Express 4, BullMQ 5 + Redis (ioredis), pdfkit, yazl/yauzl, @noble/ed25519</td>
+</tr>
+<tr>
+<td>Business Backend</td>
+<td>Supabase (PostgreSQL + RLS + RPC + Edge Functions/Deno), Vault secrets</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td>Vitest 3, fast-check 4 (PBT), Playwright 1.58 (e2e), pgTAP (supabase/tests)</td>
+</tr>
+<tr>
+<td>Knowledge</td>
+<td>Node/TS pipeline (SheetJS สำหรับ .xls BIFF), Obsidian vault output</td>
+</tr>
+</tbody></table>
+<h3>13.2 คำสั่งตรวจสอบมาตรฐาน</h3>
+<pre><code class="language-bash">npx tsc -b tsconfig.build.json     # typecheck (script: typecheck:all)
+npm run test:run                    # vitest ทั้งหมด (4,404 tests)
+npm run build                       # tsc + vite build
+npx playwright test --grep &quot;@smoke&quot; # e2e smoke (7 tests)
+npm run verify                      # test + typecheck + e2e smoke รวม
+npm run gate:bypass-scan            # CI gate bypass scan
+</code></pre>
+<h3>13.3 เอกสารอ้างอิงภายใน</h3>
+<ul>
+<li><code>REQUIREMENTS-OVERVIEW.md</code> — requirements ครบ 8 spec + ADR-001..027</li>
+<li><code>.kiro/specs/*/</code> — requirements.md / design.md / tasks.md ต่อ spec</li>
+<li><code>.kiro/steering/</code> — architecture-decisions.md, ubiquitous-language.md</li>
+<li><code>CHANGELOG.md</code> — v2.1.0 (D1–D3.3 CNC trust chain), v2.0.0</li>
+<li><code>CONTRIBUTING.md</code> — Safety Gate policy + ระดับเทสต์บังคับ 4 ระดับ</li>
+<li><code>docs/SKILL.md</code> — Minifix Drillmap (สเปค Häfele S200 ครบ)</li>
+<li><code>docs/architecture/</code> — CLOUD_SYNC, CUT_OPTIMIZATION, MULTI_MACHINE_EXPORT designs</li>
+<li><code>.claude/skills/</code> — 7 architectural-invariant skills (truth-derivation, zustand-reactivity, geometry-invariants, material-stack, export-determinism, thickness-compliance, monolith-dev-guide)</li>
+</ul>
+<hr>
+<p><em>เอกสารนี้สร้างจากการสำรวจ codebase จริง (source, migrations, specs, tests) ณ commit <code>2c19935</code> — สถานะ implement ทุกรายการอ้างอิงจากโค้ดและผลเทสต์ที่รันจริง ไม่ใช่จากแผน</em></p>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
