@@ -278,7 +278,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - **Curved / Arc Panel System [P1] 🔵** — งานโค้งแบบพารามิเตอร์เป็น **in-scope** (มติ grilling 2026-07-04: สินค้าจริงของ DAPH มีชิ้นงานโค้ง) สถานะจริงต่อชั้น:
   - ✅ **Toolpath/G-code**: IR รองรับ `ARC_CW/ARC_CCW`, dialect Biesse/HOMAG ปล่อย G2/G3 + I/J center, arc lead-in/lead-out, verifier + simulator ตรวจ arc ได้ (`src/core/manufacturing/gcode/`, `toolpath/geom/entryExitEmitter.ts`)
   - ✅ **Kerf Bending engine**: คำนวณ bendRadius/bendAngle/arc length/kerfCount/spacing/minimum bend radius ต่อวัสดุ (`src/core/catalog/KerfBending.ts` + calculator UI)
-  - ⏳ **Cabinet model**: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — `Cabinet.ts` ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF — เป็นงานถัดไปของฟีเจอร์นี้
+  - ⏳ **Cabinet model**: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — `Cabinet.ts` ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF
+  - 📋 **Spec พร้อมแล้ว**: `.kiro/specs/curved-panel-system/` (requirements 7 ข้อ + design + tasks 7 phases) — Panel_Profile model, Kerf_Pattern generator, Gate G12, drill map exclusion, 3D overlay, export ครบวงจร
 
 #### 6.1.8 Persistence และ Versions [P0] ✅
 
@@ -657,6 +658,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
 1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
+1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec พร้อมที่ `.kiro/specs/curved-panel-system/` (มติ grilling: สินค้าจริงมีชิ้นโค้ง; ✅ arc toolpath + kerf engine มีแล้ว เหลือ Panel_Profile model + G12 + export)
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2

@@ -1,0 +1,119 @@
+# Requirements Document
+
+## Introduction
+
+เอกสารนี้กำหนด requirements ของฟีเจอร์ **Curved Panel System** — ทำให้ MONOLITH รองรับ**งานโค้งแบบ parametric** ในตู้เฟอร์นิเจอร์แผ่น: มุมโค้งรัศมี R (rounded corner), ส่วนโค้งวงกลม (circular arc), S-curve (สองโค้งต่อเนื่องแบบ tangent) และ side panel โค้ง — ผลิตด้วยเทคนิค **kerf bending** (ซอยร่องด้านในของแผ่นตามแนวโค้ง แล้วดัด + ปิดผิวด้วย skin) ตามชิ้นงานจริงของ DAPH และตัวอย่างอุตสาหกรรม (Circular Arc System / S圆弧)
+
+**ขอบเขต v1 (สำคัญ):** โค้งแกนเดียว (single-axis bend) บนแผ่น panel เท่านั้น — ไม่รวม compound curve 3 มิติ / freeform solid modeling (ยังคงเป็น Non-Goal N-1 ของ PRD เพราะต้องใช้ geometry kernel คนละชุด)
+
+**Reuse-not-fork (ข้อบังคับ):**
+- **Kerf engine** = `src/core/catalog/KerfBending.ts` (bendRadius, bendAngle, arcLength in/out, kerfCount, kerfSpacing, `getMinimumBendRadius(material, thickness)`) — proven แล้ว ห้ามเขียนสูตรซ้ำ
+- **Arc toolpath** = G-code IR `ARC_CW/ARC_CCW` + planOps + dialect Biesse/HOMAG (G2/G3, I/J) + entry/exit arc leads + toolpath verifier + simulator (`src/core/manufacturing/gcode/`, `toolpath/`)
+- **SLOT operation** = ประเภท operation ที่มีอยู่ใน CNC ops สำหรับร่อง kerf
+- **Gate framework** = โครง G11 (`src/gate/rules/`) — เพิ่ม G12 ไม่แก้ G เดิม
+- **Material Stack** = `PanelMaterialSystem` + `materialThickness.ts` (single source of thickness — skill: thickness-compliance)
+- **Determinism** = stable JSON + golden fixtures + fast-check PBT (skill: export-determinism)
+- **Truth Derivation** = UI 3D และไฟล์ผลิตต้อง derive จาก model เดียวกัน (skill: truth-derivation)
+
+## Glossary
+
+- **Panel_Profile**: รูปทรงระนาบของแผ่นแบบ parametric — `RECT` (ค่าเริ่มต้น) | `ROUNDED_CORNER` (มุมโค้งรัศมี R ต่อมุม) | `ARC` (โค้งวงกลมส่วนเดียว) | `S_CURVE` (สองโค้ง tangent ทิศสลับ)
+- **Kerf_Zone**: บริเวณบนแผ่นที่ต้องซอยร่อง kerf เพื่อดัดโค้ง = ส่วนโค้งของ profile + ระยะเผื่อเข้า/ออก
+- **Kerf_Pattern**: ชุดร่อง kerf ที่ generate จาก Kerf engine (จำนวน N, ระยะห่าง S, ความลึก, ทิศตั้งฉากกับแนวสัมผัสโค้ง)
+- **Skin_Panel**: แผ่นบางปิดหน้าร่อง kerf หลังดัด (optional) — เป็นชิ้นงานแยกใน BOM
+- **Developed_Length**: ความยาวคลี่แบน (arc length ด้านนอก) ที่ใช้ตัดจริง — ไม่ใช่ bounding box
+- **Min_Bend_Radius**: รัศมีดัดต่ำสุดต่อ (วัสดุ, ความหนา) จาก `getMinimumBendRadius`
+- **Kerf_Margin**: ระยะกันชนรอบ Kerf_Zone ที่ห้ามมี fitting/รูเจาะ
+- **G12**: Safety Gate ใหม่ — Curve Manufacturability validation
+
+## Requirements
+
+### Requirement 1: Parametric Panel Profile Model
+
+**User Story:** As a Designer, I want กำหนดแผ่นให้มีมุมโค้ง R / โค้งวงกลม / S-curve ด้วยพารามิเตอร์ (รัศมี, มุม, ตำแหน่ง), so that ฉันออกแบบงานโค้งได้ในโปรแกรมเดียวโดยไม่ต้องวาด freeform
+
+#### Acceptance Criteria
+
+1. THE Cabinet model SHALL ขยาย `CabinetPanel` ด้วย `profile: Panel_Profile` (ค่าเริ่มต้น `RECT` — backward compatible: โปรเจกต์เดิม load ได้โดยพฤติกรรมไม่เปลี่ยน)
+2. WHEN Designer กำหนด `ROUNDED_CORNER` THE ระบบ SHALL รับรัศมี R ต่อมุม (0 = เหลี่ยม) และ validate R ≤ min(กว้าง, สูง)/2
+3. WHEN Designer กำหนด `ARC` หรือ `S_CURVE` THE ระบบ SHALL รับพารามิเตอร์ {รัศมี, มุมกวาด, จุดเริ่ม} และสำหรับ S_CURVE SHALL บังคับความต่อเนื่องแบบ tangent ระหว่างสองโค้ง (G1 continuity)
+4. THE Panel_Profile SHALL เป็น deterministic: พารามิเตอร์เดิม → geometry เดิมทุก byte (ผ่าน stable serialization)
+5. IF พารามิเตอร์ทำให้ geometry ขัดแย้ง (โค้งตัดกันเอง/เกินขอบแผ่น), THEN THE ระบบ SHALL ปฏิเสธที่ชั้น input พร้อมเหตุผล — ไม่สร้าง geometry เสีย
+
+### Requirement 2: Kerf Pattern Generation (จาก engine เดิม)
+
+**User Story:** As a Factory Operator, I want ให้ระบบ generate ร่อง kerf อัตโนมัติจากพารามิเตอร์โค้ง, so that ฉันไม่ต้องคำนวณจำนวน/ระยะร่องเองหน้างาน
+
+#### Acceptance Criteria
+
+1. WHEN panel มี Kerf_Zone THE ระบบ SHALL เรียก `calculateKerfBending` (engine เดิม) ด้วย {วัสดุ, ความหนา, รัศมี, มุม} → ได้ kerfCount N + kerfSpacing S
+2. THE Kerf_Pattern SHALL วางร่องตั้งฉากกับแนวสัมผัสโค้ง กระจายตาม arc length ด้านนอก (คลี่แบน) — ตำแหน่งเป็น deterministic
+3. THE ความลึกร่อง SHALL เหลือเนื้อวัสดุ ≥ ความหนา skin ขั้นต่ำของวัสดุนั้น และเคารพ thickness safety margin 0.5mm (ค่าเดียวกับระบบเจาะ)
+4. IF วัสดุไม่มีข้อมูลใน `getMinimumBendRadius`, THEN THE ระบบ SHALL fail-safe block (ไม่เดาค่า) พร้อมข้อความให้เพิ่มข้อมูลวัสดุ
+5. WHEN ผู้ใช้แก้รัศมี/วัสดุ/ความหนา THE Kerf_Pattern SHALL regenerate อัตโนมัติ (ไม่มี stale state — skill: zustand-reactivity)
+
+### Requirement 3: Gate G12 — Curve Manufacturability
+
+**User Story:** As a Technician, I want ด่านตรวจที่ block งานโค้งที่ผลิตไม่ได้ก่อน export, so that ไม่มีชิ้นงานโค้งพังในโรงงาน
+
+#### Acceptance Criteria
+
+1. THE G12 SHALL BLOCK เมื่อ รัศมี < Min_Bend_Radius(วัสดุ, ความหนา)
+2. THE G12 SHALL BLOCK เมื่อ kerfSpacing < ขีดจำกัดเครื่องมือ (kerf blade width + เนื้อไม้ขั้นต่ำระหว่างร่อง)
+3. THE G12 SHALL BLOCK เมื่อ ความลึกร่องละเมิดเกณฑ์ Req 2.3
+4. THE G12 SHALL BLOCK เมื่อ มี drill point / fitting อยู่ภายใน Kerf_Zone + Kerf_Margin (ค่าเริ่มต้น 8mm — ค่าเดียวกับ minMarginToEdgeMm)
+5. THE G12 SHALL WARNING (waive ได้) เมื่อ S_CURVE มีช่วงเปลี่ยนทิศสั้นกว่าค่าแนะนำ หรือ grain direction ขนานแนวดัด (เสี่ยงหัก)
+6. THE G12 SHALL ใช้ severity/waive/audit semantics เดียวกับ gate เดิมทุกประการ และต้องมี error code ลง `docs/SAFETY_GATE.md` (Golden Rule 6)
+
+### Requirement 4: DrillMap และ System 32 หลบเขตโค้ง
+
+**User Story:** As a Designer, I want ให้ Minifix/เดือย/shelf pin หลบเขตโค้งอัตโนมัติ, so that ข้อต่อไม่ตกในบริเวณที่ดัด
+
+#### Acceptance Criteria
+
+1. WHEN generate DrillMap บน panel ที่มี Kerf_Zone THE ระบบ SHALL กรองจุดเจาะทุกชนิดออกจาก Kerf_Zone + Kerf_Margin (pattern เดียวกับ edge margin filtering เดิมใน `generateDrillMap.ts`)
+2. THE System 32 pattern SHALL ข้ามช่วงโค้งแล้วต่อ pitch ใหม่หลังพ้นเขต โดยตำแหน่งยัง deterministic
+3. IF การกรองทำให้ connector คู่ใดขาดคู่ (CAM ไม่มี BOLT), THEN THE G11 เดิม SHALL ตรวจพบ (ไม่ต้องเพิ่มกฎใหม่ — reuse pairing validator)
+
+### Requirement 5: 3D Visualization (Truth Derivation)
+
+**User Story:** As a Designer, I want เห็นแผ่นโค้งและร่อง kerf ใน 3D/X-Ray ตรงกับที่โรงงานจะได้, so that ฉันตรวจงานได้ก่อนส่งจริง
+
+#### Acceptance Criteria
+
+1. THE Cabinet3D SHALL render Panel_Profile โค้งจาก model เดียวกับที่ใช้สร้างไฟล์ผลิต (ห้าม fork geometry — skill: truth-derivation)
+2. WHEN X-Ray mode เปิด THE ระบบ SHALL แสดง Kerf_Pattern overlay บนหน้าที่ถูกซอย
+3. THE การ render SHALL ไม่ทำให้ FPS ตกอย่างมีนัยจากแผ่นเหลี่ยม (ใช้ arc tessellation คงที่ + memo)
+
+### Requirement 6: Export — DXF / CNC / Cut List
+
+**User Story:** As a Factory Operator, I want ไฟล์ DXF/G-code ที่มีขอบโค้งและร่อง kerf ครบ พร้อมความยาวคลี่แบนใน cut list, so that ตัดและซอยได้จากไฟล์ตรง ๆ
+
+#### Acceptance Criteria
+
+1. THE OperationGraph SHALL แทนร่อง kerf เป็น SLOT operations และขอบโค้งเป็น arc segments (ผ่าน IR `ARC_CW/ARC_CCW` เดิม)
+2. THE DXF export SHALL ปล่อยขอบโค้ง (ARC entity หรือ POLYLINE + bulge ตาม R12) และผ่าน G10.1/10.2/10.3 ครบ
+3. THE Cut List SHALL แสดง Developed_Length (คลี่แบน) เป็นขนาดตัด และระบุ kerfCount ต่อชิ้น
+4. WHEN panel มี Skin_Panel THE BOM SHALL มี skin เป็นชิ้นแยก (วัสดุ/ความหนา/ขนาดคลี่)
+5. THE export ทั้งหมด SHALL deterministic (hash เดิมต่อ input เดิม) และเข้า Factory Packet + signed receipt ตามปกติ
+6. THE Nesting (v1) SHALL ใช้ bounding box ของชิ้นโค้ง และ manifest SHALL ระบุว่าเป็น approximate (no silent caps)
+
+### Requirement 7: Persistence และ Backward Compatibility
+
+**User Story:** As a Designer, I want โปรเจกต์เก่าเปิดได้เหมือนเดิมและโปรเจกต์ใหม่เก็บพารามิเตอร์โค้งครบ, so that ไม่มีงานเดิมพัง
+
+#### Acceptance Criteria
+
+1. THE project serialization SHALL เก็บ Panel_Profile + Kerf/Skin config และ load กลับได้ครบ (round-trip)
+2. WHEN load โปรเจกต์ที่ไม่มี field profile THE ระบบ SHALL default เป็น RECT โดยไม่มี migration error
+3. THE golden fixtures SHALL ครอบคลุมอย่างน้อย: rounded corner R เดียว, ARC 90°, S_CURVE — เทียบ DrillMap/Packet hash
+
+## Correctness Properties (PBT — fast-check)
+
+1. **Determinism**: พารามิเตอร์โค้งเดิม → Kerf_Pattern + Packet hash เดิมเสมอ
+2. **Exclusion invariant**: ∀ drill point: ไม่อยู่ใน Kerf_Zone + Kerf_Margin
+3. **Radius monotonicity**: รัศมีลดลง → kerfCount ไม่ลดลง (ที่วัสดุ/มุมคงที่)
+4. **Depth safety**: ∀ kerf: ความหนาคงเหลือ ≥ skin ขั้นต่ำ + 0.5mm
+5. **Tangency**: S_CURVE สองโค้งต่อกันด้วยความชันเท่ากันที่จุดต่อเสมอ
+6. **Round-trip**: profile serialize → parse → serialize เท่าเดิม
+7. **Backward compat**: panel ไม่มี profile ≡ RECT ทุก pipeline (DrillMap/DXF/CutList เท่าเดิม byte-identical)

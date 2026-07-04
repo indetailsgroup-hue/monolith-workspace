@@ -495,7 +495,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 <li><strong>Curved / Arc Panel System [P1] 🔵</strong> — งานโค้งแบบพารามิเตอร์เป็น <strong>in-scope</strong> (มติ grilling 2026-07-04: สินค้าจริงของ DAPH มีชิ้นงานโค้ง) สถานะจริงต่อชั้น:<ul>
 <li>✅ <strong>Toolpath/G-code</strong>: IR รองรับ <code>ARC_CW/ARC_CCW</code>, dialect Biesse/HOMAG ปล่อย G2/G3 + I/J center, arc lead-in/lead-out, verifier + simulator ตรวจ arc ได้ (<code>src/core/manufacturing/gcode/</code>, <code>toolpath/geom/entryExitEmitter.ts</code>)</li>
 <li>✅ <strong>Kerf Bending engine</strong>: คำนวณ bendRadius/bendAngle/arc length/kerfCount/spacing/minimum bend radius ต่อวัสดุ (<code>src/core/catalog/KerfBending.ts</code> + calculator UI)</li>
-<li>⏳ <strong>Cabinet model</strong>: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — <code>Cabinet.ts</code> ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF — เป็นงานถัดไปของฟีเจอร์นี้</li>
+<li>⏳ <strong>Cabinet model</strong>: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — <code>Cabinet.ts</code> ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF</li>
+<li>📋 <strong>Spec พร้อมแล้ว</strong>: <code>.kiro/specs/curved-panel-system/</code> (requirements 7 ข้อ + design + tasks 7 phases) — Panel_Profile model, Kerf_Pattern generator, Gate G12, drill map exclusion, 3D overlay, export ครบวงจร</li>
 </ul>
 </li>
 </ul>
@@ -1065,7 +1066,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 <h3>Roadmap ถัดไป (เรียงตาม dependency)</h3>
 <ol start="0">
 <li><strong>[Pilot Wave 1 — มติ grilling]</strong> เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน <code>qc_capture</code>) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน</li>
-<li><strong>[ตอนนี้]</strong> ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration <code>0031</code> แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)</li>
+<li><strong>[ตอนนี้]</strong> ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration <code>0031</code> แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
+1.5. <strong>[ฟีเจอร์ CAD ถัดไป]</strong> Curved Panel System — spec พร้อมที่ <code>.kiro/specs/curved-panel-system/</code> (มติ grilling: สินค้าจริงมีชิ้นโค้ง; ✅ arc toolpath + kerf engine มีแล้ว เหลือ Panel_Profile model + G12 + export)</li>
 <li><strong>[ถัดไป]</strong> mcp-layer unit tests ที่เหลือ + ADR-019 write-gate</li>
 <li><strong>[Phase 3]</strong> accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม</li>
 <li><strong>[รอ owner]</strong> 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2</li>
