@@ -98,6 +98,11 @@
 <td>TypeScript 0 errors · Vitest 4,404 tests ผ่าน · E2E smoke ผ่าน</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>วิธีอ่านเอกสารนี้:</strong> เนื้อหาแบ่งเป็น 2 ประเภท —
+<strong>[ของจริง]</strong> ข้อเท็จจริงจาก codebase/specs/tests ที่ตรวจสอบแล้ว (System Guarantees ใน §3, §5–§7, §10 ตารางสถานะ, §11–§13) และ
+<strong>[ข้อเสนอ 📝]</strong> สิ่งที่สังเคราะห์ขึ้นเพื่อให้ owner พิจารณา (Business Goals ใน §3, Personas/User Stories ใน §4, วิธีวัดใน §9) — ตัวเลขเป้าทั้งหมดใช้แนวทาง &quot;เก็บ baseline 30–60 วันแล้วค่อยตั้ง&quot; ห้ามใช้ส่วน [ข้อเสนอ 📝] เป็นข้ออ้างอิง requirement จนกว่า owner จะยืนยัน</p>
+</blockquote>
 <hr>
 <h2>สารบัญ</h2>
 <ol>
@@ -125,7 +130,7 @@
 <li><a href="#10-%E0%B8%AA%E0%B8%96%E0%B8%B2%E0%B8%99%E0%B8%B0%E0%B9%81%E0%B8%A5%E0%B8%B0-roadmap">สถานะปัจจุบันและ Roadmap</a></li>
 <li><a href="#11-open-questions">คำถามที่ยังเปิดอยู่ (Open Questions)</a></li>
 <li><a href="#12-glossary">อภิธานศัพท์ (Glossary)</a></li>
-<li><a href="#13-%E0%B8%A0%E0%B8%B2%E0%B8%84%E0%B8%9C%E0%B8%99%E0%B8%A7%E0%B8%81">ภาคผนวก: Tech Stack และคำสั่งตรวจสอบ</a></li>
+<li><a href="#13-%E0%B8%A0%E0%B8%B2%E0%B8%84%E0%B8%9C%E0%B8%99%E0%B8%A7%E0%B8%81">ภาคผนวก: Tech Stack, Functional Coverage และคำสั่งตรวจสอบ</a></li>
 </ol>
 <hr>
 <h2>1. บทสรุปผู้บริหาร</h2>
@@ -157,47 +162,72 @@
 <p><strong>ต้นทุนของการไม่แก้:</strong> ของเสียจากการเจาะผิดคิดเป็นต้นทุนวัสดุ+เวลาโดยตรง, งานส่งช้าเพราะรออนุมัติ, ปิดบัญชีไม่ได้เพราะเอกสารไม่ครบ, และความเสี่ยงกฎหมายคุ้มครองข้อมูลส่วนบุคคล</p>
 <hr>
 <h2>3. เป้าหมายและ Non-Goals</h2>
-<h3>Goals (ผลลัพธ์ที่วัดได้)</h3>
+<h3>System Guarantees — [ของจริง: ระบบ enforce แล้ว มีเทสต์คุ้มครอง]</h3>
+<p>สิ่งเหล่านี้<strong>ไม่ใช่เป้าที่ต้องไปให้ถึง</strong> แต่เป็นคุณสมบัติที่ระบบรับประกันโดยกลไก — ถ้าข้อใดถูกละเมิดถือเป็น bug ระดับร้ายแรง:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Guarantee</th>
+<th>กลไกที่ enforce</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SG-1</td>
+<td><strong>ผลลัพธ์การผลิตทำซ้ำได้ 100%</strong></td>
+<td>Cabinet เดิม → Packet/G-code/ZIP hash (SHA-256) เดิมทุกครั้ง (determinism tests + golden fixtures)</td>
+</tr>
+<tr>
+<td>SG-2</td>
+<td><strong>ตรวจสอบย้อนกลับได้ทุกไฟล์</strong></td>
+<td>ทุก export มี signed receipt (Ed25519) ตรวจ offline ได้ด้วย CLI (Golden Matrix P13.4)</td>
+</tr>
+<tr>
+<td>SG-3</td>
+<td><strong>ไฟล์ผลิตทุกไฟล์ผ่าน Gate</strong></td>
+<td>export ได้เฉพาะ FROZEN/RELEASED + gate ผ่าน/waived (waive มีบันทึกเหตุผลเสมอ)</td>
+</tr>
+<tr>
+<td>SG-4</td>
+<td><strong>เอกสารเข้าระบบต้องผ่านคนยืนยัน</strong></td>
+<td>approve-before-emit + no-guess fail-safe (state machine + verify gate)</td>
+</tr>
+<tr>
+<td>SG-5</td>
+<td><strong>งานเกิน SLA ถูก escalate อัตโนมัติ</strong></td>
+<td>SLA sweep cron: 50% → reminder, 100% → escalate</td>
+</tr>
+<tr>
+<td>SG-6</td>
+<td><strong>PDPA by architecture</strong></td>
+<td>OCR on-prem; PII redaction ที่ MCP boundary; ไม่มี egress เอกสารการเงิน</td>
+</tr>
+</tbody></table>
+<h3>Business Goals — [ข้อเสนอ 📝 วิธีวัดยืนยันแล้ว; ตัวเลขเป้ารอ baseline]</h3>
+<p>เป้าหมายเชิงผลลัพธ์ที่ต้อง<strong>วัดจากโลกจริง</strong> ไม่ใช่จากกลไกระบบ — แนวทางที่ตกลงกัน (grilling 2026-07-04): <strong>เก็บ baseline จากการใช้งานจริง 30–60 วันแรก แล้วให้ owner ตั้งตัวเลขเป้าจากข้อมูล</strong> ไม่ตั้งตัวเลขจากอากาศ:</p>
 <table>
 <thead>
 <tr>
 <th>#</th>
 <th>เป้าหมาย</th>
-<th>ตัวชี้วัด</th>
+<th>วิธีวัด (ยืนยันแล้ว)</th>
+<th>ตัวเลขเป้า</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>G-1</td>
-<td><strong>ของเสียจากไฟล์ผลิตผิดเป็นศูนย์</strong></td>
-<td>ทุกไฟล์ที่ออกจากระบบผ่าน Gate G1–G11 + G10 (DXF safety) 100%; ไฟล์ที่ waive ต้องมีบันทึกเหตุผล</td>
+<td>BG-1</td>
+<td><strong>ลดของเสียจากการผลิต</strong></td>
+<td>Defect rate ต่อเดือนจาก <code>qc_capture</code> (Capture Spine) — โรงงานถ่ายภาพชิ้นงานเสีย/rework เข้าระบบ แยกสาเหตุว่ามาจากไฟล์/เครื่อง/คน</td>
+<td>รอ baseline 30–60 วัน</td>
 </tr>
 <tr>
-<td>G-2</td>
-<td><strong>ผลลัพธ์การผลิตทำซ้ำได้ 100%</strong></td>
-<td>Cabinet เดิม → Packet/G-code/ZIP hash (SHA-256) เดิมทุกครั้ง</td>
-</tr>
-<tr>
-<td>G-3</td>
-<td><strong>ตรวจสอบย้อนกลับได้ทุกไฟล์</strong></td>
-<td>ทุก export มี signed receipt (Ed25519) ตรวจ offline ได้ด้วย CLI</td>
-</tr>
-<tr>
-<td>G-4</td>
-<td><strong>งานทุกออเดอร์รู้สถานะเสมอ</strong></td>
-<td>work item ทุกใบระบุขั้น canonical (0–7) + ผู้อนุมัติ + SLA; งานเกิน SLA ถูก escalate อัตโนมัติ</td>
-</tr>
-<tr>
-<td>G-5</td>
-<td><strong>เอกสารเข้าระบบต้องผ่านคนยืนยัน</strong></td>
-<td>Artifact ทุกชิ้น approve ก่อน emit; ไม่มีการเดาค่า (no-guess fail-safe)</td>
-</tr>
-<tr>
-<td>G-6</td>
-<td><strong>PDPA by architecture</strong></td>
-<td>OCR ทำ on-premises; ข้อมูล PII ไม่ออกนอกองค์กร; redaction ที่ MCP boundary</td>
+<td>BG-2</td>
+<td><strong>งานจบตามกำหนด</strong></td>
+<td>% work item ที่จบภายใน SLA ต่อขั้น (จากข้อมูล workflow) + ระบุขั้นคอขวด</td>
+<td>รอ baseline 30–60 วัน</td>
 </tr>
 </tbody></table>
-<h3>Non-Goals (สิ่งที่ตั้งใจไม่ทำ)</h3>
+<h3>Non-Goals (สิ่งที่ตั้งใจไม่ทำ) — [ของจริง: อิงจาก ADR/spec ยกเว้น N-1, N-3 ที่อนุมานจากสถาปัตยกรรม]</h3>
 <table>
 <thead>
 <tr>
@@ -243,7 +273,7 @@
 </tr>
 </tbody></table>
 <hr>
-<h2>4. ผู้ใช้และ User Stories</h2>
+<h2>4. ผู้ใช้และ User Stories — [ข้อเสนอ 📝 สังเคราะห์จาก role ที่มีจริงใน code/spec; รอ owner ยืนยัน]</h2>
 <h3>Personas</h3>
 <table>
 <thead>
@@ -923,22 +953,61 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 </tr>
 </tbody></table>
 <hr>
-<h2>9. Success Metrics</h2>
-<h3>Leading Indicators (วัดได้ทันทีหลังใช้งาน)</h3>
-<ul>
-<li>% ไฟล์ export ที่ผ่าน gate โดยไม่มี BLOCKER ตั้งแต่ครั้งแรก (เป้า: เพิ่มขึ้นต่อเนื่อง — สะท้อนว่านักออกแบบเรียนรู้กฎ)</li>
-<li>จำนวน waive ต่อสัปดาห์ + สัดส่วนที่มีเหตุผลบันทึกครบ (เป้า: 100% มีเหตุผล)</li>
-<li>เวลาเฉลี่ยจาก Freeze → ดาวน์โหลดไฟล์โรงงาน (เป้า: &lt; 5 นาที)</li>
-<li>% การอนุมัติที่จบภายใน SLA (เป้า: &gt; 90%; timeout ทุกตัวมี escalation record)</li>
-<li>% capture artifact ที่ผ่าน human verify ก่อน emit (ต้อง = 100% โดยนิยาม; ตัวเลขที่ต่ำกว่าคือ bug)</li>
-</ul>
-<h3>Lagging Indicators (วัดรายเดือน/ไตรมาส)</h3>
-<ul>
-<li>ต้นทุนของเสียจากการเจาะ/ตัดผิด (เป้า: → 0)</li>
-<li>จำนวนงานที่ต้อง rework จาก revision ประเภท daph_defect (เป้า: ลดลงต่อเนื่อง)</li>
-<li>รอบเวลาปิดบัญชีรายเดือน (เป้า: ลดลงเมื่อ capture → ledger อัตโนมัติเต็มรูป)</li>
-<li>Utilization ของแผ่น (nesting) เฉลี่ย (เป้า: เพิ่มขึ้น)</li>
-</ul>
+<h2>9. Success Metrics — [ข้อเสนอ 📝 แนวทาง: เก็บ baseline 30–60 วันแรก แล้ว owner ตั้งเป้าจากข้อมูล]</h2>
+<blockquote>
+<p>มติจาก grilling (2026-07-04): <strong>ไม่ตั้งตัวเลขเป้าก่อนมีข้อมูลจริง</strong> — รายการด้านล่างระบุ <em>วิธีวัดและแหล่งข้อมูล</em> เท่านั้น เมื่อครบ baseline ให้ owner กำหนดเป้าและใส่วันที่ review</p>
+</blockquote>
+<h3>Leading Indicators (วัดได้ทันทีหลังเริ่มใช้งาน)</h3>
+<table>
+<thead>
+<tr>
+<th>ตัวชี้วัด</th>
+<th>แหล่งข้อมูล</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>% ไฟล์ export ที่ผ่าน gate โดยไม่มี BLOCKER ตั้งแต่ครั้งแรก</td>
+<td>gate result ใน factory packet + export audit</td>
+</tr>
+<tr>
+<td>จำนวน waive ต่อสัปดาห์ + ประเภท WARNING ที่ถูก waive บ่อยสุด</td>
+<td>waiver audit log</td>
+</tr>
+<tr>
+<td>เวลาเฉลี่ยจาก Freeze → ดาวน์โหลดไฟล์โรงงาน</td>
+<td>activity timeline (P8)</td>
+</tr>
+<tr>
+<td>% การอนุมัติที่จบภายใน SLA ต่อขั้น</td>
+<td>workflow approval_request + SLA sweep records</td>
+</tr>
+</tbody></table>
+<p><em>หมายเหตุ: &quot;% capture ผ่าน human verify ก่อน emit&quot; ถูกถอดออกจาก metric — มันคือ SG-4 (guarantee) ตัวเลขต่ำกว่า 100% คือ bug ไม่ใช่ผลงาน</em></p>
+<h3>Lagging Indicators (วัดรายเดือน/ไตรมาส หลังมี baseline)</h3>
+<table>
+<thead>
+<tr>
+<th>ตัวชี้วัด</th>
+<th>แหล่งข้อมูล</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Defect rate / ต้นทุนของเสียจากการเจาะ-ตัดผิด (<strong>BG-1</strong>)</td>
+<td><code>qc_capture</code> artifacts แยกตามสาเหตุ</td>
+</tr>
+<tr>
+<td>จำนวน rework จาก revision ประเภท <code>daph_defect</code></td>
+<td>revision classification (Req 21)</td>
+</tr>
+<tr>
+<td>รอบเวลาปิดบัญชีรายเดือน</td>
+<td>ledger + capture emission timestamps</td>
+</tr>
+<tr>
+<td>Utilization ของแผ่น (nesting) เฉลี่ย</td>
+<td>nesting SheetResult.utilization</td>
+</tr>
+</tbody></table>
 <hr>
 <h2>10. สถานะและ Roadmap</h2>
 <h3>สถานะปัจจุบัน (2026-07-04)</h3>
@@ -1193,7 +1262,851 @@ npx playwright test --grep &quot;@smoke&quot; # e2e smoke (7 tests)
 npm run verify                      # test + typecheck + e2e smoke รวม
 npm run gate:bypass-scan            # CI gate bypass scan
 </code></pre>
-<h3>13.3 เอกสารอ้างอิงภายใน</h3>
+<h3>13.3 Functional Coverage Index — รายการฟังก์ชันครบตาม codebase</h3>
+<blockquote>
+<p>ส่วนนี้เป็นดัชนีละเอียดสำหรับ owner / PM / engineer ใช้ตรวจว่า PRD ครอบคลุมทุก capability หลักใน repository แล้ว โดย trace กลับไปยัง source folder ได้ทันที สถานะเป็นการสำรวจจากโครงสร้างไฟล์และเอกสาร ณ 2026-07-04</p>
+</blockquote>
+<h4>13.3.1 Designer Workspace / Frontend Experience</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>App Shell</td>
+<td>แสดง layout ซ้าย/กลาง/ขวา, toolbar บน, export action, project state, gate status</td>
+<td><code>src/App.tsx</code>, <code>src/components/layout/AppShell.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Viewport 3D</td>
+<td>Render cabinet, grid, light, camera, controls, WebGL recovery, R3F context</td>
+<td><code>src/components/canvas/</code>, <code>src/App.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>View Presets</td>
+<td>Front, Left, Top, Perspective, Install, Factory, CNC พร้อม orthographic/perspective behavior</td>
+<td><code>src/components/canvas/ViewportController.tsx</code>, <code>src/core/store/useViewStore.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cabinet CRUD</td>
+<td>สร้าง/เลือก/ลบ/duplicate ตู้, active cabinet, multi-cabinet scene position</td>
+<td><code>src/core/store/useCabinetStore.ts</code>, <code>src/components/ui/CabinetList.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Parametric Dimensions</td>
+<td>ปรับ width/height/depth/toe kick/shelf/divider แล้ว regenerate panels</td>
+<td><code>src/components/layout/ParametricContractPanel.tsx</code>, <code>src/core/store/cabinetDerivations.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Panel Override</td>
+<td>แก้ panel offset, material, grain, edge, groove/back settings ต่อแผ่น</td>
+<td><code>src/components/ui/PanelConfigModal.tsx</code>, <code>PanelConfigPanel.tsx</code>, <code>PanelOverrideModal.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Construction Type</td>
+<td>รองรับ INSET/OVERLAY และส่งผลต่อ cut size / drill map / connector placement</td>
+<td><code>src/components/ui/ConstructionTypeSelector.tsx</code>, <code>src/gate/compute/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Back Panel System</td>
+<td>เปิด/ปิด, inset/overlay, groove depth, back void, clearance gate</td>
+<td><code>src/core/store/useCabinetStore.ts</code>, <code>src/gate/rules/rule_clearance_backPanel.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Material Selector</td>
+<td>เลือก core/surface/edge, thumbnail, property panel, apply selected/all</td>
+<td><code>src/components/ui/MaterialSelector.tsx</code>, <code>src/components/icons/MaterialIcons.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Material Rendering</td>
+<td>Triplanar texture, grain rotation, texture preload เฉพาะ active material</td>
+<td><code>src/components/materials/TriplanarMaterial.tsx</code>, <code>src/core/materials/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Hardware Library</td>
+<td>เลือก/ตั้งค่า Minifix, hinge, dowel, shelf pin, drawer, handle, LED</td>
+<td><code>src/components/ui/HardwareLibrary.tsx</code>, <code>HardwarePanel.tsx</code>, <code>src/components/ui/connectors/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Connector Assembly</td>
+<td>แสดง connector list, toggle visibility, context menu, transform override</td>
+<td><code>src/components/ui/ConnectorAssemblyPanel.tsx</code>, <code>HardwareContextMenu.tsx</code>, <code>ConnectorList.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Minifix 3D Preview</td>
+<td>Preview ชุด cam/bolt/dowel, V/H flip, rotate, axis alignment</td>
+<td><code>src/components/canvas/Minifix3DPreview.tsx</code>, <code>MinifixSet.tsx</code>, <code>Hardware3D.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Drill Visuals</td>
+<td>X-Ray, CAD indicators, 2D drill map modal, dimension annotations, CSG hole overlay</td>
+<td><code>src/components/canvas/CADDrillIndicators.tsx</code>, <code>CADDrillMapView.tsx</code>, <code>CSGDrillOverlay.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Move/Rotate/Gizmo</td>
+<td>Plasticity-style gizmo, axis/plane lock, HUD, snap, keyboard tools</td>
+<td><code>src/core/store/useToolStore.ts</code>, <code>useGizmoStore.ts</code>, <code>src/components/canvas/GizmoTranslate.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Snap &amp; Measure</td>
+<td>Grid/edge/corner snap, snap guides, measure layer</td>
+<td><code>src/core/store/useSnapStore.ts</code>, <code>src/components/canvas/SnapGuides.tsx</code>, <code>src/components/tools/MeasureLayer.tsx</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Sketch Mode</td>
+<td>Construction plane, line/rect/point, preview, snap glyphs, HUD</td>
+<td><code>src/core/sketch/</code>, <code>src/components/canvas/SketchInputLayer.tsx</code>, <code>SketchPreview.tsx</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Command UX</td>
+<td>Command palette, radial menu, context toolbar, shortcut overlay, toast</td>
+<td><code>src/components/ui/CommandPalette.tsx</code>, <code>RadialMenu.tsx</code>, <code>ShortcutOverlay.tsx</code>, <code>ToastContainer.tsx</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Theme &amp; Preferences</td>
+<td>Dark/light theme persistence, app preferences boundary</td>
+<td><code>src/core/persistence/appPrefs.ts</code>, <code>src/App.tsx</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Decor Calculators</td>
+<td>Hidden door hinge, kerf bending, wainscoting, slat calculator</td>
+<td><code>src/components/calculators/</code></td>
+<td>P2</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.2 Project, State, Persistence และ Traceability</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Project Store</td>
+<td>Initialize project, save/load, dirty tracking, project-scoped persistence</td>
+<td><code>src/core/store/useProjectStore.ts</code>, <code>projectScopedStorage.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Spec Store</td>
+<td>DRAFT/FROZEN/RELEASED, validation result, freeze/release/unfreeze actions</td>
+<td><code>src/core/store/useSpecStore.ts</code>, <code>src/spec/store.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Selection Store</td>
+<td>selected panel/cabinet, modal visibility, deselect behavior</td>
+<td><code>src/core/store/useSelectionStore.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DrillMap Store</td>
+<td>สร้าง/เก็บ drillMap, CAD view toggle, override sync</td>
+<td><code>src/core/store/useDrillMapStore.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Runtime Stores</td>
+<td>UI, live validation, CNC overlay, checklist, proof, verify status</td>
+<td><code>src/core/store/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Lineage</td>
+<td>เขียน/อ่าน revision chain, timeline, chain viewer</td>
+<td><code>src/core/lineage/</code>, <code>src/core/chainEvents/</code>, <code>src/components/ui/LineageTimeline.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Proof Store</td>
+<td>เก็บ proof/export verification status เพื่อแสดงใน UI</td>
+<td><code>src/core/store/useProofStore.ts</code>, <code>src/components/ui/ProofCard.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Sync Badge</td>
+<td>แสดงสถานะ sync/persistence และ error state</td>
+<td><code>src/components/ui/SyncStatusBadge.tsx</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.3 Gate, Manufacturing Truth และ Export</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gate Runner</td>
+<td>รวม rules แล้วออก GateResult พร้อม metrics/issues</td>
+<td><code>src/gate/runGate.ts</code>, <code>src/core/gate/runGateBundle.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Gate UI</td>
+<td>Safety panel, status indicator, blocker modal, focus entity, apply patch</td>
+<td><code>src/gate/ui/</code>, <code>src/components/pages/SafetyGatePage.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Gate Rules</td>
+<td>cut size, drill depth, min margin, fitting spacing, edge allowance, back panel clearance</td>
+<td><code>src/gate/rules/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G4 Geometry</td>
+<td>OD tolerance, overlap, cabinet geometry consistency</td>
+<td><code>src/gate/rules/gateG4_geometry.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G9 Packet Boundary</td>
+<td>External packet validation, branded type, static scan</td>
+<td><code>src/core/gate/g9PersistenceGate.ts</code>, <code>brandTypes.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G10 DXF Safety</td>
+<td>Golden DXF, semantic validation, machine dialect validation</td>
+<td><code>src/core/gate/gate10DxfSafety.ts</code>, <code>gate10_2DxfSemantic.ts</code>, <code>gate10_3MachineDialect.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G11 Minifix/System32</td>
+<td>Distance B, mating tolerance, dowel/bolt/cam pairing, System32 constraints</td>
+<td><code>src/gate/rules/gateG11_minifixSystem32.ts</code>, <code>src/cnc/validation/gateG11_operationGraph.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Waive/Admin Override</td>
+<td>Warning waive/unwaive, admin override reason, audit expectation</td>
+<td><code>src/components/ui/WaiveModal.tsx</code>, <code>UnwaiveModal.tsx</code>, <code>AdminOverrideDialog.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DrillMap Generation</td>
+<td>Generate deterministic holes per panel/joint, axis-tagged pair keys</td>
+<td><code>src/core/manufacturing/drillMap/generateDrillMap.ts</code>, <code>pairKeyV2.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Connector Compiler</td>
+<td>Compile connector intent to CNC-ready ops, placement, coordinate calculation</td>
+<td><code>src/core/connector/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>OperationGraph</td>
+<td>Build CNC operations from validated packet, normalize manufacturing truth</td>
+<td><code>src/core/manufacturing/opgraph/buildOpGraph.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>G-code IR</td>
+<td>Build/format IR, emit program, line numbering</td>
+<td><code>src/core/manufacturing/gcode/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Machine Dialects</td>
+<td>Biesse ISO, HOMAG, KDT, Fanuc-style, post profiles</td>
+<td><code>src/core/manufacturing/gcode/dialects/</code>, <code>src/core/manufacturing/post/profile/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Toolpath Planner</td>
+<td>Multi-tool plan, tool change validation, tabs, entry/exit policy</td>
+<td><code>src/core/manufacturing/planner/</code>, <code>toolpath/</code>, <code>policy/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Simulation &amp; Verify</td>
+<td>Simulate IR program, safety rules, geometry consistency, verifier reports</td>
+<td><code>src/core/manufacturing/sim/</code>, <code>verify/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>DXF Export</td>
+<td>OperationGraph to DXF, R12 writer, normalized deterministic output</td>
+<td><code>src/core/export/operationGraphToDxf.ts</code>, <code>src/core/manufacturing/dxfR12Writer.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cut List Export</td>
+<td>CSV cut list and download artifacts</td>
+<td><code>src/export/cutList/</code>, <code>src/core/export/monolith/builders/buildCutListCsv.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Factory Package</td>
+<td>Build packet with drillMap/connectors/cutList/gateResult/manifest</td>
+<td><code>src/factory/packet/</code>, <code>src/core/factoryPackage/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Release Bundle</td>
+<td>Build signed release bundles v1/v2, release store, signer</td>
+<td><code>src/core/manufacturing/release/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Export Policy</td>
+<td>Enforce state/gate policy before export</td>
+<td><code>src/export/policy/</code>, <code>src/core/trust/exportGuard.ts</code>, <code>src/core/manufacturing/export/enforceExportGate.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Cryptographic Hash</td>
+<td>Canonical JSON, SHA-256, stable stringify vectors</td>
+<td><code>src/core/crypto/</code>, <code>contracts/hashing/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Signature Verify</td>
+<td>Verify bundle/manifest signatures and receipt status</td>
+<td><code>src/export/verify/</code>, <code>src/core/manufacturing/export/sigVerify.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Download Adapters</td>
+<td>Browser-side ZIP/download client and export API adapters</td>
+<td><code>src/core/adapter/</code>, <code>src/core/api/exportApi.ts</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.4 Factory Mode, Server และ CNC Operations</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Factory App</td>
+<td>Dashboard + Job Detail + FactoryLayout</td>
+<td><code>src/factory/FactoryApp.tsx</code>, <code>pages/</code>, <code>layouts/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Filter jobs, group jobs, toolbar query state</td>
+<td><code>src/factory/components/dashboard/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Job Detail</td>
+<td>Packet viewer, export controls, activity timeline, CNC preview</td>
+<td><code>src/factory/pages/JobDetail.tsx</code>, <code>components/packet/</code>, <code>components/cnc/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Packet Ingest</td>
+<td>Upload/unzip/verify factory packet and show parse errors</td>
+<td><code>src/factory/components/PacketIngestPanel.tsx</code>, <code>src/factory/packet/unzipPacket.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Packet Tabs</td>
+<td>Overview, parts sheets, toolpaths, JSON viewer, error panel</td>
+<td><code>src/factory/components/packet/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Machine Selector</td>
+<td>เลือก machine/profile ก่อนสร้าง CNC</td>
+<td><code>src/factory/components/MachineSelector.tsx</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>CNC Generate</td>
+<td>Generate G-code for job, workpiece config adapter, preview panel</td>
+<td><code>src/factory/cnc/</code>, <code>src/factory/components/cnc/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>CNC Overlay</td>
+<td>Preview markers/legend/transform/resolve state</td>
+<td><code>src/factory/cnc/overlay/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Tool Health</td>
+<td>Wear model, tool usage observer, threshold editor, reset, health strip/modal</td>
+<td><code>src/factory/tooling/</code>, <code>src/factory/components/tooling/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Server Verify</td>
+<td>Run verifier, audit verify service, synthetic golden</td>
+<td><code>src/factory/server/verifyService.ts</code>, <code>runVerifier.ts</code>, <code>syntheticGolden.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Server Packet Route</td>
+<td>Lite packet schema, hash, packet route</td>
+<td><code>src/factory/server/packet/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Server Export Route</td>
+<td>Export options, service, route, audit, ZIP bundle</td>
+<td><code>src/factory/server/export/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>API Clients</td>
+<td>Jobs/activity/export/verify/mock data clients</td>
+<td><code>src/factory/api/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Storage</td>
+<td>IndexedDB packet store and tooling store</td>
+<td><code>src/factory/storage/</code>, <code>src/factory/tooling/storage/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.5 Business OS Modules จาก <code>.kiro/specs</code></h4>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Requirement Scope</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DAPH Second Brain</td>
+<td>Vault PARA, MOC, Knowledge_Export, PFMEA/process/RACI model</td>
+<td><code>.kiro/specs/daph-obsidian-second-brain/</code>, <code>daph-second-brain/</code></td>
+<td>P0</td>
+<td>✅ 100%</td>
+</tr>
+<tr>
+<td>LINE OA Commerce</td>
+<td>Webhook HMAC, idempotency, routing, outbound, customer identity, order intake, audit</td>
+<td><code>.kiro/specs/line-oa-commerce/</code>, <code>supabase/functions/</code></td>
+<td>P0</td>
+<td>✅ 100%</td>
+</tr>
+<tr>
+<td>Workflow Copilot</td>
+<td>Handoff, RACI approver, one-click approval, AI advisory, notification, SLA, delegation, revision locks</td>
+<td><code>.kiro/specs/monolith-workflow-copilot/</code>, <code>src/workflow/</code></td>
+<td>P0</td>
+<td>🔵 84%</td>
+</tr>
+<tr>
+<td>MCP Layer</td>
+<td>Tool catalog, client auth, authorization, autonomy gate, pending invocation, redaction, rate limit</td>
+<td><code>.kiro/specs/monolith-mcp-layer/</code>, <code>src/mcp/</code></td>
+<td>P0</td>
+<td>🔵 88%</td>
+</tr>
+<tr>
+<td>Capture Spine</td>
+<td>Ingest, OCR, verify, lifecycle, fraud signal, commit adapters, no-guess</td>
+<td><code>.kiro/specs/capture-spine/</code>, <code>src/capture/</code></td>
+<td>P0</td>
+<td>✅ Wave 0+1</td>
+</tr>
+<tr>
+<td>Accounting</td>
+<td>Ledger, multi-book, currency, bank feed, receivables, tax, WHT, eTax, manufacturing costing</td>
+<td><code>.kiro/specs/monolith-accounting/</code>, <code>src/ledger/</code>, <code>src/tax/</code></td>
+<td>P0/P1</td>
+<td>🟡 36%</td>
+</tr>
+<tr>
+<td>Design Hub Phase 2</td>
+<td>Marketplace, Bible grammar, UGC, professional profiles, learning center, PDPA, payment/governance</td>
+<td><code>.kiro/specs/design-hub-platform-phase2/</code></td>
+<td>P2</td>
+<td>⏸ Owner decisions</td>
+</tr>
+<tr>
+<td>TCCK Separation</td>
+<td>Decision record and archive of shared-platform idea</td>
+<td><code>.kiro/specs/separate-monolith-tcck/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.6 Workflow / Capture / MCP / Accounting Function Detail</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Workflow Handoff</td>
+<td>Enforce canonical order, optimistic locking, capture-once-reuse</td>
+<td><code>src/workflow/handoff/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Workflow Approval</td>
+<td>Authz, idempotency, quorum</td>
+<td><code>src/workflow/approval/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Workflow Resolver</td>
+<td>Approver resolution, delegation routing, customer approver, escalation</td>
+<td><code>src/workflow/resolver/</code>, <code>delegation/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>Workflow Notification</td>
+<td>Template, routing, suppression, quiet hours/missing binding, retry backoff</td>
+<td><code>src/workflow/notification/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>Workflow SLA</td>
+<td>Sweep overdue items and trigger reminders/escalation</td>
+<td><code>src/workflow/sla/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Workflow Revision</td>
+<td>Classify revision, threshold, re-quote FSM</td>
+<td><code>src/workflow/revision/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Workflow Copilot</td>
+<td>Build advisory from PFMEA/RPN and freshness checks</td>
+<td><code>src/workflow/copilot/</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Workflow Audit</td>
+<td>Append-only writer and audit event shape</td>
+<td><code>src/workflow/audit/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Capture Lifecycle</td>
+<td>proposed/approved/rejected/emitted/superseded state machine</td>
+<td><code>src/capture/state-machine.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Capture Idempotency</td>
+<td>Prevent duplicate artifacts by stable key</td>
+<td><code>src/capture/idempotency.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Capture Verify Gate</td>
+<td>Require human verification for critical/low-confidence/suspicious fields</td>
+<td><code>src/capture/verify-gate.ts</code>, <code>verify-rules.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Capture Fraud Signals</td>
+<td>VAT mismatch, vendor unknown, total anomaly, duplicate</td>
+<td><code>src/capture/fraud-signal.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>MCP Catalog</td>
+<td>Filtered tool discovery by role/scope</td>
+<td><code>src/mcp/catalog.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>MCP Authz</td>
+<td>Principal/site/role authorization, fail-closed</td>
+<td><code>src/mcp/authz.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>MCP Autonomy</td>
+<td>Read/write/approval tool tier classification and pending gate</td>
+<td><code>src/mcp/autonomy.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>MCP Redaction/PDPA</td>
+<td>Data minimization, consent checks, cross-border suppression</td>
+<td><code>src/mcp/redaction.ts</code>, <code>pdpa.ts</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>MCP Rate Limit</td>
+<td>Per-principal/client/tool atomic throttling model</td>
+<td><code>src/mcp/ratelimit.ts</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Ledger</td>
+<td>Multi-book, currency, bank feed, receivables</td>
+<td><code>src/ledger/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>Tax</td>
+<td>VAT/eTax XML, WHT and RD prep output</td>
+<td><code>src/tax/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>IAM</td>
+<td>Secure row filter, scope checks, C12 role/site helpers</td>
+<td><code>src/iam/</code>, <code>src/core/auth/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h4>13.3.7 Data, Schema, Contracts และ Supabase</h4>
+<table>
+<thead>
+<tr>
+<th>กลุ่มฟังก์ชัน</th>
+<th>Requirement ที่ต้องมี</th>
+<th>Source หลัก</th>
+<th>Priority</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Canonical Model</td>
+<td>Gate09 canonical validation, adapters, zod schemas</td>
+<td><code>src/core/model/canonical/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Project Schema</td>
+<td>Zod schema for project/cabinet/panel/material/hardware</td>
+<td><code>src/core/schema/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Bundle Schema</td>
+<td>Export bundle build/verify types</td>
+<td><code>src/core/bundle/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Contracts Package</td>
+<td>Kernel client/types shared boundary</td>
+<td><code>contracts/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Manufacturing Config</td>
+<td>Runtime constants JSON + schema + policy apply</td>
+<td><code>src/core/config/</code></td>
+<td>P0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Runtime Tuning</td>
+<td>Store/apply runtime tuning safely</td>
+<td><code>src/core/config/runtimeTuning*</code></td>
+<td>P1</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Supabase Migrations</td>
+<td>C12, workflow, capture, line, accounting tables/RPC/RLS</td>
+<td><code>supabase/migrations/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+<tr>
+<td>Edge Functions</td>
+<td>LINE webhook, approval, capture ingest/OCR/field capture</td>
+<td><code>supabase/functions/</code></td>
+<td>P0</td>
+<td>🔵</td>
+</tr>
+</tbody></table>
+<h4>13.3.8 Acceptance Checklist รวมสำหรับ Release</h4>
+<table>
+<thead>
+<tr>
+<th>Checklist</th>
+<th>เงื่อนไขผ่าน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Designer can model</td>
+<td>ผู้ใช้สร้างตู้ ปรับมิติ ใส่วัสดุ/ฮาร์ดแวร์ เห็น 3D + X-Ray + drill annotation โดยไม่ error</td>
+</tr>
+<tr>
+<td>Gate protects factory</td>
+<td>BLOCKER ห้าม export, WARNING waive ได้พร้อมเหตุผล, admin override มี audit</td>
+</tr>
+<tr>
+<td>Truth is deterministic</td>
+<td>input เดิมให้ drillMap/factoryPacket/opGraph/G-code/ZIP hash เดิม</td>
+</tr>
+<tr>
+<td>DXF/G-code are derived correctly</td>
+<td>DXF มาจาก OperationGraph เท่านั้น, dialect ตรงเครื่อง, semantic gate ผ่าน</td>
+</tr>
+<tr>
+<td>Factory can verify offline</td>
+<td>packet/receipt/manifest ตรวจ signature/hash ได้โดยไม่พึ่ง server</td>
+</tr>
+<tr>
+<td>Workflow stays human-led</td>
+<td>AI แนะนำได้ แต่ write/approval action ต้องผ่าน human gate</td>
+</tr>
+<tr>
+<td>Capture never guesses</td>
+<td>OCR/extraction confidence ต่ำหรือ field สำคัญขาดต้องรอ verify; ไม่มี placeholder fake value</td>
+</tr>
+<tr>
+<td>Accounting balances</td>
+<td>journal entry debit = credit, multi-book ไม่ปนกัน, VAT/WHT rules ทดสอบได้</td>
+</tr>
+<tr>
+<td>PDPA/RLS fail closed</td>
+<td>ไม่มี PII egress โดย default, role/site scope ตรวจทุก boundary</td>
+</tr>
+<tr>
+<td>Audit is append-only</td>
+<td>export/approval/capture/MCP invocation มี trace และแก้ย้อนหลังไม่ได้</td>
+</tr>
+</tbody></table>
+<h3>13.4 เอกสารอ้างอิงภายใน</h3>
 <ul>
 <li><code>REQUIREMENTS-OVERVIEW.md</code> — requirements ครบ 8 spec + ADR-001..027</li>
 <li><code>.kiro/specs/*/</code> — requirements.md / design.md / tasks.md ต่อ spec</li>

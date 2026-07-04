@@ -10,6 +10,10 @@
 | **Repository** | https://github.com/indetailsgroup-hue/iimos-workspace |
 | **สถานะการทดสอบ** | TypeScript 0 errors · Vitest 4,404 tests ผ่าน · E2E smoke ผ่าน |
 
+> **วิธีอ่านเอกสารนี้:** เนื้อหาแบ่งเป็น 2 ประเภท —
+> **[ของจริง]** ข้อเท็จจริงจาก codebase/specs/tests ที่ตรวจสอบแล้ว (System Guarantees ใน §3, §5–§7, §10 ตารางสถานะ, §11–§13) และ
+> **[ข้อเสนอ 📝]** สิ่งที่สังเคราะห์ขึ้นเพื่อให้ owner พิจารณา (Business Goals ใน §3, Personas/User Stories ใน §4, วิธีวัดใน §9) — ตัวเลขเป้าทั้งหมดใช้แนวทาง "เก็บ baseline 30–60 วันแล้วค่อยตั้ง" ห้ามใช้ส่วน [ข้อเสนอ 📝] เป็นข้ออ้างอิง requirement จนกว่า owner จะยืนยัน
+
 ---
 
 ## สารบัญ
@@ -36,7 +40,7 @@
 10. [สถานะปัจจุบันและ Roadmap](#10-สถานะและ-roadmap)
 11. [คำถามที่ยังเปิดอยู่ (Open Questions)](#11-open-questions)
 12. [อภิธานศัพท์ (Glossary)](#12-glossary)
-13. [ภาคผนวก: Tech Stack และคำสั่งตรวจสอบ](#13-ภาคผนวก)
+13. [ภาคผนวก: Tech Stack, Functional Coverage และคำสั่งตรวจสอบ](#13-ภาคผนวก)
 
 ---
 
@@ -80,18 +84,29 @@
 
 ## 3. เป้าหมายและ Non-Goals
 
-### Goals (ผลลัพธ์ที่วัดได้)
+### System Guarantees — [ของจริง: ระบบ enforce แล้ว มีเทสต์คุ้มครอง]
 
-| # | เป้าหมาย | ตัวชี้วัด |
-|---|---------|----------|
-| G-1 | **ของเสียจากไฟล์ผลิตผิดเป็นศูนย์** | ทุกไฟล์ที่ออกจากระบบผ่าน Gate G1–G11 + G10 (DXF safety) 100%; ไฟล์ที่ waive ต้องมีบันทึกเหตุผล |
-| G-2 | **ผลลัพธ์การผลิตทำซ้ำได้ 100%** | Cabinet เดิม → Packet/G-code/ZIP hash (SHA-256) เดิมทุกครั้ง |
-| G-3 | **ตรวจสอบย้อนกลับได้ทุกไฟล์** | ทุก export มี signed receipt (Ed25519) ตรวจ offline ได้ด้วย CLI |
-| G-4 | **งานทุกออเดอร์รู้สถานะเสมอ** | work item ทุกใบระบุขั้น canonical (0–7) + ผู้อนุมัติ + SLA; งานเกิน SLA ถูก escalate อัตโนมัติ |
-| G-5 | **เอกสารเข้าระบบต้องผ่านคนยืนยัน** | Artifact ทุกชิ้น approve ก่อน emit; ไม่มีการเดาค่า (no-guess fail-safe) |
-| G-6 | **PDPA by architecture** | OCR ทำ on-premises; ข้อมูล PII ไม่ออกนอกองค์กร; redaction ที่ MCP boundary |
+สิ่งเหล่านี้**ไม่ใช่เป้าที่ต้องไปให้ถึง** แต่เป็นคุณสมบัติที่ระบบรับประกันโดยกลไก — ถ้าข้อใดถูกละเมิดถือเป็น bug ระดับร้ายแรง:
 
-### Non-Goals (สิ่งที่ตั้งใจไม่ทำ)
+| # | Guarantee | กลไกที่ enforce |
+|---|-----------|----------------|
+| SG-1 | **ผลลัพธ์การผลิตทำซ้ำได้ 100%** | Cabinet เดิม → Packet/G-code/ZIP hash (SHA-256) เดิมทุกครั้ง (determinism tests + golden fixtures) |
+| SG-2 | **ตรวจสอบย้อนกลับได้ทุกไฟล์** | ทุก export มี signed receipt (Ed25519) ตรวจ offline ได้ด้วย CLI (Golden Matrix P13.4) |
+| SG-3 | **ไฟล์ผลิตทุกไฟล์ผ่าน Gate** | export ได้เฉพาะ FROZEN/RELEASED + gate ผ่าน/waived (waive มีบันทึกเหตุผลเสมอ) |
+| SG-4 | **เอกสารเข้าระบบต้องผ่านคนยืนยัน** | approve-before-emit + no-guess fail-safe (state machine + verify gate) |
+| SG-5 | **งานเกิน SLA ถูก escalate อัตโนมัติ** | SLA sweep cron: 50% → reminder, 100% → escalate |
+| SG-6 | **PDPA by architecture** | OCR on-prem; PII redaction ที่ MCP boundary; ไม่มี egress เอกสารการเงิน |
+
+### Business Goals — [ข้อเสนอ 📝 วิธีวัดยืนยันแล้ว; ตัวเลขเป้ารอ baseline]
+
+เป้าหมายเชิงผลลัพธ์ที่ต้อง**วัดจากโลกจริง** ไม่ใช่จากกลไกระบบ — แนวทางที่ตกลงกัน (grilling 2026-07-04): **เก็บ baseline จากการใช้งานจริง 30–60 วันแรก แล้วให้ owner ตั้งตัวเลขเป้าจากข้อมูล** ไม่ตั้งตัวเลขจากอากาศ:
+
+| # | เป้าหมาย | วิธีวัด (ยืนยันแล้ว) | ตัวเลขเป้า |
+|---|---------|---------------------|-----------|
+| BG-1 | **ลดของเสียจากการผลิต** | Defect rate ต่อเดือนจาก `qc_capture` (Capture Spine) — โรงงานถ่ายภาพชิ้นงานเสีย/rework เข้าระบบ แยกสาเหตุว่ามาจากไฟล์/เครื่อง/คน | รอ baseline 30–60 วัน |
+| BG-2 | **งานจบตามกำหนด** | % work item ที่จบภายใน SLA ต่อขั้น (จากข้อมูล workflow) + ระบุขั้นคอขวด | รอ baseline 30–60 วัน |
+
+### Non-Goals (สิ่งที่ตั้งใจไม่ทำ) — [ของจริง: อิงจาก ADR/spec ยกเว้น N-1, N-3 ที่อนุมานจากสถาปัตยกรรม]
 
 | # | ไม่ทำ | เหตุผล |
 |---|-------|--------|
@@ -105,7 +120,7 @@
 
 ---
 
-## 4. ผู้ใช้และ User Stories
+## 4. ผู้ใช้และ User Stories — [ข้อเสนอ 📝 สังเคราะห์จาก role ที่มีจริงใน code/spec; รอ owner ยืนยัน]
 
 ### Personas
 
@@ -589,20 +604,27 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 ---
 
-## 9. Success Metrics
+## 9. Success Metrics — [ข้อเสนอ 📝 แนวทาง: เก็บ baseline 30–60 วันแรก แล้ว owner ตั้งเป้าจากข้อมูล]
 
-### Leading Indicators (วัดได้ทันทีหลังใช้งาน)
-- % ไฟล์ export ที่ผ่าน gate โดยไม่มี BLOCKER ตั้งแต่ครั้งแรก (เป้า: เพิ่มขึ้นต่อเนื่อง — สะท้อนว่านักออกแบบเรียนรู้กฎ)
-- จำนวน waive ต่อสัปดาห์ + สัดส่วนที่มีเหตุผลบันทึกครบ (เป้า: 100% มีเหตุผล)
-- เวลาเฉลี่ยจาก Freeze → ดาวน์โหลดไฟล์โรงงาน (เป้า: < 5 นาที)
-- % การอนุมัติที่จบภายใน SLA (เป้า: > 90%; timeout ทุกตัวมี escalation record)
-- % capture artifact ที่ผ่าน human verify ก่อน emit (ต้อง = 100% โดยนิยาม; ตัวเลขที่ต่ำกว่าคือ bug)
+> มติจาก grilling (2026-07-04): **ไม่ตั้งตัวเลขเป้าก่อนมีข้อมูลจริง** — รายการด้านล่างระบุ *วิธีวัดและแหล่งข้อมูล* เท่านั้น เมื่อครบ baseline ให้ owner กำหนดเป้าและใส่วันที่ review
 
-### Lagging Indicators (วัดรายเดือน/ไตรมาส)
-- ต้นทุนของเสียจากการเจาะ/ตัดผิด (เป้า: → 0)
-- จำนวนงานที่ต้อง rework จาก revision ประเภท daph_defect (เป้า: ลดลงต่อเนื่อง)
-- รอบเวลาปิดบัญชีรายเดือน (เป้า: ลดลงเมื่อ capture → ledger อัตโนมัติเต็มรูป)
-- Utilization ของแผ่น (nesting) เฉลี่ย (เป้า: เพิ่มขึ้น)
+### Leading Indicators (วัดได้ทันทีหลังเริ่มใช้งาน)
+| ตัวชี้วัด | แหล่งข้อมูล |
+|----------|------------|
+| % ไฟล์ export ที่ผ่าน gate โดยไม่มี BLOCKER ตั้งแต่ครั้งแรก | gate result ใน factory packet + export audit |
+| จำนวน waive ต่อสัปดาห์ + ประเภท WARNING ที่ถูก waive บ่อยสุด | waiver audit log |
+| เวลาเฉลี่ยจาก Freeze → ดาวน์โหลดไฟล์โรงงาน | activity timeline (P8) |
+| % การอนุมัติที่จบภายใน SLA ต่อขั้น | workflow approval_request + SLA sweep records |
+
+*หมายเหตุ: "% capture ผ่าน human verify ก่อน emit" ถูกถอดออกจาก metric — มันคือ SG-4 (guarantee) ตัวเลขต่ำกว่า 100% คือ bug ไม่ใช่ผลงาน*
+
+### Lagging Indicators (วัดรายเดือน/ไตรมาส หลังมี baseline)
+| ตัวชี้วัด | แหล่งข้อมูล |
+|----------|------------|
+| Defect rate / ต้นทุนของเสียจากการเจาะ-ตัดผิด (**BG-1**) | `qc_capture` artifacts แยกตามสาเหตุ |
+| จำนวน rework จาก revision ประเภท `daph_defect` | revision classification (Req 21) |
+| รอบเวลาปิดบัญชีรายเดือน | ledger + capture emission timestamps |
+| Utilization ของแผ่น (nesting) เฉลี่ย | nesting SheetResult.utilization |
 
 ---
 
@@ -705,7 +727,162 @@ npm run verify                      # test + typecheck + e2e smoke รวม
 npm run gate:bypass-scan            # CI gate bypass scan
 ```
 
-### 13.3 เอกสารอ้างอิงภายใน
+### 13.3 Functional Coverage Index — รายการฟังก์ชันครบตาม codebase
+
+> ส่วนนี้เป็นดัชนีละเอียดสำหรับ owner / PM / engineer ใช้ตรวจว่า PRD ครอบคลุมทุก capability หลักใน repository แล้ว โดย trace กลับไปยัง source folder ได้ทันที สถานะเป็นการสำรวจจากโครงสร้างไฟล์และเอกสาร ณ 2026-07-04
+
+#### 13.3.1 Designer Workspace / Frontend Experience
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| App Shell | แสดง layout ซ้าย/กลาง/ขวา, toolbar บน, export action, project state, gate status | `src/App.tsx`, `src/components/layout/AppShell.tsx` | P0 | ✅ |
+| Viewport 3D | Render cabinet, grid, light, camera, controls, WebGL recovery, R3F context | `src/components/canvas/`, `src/App.tsx` | P0 | ✅ |
+| View Presets | Front, Left, Top, Perspective, Install, Factory, CNC พร้อม orthographic/perspective behavior | `src/components/canvas/ViewportController.tsx`, `src/core/store/useViewStore.ts` | P0 | ✅ |
+| Cabinet CRUD | สร้าง/เลือก/ลบ/duplicate ตู้, active cabinet, multi-cabinet scene position | `src/core/store/useCabinetStore.ts`, `src/components/ui/CabinetList.tsx` | P0 | ✅ |
+| Parametric Dimensions | ปรับ width/height/depth/toe kick/shelf/divider แล้ว regenerate panels | `src/components/layout/ParametricContractPanel.tsx`, `src/core/store/cabinetDerivations.ts` | P0 | ✅ |
+| Panel Override | แก้ panel offset, material, grain, edge, groove/back settings ต่อแผ่น | `src/components/ui/PanelConfigModal.tsx`, `PanelConfigPanel.tsx`, `PanelOverrideModal.tsx` | P0 | ✅ |
+| Construction Type | รองรับ INSET/OVERLAY และส่งผลต่อ cut size / drill map / connector placement | `src/components/ui/ConstructionTypeSelector.tsx`, `src/gate/compute/` | P0 | ✅ |
+| Back Panel System | เปิด/ปิด, inset/overlay, groove depth, back void, clearance gate | `src/core/store/useCabinetStore.ts`, `src/gate/rules/rule_clearance_backPanel.ts` | P0 | ✅ |
+| Material Selector | เลือก core/surface/edge, thumbnail, property panel, apply selected/all | `src/components/ui/MaterialSelector.tsx`, `src/components/icons/MaterialIcons.tsx` | P0 | ✅ |
+| Material Rendering | Triplanar texture, grain rotation, texture preload เฉพาะ active material | `src/components/materials/TriplanarMaterial.tsx`, `src/core/materials/` | P1 | ✅ |
+| Hardware Library | เลือก/ตั้งค่า Minifix, hinge, dowel, shelf pin, drawer, handle, LED | `src/components/ui/HardwareLibrary.tsx`, `HardwarePanel.tsx`, `src/components/ui/connectors/` | P0 | ✅ |
+| Connector Assembly | แสดง connector list, toggle visibility, context menu, transform override | `src/components/ui/ConnectorAssemblyPanel.tsx`, `HardwareContextMenu.tsx`, `ConnectorList.tsx` | P0 | ✅ |
+| Minifix 3D Preview | Preview ชุด cam/bolt/dowel, V/H flip, rotate, axis alignment | `src/components/canvas/Minifix3DPreview.tsx`, `MinifixSet.tsx`, `Hardware3D.tsx` | P0 | ✅ |
+| Drill Visuals | X-Ray, CAD indicators, 2D drill map modal, dimension annotations, CSG hole overlay | `src/components/canvas/CADDrillIndicators.tsx`, `CADDrillMapView.tsx`, `CSGDrillOverlay.tsx` | P0 | ✅ |
+| Move/Rotate/Gizmo | Plasticity-style gizmo, axis/plane lock, HUD, snap, keyboard tools | `src/core/store/useToolStore.ts`, `useGizmoStore.ts`, `src/components/canvas/GizmoTranslate.tsx` | P0 | ✅ |
+| Snap & Measure | Grid/edge/corner snap, snap guides, measure layer | `src/core/store/useSnapStore.ts`, `src/components/canvas/SnapGuides.tsx`, `src/components/tools/MeasureLayer.tsx` | P1 | ✅ |
+| Sketch Mode | Construction plane, line/rect/point, preview, snap glyphs, HUD | `src/core/sketch/`, `src/components/canvas/SketchInputLayer.tsx`, `SketchPreview.tsx` | P1 | ✅ |
+| Command UX | Command palette, radial menu, context toolbar, shortcut overlay, toast | `src/components/ui/CommandPalette.tsx`, `RadialMenu.tsx`, `ShortcutOverlay.tsx`, `ToastContainer.tsx` | P1 | ✅ |
+| Theme & Preferences | Dark/light theme persistence, app preferences boundary | `src/core/persistence/appPrefs.ts`, `src/App.tsx` | P1 | ✅ |
+| Decor Calculators | Hidden door hinge, kerf bending, wainscoting, slat calculator | `src/components/calculators/` | P2 | ✅ |
+
+#### 13.3.2 Project, State, Persistence และ Traceability
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| Project Store | Initialize project, save/load, dirty tracking, project-scoped persistence | `src/core/store/useProjectStore.ts`, `projectScopedStorage.ts` | P0 | ✅ |
+| Spec Store | DRAFT/FROZEN/RELEASED, validation result, freeze/release/unfreeze actions | `src/core/store/useSpecStore.ts`, `src/spec/store.ts` | P0 | ✅ |
+| Selection Store | selected panel/cabinet, modal visibility, deselect behavior | `src/core/store/useSelectionStore.ts` | P0 | ✅ |
+| DrillMap Store | สร้าง/เก็บ drillMap, CAD view toggle, override sync | `src/core/store/useDrillMapStore.ts` | P0 | ✅ |
+| Runtime Stores | UI, live validation, CNC overlay, checklist, proof, verify status | `src/core/store/` | P1 | ✅ |
+| Lineage | เขียน/อ่าน revision chain, timeline, chain viewer | `src/core/lineage/`, `src/core/chainEvents/`, `src/components/ui/LineageTimeline.tsx` | P0 | ✅ |
+| Proof Store | เก็บ proof/export verification status เพื่อแสดงใน UI | `src/core/store/useProofStore.ts`, `src/components/ui/ProofCard.tsx` | P0 | ✅ |
+| Sync Badge | แสดงสถานะ sync/persistence และ error state | `src/components/ui/SyncStatusBadge.tsx` | P1 | ✅ |
+
+#### 13.3.3 Gate, Manufacturing Truth และ Export
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| Gate Runner | รวม rules แล้วออก GateResult พร้อม metrics/issues | `src/gate/runGate.ts`, `src/core/gate/runGateBundle.ts` | P0 | ✅ |
+| Gate UI | Safety panel, status indicator, blocker modal, focus entity, apply patch | `src/gate/ui/`, `src/components/pages/SafetyGatePage.tsx` | P0 | ✅ |
+| Gate Rules | cut size, drill depth, min margin, fitting spacing, edge allowance, back panel clearance | `src/gate/rules/` | P0 | ✅ |
+| G4 Geometry | OD tolerance, overlap, cabinet geometry consistency | `src/gate/rules/gateG4_geometry.ts` | P0 | ✅ |
+| G9 Packet Boundary | External packet validation, branded type, static scan | `src/core/gate/g9PersistenceGate.ts`, `brandTypes.ts` | P0 | ✅ |
+| G10 DXF Safety | Golden DXF, semantic validation, machine dialect validation | `src/core/gate/gate10DxfSafety.ts`, `gate10_2DxfSemantic.ts`, `gate10_3MachineDialect.ts` | P0 | ✅ |
+| G11 Minifix/System32 | Distance B, mating tolerance, dowel/bolt/cam pairing, System32 constraints | `src/gate/rules/gateG11_minifixSystem32.ts`, `src/cnc/validation/gateG11_operationGraph.ts` | P0 | ✅ |
+| Waive/Admin Override | Warning waive/unwaive, admin override reason, audit expectation | `src/components/ui/WaiveModal.tsx`, `UnwaiveModal.tsx`, `AdminOverrideDialog.tsx` | P0 | ✅ |
+| DrillMap Generation | Generate deterministic holes per panel/joint, axis-tagged pair keys | `src/core/manufacturing/drillMap/generateDrillMap.ts`, `pairKeyV2.ts` | P0 | ✅ |
+| Connector Compiler | Compile connector intent to CNC-ready ops, placement, coordinate calculation | `src/core/connector/` | P0 | ✅ |
+| OperationGraph | Build CNC operations from validated packet, normalize manufacturing truth | `src/core/manufacturing/opgraph/buildOpGraph.ts` | P0 | ✅ |
+| G-code IR | Build/format IR, emit program, line numbering | `src/core/manufacturing/gcode/` | P0 | ✅ |
+| Machine Dialects | Biesse ISO, HOMAG, KDT, Fanuc-style, post profiles | `src/core/manufacturing/gcode/dialects/`, `src/core/manufacturing/post/profile/` | P0 | ✅ |
+| Toolpath Planner | Multi-tool plan, tool change validation, tabs, entry/exit policy | `src/core/manufacturing/planner/`, `toolpath/`, `policy/` | P1 | ✅ |
+| Simulation & Verify | Simulate IR program, safety rules, geometry consistency, verifier reports | `src/core/manufacturing/sim/`, `verify/` | P1 | ✅ |
+| DXF Export | OperationGraph to DXF, R12 writer, normalized deterministic output | `src/core/export/operationGraphToDxf.ts`, `src/core/manufacturing/dxfR12Writer.ts` | P0 | ✅ |
+| Cut List Export | CSV cut list and download artifacts | `src/export/cutList/`, `src/core/export/monolith/builders/buildCutListCsv.ts` | P0 | ✅ |
+| Factory Package | Build packet with drillMap/connectors/cutList/gateResult/manifest | `src/factory/packet/`, `src/core/factoryPackage/` | P0 | ✅ |
+| Release Bundle | Build signed release bundles v1/v2, release store, signer | `src/core/manufacturing/release/` | P0 | ✅ |
+| Export Policy | Enforce state/gate policy before export | `src/export/policy/`, `src/core/trust/exportGuard.ts`, `src/core/manufacturing/export/enforceExportGate.ts` | P0 | ✅ |
+| Cryptographic Hash | Canonical JSON, SHA-256, stable stringify vectors | `src/core/crypto/`, `contracts/hashing/` | P0 | ✅ |
+| Signature Verify | Verify bundle/manifest signatures and receipt status | `src/export/verify/`, `src/core/manufacturing/export/sigVerify.ts` | P0 | ✅ |
+| Download Adapters | Browser-side ZIP/download client and export API adapters | `src/core/adapter/`, `src/core/api/exportApi.ts` | P1 | ✅ |
+
+#### 13.3.4 Factory Mode, Server และ CNC Operations
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| Factory App | Dashboard + Job Detail + FactoryLayout | `src/factory/FactoryApp.tsx`, `pages/`, `layouts/` | P0 | ✅ |
+| Dashboard | Filter jobs, group jobs, toolbar query state | `src/factory/components/dashboard/` | P0 | ✅ |
+| Job Detail | Packet viewer, export controls, activity timeline, CNC preview | `src/factory/pages/JobDetail.tsx`, `components/packet/`, `components/cnc/` | P0 | ✅ |
+| Packet Ingest | Upload/unzip/verify factory packet and show parse errors | `src/factory/components/PacketIngestPanel.tsx`, `src/factory/packet/unzipPacket.ts` | P0 | ✅ |
+| Packet Tabs | Overview, parts sheets, toolpaths, JSON viewer, error panel | `src/factory/components/packet/` | P0 | ✅ |
+| Machine Selector | เลือก machine/profile ก่อนสร้าง CNC | `src/factory/components/MachineSelector.tsx` | P0 | ✅ |
+| CNC Generate | Generate G-code for job, workpiece config adapter, preview panel | `src/factory/cnc/`, `src/factory/components/cnc/` | P0 | ✅ |
+| CNC Overlay | Preview markers/legend/transform/resolve state | `src/factory/cnc/overlay/` | P1 | ✅ |
+| Tool Health | Wear model, tool usage observer, threshold editor, reset, health strip/modal | `src/factory/tooling/`, `src/factory/components/tooling/` | P1 | ✅ |
+| Server Verify | Run verifier, audit verify service, synthetic golden | `src/factory/server/verifyService.ts`, `runVerifier.ts`, `syntheticGolden.ts` | P0 | ✅ |
+| Server Packet Route | Lite packet schema, hash, packet route | `src/factory/server/packet/` | P0 | ✅ |
+| Server Export Route | Export options, service, route, audit, ZIP bundle | `src/factory/server/export/` | P0 | ✅ |
+| API Clients | Jobs/activity/export/verify/mock data clients | `src/factory/api/` | P0 | ✅ |
+| Storage | IndexedDB packet store and tooling store | `src/factory/storage/`, `src/factory/tooling/storage/` | P1 | ✅ |
+
+#### 13.3.5 Business OS Modules จาก `.kiro/specs`
+
+| Module | Requirement Scope | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| DAPH Second Brain | Vault PARA, MOC, Knowledge_Export, PFMEA/process/RACI model | `.kiro/specs/daph-obsidian-second-brain/`, `daph-second-brain/` | P0 | ✅ 100% |
+| LINE OA Commerce | Webhook HMAC, idempotency, routing, outbound, customer identity, order intake, audit | `.kiro/specs/line-oa-commerce/`, `supabase/functions/` | P0 | ✅ 100% |
+| Workflow Copilot | Handoff, RACI approver, one-click approval, AI advisory, notification, SLA, delegation, revision locks | `.kiro/specs/monolith-workflow-copilot/`, `src/workflow/` | P0 | 🔵 84% |
+| MCP Layer | Tool catalog, client auth, authorization, autonomy gate, pending invocation, redaction, rate limit | `.kiro/specs/monolith-mcp-layer/`, `src/mcp/` | P0 | 🔵 88% |
+| Capture Spine | Ingest, OCR, verify, lifecycle, fraud signal, commit adapters, no-guess | `.kiro/specs/capture-spine/`, `src/capture/` | P0 | ✅ Wave 0+1 |
+| Accounting | Ledger, multi-book, currency, bank feed, receivables, tax, WHT, eTax, manufacturing costing | `.kiro/specs/monolith-accounting/`, `src/ledger/`, `src/tax/` | P0/P1 | 🟡 36% |
+| Design Hub Phase 2 | Marketplace, Bible grammar, UGC, professional profiles, learning center, PDPA, payment/governance | `.kiro/specs/design-hub-platform-phase2/` | P2 | ⏸ Owner decisions |
+| TCCK Separation | Decision record and archive of shared-platform idea | `.kiro/specs/separate-monolith-tcck/` | P0 | ✅ |
+
+#### 13.3.6 Workflow / Capture / MCP / Accounting Function Detail
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| Workflow Handoff | Enforce canonical order, optimistic locking, capture-once-reuse | `src/workflow/handoff/` | P0 | ✅ |
+| Workflow Approval | Authz, idempotency, quorum | `src/workflow/approval/` | P0 | ✅ |
+| Workflow Resolver | Approver resolution, delegation routing, customer approver, escalation | `src/workflow/resolver/`, `delegation/` | P0 | 🔵 |
+| Workflow Notification | Template, routing, suppression, quiet hours/missing binding, retry backoff | `src/workflow/notification/` | P0 | 🔵 |
+| Workflow SLA | Sweep overdue items and trigger reminders/escalation | `src/workflow/sla/` | P0 | ✅ |
+| Workflow Revision | Classify revision, threshold, re-quote FSM | `src/workflow/revision/` | P0 | ✅ |
+| Workflow Copilot | Build advisory from PFMEA/RPN and freshness checks | `src/workflow/copilot/` | P1 | ✅ |
+| Workflow Audit | Append-only writer and audit event shape | `src/workflow/audit/` | P0 | ✅ |
+| Capture Lifecycle | proposed/approved/rejected/emitted/superseded state machine | `src/capture/state-machine.ts` | P0 | ✅ |
+| Capture Idempotency | Prevent duplicate artifacts by stable key | `src/capture/idempotency.ts` | P0 | ✅ |
+| Capture Verify Gate | Require human verification for critical/low-confidence/suspicious fields | `src/capture/verify-gate.ts`, `verify-rules.ts` | P0 | ✅ |
+| Capture Fraud Signals | VAT mismatch, vendor unknown, total anomaly, duplicate | `src/capture/fraud-signal.ts` | P0 | ✅ |
+| MCP Catalog | Filtered tool discovery by role/scope | `src/mcp/catalog.ts` | P0 | ✅ |
+| MCP Authz | Principal/site/role authorization, fail-closed | `src/mcp/authz.ts` | P0 | ✅ |
+| MCP Autonomy | Read/write/approval tool tier classification and pending gate | `src/mcp/autonomy.ts` | P0 | ✅ |
+| MCP Redaction/PDPA | Data minimization, consent checks, cross-border suppression | `src/mcp/redaction.ts`, `pdpa.ts` | P0 | ✅ |
+| MCP Rate Limit | Per-principal/client/tool atomic throttling model | `src/mcp/ratelimit.ts` | P1 | ✅ |
+| Ledger | Multi-book, currency, bank feed, receivables | `src/ledger/` | P0 | 🔵 |
+| Tax | VAT/eTax XML, WHT and RD prep output | `src/tax/` | P0 | 🔵 |
+| IAM | Secure row filter, scope checks, C12 role/site helpers | `src/iam/`, `src/core/auth/` | P0 | ✅ |
+
+#### 13.3.7 Data, Schema, Contracts และ Supabase
+
+| กลุ่มฟังก์ชัน | Requirement ที่ต้องมี | Source หลัก | Priority | สถานะ |
+|---|---|---|---|---|
+| Canonical Model | Gate09 canonical validation, adapters, zod schemas | `src/core/model/canonical/` | P0 | ✅ |
+| Project Schema | Zod schema for project/cabinet/panel/material/hardware | `src/core/schema/` | P0 | ✅ |
+| Bundle Schema | Export bundle build/verify types | `src/core/bundle/` | P0 | ✅ |
+| Contracts Package | Kernel client/types shared boundary | `contracts/` | P0 | ✅ |
+| Manufacturing Config | Runtime constants JSON + schema + policy apply | `src/core/config/` | P0 | ✅ |
+| Runtime Tuning | Store/apply runtime tuning safely | `src/core/config/runtimeTuning*` | P1 | ✅ |
+| Supabase Migrations | C12, workflow, capture, line, accounting tables/RPC/RLS | `supabase/migrations/` | P0 | 🔵 |
+| Edge Functions | LINE webhook, approval, capture ingest/OCR/field capture | `supabase/functions/` | P0 | 🔵 |
+
+#### 13.3.8 Acceptance Checklist รวมสำหรับ Release
+
+| Checklist | เงื่อนไขผ่าน |
+|---|---|
+| Designer can model | ผู้ใช้สร้างตู้ ปรับมิติ ใส่วัสดุ/ฮาร์ดแวร์ เห็น 3D + X-Ray + drill annotation โดยไม่ error |
+| Gate protects factory | BLOCKER ห้าม export, WARNING waive ได้พร้อมเหตุผล, admin override มี audit |
+| Truth is deterministic | input เดิมให้ drillMap/factoryPacket/opGraph/G-code/ZIP hash เดิม |
+| DXF/G-code are derived correctly | DXF มาจาก OperationGraph เท่านั้น, dialect ตรงเครื่อง, semantic gate ผ่าน |
+| Factory can verify offline | packet/receipt/manifest ตรวจ signature/hash ได้โดยไม่พึ่ง server |
+| Workflow stays human-led | AI แนะนำได้ แต่ write/approval action ต้องผ่าน human gate |
+| Capture never guesses | OCR/extraction confidence ต่ำหรือ field สำคัญขาดต้องรอ verify; ไม่มี placeholder fake value |
+| Accounting balances | journal entry debit = credit, multi-book ไม่ปนกัน, VAT/WHT rules ทดสอบได้ |
+| PDPA/RLS fail closed | ไม่มี PII egress โดย default, role/site scope ตรวจทุก boundary |
+| Audit is append-only | export/approval/capture/MCP invocation มี trace และแก้ย้อนหลังไม่ได้ |
+
+### 13.4 เอกสารอ้างอิงภายใน
 
 - `REQUIREMENTS-OVERVIEW.md` — requirements ครบ 8 spec + ADR-001..027
 - `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec
