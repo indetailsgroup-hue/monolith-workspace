@@ -700,18 +700,18 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
 1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
 1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
-1.6. **[SaaS — รอ owner]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL + tests + matrix 53 features พร้อมหมด; **Phase 0 = ตัดสิน แยก DB vs รวม C12** แล้วจึง landing เป็น migration จริง
+1.6. **[SaaS — รอ owner]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) พร้อมแล้ว; **Phase 0 = ตัดสิน แยก DB vs รวม C12** แล้วจึง landing เป็น migration จริง
 1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
-4. **[รอ owner]** 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
+4. **[รอ owner]** owner decisions ข้อ 1–7 (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
 5. **[รอ governance]** e-Tax XAdES + X.509 (จัดหา ETDA CA)
 
 ---
 
 ## 11. Open Questions
 
-**Owner Decisions ค้าง 7 ข้อ (จาก REQUIREMENTS-OVERVIEW §4.2) — blocking Phase 3/design-hub:**
+**Owner Decisions ค้าง 8 ข้อ — ข้อ 1–7 จาก REQUIREMENTS-OVERVIEW §4.2 (blocking Phase 3/design-hub), ข้อ 8 เพิ่มใน Edition 2.0 (blocking entitlement Phase 0):**
 
 | # | คำถาม | ใครตอบ |
 |---|-------|--------|
