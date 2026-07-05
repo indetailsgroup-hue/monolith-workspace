@@ -6,7 +6,7 @@
 
 **สถานะ:** design-stage — DDL draft ผ่าน security review 2 รอบแล้ว (v0.1→v0.2 ปิด S1–S4/L5–L9, v0.2→v0.3 เพิ่มธง roadmap) — **ยังไม่ deploy** รอ owner decision ข้อ C12 (Req 10)
 
-**Working artifacts:** `schema-draft-v0.3.sql` (DDL — SSOT ของ schema), `tests-negative.sql` (negative tests), เอกสาร/matrix HTML ใน `one clik/` (v0.3)
+**Working artifacts (ทั้งหมดอยู่ในโฟลเดอร์ spec นี้):** `schema-draft-v0.3.sql` (DDL — SSOT ของ schema) · `tests-negative.sql` (negative tests) · `schema-design-v0.3.md/.html` (design rationale + changelog) · `tier-matrix-v0.3.html` (ตาราง 53 features interactive) · `entitlement-tier-spec.html` (spec bundle) · `research-oneclickcabinet-v4.1.md` (competitive research ต้นทางของ freemium ladder) — สำเนาประวัติ v0.1/v0.2 อยู่ที่ `one clik/` นอก repo
 
 **Reuse-not-fork (เงื่อนไข):** ถ้าคำตอบ Req 10 คือ "รวม DB" ต้อง map `organizations ↔ sites` และใช้ C12 pattern (`resolve_actor`, `has_site_access`) — ห้ามมี identity สองระบบใน DB เดียว
 

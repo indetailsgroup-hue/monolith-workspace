@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — Entitlement/Tier Schema · Design Proposal v0.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>MONOLITH — Entitlement/Tier Matrix + Supabase Multi-Tier Schema</h1>
+<h3>Design Proposal v0.3 · 5 ก.ค. 2026</h3>
+<p><em>อัปเดตจาก v0.2 — เพิ่มชั้น Trust/Tool-Wear/CO2/STEP + ระบบธง <code>implemented</code>/<code>roadmap</code> ที่ DB บังคับจริง — DDL ฉบับเต็ม: <code>MONOLITH-schema-multitier-v0.3.sql</code> (source of truth เดียว)</em></p>
+<blockquote>
+<p><strong>สถานะ:</strong> design proposal — คำถาม owner (C12: แยก DB / รวม DB) ยังเปิดอยู่
+<strong>Spec ใน repo:</strong> <code>.kiro/specs/entitlement-tier/</code> (requirements/design/tasks — สร้างพร้อม v0.3)</p>
+</blockquote>
+<hr>
+<h2>Changelog v0.2 → v0.3</h2>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>การเปลี่ยนแปลง</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>F1</strong></td>
+<td>เพิ่ม <code>features.status</code> enum (<code>implemented</code> | <code>roadmap</code>) — ธงความพร้อมจริงของ capability เก็บที่ DB เป็น source of truth เดียว (UI/pricing ดึงไปแสดง &quot;coming soon&quot; เอง)</td>
+</tr>
+<tr>
+<td><strong>F2</strong></td>
+<td><strong>Roadmap hard-block ที่ resolver</strong>: <code>has_feature</code>/<code>feature_limit</code> คืน false/0 สำหรับ feature ที่ <code>status=&#39;roadmap&#39;</code> <strong>ไม่ว่า plan จะ map ไว้อย่างไร</strong> — ปลดได้ทางเดียวคือ <code>entitlement_overrides</code> รายองค์กร (= ช่องทาง <strong>beta program</strong> ใส่ <code>reason=&#39;beta&#39;</code>) · <code>assert_feature</code> โยน error แยก <code>feature_roadmap</code> (ให้ UI ขึ้น &quot;coming soon&quot; ไม่ใช่ &quot;upgrade&quot;)</td>
+</tr>
+<tr>
+<td><strong>F3</strong></td>
+<td>Seed ขยาย <strong>42 → 53 features</strong> (212 entitlement rows): เพิ่มหมวด <strong>Trust</strong> (<code>trust.signed_export</code>, <code>trust.audit_chain</code>), <code>cam.tool_wear</code>, <code>report.co2</code>, <code>export.step</code>, <code>export.pdf_report</code>, <code>export.cutlist_dialects</code>, <code>design.clearance_check</code>, <code>design.multi_cabinet</code>, <code>nest.optimizer_pro</code>, <code>hardware.engine_packs</code></td>
+</tr>
+<tr>
+<td><strong>F4</strong></td>
+<td><strong>จัดสถานะซื่อตรงตามหลักฐานในโค้ด MONOLITH</strong>: implemented 34 · roadmap 19 — ไม่ใช่แค่ 2 ตัวใหม่ แต่รวมของเดิมที่ matrix ขายไว้แต่โค้ดยังไม่มี (ดูตารางด้านล่าง)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>1. ธง Roadmap — รายการ 19 ตัว (ตามหลักฐาน ณ 2026-07-05)</h2>
+<table>
+<thead>
+<tr>
+<th>กลุ่ม</th>
+<th>feature_key</th>
+<th>เหตุผลที่เป็น roadmap</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Label</td>
+<td><code>label.basic</code>, <code>label.advance</code>, <code>label.no_watermark</code></td>
+<td>ยังไม่พบระบบ label/barcode ในโค้ด</td>
+</tr>
+<tr>
+<td>Cloud</td>
+<td><code>storage.cloud_enabled</code>, <code>storage.cloud_mb</code></td>
+<td>โค้ดจริงเป็น localStorage/local-first; Yjs cloud sync = design doc</td>
+</tr>
+<tr>
+<td>Nesting</td>
+<td><code>nest.advance</code> (true-shape/NFP), <code>nest.offcut_inventory</code>, <code>nest.optimizer_pro</code> (SA/GA)</td>
+<td>โค้ดมีเฉพาะ FFDH rectangular</td>
+</tr>
+<tr>
+<td>CAM</td>
+<td><code>cam.dogbone</code>, <code>cam.kerf_bending</code>, <code>export.six_side_drill</code></td>
+<td>dogbone ไม่พบ; kerf = spec พร้อมแต่ Phase 0 ยังไม่เริ่ม; six-side ยังไม่ verify</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td><code>hardware.engine_packs</code>, <code>design.custom_hardware_lib</code></td>
+<td>engines 23 ตอน = design library; org-scoped lib ต้องมี tenancy ก่อน</td>
+</tr>
+<tr>
+<td>SaaS/ทีม</td>
+<td><code>platform.seats</code></td>
+<td>multi-user org ยังไม่มี</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td><code>ai.design_assist</code>, <code>integration.erp</code>, <code>integration.api</code>, <code>platform.sso</code>, <code>platform.self_host</code></td>
+<td>ยังไม่มีทั้งกลุ่ม</td>
+</tr>
+</tbody></table>
+<p><strong>Implemented เด่นที่เพิ่งเข้า matrix:</strong> <code>trust.signed_export</code> + <code>trust.audit_chain</code> (Ed25519 receipt + <code>monolith-verify</code> offline + merkle — ของแพงสุดที่ไม่เคยอยู่ใน matrix), <code>cam.tool_wear</code> (D6), <code>report.co2</code>, <code>export.step</code>/<code>pdf_report</code>/<code>cutlist_dialects</code> (server exporters), <code>design.clearance_check</code> (swing/pull envelopes), <code>design.multi_cabinet</code> (snap)</p>
+<p><strong>การพลิกธง:</strong> feature ship จริง → <code>update features set status=&#39;implemented&#39; where key=...</code> → plan ที่ map ไว้ปลดเองอัตโนมัติ ไม่ต้องแตะ matrix (ผูกกับ release process — ดู tasks ใน spec)</p>
+<hr>
+<h2>2. Tier Matrix (53 features)</h2>
+<p>ดูตาราง interactive พร้อม badge <code>roadmap</code>: <strong><code>MONOLITH-Tier-Matrix-v0.3.html</code></strong> (ค่า tier ของ 42 ตัวเดิมคงเดิมทั้งหมด; 11 ตัวใหม่ตามตารางใน §1 ของ v0.3 review)</p>
+<p>สาระใหม่ต่อ tier: <strong>Advance</strong> ได้เพิ่ม trust.signed_export, tool_wear, STEP, cutlist dialects, (อนาคต: optimizer_pro, engine_packs, kerf, six-side) · <strong>Plus</strong> ได้เพิ่ม pdf_report, co2, clearance_check, multi_cabinet · <strong>Enterprise</strong> ได้ trust.audit_chain เพิ่มจากชุด SSO/self-host/API เดิม</p>
+<hr>
+<h2>3. Gating Mechanics (4 แบบ — เท่า v0.2) + ชั้น status</h2>
+<p>ลำดับ resolve ต่อ feature:</p>
+<pre><code>1. unknown feature                      → deny (false/0)
+2. entitlement_overrides (ยังไม่หมดอายุ) → ชนะเสมอ (ช่อง beta ปลด roadmap ได้)
+3. status = &#39;roadmap&#39;                   → deny (plan ไม่มีผล)   ← ใหม่ [F2]
+4. plan_entitlements ของ effective_plan → ตามค่า
+5. ไม่มี mapping                        → deny
+</code></pre>
+<p><code>effective_plan()</code>: active/trialing → plan · past_due grace 7 วัน · อื่น → <code>free</code> (เท่า v0.2)</p>
+<p><strong>Error contract ฝั่ง app (เพิ่ม 1 ตัว):</strong> <code>org_access_denied</code> · <code>not_entitled</code> · <strong><code>feature_roadmap</code> (→ แสดง &quot;coming soon&quot;)</strong> · <code>wrong_gate_kind</code> · <code>quota_exceeded</code> · <code>unknown_feature</code></p>
+<hr>
+<h2>4. โครง Schema — จุดต่างจาก v0.2 มีที่เดียว</h2>
+<ul>
+<li><code>features</code> + คอลัมน์ <code>status public.feature_status not null default &#39;implemented&#39;</code></li>
+<li><code>has_feature</code> / <code>feature_limit</code> / <code>assert_feature</code> เพิ่ม logic ตาม §3</li>
+<li>ที่เหลือ (tenancy, RLS 11 ตาราง, triggers atomic 3 ตัว, advisory locks, anon pricing read) <strong>เหมือน v0.2 ทุกประการ</strong> — ดู DDL จริงในไฟล์ .sql</li>
+</ul>
+<hr>
+<h2>5. วิธีใช้จากฝั่ง App (เพิ่มจาก v0.2)</h2>
+<pre><code class="language-sql">-- bundle ตอน login: ส่ง status ไปด้วยเพื่อ render &quot;coming soon&quot;
+select f.key, f.kind, f.status,
+       case when f.kind = &#39;boolean&#39; then public.has_feature(:org, f.key) end as enabled,
+       case when f.kind &lt;&gt; &#39;boolean&#39; then public.feature_limit(:org, f.key) end as lim
+from public.features f;
+</code></pre>
+<pre><code class="language-ts">// UI 3 สถานะ: enabled | locked (upgrade) | coming-soon (roadmap)
+const ui = (f) =&gt; f.status === &#39;roadmap&#39; &amp;&amp; !f.enabled ? &#39;coming-soon&#39;
+                : f.enabled ? &#39;enabled&#39; : &#39;locked&#39;;
+</code></pre>
+<p>Beta program: <code>insert into entitlement_overrides(org_id, feature_key, bool_value, reason, expires_at) values (:org,&#39;cam.kerf_bending&#39;,true,&#39;beta&#39;,&#39;2026-12-31&#39;);</code></p>
+<hr>
+<h2>6. Next Steps</h2>
+<ol>
+<li>ตอบ owner decision C12 (แยก/รวม DB) → กำหนดปลายทาง deploy</li>
+<li>รัน <code>tests-negative.sql</code> (ในชุด <code>.kiro/specs/entitlement-tier/</code>) บน scratch DB — ยืนยัน RLS ข้าม org, quota block, roadmap block, grace/free fallback</li>
+<li>Stripe sync Edge Function + reset counters ต้นรอบ</li>
+<li>Byte-tracking สำหรับ <code>storage.cloud_mb</code> (เมื่อ cloud sync หลุด roadmap)</li>
+<li>ผูก &quot;พลิกธง status&quot; เข้า release checklist ของทุกฟีเจอร์ใน §1</li>
+</ol>
+<hr>
+<p><em>ชุดไฟล์ v0.3: <code>.sql</code> (DDL — SSOT) · เอกสารนี้ · <code>MONOLITH-Tier-Matrix-v0.3.html</code> (interactive) · spec ใน repo <code>.kiro/specs/entitlement-tier/</code> — v0.1/v0.2 เก็บเป็นประวัติ</em></p>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
