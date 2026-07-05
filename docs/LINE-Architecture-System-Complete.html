@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — LINE Architecture (ทั้งระบบ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>MONOLITH — LINE Architecture (ทั้งระบบ · ฉบับสมบูรณ์)</h1>
+<h3>System-wide LINE Integration Architecture · 5 กรกฎาคม 2026</h3>
+<blockquote>
+<p>เอกสารฉบับเดียวรวม <strong>ทุก touchpoint ของ LINE ในระบบ MONOLITH</strong> — ตั้งแต่ LINE OA Commerce ที่ทำเสร็จแล้ว, การอนุมัติแบบ/งานผ่าน Flex, การส่งเอกสาร/รูปเข้า capture, การแจ้งเตือน workflow, จนถึงกลุ่ม LINE ของงานติดตั้ง
+<strong>ป้ายสถานะ:</strong> ✅ = implemented (มีในโค้ด) · 🔵 = in-progress · 📝 = ข้อเสนอ (spec/ร่าง) · ⏸ = รอ dependency
+<strong>แหล่ง:</strong> <code>supabase/migrations/00000000000001–62_line_oa_*</code>, <code>supabase/functions/{line-webhook,line-outbound-sender,approval-postback,capture-ingest,field-capture}</code>, PRD §6.5–6.6, ADR-033, <code>.kiro/specs/installation-pm/line-architecture-v0.1.md</code></p>
+</blockquote>
+<hr>
+<h2>1. ภาพรวม — LINE คือช่องทาง Engagement + Field ของทั้งระบบ</h2>
+<p>MONOLITH ใช้ <strong>LINE เป็นช่องทางหลักติดต่อคนนอกออฟฟิศ</strong> (ลูกค้า + ช่างหน้างาน + คนส่งเอกสาร) เพราะคนไทยอยู่บน LINE อยู่แล้ว — เชื่อมเข้าแกน trust/capture/workflow ของระบบผ่าน Edge Function ที่ควบคุมความปลอดภัยไว้แน่น</p>
+<pre><code>                          ┌──────────── LINE Platform ────────────┐
+ ลูกค้า ─┐                │  OA (1:1)          กลุ่ม (group)       │
+ ช่าง ───┼─ ข้อความ/รูป/postback ─→  line-webhook (HMAC + idempotent)
+ บัญชี ──┘                └───────────────────┬───────────────────┘
+                                              │
+              ┌───────────────────────────────┼───────────────────────────────┐
+              ▼                               ▼                               ▼
+      capture spine                   workflow / approval               order intake
+   (expense/customer_req/            (work item, gate,               (quote→order→ship)
+    installation_proof)               Flex approval)
+              │                               │                               │
+              └──────────── audit (append-only) + RLS site-scoped ────────────┘
+                                              │
+                                    line-outbound-sender (worker)
+                          template ที่ approve แล้ว + named slots (ไม่มี free-text LLM)
+</code></pre>
+<p><strong>หลักเหล็ก 4 ข้อ (ใช้ทุก touchpoint):</strong></p>
+<ol>
+<li><strong>Webhook ทุกทางเข้า HMAC + idempotent</strong> ตาม <code>webhook_event_id</code> UNIQUE — replay ไม่ซ้ำ</li>
+<li><strong>Outbound เป็น pre-approved template + named slots เท่านั้น</strong> — ไม่มี free-text LLM (กันข้อความหลุด/หลอก)</li>
+<li><strong>ลูกค้าไม่เป็น DB principal</strong> — Edge Function เป็นตัวกลาง (ไม่สร้าง account ให้ลูกค้า)</li>
+<li><strong>สิทธิ์ใน DB มาจาก RLS + membership เท่านั้น</strong> — การอยู่ใน LINE (แชท/กลุ่ม) ไม่ให้สิทธิ์ใด ๆ</li>
+</ol>
+<hr>
+<h2>2. โครงสร้างพื้นฐาน — LINE OA Commerce ✅ (เสร็จแล้ว 20/20 tasks · 31 properties)</h2>
+<p>ไฟล์: <code>supabase/functions/line-webhook</code>, <code>line-outbound-sender</code>, migrations <code>00000000000001–62</code></p>
+<p><strong>8 ตารางหลัก</strong> (<code>vertical_context</code> แยก Monolith furniture / TCCK food ในช่องเดียว):</p>
+<table>
+<thead>
+<tr>
+<th>ตาราง</th>
+<th>หน้าที่</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>line_oa_channels</code></td>
+<td>ช่อง OA (เก็บเฉพาะ Vault refs ของ secret — Edge Function ไม่ถือ secret)</td>
+</tr>
+<tr>
+<td><code>line_oa_conversations</code></td>
+<td>thread ต่อ (line_user_id, vertical_context) — lifecycle: site_unresolved → open → closed</td>
+</tr>
+<tr>
+<td><code>line_oa_inbound_messages</code></td>
+<td>ข้อความรับเข้า — idempotency anchor = <code>webhook_event_id</code> UNIQUE</td>
+</tr>
+<tr>
+<td><code>line_oa_outbound_messages</code></td>
+<td>ส่งออก staged: pending → sent/failed (worker claim rows, resolve token จาก Vault)</td>
+</tr>
+<tr>
+<td><code>line_oa_customer_identity</code></td>
+<td>LINE user_id → canonical customer + <code>match_confidence</code> + <code>manual_review_required</code> (<strong>ไม่ auto-merge</strong>)</td>
+</tr>
+<tr>
+<td><code>line_oa_message_templates</code></td>
+<td>template pre-approved + named slots (<code>{{order_id}}</code>), vertical-scoped, immutable version, <strong>ไม่มี free-text</strong>, brand voice ≤200 ตัวอักษร</td>
+</tr>
+<tr>
+<td><code>line_oa_orders</code></td>
+<td>order canonical (quote→order→ship), origin_channel=&#39;line_oa&#39;, idempotent</td>
+</tr>
+<tr>
+<td><code>line_oa_audit_log</code></td>
+<td>append-only (immutability enforce migration 0005)</td>
+</tr>
+</tbody></table>
+<p><strong>Functions หลัก:</strong> signature verification (0010), identity resolution (0020) + merge candidate (0021), ingest webhook (0022), resolve conversation site (0030), send outbound (0040) + record result (0041), create order (0050), forecast sync (0060), session timeout sweep (0061, cron), query audit (0062) · RLS site-scoped ทุกตาราง</p>
+<hr>
+<h2>3. ตัวตน (Identities) — ใครเป็นใครใน LINE</h2>
+<table>
+<thead>
+<tr>
+<th>Actor</th>
+<th>Identity</th>
+<th>ที่เก็บ</th>
+<th>ยืนยันแบบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ลูกค้า</strong></td>
+<td>LINE user_id → canonical customer</td>
+<td><code>line_oa_customer_identity</code> ✅</td>
+<td>อนุมาน (match_confidence) + มนุษย์ตรวจถ้าไม่ชัด — ไม่ auto-merge</td>
+</tr>
+<tr>
+<td><strong>พนักงาน</strong> (ช่าง/หัวหน้า/sale/บัญชี)</td>
+<td>LINE user_id ↔ auth user</td>
+<td><code>line_staff_identity</code> 📝</td>
+<td><strong>deterministic</strong> (ลิงก์ + LINE Login + consent, ครั้งเดียว) — เพื่อ audit &quot;ใครทำ&quot;</td>
+</tr>
+<tr>
+<td><strong>Bot</strong></td>
+<td>OA channel</td>
+<td><code>line_oa_channels</code> ✅</td>
+<td>ตัวเดียว ทำงานต่างกันตาม context/group_type</td>
+</tr>
+</tbody></table>
+<p><strong>เหตุผลแยก staff จาก customer identity:</strong> ลูกค้าจับคู่โดยอนุมานได้ แต่พนักงานต้องยืนยันตัวเอง deterministic เพราะ <code>resolve_actor</code> ต้อง audit ได้แน่นอนว่ารูป/<code>#ปัญหา</code>/การกดปุ่มมาจากใคร</p>
+<hr>
+<h2>4. Touchpoint ทั้งหมด (แยกตาม use-case)</h2>
+<h3>4.1 ลูกค้า — แชท + สั่งงาน ✅</h3>
+<p>LINE OA 1:1: ลูกค้าทัก → identity resolution → conversation → order intake (quote→order→ship) · ตอบด้วย template</p>
+<h3>4.2 ลูกค้า — อนุมัติแบบ/งาน ผ่าน Flex ✅ (design) / 📝 (installation)</h3>
+<p><code>supabase/functions/approval-postback</code>:</p>
+<ul>
+<li><strong>One-click approve/reject จาก LINE</strong> (Encrypted_Postback + HMAC verify) + <strong>web fallback</strong> (JWT session) — ผลสองช่องทางตรงกันเสมอ, idempotent ตาม <code>webhook_event_id</code></li>
+<li><strong>Customer Approver (PRD §6.5 Req 20):</strong> ลูกค้าอนุมัติผ่าน LINE Flex / customer-design-view โดย<strong>ไม่เป็น DB principal</strong>; Edge Function mediate; timeout → escalate ไป project_manager</li>
+<li>ใช้กับ: อนุมัติแบบ 3D (เฟสออกแบบ) ✅ · <strong>อนุมัติงานติดตั้งเสร็จ</strong> (template <code>inst_approval_request</code>) 📝</li>
+</ul>
+<h3>4.3 การส่งเอกสาร/รูป เข้า Capture ผ่าน LINE ✅ infra / ตาม type</h3>
+<p><code>supabase/functions/capture-ingest</code>, <code>field-capture</code> + ADR-033 (<code>cloud_allowed</code>):</p>
+<ul>
+<li><strong>บิล/ใบเสร็จ</strong> (บัญชี) → capture <code>expense_document</code> (OCR + fraud flags + รอคนยืนยัน) ✅ · cloud_allowed=true</li>
+<li><strong>ใบบันทึกความต้องการลูกค้า</strong> → capture <code>customer_requirement</code> 📝 · cloud_allowed=false (ข้อมูลบุคคล)</li>
+<li><strong>รูปหลักฐานติดตั้ง</strong> → capture <code>installation_proof</code> → verified → <strong>ปิด work item อัตโนมัติ</strong> (0063) · cloud_allowed=false</li>
+<li><strong>ข้อมูลวัดพื้นที่</strong> → <code>site_survey</code> → SiteSurveyZone (0073)</li>
+</ul>
+<h3>4.4 พนักงานออฟฟิศ — อนุมัติ work item ผ่าน LINE 🔵 (รอ Phase 13)</h3>
+<p>Office staff (ขาย/วัด/วางแผน) เห็นสถานะงานใน canonical process + กดอนุมัติ/ส่งต่อขั้นจาก LINE · <strong>ขึ้นกับ workflow Phase 13 (notification delivery + retry) ที่ยังไม่ปิด</strong> ⏸</p>
+<h3>4.5 Executive — escalation ผ่าน LINE 🔵</h3>
+<p>งานเสี่ยง RPN เกิน threshold / งบเกิน → escalate ทันที (Copilot) · Phase 13/14</p>
+<h3>4.6 ช่างหน้างาน — รูป + #ปัญหา + แจ้งเตือน (กลุ่ม) 📝</h3>
+<p>ดู §5 (Installation groups)</p>
+<hr>
+<h2>5. Groups Model — กลุ่ม LINE ของงานติดตั้ง 📝 (installation-pm rev.2)</h2>
+<blockquote>
+<p>schema line-oa เดิมเป็น <strong>1:1 ล้วน (ไม่มี group)</strong> → ส่วนกลุ่มเป็น net-new · มติ owner (5 ก.ค. 2026): บ้านละ 2 กลุ่ม, bot ทุกกลุ่ม, staff identity ผูกครั้งเดียว</p>
+</blockquote>
+<pre><code>installation_projects (บ้าน) ─1:2─ line_groups
+  ├─ internal → sale(ตลอด) + สมาชิกหมุนตามเฟส (ทีมวัด→designer/3D→หัวหน้าทีม+ช่าง)
+  │             (+media ชั่วคราวช่วงถ่ายงาน)
+  └─ customer → ลูกค้า + sale + หัวหน้าทีม (ช่างไม่อยู่)
+</code></pre>
+<p><strong>Bot ทุกกลุ่ม พร้อม guardrails:</strong></p>
+<ul>
+<li>กลุ่ม internal: รูป → capture <code>installation_proof</code> (+quick reply เลือกห้อง/เลน), <code>#ปัญหา</code> → issue + แจ้งหัวหน้า, แจ้งเตือนทีม</li>
+<li>กลุ่ม customer: <strong>เฉพาะ template <code>audience=&#39;customer&#39;</code></strong> (DB CHECK — ส่งผิดกลุ่ม = error), ความคืบหน้า curated, ขออนุมัติ Flex</li>
+<li><strong>รูป internal ไม่ forward อัตโนมัติ</strong>ไปกลุ่มลูกค้า — มนุษย์เลือกผ่าน PWA</li>
+<li>v1 เก็บจากกลุ่มแค่ <strong>รูป + #ปัญหา + member events</strong> (ไม่เก็บแชททั่วไป — PDPA)</li>
+</ul>
+<p><strong>การผูกบ้าน:</strong> เปิดโปรเจกต์ → ออกรหัสผูก (48 ชม.) → เชิญ bot → พิมพ์ <code>#ผูก &lt;รหัส&gt; &lt;ทีม|ลูกค้า&gt;</code> → <code>line_groups</code> (idempotent) → member events sync <code>line_group_members</code> ตลอด → ปิดงาน = archived</p>
+<p><strong>ตำแหน่งใครอยู่กลุ่มไหน</strong> (จาก org 38 ตำแหน่ง): ดู <code>.kiro/specs/installation-pm/line-architecture-v0.1.md</code> §1.1 (กลุ่ม ก ผูกโปรเจกต์ / กลุ่ม ข support ไม่มี membership → RLS ปิด default)</p>
+<hr>
+<h2>6. ความปลอดภัย + Guardrails (บังคับที่ DB/Edge ไม่ใช่วินัยคน)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Guardrail</th>
+<th>บังคับที่</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G1</td>
+<td>HMAC signature ต่อ channel (secret จาก Vault)</td>
+<td>line-webhook (0010) ✅</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Idempotency ทุกทางเข้า (<code>webhook_event_id</code> UNIQUE)</td>
+<td>schema (0003) ✅</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>Outbound = template ที่ approve แล้ว + named slots, ไม่มี free-text LLM</td>
+<td>templates + sender ✅</td>
+</tr>
+<tr>
+<td>G4</td>
+<td>Template <code>audience</code> (internal/customer/both) — ส่งผิดกลุ่ม = error</td>
+<td>DB CHECK + Edge 📝</td>
+</tr>
+<tr>
+<td>G5</td>
+<td>รูป internal ไม่ auto-forward → กลุ่มลูกค้า</td>
+<td>app logic 📝</td>
+</tr>
+<tr>
+<td>G6</td>
+<td>ลูกค้าไม่เป็น DB principal (Edge mediate)</td>
+<td>approval-postback ✅</td>
+</tr>
+<tr>
+<td>G7</td>
+<td><strong>กลุ่ม LINE ≠ authorization</strong> — สิทธิ์จาก membership+RLS เท่านั้น</td>
+<td>RLS 📝</td>
+</tr>
+<tr>
+<td>G8</td>
+<td>Identity ลูกค้าไม่ auto-merge (มนุษย์ตรวจ)</td>
+<td>identity resolution ✅</td>
+</tr>
+<tr>
+<td>G9</td>
+<td>Scrub PII ใน log</td>
+<td>sender/functions ✅</td>
+</tr>
+<tr>
+<td>G10</td>
+<td>Audit append-only (immutable)</td>
+<td>0005 ✅</td>
+</tr>
+<tr>
+<td>G11</td>
+<td>cloud_allowed ต่อ capture type (ข้อมูลบุคคล = manual)</td>
+<td>ADR-033 (0080) ✅</td>
+</tr>
+<tr>
+<td>G12</td>
+<td>PDPA: consent ตอนผูก staff identity + privacy notice ในกลุ่ม</td>
+<td>📝</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>7. Data Model รวม</h2>
+<p><strong>มีแล้ว ✅:</strong> <code>line_oa_channels</code> · <code>line_oa_conversations</code> · <code>line_oa_inbound_messages</code> · <code>line_oa_outbound_messages</code> · <code>line_oa_customer_identity</code> · <code>line_oa_message_templates</code> · <code>line_oa_orders</code> · <code>line_oa_audit_log</code></p>
+<p><strong>เพิ่มสำหรับ groups + staff 📝</strong> (installation-pm):</p>
+<pre><code class="language-sql">line_staff_identity   (line_user_id UNIQUE, user_id → auth, display_name, bound_at, consent_at, revoked_at)
+line_groups           (line_group_id UNIQUE, project_id, group_type internal|customer, status, bound_by)
+line_group_members    (group_id, line_user_id, display_name, member_kind staff|customer|guest, joined_at, left_at)
+line_bind_codes       (code, project_id, expires_at, uses_left)
+line_oa_message_templates + audience (&#39;internal&#39;|&#39;customer&#39;|&#39;both&#39;)        -- G4
+line_oa_outbound_messages + target_type (&#39;user&#39;|&#39;group&#39;) + target_id       -- ส่งเข้ากลุ่ม
+line_oa_inbound_messages  + source_type (&#39;user&#39;|&#39;group&#39;) + line_group_id    -- รับจากกลุ่ม
+</code></pre>
+<p>ทั้งหมด RLS fail-closed (convention C12) · member events idempotent</p>
+<hr>
+<h2>8. Status Matrix — อะไรเสร็จ / อะไรรอ</h2>
+<table>
+<thead>
+<tr>
+<th>ความสามารถ</th>
+<th>สถานะ</th>
+<th>หมายเหตุ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LINE OA Commerce (webhook/identity/conversation/outbound/template/order/audit)</td>
+<td>✅ 20/20</td>
+<td>multi-vertical furniture+food</td>
+</tr>
+<tr>
+<td>Customer design approval (Flex + web fallback + escalate)</td>
+<td>✅</td>
+<td>approval-postback</td>
+</tr>
+<tr>
+<td>Capture ผ่าน LINE — expense_document</td>
+<td>✅</td>
+<td>OCR + fraud + verify</td>
+</tr>
+<tr>
+<td>Capture ผ่าน LINE — customer_requirement / installation_proof</td>
+<td>📝</td>
+<td>ร่าง capture type + L3 adapter</td>
+</tr>
+<tr>
+<td>Workflow work-item approval ผ่าน LINE</td>
+<td>🔵 ⏸</td>
+<td><strong>รอ workflow Phase 13</strong> (notification delivery + retry)</td>
+</tr>
+<tr>
+<td>Executive escalation ผ่าน LINE</td>
+<td>🔵</td>
+<td>Phase 13/14</td>
+</tr>
+<tr>
+<td><strong>LINE Groups (2/บ้าน) + bot + staff identity + guardrails</strong></td>
+<td>📝</td>
+<td>installation-pm rev.2 — net-new (schema เดิมไม่มี group)</td>
+</tr>
+<tr>
+<td>Installation approval Flex (<code>inst_approval_request</code>)</td>
+<td>📝</td>
+<td>reuse approval-postback</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. Dependencies (สำคัญก่อน implement)</h2>
+<ol>
+<li><strong>workflow Phase 13 (notification delivery + retry) ยังไม่ปิด</strong> → การแจ้งเตือน/อนุมัติ work item ผ่าน LINE (§4.4–4.5) และแจ้งเตือนทีมติดตั้ง (§5) พึ่งชั้นนี้ — <strong>ควรปิด Phase 13 ก่อนเริ่ม installation-pm Phase 1.8</strong></li>
+<li>Installation groups พึ่ง <code>line_staff_identity</code> + group tables (net-new) — landing พร้อม installation-pm migrations (Phase 1.1)</li>
+<li>capture types ใหม่พึ่ง L3 adapter (customer_requirement → work_item_open; ดู <code>installation-pm/tasks 1.5b</code>)</li>
+</ol>
+<hr>
+<p><em>เอกสารนี้เป็นภาพรวม LINE ทั้งระบบ — รายละเอียดกลุ่มติดตั้งอยู่ <code>.kiro/specs/installation-pm/line-architecture-v0.1.md</code>, รายละเอียด LINE OA Commerce อยู่ PRD §6.6 + <code>.kiro/specs/line-oa-commerce/</code>. สถานะ ✅ อ้างจากโค้ด/เทสต์จริง, 📝/🔵 จาก spec/แผน</em></p>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>

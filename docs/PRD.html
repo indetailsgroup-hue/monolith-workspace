@@ -813,6 +813,9 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 </ul>
 <p><strong>Audit:</strong> <code>workflow_audit_log</code> append-only; RLS site-scoped (governance | has_site_access)</p>
 <hr>
+<blockquote>
+<p><strong>ภาพรวม LINE ทั้งระบบ:</strong> ดูเอกสารรวม <code>docs/LINE-Architecture-System-Complete.md</code> (+<code>.html</code>) — รวมทุก touchpoint (OA Commerce, customer approval, capture ผ่าน LINE, workflow, installation groups) พร้อม status matrix + guardrails</p>
+</blockquote>
 <h3>6.6 โมดูล LINE OA Commerce</h3>
 <p><strong>ไฟล์หลัก:</strong> <code>supabase/functions/line-webhook</code>, <code>line-outbound-sender</code>, migrations <code>00000000000000–62</code> — ✅ เสร็จ (13 req, 31 properties ผ่าน PBT)</p>
 <p><strong>[P0] ทั้งหมด ✅</strong></p>
