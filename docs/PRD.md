@@ -48,7 +48,7 @@
 
 **MONOLITH Manufacturing OS** คือระบบปฏิบัติการธุรกิจครบวงจรสำหรับผู้ผลิตเฟอร์นิเจอร์บิลท์อิน (built-in furniture) ครอบคลุมตั้งแต่ **การออกแบบตู้ 3 มิติ → การผลิตด้วยเครื่อง CNC → การบริหารงานสำนักงาน/โรงงาน/ติดตั้ง → การเงินและบัญชี** ในระบบเดียว
 
-หัวใจของผลิตภัณฑ์คือหลักการ **"โรงงานก่อน ความสวยทีหลัง" (Factory-First)** — ทุกผลลัพธ์ที่ส่งเข้าโรงงาน (DXF, G-code, Cut List) ต้องผ่านด่านตรวจความปลอดภัย (Safety Gate) ต้องทำซ้ำได้ผลเดิมแบบ bit-identical (Deterministic) และต้องตรวจสอบย้อนกลับได้ด้วยลายเซ็นดิจิทัล (Signed Receipt) — **ถ้ามันพังในโรงงานได้ มันต้อง fail ใน CI ก่อน**
+หัวใจของผลิตภัณฑ์คือปรัชญาทางการจาก master spec: **"Design is Free — Manufacturing is Deterministic"** (ออกแบบอิสระ แต่การผลิตต้อง deterministic) หรือที่ทีมเรียกว่า **"โรงงานก่อน ความสวยทีหลัง" (Factory-First)** — ทุกผลลัพธ์ที่ส่งเข้าโรงงาน (DXF, G-code, Cut List) ต้องผ่านด่านตรวจความปลอดภัย (Safety Gate) ต้องทำซ้ำได้ผลเดิมแบบ bit-identical (Deterministic) และต้องตรวจสอบย้อนกลับได้ด้วยลายเซ็นดิจิทัล (Signed Receipt) — **ถ้ามันพังในโรงงานได้ มันต้อง fail ใน CI ก่อน**
 
 ระบบแบ่งเป็น 3 ชั้นสถาปัตยกรรม:
 
@@ -230,8 +230,10 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 #### 6.1.2 Parametric Cabinet Modeling [P0] ✅
 
-- ประเภทตู้: BASE / WALL / TALL (CabinetTaxonomy)
-- ปรับมิติผ่าน slider + input: Width, Height, Depth, Toe Kick, Shelf Count, Divider Count → `generatePanels()` สร้างแผ่นใหม่แบบ deterministic
+- ประเภทตู้: BASE / WALL / TALL (CabinetTaxonomy ในโค้ด) — master spec (FR1.1) กำหนดเพิ่ม DRAWER, CORNER ด้วย (สถานะ: 🔵 ตาม spec)
+- ปรับมิติผ่าน slider + input: Width, Height, Depth, Toe Kick, Shelf Count, Divider Count → `generatePanels()` สร้างแผ่นใหม่แบบ deterministic — ช่วงมาตรฐาน (FR1.2): W 200–1200 / H 300–2400 / D 300–1000 / toe-kick 0–150 (เกิน = warn ไม่ block); shelf 0–8 (warn >5), divider 0–3
+- **Compartment System (spec v2.5, US9–US11)**: right-click ที่ช่องตู้ → ปุ่ม + → เพิ่มชั้น/แผ่นกั้น (จำนวน 1–10 กระจายเท่ากัน, sub-compartment เลือกแยกได้); คลิก dimension label ใน viewport แก้ขนาดช่องได้ตรง ๆ (label น้ำเงิน = W/H, ส้ม = ตำแหน่ง partial divider); Position Overrides ต่อแผ่น (front/back setback 0–100mm, gap height, ปุ่ม Reset to Auto)
+- **Cost & CO2 tracking (FR7)**: ต้นทุน THB (core ต่อ m² + surface + edge ต่อเมตร + hardware) และ CO2 kg ต่อวัสดุ คำนวณ real-time ต่อแผ่นและรวมทั้งตู้ + พื้นที่/ความยาวขอบรวม
 - Construction type: **INSET** (บังใบ/เซาะร่อง) vs **OVERLAY** (วางทับ) — กระทบตำแหน่งรูเจาะทั้งระบบ
 - Back panel: เปิด/ปิด, inset (เซาะร่อง `grooveDepth`, `backVoid`, `backThickness`) หรือ overlay; ตำแหน่ง `backZ = -D/2 + backVoid + backTotalT/2`
 - Grain Direction ต่อแผ่น (VERTICAL/HORIZONTAL) พร้อม default ตาม role (ข้าง=ตั้ง, พื้น/ชั้น=นอน) และหมุน texture 90° แบบ real-time
@@ -367,6 +369,12 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - **Kerf Bending** (kerf-bending-algorithms.md): ดู §6.1.7 — เอกสารหลักของ curved-panel-system spec
 - **Kernel Truth Service (SPEC-08 "Plasticity-DNA")**: สัญญา TS ↔ Python/PyOCC ใน `contracts/kernel/types.ts` — B-Rep เป็น geometric truth, KernelDelta chain (SHA-256 ต่อ delta), canonical JSON — **สถานะ: contract พร้อม, ตัว service เป็นงาน design-hub phase 2 (รอ owner decisions)**
 - **Runtime Modes**: DESIGNER (ยืดหยุ่น — เช่น G10 fail แบบ allowing) vs FACTORY (เข้มงวด) — เห็นพฤติกรรมในโค้ด gate
+- **Verifier Golden Strings** (verifier-golden-strings.md): สัญญา output ของ `monolith-verify` แบบ parse ได้ 100% — header `MONOLITH_VERIFY_V1` + KV lines (VERDICT/CODE/EXIT_CODE + hashes) + **`SUMMARY_TH=` ข้อความไทยสำหรับ operator** + `---LOG---`; CODE คงที่ตลอดกาล (เพิ่มได้ ห้ามเปลี่ยนความหมาย)
+- **Hardware Engineering Corpus** (hardware-drilling-specifications.md, 12,400 บรรทัด, 23 ตอน v2.5–v14): System 32, drilling 5 ชนิด, G-code cycles G81/G83/G85 + engines ระดับ design ของ **AVENTOS lifts (HS/HL/HK), box systems (MERIVOBOX/TANDEMBOX/METABOX), Lamello P-System, Ixconnect/Tofix, Dovetail, specialty hinges, dowels, Minifix 4 รุ่นวิวัฒนาการ** — โค้ดปัจจุบัน implement สาย Minifix แล้ว ส่วนที่เหลือ = **design library / P2 backlog**; §17.11 ชี้ขาด Distance A (เลือกรุ่น CAM) vs Distance B (ตำแหน่งเจาะจริง); §23 errata การ render Minifix 3D (dowel rotation/offset 32/origin ที่ขอบไม้)
+- **Connector Gap Analysis** (gap-analysis-overlay-inset-connector.md): backlog ต่อยอด G11 — HIGH: load-based selection, tightening angle, arrow orientation; แผน 4 phase (installation metadata ใน DrillMapPoint → structural validation → auto-select Minifix 12/15 → BOM + assembly PDF)
+- **Collision & Clearance** (collision-clearance-system.md): spatial hash cell 500mm + padding 150mm, OBB SAT, **door swing envelope 110° 8 samples + drawer pull envelope 6 samples**, deterministic replay, telemetry + runtime auto-tuning
+- **ค่าคงที่ตู้เพิ่มเติม** (parametric-cabinet-calculations.md ภาคผนวก A): BUMPER_GAP 1.5, SHELF_GAP 1.0, FRONT/REAR_SETBACK 20/10, BACK_INSET 20, DOOR_GAP 2.0, DRAWER_GAP 3.0, RUNNER_CLEARANCE 12.7; สูตร shelf: `D_shelf = (D_side − I_back − T_back) − S_front − S_rear` พร้อมตารางต่อประเภทตู้ (LED rear 20, เครื่องใช้ไฟฟ้า 50–100)
+- **Templates "Operational Intelligence"**: design system ภายในสำหรับ dashboard/รายงาน (component library + HTML template + CSS)
 
 ---
 
@@ -633,6 +641,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 > [ข้อเสนอ 📝] แนวทาง: เก็บ baseline 30–60 วันแรก แล้ว owner ตั้งเป้าจากข้อมูล
 
 > มติจาก grilling (2026-07-04): **ไม่ตั้งตัวเลขเป้าก่อนมีข้อมูลจริง** — รายการด้านล่างระบุ *วิธีวัดและแหล่งข้อมูล* เท่านั้น เมื่อครบ baseline ให้ owner กำหนดเป้าและใส่วันที่ review
+>
+> เพื่อการอ้างอิง: master spec v2.0 (specs/main/spec.md — สถานะ DRAFT) เคยเสนอเป้าไว้: ลดเวลาออกแบบ 50% เทียบ CAD เดิม, revision หลัง validation <5%, export สำเร็จ >95%, ความพึงพอใจ >80%, ต้นทุนประเมินคลาด ≤±10% — ใช้เป็นตัวเทียบเมื่อ baseline มาถึงได้ แต่ยังไม่ผูกมัดด้วยเหตุผลเดียวกัน
 
 ### Leading Indicators (วัดได้ทันทีหลังเริ่มใช้งาน)
 | ตัวชี้วัด | แหล่งข้อมูล |
@@ -661,6 +671,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | ระบบ | สถานะ | หลักฐาน |
 |------|-------|---------|
 | CAD/CAM แกนหลัก (v2.1.0) | ✅ Production-ready | FIX_PLAN ปิดครบ; tsc 0 errors; 4,404 tests; e2e ผ่าน |
+| Designer Workspace v2.0 spec (specs/main) | 🔵 25/36 tasks | T001–T023 เสร็จ (เว้น T004); ค้าง T024–T035 (docs, v2.1 prep, config externalization, advanced) |
 | Knowledge Layer | ✅ 100% | Vault 224 ไฟล์; pipeline idempotent (PBT) |
 | line-oa-commerce | ✅ 100% | 20/20 tasks; 31 properties |
 | workflow-copilot | 🔵 84% | 113/134 tasks; ค้าง Phase 13–14 |
@@ -695,10 +706,20 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | 6 | MCP exposure — เปิด tool ไหนให้ AI client ภายนอก | Owner + governance |
 | 7 | Auto-approve policy — งานประเภทไหน (ถ้ามี) อนุญาต tier สูงขึ้น | Owner + governance |
 
-**Docs drift ที่ตรวจพบ (2026-07-04) — ต้อง reconcile:**
-- `docs/SAFETY_GATE.md` อธิบาย state machine 4 สถานะ (DRAFT→FROZEN→**GATED**→RELEASED) แต่โค้ดจริงมี 3 สถานะ (GATED ปรากฏแค่ใน comment) — ต้องตัดสินว่าอัปเดตเอกสารหรือเพิ่มสถานะจริง (Engineering)
-- `docs/README.md` (root repo) เป็นคู่มือติดตั้ง Material Selector ไม่ใช่ README หลักของโปรเจกต์ — ควรเขียน README จริง (Engineering)
-- สูตรความหนาข้างลิ้นชักขัดกันระหว่างแหล่ง (MOVENTO 42mm vs standard 26mm) — formula-reference.md ชี้ขาดแล้ว แต่ผู้ใช้เอกสารอื่นอาจสับสน (Engineering)
+**Docs drift ที่ตรวจพบ (อ่าน specs/ ครบชุด 2026-07-05) — ต้อง reconcile:**
+
+| # | ความขัดแย้ง | ข้อเท็จจริง/ผู้ชนะ |
+|---|------------|-------------------|
+| D-1 | `docs/SAFETY_GATE.md` อ้าง 4 สถานะ (มี GATED) | โค้ดมี 3 สถานะ (GATED มีแค่ใน comment) — โค้ดชนะ |
+| D-2 | นิยาม "Cut Size": formula-reference §3 (ไม่บวก premill) vs SPEC-08 v8.2 + โค้ด export (บวก premill ต่อด้าน) | **โค้ด export ใช้ SPEC-08** (`monolithExportContext.ts:67`) — เป็นคนละ concept (ขนาดหลัง premill vs ขนาดเลื่อยรวมเผื่อ premill) ต้องตั้งชื่อแยกให้ชัดในเอกสาร |
+| D-3 | dxf-export-specs ตั้งเป้า DXF AC1032 (R2018) | โค้ดจริง R12 (+ HOMAG profile ใช้ DXF2000) — ตัดสินใจว่าจะคง R12 หรือ upgrade |
+| D-4 | Hinge cup depth: master-db 11.5 / dxf-export 12 / door-drawer 13 | สามค่าในสามเอกสาร — ต้องชี้ขาดใน formula-reference |
+| D-5 | Minifix CAM depth: master-hardware-database 12.7 | โค้ด 13.5 (Häfele FF 3.10, commit ก.พ. 26) — อัปเดต DB |
+| D-6 | spec.md ระบุ 6 views | โค้ด/api-doc มี 7 (เพิ่ม Top) — spec เก่ากว่า |
+| D-7 | api-documentation: CabinetType มี UPPER/CUSTOM, MIN_WIDTH 300, MAX_DEPTH 600 | ขัดทั้ง spec.md (200/1000) และโค้ด — ติดป้าย historical |
+| D-8 | door-drawer §9–10 engines อ้าง `src/services/*` | ไม่มีในโค้ดปัจจุบัน = documented-not-implemented (Wood Drawer Architect + LEGRABOX Kinetics) |
+| D-9 | root `README.md` เป็นคู่มือ Material Selector | ควรเขียน README จริงของโปรเจกต์ |
+| D-10 | cross-reference-index อ้าง `specs/export/` | ไฟล์จริงอยู่ `specs/manufacturing/` |
 
 **คำถามทางเทคนิคที่ไม่ blocking:**
 - (Engineering) กลยุทธ์ sync cloud ของโปรเจกต์ CAD (ปัจจุบัน localStorage; มี design doc `CLOUD_SYNC_ARCHITECTURE` แล้ว)
@@ -919,7 +940,8 @@ npm run gate:bypass-scan            # CI gate bypass scan
 ### 13.4 เอกสารอ้างอิงภายใน
 
 - `REQUIREMENTS-OVERVIEW.md` — requirements ครบ 8 spec + ADR-001..027
-- **`specs/` (7 หมวด, 27 ไฟล์) — เอกสารวิศวกรรมระบบผลิต**: main (spec/plan/tasks), manufacturing (kerf-bending, cut-optimization, door-drawer, dxf-export, hardware-drilling), reference (formula-reference, master-hardware-database, api-documentation, cross-reference-index), technical (parametric-cabinet-calculations, snap, collision, trust-chain, r3f, verifier-golden-strings, webgpu-roadmap ฯลฯ), strategy (web-first-r3f), testing, templates
+- **`specs/` (7 หมวด, 27 ไฟล์, ~27,000 บรรทัด) — เอกสารวิศวกรรมระบบผลิต**: main (spec/plan/tasks), manufacturing (kerf-bending, cut-optimization, door-drawer, dxf-export, hardware-drilling 12.4k บรรทัด), reference (formula-reference, master-hardware-database, api-documentation, cross-reference-index), technical (parametric-cabinet-calculations, snap, collision, trust-chain, r3f, verifier-golden-strings, configurator, 3d-optimization, webgpu-roadmap, gap-analysis), strategy (web-first-r3f), testing, templates
+  - **กติกาชี้ขาดเมื่อเอกสารขัดกัน (จาก cross-reference-index §5.2)**: (1) formula-reference ก่อน (2) master-hardware-database สำหรับ hardware (3) โฟลเดอร์ reference/ ชนะเสมอ (4) รายงาน conflict เพื่ออัปเดต SSOT — และเมื่อเอกสารขัดกับ**โค้ดที่มีเทสต์คุ้ม** ให้ตรวจโค้ดเป็นความจริงล่าสุดแล้วย้อนแก้เอกสาร (ดู §11 Docs drift)
 - `contracts/` — kernel contract (SPEC-08 Plasticity-DNA, TS↔PyOCC), command registry, stable-hash vectors
 - `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec
 - `.kiro/steering/` — architecture-decisions.md, ubiquitous-language.md
