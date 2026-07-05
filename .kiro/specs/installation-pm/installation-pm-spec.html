@@ -166,7 +166,7 @@
 <ol>
 <li>THE ระบบ SHALL มี installation_projects (ลูกค้า, สถานที่, ช่วงเวลา, สถานะ lifecycle: draft → scheduled → installing → customer_review → closed) <strong>ผูกกับ work_item ของขั้น Installation ใน canonical process</strong> (<code>work_item_id</code> link — ไม่สร้าง lifecycle ขนาน)</li>
 <li>THE งานติดตั้ง start/finish SHALL เดินผ่าน workflow RPCs เดิม (<code>rpc_handoff_work_item</code> ฯลฯ) เพื่อให้ approval + notification เดิมทำงาน (workflow Req: approver = หัวหน้าทีม Installation, auto-notify Sale/PM) — <strong>ห้าม bypass workflow</strong></li>
-<li>THE installation_tasks SHALL เป็น <strong>subtask ระดับหน้างาน</strong> (จุดติดตั้งย่อย/checklist) ใต้ work_item — ไม่ซ้ำซ้อนกับ process step; มุมมอง Kanban board รวมทั้งสอง</li>
+<li>THE โครงสร้างหน้างาน SHALL เป็น 3 ชั้นตาม staffing model จริง (owner 5 ก.ค. 2026): <strong>บ้าน</strong> (project + หัวหน้างาน 1 คน = approver) → <strong>ห้อง</strong> (<code>installation_rooms</code>, room_type) → <strong>เลนช่าง</strong> (<code>installation_tasks</code> จาก template — ห้องละ 3 เลน คนละ assignee, ทุกห้องขนานกัน; เช่น บ้าน 5 ห้อง = 15 ช่าง + หัวหน้า 1 = 16 คน) — ไม่ซ้ำซ้อนกับ process step; ห้องเสร็จ = 3 เลนครบ + รูป Wrapping; บ้านเสร็จ = ทุกห้องเสร็จ → customer_review</li>
 <li>WHEN โปรเจกต์เข้าสถานะ customer_review THE ระบบ SHALL สร้าง approval request ได้ (Req 7)</li>
 <li>Gantt + company dashboard เป็น Phase 3 (ดู tasks.md) — ไม่อยู่ใน MVP</li>
 </ol>
@@ -256,16 +256,19 @@
 <p>ใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) ถ้าตั้ง <code>site_projects</code> จะสับสนใน RLS policy ทันที → ใช้ <strong><code>installation_projects</code></strong> และ prefix <code>installation_*</code>/<code>field_*</code> ทั้งชุด (feature keys ใน entitlement ใช้ <code>sitepm.*</code> ได้เพราะเป็น namespace การขาย ไม่ใช่ชื่อตาราง)</p>
 <h2>D-2: Data Model (org-scoped + RLS ทุกตาราง — convention C12)</h2>
 <p><strong>Tenancy (มติ ADR-035):</strong> v1 อยู่ DB เดิม — <strong>ไม่มี org_id/tenant col</strong> ใช้ convention C12 ตรง ๆ (roles + site_code จาก JWT, <code>resolve_actor</code> เป็น audit actor) + <code>installation_memberships</code> คุมการเข้าถึงของช่างภายนอกรายโปรเจกต์; เวอร์ชัน SaaS ในอนาคตอยู่ DB แยก (ADR-034) ค่อย re-scope tenancy ตอนนั้น</p>
+<p><strong>Staffing model (owner 5 ก.ค. 2026):</strong> ห้องละ 3 ช่าง (คนละเลน checklist) ทุกห้องขนานกัน + หัวหน้างาน 1 คน/บ้าน (เช่น บ้าน 5 ห้อง = 16 คน) → โครงสร้างต้องมีชั้น &quot;ห้อง&quot;: บ้าน (project + foreman) → ห้อง (room_type) → เลนช่าง (subtask + assignee)</p>
 <pre><code>(C12 DB เดิม — single company)
   installation_projects ─*:1─ work_items (ขั้น Installation — lifecycle จริงอยู่ที่ workflow; ดู D-11)
-  installation_projects ─┬─1:*─ installation_tasks      (subtask หน้างานใต้ work_item — ไม่ใช่ process step)
-                               ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
-                               │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
-                               ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
-                               ├─1:*─ installation_chat_messages
-                               ├─1:*─ installation_approvals   (channel: line|link, result, postback_id UNIQUE)
-                               ├─1:*─ installation_audit_log   (append-only)
-                               └─*:*─ packet_registry           (ผ่าน installation_packets join)
+  installation_projects (foreman = หัวหน้างาน 1 คน/บ้าน — approver start/finish)
+                         ─┬─1:*─ installation_rooms     (room_type: kitchen/bedroom/... — เสร็จ = 3 เลนครบ + รูป Wrapping)
+                          │        └─1:*─ installation_tasks (เลนช่าง 1/2/3 จาก template + assignee ช่างจริง)
+                          ├─1:*─ installation_photos     (storage_path, thumb_path, meta, room_ref?, panel_ref?)
+                          │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
+                          ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
+                          ├─1:*─ installation_chat_messages
+                          ├─1:*─ installation_approvals   (channel: line|link, result, postback_id UNIQUE)
+                          ├─1:*─ installation_audit_log   (append-only)
+                          └─*:*─ packet_registry           (ผ่าน installation_packets join)
 installation_memberships (project_id, user_id, member_type: internal|external, role)
 form_templates (org-scoped, versioned, immutable หลัง publish)
 packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel index)
@@ -425,7 +428,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 </ul>
 <h2>Phase 1: Web MVP — PWA + offline-lite เกาะ line_oa/workflow spine (D-11)</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 1.1 Migrations: installation_projects (<strong>+work_item_id link</strong>) / installation_tasks (subtask ใต้ work_item) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — <strong>convention C12 เดิม ไม่มี tenant col</strong> (ADR-035) + RLS fail-closed</li>
+<li><input disabled="" type="checkbox"> 1.1 Migrations: installation_projects (<strong>+work_item_id link + foreman</strong>) / <strong>installation_rooms</strong> (room_type — ชั้นห้องตาม staffing model) / installation_tasks (เลนช่างใต้ห้อง) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — <strong>convention C12 เดิม ไม่มี tenant col</strong> (ADR-035) + RLS fail-closed</li>
 <li><input disabled="" type="checkbox"> 1.2 Wire lifecycle เข้า workflow: start/finish ผ่าน <code>rpc_handoff_work_item</code>/completion เดิม — approval หัวหน้าทีม Installation + auto-notify ทำงานตาม workflow spec (ห้าม bypass); subtask ครบ ≠ auto-complete (ปิดงานผ่าน capture proof เท่านั้น)</li>
 <li><input disabled="" type="checkbox"> 1.3 Photo path: PWA upload → <code>rpc_capture_ingest</code> (<code>installation_proof</code>) + <strong>LINE photo → capture</strong> route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)</li>
 <li><input disabled="" type="checkbox"> 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)</li>
@@ -480,10 +483,13 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <strong>Correction จาก owner (5 ก.ค. 2026):</strong> <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> (เลนงานขนานต่อคน) — ไม่ใช่เฟสตามลำดับ; sheet ตารางรายวัน (time-box 15 นาที) คือเลนของช่างแต่ละคนในวันเดียวกัน
 <strong>สถานะ:</strong> draft รอ review กับหัวหน้าทีม Installation ก่อน seed เป็น <code>form_templates</code> จริง (tasks Phase 1.1/1.6) — โดยเฉพาะรายการที่ mark ⚠ (ข้อมูลสองไฟล์ไม่ตรงกันเล็กน้อย)</p>
 </blockquote>
-<h2>โมเดล</h2>
+<h2>โมเดล (owner ยืนยัน 5 ก.ค. 2026)</h2>
 <ul>
-<li>Template = <strong>ต่อประเภทห้อง × เลนช่าง</strong> — ทีมมาตรฐาน 5 คน แบ่ง 3 เลน (ช่าง 1/2/3 ตาม checklist; อีก 2 คนหมุนช่วย)</li>
-<li><strong>กติกาความคืบหน้า:</strong> ห้องเสร็จ = ทุกเลนของห้องนั้นติ๊กครบ + ถ่ายรูป <strong>Wrapping</strong> เข้า capture <code>installation_proof</code> (ทุกเลนจบด้วย ทำความสะอาด → Wrapping = จุดถ่ายรูปธรรมชาติ)</li>
+<li><strong>Staffing:</strong> ห้องละ <strong>3 ช่าง</strong> — คนละ 1 เลน (ช่าง 1/2/3 ตาม checklist) ทุกห้องทำ<strong>ขนานกัน</strong> + <strong>หัวหน้างาน 1 คนต่อบ้าน</strong> คุมทุกห้อง
+ตัวอย่างจริง: บ้าน 5 ห้อง = 5×3 ช่าง + หัวหน้า 1 = <strong>16 คน</strong></li>
+<li>Template = <strong>ต่อประเภทห้อง × เลนช่าง</strong> — เปิดห้องหนึ่ง = สร้าง subtask 3 เลน มอบ assignee ช่างจริงคนละเลน</li>
+<li><strong>บทบาทหัวหน้างาน:</strong> ติ๊ก T0 site-readiness + เป็น approver start/finish ของ work item (= &quot;หัวหน้าทีม Installation&quot; ใน workflow spec) + รับ escalation จากทุกห้อง</li>
+<li><strong>กติกาความคืบหน้า:</strong> ห้องเสร็จ = ทุกเลนของห้องนั้นติ๊กครบ + ถ่ายรูป <strong>Wrapping</strong> เข้า capture <code>installation_proof</code> (ทุกเลนจบด้วย ทำความสะอาด → Wrapping = จุดถ่ายรูปธรรมชาติ); บ้านเสร็จ = ทุกห้องเสร็จ → เข้าสถานะ customer_review (ลูกค้าอนุมัติผ่าน LINE)</li>
 <li>เลนของห้องครัวเป็นชุดเต็ม (มี Top, ประปา, เช็คหน้าบาน) — ห้องอื่นใช้ชุดเดียวกันตัดรายการครัวออก</li>
 <li>ทุก template: org-scoped, versioned, immutable หลัง publish (requirements Req 5)</li>
 </ul>
@@ -559,7 +565,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <h2>สิ่งที่ต้องยืนยันกับหน้างานก่อน seed จริง</h2>
 <ul>
 <li>⚠ home_office ประปา (ด้านบน) · การสะกด &quot;เพลส/Wraping/เก็นงาน&quot; ในไฟล์ต้นทาง — draft นี้ normalize แล้ว</li>
-<li>ทีม 5 คนแต่ checklist มี 3 เลน — อีก 2 คนทำเลนไหน (หมุนช่วย? งานยก?) → มีผล assignee model</li>
+<li><del>ทีม 5 คนแต่ checklist มี 3 เลน</del> → ✅ <strong>ตอบแล้ว (owner):</strong> ห้องละ 3 ช่างคนละเลน ขนานทุกห้อง + หัวหน้างาน 1/บ้าน (บ้าน 5 ห้อง = 16 คน) — เลข &quot;5&quot; ในไฟล์เป็น manpower planning ต่อแผนก ไม่ใช่ crew ต่อห้อง</li>
 <li>Bed Room 2/3 checklist เหมือนกันทุกข้อ — ยุบเป็น bedroom เดียว (ทำแล้วใน T2) โอเคไหม</li>
 </ul>
 </div>

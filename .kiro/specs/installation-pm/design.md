@@ -11,17 +11,21 @@
 
 **Tenancy (มติ ADR-035):** v1 อยู่ DB เดิม — **ไม่มี org_id/tenant col** ใช้ convention C12 ตรง ๆ (roles + site_code จาก JWT, `resolve_actor` เป็น audit actor) + `installation_memberships` คุมการเข้าถึงของช่างภายนอกรายโปรเจกต์; เวอร์ชัน SaaS ในอนาคตอยู่ DB แยก (ADR-034) ค่อย re-scope tenancy ตอนนั้น
 
+**Staffing model (owner 5 ก.ค. 2026):** ห้องละ 3 ช่าง (คนละเลน checklist) ทุกห้องขนานกัน + หัวหน้างาน 1 คน/บ้าน (เช่น บ้าน 5 ห้อง = 16 คน) → โครงสร้างต้องมีชั้น "ห้อง": บ้าน (project + foreman) → ห้อง (room_type) → เลนช่าง (subtask + assignee)
+
 ```
 (C12 DB เดิม — single company)
   installation_projects ─*:1─ work_items (ขั้น Installation — lifecycle จริงอยู่ที่ workflow; ดู D-11)
-  installation_projects ─┬─1:*─ installation_tasks      (subtask หน้างานใต้ work_item — ไม่ใช่ process step)
-                               ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
-                               │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
-                               ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
-                               ├─1:*─ installation_chat_messages
-                               ├─1:*─ installation_approvals   (channel: line|link, result, postback_id UNIQUE)
-                               ├─1:*─ installation_audit_log   (append-only)
-                               └─*:*─ packet_registry           (ผ่าน installation_packets join)
+  installation_projects (foreman = หัวหน้างาน 1 คน/บ้าน — approver start/finish)
+                         ─┬─1:*─ installation_rooms     (room_type: kitchen/bedroom/... — เสร็จ = 3 เลนครบ + รูป Wrapping)
+                          │        └─1:*─ installation_tasks (เลนช่าง 1/2/3 จาก template + assignee ช่างจริง)
+                          ├─1:*─ installation_photos     (storage_path, thumb_path, meta, room_ref?, panel_ref?)
+                          │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
+                          ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
+                          ├─1:*─ installation_chat_messages
+                          ├─1:*─ installation_approvals   (channel: line|link, result, postback_id UNIQUE)
+                          ├─1:*─ installation_audit_log   (append-only)
+                          └─*:*─ packet_registry           (ผ่าน installation_packets join)
 installation_memberships (project_id, user_id, member_type: internal|external, role)
 form_templates (org-scoped, versioned, immutable หลัง publish)
 packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel index)

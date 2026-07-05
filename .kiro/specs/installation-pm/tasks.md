@@ -12,7 +12,7 @@
 
 ## Phase 1: Web MVP — PWA + offline-lite เกาะ line_oa/workflow spine (D-11)
 
-- [ ] 1.1 Migrations: installation_projects (**+work_item_id link**) / installation_tasks (subtask ใต้ work_item) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
+- [ ] 1.1 Migrations: installation_projects (**+work_item_id link + foreman**) / **installation_rooms** (room_type — ชั้นห้องตาม staffing model) / installation_tasks (เลนช่างใต้ห้อง) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
 - [ ] 1.2 Wire lifecycle เข้า workflow: start/finish ผ่าน `rpc_handoff_work_item`/completion เดิม — approval หัวหน้าทีม Installation + auto-notify ทำงานตาม workflow spec (ห้าม bypass); subtask ครบ ≠ auto-complete (ปิดงานผ่าน capture proof เท่านั้น)
 - [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
 - [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)

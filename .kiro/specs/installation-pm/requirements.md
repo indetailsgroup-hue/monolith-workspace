@@ -49,7 +49,7 @@
 
 1. THE ระบบ SHALL มี installation_projects (ลูกค้า, สถานที่, ช่วงเวลา, สถานะ lifecycle: draft → scheduled → installing → customer_review → closed) **ผูกกับ work_item ของขั้น Installation ใน canonical process** (`work_item_id` link — ไม่สร้าง lifecycle ขนาน)
 2. THE งานติดตั้ง start/finish SHALL เดินผ่าน workflow RPCs เดิม (`rpc_handoff_work_item` ฯลฯ) เพื่อให้ approval + notification เดิมทำงาน (workflow Req: approver = หัวหน้าทีม Installation, auto-notify Sale/PM) — **ห้าม bypass workflow**
-3. THE installation_tasks SHALL เป็น **subtask ระดับหน้างาน** (จุดติดตั้งย่อย/checklist) ใต้ work_item — ไม่ซ้ำซ้อนกับ process step; มุมมอง Kanban board รวมทั้งสอง
+3. THE โครงสร้างหน้างาน SHALL เป็น 3 ชั้นตาม staffing model จริง (owner 5 ก.ค. 2026): **บ้าน** (project + หัวหน้างาน 1 คน = approver) → **ห้อง** (`installation_rooms`, room_type) → **เลนช่าง** (`installation_tasks` จาก template — ห้องละ 3 เลน คนละ assignee, ทุกห้องขนานกัน; เช่น บ้าน 5 ห้อง = 15 ช่าง + หัวหน้า 1 = 16 คน) — ไม่ซ้ำซ้อนกับ process step; ห้องเสร็จ = 3 เลนครบ + รูป Wrapping; บ้านเสร็จ = ทุกห้องเสร็จ → customer_review
 4. WHEN โปรเจกต์เข้าสถานะ customer_review THE ระบบ SHALL สร้าง approval request ได้ (Req 7)
 5. Gantt + company dashboard เป็น Phase 3 (ดู tasks.md) — ไม่อยู่ใน MVP
 
