@@ -73,7 +73,7 @@
 <p>เอกสารนี้กำหนด requirements ของโมดูล <strong>Installation PM</strong> — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: <code>ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน</code> — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)</p>
 <p><strong>สถานะ:</strong> approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — <strong>มติ 4 ข้อ (ADR-034/035 + amendment):</strong> (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง, (4) <strong>MVP เกาะ line_oa + workflow spine</strong>: งานติดตั้ง = work_item ขั้น Installation, รูป = capture <code>installation_proof</code>, แจ้งเตือนช่างผ่าน LINE — ห้ามสร้างระบบขนาน</p>
 <p><strong>ขอบเขต IP:</strong> ลอกได้เฉพาะ<em>แนวคิดฟีเจอร์/เวิร์กโฟลว์</em> (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล</p>
-<p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · <strong><code>capture-type-customer-requirement-draft.sql</code></strong> (ใบบันทึกความต้องการ — 9 field จาก &quot;สำหรับคุณชุ.xlsx&quot; 2025 + verify rules ตาม PFMEA Sale) · <strong><code>form-templates-installation-v0.1.md</code></strong> (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> ยืนยันโดย owner) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
+<p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · <strong><code>capture-type-customer-requirement-draft.sql</code></strong> (ใบบันทึกความต้องการ — 9 field จาก &quot;สำหรับคุณชุ.xlsx&quot; 2025 + verify rules ตาม PFMEA Sale) · <strong><code>form-templates-installation-v0.1.md</code></strong> (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> ยืนยันโดย owner) · <strong><code>line-architecture-v0.1.md</code></strong> (LINE OA + กลุ่ม: 2 กลุ่ม/บ้าน, bot ทุกกลุ่ม + guardrails, staff identity, access matrix — Req 13) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
 <h2>Glossary</h2>
 <ul>
 <li><strong>Installation Project</strong>: โปรเจกต์ติดตั้งหน้างาน 1 งาน (ลูกค้า/สถานที่/ช่วงเวลา) — <strong>ตั้งใจไม่ใช้คำว่า <code>site</code></strong> เพราะใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) คนละความหมาย</li>
@@ -237,6 +237,16 @@
 <li><del>MVP scope</del> → <strong>dogfood ภายใน + PWA + offline-lite</strong> (ADR-035) — ไม่ใช่ทั้ง (ก) เดิมและ (ข): เพิ่มคิว upload ทางเดียวเข้า Phase 1 โดยไม่แตะ two-way sync</li>
 <li>Implement เริ่มได้ — เหลือ spikes ใน tasks Phase 0 (Realtime load test) ก่อนผูก chat กับ MVP</li>
 </ol>
+<h3>Requirement 13: LINE Groups + Staff Identity (มติ owner 5 ก.ค. 2026 — ดู <code>line-architecture-v0.1.md</code>)</h3>
+<ol>
+<li>THE บ้าน 1 หลัง SHALL มี LINE <strong>2 กลุ่ม</strong>: internal (หัวหน้า+ช่าง+sale — คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — เฉพาะความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ) — ผูกกับ <code>installation_projects</code> ผ่าน <code>line_groups</code> + รหัสผูกบ้าน</li>
+<li>THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: capture รูป (→<code>installation_proof</code>) + <code>#ปัญหา</code> + แจ้งเตือนทีม; กลุ่ม customer: <strong>เฉพาะ template ที่ <code>audience=&#39;customer&#39;</code></strong> — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)</li>
+<li>THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี <strong>ครั้งเดียวผ่านลิงก์ + LINE Login</strong> (<code>line_staff_identity</code>, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit &quot;ใครทำอะไรที่ไหนเมื่อไหร่&quot;</li>
+<li>THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (<code>line_group_members</code> sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน</li>
+<li>THE สิทธิ์เข้าถึงข้อมูล SHALL มาจาก <code>installation_memberships</code> + RLS เท่านั้น — <strong>การอยู่ในกลุ่ม LINE ไม่ให้สิทธิ์ใด ๆ ใน DB</strong> (กลุ่มเป็นช่องทาง ไม่ใช่ authorization)</li>
+<li>THE รูปจากกลุ่ม internal SHALL ไม่ถูก forward ไปกลุ่ม customer อัตโนมัติ — curated โดยมนุษย์ผ่าน PWA เท่านั้น</li>
+<li>v1 SHALL เก็บจากกลุ่มเฉพาะ <strong>รูป + <code>#ปัญหา</code> + member events</strong> — ไม่เก็บบทสนทนาทั่วไป (PDPA + เจตนาเก็บหลักฐานงาน)</li>
+</ol>
 <h2>Correctness Properties (สำหรับ test)</h2>
 <ol>
 <li><strong>Cross-org/external isolation</strong>: external member เห็นเฉพาะโปรเจกต์ที่มี membership; ข้าม org ล้มเหลวทุกทาง</li>
@@ -245,6 +255,9 @@
 <li><strong>Sync convergence</strong>: ทุก conflict scenario → converge โดยไม่มี silent data loss (ฝั่งแพ้มี conflict copy)</li>
 <li><strong>Approval provenance</strong>: ทุก approval → audit row + ผูก packet/report; postback ซ้ำ = idempotent</li>
 <li><strong>Roadmap gating</strong>: <code>sitepm.*</code> ทุกตัว = false/0 ทุก plan จนกว่า flip (ยกเว้น beta override)</li>
+<li><strong>Template audience</strong>: ทุก outbound → กลุ่ม customer ที่ template เป็น <code>internal</code> → ถูกปฏิเสธที่ DB (ไม่มีทางหลุด)</li>
+<li><strong>Group ≠ authorization</strong>: user ที่อยู่ในกลุ่ม LINE แต่ไม่มี <code>installation_memberships</code> → เข้าถึงข้อมูลโปรเจกต์ใน DB ไม่ได้ทุกทาง</li>
+<li><strong>Staff attribution</strong>: ทุกรูป/<code>#ปัญหา</code> จากกลุ่ม internal → resolve เป็นพนักงานได้เสมอ (ไม่มี identity → เข้าคิว unbound + แจ้งหัวหน้า ไม่ silently drop)</li>
 </ol>
 <hr>
 <h1>Design Document — Installation PM</h1>
@@ -400,7 +413,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 </tr>
 <tr>
 <td>line_oa webhook/outbound + templates</td>
-<td>(ก) ช่างส่งรูปผ่าน LINE → capture (ข) แจ้งเตือนช่าง: งานใหม่/approval/เตือนรายงาน (ค) ลูกค้าอนุมัติ (D-5)</td>
+<td>(ก) ช่างส่งรูปผ่าน LINE → capture (ข) แจ้งเตือนช่าง: งานใหม่/approval/เตือนรายงาน (ค) ลูกค้าอนุมัติ (D-5) — <strong>โครงกลุ่ม + staff identity + guardrails ทั้งหมด: <code>line-architecture-v0.1.md</code> (Req 13)</strong></td>
 </tr>
 </tbody></table>
 <p>สิ่งที่ Installation PM <strong>เพิ่ม</strong> (ไม่ทับของเดิม): มุมมองโปรเจกต์ (จัดกลุ่ม work items ต่อ job ลูกค้า + Kanban), subtask หน้างาน, media processing (thumbnail/compress บน capture artifact), annotation layer, field report + PDF, offline-lite queue (D-6a), packet registry (D-3)</p>
@@ -437,7 +450,9 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><input disabled="" type="checkbox"> 1.5c Seed <code>form_templates</code> จาก <code>form-templates-installation-v0.1.md</code> (<strong>owner ตอบคำถามเปิดครบ 3 ข้อแล้ว</strong> — ประปา = conditional item, 3 ช่าง/ห้อง + หัวหน้า 1/บ้าน, preset บ้านมาตรฐาน 5 ห้อง) — sanity check กับหัวหน้าทีมตอน rollout</li>
 <li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export</li>
 <li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)</li>
-<li><input disabled="" type="checkbox"> 1.8 LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม</li>
+<li><input disabled="" type="checkbox"> 1.8 LINE groups + staff identity (Req 13, <code>line-architecture-v0.1.md</code>): migrations <code>line_staff_identity</code>/<code>line_groups</code>/<code>line_group_members</code>/<code>line_bind_codes</code> + extend templates (<code>audience</code>) + outbound (<code>target_type/target_id</code>) + inbound (<code>source_type/line_group_id</code>) — <strong>guardrail audience เป็น DB CHECK</strong></li>
+<li><input disabled="" type="checkbox"> 1.8b Bot flows: join event → <code>#ผูก</code> → binding; member sync; รูปกลุ่ม internal → capture <code>installation_proof</code> + quick reply เลือกห้อง/เลน; <code>#ปัญหา</code> → issue + แจ้งหัวหน้า; ลิงก์ผูก staff identity (LINE Login + consent)</li>
+<li><input disabled="" type="checkbox"> 1.8c LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5, <code>audience=&#39;customer&#39;</code>) + curated progress update + แจ้งเตือนทีม internal (งานใหม่/approval result/เตือนรายงาน)</li>
 <li><input disabled="" type="checkbox"> 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)</li>
 <li><input disabled="" type="checkbox"> 1.10* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency + subtask-ไม่-complete-work-item</li>
 </ul>
@@ -475,6 +490,206 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <h2>Deferred</h2>
 <ul>
 <li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
+</ul>
+<hr>
+<h1>LINE Architecture — Installation PM v0.1</h1>
+<blockquote>
+<p><strong>มติ owner (5 ก.ค. 2026):</strong> (1) บ้านละ <strong>2 กลุ่ม</strong> — Internal Team (คุยงาน/ปัญหา/ต้นทุน/แก้แบบ/นัดช่าง) + Customer Group (เฉพาะสิ่งที่ลูกค้าควรรู้: ความคืบหน้า, แบบ, นัดหมาย, ขออนุมัติ) · (2) <strong>bot เข้าทุกกลุ่ม</strong> ในบทบาท &quot;ผู้ช่วยเก็บหลักฐานและแจ้งเตือน&quot; พร้อม guardrails — ห้ามพูดต้นทุน/เรื่องภายในในกลุ่มลูกค้า, กลุ่มลูกค้าใช้ template ควบคุมเท่านั้น, ข้อความ sensitive route เข้ากลุ่มทีมในเท่านั้น · (3) ผูกตัวตนพนักงาน↔LINE ด้วย<strong>ลิงก์ครั้งเดียว</strong> (LINE Login)
+<strong>ฐานที่ต่อยอด:</strong> line-oa-commerce (✅ 20/20 — webhook HMAC/idempotent, outbound worker, template governance &quot;ไม่มี free-text LLM&quot;, customer identity) — <strong>schema เดิมเป็น 1:1 ล้วน ไม่มี group</strong> → ส่วนกลุ่ม/ตัวตนพนักงานเป็น net-new ตามเอกสารนี้</p>
+</blockquote>
+<h2>1. Actors &amp; Identities — ใครเป็นใครในระบบ</h2>
+<table>
+<thead>
+<tr>
+<th>Actor</th>
+<th>Identity</th>
+<th>ที่เก็บ</th>
+<th>หมายเหตุ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>ลูกค้า</strong></td>
+<td>LINE user_id → canonical customer</td>
+<td><code>line_oa_customer_identity</code> (มีแล้ว)</td>
+<td>ไม่เป็น DB principal (Edge Function mediate — pattern เดิม)</td>
+</tr>
+<tr>
+<td><strong>พนักงาน</strong> (ช่าง/หัวหน้างาน/sale/office)</td>
+<td>LINE user_id ↔ บัญชีพนักงาน (auth user)</td>
+<td><strong><code>line_staff_identity</code></strong> (ใหม่)</td>
+<td>ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; <code>line_user_id</code> UNIQUE (คนหนึ่ง = บัญชีเดียว)</td>
+</tr>
+<tr>
+<td><strong>Bot</strong></td>
+<td>OA channel เดิม</td>
+<td><code>line_oa_channels</code> (Vault refs)</td>
+<td>ตัวเดียว ทำงานต่างกันตาม group_type</td>
+</tr>
+</tbody></table>
+<p><strong>ทำไมต้องแยก staff identity จาก customer identity:</strong> ตาราง customer มี match_confidence/manual_review (จับคู่โดยอนุมาน) แต่พนักงานต้อง<strong>ยืนยันตัวเองแบบ deterministic</strong> (LINE Login) เพื่อให้ <code>resolve_actor</code> audit ได้ว่า &quot;ช่างคนไหนส่งรูปนี้&quot; — ห้ามอนุมาน</p>
+<h2>2. Group Model — ใครอยู่กลุ่มไหน</h2>
+<pre><code>installation_projects (บ้าน) ─1:2─ line_groups
+  ├─ group_type = &#39;internal&#39;  → หัวหน้างาน + ช่างทุกคนของบ้าน + sale (+office ตามงาน)
+  └─ group_type = &#39;customer&#39;  → ลูกค้า + sale + หัวหน้างาน (ช่างไม่อยู่)
+
+line_groups        (line_group_id UNIQUE, project_id, group_type, status: active|archived)
+line_group_members (group_id, line_user_id, display_name snapshot, joined_at, left_at)
+                    — sync จาก webhook events: memberJoined / memberLeft / join / leave
+                    — ตอบคำถาม &quot;ใครอยู่กลุ่มไหนบ้าง&quot; ได้จาก DB ตลอดเวลา + ย้อนประวัติได้
+</code></pre>
+<ul>
+<li>สมาชิกที่ join แล้ว <strong>match กับ <code>line_staff_identity</code></strong> → รู้ชื่อพนักงาน; match กับ customer identity → รู้ว่าเป็นลูกค้า; ไม่ match ทั้งคู่ → bot ส่งลิงก์ผูกตัวตน (ถ้าอยู่กลุ่ม internal) หรือ mark เป็น guest (กลุ่มลูกค้า เช่น ญาติ/ผู้รับเหมาฝั่งลูกค้า)</li>
+<li><strong>คนแปลกหน้าในกลุ่ม internal</strong> (ไม่ยอมผูกตัวตนภายใน N วัน) → แจ้งหัวหน้างาน — กันข้อมูลภายในรั่ว</li>
+</ul>
+<h2>3. Linkage — ลิงก์กลุ่มกับบ้านอย่างไร (provisioning)</h2>
+<pre><code>เปิด installation project (จาก customer_requirement verified)
+  → ระบบออก &quot;รหัสผูกบ้าน&quot; (สั้น, หมดอายุ 48 ชม., ใช้ได้ 2 ครั้ง — internal+customer)
+  → หัวหน้างาน/sale สร้างกลุ่ม LINE 2 กลุ่มตามปกติ + เชิญ bot เข้ากลุ่ม
+  → bot ได้ join event → ตอบในกลุ่ม: &quot;พิมพ์ #ผูก &lt;รหัส&gt; &lt;ทีม|ลูกค้า&gt;&quot;
+  → คนที่มี staff identity พิมพ์ #ผูก → ระบบบันทึก line_groups (idempotent: กลุ่มหนึ่งผูกได้บ้านเดียว)
+  → จากนั้น member events ไหลเข้า line_group_members อัตโนมัติ
+ปิดงาน (project closed) → กลุ่ม archived — bot หยุด capture/แจ้งเตือน (ประวัติคงอยู่)
+</code></pre>
+<p>กติกา: การผูกทำได้เฉพาะผู้มี staff identity + เป็นสมาชิกโปรเจกต์นั้น · ผูกซ้ำ/ผิดบ้าน → หัวหน้างานแก้ผ่าน PWA (audit ทุกครั้ง)</p>
+<h2>4. Event Flows — ใครทำอะไรที่ไหนเมื่อไหร่</h2>
+<p>ทุกแถวลง audit เป็น 4 มิติ: <strong>ใคร</strong> (staff/customer identity) · <strong>ทำอะไร</strong> (event type) · <strong>ที่ไหน</strong> (บ้าน→ห้อง จาก group linkage + context) · <strong>เมื่อไหร่</strong> (webhook timestamp)</p>
+<table>
+<thead>
+<tr>
+<th>เหตุการณ์</th>
+<th>กลุ่ม</th>
+<th>ระบบทำอะไร</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ช่างส่ง<strong>รูป</strong>ในกลุ่มทีมใน</td>
+<td>internal</td>
+<td>→ capture <code>installation_proof</code> อัตโนมัติ (actor = ช่างจาก staff identity, project จาก group) → bot ตอบ ack + ให้เลือกห้อง/เลน (quick reply) → เข้า verify flow เดิม</td>
+</tr>
+<tr>
+<td>ช่างพิมพ์ <strong>#ปัญหา</strong> + ข้อความ/รูป</td>
+<td>internal</td>
+<td>→ สร้าง issue ผูกบ้าน/ห้อง + แจ้งหัวหน้างาน (เก็บเป็นหลักฐาน ไม่หายในแชท)</td>
+</tr>
+<tr>
+<td>bot แจ้งเตือนทีม (งานใหม่/handoff/ผล approval/เตือนรายงาน)</td>
+<td>internal</td>
+<td>outbound template หมวด internal</td>
+</tr>
+<tr>
+<td>bot ส่ง<strong>ความคืบหน้า</strong> (ห้องเสร็จ + รูปที่หัวหน้าเลือกแล้ว), นัดหมาย, แบบ, <strong>ขออนุมัติ (Flex)</strong></td>
+<td>customer</td>
+<td>outbound template หมวด customer เท่านั้น (whitelist ที่ DB — ดู §6)</td>
+</tr>
+<tr>
+<td>ลูกค้ากดอนุมัติ/ปฏิเสธจาก Flex ในกลุ่ม</td>
+<td>customer</td>
+<td>postback → <code>installation_approvals</code> (idempotent) → audit + แจ้งกลุ่ม internal</td>
+</tr>
+<tr>
+<td>ลูกค้าถามในกลุ่ม</td>
+<td>customer</td>
+<td>คนตอบ (sale/หัวหน้า); bot ตอบเฉพาะเรื่องที่ระบบรู้ผ่าน template (เช่น สถานะงาน) — <strong>ไม่มี free-text LLM</strong> (กติกาเดิม)</td>
+</tr>
+<tr>
+<td>member join/leave ทุกกลุ่ม</td>
+<td>ทั้งคู่</td>
+<td>sync <code>line_group_members</code> + audit</td>
+</tr>
+</tbody></table>
+<h2>5. Access Matrix — ใครเข้าถึงข้อมูลอะไร</h2>
+<table>
+<thead>
+<tr>
+<th>ข้อมูล</th>
+<th>ช่าง</th>
+<th>หัวหน้างาน</th>
+<th>Sale</th>
+<th>Office/บัญชี</th>
+<th>ลูกค้า</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Checklist/subtask เลนตัวเอง</td>
+<td>✅ เขียน</td>
+<td>✅ ทุกเลน</td>
+<td>👁 อ่าน</td>
+<td>👁 อ่าน</td>
+<td>✕</td>
+</tr>
+<tr>
+<td>รูปหน้างานทั้งหมด (raw, กลุ่ม internal)</td>
+<td>✅ ของบ้านที่ตัวเองมี membership</td>
+<td>✅</td>
+<td>✅</td>
+<td>👁</td>
+<td>✕</td>
+</tr>
+<tr>
+<td>รูป/ความคืบหน้า curated</td>
+<td>—</td>
+<td>✅ เลือกส่ง</td>
+<td>✅ เลือกส่ง</td>
+<td>👁</td>
+<td>✅ เฉพาะที่ถูกส่งเข้ากลุ่ม customer</td>
+</tr>
+<tr>
+<td>ปัญหา/defect (#ปัญหา)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>👁</td>
+<td>✕ (จนกว่าจะแปลงเป็นข้อความ curated)</td>
+</tr>
+<tr>
+<td>ต้นทุน/ราคา/margin</td>
+<td>✕</td>
+<td>👁 (ตาม role)</td>
+<td>✅ (quote)</td>
+<td>✅</td>
+<td>✕ เด็ดขาด — guardrail ที่ template whitelist</td>
+</tr>
+<tr>
+<td>customer_requirement (ข้อมูลส่วนตัวลูกค้า)</td>
+<td>👁 เฉพาะส่วนหน้างาน (ที่อยู่/ข้อจำกัดไซต์)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>(ของตัวเอง)</td>
+</tr>
+<tr>
+<td>ผลอนุมัติ</td>
+<td>👁</td>
+<td>✅</td>
+<td>✅</td>
+<td>👁</td>
+<td>✅ ของตัวเอง</td>
+</tr>
+</tbody></table>
+<p>บังคับ 3 ชั้นตามหลักเดิม: UI (PWA) · Edge Function (LINE routes) · <strong>DB RLS</strong> (membership ต่อโปรเจกต์ + role) — LINE group membership <strong>ไม่ใช่</strong>ตัวกำหนดสิทธิ์ใน DB (คนหลุดเข้ากลุ่มไม่ได้สิทธิ์อะไรใน DB — สิทธิ์มาจาก <code>installation_memberships</code> เท่านั้น; กลุ่มเป็นแค่ช่องทาง)</p>
+<h2>6. Guardrails (มติ owner ข้อ 2 — บังคับที่ DB ไม่ใช่วินัยคน)</h2>
+<ol>
+<li><code>line_oa_message_templates</code> เพิ่มคอลัมน์ <strong><code>audience</code></strong> (<code>internal</code> | <code>customer</code> | <code>both</code>) — outbound ไปกลุ่ม customer ได้เฉพาะ template ที่ <code>audience IN (&#39;customer&#39;,&#39;both&#39;)</code> — <strong>CHECK ที่ DB + Edge Function</strong> (ส่งผิดกลุ่ม = โยน error ไม่ใช่แค่เตือน)</li>
+<li>Template หมวด customer: ห้ามมี slot ที่รับข้อมูลต้นทุน/ภายใน (review ตอน approve template — governance เดิม)</li>
+<li>รูปจากกลุ่ม internal <strong>ไม่ forward อัตโนมัติ</strong>ไปกลุ่ม customer — ต้องมนุษย์ (หัวหน้า/sale) เลือกผ่าน PWA เป็น curated update เท่านั้น</li>
+<li>Bot ไม่ initiate free-text ใด ๆ — ทุก outbound คือ pre-approved template + named slots (สืบทอด line-oa Req เดิม)</li>
+<li>Scrub logs (pattern เดิม) + รูป/ข้อความกลุ่ม = ข้อมูลส่วนบุคคล → PDPA: consent ตอน bind staff identity; privacy notice ปักในกลุ่ม (bot ส่งตอน join); retention ตาม lifecycle policy (D-4)</li>
+</ol>
+<h2>7. Data Model เพิ่ม (net-new — เข้า tasks Phase 1)</h2>
+<pre><code class="language-sql">line_staff_identity   (line_user_id text UNIQUE, user_id uuid → auth, display_name, bound_at, consent_at, revoked_at)
+line_groups           (id, line_group_id text UNIQUE, project_id → installation_projects, group_type internal|customer, status, bound_by, bound_at)
+line_group_members    (group_id, line_user_id, display_name, member_kind staff|customer|guest, joined_at, left_at)
+line_bind_codes       (code, project_id, expires_at, uses_left)          -- รหัสผูกบ้าน
+line_oa_message_templates + audience (&#39;internal&#39;|&#39;customer&#39;|&#39;both&#39;)      -- guardrail G1
+line_oa_outbound_messages + target_type (&#39;user&#39;|&#39;group&#39;) + target_id     -- ส่งเข้ากลุ่มได้
+line_oa_inbound_messages + source_type (&#39;user&#39;|&#39;group&#39;) + line_group_id  -- รับจากกลุ่มได้
+</code></pre>
+<p>ทั้งหมด RLS fail-closed ตาม convention C12 · member events idempotent ตาม <code>webhook_event_id</code> เดิม</p>
+<h2>8. สิ่งที่ยังไม่ทำใน v1 (ตัดชัด)</h2>
+<ul>
+<li>Bot ตอบคำถามลูกค้าแบบเข้าใจภาษา (LLM) — ขัดกติกา template-only; ทบทวนพร้อม MCP governance</li>
+<li>อ่านข้อความกลุ่ม internal ทั้งหมดเข้า DB — v1 เก็บเฉพาะ<strong>รูป + #ปัญหา + member events</strong> (เจตนา: เก็บหลักฐานงาน ไม่ใช่ดักฟังแชท — PDPA-friendly และลด noise)</li>
+<li>LINE Notify (deprecated โดย LINE แล้ว) — ใช้ Messaging API push อย่างเดียว</li>
 </ul>
 <hr>
 <h1>Form Templates — Installation Checklists v0.1 (ผ่าน owner review แล้ว — พร้อม seed)</h1>

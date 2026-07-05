@@ -8,7 +8,7 @@
 
 **ขอบเขต IP:** ลอกได้เฉพาะ*แนวคิดฟีเจอร์/เวิร์กโฟลว์* (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล
 
-**Working artifacts (ในโฟลเดอร์นี้):** `design.md` · `tasks.md` · `build-plan-external-draft-2026-07-05.md` (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · **`capture-type-customer-requirement-draft.sql`** (ใบบันทึกความต้องการ — 9 field จาก "สำหรับคุณชุ.xlsx" 2025 + verify rules ตาม PFMEA Sale) · **`form-templates-installation-v0.1.md`** (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; **P1/P2/P3 = ช่างคนที่ 1/2/3** ยืนยันโดย owner) — entitlement delta อยู่ที่ `../entitlement-tier/schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html`
+**Working artifacts (ในโฟลเดอร์นี้):** `design.md` · `tasks.md` · `build-plan-external-draft-2026-07-05.md` (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · **`capture-type-customer-requirement-draft.sql`** (ใบบันทึกความต้องการ — 9 field จาก "สำหรับคุณชุ.xlsx" 2025 + verify rules ตาม PFMEA Sale) · **`form-templates-installation-v0.1.md`** (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; **P1/P2/P3 = ช่างคนที่ 1/2/3** ยืนยันโดย owner) · **`line-architecture-v0.1.md`** (LINE OA + กลุ่ม: 2 กลุ่ม/บ้าน, bot ทุกกลุ่ม + guardrails, staff identity, access matrix — Req 13) — entitlement delta อยู่ที่ `../entitlement-tier/schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html`
 
 ## Glossary
 
@@ -120,6 +120,16 @@
 2. ~~MVP scope~~ → **dogfood ภายใน + PWA + offline-lite** (ADR-035) — ไม่ใช่ทั้ง (ก) เดิมและ (ข): เพิ่มคิว upload ทางเดียวเข้า Phase 1 โดยไม่แตะ two-way sync
 3. Implement เริ่มได้ — เหลือ spikes ใน tasks Phase 0 (Realtime load test) ก่อนผูก chat กับ MVP
 
+### Requirement 13: LINE Groups + Staff Identity (มติ owner 5 ก.ค. 2026 — ดู `line-architecture-v0.1.md`)
+
+1. THE บ้าน 1 หลัง SHALL มี LINE **2 กลุ่ม**: internal (หัวหน้า+ช่าง+sale — คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — เฉพาะความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ) — ผูกกับ `installation_projects` ผ่าน `line_groups` + รหัสผูกบ้าน
+2. THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: capture รูป (→`installation_proof`) + `#ปัญหา` + แจ้งเตือนทีม; กลุ่ม customer: **เฉพาะ template ที่ `audience='customer'`** — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)
+3. THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี **ครั้งเดียวผ่านลิงก์ + LINE Login** (`line_staff_identity`, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit "ใครทำอะไรที่ไหนเมื่อไหร่"
+4. THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (`line_group_members` sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน
+5. THE สิทธิ์เข้าถึงข้อมูล SHALL มาจาก `installation_memberships` + RLS เท่านั้น — **การอยู่ในกลุ่ม LINE ไม่ให้สิทธิ์ใด ๆ ใน DB** (กลุ่มเป็นช่องทาง ไม่ใช่ authorization)
+6. THE รูปจากกลุ่ม internal SHALL ไม่ถูก forward ไปกลุ่ม customer อัตโนมัติ — curated โดยมนุษย์ผ่าน PWA เท่านั้น
+7. v1 SHALL เก็บจากกลุ่มเฉพาะ **รูป + `#ปัญหา` + member events** — ไม่เก็บบทสนทนาทั่วไป (PDPA + เจตนาเก็บหลักฐานงาน)
+
 ## Correctness Properties (สำหรับ test)
 
 1. **Cross-org/external isolation**: external member เห็นเฉพาะโปรเจกต์ที่มี membership; ข้าม org ล้มเหลวทุกทาง
@@ -128,3 +138,6 @@
 4. **Sync convergence**: ทุก conflict scenario → converge โดยไม่มี silent data loss (ฝั่งแพ้มี conflict copy)
 5. **Approval provenance**: ทุก approval → audit row + ผูก packet/report; postback ซ้ำ = idempotent
 6. **Roadmap gating**: `sitepm.*` ทุกตัว = false/0 ทุก plan จนกว่า flip (ยกเว้น beta override)
+7. **Template audience**: ทุก outbound → กลุ่ม customer ที่ template เป็น `internal` → ถูกปฏิเสธที่ DB (ไม่มีทางหลุด)
+8. **Group ≠ authorization**: user ที่อยู่ในกลุ่ม LINE แต่ไม่มี `installation_memberships` → เข้าถึงข้อมูลโปรเจกต์ใน DB ไม่ได้ทุกทาง
+9. **Staff attribution**: ทุกรูป/`#ปัญหา` จากกลุ่ม internal → resolve เป็นพนักงานได้เสมอ (ไม่มี identity → เข้าคิว unbound + แจ้งหัวหน้า ไม่ silently drop)

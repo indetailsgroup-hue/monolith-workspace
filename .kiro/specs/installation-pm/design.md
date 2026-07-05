@@ -121,7 +121,7 @@ installation_projects (customer_review)
 | `work_items` + `process_model` (ขั้น Installation ใน canonical process) | lifecycle งานติดตั้งจริง — start/finish ผ่าน `rpc_handoff_work_item`/completion → approval หัวหน้าทีม Installation + auto-notify Sale/PM ทำงานเองตาม workflow spec |
 | capture `installation_proof` (0051, verify rules + manual entry ตาม ADR-033) | รูปหลักฐานติดตั้ง: ingest → verify → promote → **commit 'Work_Item complete' (0063)** — การปิดงานด้วยรูปมีอยู่แล้ว |
 | capture `site_survey` → `SiteSurveyZone` (0062/0073) | ข้อมูลวัดหน้างานก่อนติดตั้ง — แสดง read-only ในหน้าโปรเจกต์ |
-| line_oa webhook/outbound + templates | (ก) ช่างส่งรูปผ่าน LINE → capture (ข) แจ้งเตือนช่าง: งานใหม่/approval/เตือนรายงาน (ค) ลูกค้าอนุมัติ (D-5) |
+| line_oa webhook/outbound + templates | (ก) ช่างส่งรูปผ่าน LINE → capture (ข) แจ้งเตือนช่าง: งานใหม่/approval/เตือนรายงาน (ค) ลูกค้าอนุมัติ (D-5) — **โครงกลุ่ม + staff identity + guardrails ทั้งหมด: `line-architecture-v0.1.md` (Req 13)** |
 
 สิ่งที่ Installation PM **เพิ่ม** (ไม่ทับของเดิม): มุมมองโปรเจกต์ (จัดกลุ่ม work items ต่อ job ลูกค้า + Kanban), subtask หน้างาน, media processing (thumbnail/compress บน capture artifact), annotation layer, field report + PDF, offline-lite queue (D-6a), packet registry (D-3)
 
