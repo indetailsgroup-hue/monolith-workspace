@@ -68,8 +68,10 @@ type PanelProfile =
   | { kind: 'S_CURVE'; edge: PanelEdge; r1: number; r2: number; sweepDeg1: number; sweepDeg2: number }; // tangent ต่อเนื่อง
 
 type KerfToolProfile =
-  | { kind: 'ROUTER'; bitDiameter: number }   // ร่องกว้าง = Ø ดอก
-  | { kind: 'SAW'; bladeKerf: number };       // ร่องกว้าง = kerf ใบเลื่อย
+  | { kind: 'ROUTER'; bitDiameter: number; kEff?: number; }                    // ร่องกว้าง = Ø ดอก
+  | { kind: 'SAW'; bladeKerf: number; kEff?: number; maxDepth?: number; };     // ร่องกว้าง = kerf ใบเลื่อย
+// kEff = ความกว้างร่องที่ calibrate จริงต่อ tool (coupon test §6.1 ของ kerf doc) — ถ้าไม่มีใช้ค่า nominal;
+// การคำนวณทุกจุดใช้ k_eff(tool) ตาม Req 9.2 (แก้จากเดิมที่ k_eff อยู่ระดับ MachineSpec — มติ review patch 2026-07-05)
 
 interface KerfPattern {           // ผลจาก generator — deterministic
   zone: { start: number; end: number };   // ระยะตามขอบ (คลี่แบน)
@@ -80,8 +82,10 @@ interface KerfPattern {           // ผลจาก generator — deterministic
 }
 
 type SkinConfig =                          // มติ #3 — 2 โหมด
-  | { mode: 'SKIN_PANEL'; materialId: string; thickness: number }   // ชิ้นแยกใน BOM (HDF/MDF 3–4mm)
-  | { mode: 'SURFACE_FINISH'; materialId: string };                 // วีเนียร์/laminate ใน material stack
+  | { mode: 'SKIN_PANEL'; materialId: string; thickness: number; side: SkinSide }   // ชิ้นแยกใน BOM (HDF/MDF 3–4mm)
+  | { mode: 'SURFACE_FINISH'; materialId: string; side: SkinSide };                 // วีเนียร์/laminate ใน material stack
+
+type SkinSide = 'KERF_FACE' | 'OUTER_FACE' | 'BOTH';   // หน้า kerf (ด้าน concave ที่ซอยร่อง) / ผิวนอก / ทั้งสอง — มติ review patch 2026-07-05
 
 interface MatingSlotPattern {              // มติ #4 — Req 8
   pairKey: string;                         // content-addressed แบบ pairKeyV2
@@ -96,7 +100,7 @@ interface MatingSlotPattern {              // มติ #4 — Req 8
 |------|----------|---------|
 | G12_RADIUS_BELOW_MIN | BLOCKER | radius < getMinimumBendRadius(material, thickness) |
 | G12_KERF_SPACING_TOO_TIGHT | BLOCKER | spacing < bladeWidth + minWeb |
-| G12_KERF_DEPTH_UNSAFE | BLOCKER | เนื้อคงเหลือ < skinMin + 0.5mm |
+| G12_KERF_DEPTH_UNSAFE | BLOCKER | เนื้อคงเหลือ (t_web) < max(15% ของความหนา, skinMin + 0.5mm) |
 | G12_FITTING_IN_KERF_ZONE | BLOCKER | drill point ใน zone + margin |
 | G12_SCURVE_TRANSITION_SHORT | WARNING | ช่วงเปลี่ยนทิศ < ค่าแนะนำ |
 | G12_GRAIN_PARALLEL_TO_BEND | WARNING | grain ขนานแนวดัด |

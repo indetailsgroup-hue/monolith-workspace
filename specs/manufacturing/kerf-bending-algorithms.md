@@ -1,10 +1,13 @@
 # Kerf Bending Algorithms for CNC Manufacturing
 # อัลกอริทึมและวิศวกรรมการผลิตสำหรับการดัดไม้ด้วยรอยตัด (Kerf Bending)
 
-**Version:** 1.0
-**Last Updated:** 2026-01-10
+**Version:** 1.1
+**Last Updated:** 2026-07-05
 **Status:** Advanced Manufacturing Technique
 **Target:** In-house CNC CAM System (Stand-alone)
+
+> **v1.1 (back-port มติ grilling 2026-07-04):** เพิ่ม Tool Model ROUTER/SAW (§1.3), R_min Catalog + block rule (§2.7), Skin Config (§9), Mating Slot (§10)
+> **การแบ่งหน้าที่เอกสาร:** ไฟล์นี้ = สูตรและวิศวกรรม kerf (authoritative) — ส่วน **G12 error codes (10), Correctness Properties (9), Implementation Phases** เป็นของ `.kiro/specs/curved-panel-system/` (requirements/design/tasks) **อ้างอิงที่นั่นที่เดียว ห้าม duplicate ตามกติกา Never-Duplicate ของ specs/**
 
 ---
 
@@ -85,6 +88,28 @@ N ≈ ΔL / k_eff
 
 ---
 
+### 1.3 Tool Model: ROUTER และ SAW (v1.1 — มติ grilling #1)
+
+เดิม v1.0 สมมติ router อย่างเดียว (spindle plunge) — v1.1 รองรับเครื่องมือ 2 ชนิด **เลือกได้ต่อ panel** ตามงานจริงของโรงงาน:
+
+| Tool | นิยามด้วย | k_eff มาจาก | Toolpath | เหมาะกับ |
+|------|-----------|-------------|----------|----------|
+| **ROUTER** | Ø ดอก end mill (`bitDiameter`) | Ø + runout (calibrate §6.1) | plunge + serpentine + depth ramping (§5) | ร่องปลายโค้ง, งานละเอียด, ร่องไม่ทะลุขอบ |
+| **SAW** | ความหนาใบ (`bladeKerf`) | ความหนาใบ + set + runout | pass ตรงตามแนวใบ (จำกัด `maxDepth` = blade projection) | ร่องตรงยาว, throughput สูง, kerf บาง 3.0–3.5mm |
+
+สูตรทุกจุดในเอกสารนี้ที่ใช้ `k` ให้อ่านเป็น **`k_eff(tool)`** ของ tool ที่ panel นั้นเลือก:
+
+```
+θ_allow = C_mat × atan( k_eff(tool) / t_web )
+p_min   ≥ 1.8 × k_eff(tool)
+```
+
+**Tool Invariance (Correctness Property 9 ใน spec):** เปลี่ยน tool (ROUTER↔SAW หรือเปลี่ยนขนาด) แล้วรูปโค้งปลายทางต้องเท่าเดิม (R เป้าหมาย, developed length, มุมรวม θ) — สิ่งที่เปลี่ยนได้คือ N, p, d เท่านั้น เหตุผล: N·k_eff ≈ ΔL (§1.2) เป็น invariant — tool กว้างขึ้น → N น้อยลง แต่เนื้อที่ถูกลบรวมเท่าเดิม
+
+Type จริงดูที่ `curved-panel-system/design.md` (`KerfToolProfile` — discriminated union + `kEff` calibrate ต่อ tool)
+
+---
+
 ## ส่วนที่ 2: สูตรคำนวณและกฎออกแบบร่อง (Kerf Design Rules)
 
 ### 2.1 มุมยอมได้ต่อร่อง (Allowable Angle per Slot)
@@ -161,6 +186,29 @@ R_design = 1 / κ'(s)
 **ค่า γ แนะนำ:**
 - ไม้อัด: 0.10-0.12 (10-12%)
 - MDF: 0.12-0.15 (12-15%)
+
+---
+
+### 2.7 R_min Catalog + Block Rule (v1.1 — มติ grilling #2, Req 2.7 ใน spec)
+
+> **Req 2.7:** ก่อนปล่อย v1 ต้องเติมตาราง **min bend radius (R_min) ครบทุก (วัสดุ × ความหนา) ใน catalog — MDF / Particleboard (PB) / Plywood** โดยแต่ละค่า**ต้องมี source อ้างอิง** (task 4.3 ใน spec) — วัสดุ×ความหนาที่ไม่มีข้อมูล = **block** (`G12_MATERIAL_DATA_MISSING`)
+
+**Catalog skeleton (ห้าม fabricate ค่า — เติมจริงใน task 4.3 เท่านั้น):**
+
+| Material | Thickness | R_min (mm) | Source | Status |
+|----------|-----------|-----------|--------|--------|
+| Plywood | 6 / 9 / 12 / 18 mm | — | (task 4.3) | ⛔ REQUIRED before v1 |
+| MDF | 6 / 9 / 12 / 18 mm | — | (task 4.3) | ⛔ REQUIRED before v1 |
+| **Particleboard (PB)** | 16 / 18 mm | — | (task 4.3) | ⛔ REQUIRED before v1 (ดัดยาก/เปราะกว่า — คาด R_min สูงกว่า MDF) |
+| *(วัสดุ×ความหนาอื่นใน PanelMaterialSystem)* | … | — | (task 4.3) | ⛔ REQUIRED |
+
+**Validation gate:**
+```
+material×thickness ∉ catalog        → G12_MATERIAL_DATA_MISSING  (BLOCK)
+R ที่ขอ < catalog R_min             → G12_RADIUS_BELOW_MIN       (BLOCK)
+```
+
+> หมายเหตุ: ตาราง §6.3 (t_web/p/feed/γ) เป็น *input การออกแบบร่อง* — **R_min เป็นคนละค่า** ห้าม derive จาก p/t_web โดยไม่ทดสอบจริง
 
 ---
 
@@ -723,6 +771,35 @@ kerf-bend calibrate springback \
 
 ---
 
+## ส่วนที่ 9: Skin Config — ปิดผิวหน้า kerf (v1.1 — มติ grilling #3)
+
+v1.0 ระบุข้อจำกัด "ด้าน concave มีร่องเห็น ไม่เรียบ" โดยไม่มีทางแก้ — v1.1 กำหนด 2 โหมด:
+
+| โหมด | คืออะไร | ผลใน BOM / material stack |
+|------|---------|----------------------------|
+| **`SKIN_PANEL`** | แผ่นบาง HDF/MDF 3–4mm ดัดตามโค้งแล้วปิดทับหน้า kerf | **ชิ้นแยกใน BOM** (มีขนาดคลี่ + nesting ของตัวเอง) |
+| **`SURFACE_FINISH`** | วีเนียร์/laminate ดัดโค้ง | อยู่ใน **material stack** ของแผ่น (คิดใน composite thickness ไม่แยกชิ้น) |
+
+- ระบุหน้า (`side`): `KERF_FACE` (หน้าที่ซอยร่อง) / `OUTER_FACE` / `BOTH`
+- เกณฑ์ความลึกร่องผูกกับ skin: `t_web ≥ max(15%T, skin_min + 0.5mm)` (unified rule — ดู `G12_KERF_DEPTH_UNSAFE`)
+- Type จริง: `SkinConfig` ใน `curved-panel-system/design.md`
+
+---
+
+## ส่วนที่ 10: Mating Slot — ร่องประกบชิ้นโค้ง (v1.1 — มติ grilling #4, Requirement 8 ใน spec)
+
+ชิ้นโค้งต้องต่อเข้าแผ่นข้างเคียงด้วย **ซี่ (fingers) ฝั่งโค้ง + ร่องรับ (receiver slots) ฝั่งแผ่นประกบ** เป็นคู่:
+
+1. Generator สร้างซี่/ร่องเป็นคู่ deterministic ผูกกันด้วย **pair key แบบ content-addressed (รูปแบบเดียวกับ `pairKeyV2` ของ Minifix)** — override ได้ต่อคู่
+2. Tolerance การจับคู่ world-space ≤ **0.1mm** (ค่าเดียวกับ `MATING_TOLERANCE` ของ G11)
+3. ร่อง slot ห้ามทับ kerf slot / รูเจาะ (`G12_SLOT_OVERLAPS_KERF`) และขอบแผ่นรับต้องพอ (`G12_SLOT_EDGE_INSUFFICIENT`)
+4. ลำดับ toolpath: อยู่กลุ่ม routing — หลังเจาะรู/kerf, ก่อน profile cut-out (ตาม priority §5.2)
+5. ความลึกร่องรับเคารพ thickness safety margin 0.5mm ของแผ่นรับ
+
+Type จริง: `MatingSlotPattern` ใน `curved-panel-system/design.md`; correctness = Property 8 (pair symmetry ≤0.1mm)
+
+---
+
 ## สรุป (Conclusion)
 
 เอกสารนี้นำเสนอ **ชุดสูตร อัลกอริทึม และสถาปัตยกรรมซอฟต์แวร์** ที่สมบูรณ์สำหรับการพัฒนาระบบ Kerf Bending ภายในองค์กร โดยไม่ต้องพึ่งพาซอฟต์แวร์ภายนอก
@@ -760,3 +837,13 @@ kerf-bend calibrate springback \
 - Wood Handbook: Wood as an Engineering Material (USDA Forest Service)
 - GRBL G-code Reference
 - Kerf Bending Research Papers (MIT, ETH Zurich)
+- `.kiro/specs/curved-panel-system/` — requirements (9 ข้อ) / design (G12 10 codes + types) / tasks (Phase 0–7 + 2.5) — **authoritative สำหรับ implementation**
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.1 | 2026-07-05 | Back-port มติ grilling 4 ข้อ (spec commits `ba3d5b4` + `7d0244a`): §1.3 Tool Model ROUTER/SAW + tool invariance, §2.7 R_min catalog (รวม PB) + block rule, §9 Skin Config 2 โหมด, §10 Mating Slot; unified web rule `max(15%T, skin_min+0.5)`; ประกาศแบ่งหน้าที่กับ .kiro spec (Never-Duplicate) |
+| 1.0 | 2026-01-10 | Initial release |

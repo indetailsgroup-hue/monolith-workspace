@@ -54,7 +54,7 @@
 
 1. WHEN panel มี Kerf_Zone THE ระบบ SHALL เรียก `calculateKerfBending` (engine เดิม) ด้วย {วัสดุ, ความหนา, รัศมี, มุม} → ได้ kerfCount N + kerfSpacing S
 2. THE Kerf_Pattern SHALL วางร่องตั้งฉากกับแนวสัมผัสโค้ง กระจายตาม arc length ด้านนอก (คลี่แบน) — ตำแหน่งเป็น deterministic
-3. THE ความลึกร่อง SHALL เหลือเนื้อวัสดุ ≥ ความหนา skin ขั้นต่ำของวัสดุนั้น และเคารพ thickness safety margin 0.5mm (ค่าเดียวกับระบบเจาะ)
+3. THE ความลึกร่อง SHALL เหลือเนื้อวัสดุ (t_web) ≥ **max( 15% ของความหนาแผ่น, ความหนา skin ขั้นต่ำ + 0.5mm )** — รวมเกณฑ์จาก kerf-bending-algorithms.md §2.3 (web ≥15%T) กับ thickness safety margin ของระบบเจาะเป็นเกณฑ์เดียว (มติ review patch 2026-07-05)
 4. IF วัสดุไม่มีข้อมูลใน `getMinimumBendRadius`, THEN THE ระบบ SHALL fail-safe block (ไม่เดาค่า) พร้อมข้อความให้เพิ่มข้อมูลวัสดุ
 5. WHEN ผู้ใช้แก้รัศมี/วัสดุ/ความหนา THE Kerf_Pattern SHALL regenerate อัตโนมัติ (ไม่มี stale state — skill: zustand-reactivity)
 6. THE ผู้ใช้ SHALL เลือก Kerf_Tool_Profile (`ROUTER` | `SAW`) ต่อ panel ได้ และความกว้างร่อง/ระยะห่างขั้นต่ำ SHALL คิดจาก tool ที่เลือก (มติ grilling #1)
