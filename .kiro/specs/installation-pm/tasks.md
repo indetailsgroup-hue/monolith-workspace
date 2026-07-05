@@ -62,3 +62,9 @@
 ## Deferred
 
 - IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร
+
+## UX Tenet queue (จาก docs/UX-Tenet-System-Audit-v1.md)
+
+- [ ] U1 Survey mobile form: "งานวัดของฉันวันนี้" (ที่อยู่+แผนที่+ข้อมูล sale แนบเอง — ไม่ต้องปริ้น) + ฟอร์มไล่ตามลำดับวัดจริง + แบบฟอร์มความต้องการ (LADY/MAN checklist) บนมือถือ (S3)
+- [ ] U2 ปุ่ม "แจ้งปัญหา" pattern เดียวกันที่โรงงาน (รูป→ปุ่ม→route ซ่อมบำรุง/QA) — reuse จาก 1.8b (S5)
+- [ ] U3 Customer reject flow: ปุ่มเหตุผลง่าย + ระบบ route เข้า revision เอง; ลิงก์ดูแบบหมดอายุ = ขอใหม่ 1 tap (S4)

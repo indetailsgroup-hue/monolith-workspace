@@ -152,3 +152,7 @@
 7. **Backward compat**: panel ไม่มี profile ≡ RECT ทุก pipeline (DrillMap/DXF/CutList เท่าเดิม byte-identical)
 8. **Slot pairing**: ∀ mating joint: จำนวนซี่ฝั่งชิ้นโค้ง = จำนวนร่องฝั่งแผ่นรับ และตำแหน่ง world-space ตรงกัน ≤ 0.1mm (ค่าเดียวกับ MATING_TOLERANCE ของ G11)
 9. **Tool invariance**: เปลี่ยน Kerf_Tool_Profile → kerfCount/ตำแหน่งเปลี่ยนได้ แต่ geometry โค้งปลายทาง (developed length, มุม) ต้องเท่าเดิม
+
+## หมายเหตุเพิ่ม (UX Tenet — 2026-07-05)
+
+ทุก G12 code (และ G-code ใหม่ทุกตัว) ต้องส่งถึง Designer เป็น **(ก) ข้อความภาษาคนบอกว่าผิดอะไร (ข) ปุ่ม Focus พาไปดูจุดใน 3D (ค) ปุ่ม Fix อัตโนมัติเมื่อมี patch** — ห้ามโชว์แค่รหัส error (กติกา S2 ใน `docs/UX-Tenet-System-Audit-v1.md`)

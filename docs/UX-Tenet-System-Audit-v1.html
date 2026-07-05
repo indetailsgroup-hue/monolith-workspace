@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Tenet Audit — ทั้งระบบ (MONOLITH)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>UX Tenet Audit — ทั้งระบบ (v1)</h1>
+<h3>&quot;หน้าบ้านง่ายจนคนรัก หลังบ้านรับความยากไว้เอง&quot; — ตรวจทุก persona/flow</h3>
+<blockquote>
+<p>ตรวจทุก persona จาก PRD §4 (ฉบับ reconcile กับ 38 ตำแหน่ง) ด้วยไม้บรรทัด Governing UX Tenet (PRD §1): <strong>ต่อ 1 งานวัด (a) จำนวน tap/การกระทำ (b) ศัพท์ระบบที่ผู้ใช้เห็น</strong> — คู่กับ audit เฉพาะทางของงานติดตั้งที่ <code>.kiro/specs/installation-pm/ux-tenet-audit-v1.md</code>
+<strong>ข้อยกเว้นที่ประกาศชัด:</strong> ผู้ใช้ &quot;มืออาชีพของระบบ&quot; (Designer/Draftsman/Admin/DevOps) เครื่องมือซับซ้อนได้เพราะความซับซ้อนคือเนื้องานเขา — tenet เข้มสุดกับ <strong>ผู้ใช้ปลายทาง/หน้างาน/นาน ๆ ใช้ที</strong> (ช่าง ลูกค้า ช่างวัด โรงงาน ผู้อนุมัติ)
+คะแนน: 🟢 ผ่าน · 🟡 เสี่ยง (ดันเข้าหลังบ้านได้) · 🔴 leak (ผลักความยากให้ผู้ใช้ผิดที่)</p>
+</blockquote>
+<h2>สรุปผลรวม</h2>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>ความถี่ใช้</th>
+<th>คะแนนรวม</th>
+<th>จุดต้องแก้</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Customer (ลูกค้า)</td>
+<td>นาน ๆ ที (สำคัญสุด — คนจ่ายเงิน)</td>
+<td>🟢</td>
+<td>เฝ้าระวัง 2 จุด</td>
+</tr>
+<tr>
+<td>Installation Crew/Lead</td>
+<td>ทุกวัน</td>
+<td>🟢 (หลัง audit v1)</td>
+<td>แก้แล้ว 9 จุด</td>
+</tr>
+<tr>
+<td>Surveyor (ช่างวัด)</td>
+<td>ทุกวัน</td>
+<td>🟡</td>
+<td>2 จุด</td>
+</tr>
+<tr>
+<td>Factory Operator</td>
+<td>ทุกวัน</td>
+<td>🟡</td>
+<td>1 จุดใหญ่ (CLI)</td>
+</tr>
+<tr>
+<td>Office Staff / ผู้อนุมัติ</td>
+<td>ทุกวัน</td>
+<td>🟢/🟡</td>
+<td>1 จุด</td>
+</tr>
+<tr>
+<td>Accountant</td>
+<td>ทุกวัน (งานเฉพาะทาง)</td>
+<td>🟢</td>
+<td>หลักต่างออกไป — ดูข้อ 6</td>
+</tr>
+<tr>
+<td>Executive Owner</td>
+<td>รายสัปดาห์</td>
+<td>🟢</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Designer / Draftsman / 3D</td>
+<td>ทุกวัน (มืออาชีพ)</td>
+<td>🟢 (ยกเว้น)</td>
+<td>1 จุด (blocker language)</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>ทุกวัน</td>
+<td>🟡</td>
+<td>1 จุด (customer_requirement form)</td>
+</tr>
+</tbody></table>
+<h2>1. Customer (ลูกค้า) — เข้มสุดเพราะเป็นคนจ่ายเงินและไม่มีทางถูกอบรม</h2>
+<table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>ตอนนี้</th>
+<th>คะแนน</th>
+<th>หมายเหตุ/เฝ้าระวัง</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ดูแบบ 3D</td>
+<td>ลิงก์จาก LINE เปิดดูเลย ไม่ต้องสมัคร account ✅</td>
+<td>🟢</td>
+<td>เฝ้าระวัง: ลิงก์ต้องไม่หมดอายุเร็วจนลูกค้ากดแล้วเจอ error — ถ้าหมดอายุให้ขอลิงก์ใหม่ได้ใน 1 tap</td>
+</tr>
+<tr>
+<td>อนุมัติแบบ/งาน</td>
+<td>Flex การ์ดเดียว กดปุ่มเดียว + web fallback ✅</td>
+<td>🟢</td>
+<td>เฝ้าระวัง: ภาษาบนการ์ด/ปุ่มต้องเป็นภาษาคน 100% (&quot;อนุมัติแบบห้องครัว&quot; ไม่ใช่ &quot;Approve Released_Spec v3&quot;) — เพิ่มเป็นเกณฑ์ review template</td>
+</tr>
+<tr>
+<td>รับความคืบหน้า</td>
+<td>curated update ในกลุ่ม (มนุษย์เลือกส่ง)</td>
+<td>🟢</td>
+<td>ตามมติ owner แล้ว</td>
+</tr>
+<tr>
+<td>แก้แบบ/ปฏิเสธ</td>
+<td>กดปฏิเสธ → ?</td>
+<td>🟡</td>
+<td><strong>ต้องมีช่องบอกเหตุผลแบบง่าย</strong> (ปุ่มเหตุผลยอดฮิต + พิมพ์เอง) แล้วระบบ route กลับเข้า revision workflow เอง — ลูกค้าไม่ควรต้องรู้ว่า &quot;ต้องติดต่อใครยังไงต่อ&quot;</td>
+</tr>
+</tbody></table>
+<h2>2. Surveyor (ช่างวัดพื้นที่) — ทุกวัน, หน้างาน</h2>
+<table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>ตอนนี้</th>
+<th>คะแนน</th>
+<th>ดันเข้าหลังบ้าน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>รับงานวัดวันนี้</td>
+<td>(spec ยังไม่ระบุ)</td>
+<td>🟡</td>
+<td>ให้เหมือนช่างติดตั้ง: <strong>&quot;งานวัดของฉันวันนี้&quot;</strong> — ที่อยู่ + แผนที่ + ข้อมูลจาก sale แนบครบ (PFMEA: ลืมปริ้นเอกสาร = ความเสี่ยง sev 8 → ระบบแนบให้เอง ไม่ต้องปริ้น)</td>
+</tr>
+<tr>
+<td>บันทึกผลวัด</td>
+<td>form site_survey (SiteSurveyZone มี schema แล้ว)</td>
+<td>🟡</td>
+<td>ฟอร์มต้อง<strong>ไล่ตามลำดับที่ช่างวัดจริง</strong> (เอียงพื้น→ระยะ→ช่องเปิด→ไฟ) + รูปแนบต่อ zone + ใช้ได้บนมือถือถนัดมือเดียว; ห้ามให้เลือก project (มาจากงานที่กดเข้า)</td>
+</tr>
+<tr>
+<td>แบบฟอร์มความต้องการ (wardrobe นับเสื้อผ้า)</td>
+<td>กระดาษเดิม</td>
+<td>🟡</td>
+<td>แปลงเป็น checklist ติ๊ก+ตัวเลข ใน PWA — โครงตามใบจริง <code>ข้อมูลออกวัดพื้นที่ฯ</code> (LADY/MAN) ที่ช่างคุ้นอยู่แล้ว</td>
+</tr>
+</tbody></table>
+<h2>3. Factory Operator (โรงงาน) — ทุกวัน</h2>
+<table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>ตอนนี้</th>
+<th>คะแนน</th>
+<th>ดันเข้าหลังบ้าน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>รับงาน/ดาวน์โหลด bundle</td>
+<td>Factory Server (LAN) เลือกงาน → โหลด ZIP ตรง dialect เครื่อง</td>
+<td>🟢</td>
+<td>ดีอยู่: เลือกเครื่องครั้งแรกครั้งเดียว ระบบจำ dialect</td>
+</tr>
+<tr>
+<td><strong>ตรวจ receipt</strong></td>
+<td><strong>CLI <code>monolith-receipt-verify</code></strong></td>
+<td>🔴 → 🟡</td>
+<td>CLI สำหรับ operator = leak ชัด ๆ — <strong>Factory Server UI ต้อง verify ให้อัตโนมัติทุก bundle แล้วโชว์ ✅/❌ ใหญ่ ๆ ก่อนปุ่มดาวน์โหลด</strong> (operator ไม่ต้องรู้ว่ามีการ verify); CLI คงไว้สำหรับ auditor/offline dispute (Golden Matrix P13.4) — เป็น power tool ไม่ใช่ flow ปกติ</td>
+</tr>
+<tr>
+<td>แจ้งของเสีย/เครื่องมีปัญหา</td>
+<td>(ไม่มี flow)</td>
+<td>🟡</td>
+<td>ให้เหมือนช่างติดตั้ง: ถ่ายรูปที่สถานี → ปุ่ม &quot;แจ้งปัญหา&quot; → route ไปซ่อมบำรุง/QA (pattern <code>#ปัญหา</code> เดียวกัน — reuse)</td>
+</tr>
+</tbody></table>
+<h2>4. Office Staff / ผู้อนุมัติ (ขาย/วัด/วางแผน) — ทุกวัน</h2>
+<table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>ตอนนี้</th>
+<th>คะแนน</th>
+<th>ดันเข้าหลังบ้าน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>อนุมัติ work item</td>
+<td>LINE คลิกเดียว + web fallback ✅</td>
+<td>🟢</td>
+<td>pattern ถูกแล้ว</td>
+</tr>
+<tr>
+<td>เห็นสถานะงาน 8 ขั้น</td>
+<td>workflow console</td>
+<td>🟡</td>
+<td>ภาษาบนจอ = ชื่อขั้นภาษาคน (&quot;รอวัดพื้นที่&quot; ไม่ใช่ &quot;AREA_MEASUREMENT_PENDING&quot;); การส่งต่อขั้น = ปุ่มเดียว ระบบตรวจเงื่อนไขเองแล้วบอกว่าขาดอะไรเป็นภาษาคน</td>
+</tr>
+<tr>
+<td>Sales เก็บ customer_requirement (16 fields)</td>
+<td>ฟอร์ม</td>
+<td>🟡</td>
+<td>16 ช่องคือเยอะสำหรับคุยกับลูกค้าไปกรอกไป — จัดเป็น <strong>wizard ตามบทสนทนาจริง</strong> (ใคร→ที่ไหน→ทำอะไร→สไตล์→วัสดุ→งบ) + ค่า TBD ได้ทุกช่องที่ไม่ critical + <strong>ดึงจากแชท LINE อัตโนมัติ</strong> เมื่อลูกค้าพิมพ์มาแล้ว (อย่าให้ sale พิมพ์ซ้ำสิ่งที่ลูกค้าเขียนเอง)</td>
+</tr>
+</tbody></table>
+<h2>5. Executive Owner — รายสัปดาห์</h2>
+<p>Escalation (RPN/งบเกิน) เป็นการ์ดถึงมือทันที ✅ · ตัดสินใจ = ตอบการ์ด/สั่งใน Copilot — 🟢 · เฝ้าระวัง: การ์ด escalation ต้องสรุป &quot;ต้องตัดสินอะไร + ผลของแต่ละทาง&quot; ในการ์ดเดียว ไม่ใช่ลิงก์ไปอ่านเอกสารยาว</p>
+<h2>6. Accountant — หลักต่างออกไป (rigor คือเนื้องานเขา)</h2>
+<p>บัญชีคือคนที่<strong>รับความยากแทนคนอื่นทั้งระบบ</strong> — tenet สำหรับเขาไม่ใช่ &quot;ซ่อน rigor&quot; แต่คือ <strong>&quot;อย่าให้ทำงานซ้ำซ้อน&quot;</strong>:</p>
+<ul>
+<li>✅ ทำถูกแล้ว: OCR กรอกให้ก่อน + มนุษย์ยืนยัน (ไม่ใช่พิมพ์เอง), fraud flags ชี้เป้า (ไม่ใช่ไล่หาเอง), verify queue รวมที่เดียว</li>
+<li>🟡 เกณฑ์เพิ่ม: หน้า verify ต้องเห็น <strong>รูปเอกสาร + ค่าที่ OCR อ่าน เคียงข้างกัน</strong> แก้เฉพาะช่องที่ผิด (corrected_fields — มีใน 0078 แล้ว ✅) + ปุ่มยืนยันเดียว; ห้าม re-type ทั้งใบ</li>
+</ul>
+<h2>7. Designer / Draftsman / 3D (มืออาชีพของระบบ — ข้อยกเว้น)</h2>
+<p>เครื่องมือ CAD/CAM ซับซ้อนได้ (เนื้องาน) — จุดเดียวที่ tenet ยังบังคับ:</p>
+<ul>
+<li>🟡 <strong>ภาษา blocker ของ Gate:</strong> &quot;เจาะชิดขอบเกิน — กด Focus เพื่อดูจุด, กด Fix เพื่อแก้อัตโนมัติ&quot; ✅ ดีแล้ว แต่ต้องคุมทุก G-code ใหม่ (รวม G12 curved) ให้มี (ก) ภาษาคนบอกว่าผิดอะไร (ข) ปุ่มพาไปดู (ค) ปุ่มแก้อัตโนมัติเมื่อมี — <strong>ห้ามโชว์แค่รหัส error</strong></li>
+</ul>
+<h2>กติกาถาวรที่ตกผลึกจาก audit ระบบ (เพิ่มจาก D-12 ของ installation-pm)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>กติกา</th>
+<th>ใช้กับ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td><strong>Verify อัตโนมัติ ผู้ใช้เห็นแค่ ✅/❌</strong> — CLI/เครื่องมือเทคนิคเป็นของ auditor ไม่ใช่ flow ปกติ</td>
+<td>Factory receipt, ทุก integrity check</td>
+</tr>
+<tr>
+<td>S2</td>
+<td><strong>ภาษาคนทุกจอผู้ใช้ปลายทาง</strong> — ชื่อขั้น/ปุ่ม/error ห้ามเป็นรหัส/ENUM/ศัพท์ spec</td>
+<td>workflow console, gate blockers, Flex ทุกใบ</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><strong>อย่าให้ใครพิมพ์สิ่งที่ระบบรู้แล้ว</strong> — OCR ก่อนมนุษย์แก้, ดึงจากแชทก่อน sale กรอก, infer ก่อนถาม</td>
+<td>capture ทุก type, customer_requirement</td>
+</tr>
+<tr>
+<td>S4</td>
+<td><strong>ปฏิเสธ/ผิดพลาดต้องมีทางไปต่อใน 1 tap</strong> — reject มีช่องเหตุผลง่าย + ระบบ route เอง, ลิงก์หมดอายุขอใหม่ได้ทันที</td>
+<td>customer approval, ทุก error state</td>
+</tr>
+<tr>
+<td>S5</td>
+<td><strong>ทุกคนหน้างานมีปุ่ม &quot;แจ้งปัญหา&quot; pattern เดียวกัน</strong> (รูป → ปุ่ม → route เอง)</td>
+<td>ช่างติดตั้ง ✅, โรงงาน, ช่างวัด</td>
+</tr>
+<tr>
+<td>S6</td>
+<td><strong>คนรับ rigor (บัญชี/QA) = ห้ามทำซ้ำซ้อน</strong> — ระบบเตรียมให้แก้เฉพาะจุด ไม่ re-type</td>
+<td>verify queues ทุกอัน</td>
+</tr>
+</tbody></table>
+<h2>รายการแก้ที่เข้าคิว (จะผูกเข้า spec/tasks ที่เกี่ยวข้อง)</h2>
+<ol>
+<li><strong>Factory Server:</strong> auto-verify receipt + ✅/❌ บน UI (S1) → เพิ่มเข้า factory server backlog</li>
+<li><strong>Gate blockers:</strong> เกณฑ์ (ภาษาคน + Focus + Fix) เป็นข้อบังคับของ G-code ใหม่ทุกตัว รวม G12 curved → note เข้า curved-panel-system spec</li>
+<li><strong>customer_requirement wizard + ดึงจากแชท</strong> (S3) → note เข้า field-purchase/installation-pm sibling (capture UX)</li>
+<li><strong>Survey mobile form ตามลำดับวัดจริง + งานวัดของฉันวันนี้</strong> → เข้า installation-pm/measure backlog</li>
+<li><strong>Reject flow ลูกค้า + ลิงก์หมดอายุ</strong> (S4) → เข้า template governance checklist</li>
+<li><strong>ปุ่มแจ้งปัญหาที่โรงงาน</strong> (S5) → reuse pattern จาก installation-pm</li>
+</ol>
+<hr>
+<p><em>Audit นี้ประเมินจาก spec/PRD ปัจจุบัน — flow ที่ยังไม่ implement ให้ถือกติกา S1–S6 เป็นข้อบังคับตอน implement; flow ที่ implement แล้ว (LINE approve, capture verify) ให้ตรวจกับของจริงอีกครั้งตอน pilot Wave 1–2 แล้วอัปเดตคะแนน</em></p>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
