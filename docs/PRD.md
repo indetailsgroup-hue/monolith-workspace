@@ -1,14 +1,15 @@
 # PRD — MONOLITH Manufacturing OS (IIMOS Workspace)
 
-**Product Requirements Document ฉบับสมบูรณ์**
+**Product Requirements Document ฉบับสมบูรณ์ — Edition 2.0**
 
 | | |
 |---|---|
 | **ชื่อผลิตภัณฑ์** | MONOLITH Manufacturing OS (ชื่อ workspace: `monolith-workspace` / IIMOS) |
-| **เวอร์ชัน** | 2.1.0 (Factory-Ready CNC Pipeline) |
-| **วันที่จัดทำเอกสาร** | 4 กรกฎาคม 2026 |
+| **เวอร์ชันผลิตภัณฑ์** | 2.1.0 (Factory-Ready CNC Pipeline) |
+| **ฉบับเอกสาร** | **Edition 2.0** · 5 กรกฎาคม 2026 (ฉบับแรก 4 ก.ค. 2026 — ดู Revision History ท้ายเอกสาร) |
 | **Repository** | https://github.com/indetailsgroup-hue/iimos-workspace |
 | **สถานะการทดสอบ** | TypeScript 0 errors · Vitest 4,404 tests ผ่าน · E2E smoke ผ่าน |
+| **ผ่านกระบวนการ** | Grilling 2 รอบ (โครงเอกสาร + curved spec) · อ่าน `specs/` corpus ครบ 27 ไฟล์ · ตรวจทุก claim กับโค้ดจริง |
 
 > **วิธีอ่านเอกสารนี้:** เนื้อหาแบ่งเป็น 2 ประเภท —
 > **[ของจริง]** ข้อเท็จจริงจาก codebase/specs/tests ที่ตรวจสอบแล้ว (System Guarantees ใน §3, §5–§7, §10 ตารางสถานะ, §11–§13) และ
@@ -282,8 +283,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
   - ✅ **Toolpath/G-code**: IR รองรับ `ARC_CW/ARC_CCW`, dialect Biesse/HOMAG ปล่อย G2/G3 + I/J center, arc lead-in/lead-out, verifier + simulator ตรวจ arc ได้ (`src/core/manufacturing/gcode/`, `toolpath/geom/entryExitEmitter.ts`)
   - ✅ **Kerf Bending engine**: คำนวณ bendRadius/bendAngle/arc length/kerfCount/spacing/minimum bend radius ต่อวัสดุ (`src/core/catalog/KerfBending.ts` + calculator UI)
   - ⏳ **Cabinet model**: ยังวาด panel โค้ง (circular arc / S-curve / side panel โค้ง) เป็น object ในตู้ไม่ได้ — `Cabinet.ts` ยังไม่มี curve geometry; kerf result ยังไม่ auto-generate groove pattern ลง DXF
-  - 📋 **Spec พร้อมแล้ว**: `.kiro/specs/curved-panel-system/` (requirements 9 ข้อ + design + tasks 8 phases) — Panel_Profile model, Kerf_Pattern generator, Gate G12, mating slots, drill map exclusion, 3D overlay, export, spring-back/calibration
-  - 📐 **เอกสารวิศวกรรมหลัก**: `specs/manufacturing/kerf-bending-algorithms.md` (สูตร variable-curvature spacing, spring-back γ, calibration k_eff, ตารางพารามิเตอร์ plywood/MDF, KPI คลาดรัศมี ≤5% / FTY ≥95%) — spec และ engine ต้อง reconcile กับเอกสารนี้ (task Phase 0)
+  - 📋 **Spec พร้อมแล้ว (grill แล้ว 2 รอบ)**: `.kiro/specs/curved-panel-system/` — requirements 9 ข้อ (รวม Req 8 mating slots, Req 9 spring-back/calibration), Gate G12 10 error codes, Correctness Properties 9 ข้อ, tasks Phase 0–7 (+2.5); มติ grilling 4 ข้อ: kerf tool 2 แบบ (ROUTER/SAW ต่อ panel), ตาราง R_min ครบทุกวัสดุ (task 4.3), skin 2 โหมด (SKIN_PANEL/SURFACE_FINISH + side), mating slot ใน v1
+  - 📐 **เอกสารวิศวกรรมหลัก**: `specs/manufacturing/kerf-bending-algorithms.md` **v1.1** (back-port มติ grilling แล้ว: §1.3 tool model, §2.7 R_min catalog, §9 skin, §10 mating slot; unified web rule `t_web ≥ max(15%T, skin_min+0.5)`) — Phase 0 = reconcile `KerfBending.ts` กับเอกสารนี้
 
 #### 6.1.8 Persistence และ Versions [P0] ✅
 
@@ -698,7 +699,9 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
 1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
-1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec พร้อมที่ `.kiro/specs/curved-panel-system/` (มติ grilling: สินค้าจริงมีชิ้นโค้ง; ✅ arc toolpath + kerf engine มีแล้ว เหลือ Panel_Profile model + G12 + export)
+1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
+1.6. **[SaaS — รอ owner]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL + tests + matrix 53 features พร้อมหมด; **Phase 0 = ตัดสิน แยก DB vs รวม C12** แล้วจึง landing เป็น migration จริง
+1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** 7 owner decisions (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
@@ -719,6 +722,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | 5 | Released_Spec contract เวอร์ชันถัดไป (CAM ↔ capture) | Owner + วิศวกรรม |
 | 6 | MCP exposure — เปิด tool ไหนให้ AI client ภายนอก | Owner + governance |
 | 7 | Auto-approve policy — งานประเภทไหน (ถ้ามี) อนุญาต tier สูงขึ้น | Owner + governance |
+| 8 | **Entitlement SaaS: แยก DB ใหม่ หรือรวม DB กับ C12** (ถ้ารวมต้อง map org↔site + RLS convention เดิม) — blocking Phase 0 ของ `.kiro/specs/entitlement-tier/` | Owner + วิศวกรรม |
 
 **Docs drift ที่ตรวจพบ (อ่าน specs/ ครบชุด 2026-07-05) — ต้อง reconcile:**
 
@@ -769,6 +773,11 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | **No-guess / Fail-safe** | หลักการ: ไม่เดาค่า ไม่ auto-pass เมื่อข้อมูล/กลไกไม่พร้อม |
 | **PARA** | Projects / Areas / Resources / Archives (โครง Vault) |
 | **MOC** | Map of Contents (หน้า index ต่อกลุ่ม/หน่วยใน Vault) |
+| **Plan / Entitlement** | Plan = bundle ที่ลูกค้าซื้อ (free/plus/advance/enterprise); Entitlement = สิทธิ์ที่ resolve จริง (override รายองค์กร > plan > deny) |
+| **Gate 4 แบบ (SaaS)** | boolean / stock_quota (นับของจริง) / metered_quota (ต่อรอบบิล) / limit_param (เพดานต่อครั้ง) |
+| **Roadmap flag** | `features.status='roadmap'` — DB บล็อกไม่ให้ plan ปลด feature ที่ยังไม่ implement; ปลดได้เฉพาะ override beta รายองค์กร |
+| **k_eff** | ความกว้างร่อง kerf ที่ calibrate จริงต่อ tool (coupon test) — สูตร kerf ทุกจุดใช้ค่านี้ ไม่ใช่ Ø nominal |
+| **Spring-back (γ)** | ปัจจัยไม้คืนรูปหลังดัด (plywood ~0.10–0.12, MDF ~0.12–0.15) — ออกแบบร่องให้โค้งเกินเป้า κ′=κ(1+γ) |
 
 ---
 
@@ -957,7 +966,7 @@ npm run gate:bypass-scan            # CI gate bypass scan
 - **`specs/` (7 หมวด, 27 ไฟล์, ~27,000 บรรทัด) — เอกสารวิศวกรรมระบบผลิต**: main (spec/plan/tasks), manufacturing (kerf-bending, cut-optimization, door-drawer, dxf-export, hardware-drilling 12.4k บรรทัด), reference (formula-reference, master-hardware-database, api-documentation, cross-reference-index), technical (parametric-cabinet-calculations, snap, collision, trust-chain, r3f, verifier-golden-strings, configurator, 3d-optimization, webgpu-roadmap, gap-analysis), strategy (web-first-r3f), testing, templates
   - **กติกาชี้ขาดเมื่อเอกสารขัดกัน (จาก cross-reference-index §5.2)**: (1) formula-reference ก่อน (2) master-hardware-database สำหรับ hardware (3) โฟลเดอร์ reference/ ชนะเสมอ (4) รายงาน conflict เพื่ออัปเดต SSOT — และเมื่อเอกสารขัดกับ**โค้ดที่มีเทสต์คุ้ม** ให้ตรวจโค้ดเป็นความจริงล่าสุดแล้วย้อนแก้เอกสาร (ดู §11 Docs drift)
 - `contracts/` — kernel contract (SPEC-08 Plasticity-DNA, TS↔PyOCC), command registry, stable-hash vectors
-- `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec
+- `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec — รวม spec ใหม่จาก session นี้: **`curved-panel-system/`** (พร้อม kerf patch archive ที่ติดป้าย SUPERSEDED) และ **`entitlement-tier/`** (spec + `schema-draft-v0.3.sql` + `tests-negative.sql` + tier-matrix/schema-design v0.3 + `research-oneclickcabinet-v4.1.md`)
 - `.kiro/steering/` — architecture-decisions.md, ubiquitous-language.md
 - `CHANGELOG.md` — v2.1.0 (D1–D3.3 CNC trust chain), v2.0.0
 - `CONTRIBUTING.md` — Safety Gate policy + ระดับเทสต์บังคับ 4 ระดับ
@@ -967,4 +976,14 @@ npm run gate:bypass-scan            # CI gate bypass scan
 
 ---
 
-*เอกสารนี้สร้างจากการสำรวจ codebase จริง (source, migrations, specs, tests) ณ commit `2c19935` — สถานะ implement ทุกรายการอ้างอิงจากโค้ดและผลเทสต์ที่รันจริง ไม่ใช่จากแผน*
+## Revision History
+
+| Edition | วันที่ | การเปลี่ยนแปลงหลัก |
+|---------|--------|---------------------|
+| **2.0** | 2026-07-05 | ฉบับปรับปรุงรวม: ผลอ่าน `specs/` corpus ครบ 27 ไฟล์ (§6.2.8, §13.4, Drift D-1..D-10), §6.11 โมดูล design-stage 4 ตัว, Curved Panel spec ผ่าน grilling + kerf doc v1.1, Entitlement & Multi-Tier v0.3 (53 features, roadmap hard-block) + owner decision ข้อ 8, Glossary/Roadmap/อ้างอิงอัปเดตทั้งชุด |
+| 1.1–1.9 | 2026-07-04/05 | รอบ grilling: แยก System Guarantees/Business Goals, baseline-first metrics, Non-Goals คัดของแท้, Pilot Wave 1, แก้ overclaim (workflow 84%, accounting bank feed), ป้าย [ของจริง]/[ข้อเสนอ 📝] |
+| 1.0 | 2026-07-04 | ฉบับแรกจากการสำรวจ codebase ด้วย 6 agents + verify กับเทสต์จริง |
+
+---
+
+*เอกสารนี้สร้างและปรับปรุงจากการสำรวจ codebase จริง (source, migrations, specs corpus 27 ไฟล์, tests) — Edition 2.0 ณ commit `3a8b910` — สถานะ implement ทุกรายการอ้างอิงจากโค้ดและผลเทสต์ที่รันจริง ไม่ใช่จากแผน; ส่วน [ข้อเสนอ 📝] รอ owner ยืนยันตามที่ระบุหน้าแรก*
