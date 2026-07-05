@@ -492,7 +492,10 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
 </ul>
 <hr>
-<h1>LINE Architecture — Installation PM v0.1 (rev.1 — เพิ่มตำแหน่งงานครบชุดตาม &quot;สำหรับคุณชุ.xlsx&quot;)</h1>
+<h1>LINE Architecture — Installation PM v0.1 (rev.2 — ยืนยันตำแหน่ง/สายบังคับบัญชากับ JD ทางการ 27 ฉบับ)</h1>
+<blockquote>
+<p><strong>แหล่งอ้างอิงตำแหน่ง:</strong> <code>docs/DAPH-org-structure-from-JD-2025.md</code> (สกัดจาก JD .doc 27 ฉบับ ก.ค. 2025 — อ่านครบทุกใบ 2026-07-05) — ใช้เป็น SSOT เรื่องชื่อตำแหน่ง/สายบังคับบัญชา/อำนาจอนุมัติ เหนือกว่าที่อนุมานจาก workbook</p>
+</blockquote>
 <blockquote>
 <p><strong>มติ owner (5 ก.ค. 2026):</strong> (1) บ้านละ <strong>2 กลุ่ม</strong> — Internal Team (คุยงาน/ปัญหา/ต้นทุน/แก้แบบ/นัดช่าง) + Customer Group (เฉพาะสิ่งที่ลูกค้าควรรู้: ความคืบหน้า, แบบ, นัดหมาย, ขออนุมัติ) · (2) <strong>bot เข้าทุกกลุ่ม</strong> ในบทบาท &quot;ผู้ช่วยเก็บหลักฐานและแจ้งเตือน&quot; พร้อม guardrails — ห้ามพูดต้นทุน/เรื่องภายในในกลุ่มลูกค้า, กลุ่มลูกค้าใช้ template ควบคุมเท่านั้น, ข้อความ sensitive route เข้ากลุ่มทีมในเท่านั้น · (3) ผูกตัวตนพนักงาน↔LINE ด้วย<strong>ลิงก์ครั้งเดียว</strong> (LINE Login)
 <strong>ฐานที่ต่อยอด:</strong> line-oa-commerce (✅ 20/20 — webhook HMAC/idempotent, outbound worker, template governance &quot;ไม่มี free-text LLM&quot;, customer identity) — <strong>schema เดิมเป็น 1:1 ล้วน ไม่มี group</strong> → ส่วนกลุ่ม/ตัวตนพนักงานเป็น net-new ตามเอกสารนี้</p>
@@ -563,28 +566,58 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <td>internal ช่วงออกแบบ; ผลงาน render → กลุ่ม customer ผ่าน curated</td>
 </tr>
 <tr>
-<td>Production Planning</td>
+<td>Production Planning (ใต้ <strong>PM</strong> ตาม JD — รวม Draftsman ไฟล์ตัด/เจาะ)</td>
 <td>5 (25k/คน)</td>
-<td>3D model→Pytha, raw mat list, FTR production list, installation checklist, <strong>สั่งซื้อวัสดุ (Purchasing)</strong></td>
+<td>3D→Pytha, ถอดแบบ/วัสดุ, ประเมินราคา, FTR/installation checklist, <strong>ส่งรายการวัสดุให้คลัง+จัดซื้อ</strong></td>
 <td>internal — แจ้งกำหนดการผลิต/ของเข้า</td>
 </tr>
 <tr>
-<td>Production (Factory)</td>
+<td>Production (Factory — ใต้ผู้จัดการโรงงาน)</td>
 <td>27</td>
-<td>สถานีเครื่อง: Laminate HPL (4), cutting (4), edging (4), CNC (4), assembly (7: ทำความสะอาด 2/เกือกม้า 1/เดือยไม้ 1/เดือยเหล็ก 1/ประกอบ 2), packing (2)</td>
-<td>ปกติไม่อยู่กลุ่มบ้าน — งานเดินผ่าน work item/ใบงาน; แจ้งของเสร็จ → bot โพสต์กลุ่ม internal</td>
+<td>สถานีเครื่อง: Laminate HPL (4), cutting (4), edging (4), CNC (4), assembly (7), packing (2) + หัวหน้าฝ่ายผลิต</td>
+<td>ปกติไม่อยู่กลุ่มบ้าน — งานเดินผ่าน work item/ใบงาน; ของเสร็จ → bot โพสต์กลุ่ม internal</td>
 </tr>
 <tr>
-<td>Installation</td>
-<td>3 ช่าง/ห้อง + หัวหน้างาน 1/บ้าน</td>
-<td>ตาม form templates</td>
-<td>internal ช่วงติดตั้ง; หัวหน้าอยู่กลุ่ม customer ด้วย</td>
+<td><strong>จัดซื้อ (Purchasing)</strong></td>
+<td>—</td>
+<td><strong>สังกัดฝ่ายบัญชี-การเงิน (JD)</strong> — PR → <strong>MD อนุมัติ</strong> → PO; ประเมิน Supplier</td>
+<td>ไม่อยู่กลุ่มบ้าน — เดินผ่าน capture/workflow</td>
 </tr>
 <tr>
-<td>General Manager / BD</td>
+<td><strong>คลังสินค้า (Warehouse)</strong></td>
+<td>—</td>
+<td>เบิก-จ่ายวัสดุ/อุปกรณ์ <strong>ทั้งงานผลิตและงานติดตั้ง</strong>, FIFO, สต๊อกรายวัน</td>
+<td>ไม่อยู่กลุ่มบ้าน — เบิกของทีมช่างผ่านใบเบิก/ระบบ</td>
+</tr>
+<tr>
+<td><strong>โลจิสติกส์</strong></td>
+<td>—</td>
+<td><strong>จัดส่งช่างติดตั้ง + ชิ้นงาน</strong>ไปหน้างาน (ใต้ผู้จัดการโรงงาน)</td>
+<td>แจ้งกำหนดส่ง → bot โพสต์กลุ่ม internal</td>
+</tr>
+<tr>
+<td><strong>QA (ประกันคุณภาพ)</strong></td>
+<td>—</td>
+<td>ด่านสุดท้ายก่อนส่งมอบ — อนุมัติของดี/ของเสีย, ตรวจวัตถุดิบ/กระบวนการ/สำเร็จรูป</td>
+<td>ไม่อยู่กลุ่มบ้าน</td>
+</tr>
+<tr>
+<td>Installation (สายบังคับบัญชา 4 ชั้นตาม JD: หัวหน้าฝ่าย → <strong>หัวหน้าทีม</strong> → หัวหน้าช่าง → ช่าง+ผู้ช่วยช่าง)</td>
+<td>3 ช่าง/ห้อง + <strong>หัวหน้าทีมติดตั้ง 1/บ้าน</strong></td>
+<td>ตาม form templates; <strong>ช่างทุกระดับมีหน้าที่ตาม JD: &quot;ส่งรายงานการติดตั้งทุกครั้ง&quot; + รายงานประจำวัน + คุมเวลาเข้า-ออกไซต์</strong></td>
+<td>internal ช่วงติดตั้ง; หัวหน้าทีมอยู่กลุ่ม customer ด้วย</td>
+</tr>
+<tr>
+<td><strong>Project Manager / Assistant PM</strong> (ฝ่ายงานติดตั้ง — คุมทั้งติดตั้ง+วางแผนการผลิต ตาม JD)</td>
 <td>1+1</td>
-<td>oversight, escalation (Executive Owner ใน RACI)</td>
-<td>ไม่บังคับอยู่กลุ่ม — เห็นทุกอย่างผ่าน PWA/dashboard</td>
+<td>เจ้าของเส้นส่งมอบ; escalation จากทุกบ้าน (ตรง workflow spec: timeout → project_manager)</td>
+<td>เข้ากลุ่มได้ตามต้องการ; เห็นทุกบ้านผ่าน PWA</td>
+</tr>
+<tr>
+<td>General Manager</td>
+<td>1</td>
+<td>oversight ทุกฝ่าย (Executive Owner ใน RACI); MD เหนือขึ้นไปอนุมัติ PO</td>
+<td>ไม่บังคับอยู่กลุ่ม — dashboard</td>
 </tr>
 </tbody></table>
 <p><strong>กลุ่ม ข — support ไม่ผูกโปรเจกต์ลูกค้ารายหลัง</strong> (มี staff identity ได้ แต่ไม่มี membership ต่อบ้าน → ไม่เห็นข้อมูลโปรเจกต์ตาม RLS): Marketing (Brand Editor, Creative, Account Executive ฯลฯ), digital marketing (Content, SEO, Data &amp; Analytics, E-Commerce ฯลฯ), team media/Production House (motion graphic, graphic designer, Director, Camera man ฯลฯ — เข้าไซต์ถ่ายงานได้เป็นครั้งคราว → ให้ membership ชั่วคราวแบบ external ต่อบ้าน + เข้ากลุ่ม internal เฉพาะช่วงถ่าย), Software team, Marketing officer (Year 2+)</p>
@@ -861,6 +894,7 @@ line_oa_inbound_messages + source_type (&#39;user&#39;|&#39;group&#39;) + line_g
 <ul>
 <li><strong>Staffing:</strong> ห้องละ <strong>3 ช่าง</strong> — คนละ 1 เลน (ช่าง 1/2/3 ตาม checklist) ทุกห้องทำ<strong>ขนานกัน</strong> + <strong>หัวหน้างาน 1 คนต่อบ้าน</strong> คุมทุกห้อง
 ตัวอย่างจริง: บ้าน 5 ห้อง = 5×3 ช่าง + หัวหน้า 1 = <strong>16 คน</strong></li>
+<li><strong>ตำแหน่งตาม JD ทางการ</strong> (<code>docs/DAPH-org-structure-from-JD-2025.md</code>): หัวหน้างาน/บ้าน = <strong>หัวหน้าทีมติดตั้ง</strong>; ช่างในเลนอาจเป็น ช่างติดตั้ง/ผู้ช่วยช่าง/หัวหน้าช่าง คละกัน (สายบังคับบัญชา: หัวหน้าฝ่าย → หัวหน้าทีม → หัวหน้าช่าง → ช่าง+ผู้ช่วย); <strong>การส่งรายงานประจำวัน = หน้าที่ตาม JD ของช่างทุกระดับ</strong> (ไม่ใช่ฟีเจอร์เสริม) และหัวหน้าทีมมีหน้าที่คุมเวลาเข้า-ออกไซต์ → daily report ควรมีช่องเวลาเข้า-ออก</li>
 <li>Template = <strong>ต่อประเภทห้อง × เลนช่าง</strong> — เปิดห้องหนึ่ง = สร้าง subtask 3 เลน มอบ assignee ช่างจริงคนละเลน</li>
 <li><strong>บทบาทหัวหน้างาน:</strong> ติ๊ก T0 site-readiness + เป็น approver start/finish ของ work item (= &quot;หัวหน้าทีม Installation&quot; ใน workflow spec) + รับ escalation จากทุกห้อง</li>
 <li><strong>กติกาความคืบหน้า:</strong> ห้องเสร็จ = ทุกเลนของห้องนั้นติ๊กครบ + ถ่ายรูป <strong>Wrapping</strong> เข้า capture <code>installation_proof</code> (ทุกเลนจบด้วย ทำความสะอาด → Wrapping = จุดถ่ายรูปธรรมชาติ); บ้านเสร็จ = ทุกห้องเสร็จ → เข้าสถานะ customer_review (ลูกค้าอนุมัติผ่าน LINE)</li>

@@ -1,4 +1,6 @@
-# LINE Architecture — Installation PM v0.1 (rev.1 — เพิ่มตำแหน่งงานครบชุดตาม "สำหรับคุณชุ.xlsx")
+# LINE Architecture — Installation PM v0.1 (rev.2 — ยืนยันตำแหน่ง/สายบังคับบัญชากับ JD ทางการ 27 ฉบับ)
+
+> **แหล่งอ้างอิงตำแหน่ง:** `docs/DAPH-org-structure-from-JD-2025.md` (สกัดจาก JD .doc 27 ฉบับ ก.ค. 2025 — อ่านครบทุกใบ 2026-07-05) — ใช้เป็น SSOT เรื่องชื่อตำแหน่ง/สายบังคับบัญชา/อำนาจอนุมัติ เหนือกว่าที่อนุมานจาก workbook
 
 > **มติ owner (5 ก.ค. 2026):** (1) บ้านละ **2 กลุ่ม** — Internal Team (คุยงาน/ปัญหา/ต้นทุน/แก้แบบ/นัดช่าง) + Customer Group (เฉพาะสิ่งที่ลูกค้าควรรู้: ความคืบหน้า, แบบ, นัดหมาย, ขออนุมัติ) · (2) **bot เข้าทุกกลุ่ม** ในบทบาท "ผู้ช่วยเก็บหลักฐานและแจ้งเตือน" พร้อม guardrails — ห้ามพูดต้นทุน/เรื่องภายในในกลุ่มลูกค้า, กลุ่มลูกค้าใช้ template ควบคุมเท่านั้น, ข้อความ sensitive route เข้ากลุ่มทีมในเท่านั้น · (3) ผูกตัวตนพนักงาน↔LINE ด้วย**ลิงก์ครั้งเดียว** (LINE Login)
 > **ฐานที่ต่อยอด:** line-oa-commerce (✅ 20/20 — webhook HMAC/idempotent, outbound worker, template governance "ไม่มี free-text LLM", customer identity) — **schema เดิมเป็น 1:1 ล้วน ไม่มี group** → ส่วนกลุ่ม/ตัวตนพนักงานเป็น net-new ตามเอกสารนี้
@@ -23,10 +25,15 @@
 | measure (Area Measurement) | 10 | ตรวจข้อมูลจาก sale, วัดพื้นที่ → site_survey | internal ช่วงวัดพื้นที่ |
 | Designer | 5 | Function, Mood & theme, Floor plan, Cabinet & wall list | internal + ส่งแบบ/ขออนุมัติเข้ากลุ่ม **customer** (ผ่าน curated flow) ช่วงออกแบบ |
 | 3D rendering | 5 | 3D final, furniture/lighting/material selection, rendering | internal ช่วงออกแบบ; ผลงาน render → กลุ่ม customer ผ่าน curated |
-| Production Planning | 5 (25k/คน) | 3D model→Pytha, raw mat list, FTR production list, installation checklist, **สั่งซื้อวัสดุ (Purchasing)** | internal — แจ้งกำหนดการผลิต/ของเข้า |
-| Production (Factory) | 27 | สถานีเครื่อง: Laminate HPL (4), cutting (4), edging (4), CNC (4), assembly (7: ทำความสะอาด 2/เกือกม้า 1/เดือยไม้ 1/เดือยเหล็ก 1/ประกอบ 2), packing (2) | ปกติไม่อยู่กลุ่มบ้าน — งานเดินผ่าน work item/ใบงาน; แจ้งของเสร็จ → bot โพสต์กลุ่ม internal |
-| Installation | 3 ช่าง/ห้อง + หัวหน้างาน 1/บ้าน | ตาม form templates | internal ช่วงติดตั้ง; หัวหน้าอยู่กลุ่ม customer ด้วย |
-| General Manager / BD | 1+1 | oversight, escalation (Executive Owner ใน RACI) | ไม่บังคับอยู่กลุ่ม — เห็นทุกอย่างผ่าน PWA/dashboard |
+| Production Planning (ใต้ **PM** ตาม JD — รวม Draftsman ไฟล์ตัด/เจาะ) | 5 (25k/คน) | 3D→Pytha, ถอดแบบ/วัสดุ, ประเมินราคา, FTR/installation checklist, **ส่งรายการวัสดุให้คลัง+จัดซื้อ** | internal — แจ้งกำหนดการผลิต/ของเข้า |
+| Production (Factory — ใต้ผู้จัดการโรงงาน) | 27 | สถานีเครื่อง: Laminate HPL (4), cutting (4), edging (4), CNC (4), assembly (7), packing (2) + หัวหน้าฝ่ายผลิต | ปกติไม่อยู่กลุ่มบ้าน — งานเดินผ่าน work item/ใบงาน; ของเสร็จ → bot โพสต์กลุ่ม internal |
+| **จัดซื้อ (Purchasing)** | — | **สังกัดฝ่ายบัญชี-การเงิน (JD)** — PR → **MD อนุมัติ** → PO; ประเมิน Supplier | ไม่อยู่กลุ่มบ้าน — เดินผ่าน capture/workflow |
+| **คลังสินค้า (Warehouse)** | — | เบิก-จ่ายวัสดุ/อุปกรณ์ **ทั้งงานผลิตและงานติดตั้ง**, FIFO, สต๊อกรายวัน | ไม่อยู่กลุ่มบ้าน — เบิกของทีมช่างผ่านใบเบิก/ระบบ |
+| **โลจิสติกส์** | — | **จัดส่งช่างติดตั้ง + ชิ้นงาน**ไปหน้างาน (ใต้ผู้จัดการโรงงาน) | แจ้งกำหนดส่ง → bot โพสต์กลุ่ม internal |
+| **QA (ประกันคุณภาพ)** | — | ด่านสุดท้ายก่อนส่งมอบ — อนุมัติของดี/ของเสีย, ตรวจวัตถุดิบ/กระบวนการ/สำเร็จรูป | ไม่อยู่กลุ่มบ้าน |
+| Installation (สายบังคับบัญชา 4 ชั้นตาม JD: หัวหน้าฝ่าย → **หัวหน้าทีม** → หัวหน้าช่าง → ช่าง+ผู้ช่วยช่าง) | 3 ช่าง/ห้อง + **หัวหน้าทีมติดตั้ง 1/บ้าน** | ตาม form templates; **ช่างทุกระดับมีหน้าที่ตาม JD: "ส่งรายงานการติดตั้งทุกครั้ง" + รายงานประจำวัน + คุมเวลาเข้า-ออกไซต์** | internal ช่วงติดตั้ง; หัวหน้าทีมอยู่กลุ่ม customer ด้วย |
+| **Project Manager / Assistant PM** (ฝ่ายงานติดตั้ง — คุมทั้งติดตั้ง+วางแผนการผลิต ตาม JD) | 1+1 | เจ้าของเส้นส่งมอบ; escalation จากทุกบ้าน (ตรง workflow spec: timeout → project_manager) | เข้ากลุ่มได้ตามต้องการ; เห็นทุกบ้านผ่าน PWA |
+| General Manager | 1 | oversight ทุกฝ่าย (Executive Owner ใน RACI); MD เหนือขึ้นไปอนุมัติ PO | ไม่บังคับอยู่กลุ่ม — dashboard |
 
 **กลุ่ม ข — support ไม่ผูกโปรเจกต์ลูกค้ารายหลัง** (มี staff identity ได้ แต่ไม่มี membership ต่อบ้าน → ไม่เห็นข้อมูลโปรเจกต์ตาม RLS): Marketing (Brand Editor, Creative, Account Executive ฯลฯ), digital marketing (Content, SEO, Data & Analytics, E-Commerce ฯลฯ), team media/Production House (motion graphic, graphic designer, Director, Camera man ฯลฯ — เข้าไซต์ถ่ายงานได้เป็นครั้งคราว → ให้ membership ชั่วคราวแบบ external ต่อบ้าน + เข้ากลุ่ม internal เฉพาะช่วงถ่าย), Software team, Marketing officer (Year 2+)
 
