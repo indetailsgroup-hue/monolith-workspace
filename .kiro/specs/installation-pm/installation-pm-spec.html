@@ -239,7 +239,7 @@
 </ol>
 <h3>Requirement 13: LINE Groups + Staff Identity (มติ owner 5 ก.ค. 2026 — ดู <code>line-architecture-v0.1.md</code>)</h3>
 <ol>
-<li>THE บ้าน 1 หลัง SHALL มี LINE <strong>2 กลุ่ม</strong>: internal (หัวหน้า+ช่าง+sale — คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — เฉพาะความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ) — ผูกกับ <code>installation_projects</code> ผ่าน <code>line_groups</code> + รหัสผูกบ้าน</li>
+<li>THE บ้าน 1 หลัง SHALL มี LINE <strong>2 กลุ่ม</strong> อายุยาวตลอดโปรเจกต์: internal (sale ตลอด + สมาชิกหมุนตามเฟส — ทีมวัด→designer/3D→หัวหน้า+ช่าง; คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — ความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ ตั้งแต่เฟสออกแบบ) — ผูกกับ <code>installation_projects</code> ผ่าน <code>line_groups</code> + รหัสผูกบ้าน; ตำแหน่งงานครบชุด (Sale/วัด/Designer/3D/PP/Factory/ติดตั้ง/GM + support) ดู <code>line-architecture-v0.1.md</code> §1.1</li>
 <li>THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: capture รูป (→<code>installation_proof</code>) + <code>#ปัญหา</code> + แจ้งเตือนทีม; กลุ่ม customer: <strong>เฉพาะ template ที่ <code>audience=&#39;customer&#39;</code></strong> — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)</li>
 <li>THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี <strong>ครั้งเดียวผ่านลิงก์ + LINE Login</strong> (<code>line_staff_identity</code>, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit &quot;ใครทำอะไรที่ไหนเมื่อไหร่&quot;</li>
 <li>THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (<code>line_group_members</code> sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน</li>
@@ -492,7 +492,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
 </ul>
 <hr>
-<h1>LINE Architecture — Installation PM v0.1</h1>
+<h1>LINE Architecture — Installation PM v0.1 (rev.1 — เพิ่มตำแหน่งงานครบชุดตาม &quot;สำหรับคุณชุ.xlsx&quot;)</h1>
 <blockquote>
 <p><strong>มติ owner (5 ก.ค. 2026):</strong> (1) บ้านละ <strong>2 กลุ่ม</strong> — Internal Team (คุยงาน/ปัญหา/ต้นทุน/แก้แบบ/นัดช่าง) + Customer Group (เฉพาะสิ่งที่ลูกค้าควรรู้: ความคืบหน้า, แบบ, นัดหมาย, ขออนุมัติ) · (2) <strong>bot เข้าทุกกลุ่ม</strong> ในบทบาท &quot;ผู้ช่วยเก็บหลักฐานและแจ้งเตือน&quot; พร้อม guardrails — ห้ามพูดต้นทุน/เรื่องภายในในกลุ่มลูกค้า, กลุ่มลูกค้าใช้ template ควบคุมเท่านั้น, ข้อความ sensitive route เข้ากลุ่มทีมในเท่านั้น · (3) ผูกตัวตนพนักงาน↔LINE ด้วย<strong>ลิงก์ครั้งเดียว</strong> (LINE Login)
 <strong>ฐานที่ต่อยอด:</strong> line-oa-commerce (✅ 20/20 — webhook HMAC/idempotent, outbound worker, template governance &quot;ไม่มี free-text LLM&quot;, customer identity) — <strong>schema เดิมเป็น 1:1 ล้วน ไม่มี group</strong> → ส่วนกลุ่ม/ตัวตนพนักงานเป็น net-new ตามเอกสารนี้</p>
@@ -514,10 +514,10 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <td>ไม่เป็น DB principal (Edge Function mediate — pattern เดิม)</td>
 </tr>
 <tr>
-<td><strong>พนักงาน</strong> (ช่าง/หัวหน้างาน/sale/office)</td>
+<td><strong>พนักงานทุกตำแหน่ง</strong> (ดู §1.1)</td>
 <td>LINE user_id ↔ บัญชีพนักงาน (auth user)</td>
-<td><strong><code>line_staff_identity</code></strong> (ใหม่)</td>
-<td>ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; <code>line_user_id</code> UNIQUE (คนหนึ่ง = บัญชีเดียว)</td>
+<td><strong><code>line_staff_identity</code></strong> (ใหม่ — ตารางเดียวทุกตำแหน่ง)</td>
+<td>ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; <code>line_user_id</code> UNIQUE; <strong>role/แผนก มาจากระบบ (C12 roles + memberships) ไม่ใช่จาก LINE</strong></td>
 </tr>
 <tr>
 <td><strong>Bot</strong></td>
@@ -527,10 +527,78 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 </tr>
 </tbody></table>
 <p><strong>ทำไมต้องแยก staff identity จาก customer identity:</strong> ตาราง customer มี match_confidence/manual_review (จับคู่โดยอนุมาน) แต่พนักงานต้อง<strong>ยืนยันตัวเองแบบ deterministic</strong> (LINE Login) เพื่อให้ <code>resolve_actor</code> audit ได้ว่า &quot;ช่างคนไหนส่งรูปนี้&quot; — ห้ามอนุมาน</p>
+<h3>1.1 ตำแหน่งงานทั้งหมดในขั้นตอนการทำงาน DAPH (จาก &quot;สำหรับคุณชุ.xlsx&quot; 2025-07-03)</h3>
+<p><strong>กลุ่ม ก — ทำงานต่อโปรเจกต์ลูกค้าโดยตรง</strong> (มี membership ต่อบ้าน + เกี่ยวกับ LINE กลุ่ม — ตรงกับ Department ใน workflow spec: Sale, Area Measurement, Designer, 3D_Presentation, Production Planning, 3D_Rendering_Final, Factory, Installation, Purchasing):</p>
+<table>
+<thead>
+<tr>
+<th>แผนก (ตามไฟล์)</th>
+<th>คน (แผน)</th>
+<th>บทบาทต่อโปรเจกต์</th>
+<th>เฟสที่แตะ LINE กลุ่ม</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>on Line sales</td>
+<td>2</td>
+<td>Qualify ลูกค้า, เสนอราคา, ชี้แจงขั้นตอน, เก็บค่าวัดหน้างาน</td>
+<td>ทุกเฟส — อยู่ทั้ง 2 กลุ่มตลอดอายุโปรเจกต์</td>
+</tr>
+<tr>
+<td>measure (Area Measurement)</td>
+<td>10</td>
+<td>ตรวจข้อมูลจาก sale, วัดพื้นที่ → site_survey</td>
+<td>internal ช่วงวัดพื้นที่</td>
+</tr>
+<tr>
+<td>Designer</td>
+<td>5</td>
+<td>Function, Mood &amp; theme, Floor plan, Cabinet &amp; wall list</td>
+<td>internal + ส่งแบบ/ขออนุมัติเข้ากลุ่ม <strong>customer</strong> (ผ่าน curated flow) ช่วงออกแบบ</td>
+</tr>
+<tr>
+<td>3D rendering</td>
+<td>5</td>
+<td>3D final, furniture/lighting/material selection, rendering</td>
+<td>internal ช่วงออกแบบ; ผลงาน render → กลุ่ม customer ผ่าน curated</td>
+</tr>
+<tr>
+<td>Production Planning</td>
+<td>5 (25k/คน)</td>
+<td>3D model→Pytha, raw mat list, FTR production list, installation checklist, <strong>สั่งซื้อวัสดุ (Purchasing)</strong></td>
+<td>internal — แจ้งกำหนดการผลิต/ของเข้า</td>
+</tr>
+<tr>
+<td>Production (Factory)</td>
+<td>27</td>
+<td>สถานีเครื่อง: Laminate HPL (4), cutting (4), edging (4), CNC (4), assembly (7: ทำความสะอาด 2/เกือกม้า 1/เดือยไม้ 1/เดือยเหล็ก 1/ประกอบ 2), packing (2)</td>
+<td>ปกติไม่อยู่กลุ่มบ้าน — งานเดินผ่าน work item/ใบงาน; แจ้งของเสร็จ → bot โพสต์กลุ่ม internal</td>
+</tr>
+<tr>
+<td>Installation</td>
+<td>3 ช่าง/ห้อง + หัวหน้างาน 1/บ้าน</td>
+<td>ตาม form templates</td>
+<td>internal ช่วงติดตั้ง; หัวหน้าอยู่กลุ่ม customer ด้วย</td>
+</tr>
+<tr>
+<td>General Manager / BD</td>
+<td>1+1</td>
+<td>oversight, escalation (Executive Owner ใน RACI)</td>
+<td>ไม่บังคับอยู่กลุ่ม — เห็นทุกอย่างผ่าน PWA/dashboard</td>
+</tr>
+</tbody></table>
+<p><strong>กลุ่ม ข — support ไม่ผูกโปรเจกต์ลูกค้ารายหลัง</strong> (มี staff identity ได้ แต่ไม่มี membership ต่อบ้าน → ไม่เห็นข้อมูลโปรเจกต์ตาม RLS): Marketing (Brand Editor, Creative, Account Executive ฯลฯ), digital marketing (Content, SEO, Data &amp; Analytics, E-Commerce ฯลฯ), team media/Production House (motion graphic, graphic designer, Director, Camera man ฯลฯ — เข้าไซต์ถ่ายงานได้เป็นครั้งคราว → ให้ membership ชั่วคราวแบบ external ต่อบ้าน + เข้ากลุ่ม internal เฉพาะช่วงถ่าย), Software team, Marketing officer (Year 2+)</p>
 <h2>2. Group Model — ใครอยู่กลุ่มไหน</h2>
 <pre><code>installation_projects (บ้าน) ─1:2─ line_groups
-  ├─ group_type = &#39;internal&#39;  → หัวหน้างาน + ช่างทุกคนของบ้าน + sale (+office ตามงาน)
-  └─ group_type = &#39;customer&#39;  → ลูกค้า + sale + หัวหน้างาน (ช่างไม่อยู่)
+  ├─ group_type = &#39;internal&#39;  → sale (ตลอด) + สมาชิกหมุนตามเฟส: ทีมวัด (ช่วงวัด) →
+  │                             designer/3D (ช่วงออกแบบ) → หัวหน้างาน+ช่าง (ช่วงติดตั้ง)
+  │                             (+team media ชั่วคราวช่วงถ่ายงาน — external membership)
+  └─ group_type = &#39;customer&#39;  → ลูกค้า + sale + หัวหน้างาน (ช่างไม่อยู่; designer ไม่อยู่ —
+                                แบบ/render ส่งเข้ากลุ่มผ่าน curated flow)
+
+**กลุ่มมีอายุยาวตลอดโปรเจกต์ ไม่ใช่แค่เฟสติดตั้ง** — กลุ่ม customer ทำงานตั้งแต่เฟสออกแบบ
+(ส่งแบบ 3D + ขออนุมัติแบบผ่าน Flex — flow เดียวกับอนุมัติงานติดตั้ง) สมาชิก internal
+หมุนตามเฟส โดย member events บันทึกหมดว่าใครเข้า/ออกเมื่อไหร่
 
 line_groups        (line_group_id UNIQUE, project_id, group_type, status: active|archived)
 line_group_members (group_id, line_user_id, display_name snapshot, joined_at, left_at)
@@ -597,32 +665,106 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
 <td>sync <code>line_group_members</code> + audit</td>
 </tr>
 </tbody></table>
-<h2>5. Access Matrix — ใครเข้าถึงข้อมูลอะไร</h2>
+<h2>5. Access Matrix — ใครเข้าถึงข้อมูลอะไร (ครบทุกตำแหน่งกลุ่ม ก + support)</h2>
 <table>
 <thead>
 <tr>
 <th>ข้อมูล</th>
-<th>ช่าง</th>
+<th>ช่างติดตั้ง</th>
 <th>หัวหน้างาน</th>
 <th>Sale</th>
+<th>ทีมวัด</th>
+<th>Designer/3D</th>
+<th>Production Planning</th>
+<th>Factory (สถานี)</th>
 <th>Office/บัญชี</th>
+<th>GM/BD</th>
+<th>Marketing/media/SW</th>
 <th>ลูกค้า</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Checklist/subtask เลนตัวเอง</td>
+<td>customer_requirement</td>
+<td>👁 ส่วนหน้างาน</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ (ตรวจข้อมูลจาก sale — JES-002)</td>
+<td>✅</td>
+<td>✅</td>
+<td>✕</td>
+<td>✅</td>
+<td>✅</td>
+<td>✕</td>
+<td>(ของตัวเอง)</td>
+</tr>
+<tr>
+<td>site_survey / SiteSurveyZone</td>
+<td>👁</td>
+<td>✅</td>
+<td>👁</td>
 <td>✅ เขียน</td>
-<td>✅ ทุกเลน</td>
-<td>👁 อ่าน</td>
-<td>👁 อ่าน</td>
+<td>✅</td>
+<td>✅</td>
+<td>✕</td>
+<td>👁</td>
+<td>✅</td>
+<td>✕</td>
 <td>✕</td>
 </tr>
 <tr>
-<td>รูปหน้างานทั้งหมด (raw, กลุ่ม internal)</td>
-<td>✅ ของบ้านที่ตัวเองมี membership</td>
+<td>แบบ/3D/render + ผลอนุมัติแบบ</td>
+<td>👁</td>
 <td>✅</td>
 <td>✅</td>
 <td>👁</td>
+<td>✅ เขียน</td>
+<td>✅</td>
+<td>👁 (drawing ใบงาน)</td>
+<td>👁</td>
+<td>✅</td>
+<td>✕</td>
+<td>✅ เฉพาะที่ส่งเข้ากลุ่ม + อนุมัติของตัวเอง</td>
+</tr>
+<tr>
+<td>ใบงานผลิต / FTR checklist / กำหนดการ</td>
+<td>✕</td>
+<td>👁</td>
+<td>👁</td>
+<td>✕</td>
+<td>👁</td>
+<td>✅ เขียน</td>
+<td>✅ สถานีตัวเอง</td>
+<td>👁</td>
+<td>✅</td>
+<td>✕</td>
+<td>✕</td>
+</tr>
+<tr>
+<td>Checklist/subtask ติดตั้ง</td>
+<td>✅ เลนตัวเอง</td>
+<td>✅ ทุกเลน</td>
+<td>👁</td>
+<td>✕</td>
+<td>✕</td>
+<td>👁 (ตัวเองเป็นคน issue checklist)</td>
+<td>✕</td>
+<td>👁</td>
+<td>✅</td>
+<td>✕</td>
+<td>✕</td>
+</tr>
+<tr>
+<td>รูปหน้างาน raw (กลุ่ม internal)</td>
+<td>✅ บ้านที่มี membership</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ ช่วงวัด</td>
+<td>✅ ช่วงออกแบบ</td>
+<td>👁</td>
+<td>✕</td>
+<td>👁</td>
+<td>✅</td>
+<td>ชั่วคราวตาม external membership</td>
 <td>✕</td>
 </tr>
 <tr>
@@ -630,42 +772,59 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
 <td>—</td>
 <td>✅ เลือกส่ง</td>
 <td>✅ เลือกส่ง</td>
+<td>—</td>
+<td>เสนอผ่าน curated</td>
+<td>—</td>
+<td>—</td>
 <td>👁</td>
-<td>✅ เฉพาะที่ถูกส่งเข้ากลุ่ม customer</td>
+<td>✅</td>
+<td>✕</td>
+<td>✅ ที่ถูกส่งเข้ากลุ่ม</td>
 </tr>
 <tr>
 <td>ปัญหา/defect (#ปัญหา)</td>
 <td>✅</td>
 <td>✅</td>
 <td>✅</td>
+<td>✅ ช่วงวัด</td>
+<td>✅ ช่วงออกแบบ</td>
+<td>✅</td>
+<td>👁 (defect ที่โยงผลิต)</td>
 <td>👁</td>
-<td>✕ (จนกว่าจะแปลงเป็นข้อความ curated)</td>
-</tr>
-<tr>
-<td>ต้นทุน/ราคา/margin</td>
+<td>✅</td>
 <td>✕</td>
-<td>👁 (ตาม role)</td>
-<td>✅ (quote)</td>
-<td>✅</td>
-<td>✕ เด็ดขาด — guardrail ที่ template whitelist</td>
+<td>✕ จนกว่า curated</td>
 </tr>
 <tr>
-<td>customer_requirement (ข้อมูลส่วนตัวลูกค้า)</td>
-<td>👁 เฉพาะส่วนหน้างาน (ที่อยู่/ข้อจำกัดไซต์)</td>
+<td>ต้นทุน/ราคา/margin/job-cost</td>
+<td>✕</td>
+<td>👁 ตาม role</td>
+<td>✅ quote</td>
+<td>✕</td>
+<td>✕</td>
+<td>✅ (วัสดุ/สั่งซื้อ)</td>
+<td>✕</td>
 <td>✅</td>
 <td>✅</td>
-<td>✅</td>
-<td>(ของตัวเอง)</td>
+<td>✕</td>
+<td>✕ เด็ดขาด (guardrail DB)</td>
 </tr>
 <tr>
-<td>ผลอนุมัติ</td>
+<td>ผลอนุมัติงานติดตั้ง</td>
 <td>👁</td>
 <td>✅</td>
 <td>✅</td>
+<td>✕</td>
+<td>✕</td>
 <td>👁</td>
+<td>✕</td>
+<td>👁</td>
+<td>✅</td>
+<td>✕</td>
 <td>✅ ของตัวเอง</td>
 </tr>
 </tbody></table>
+<p>หลัก: <strong>role มาจาก C12 roles + <code>installation_memberships</code> ต่อบ้าน</strong> — Marketing/media/Software ไม่มี membership → RLS ปิดหมดโดย default (team media เข้าถ่ายงาน = external membership ชั่วคราว); Factory ทำงานผ่าน work item/ใบงานของแผนกตัวเอง ไม่ผูกกลุ่ม LINE บ้าน</p>
 <p>บังคับ 3 ชั้นตามหลักเดิม: UI (PWA) · Edge Function (LINE routes) · <strong>DB RLS</strong> (membership ต่อโปรเจกต์ + role) — LINE group membership <strong>ไม่ใช่</strong>ตัวกำหนดสิทธิ์ใน DB (คนหลุดเข้ากลุ่มไม่ได้สิทธิ์อะไรใน DB — สิทธิ์มาจาก <code>installation_memberships</code> เท่านั้น; กลุ่มเป็นแค่ช่องทาง)</p>
 <h2>6. Guardrails (มติ owner ข้อ 2 — บังคับที่ DB ไม่ใช่วินัยคน)</h2>
 <ol>

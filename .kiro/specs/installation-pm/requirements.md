@@ -122,7 +122,7 @@
 
 ### Requirement 13: LINE Groups + Staff Identity (มติ owner 5 ก.ค. 2026 — ดู `line-architecture-v0.1.md`)
 
-1. THE บ้าน 1 หลัง SHALL มี LINE **2 กลุ่ม**: internal (หัวหน้า+ช่าง+sale — คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — เฉพาะความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ) — ผูกกับ `installation_projects` ผ่าน `line_groups` + รหัสผูกบ้าน
+1. THE บ้าน 1 หลัง SHALL มี LINE **2 กลุ่ม** อายุยาวตลอดโปรเจกต์: internal (sale ตลอด + สมาชิกหมุนตามเฟส — ทีมวัด→designer/3D→หัวหน้า+ช่าง; คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — ความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ ตั้งแต่เฟสออกแบบ) — ผูกกับ `installation_projects` ผ่าน `line_groups` + รหัสผูกบ้าน; ตำแหน่งงานครบชุด (Sale/วัด/Designer/3D/PP/Factory/ติดตั้ง/GM + support) ดู `line-architecture-v0.1.md` §1.1
 2. THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: capture รูป (→`installation_proof`) + `#ปัญหา` + แจ้งเตือนทีม; กลุ่ม customer: **เฉพาะ template ที่ `audience='customer'`** — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)
 3. THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี **ครั้งเดียวผ่านลิงก์ + LINE Login** (`line_staff_identity`, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit "ใครทำอะไรที่ไหนเมื่อไหร่"
 4. THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (`line_group_members` sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน
