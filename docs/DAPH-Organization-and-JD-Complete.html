@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAPH — โครงสร้างองค์กรและ JD (ฉบับสมบูรณ์)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>DAPH — โครงสร้างองค์กรและใบกำหนดหน้าที่งาน (ฉบับสมบูรณ์)</h1>
+<h3>Organization Structure &amp; Job Descriptions — Complete Edition · 5 กรกฎาคม 2026</h3>
+<blockquote>
+<p>เอกสารฉบับเดียวรวม <strong>โครงสร้างองค์กร + ทุกตำแหน่ง 38 รายการ</strong> — 27 ตำแหน่งจาก <strong>JD ทางการ</strong> (สรุปจากไฟล์จริง ก.ค. 2025) + 11 ตำแหน่ง<strong>ร่างเพิ่ม</strong> (owner ยืนยันมีจริง 2026-07-05)
+<strong>แหล่งข้อมูล:</strong> JD .doc 27 ฉบับ · <code>สำหรับคุณชุ.xlsx</code> (breakdown งาน 2025) · PFMEA/Control Plan รายแผนก (2020) · workflow-copilot spec · <code>MONOLITH_Brand_System_Spec_v1</code> · <code>package.json</code> (tech stack จริง)
+<strong>ป้ายสถานะ:</strong> ✅ = JD ทางการ · 📝 = ร่าง [ข้อเสนอ] รอ HR/owner อนุมัติลงฟอร์ม
+เอกสารนี้แทนที่การอ้างอิงแยกระหว่าง <code>DAPH-org-structure-from-JD-2025.md</code> และ <code>JD-drafts-missing-positions-2026-07.md</code> (สองไฟล์นั้นยังคงอยู่เป็นที่มา)</p>
+</blockquote>
+<hr>
+<h2>ส่วนที่ 1 · ผังบังคับบัญชา</h2>
+<pre><code>กรรมการผู้จัดการ (MD) ← อนุมัติ PO ทุกใบ, สัญญาผูกพัน, งบลงทุน
+└─ ผู้จัดการทั่วไป (GM)
+   ├─ ผู้จัดการโรงงาน (Plant Manager) — ฝ่ายผลิตและงานคุณภาพ
+   │   ├─ หัวหน้าฝ่ายผลิต (Production Head) ─ เจ้าหน้าที่ฝ่ายผลิต (27 คน · 6 สถานี)
+   │   ├─ หัวหน้าฝ่ายซ่อมบำรุง (Maintenance Head)
+   │   ├─ ฝ่ายประกันคุณภาพ (QA)
+   │   ├─ หัวหน้าฝ่ายความปลอดภัย (Safety/HSE) 📝
+   │   ├─ หัวหน้าฝ่ายคลังสินค้า (Warehouse)
+   │   ├─ หัวหน้าฝ่ายโลจิสติกส์ (Logistics) 📝 — ส่งช่าง+ชิ้นงานไปหน้างาน
+   │   └─ หัวหน้าฝ่าย R&amp;D 📝
+   ├─ ผู้จัดการโครงการ (Project Manager) — ฝ่ายงานติดตั้ง (คุมทั้งติดตั้ง+วางแผนผลิต)
+   │   ├─ ที่ปรึกษา/ผู้ช่วย PM (Assistant PM)
+   │   ├─ หัวหน้าฝ่ายติดตั้ง (Installation Dept Head)
+   │   │   └─ หัวหน้าทีมติดตั้ง (Team Lead — 1 คน/บ้าน = &quot;หัวหน้างาน&quot;)
+   │   │       └─ หัวหน้าช่างติดตั้ง (Chief Technician)
+   │   │           ├─ ช่างติดตั้ง (Technician) — 3 คน/ห้อง
+   │   │           └─ ผู้ช่วยช่างติดตั้ง (Assistant Technician)
+   │   └─ หัวหน้าฝ่ายวางแผนการผลิต
+   │       ├─ เจ้าหน้าที่วางแผนการผลิต (Production Planning)
+   │       └─ เจ้าหน้าที่เขียนแบบ (Draftsman)
+   ├─ ผู้จัดการฝ่ายบัญชีและการเงิน
+   │   ├─ เจ้าหน้าที่บัญชี (Accounting Officer)
+   │   ├─ เจ้าหน้าที่การเงิน (Finance Officer)
+   │   └─ เจ้าหน้าที่จัดซื้อ (Purchasing — PO ต้อง MD อนุมัติ)
+   ├─ ผู้จัดการฝ่ายบุคคล (HR Manager) ─ เจ้าหน้าที่ HR
+   ├─ ผู้จัดการฝ่ายการตลาด (Marketing Manager) 📝 ─ เจ้าหน้าที่ดิจิทัล/มีเดีย 📝
+   ├─ ผู้จัดการฝ่ายขาย (Sales Manager) ─ เจ้าหน้าที่ฝ่ายขาย
+   ├─ ผู้จัดการฝ่ายออกแบบ (Designer Manager)
+   │   ├─ เจ้าหน้าที่ออกแบบ (Designer)
+   │   └─ เจ้าหน้าที่ 3D Rendering 📝
+   ├─ หัวหน้าฝ่ายวัดพื้นที่ (Area Measurement Head) 📝 ─ เจ้าหน้าที่วัดพื้นที่ 📝
+   └─ ทีมซอฟต์แวร์ (Software) 📝 — Dev Lead / Engineer / DevOps (พัฒนา MONOLITH)
+</code></pre>
+<p><strong>อำนาจอนุมัติสำคัญ (จาก JD):</strong> PO/จัดซื้อ → กรรมการผู้จัดการ · ยืนยัน Released_Spec gate → หัวหน้า Designer (RACI accountable, ADR-031) · อนุมัติของดี/เสีย → QA · สั่งหยุดงานไม่ปลอดภัย → Safety · start/finish งานติดตั้ง → หัวหน้าทีมติดตั้ง</p>
+<p><strong>คนต่อโปรเจกต์ (ตัวอย่างบ้าน 5 ห้อง):</strong> ติดตั้ง 3 ช่าง/ห้อง × 5 + หัวหน้าทีม 1 = <strong>16 คน</strong>; วัดพื้นที่ ~10 คน; Designer/3D/วางแผนการผลิต ฝ่ายละ ~5 คน; ผลิต 27 คน (6 สถานี)</p>
+<hr>
+<h2>ส่วนที่ 2 · ใบกำหนดหน้าที่งานทุกตำแหน่ง (38)</h2>
+<h3>กลุ่ม A · ผู้บริหาร</h3>
+<h4>A1 · ผู้จัดการทั่วไป (General Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> บริหาร · <strong>ขึ้นตรง:</strong> กรรมการผู้จัดการ · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> วางกลยุทธ์บริหารองค์กรตามนโยบายบริษัท ควบคุมผลประกอบการและคุณภาพส่งมอบลูกค้า</li>
+<li><strong>หน้าที่หลัก:</strong> กำหนด/ทบทวนนโยบาย+แผนกลยุทธ์+การลงทุน · ควบคุมการผลิต+การติดตั้งให้ได้มาตรฐาน · ตัดสินใจแก้ปัญหา · บริหารบุคลากร+งบประมาณ · คุมลูกน้อง: ผจก.โรงงาน/โครงการ/บัญชี/บุคคล/การตลาด/ขาย/ออกแบบ</li>
+<li><strong>อำนาจ:</strong> จัดซื้อ-จัดจ้าง, งบดุล, สัญญาผูกพันในนามบริษัท</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีขึ้นไป · บริหาร ≥ 10 ปี · มีรถยนต์</li>
+</ul>
+<h3>กลุ่ม B · ออกแบบ / วางแผนการผลิต</h3>
+<h4>B1 · ผู้จัดการฝ่ายออกแบบ (Designer Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ออกแบบ · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> จัดการ · <strong>หมายเหตุ:</strong> = ผู้ยืนยัน Gate (RACI accountable, ADR-031)</li>
+<li><strong>Purpose:</strong> ควบคุมงานออกแบบในทีมให้ตรงความต้องการลูกค้า ผลิต/ติดตั้งได้ ต้นทุนไม่สูง ทันกำหนด</li>
+<li><strong>หน้าที่หลัก:</strong> คุมทีมออกแบบ+มาตรฐานสากล · ควบคุมการผลิตแบบทันกำหนด · ส่งมอบ 3D→ลูกค้า/ฝ่ายวางแผน, Floorplan→ติดตั้ง · ให้คำปรึกษา PM/ผจก.โรงงาน · ตรวจชิ้นส่วนหลังผลิต/ติดตั้งตรง spec</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี ออกแบบภายใน · 3D/SketchUp/3D Max/AutoCAD · ออกแบบ ≥ 5 ปี</li>
+</ul>
+<h4>B2 · เจ้าหน้าที่ออกแบบ (Designer) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ออกแบบ · <strong>ขึ้นตรง:</strong> ผจก.ออกแบบ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ประสานลูกค้า+ฝ่ายขายเพื่อออกแบบงานตกแต่งภายใน</li>
+<li><strong>หน้าที่หลัก:</strong> พบลูกค้าเก็บข้อมูล/ความต้องการ (กทม./ตจว.) · ศึกษาโครงสร้าง+คำนวณงบประมาณ+เลือกวัสดุ · นำเสนอแบบ+ปรับแก้ · ส่งแบบ 3D→ลูกค้า, 3D→ฝ่ายวางแผน, Floorplan→ติดตั้ง · ตรวจชิ้นส่วนหลังติดตั้งตรง spec</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี ออกแบบภายใน · 3D/SketchUp/3D Max/AutoCAD · ≥ 5 ปี</li>
+</ul>
+<h4>B3 · เจ้าหน้าที่ 3D Rendering (3D Visualization Artist) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ออกแบบ/3D · <strong>ขึ้นตรง:</strong> ผจก.ออกแบบ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> สร้างภาพ 3D perspective + rendering คุณภาพสูงเพื่อนำเสนอลูกค้าและยืนยัน material ก่อนผลิต</li>
+<li><strong>หน้าที่หลัก:</strong> 3D Model (build room/structure, import cabinet, check corner/filler, recheck position) · 3D Rendering (ตรวจระยะ/ไฟล์, furniture/decoration/lighting selection, material setting) · recheck 3D final กับฝ่ายวางแผนก่อนส่ง · ส่งภาพให้ฝ่ายขาย/Designer นำเสนอ</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี ออกแบบ/มัลติมีเดีย · 3D Max + V-Ray/Corona, SketchUp, Pytha · 3D interior ≥ 2 ปี</li>
+</ul>
+<h4>B4 · เจ้าหน้าที่วางแผนการผลิต (Production Planning) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> วางแผนการผลิต · <strong>ขึ้นตรง:</strong> ผู้จัดการโครงการ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ประสานฝ่ายออกแบบ ทำแบบชิ้นงาน ถอดปริมาณวัสดุ แบบการติดตั้ง</li>
+<li><strong>หน้าที่หลัก:</strong> เขียนแบบ AutoCAD/อ่าน-ถอดแบบ · แปลงภาพสเก็ตช์เป็นแบบผลิต (Pytha→MaxCut→Excel) · <strong>คำนวณประเมินราคา</strong>เพื่อเสนอลูกค้า · ทำรายการวัสดุ→คลัง/จัดซื้อ · ทำไฟล์เจาะ+checklist · ตรวจชิ้นส่วนหลังผลิต</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี เขียนแบบ · AutoCAD (3D พิจารณาพิเศษ) · เขียนแบบ ≥ 2 ปี</li>
+</ul>
+<h4>B5 · เจ้าหน้าที่เขียนแบบ (Draftsman) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> วางแผนการผลิต · <strong>ขึ้นตรง:</strong> ผู้จัดการโครงการ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ทำแบบชิ้นงาน ถอดปริมาณวัสดุ แบบติดตั้ง</li>
+<li><strong>หน้าที่หลัก:</strong> เขียนแบบตกแต่ง AutoCAD · ทำไฟล์งานตัด/งานเจาะ→ฝ่ายผลิต · อ่าน/ถอดแบบ · ตรวจตัวเลขขนาด+ความสัมพันธ์ชิ้นส่วน · ตรวจชิ้นส่วนหลังผลิต+หน้างานตรง spec</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี เขียนแบบ · AutoCAD (3D พิจารณาพิเศษ) · ≥ 2 ปี</li>
+</ul>
+<h3>กลุ่ม C · วัดพื้นที่</h3>
+<h4>C1 · หัวหน้าฝ่ายวัดพื้นที่ (Area Measurement Head) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> วัดพื้นที่ · <strong>ขึ้นตรง:</strong> ผจก.ขาย/โครงการ (รอ owner ยืนยัน) · <strong>ระดับ:</strong> หัวหน้างาน</li>
+<li><strong>Purpose:</strong> วางแผน+ควบคุมทีมวัดพื้นที่ให้ได้ข้อมูล+ความต้องการครบถ้วนแม่นยำ ส่งฝ่ายออกแบบทันเวลา</li>
+<li><strong>หน้าที่หลัก:</strong> วางคิวงานทีม ~10 คน + จัดสรรอุปกรณ์ · คุมความพร้อมก่อนออกงาน (ตรวจข้อมูลจากขาย, เตรียมเอกสาร/แบบแปลนล่วงหน้า, ตรวจเลเซอร์/ตลับเมตร/ฉาก) · คุมคุณภาพบันทึก (ความเอียง, ระยะ, ตำแหน่งไฟ + แบบฟอร์มความต้องการ) · รายงานประจำวัน</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี ก่อสร้าง/สถาปัตย์ · อ่านแบบ · เลเซอร์วัดระยะ · ≥ 3 ปี</li>
+</ul>
+<h4>C2 · เจ้าหน้าที่วัดพื้นที่ (Surveyor) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> วัดพื้นที่ · <strong>ขึ้นตรง:</strong> หัวหน้าฝ่ายวัดพื้นที่ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ออกวัดหน้างานและบันทึกข้อมูลพื้นที่+ความต้องการครบถ้วนแม่นยำ</li>
+<li><strong>หน้าที่หลัก:</strong> ตรวจข้อมูลจากขาย+ศึกษาเส้นทาง+ทดสอบอุปกรณ์ก่อนออก · วัด/บันทึก (ความเอียง, กว้าง×ยาว×สูง, ประตู/หน้าต่าง/ไฟ) · เก็บแบบฟอร์มความต้องการต่อห้อง (เช่น wardrobe นับจำนวนสิ่งของ) · ลงรายงานประจำวัน</li>
+<li><strong>คุณสมบัติ:</strong> ปวช.-ปวส. ก่อสร้าง · อ่านแบบเบื้องต้น · เลเซอร์/ตลับเมตร · มีรถ/เดินทาง ตจว.</li>
+</ul>
+<h3>กลุ่ม D · โครงการ / ติดตั้ง (สาย 4 ชั้น)</h3>
+<h4>D1 · ผู้จัดการโครงการ (Project Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> บริหารโครงการให้ส่งมอบงานคุณภาพ คุมต้นทุน ตรงเวลา</li>
+<li><strong>หน้าที่หลัก:</strong> เลือก/จัดสรรทรัพยากรต่อโครงการ · คุมเวลา+ค่าใช้จ่าย · ประสานทุกฝ่าย · ติดตาม+ประเมินความก้าวหน้า+รายงาน · <strong>รับ escalation งานติดตั้ง</strong> (timeout→PM); คุมลูกน้อง: หัวหน้างานติดตั้ง + หัวหน้าฝ่ายวางแผนการผลิต</li>
+<li><strong>อำนาจ:</strong> จัดซื้อวัสดุ/เครื่องมือติดตั้ง, งบดุล, สัญญา</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรี · ≥ 3 ปี · มีรถยนต์</li>
+</ul>
+<h4>D2 · ที่ปรึกษา/ผู้ช่วยผู้จัดการโครงการ (Assistant PM) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> ผู้จัดการโครงการ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบงานติดตั้งให้มีคุณภาพและเสร็จตามกำหนด (คุมหัวหน้าทีมติดตั้ง)</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผนทรัพยากร/เครื่องมือ/ต้นทุนติดตั้ง · คุมเวลาเข้า-ออกไซต์ · สรุปรายงานทุกวัน</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · จัดสรรทรัพยากร/คอมพิวเตอร์ · ≥ 5 ปี</li>
+</ul>
+<h4>D3 · หัวหน้าฝ่ายติดตั้ง (Installation Dept Head) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> ผู้จัดการโครงการ · <strong>ระดับ:</strong> ปฏิบัติการ/หัวหน้า</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบงานติดตั้งทุกทีม + ประสิทธิภาพตามนโยบาย</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผนทรัพยากร/เครื่องมือ/ต้นทุน · คุมเวลาเข้า-ออกไซต์ของทุกทีม · ติดตามงาน+ปัญหา+วิธีแก้แต่ละทีม · บริหารความปลอดภัย · สรุปรายงานทุกวัน</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · อ่านแบบ/เครื่องมือช่าง · ≥ 1 ปี</li>
+</ul>
+<h4>D4 · หัวหน้าทีมติดตั้ง (Installation Team Lead) ✅ — &quot;หัวหน้างาน 1 คน/บ้าน&quot;</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> หัวหน้าฝ่ายติดตั้ง · <strong>ระดับ:</strong> ปฏิบัติการ/หัวหน้า · <strong>หมายเหตุ:</strong> = approver start/finish งานติดตั้งในระบบ</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบงานติดตั้งของทีมให้มีคุณภาพและเสร็จตามกำหนด</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผนทรัพยากร/เครื่องมือ/ต้นทุน · <strong>คุมเวลาเข้า-ออกไซต์</strong> · คุมงานตรงแบบ+ความต้องการลูกค้า · คุมความสะอาดบ้านลูกค้า · บริหารความปลอดภัย · สรุปรายงานทุกวัน</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · อ่านแบบ/เครื่องมือช่าง/สื่อสาร-เจรจา · ≥ 1 ปี</li>
+</ul>
+<h4>D5 · หัวหน้าช่างติดตั้ง (Chief Technician) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> หัวหน้าทีมติดตั้ง · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบงานติดตั้งของทีมให้มีคุณภาพและเสร็จตามกำหนด (เทียบเท่า Team Lead ระดับหน้างาน)</li>
+<li><strong>หน้าที่หลัก:</strong> เหมือน D4 เน้นภาคปฏิบัติหน้างาน + ใช้เครื่องมือช่าง + สื่อสารทีม</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · อ่านแบบ/เครื่องมือช่าง · ≥ 1 ปี</li>
+</ul>
+<h4>D6 · ช่างติดตั้ง (Installation Technician) ✅ — 3 คน/ห้อง</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> หัวหน้าทีมติดตั้ง · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ติดตั้งงานให้มีคุณภาพและเสร็จตามกำหนด</li>
+<li><strong>หน้าที่หลัก:</strong> ศึกษาแบบก่อนเข้างานทุกครั้ง · ติดตั้งตามรายละเอียดครบถ้วน · ดูแลความสะอาด/ปลอดภัยในบ้านลูกค้า · ควบคุมเครื่องมือ · <strong>ส่งรายงานการติดตั้งทุกครั้ง + รายงานประจำวัน</strong></li>
+<li><strong>คุณสมบัติ:</strong> ม.3 ขึ้นไป · อ่านแบบติดตั้ง/งานเฟอร์นิเจอร์/ความปลอดภัย · ประสบการณ์ 0 ปี (เริ่มได้)</li>
+</ul>
+<h4>D7 · ผู้ช่วยช่างติดตั้ง (Assistant Technician) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานติดตั้ง · <strong>ขึ้นตรง:</strong> หัวหน้าทีมติดตั้ง · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose/หน้าที่:</strong> เหมือน D6 บทบาทผู้ช่วย — ศึกษาแบบ, ติดตั้งตามรายละเอียด, ดูแลความสะอาด/ปลอดภัย/เครื่องมือ, ส่งรายงานประจำวัน</li>
+<li><strong>คุณสมบัติ:</strong> ม.3 ขึ้นไป · ประสบการณ์ 0 ปี</li>
+</ul>
+<h3>กลุ่ม E · โรงงาน / ผลิต / คุณภาพ</h3>
+<h4>E1 · ผู้จัดการโรงงาน (Plant Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและงานคุณภาพ · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> วางกลยุทธ์บริหารโรงงานให้ผลิตสินค้าคุณภาพ ต้นทุนและส่งมอบแข่งขันได้</li>
+<li><strong>หน้าที่หลัก:</strong> กำหนดนโยบาย+แผนผลิต+การลงทุน · จัดทำคู่มือมาตรฐาน (เครื่องจักร/ผลิต/ติดตั้ง) · คุมการผลิตตามมาตรฐาน · จัดการสต๊อก · คุมลูกน้อง: หัวหน้าฝ่ายผลิต/ซ่อมบำรุง/QA/ความปลอดภัย/คลัง/โลจิสติกส์/R&amp;D</li>
+<li><strong>อำนาจ:</strong> จัดซื้อในโรงงาน, งบดุล, สัญญา</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีวิศวกรรม · โรงงาน ≥ 10 ปี + บริหาร ≥ 3 ปี · มีรถยนต์</li>
+</ul>
+<h4>E2 · หัวหน้าฝ่ายผลิต (Production Head) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิต · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> ปฏิบัติการ/หัวหน้า</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบกระบวนการผลิตให้ได้คุณภาพ ต้นทุน ปริมาณ เวลาส่งมอบ</li>
+<li><strong>หน้าที่หลัก:</strong> ประมาณการยอด+วางแผนเครื่องจักร/กำลังคน/วัตถุดิบ · กำหนดตารางผลิต+คุมกระบวนการ+แก้ปัญหา · บริหารความปลอดภัย · คุมของเสีย/rework</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · ใบประกอบวิชาชีพวิศวกรรม · ≥ 5 ปี</li>
+</ul>
+<h4>E3 · เจ้าหน้าที่ฝ่ายผลิต (Production Operator) ✅ — 27 คน · 6 สถานี</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิต · <strong>ขึ้นตรง:</strong> หัวหน้าฝ่ายผลิต · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>สถานี (จาก workbook):</strong> Laminate HPL (4) · Cutting (4) · Edging (4) · CNC (4) · Assembly (7: ทำความสะอาด/เกือกม้า/เดือยไม้/เดือยเหล็ก/ประกอบ) · Packing (2)</li>
+<li><strong>หน้าที่หลัก:</strong> ตรวจเครื่องจักร+ใบงานก่อนเริ่ม · ทำงานตามใบงาน (เพลส HPL/ตัด/ติดขอบ/เจาะ/ประกอบ/แพ็ค) · ตรวจคุณภาพระหว่างผลิต · ทำความสะอาดเครื่อง</li>
+</ul>
+<h4>E4 · หัวหน้าฝ่ายซ่อมบำรุง (Maintenance Head) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบ บำรุงรักษาเครื่องจักรและเครื่องมือในโรงงาน</li>
+<li><strong>หน้าที่หลัก:</strong> ซ่อม/บำรุง/ดัดแปลงเครื่องจักร-ยานพาหนะ · จัดทำสถิติ+ประวัติซ่อม+รายงาน · ให้คำแนะนำเทคนิค+คู่มือเครื่องจักร</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · งานเครื่องกล/ภาษาอังกฤษคู่มือ · ≥ 3 ปี</li>
+</ul>
+<h4>E5 · เจ้าหน้าที่ประกันคุณภาพ (Quality Assurance) ✅ — ด่านสุดท้ายก่อนส่งมอบ</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ประกันคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> วางแผน+ควบคุมระบบประกันคุณภาพ ตรวจสอบสินค้าให้ได้มาตรฐาน</li>
+<li><strong>หน้าที่หลัก:</strong> ตรวจวัตถุดิบ (อนุมัติของดี/เสีย, Spec) · ตรวจกระบวนการผลิต · <strong>ตรวจผลิตภัณฑ์ก่อนส่งมอบ (ด่านสุดท้าย)</strong> · ดูแลเครื่องมือวัด+สอบเทียบ · ตอบข้อร้องเรียน</li>
+<li><strong>อำนาจ:</strong> อนุมัติของดี/เสีย, ปรับ Spec, จัดซื้อเครื่องมือวัด</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · ประกันคุณภาพ ≥ 8 ปี</li>
+</ul>
+<h4>E6 · เจ้าหน้าที่คลังสินค้า (Warehouse Staff) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> เบิก-จ่ายวัสดุ อุปกรณ์ <strong>ทั้งงานผลิตและงานติดตั้ง</strong></li>
+<li><strong>หน้าที่หลัก:</strong> รับ-จ่าย-จัดเก็บ-ตรวจนับตามใบสั่งซื้อ/ใบเบิก · นัดรับสินค้าจาก Supplier+ตรวจ · ควบคุมสต๊อก (FIFO, NC Product) · รายงานสต๊อกรายวัน/เดือน</li>
+<li><strong>คุณสมบัติ:</strong> ปวช.ขึ้นไป · จัดการคลัง/FIFO/Excel · ประสบการณ์ 0 ปี</li>
+</ul>
+<h4>E7 · หัวหน้าฝ่ายโลจิสติกส์ (Logistics Head) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> จัดการ/หัวหน้า</li>
+<li><strong>Purpose:</strong> วางแผน+ควบคุมการจัดส่งชิ้นงานสำเร็จ + ทีมช่างไปหน้างานให้ตรงเวลาครบถ้วน</li>
+<li><strong>หน้าที่หลัก:</strong> วางคิวจัดส่ง (packet+ทีม+รถ+เวลานัด) · คุมโหลด/ตรวจนับก่อนออกโรงงาน · ประสานคลัง+ติดตั้ง · ติดตามสถานะ+แจ้งทีม (จุดเชื่อม Factory→Installation)</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.ขึ้นไป · โลจิสติกส์/คลัง ≥ 3 ปี</li>
+</ul>
+<h4>E8 · หัวหน้าฝ่ายความปลอดภัย (Safety / HSE Head) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> จัดการ/หัวหน้า</li>
+<li><strong>Purpose:</strong> วางแผน ควบคุม ตรวจสอบงานความปลอดภัย อาชีวอนามัย สิ่งแวดล้อม ทั้งโรงงานและหน้างานติดตั้ง</li>
+<li><strong>หน้าที่หลัก:</strong> ควบคุมความเสี่ยง <strong>VOCs (ฟอร์มาลดีไฮด์/โทลูอีน/ไซลีน/เบนซีน), ฝุ่นไม้/MDF, ใยแก้ว</strong> (ซิลิโคสิส/มะเร็ง), เสียง, เครื่องจักร → ระบบระบายอากาศ/PPE/จัดเก็บสารเคมี · ความปลอดภัยหน้างาน (ไฟฟ้า/งานสูง) · SOP+สอบสวนอุบัติเหตุ+อบรม · safety audit</li>
+<li><strong>อำนาจ:</strong> สั่งหยุดงานไม่ปลอดภัย, จัดซื้อ PPE</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีอาชีวอนามัย · <strong>ใบ จป.วิชาชีพ</strong> · ≥ 3 ปี</li>
+</ul>
+<h4>E9 · หัวหน้าฝ่าย R&amp;D (R&amp;D Head) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและคุณภาพ · <strong>ขึ้นตรง:</strong> ผจก.โรงงาน · <strong>ระดับ:</strong> จัดการ/หัวหน้า</li>
+<li><strong>Purpose:</strong> วิจัย+พัฒนาผลิตภัณฑ์ วัสดุ วิธีผลิตใหม่ ยกระดับคุณภาพ ลดต้นทุน สร้างความแตกต่าง</li>
+<li><strong>หน้าที่หลัก:</strong> วิจัยวัสดุใหม่ (laminate/HPL/fitting/hardware) + ทดสอบ · พัฒนาเทคนิคผลิต/ติดตั้ง (kerf-bending, System 32) · prototype ก่อน production · ทำ spec/มาตรฐานวัสดุ (ผูก master hardware DB)</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีวิศวกรรม/วัสดุศาสตร์/ออกแบบผลิตภัณฑ์ · R&amp;D เฟอร์นิเจอร์ ≥ 5 ปี</li>
+</ul>
+<h3>กลุ่ม F · บัญชี / การเงิน / จัดซื้อ</h3>
+<h4>F1 · ผู้จัดการฝ่ายบัญชีและการเงิน (Accounting &amp; Finance Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> บัญชี-การเงิน · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> บริหาร</li>
+<li><strong>Purpose:</strong> กำหนดนโยบาย+ดูแลระบบบัญชี การเงินทั้งระบบ รวมภาษีทุกตัว</li>
+<li><strong>หน้าที่หลัก:</strong> วางระบบบัญชี/การเงิน · คุมปิดบัญชีแต่ละงวด · คุมงบการเงิน/งบดุล/กำไรขาดทุน · คุมรับ-จ่าย · คุมงบประมาณ · คุมรายงานภาษี; ลูกน้อง: บัญชี+การเงิน</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีบัญชี/การเงิน · ≥ 10 ปี</li>
+</ul>
+<h4>F2 · เจ้าหน้าที่บัญชี (Accounting Officer) ✅ ⚠ ไฟล์ต้นทาง title ผิดเป็น &quot;Finance Officer&quot;</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> บัญชี-การเงิน · <strong>ขึ้นตรง:</strong> ผจก.บัญชีและการเงิน · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> จัดทำเอกสารบัญชี รายรับ-รายจ่าย ภาษีนำส่งราชการ</li>
+<li><strong>หน้าที่หลัก:</strong> บัญชีเจ้าหนี้ (ตรวจจ่าย, ภพ.30/ภงด.1,3,53/สปส., ใบสำคัญจ่าย, รายงานอายุเจ้าหนี้) · บัญชีลูกหนี้ (invoice, รับชำระ, ยอดขาย, ภพ.30) · บัญชีต้นทุน (ต้นทุนผลิต, สินค้าคงเหลือ, OT ผลิต)</li>
+<li><strong>คุณสมบัติ:</strong> ปวช.-ป.ตรีบัญชี/การเงิน · ≥ 2 ปี</li>
+</ul>
+<h4>F3 · เจ้าหน้าที่การเงิน (Finance Officer) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> บัญชี-การเงิน · <strong>ขึ้นตรง:</strong> ผจก.บัญชีและการเงิน · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> จัดทำเอกสารการเงิน รายรับ-รายจ่าย ภาษี</li>
+<li><strong>หน้าที่หลัก:</strong> บริหารบัญชีออมทรัพย์/กระแสรายวัน · ออกใบแจ้งหนี้/ใบเสร็จ/ใบกำกับ+ตรวจยอดลูกหนี้ · เช็คสั่งจ่าย/โอน Supplier · คุมเงินสดย่อย · ติดตามชำระหนี้</li>
+<li><strong>คุณสมบัติ:</strong> ปวช.-ป.ตรีบัญชี/การเงิน · ≥ 2 ปี</li>
+</ul>
+<h4>F4 · เจ้าหน้าที่จัดซื้อ (Purchasing Officer) ✅ — PO ต้อง MD อนุมัติ</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> บัญชี-การเงิน · <strong>ขึ้นตรง:</strong> ผจก.บัญชีการเงิน · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> จัดซื้อวัสดุ อุปกรณ์ ตามข้อกำหนดบริษัท</li>
+<li><strong>หน้าที่หลัก:</strong> คัดเลือก+ประเมิน Supplier · ทบทวน PR · <strong>นำเสนอ MD อนุมัติสั่งซื้อ</strong> · ออก PO · ทวนสอบของที่ส่งมอบ · บันทึกปัญหา Supplier</li>
+<li><strong>คุณสมบัติ:</strong> ปวช.ขึ้นไป · จัดซื้อ/ประเมิน Supplier/Excel · ≥ 1 ปี</li>
+</ul>
+<h3>กลุ่ม G · บุคคล</h3>
+<h4>G1 · ผู้จัดการฝ่ายบริหารทรัพยากรมนุษย์ (HR Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> HRM · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> บริหาร</li>
+<li><strong>Purpose:</strong> กำหนดนโยบายบริหารบุคลากร สรรหา วางแผนกำลังคน พัฒนา/ฝึกอบรม ผลตอบแทน พนักงานสัมพันธ์</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผนกำลังคน+สรรหา · พัฒนา/ฝึกอบรม · บริหารผลตอบแทน (สำรวจ/ออกแบบ) · พนักงานสัมพันธ์+กฎระเบียบ+ข้อพิพาท</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรี HR/บริหาร/รัฐศาสตร์/นิติ · ≥ 10 ปี</li>
+</ul>
+<h4>G2 · เจ้าหน้าที่ฝ่ายบุคคล (HR Officer) ✅ ⚠ ไฟล์ต้นทาง title ผิดเป็น &quot;Sales Manager&quot;</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> HRM · <strong>ขึ้นตรง:</strong> ผจก.บุคคล · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> บริหารจัดการและพัฒนาทรัพยากรบุคคล</li>
+<li><strong>หน้าที่หลัก:</strong> วางอัตรากำลัง+สรรหา+สัมภาษณ์ · จัดทำเงินเดือน · วางแผน/ประเมินฝึกอบรม · ประเมินความสามารถ · มาตรฐานความปลอดภัย</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรี HR · ≥ 1 ปี</li>
+</ul>
+<h3>กลุ่ม H · ขาย / การตลาด</h3>
+<h4>H1 · ผู้จัดการฝ่ายขาย (Sales Manager) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานขาย · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> บริหารยอดรายได้องค์กร ความสัมพันธ์ลูกค้า</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผน+กลยุทธ์ขาย+ส่งเสริมการขาย · สำรวจความพึงพอใจ+รับข้อร้องเรียน · คุมทีมขาย; ลูกน้อง: เจ้าหน้าที่ฝ่ายขาย</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรีการตลาด · ประสบการณ์ 0 ปี · มีรถ/เดินทาง ตจว./ตปท.</li>
+</ul>
+<h4>H2 · เจ้าหน้าที่ฝ่ายขาย (Sales Staff) ✅</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> งานขาย · <strong>ขึ้นตรง:</strong> ผจก.ขาย · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> งานขาย ประสานลูกค้า เก็บข้อมูลความต้องการ ปิดการขาย</li>
+<li><strong>หน้าที่หลัก:</strong> วางแผนขายรายสัปดาห์ · ติดต่อลูกค้าเก็บข้อมูล+ความต้องการ (กทม./ตจว.) · จัดทำใบเสนอราคา · เจรจา+ให้คำปรึกษา · <strong>ตอบแชทลูกค้า+รับข้อร้องเรียน</strong> · บริการหลังการขาย</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรีการตลาด · ประสบการณ์ 0 ปี</li>
+</ul>
+<h4>H3 · ผู้จัดการฝ่ายการตลาด (Marketing Manager) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> การตลาด · <strong>ขึ้นตรง:</strong> GM · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> บริหารการตลาดออนไลน์+ออฟไลน์ สร้างภาพลักษณ์แบรนด์ระดับสากล (MONOLITH: &quot;Calm Luxury + Engineering Precision&quot;, &quot;The Benchmark of Luxury Residential Design in Bangkok&quot;) สร้าง lead ให้ฝ่ายขาย</li>
+<li><strong>หน้าที่หลัก:</strong> กลยุทธ์+งบการตลาด (Google/FB/YouTube ads, Expo, แฟร์) · คุมภาพลักษณ์ตาม Brand System (สี #1F3D2B/#C7A86A, Playfair/Inter/JetBrains Mono, quiet luxury) · บริหารทีม digital+media · วัดผล lead→ขาย</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีการตลาด/นิเทศ · แบรนด์ luxury/interior ≥ 7 ปี</li>
+</ul>
+<h4>H4 · เจ้าหน้าที่การตลาดดิจิทัล/มีเดีย (Digital Marketing &amp; Media Officer) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> การตลาด · <strong>ขึ้นตรง:</strong> ผจก.การตลาด · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ผลิต+บริหาร content ดิจิทัล+สื่อ (ภาพ/วิดีโอ) ตาม brand สร้างการรับรู้และ lead</li>
+<li><strong>หน้าที่หลัก:</strong> content/SEO/website/e-commerce/ads + data analytics · ผลิตสื่อ (ถ่ายภาพ/วิดีโอผลงานหน้างาน, motion/graphic/editing — เข้าไซต์ = external membership ชั่วคราว) · คุมงานตรง Brand System</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรีนิเทศ/ดิจิทัล/มัลติมีเดีย · มี portfolio</li>
+<li><strong>หมายเหตุ:</strong> ครอบกลุ่มย่อยใน workbook (Content/SEO/Data/Website/E-Commerce + Production House: motion/graphic/writer/director/camera/editor) — HR อาจแตกหลายใบ</li>
+</ul>
+<h3>กลุ่ม I · เทคโนโลยี / ซอฟต์แวร์ (พัฒนา MONOLITH)</h3>
+<h4>I1 · Software Development Lead / Product Manager 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> เทคโนโลยี · <strong>ขึ้นตรง:</strong> GM/owner · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Purpose:</strong> นำทีมพัฒนา MONOLITH (CAD→CAM→Factory→ติดตั้ง) ตาม spec-driven + governance ส่งมอบซอฟต์แวร์ deterministic verify ได้</li>
+<li><strong>หน้าที่หลัก:</strong> คุม SDLC (spec→implement→test→release gate) · คุมสถาปัตยกรรม+ADR · roadmap ร่วม owner · configuration management+CI · release ผูกธง feature status</li>
+<li><strong>คุณสมบัติ:</strong> ป.ตรีวิศวกรรมคอมพิวเตอร์ · lead ทีม ≥ 5 ปี</li>
+</ul>
+<h4>I2 · Software Engineer (Full-stack) 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> เทคโนโลยี · <strong>ขึ้นตรง:</strong> Software Dev Lead · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> พัฒนา+ดูแลฟีเจอร์ MONOLITH ตาม spec + test ให้ผ่าน gate</li>
+<li><strong>หน้าที่หลัก:</strong> front-end 3D/CAD (<strong>React 18 + TS 5 + Vite 5 + Three.js/R3F + Zustand</strong>) + back-end (<strong>Supabase/Postgres — migration/RLS/Edge Functions</strong>) · เขียนเทสต์ (<strong>Vitest + Playwright</strong>) · CAM/export/drill map/trust chain/capture · type safety+ADR</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรีคอมพิวเตอร์ · TS+React (Three.js/Supabase พิจารณาพิเศษ) · ≥ 2 ปี</li>
+</ul>
+<h4>I3 · DevOps / Infrastructure Engineer 📝</h4>
+<ul>
+<li><strong>ฝ่าย:</strong> เทคโนโลยี · <strong>ขึ้นตรง:</strong> Software Dev Lead · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Purpose:</strong> ดูแล cloud infra, CI/CD, ความมั่นคงปลอดภัยของ MONOLITH</li>
+<li><strong>หน้าที่หลัก:</strong> Supabase/Postgres ops (migration/backup/RLS/branch), Edge Functions deploy, Vault · CI/CD (test gate เขียวก่อน merge) · monitoring/logging (scrub PII) · security (on-prem guard/egress/key rotation) · เตรียม SaaS separate-DB (ADR-034)</li>
+<li><strong>คุณสมบัติ:</strong> ปวส.-ป.ตรีคอมพิวเตอร์ · Linux/cloud/CI-CD/Postgres/IaC · ≥ 2 ปี</li>
+</ul>
+<hr>
+<h2>ส่วนที่ 3 · การเชื่อมกับระบบ MONOLITH</h2>
+<ul>
+<li><strong>Persona ของระบบ ↔ ตำแหน่ง:</strong> ดู PRD §4 (reconcile แล้ว) — 1 persona อาจครอบหลายตำแหน่ง</li>
+<li><strong>workflow RACI:</strong> canonical process มี Department = Sale, Area Measurement, Designer, 3D_Presentation, Production Planning, 3D_Rendering_Final, Factory, Installation, Purchasing → map กับตำแหน่งข้างบน</li>
+<li><strong>Installation PM:</strong> หัวหน้าทีมติดตั้ง = approver; ช่าง 3 คน/ห้อง = subtask lane; รายงานประจำวัน = หน้าที่ตาม JD</li>
+<li><strong>LINE architecture:</strong> Sale = ผู้ตอบหลักกลุ่มลูกค้า; media = external membership ชั่วคราว; staff identity ผูกครั้งเดียว</li>
+</ul>
+<h2>ส่วนที่ 4 · ปัญหาเอกสารต้นทางที่ควรแก้ (ไฟล์ .doc ต้นฉบับ)</h2>
+<ol>
+<li><code>JD_HR_Officer.doc</code> — หัวเอกสาร &quot;Sales Manager&quot; แต่เนื้อหางาน HR → แก้ title</li>
+<li><code>JD_Accounting_Officer.doc</code> — title &quot;Finance Officer&quot; (ซ้ำ) แต่เนื้อหางานบัญชี → ควรเป็น &quot;Accounting Officer&quot;</li>
+<li><code>JD- Desinger Manager.doc</code> — ช่องชื่อ &quot;เจ้าหน้าที่&quot; ทั้งที่เป็นผู้จัดการ</li>
+<li><code>JD_Installation_TeamLead.doc</code> (ไม่มี suffix) ซ้ำกับ <code>-หัวหน้าฝ่าย</code> → ลบ/รวม</li>
+<li>สะกด &quot;Desinger&quot; → &quot;Designer&quot; ในชื่อไฟล์</li>
+</ol>
+<hr>
+<p><em>เอกสารนี้รวมจาก JD ทางการ 27 ฉบับ (ก.ค. 2025) + ร่าง 11 ตำแหน่ง (owner ยืนยัน 5 ก.ค. 2026) — ตำแหน่ง ✅ ยึดเนื้อหา JD จริง, 📝 ยึด workbook/PFMEA/workflow/Brand System/tech stack จริง รอ HR ลงฟอร์มทางการ</em></p>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
