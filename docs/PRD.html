@@ -885,10 +885,10 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Entitlement &amp; Multi-Tier SaaS</strong> (Free/Plus/Advance/Enterprise, 42 features, gate 4 แบบ, RLS multi-tenant)</td>
-<td>📋 Design v0.2 ผ่าน security review แล้ว (แก้ S1–S4, L5–L9)</td>
-<td>นอก repo: <code>one clik/MONOLITH-schema-multitier-v0.2.sql</code> + docs + Tier-Matrix HTML</td>
-<td><strong>Owner decision: SaaS แยก DB หรือรวมกับ C12</strong> (org↔site); ย้ายเข้า <code>.kiro/specs/entitlement-tier/</code> เมื่อตัดสิน</td>
+<td><strong>Entitlement &amp; Multi-Tier SaaS</strong> (Free/Plus/Advance/Enterprise, <strong>53 features</strong> — implemented 34 / roadmap 19, gate 4 แบบ, roadmap hard-block ที่ DB, RLS multi-tenant)</td>
+<td>📋 Design <strong>v0.3</strong> ผ่าน security review 2 รอบ (S1–S4, L5–L9, F1–F4)</td>
+<td><strong><code>.kiro/specs/entitlement-tier/</code></strong> (requirements/design/tasks + <code>schema-draft-v0.3.sql</code> + <code>tests-negative.sql</code>); เอกสาร/matrix HTML v0.3 ใน <code>one clik/</code></td>
+<td><strong>Owner decision (Phase 0): SaaS แยก DB หรือรวมกับ C12</strong> (org↔site) — ห้าม deploy ก่อนตัดสิน</td>
 </tr>
 <tr>
 <td><strong>Curved Panel System</strong> (kerf bending: rounded corner / ARC / S-curve / mating slots)</td>
