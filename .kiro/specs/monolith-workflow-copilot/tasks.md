@@ -223,7 +223,7 @@
   - [ ]* 11.12 เขียน unit test การส่ง Daily_Digest รวม
     - _Requirements: 6.4_
 
-- [ ] 12. Notification retry worker logic + web fallback (Req 18)
+- [x] 12. Notification retry worker logic + web fallback (Req 18) — **Phase 13 ปิดแล้ว (2026-07-06)**
   - [x] 12.1 สร้างโมดูล logic exponential backoff (pure)
     - สร้าง `src/workflow/notification/backoff.ts`: คำนวณ next_attempt_at เพิ่มขึ้นแบบ exponential, นับ retry, ครบจำนวน → Delivery_Failure คงไว้แม้ recover ภายหลัง
     - _Requirements: 18.1, 18.2, 18.3_
@@ -233,8 +233,13 @@
   - [x]* 12.3 เขียน property test ความต่อเนื่องทางธุรกิจ + ไม่พึ่งพา LINE ช่องทางเดียว
     - **Property 31: ความต่อเนื่องทางธุรกิจและการไม่พึ่งพา LINE ช่องทางเดียว**
     - **Validates: Requirements 18.1, 18.2, 18.3, 18.4, 18.5**
+  - [x] 12.4 ปิด delivery chain จริง (พบ+แก้บั๊ก 2026-07-06)
+    - **บั๊กเดิม:** worker POST body ไป line-outbound-sender (batch worker ไม่อ่าน body) → notification ถูก mark 'sent' โดยไม่มีการส่งถึงพนักงานจริง; backoff คงที่ 2s ไม่ใช้ retry_count
+    - **แก้:** `supabase/migrations/0081_notification_delivery_resolution.sql` — claim RPC resolve ผู้รับ (identity_binding) + render template ที่ approve แล้ว (free-text ban ที่ DB) + Vault token ref; worker ส่ง LINE push ตรง + backoff mirror `backoff.ts` + poison rows (recipient/template unresolvable) record fail โดยไม่เรียก send
+    - **Test:** `tests/workflow/ts/notificationRetryWorker.integration.test.ts` (5 tests)
+    - _Requirements: 18.1, 18.2, 18.3, 6.7_
 
-- [ ] 13. SLA sweep logic (Req 13)
+- [x] 13. SLA sweep logic (Req 13)
   - [x] 13.1 สร้างโมดูล logic SLA/reminder/timeout (pure)
     - สร้าง `src/workflow/sla/sweep.ts`: คำนวณ SLA_Deadline จาก config, reminder ที่ ≥ 50% และ 100%, escalation ทันทีเมื่อเกิน timeout โดยไม่รอ formal status; reminder จัดเป็น Direct_Responsibility_Item
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_

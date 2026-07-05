@@ -337,8 +337,8 @@ line_oa_inbound_messages  + source_type (&#39;user&#39;|&#39;group&#39;) + line_
 </tr>
 <tr>
 <td>Workflow work-item approval ผ่าน LINE</td>
-<td>🔵 ⏸</td>
-<td><strong>รอ workflow Phase 13</strong> (notification delivery + retry)</td>
+<td>🔵</td>
+<td><strong>Phase 13 ปิดแล้ว (2026-07-06)</strong> — delivery chain จริงครบ (0081 + worker push); เหลือ ops: cron registration + deploy</td>
 </tr>
 <tr>
 <td>Executive escalation ผ่าน LINE</td>
@@ -364,7 +364,7 @@ line_oa_inbound_messages  + source_type (&#39;user&#39;|&#39;group&#39;) + line_
 <hr>
 <h2>9. Dependencies (สำคัญก่อน implement)</h2>
 <ol>
-<li><strong>workflow Phase 13 (notification delivery + retry) ยังไม่ปิด</strong> → การแจ้งเตือน/อนุมัติ work item ผ่าน LINE (§4.4–4.5) และแจ้งเตือนทีมติดตั้ง (§5) พึ่งชั้นนี้ — <strong>ควรปิด Phase 13 ก่อนเริ่ม installation-pm Phase 1.8</strong></li>
+<li><del>workflow Phase 13</del> → <strong>ปิดแล้ว (2026-07-06)</strong>: delivery chain จริงครบ — <code>rpc_claim_pending_notifications</code> v2 (0081: resolve ผู้รับจาก identity_binding + render template + Vault token ref) → <code>notification-retry-worker</code> ส่ง LINE push ตรง → record/backoff ถูกสูตร (แก้บั๊กเดิมที่ mark &#39;sent&#39; โดยไม่เคยส่งจริง) — เหลือ <strong>ops: ลงทะเบียน cron (pg_cron → worker ทุก 1 นาที) + deploy</strong> ก่อนเปิดใช้จริง</li>
 <li>Installation groups พึ่ง <code>line_staff_identity</code> + group tables (net-new) — landing พร้อม installation-pm migrations (Phase 1.1)</li>
 <li>capture types ใหม่พึ่ง L3 adapter (customer_requirement → work_item_open; ดู <code>installation-pm/tasks 1.5b</code>)</li>
 </ol>

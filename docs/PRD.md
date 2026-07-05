@@ -468,7 +468,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 **ไฟล์หลัก:** `src/workflow/`, `supabase/migrations/0001–0035`, Edge Functions: `sla-sweep-scheduler`, `approval-postback`, `notification-retry-worker`, `customer-design-view`, `web-fallback-api`
 
-#### ข้อกำหนด 21 ข้อ (Req 1–21) — 🔵 113/134 tasks; ค้าง: Phase 13 (notification delivery RPC + retry), Phase 14 (delegation routing), Req 21 (Phase 1.5) และ property tests บางส่วน
+#### ข้อกำหนด 21 ข้อ (Req 1–21) — 🔵 ~115/134 tasks; **Phase 13 (notification delivery + retry) ปิดแล้ว 2026-07-06** (พบบั๊ก delivery ไม่เคยส่งจริง → แก้ด้วย migration 0081 + worker ส่ง LINE push ตรง + เทสต์ 5 ตัว); ค้าง: Phase 14 (delegation routing), Req 21 (Phase 1.5) และ tests บางส่วน (เช่น 11.12 digest unit test)
 
 **[P0] Process Model & Work Items ✅**
 - Canonical 8 ขั้น (order 0–7): Sale → Area Measurement → Designer → 3D_Presentation → Production Planning → 3D_Rendering_Final → Factory → Installation
@@ -484,11 +484,11 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - **Customer Approver (Req 20):** ลูกค้าอนุมัติผ่าน LINE Flex / customer-design-view โดยไม่เป็น DB principal; Edge Function mediate; timeout → escalate ไป project_manager
 - Delegation: มอบอำนาจอนุมัติ + revoke (migrations 0016/0017 มีแล้ว) — ⏳ delegation **routing** ค้าง Phase 14
 
-**[P0] Notifications 🔵 (โครงหลัก + migrations มีแล้ว; delivery RPC + retry ค้าง Phase 13)**
+**[P0] Notifications ✅ (Phase 13 ปิด 2026-07-06 — delivery chain ครบ: claim+resolve (0081: identity_binding + template render + Vault ref) → LINE push จริง → record/backoff (0019); เหลือ ops: ลงทะเบียน cron + deploy)**
 - Dispatch state machine: queued → pending → sent/failed; channels: direct_push / group_message
 - Quiet hours + mute category + **daily digest** (`notification_digest_pending`, no-orphan constraint); เร่งด่วน push ข้าม quiet hours
 - Retry worker (backoff exponential); celebrate เมื่อจบขั้นสุดท้ายจริงเท่านั้น (ไม่ใช่ manual close) และเคารพ quiet hours (0034/0035)
-- ⏳ ค้าง: notification delivery RPC + retry ให้ครบตาม tasks Phase 13
+- ✅ delivery จริงครบ (2026-07-06): `rpc_claim_pending_notifications` v2 (0081) resolve ผู้รับ+render+token ref → worker push LINE → backoff ถูกสูตร — เหลือ ops: cron registration
 
 **[P0] SLA & Escalation ✅**
 - SLA sweep (cron): 50% ของ SLA → reminder, 100% → timeout + escalate (status='escalated')
@@ -713,7 +713,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | Designer Workspace v2.0 spec (specs/main) | 🔵 25/36 tasks | T001–T023 เสร็จ (เว้น T004); ค้าง T024–T035 (docs, v2.1 prep, config externalization, advanced) |
 | Knowledge Layer | ✅ 100% | Vault 224 ไฟล์; pipeline idempotent (PBT) |
 | line-oa-commerce | ✅ 100% | 20/20 tasks; 31 properties |
-| workflow-copilot | 🔵 84% | 113/134 tasks; ค้าง Phase 13–14 |
+| workflow-copilot | 🔵 ~86% | ~115/134 tasks; **Phase 13 ปิดแล้ว (2026-07-06)**; ค้าง Phase 14 + Req 21 |
 | capture-spine | ✅ Wave 0+1 | 42/43 tasks; migrations ถึง 0080 |
 | mcp-layer | 🔵 88% | 43/49 tasks |
 | accounting | 🟡 36% | 37/103 tasks (ตรรกะแกนมีแล้ว) |
@@ -722,7 +722,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 ### Roadmap ถัดไป (เรียงตาม dependency)
 
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
-1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
+1. **[ตอนนี้]** ~~Phase 13~~ ✅ ปิดแล้ว (2026-07-06 — delivery chain จริง + แก้บั๊ก mark-sent-โดยไม่ส่ง); เหลือปิด Phase 14 (delegation routing), Req 21 (revision/design-lock/re-quote) + ops (cron registration + deploy) — ส่วน ADR-017/018 ลง migration `0031` แล้ว → เมื่อครบแล้วเปิด Pilot Wave 2 (workflow/LINE)
 1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
 1.6. **[SaaS — สถาปัตยกรรมตัดสินแล้ว]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) + delta v0.4 Site PM; **Phase 0 ปิดแล้ว: แยก DB (ADR-034)** — Phase 1 landing เริ่มเมื่อตัดสินใจเปิดขาย SaaS
 1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด
