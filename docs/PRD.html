@@ -269,77 +269,139 @@
 <hr>
 <h2>4. ผู้ใช้และ User Stories</h2>
 <blockquote>
-<p>[ข้อเสนอ 📝] Personas สังเคราะห์จาก role ที่มีจริงใน code/spec (roles.ts, C12, MCP catalog, RACI)
-<strong>มติ grilling (2026-07-04): ผู้ใช้นำร่อง (Pilot Wave 1) = เส้นทาง Designer → Technician → Factory Operator</strong> บนแกน CAD/CAM ที่ production-ready แล้ว — เริ่มเก็บ baseline BG-1 (defect rate) จากงานจริงทันที; บทบาทฝั่ง workflow/LINE/บัญชี เปิดใช้เมื่อ Phase 13–14 ปิด (Wave 2)</p>
+<p>[ข้อเสนอ 📝] Personas เป็น <strong>มุมมอง &quot;actor ของระบบ&quot;</strong> (ใครทำอะไรในซอฟต์แวร์) สังเคราะห์จาก role ที่มีจริงใน code/spec (roles.ts, C12, MCP catalog, RACI) — <strong>คนละมุมกับ &quot;ตำแหน่ง HR&quot; 38 ตำแหน่ง</strong> ใน <code>docs/DAPH-org-structure-from-JD-2025.md</code> (1 persona อาจครอบหลายตำแหน่ง JD และ 1 คนอาจสวมหลาย persona) — ดูตาราง map ด้านล่าง
+<strong>มติ grilling (2026-07-04): ผู้ใช้นำร่อง (Pilot Wave 1) = เส้นทาง Designer → Designer Lead (gate) → Factory Operator</strong> บนแกน CAD/CAM ที่ production-ready แล้ว — เริ่มเก็บ baseline BG-1 (defect rate) จากงานจริงทันที; บทบาทฝั่ง workflow/LINE/ติดตั้ง/บัญชี เปิดใช้เมื่อ Phase 13–14 ปิด (Wave 2)</p>
 </blockquote>
-<h3>Personas</h3>
+<h3>Personas (actor ของระบบ) — พร้อม map ไปตำแหน่งจริงตาม JD</h3>
 <table>
 <thead>
 <tr>
-<th>Persona</th>
-<th>บทบาท</th>
-<th>โมดูลหลักที่ใช้</th>
+<th>Persona (actor)</th>
+<th>บทบาทในระบบ</th>
+<th>ตำแหน่งจริงตาม JD (org doc)</th>
+<th>โมดูลหลัก</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Designer (นักออกแบบ)</strong></td>
+<td><strong>Designer</strong></td>
 <td>ออกแบบตู้ 3D, กำหนดวัสดุ/ฮาร์ดแวร์, แก้ blocker จาก Gate</td>
+<td>เจ้าหน้าที่ออกแบบ (Designer)</td>
 <td>CAD, Gate, Safety Panel</td>
 </tr>
 <tr>
-<td><strong>Technician (ช่างเทคนิค/วิศวกร)</strong></td>
-<td>ตรวจแบบ, อนุมัติ (Freeze/Release), เลือกเครื่อง CNC</td>
+<td><strong>Designer Lead / ผู้ยืนยัน Gate</strong></td>
+<td>ตรวจแบบ + <strong>ยืนยัน Gate → Released_Spec</strong> (ADR-031: ผูก RACI accountable ของ Designer ไม่ใช่ generic &quot;ช่าง&quot;); Freeze/Release, เลือกเครื่อง CNC</td>
+<td>ผู้จัดการฝ่ายออกแบบ / หัวหน้า Designer</td>
 <td>Gate, Export, CNC profiles</td>
+</tr>
+<tr>
+<td><strong>Draftsman / Production Planner</strong></td>
+<td>ถอดแบบ→CAM (Pytha/MaxCut), ทำ material list, ไฟล์เจาะ, ประเมินราคา</td>
+<td>เจ้าหน้าที่วางแผนการผลิต + เจ้าหน้าที่เขียนแบบ</td>
+<td>CAD/CAM, BOM, Export</td>
+</tr>
+<tr>
+<td><strong>3D Visualizer</strong></td>
+<td>render 3D นำเสนอลูกค้า, เลือก material/lighting, recheck vs ผลิต</td>
+<td>เจ้าหน้าที่ 3D Rendering</td>
+<td>3D, customer-design-view</td>
+</tr>
+<tr>
+<td><strong>Surveyor (วัดพื้นที่)</strong></td>
+<td>วัดหน้างาน → <code>site_survey</code>/SiteSurveyZone, เก็บใบบันทึกความต้องการ</td>
+<td>หัวหน้า/เจ้าหน้าที่วัดพื้นที่</td>
+<td>Capture (site_survey), Installation PM</td>
 </tr>
 <tr>
 <td><strong>Factory Operator (โรงงาน)</strong></td>
 <td>รับ Factory Packet, ดาวน์โหลด G-code/DXF, ตรวจ receipt, ติดตาม tool wear</td>
+<td>เจ้าหน้าที่ฝ่ายผลิต (6 สถานี) + หัวหน้าฝ่ายผลิต</td>
 <td>Factory Server, CLI verify</td>
+</tr>
+<tr>
+<td><strong>QA</strong></td>
+<td>ด่านคุณภาพก่อนส่งมอบ, อนุมัติของดี/เสีย</td>
+<td>เจ้าหน้าที่ประกันคุณภาพ</td>
+<td>Gate/verify, capture</td>
+</tr>
+<tr>
+<td><strong>Installation Crew / Team Lead</strong></td>
+<td>ช่าง 3 คน/ห้อง ทำ checklist + ถ่ายรูป; หัวหน้าทีม = approver start/finish + คุมเวลาเข้า-ออกไซต์</td>
+<td>ช่างติดตั้ง/ผู้ช่วย + หัวหน้าทีมติดตั้ง (สายติดตั้ง 4 ชั้น)</td>
+<td><strong>Installation PM</strong>, LINE, capture (installation_proof)</td>
+</tr>
+<tr>
+<td><strong>Sales / Engagement</strong></td>
+<td>Qualify ลูกค้า, ใบเสนอราคา, ตอบแชท, ผู้ตอบหลักกลุ่ม LINE ลูกค้า</td>
+<td>ผจก./เจ้าหน้าที่ฝ่ายขาย</td>
+<td>LINE OA, capture (customer_requirement), Order</td>
+</tr>
+<tr>
+<td><strong>Project Manager</strong></td>
+<td>คุมส่งมอบ (ติดตั้ง+วางแผนผลิต), รับ escalation จากทุกบ้าน</td>
+<td>ผู้จัดการโครงการ + Assistant PM</td>
+<td>Workflow escalation, Installation PM</td>
 </tr>
 <tr>
 <td><strong>Admin (ผู้ดูแลระบบ)</strong></td>
 <td>จัดการ role, override gate (มี audit), จัดการ signing keys</td>
+<td>(IT/DevOps + ผู้บริหารที่ได้สิทธิ์)</td>
 <td>AdminOverride, Key management</td>
-</tr>
-<tr>
-<td><strong>Office Staff (ฝ่ายสำนักงาน)</strong></td>
-<td>ขาย, วัดพื้นที่, วางแผนผลิต — ทำงานผ่าน work item + อนุมัติผ่าน LINE</td>
-<td>Workflow, LINE OA</td>
 </tr>
 <tr>
 <td><strong>Executive Owner (เจ้าของ)</strong></td>
 <td>รับ escalation ความเสี่ยงสูง (RPN/งบเกิน), ตัดสินใจ owner decisions</td>
+<td>GM / กรรมการผู้จัดการ</td>
 <td>Workflow escalation, Copilot</td>
 </tr>
 <tr>
 <td><strong>Customer (ลูกค้า)</strong></td>
-<td>ดูแบบ 3D, อนุมัติแบบผ่าน LINE Flex/เว็บ fallback</td>
+<td>ดูแบบ 3D, อนุมัติแบบ/งานติดตั้งผ่าน LINE Flex/เว็บ fallback</td>
+<td>(ภายนอก — ไม่เป็น DB principal)</td>
 <td>customer-design-view, approval-postback</td>
 </tr>
 <tr>
-<td><strong>Accountant (บัญชี)</strong></td>
-<td>ตรวจ artifact ค่าใช้จ่าย, ปิดบัญชี, ภาษี VAT/WHT</td>
+<td><strong>Accountant / Purchasing</strong></td>
+<td>ตรวจ artifact ค่าใช้จ่าย, ปิดบัญชี, ภาษี VAT/WHT; จัดซื้อ (PO → MD อนุมัติ)</td>
+<td>ผจก./เจ้าหน้าที่บัญชี-การเงิน + เจ้าหน้าที่จัดซื้อ</td>
 <td>Capture, Ledger, Tax</td>
+</tr>
+<tr>
+<td><strong>Warehouse / Logistics</strong></td>
+<td>เบิก-จ่ายวัสดุ (ผลิต+ติดตั้ง), จัดส่งช่าง+ชิ้นงานไปหน้างาน</td>
+<td>เจ้าหน้าที่คลัง + หัวหน้าโลจิสติกส์</td>
+<td>(stock — roadmap), Installation PM handoff</td>
 </tr>
 <tr>
 <td><strong>AI Agent (ผ่าน MCP)</strong></td>
 <td>เรียกใช้ Read tools อัตโนมัติ; Write/Approval tools ต้องรอมนุษย์</td>
+<td>(non-human principal)</td>
 <td>MCP Layer</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>หมายเหตุการ reconcile (2026-07-05):</strong> ฉบับก่อนมี 9 personas โดย &quot;Office Staff&quot; ยุบ ขาย/วัดพื้นที่/วางแผนผลิต เข้าด้วยกัน และไม่มี persona ฝั่งติดตั้ง — ตารางนี้แยกตามตำแหน่งจริง (JD 38 ตำแหน่ง) + เพิ่ม Surveyor, 3D Visualizer, Installation Crew/Lead, QA, PM, Warehouse/Logistics; และแก้ persona &quot;Technician (ช่าง)&quot; ที่ยืนยัน Gate → เป็น <strong>Designer Lead</strong> ตาม ADR-031 (ผู้ยืนยัน Released_Spec = RACI accountable ของ Designer ไม่ใช่ตำแหน่งช่าง). ตำแหน่ง back-office ที่ไม่ได้เป็น actor ของระบบผลิตโดยตรง (HR, การตลาด/media, R&amp;D, ความปลอดภัย, ซ่อมบำรุง) ไม่มี persona แยก — ใช้ระบบผ่าน role ทั่วไป/dashboard</p>
+</blockquote>
 <h3>User Stories หลัก (เรียงตามความสำคัญ)</h3>
 <p><strong>การออกแบบและผลิต</strong></p>
 <ul>
 <li>ในฐานะ <strong>Designer</strong> ฉันต้องการปรับขนาดตู้ (กว้าง/สูง/ลึก/toe kick/จำนวนชั้น) ด้วย slider แล้วเห็นโครงสร้างแผ่นและรูเจาะอัปเดตแบบ real-time เพื่อออกแบบได้เร็วโดยไม่ต้องคำนวณเอง</li>
 <li>ในฐานะ <strong>Designer</strong> ฉันต้องการเห็นตำแหน่ง Minifix/เดือย/บานพับใน X-Ray mode พร้อมเส้นบอกระยะแบบ CAD เพื่อยืนยันว่าตรงกับมาตรฐาน System 32 ก่อนส่งผลิต</li>
 <li>ในฐานะ <strong>Designer</strong> เมื่อแบบละเมิดกฎการผลิต (เจาะชิดขอบเกิน, แผ่นซ้อนทับ, ระยะ B ผิด) ฉันต้องเห็น blocker พร้อมปุ่ม Focus ไปยังจุดปัญหาใน 3D และปุ่ม Fix อัตโนมัติเมื่อมี patch</li>
-<li>ในฐานะ <strong>Technician</strong> ฉันต้องการ Freeze spec เพื่อล็อกแบบก่อนส่งออก และ Release เมื่อพร้อมผลิตจริง โดยระบบห้าม export ตอนยังเป็น DRAFT</li>
+<li>ในฐานะ <strong>Designer Lead (ผู้ยืนยัน Gate)</strong> ฉันต้องการ Freeze spec เพื่อล็อกแบบก่อนส่งออก และยืนยัน Gate → Release เมื่อพร้อมผลิตจริง โดยระบบห้าม export ตอนยังเป็น DRAFT และตรวจว่าผู้ยืนยันเป็น RACI accountable ของ Designer จริง (ADR-031)</li>
 <li>ในฐานะ <strong>Factory Operator</strong> ฉันต้องการดาวน์โหลด CNC bundle (ZIP: G-code + manifest + checksums) ที่ระบุ dialect ตรงกับเครื่องของฉัน (Biesse/HOMAG/KDT/Fanuc ฯลฯ) และตรวจ receipt แบบ offline ได้</li>
 <li>ในฐานะ <strong>Admin</strong> ฉันต้องการ override gate ได้ในกรณีจำเป็น โดยระบบบังคับบันทึกเหตุผลและตัวตนลง audit log ที่แก้ไขไม่ได้</li>
 </ul>
+<p><strong>งานหน้างาน (ขาย → วัด → ติดตั้ง)</strong></p>
+<ul>
+<li>ในฐานะ <strong>Sales</strong> ฉันต้องการ Qualify ลูกค้าจาก LINE แล้วบันทึก &quot;ใบบันทึกความต้องการ&quot; (9 field) ที่ verify แล้ว → เปิดโปรเจกต์ลูกค้าในระบบอัตโนมัติ [ข้อเสนอ 📝 — capture <code>customer_requirement</code>]</li>
+<li>ในฐานะ <strong>Surveyor</strong> ฉันต้องการบันทึกข้อมูลวัดพื้นที่หน้างาน (ความเอียง/ระยะ/ตำแหน่งไฟ + ความต้องการต่อห้อง) เข้าระบบเป็น SiteSurveyZone ให้ Designer ทำงานต่อ</li>
+<li>ในฐานะ <strong>Installation Team Lead</strong> ฉันต้องการติ๊ก site-readiness ก่อน approve เริ่มงาน, เห็นทุกห้อง×3 เลนช่างของบ้าน, และรับ escalation <code>#ปัญหา</code> จากช่าง [ข้อเสนอ 📝 — Installation PM]</li>
+<li>ในฐานะ <strong>Installation Crew (ช่าง)</strong> ฉันต้องการติ๊ก checklist เลนของฉัน + ถ่ายรูป Wrapping จบงานผ่าน LINE/PWA → ปิด work item อัตโนมัติ [ข้อเสนอ 📝 — capture <code>installation_proof</code>]</li>
+</ul>
 <p><strong>การบริหารงาน</strong></p>
 <ul>
-<li>ในฐานะ <strong>Office Staff</strong> ฉันต้องการเห็นว่างานลูกค้าแต่ละรายอยู่ขั้นไหนใน 8 ขั้น canonical และส่งต่อขั้นถัดไปได้เมื่องานขั้นปัจจุบันจบ (ข้ามขั้นไม่ได้)</li>
+<li>ในฐานะ <strong>Office Staff (ขาย/วัด/วางแผนผลิต)</strong> ฉันต้องการเห็นว่างานลูกค้าแต่ละรายอยู่ขั้นไหนใน canonical process (Sale → วัด → Design → 3D → วางแผน → ผลิต → ติดตั้ง) และส่งต่อขั้นถัดไปได้เมื่องานขั้นปัจจุบันจบ (ข้ามขั้นไม่ได้)</li>
 <li>ในฐานะ <strong>ผู้อนุมัติ</strong> ฉันต้องการกดอนุมัติ/ปฏิเสธจาก LINE ได้ในคลิกเดียว และมีเว็บ fallback เมื่อ LINE ล่ม โดยผลตัดสินสองช่องทางต้องตรงกันเสมอ</li>
 <li>ในฐานะ <strong>Executive Owner</strong> เมื่องานมีความเสี่ยง RPN เกิน threshold หรืองบเกินเพดาน ฉันต้องได้รับ escalation ทันที ไม่ใช่รู้ทีหลัง</li>
 <li>ในฐานะ <strong>Customer</strong> ฉันต้องการดูแบบและกดอนุมัติผ่าน LINE โดยไม่ต้องสมัคร account ระบบ (ระบบไม่สร้าง DB principal ให้ลูกค้า — ทำผ่าน Edge Function)</li>
@@ -2306,6 +2368,11 @@ npm run gate:bypass-scan            # CI gate bypass scan
 </tr>
 </thead>
 <tbody><tr>
+<td><strong>2.1</strong></td>
+<td>2026-07-05</td>
+<td>Integrate org จริง: อ่าน JD ทางการ 27 ฉบับ → <code>DAPH-org-structure-from-JD-2025.md</code> + ร่าง JD 11 ตำแหน่งที่ขาด; <strong>reconcile §4 Personas กับ 38 ตำแหน่ง</strong> (แยก Office Staff เป็น ขาย/วัด/วางแผน, เพิ่ม Surveyor/3D/Installation/QA/PM/Warehouse, แก้ผู้ยืนยัน Gate = Designer Lead ตาม ADR-031); Installation PM spec + LINE architecture + customer_requirement/form templates; ADR-034/035 (entitlement แยก DB, installation dogfood)</td>
+</tr>
+<tr>
 <td><strong>2.0</strong></td>
 <td>2026-07-05</td>
 <td>ฉบับปรับปรุงรวม: ผลอ่าน <code>specs/</code> corpus ครบ 27 ไฟล์ (§6.2.8, §13.4, Drift D-1..D-10), §6.11 โมดูล design-stage 4 ตัว, Curved Panel spec ผ่าน grilling + kerf doc v1.1, Entitlement &amp; Multi-Tier v0.3 (53 features, roadmap hard-block) + owner decision ข้อ 8, Glossary/Roadmap/อ้างอิงอัปเดตทั้งชุด</td>
