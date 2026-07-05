@@ -702,6 +702,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
 1.6. **[SaaS — รอ owner]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) พร้อมแล้ว; **Phase 0 = ตัดสิน แยก DB vs รวม C12** แล้วจึง landing เป็น migration จริง
 1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด
+1.8. **[ข้อเสนอ 📝 — รอ owner]** Installation PM (field PM แนว KANNA — ปิด loop ผลิต→ติดตั้ง→ลูกค้าอนุมัติผ่าน LINE) — spec ร่างแล้วที่ `.kiro/specs/installation-pm/` (verify กับโค้ดจริงแล้ว: reuse ~40–50%, packet registry + media pipeline + offline sync = net-new) + entitlement delta v0.4 (8 features — roadmap ทั้งหมด, 53→61); **block ที่ decision §11 ข้อ 8 + MVP scope (ก/ข)**
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** owner decisions ข้อ 1–7 (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
@@ -966,7 +967,7 @@ npm run gate:bypass-scan            # CI gate bypass scan
 - **`specs/` (7 หมวด, 27 ไฟล์, ~27,000 บรรทัด) — เอกสารวิศวกรรมระบบผลิต**: main (spec/plan/tasks), manufacturing (kerf-bending, cut-optimization, door-drawer, dxf-export, hardware-drilling 12.4k บรรทัด), reference (formula-reference, master-hardware-database, api-documentation, cross-reference-index), technical (parametric-cabinet-calculations, snap, collision, trust-chain, r3f, verifier-golden-strings, configurator, 3d-optimization, webgpu-roadmap, gap-analysis), strategy (web-first-r3f), testing, templates
   - **กติกาชี้ขาดเมื่อเอกสารขัดกัน (จาก cross-reference-index §5.2)**: (1) formula-reference ก่อน (2) master-hardware-database สำหรับ hardware (3) โฟลเดอร์ reference/ ชนะเสมอ (4) รายงาน conflict เพื่ออัปเดต SSOT — และเมื่อเอกสารขัดกับ**โค้ดที่มีเทสต์คุ้ม** ให้ตรวจโค้ดเป็นความจริงล่าสุดแล้วย้อนแก้เอกสาร (ดู §11 Docs drift)
 - `contracts/` — kernel contract (SPEC-08 Plasticity-DNA, TS↔PyOCC), command registry, stable-hash vectors
-- `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec — รวม spec ใหม่จาก session นี้: **`curved-panel-system/`** (พร้อม kerf patch archive ที่ติดป้าย SUPERSEDED) และ **`entitlement-tier/`** (spec + `schema-draft-v0.3.sql` + `tests-negative.sql` + tier-matrix/schema-design v0.3 + `research-oneclickcabinet-v4.1.md`)
+- `.kiro/specs/*/` — requirements.md / design.md / tasks.md ต่อ spec — รวม spec ใหม่จาก session นี้: **`curved-panel-system/`** (พร้อม kerf patch archive ที่ติดป้าย SUPERSEDED), **`entitlement-tier/`** (spec + `schema-draft-v0.3.sql` + `tests-negative.sql` + tier-matrix/schema-design v0.3 + `research-oneclickcabinet-v4.1.md` + v0.4 delta Site PM) และ **`installation-pm/`** (field PM แนว KANNA — requirements/design/tasks + external draft archive)
 - `.kiro/steering/` — architecture-decisions.md, ubiquitous-language.md
 - `CHANGELOG.md` — v2.1.0 (D1–D3.3 CNC trust chain), v2.0.0
 - `CONTRIBUTING.md` — Safety Gate policy + ระดับเทสต์บังคับ 4 ระดับ

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation PM — Spec (MONOLITH)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Requirements Document — Installation PM (Field/Site Project Management)</h1>
+<h2>Introduction</h2>
+<p>เอกสารนี้กำหนด requirements ของโมดูล <strong>Installation PM</strong> — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: <code>ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน</code> — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)</p>
+<p><strong>สถานะ:</strong> design proposal — แปลงจาก build plan ภายนอก (5 ก.ค. 2026) ผ่านการ verify กับเรโปจริงแล้ว 1 รอบ (แก้ over-claim 4 จุด — ดู §Reuse Map) — <strong>ยังไม่ implement</strong> รอ owner decisions (Req 12)</p>
+<p><strong>ขอบเขต IP:</strong> ลอกได้เฉพาะ<em>แนวคิดฟีเจอร์/เวิร์กโฟลว์</em> (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล</p>
+<p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
+<h2>Glossary</h2>
+<ul>
+<li><strong>Installation Project</strong>: โปรเจกต์ติดตั้งหน้างาน 1 งาน (ลูกค้า/สถานที่/ช่วงเวลา) — <strong>ตั้งใจไม่ใช้คำว่า <code>site</code></strong> เพราะใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) คนละความหมาย</li>
+<li><strong>Packet Registry</strong>: ตารางลงทะเบียน Factory Packet (id, SHA-256, receipt ref) — สะพานเชื่อมการผลิต ↔ การติดตั้ง (ปัจจุบัน packet เป็น artifact ฝั่ง client <strong>ยังไม่มีใน DB</strong>)</li>
+<li><strong>Field Report</strong>: รายงานหน้างาน (daily/custom form) กรอกจากมือถือ แนบรูป/ลายเซ็น</li>
+<li><strong>External Member</strong>: ช่าง/พาร์ตเนอร์ภายนอกที่เข้าถึงได้เฉพาะโปรเจกต์ที่ถูกเชิญ</li>
+<li><strong>Sync Protocol</strong>: กติกา offline sync (<code>client_rev</code> + <code>updated_at</code> + tombstone) — ต้องล็อกก่อนเขียน mobile</li>
+</ul>
+<h2>Reuse Map (ผลตรวจกับเรโปจริง 2026-07-05)</h2>
+<table>
+<thead>
+<tr>
+<th>ความสามารถ</th>
+<th>ระดับ</th>
+<th>หลักฐาน/หมายเหตุ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Multi-tenant RLS + IAM C12</td>
+<td>✅ ใช้ได้วันนี้</td>
+<td><code>src/iam/scope.ts</code>, <code>resolve_actor</code>/<code>has_site_access</code> (migrations 0074–0079)</td>
+</tr>
+<tr>
+<td>LINE OA infra (webhook/outbound/templates/order)</td>
+<td>✅ ใช้ได้วันนี้</td>
+<td>line-oa-commerce 20/20 tasks, 31 properties</td>
+</tr>
+<tr>
+<td>Audit pattern (append-only)</td>
+<td>✅ ใช้ได้วันนี้</td>
+<td>pattern จาก <code>line_oa_audit_log</code> — <strong>ไม่ใช่</strong> Trust Chain (นั่นคือ manufacturing provenance)</td>
+</tr>
+<tr>
+<td>PDPA machinery</td>
+<td>✅ ใช้ได้วันนี้</td>
+<td><code>Data_Minimization_Boundary</code> + PII redaction จาก MCP layer</td>
+</tr>
+<tr>
+<td>Customer approval ผ่าน LINE</td>
+<td>🔧 infra มี ต้องต่อยอด</td>
+<td>outbound + template governance มี; <strong>approval Flex flow = งานใหม่</strong></td>
+</tr>
+<tr>
+<td>Supabase Realtime (chat/presence)</td>
+<td>🔧 platform-only</td>
+<td><strong>ไม่มีการใช้ใน <code>src/</code> เลย</strong> — chat เป็น net-new ทั้งก้อน</td>
+</tr>
+<tr>
+<td>Storage + media pipeline + push (FCM/APNs)</td>
+<td>🔴 net-new</td>
+<td>ไม่พบ <code>storage.from(</code>/FCM/APNs ในโค้ด</td>
+</tr>
+<tr>
+<td>MFA/2FA</td>
+<td>🔧 platform รองรับ</td>
+<td>ยังไม่ได้เปิด/บังคับใช้ในระบบ</td>
+</tr>
+<tr>
+<td>Entitlement gate</td>
+<td>📝 draft</td>
+<td>v0.3 ยังไม่ deploy — block ที่ owner decision PRD §11 ข้อ 8</td>
+</tr>
+<tr>
+<td>Factory Packet ใน DB</td>
+<td>🔴 net-new</td>
+<td>packet เป็น ZIP+receipt ฝั่ง client — ต้องมี Packet Registry (Req 3)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>ตัวเลข reuse จริง ~40–50% (ไม่ใช่ 60–70% ตาม draft ภายนอก) — แต่ก็ยังถูกกว่า standalone อย่างมีนัยสำคัญ</p>
+</blockquote>
+<h2>Requirements</h2>
+<h3>Requirement 1: Tenancy + Naming + RLS</h3>
+<ol>
+<li>THE ตารางใหม่ทุกตัว SHALL ผูก tenant scope ตาม convention C12 (<code>resolve_actor</code>, <code>TO authenticated</code>) + RLS fail-closed</li>
+<li>THE ตาราง/คอลัมน์ใหม่ SHALL ไม่ใช้คำ <code>site</code> นำหน้า (ชนความหมาย C12) — ใช้ <code>installation_*</code> / <code>field_*</code></li>
+<li>THE External Member SHALL เข้าถึงได้เฉพาะ installation project ที่มี membership และเห็นเฉพาะข้อมูลของโปรเจกต์นั้น (ไม่เห็นข้อมูล org อื่น ๆ)</li>
+</ol>
+<h3>Requirement 2: Installation Project + Task + Board</h3>
+<ol>
+<li>THE ระบบ SHALL มี installation_projects (ลูกค้า, สถานที่, ช่วงเวลา, สถานะ lifecycle: draft → scheduled → installing → customer_review → closed)</li>
+<li>THE ระบบ SHALL มี installation_tasks (assignee, due, status, %progress) + มุมมอง Kanban board</li>
+<li>WHEN โปรเจกต์เข้าสถานะ customer_review THE ระบบ SHALL สร้าง approval request ได้ (Req 7)</li>
+<li>Gantt + company dashboard เป็น Phase 3 (ดู tasks.md) — ไม่อยู่ใน MVP</li>
+</ol>
+<h3>Requirement 3: Packet Registry — สะพานผลิต↔ติดตั้ง (moat)</h3>
+<ol>
+<li>THE ระบบ SHALL มี packet_registry: packet_id, SHA-256, receipt reference, cabinet/panel index — ลงทะเบียนตอน export</li>
+<li>THE installation_projects SHALL อ้าง packet_registry ได้ (0..n packets ต่อโปรเจกต์) — link <strong>immutable หลังปิดงาน</strong></li>
+<li>THE รูป/รายงานติดตั้ง SHALL ผูกถึงระดับ cabinet/panel id ใน packet ได้ (optional ต่อรูป)</li>
+<li>THE การ verify SHALL ตรวจ SHA-256 กับ receipt ได้ตาม flow <code>monolith-receipt-verify</code> เดิม</li>
+</ol>
+<h3>Requirement 4: Photo/Media Pipeline + Quota</h3>
+<ol>
+<li>THE upload SHALL ผ่าน media pipeline: บีบอัด + thumbnail (Edge Function) + จัดโฟลเดอร์ต่อโปรเจกต์</li>
+<li>THE รูป SHALL เก็บ metadata: เวลา, ผู้ถ่าย, geo (ถ้ามี consent), ผูก task/panel ได้</li>
+<li>THE annotation (วาด/มาร์กบนรูป) SHALL เก็บเป็น layer แยก ไม่ทำลายไฟล์ต้นฉบับ</li>
+<li>THE storage ต่อ org SHALL enforce ด้วย <code>sitepm.photo_storage_gb</code> (stock_quota) — นับผ่าน <code>storage_usage</code> hook (net-new — entitlement tasks Phase 4.1)</li>
+</ol>
+<h3>Requirement 5: Field Reports + Form Builder + e-Signature</h3>
+<ol>
+<li>THE daily report SHALL กรอกจากมือถือ แนบรูป และทำงาน<strong>ออฟไลน์ได้</strong> (Req 8)</li>
+<li>THE custom form builder (field types: text/number/date/photo/signature/คำนวณ) เป็น Phase 3 — MVP ใช้ template คงที่</li>
+<li>THE ลายเซ็น SHALL เก็บพร้อม timestamp + ผู้เซ็น + report version — report ที่เซ็นแล้ว immutable</li>
+<li>THE report SHALL export เป็น PDF ได้</li>
+</ol>
+<h3>Requirement 6: Chat + Notifications</h3>
+<ol>
+<li>THE แชท SHALL ผูกต่อ installation project (Supabase Realtime) — internal + external members</li>
+<li>THE push notification (FCM/APNs) SHALL แจ้ง: assigned task, mention, approval result, report submitted</li>
+<li>THE ข้อความ SHALL อยู่ใต้ RLS เดียวกับโปรเจกต์ (external member เห็นเฉพาะห้องของโปรเจกต์ตน)</li>
+</ol>
+<h3>Requirement 7: Customer Approval ผ่าน LINE (reuse line-oa)</h3>
+<ol>
+<li>THE approval request SHALL ส่งผ่าน line-oa outbound เดิม เป็น <strong>pre-approved Flex template + named slots</strong> — สอดคล้อง template governance เดิม (<strong>ไม่มี free-text LLM</strong>)</li>
+<li>WHEN ลูกค้ากดอนุมัติ/ปฏิเสธ (postback) THE ระบบ SHALL บันทึกผล + เหตุผล + timestamp แบบ idempotent (pattern webhook เดิม)</li>
+<li>THE ผลอนุมัติ SHALL ผูกกับ packet/report ที่เกี่ยวข้อง → provenance ครบ: ใคร อนุมัติอะไร ของที่ผลิตล็อตไหน</li>
+<li>WHEN ลูกค้าไม่มี LINE THE ระบบ SHALL มี fallback (secure link อีเมล/SMS) — Phase 3</li>
+</ol>
+<h3>Requirement 8: Offline-First Mobile</h3>
+<ol>
+<li>THE sync protocol (client_rev + updated_at + tombstone + กติกา conflict ต่อ entity) SHALL ถูกล็อกเป็นเอกสาร<strong>ก่อน</strong>เขียนโค้ด mobile (design.md §D-6)</li>
+<li>THE conflict default SHALL เป็น last-write-wins ต่อ row ยกเว้น report values ใช้ field-merge — <strong>ห้าม silent data loss</strong>: ฝั่งแพ้ถูกเก็บเป็น conflict copy ให้ผู้ใช้กู้ได้</li>
+<li>THE mobile app (React Native) SHALL ใช้ Supabase backend + RLS + entitlement เดิมร่วมกัน — ไม่มี backend แยก</li>
+<li>THE MVP web (Phase 1) SHALL เป็น responsive + PWA (ออนไลน์) — offline เต็มรูปแบบเป็น Phase 2 track แยก</li>
+</ol>
+<h3>Requirement 9: Entitlement Gating (v0.4 delta)</h3>
+<ol>
+<li>THE ฟีเจอร์ Site-PM ทั้ง 8 keys SHALL เพิ่มใน matrix เป็น <strong><code>status=&#39;roadmap&#39;</code> ทั้งหมด</strong> จนกว่าแต่ละตัวจะ ship (กติกา anti-vaporware v0.3)</li>
+<li>THE gate SHALL ใช้ kind จริงของ schema: <code>boolean</code>/<code>stock_quota</code>/<code>metered_quota</code>/<code>limit_param</code> — ดู <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code></li>
+<li>THE การพลิก roadmap→implemented SHALL ผูก release checklist ต่อฟีเจอร์ (สืบทอด entitlement Req 6.5)</li>
+</ol>
+<h3>Requirement 10: PDPA</h3>
+<ol>
+<li>THE รูปหน้างาน/ชื่อ/อีเมล/geo = ข้อมูลส่วนบุคคล — SHALL มี consent record + privacy notice + สิทธิเจ้าของข้อมูล (access/delete)</li>
+<li>THE ข้อมูลที่ส่งออกนอกระบบ (LINE, PDF, MCP) SHALL ผ่าน redaction ตาม pattern <code>Data_Minimization_Boundary</code> เดิม</li>
+<li>THE retention SHALL กำหนดต่อ org (default + lifecycle policy ลบ media ตามอายุ)</li>
+</ol>
+<h3>Requirement 11: Audit</h3>
+<ol>
+<li>THE เหตุการณ์สำคัญ (สร้าง/ปิดโปรเจกต์, ผูก packet, submit/sign report, approval) SHALL เขียน append-only audit ตาราง <code>installation_audit_log</code> (pattern <code>line_oa_audit_log</code>)</li>
+<li>THE audit SHALL ไม่แก้/ลบได้ และ query ได้ตาม RLS org</li>
+</ol>
+<h3>Requirement 12: Owner Decisions (blocking)</h3>
+<ol>
+<li>Owner SHALL ตัดสิน <strong>PRD §11 ข้อ 8</strong> (แยก DB vs รวม C12) ก่อน — โมดูลนี้เป็น<strong>หลักฐานเพิ่มน้ำหนักฝั่ง &quot;รวม DB&quot;</strong> (ต้อง join line_oa_*, workflow, packet_registry)</li>
+<li>Owner SHALL ยืนยัน MVP scope: (ก) web-PWA ก่อน + mobile ทีหลัง (ข้อเสนอของ spec นี้) หรือ (ข) mobile ตั้งแต่ Phase 1 (ตาม draft ภายนอก — เสี่ยง timeline)</li>
+<li>ห้าม implement จนกว่าจะตัดสินทั้ง 2 ข้อ — บันทึกเป็น ADR</li>
+</ol>
+<h2>Correctness Properties (สำหรับ test)</h2>
+<ol>
+<li><strong>Cross-org/external isolation</strong>: external member เห็นเฉพาะโปรเจกต์ที่มี membership; ข้าม org ล้มเหลวทุกทาง</li>
+<li><strong>Packet linkage integrity</strong>: ไม่มี dangling packet ref; link เป็น immutable หลังปิดงาน; SHA-256 verify ผ่านตาม receipt เดิม</li>
+<li><strong>Media quota atomicity</strong>: N concurrent uploads → ไม่ทะลุ <code>photo_storage_gb</code></li>
+<li><strong>Sync convergence</strong>: ทุก conflict scenario → converge โดยไม่มี silent data loss (ฝั่งแพ้มี conflict copy)</li>
+<li><strong>Approval provenance</strong>: ทุก approval → audit row + ผูก packet/report; postback ซ้ำ = idempotent</li>
+<li><strong>Roadmap gating</strong>: <code>sitepm.*</code> ทุกตัว = false/0 ทุก plan จนกว่า flip (ยกเว้น beta override)</li>
+</ol>
+<hr>
+<h1>Design Document — Installation PM</h1>
+<blockquote>
+<p>สถานะ: design proposal — รอ owner decisions (requirements Req 12) ก่อน implement
+อ่านคู่กับ <code>requirements.md</code> — เลข D-x อ้างถึงการตัดสินใจเชิงออกแบบในเอกสารนี้</p>
+</blockquote>
+<h2>D-1: Naming — เลี่ยงคำ <code>site</code></h2>
+<p>ใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) ถ้าตั้ง <code>site_projects</code> จะสับสนใน RLS policy ทันที → ใช้ <strong><code>installation_projects</code></strong> และ prefix <code>installation_*</code>/<code>field_*</code> ทั้งชุด (feature keys ใน entitlement ใช้ <code>sitepm.*</code> ได้เพราะเป็น namespace การขาย ไม่ใช่ชื่อตาราง)</p>
+<h2>D-2: Data Model (org-scoped + RLS ทุกตาราง — convention C12)</h2>
+<pre><code>tenants (ตาม decision PRD §11 ข้อ 8: organizations ใหม่ หรือ sites เดิมของ C12)
+  ─1:*─ installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
+                               ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
+                               │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
+                               ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
+                               ├─1:*─ installation_chat_messages
+                               ├─1:*─ installation_approvals   (channel: line|link, result, postback_id UNIQUE)
+                               ├─1:*─ installation_audit_log   (append-only)
+                               └─*:*─ packet_registry           (ผ่าน installation_packets join)
+installation_memberships (project_id, user_id, member_type: internal|external, role)
+form_templates (org-scoped, versioned, immutable หลัง publish)
+packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel index)
+</code></pre>
+<p>หลักการ: ทุกตาราง = tenant col + RLS fail-closed · external member ผ่าน <code>installation_memberships</code> เท่านั้น (policy แยกจาก org member) · report ที่เซ็นแล้ว + approval + audit = <strong>immutable</strong> (no UPDATE/DELETE policy)</p>
+<h2>D-3: Packet Registry — สะพานผลิต↔ติดตั้ง</h2>
+<p>ปัจจุบัน Factory Packet เป็น ZIP + Ed25519 receipt ฝั่ง client — <strong>ไม่มีใน DB</strong> ออกแบบ:</p>
+<ul>
+<li>ตอน export สำเร็จ → client เรียก RPC <code>register_packet(packet_id, sha256, receipt_ref, manifest)</code> (idempotent ตาม packet_id)</li>
+<li><code>manifest</code> เก็บ index ของ cabinet/panel (id + ชื่อ) พอสำหรับ link รูป/task — <strong>ไม่เก็บเนื้อ packet</strong> (ZIP อยู่ storage/ลูกค้า) → DB ไม่บวม, ความจริงยังอยู่ที่ artifact + receipt</li>
+<li>verify = โหลด artifact แล้วเช็ค SHA-256 กับ registry + <code>monolith-receipt-verify</code> เดิม (ไม่สร้างกลไก verify ใหม่)</li>
+<li>เกี่ยวพัน owner decision ข้อ 5 (Released_Spec contract) — ถ้า contract นั้น landing ก่อน ให้ registry ใช้ id space เดียวกัน</li>
+</ul>
+<h2>D-4: Media Pipeline</h2>
+<ul>
+<li>Upload → Supabase Storage path <code>org/{tenant}/inst/{project}/orig/...</code> → Edge Function trigger: compress + thumbnail → <code>.../thumb/</code></li>
+<li>Quota: ก่อน upload เรียก <code>feature_limit(&#39;sitepm.photo_storage_gb&#39;)</code> เทียบ <code>storage_usage(tenant)</code> (ตารางนับ bytes — net-new, สอดคล้อง entitlement tasks Phase 4.1) — enforce ที่ Edge Function + นับจริงหลัง upload (กัน TOCTOU ด้วย advisory lock pattern เดิม)</li>
+<li>Lifecycle: policy ต่อ org (เช่น archive/ลบ orig หลัง N ปี เก็บ thumb) — ลด storage cost ซึ่งเป็นต้นทุนโตเร็วสุด</li>
+<li>Annotation = JSON layer (stroke/shape/text) เก็บใน <code>photo_annotations</code> render ทับตอนแสดง/ตอน export PDF</li>
+</ul>
+<h2>D-5: LINE Approval Flow (reuse line-oa)</h2>
+<pre><code>installation_projects (customer_review)
+  → สร้าง installation_approvals (pending)
+  → enqueue line_oa_outbound_messages ด้วย template ใหม่ &#39;inst_approval_request&#39;
+     (pre-approved Flex + named slots: {{project_name}}, {{report_url}}, {{approve_token}}) — ไม่มี free-text
+  → ลูกค้ากดปุ่ม → LINE postback → line-webhook เดิม (HMAC + idempotent ตาม webhook_event_id)
+  → route ตาม postback type ใหม่ &#39;inst_approval&#39; → update approvals (result, reason, at) + audit row
+  → Realtime notify ทีม + push
+</code></pre>
+<ul>
+<li>ต้องเพิ่ม: template 1 ตัว (ผ่าน template governance เดิม), postback route 1 ตัว, identity mapping ลูกค้า↔โปรเจกต์ (reuse <code>line_oa_customer_identity</code>)</li>
+<li>ลูกค้าไม่มี LINE → Phase 3: secure link (signed URL อายุสั้น) ผลเข้า table เดียวกัน</li>
+</ul>
+<h2>D-6: Offline Sync Protocol (ล็อกก่อนเขียน mobile — Req 8.1)</h2>
+<ul>
+<li>ทุก row ที่ sync ได้: <code>updated_at</code> (server), <code>client_rev</code> (uuid ต่อ write), <code>deleted_at</code> (tombstone)</li>
+<li>Pull: delta ตาม <code>updated_at &gt; last_sync</code> ต่อโปรเจกต์ · Push: batch พร้อม <code>base_rev</code> ต่อ row</li>
+<li>Conflict (base_rev ไม่ตรง):<ul>
+<li>default = <strong>LWW ต่อ row</strong> + เก็บฝั่งแพ้เป็น <code>sync_conflicts</code> row (กู้คืนได้ — ห้าม silent loss)</li>
+<li><code>field_reports.values</code> = <strong>field-merge</strong> (กรอกคนละช่องไม่ชนกัน) — ชนช่องเดียวกัน → LWW ช่องนั้น + conflict copy</li>
+<li>report ที่ <strong>เซ็นแล้ว/approval/audit</strong> = immutable → ฝั่ง offline ที่แก้ของ immutable = reject ทั้ง batch row นั้น</li>
+</ul>
+</li>
+<li>Client store: เลือกใน Phase 2 spike ระหว่าง PowerSync / WatermelonDB / RxDB (เกณฑ์: RLS-compat, attachment queue, maturity) — <strong>ห้ามตัดสินใน spec นี้</strong> ต้องมี prototype ก่อน (tasks Phase 0.3)</li>
+<li>Media offline: คิวรูปแยกจาก row sync (upload ทีหลัง, report อ้างรูปด้วย local id → reconcile)</li>
+</ul>
+<h2>D-7: Chat + Push</h2>
+<ul>
+<li>Supabase Realtime channel ต่อโปรเจกต์ (<strong>การใช้ Realtime ครั้งแรกในเรโป</strong> — ต้อง load test ก่อนใช้จริง เพราะยังไม่มีที่ไหนพิสูจน์)</li>
+<li>Push: FCM (Android/web) + APNs (iOS) ผ่าน Edge Function fan-out — เก็บ device tokens ใต้ RLS ของผู้ใช้</li>
+<li>แจ้งเตือน: task assigned, @mention, approval result, report submitted</li>
+</ul>
+<h2>D-8: Entitlement Integration</h2>
+<ul>
+<li>Delta v0.4: +8 features หมวด <code>site_pm</code> — <strong>roadmap ทั้งหมด</strong> — ดู <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> (53→61 features, seed 244 rows)</li>
+<li>ความสัมพันธ์กับ <code>storage.cloud_mb</code> (มีอยู่แล้ว, roadmap): <code>sitepm.photo_storage_gb</code> เป็นโควตา<strong>แยก</strong>สำหรับ media หน้างาน (ต้นทุน/ราคาแยกจาก cloud project storage) — ตั้งใจไม่รวม</li>
+<li>UI 3 สถานะเดิม (enabled/locked/coming-soon) ใช้ได้ทันทีเมื่อ entitlement landing</li>
+</ul>
+<h2>D-9: PDPA</h2>
+<ul>
+<li>Consent: ตอนเชิญ external member + ตอนเปิดใช้ geo-tag (per-project toggle, default off)</li>
+<li>Redaction: export/LINE/MCP ผ่าน <code>Data_Minimization_Boundary</code> pattern เดิม (allowedFields + PII scrub)</li>
+<li>สิทธิเจ้าของข้อมูล: ลบรูป/ข้อมูลส่วนตัว → soft-delete + purge job (audit เก็บ event โดยไม่เก็บเนื้อ PII)</li>
+</ul>
+<h2>D-10: สิ่งที่ตัดออกจาก draft ภายนอก (พร้อมเหตุผล)</h2>
+<table>
+<thead>
+<tr>
+<th>ของใน draft</th>
+<th>การตัดสิน</th>
+<th>เหตุผล</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;Trust Chain เป็น audit log ของ site events&quot;</td>
+<td>❌ ใช้ <code>installation_audit_log</code> แทน</td>
+<td>Trust Chain = manufacturing provenance ไม่ใช่ audit อเนกประสงค์</td>
+</tr>
+<tr>
+<td>&quot;reuse AI stack ทำ voice reporting&quot;</td>
+<td>เลื่อนเป็น Phase 4 + ระบุว่าเป็น net-new</td>
+<td>เรโปมี MCP governance ไม่ใช่ speech-to-text; ฟีเจอร์ KANNA นี้ยัง unverified ด้วย</td>
+</tr>
+<tr>
+<td>MVP 3–5 เดือนรวม mobile offline</td>
+<td>แยก track: Phase 1 web-PWA, Phase 2 mobile</td>
+<td>N5 เดี่ยว ๆ ก็กินเวลาระดับนั้น; ทีมปัจจุบันเป็น web/R3F</td>
+</tr>
+<tr>
+<td>ชื่อ <code>site_project</code></td>
+<td>เปลี่ยน <code>installation_projects</code></td>
+<td>ชน C12 (D-1)</td>
+</tr>
+<tr>
+<td>&quot;Entitlement v0.3 ✅ มีแล้ว&quot;</td>
+<td>ระบุตรง: 📝 draft ยังไม่ deploy</td>
+<td>block ที่ PRD §11 ข้อ 8</td>
+</tr>
+</tbody></table>
+<h2>ความเสี่ยงหลัก (สืบทอด + เพิ่ม)</h2>
+<ol>
+<li><strong>Sync (D-6)</strong> — ผิดแล้วแก้ยากสุด → Phase 0.3 prototype ก่อนเขียนจริง</li>
+<li><strong>Storage cost (D-4)</strong> — quota + lifecycle ตั้งแต่วันแรก</li>
+<li><strong>Realtime ยังไม่เคยใช้ในเรโป (D-7)</strong> — spike + load test ก่อนผูกกับ MVP</li>
+<li><strong>Decision ข้อ 8 ค้าง</strong> — schema นี้เขียนลง DB ไหนยังไม่รู้ → ทุก DDL ในเอกสารนี้เป็น draft จนกว่า ADR ออก</li>
+<li><strong>KANNA อยู่ในตลาดไทยแล้ว</strong> (ยืนยันจากภายนอก 2026-07-05: 70,000+ บริษัท/100+ ประเทศ, ISO27001, รองรับภาษาไทย) — แข่งด้วย vertical integration + LINE ไม่ใช่ความกว้างฟีเจอร์</li>
+</ol>
+<hr>
+<h1>Implementation Plan — Installation PM</h1>
+<blockquote>
+<p>Gate แรกคือการตัดสินใจ ไม่ใช่โค้ด — ห้ามข้าม Phase 0 (pattern เดียวกับ entitlement-tier)</p>
+</blockquote>
+<h2>Phase 0: Decisions + Spikes (blocking)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 0.1 Owner ตัดสิน PRD §11 ข้อ 8 (แยก DB vs รวม C12) — โมดูลนี้คือหลักฐานฝั่ง &quot;รวม DB&quot; (join line_oa_*/workflow/packet_registry) — บันทึก ADR</li>
+<li><input disabled="" type="checkbox"> 0.2 Owner ยืนยัน MVP scope: (ก) web-PWA ก่อน [ข้อเสนอ spec นี้] vs (ข) mobile ตั้งแต่แรก [draft ภายนอก]</li>
+<li><input disabled="" type="checkbox"> 0.3* Spike: sync prototype (D-6) — 2 clients + conflict ทุก scenario ใน Correctness Property 4; เลือก client store (PowerSync/WatermelonDB/RxDB)</li>
+<li><input disabled="" type="checkbox"> 0.4* Spike: Supabase Realtime load test (การใช้ครั้งแรกในเรโป — D-7)</li>
+<li><input disabled="" type="checkbox"> 0.5 ยืนยันฟีเจอร์ AI voice ของ KANNA จาก App Store changelog (ตอนนี้ unverified) — มีผลแค่ลำดับความสำคัญ Phase 4</li>
+</ul>
+<h2>Phase 1: Web MVP (หลัง 0.1–0.2)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log + RLS ตาม convention จาก ADR 0.1</li>
+<li><input disabled="" type="checkbox"> 1.2 Packet Registry + RPC <code>register_packet</code> (idempotent) + ผูก export flow เดิม</li>
+<li><input disabled="" type="checkbox"> 1.3 Web UI: project list/detail + Kanban + task CRUD (responsive + PWA)</li>
+<li><input disabled="" type="checkbox"> 1.4 Media pipeline: upload → compress/thumbnail Edge Function + storage_usage counter + quota check</li>
+<li><input disabled="" type="checkbox"> 1.5 Daily report (template คงที่) + แนบรูป + PDF export</li>
+<li><input disabled="" type="checkbox"> 1.6 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications</li>
+<li><input disabled="" type="checkbox"> 1.7 LINE approval: template &#39;inst_approval_request&#39; + postback route + approvals table (D-5)</li>
+<li><input disabled="" type="checkbox"> 1.8* Negative tests: Correctness Properties 1, 2, 3, 5 + RLS external member</li>
+</ul>
+<h2>Phase 2: Mobile + Offline (track แยก — เริ่มได้หลัง 0.3)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 2.1 React Native shell + auth + โปรเจกต์/task แบบ online</li>
+<li><input disabled="" type="checkbox"> 2.2 Offline sync ตาม protocol D-6 (client store จาก spike) + sync_conflicts UI</li>
+<li><input disabled="" type="checkbox"> 2.3 Media offline queue + reconcile local id</li>
+<li><input disabled="" type="checkbox"> 2.4 Push: FCM/APNs + device tokens + fan-out Edge Function</li>
+<li><input disabled="" type="checkbox"> 2.5* Sync convergence tests (Property 4) — ทุก conflict matrix ต้องเขียว</li>
+</ul>
+<h2>Phase 3: Commercial</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 3.1 Gantt + project dashboard</li>
+<li><input disabled="" type="checkbox"> 3.2 Form builder (versioned templates) + e-signature + photo report</li>
+<li><input disabled="" type="checkbox"> 3.3 Sub-project, calendar + sync, import/export CSV</li>
+<li><input disabled="" type="checkbox"> 3.4 Approval fallback ไม่มี LINE (secure link)</li>
+<li><input disabled="" type="checkbox"> 3.5 PDPA ครบวงจร: consent UI, retention/lifecycle job, purge + audit</li>
+</ul>
+<h2>Phase 4: Scale / AI</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 4.1 Company-wide dashboard (enterprise)</li>
+<li><input disabled="" type="checkbox"> 4.2 AI voice reporting (speech-to-text → เติมฟอร์ม) — net-new stack; ทบทวนความจำเป็นตามผล 0.5</li>
+<li><input disabled="" type="checkbox"> 4.3 เชื่อม accounting/costing เดิม (ต้นทุนติดตั้งเข้างบโปรเจกต์)</li>
+<li><input disabled="" type="checkbox"> 4.4 MFA enforcement (Supabase MFA) สำหรับ org ที่เปิด</li>
+</ul>
+<h2>Entitlement Flips (ทำคู่ทุก Phase — กติกา v0.3 Req 6.5)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> F1 Phase 1 ship → flip <code>sitepm.projects</code>, <code>sitepm.line_approval</code> (+<code>sitepm.photo_storage_gb</code> เมื่อ quota enforce จริง)</li>
+<li><input disabled="" type="checkbox"> F2 Phase 2 ship → flip <code>sitepm.mobile_offline</code></li>
+<li><input disabled="" type="checkbox"> F3 Phase 3 ship → flip <code>sitepm.gantt</code>, <code>sitepm.custom_report</code></li>
+<li><input disabled="" type="checkbox"> F4 Phase 4 ship → flip <code>sitepm.company_dashboard</code>, <code>sitepm.ai_voice_report</code></li>
+</ul>
+<h2>Deferred</h2>
+<ul>
+<li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
+</ul>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>

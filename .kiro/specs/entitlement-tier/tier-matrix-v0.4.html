@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — Entitlement & Tier System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --onyx:#0a0e14; --surface:#111721; --surface-2:#151d29; --raise:#1a2432;
+    --line:#212c3b; --line-soft:#1a2331;
+    --ink:#e6ebf2; --ink-soft:#aab6c6; --ink-mute:#6b788a;
+    --green:#4bbd88; --green-dim:#2f7a58; --green-glow:rgba(75,189,136,.14);
+    --gold:#cba24e; --red:#dd5b52;
+    --serif:'Cormorant Garamond',Georgia,serif;
+    --sans:'Manrope','Sarabun',system-ui,sans-serif;
+    --thai:'Sarabun','Manrope',sans-serif;
+    --mono:'JetBrains Mono',monospace;
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--onyx); color:var(--ink);
+    font-family:var(--sans); font-weight:400; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1200px 600px at 78% -8%, rgba(75,189,136,.06), transparent 60%),
+                     radial-gradient(900px 500px at 8% 4%, rgba(203,162,78,.045), transparent 55%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  .th{font-family:var(--thai)}
+  code,.mono{font-family:var(--mono)}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:80px 0 46px;border-bottom:1px solid var(--line-soft);position:relative}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.34em;text-transform:uppercase;
+           color:var(--gold);display:flex;align-items:center;gap:12px;margin-bottom:26px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:var(--gold);opacity:.6}
+  h1.word{font-family:var(--serif);font-weight:500;letter-spacing:.02em;line-height:.98;
+          font-size:clamp(52px,9vw,104px)}
+  h1.word .thin{color:var(--ink-mute);font-style:italic;font-weight:400}
+  .sub{margin-top:22px;max-width:640px;color:var(--ink-soft);font-size:16.5px}
+  .sub .th{font-size:15.5px}
+  .meta{margin-top:30px;display:flex;flex-wrap:wrap;gap:10px 26px;font-family:var(--mono);
+        font-size:11.5px;color:var(--ink-mute);letter-spacing:.05em}
+  .meta b{color:var(--green);font-weight:500}
+
+  /* ---------- section frame ---------- */
+  section{padding:66px 0;border-bottom:1px solid var(--line-soft)}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:34px;flex-wrap:wrap}
+  .sec-num{font-family:var(--mono);font-size:12px;color:var(--green-dim);letter-spacing:.2em}
+  .sec-title{font-family:var(--serif);font-size:clamp(28px,4vw,40px);font-weight:500;letter-spacing:.01em}
+  .sec-note{color:var(--ink-mute);font-size:14px;margin-left:auto;max-width:360px;text-align:right}
+
+  /* ---------- tier cards ---------- */
+  .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .tier{background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--line);
+        border-radius:var(--r);padding:26px 22px 24px;cursor:pointer;position:relative;
+        transition:border-color .3s,transform .3s,box-shadow .3s}
+  .tier:hover{transform:translateY(-4px);border-color:var(--green-dim)}
+  .tier.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 18px 50px -20px var(--green-glow)}
+  .tier.featured::after{content:"แนะนำสำหรับโรงงาน";position:absolute;top:-1px;right:-1px;
+        font-family:var(--thai);font-size:10.5px;letter-spacing:.02em;color:var(--onyx);
+        background:var(--gold);padding:4px 11px;border-radius:0 var(--r) 0 var(--r);font-weight:600}
+  .tier .tname{font-family:var(--serif);font-size:27px;font-weight:600;letter-spacing:.01em}
+  .tier .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+             color:var(--ink-mute);margin-top:3px}
+  .tier .price{margin-top:20px;font-size:32px;font-weight:700;letter-spacing:-.02em}
+  .tier .price .per{font-size:13px;color:var(--ink-mute);font-weight:400;letter-spacing:0}
+  .tier .tnote{margin-top:14px;font-family:var(--thai);font-size:13px;color:var(--ink-soft);min-height:56px}
+  .tier .unlock{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);
+                font-family:var(--mono);font-size:11.5px;color:var(--green);letter-spacing:.03em}
+  .tier .unlock span{color:var(--ink-mute)}
+
+  /* ---------- matrix controls ---------- */
+  .controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:22px}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;gap:2px}
+  .seg button{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-soft);
+              background:none;border:none;padding:8px 14px;border-radius:7px;cursor:pointer;
+              transition:background .2s,color .2s}
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:var(--green-glow);color:var(--green)}
+  .search{flex:1;min-width:200px;position:relative}
+  .search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+                color:var(--ink);font-family:var(--sans);font-size:14px;padding:10px 14px 10px 38px;outline:none;
+                transition:border-color .2s}
+  .search input:focus{border-color:var(--green-dim)}
+  .search input::placeholder{color:var(--ink-mute)}
+  .search::before{content:"⌕";position:absolute;left:13px;top:50%;transform:translateY(-50%);
+                  color:var(--ink-mute);font-size:17px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .chip{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);background:var(--surface);
+        border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;transition:.2s}
+  .chip:hover{border-color:var(--green-dim);color:var(--ink)}
+  .chip.on{background:var(--green);color:var(--onyx);border-color:var(--green);font-weight:600}
+
+  /* ---------- matrix table ---------- */
+  .matrix-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+  table{width:100%;border-collapse:collapse;min-width:720px}
+  thead th{position:sticky;top:0;background:var(--surface-2);z-index:2}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--ink-mute);font-weight:500;border-bottom:1px solid var(--line)}
+  thead th.tier-col{text-align:center;cursor:pointer;transition:color .2s}
+  thead th.tier-col:hover{color:var(--ink)}
+  thead th.tier-col .cn{font-family:var(--serif);font-size:16px;text-transform:none;letter-spacing:0;
+                        color:var(--ink);display:block;font-weight:600}
+  .cat-row td{background:var(--raise);font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;
+              text-transform:uppercase;color:var(--gold);padding:9px 16px}
+  tbody tr.feat:hover{background:var(--surface-2)}
+  .fname{color:var(--ink);font-weight:500}
+  .fkey{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-mute);margin-top:2px;letter-spacing:.01em}
+  td.cell{text-align:center;font-family:var(--mono);font-size:13px;transition:background .3s}
+  .yes{color:var(--green)}
+  .no{color:var(--ink-mute);opacity:.5}
+  .num{color:var(--ink);font-weight:500}
+  .inf{color:var(--gold)}
+  td.cell.hl{background:var(--green-glow)}
+  thead th.tier-col.hl{color:var(--green)}
+  thead th.tier-col.hl .cn{color:var(--green)}
+  .gate-b{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:2px 7px;
+          border-radius:5px;border:1px solid var(--line);color:var(--ink-mute);margin-left:8px;vertical-align:middle}
+  .gate-b.bool{border-color:#2b3a4d}
+  .gate-b.stock{border-color:var(--green-dim);color:var(--green)}
+  .gate-b.meter{border-color:var(--gold);color:var(--gold)}
+    .gate-b.param{border-color:#8b7cf6;color:#a78bfa}
+    .road-b{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;border:1px dashed var(--gold);color:var(--gold);margin-left:6px;vertical-align:middle;text-transform:uppercase}
+
+  /* ---------- gate cards ---------- */
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+  .gcard .gt{font-family:var(--mono);font-size:13px;letter-spacing:.04em;margin-bottom:10px}
+  .gcard.b .gt{color:var(--ink)} .gcard.s .gt{color:var(--green)} .gcard.m .gt{color:var(--gold)}
+  .gcard .gd{font-family:var(--thai);font-size:13.5px;color:var(--ink-soft)}
+  .gcard .gex{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-mute);
+              padding-top:12px;border-top:1px solid var(--line-soft)}
+  .gcard .gex b{color:var(--ink-soft);font-weight:500}
+  .layers{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+          font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+  .layers .ly{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px}
+  .layers .arw{color:var(--green-dim)}
+  .layers .ly.last{border-color:var(--green-dim);color:var(--green)}
+
+  /* ---------- schema ---------- */
+  .schema-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .tbl{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px}
+  .tbl .tn{font-family:var(--mono);font-size:13px;color:var(--green);margin-bottom:4px}
+  .tbl .role{font-family:var(--thai);font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+  .tbl ul{list-style:none;font-family:var(--mono);font-size:11px;color:var(--ink-mute);line-height:1.9}
+  .tbl ul li::before{content:"·";color:var(--green-dim);margin-right:7px}
+  .er{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;
+      font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);white-space:pre;overflow-x:auto;
+      line-height:1.7;margin-bottom:24px}
+  .er b{color:var(--green)} .er .g{color:var(--gold)}
+
+  /* ---------- callout / footer ---------- */
+  .note{background:linear-gradient(180deg,var(--surface),var(--surface-2));border:1px solid var(--line);
+        border-left:2px solid var(--gold);border-radius:10px;padding:18px 22px;font-family:var(--thai);
+        font-size:13.5px;color:var(--ink-soft)}
+  .note b{color:var(--gold);font-weight:600}
+  footer{padding:46px 0 70px;color:var(--ink-mute);font-size:12.5px}
+  footer .files{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  footer .files span{font-family:var(--mono);font-size:11.5px;background:var(--surface);
+        border:1px solid var(--line);border-radius:7px;padding:7px 12px;color:var(--ink-soft)}
+
+  @media(max-width:900px){
+    .tiers,.schema-grid,.g3{grid-template-columns:1fr 1fr}
+    .sec-note{display:none}
+  }
+  @media(max-width:600px){
+    .tiers,.schema-grid,.g3{grid-template-columns:1fr}
+    header.hero{padding:56px 0 36px}
+    .tier.featured::after{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Entitlement &amp; Tier System · v0.4 (v0.3 + Site PM delta — ข้อเสนอ รอ owner review)</div>
+    <h1 class="word">MONO<span class="thin">lith</span></h1>
+    <p class="sub">ระบบ tier และสิทธิ์การใช้งานสำหรับแพลตฟอร์ม cabinet CAD-CAM
+      <span class="th">— แปลง freemium ladder ที่พบใน OneClickCabinet ให้เป็นโครง entitlement ที่ data-driven, บังคับได้จริง 3 ชั้น, และรองรับ multi-tenant บน Supabase</span></p>
+    <div class="meta">
+      <span>4 <b>TIERS</b> · Free → Enterprise</span>
+      <span><b id="fcount">0</b> gated features</span>
+      <span>gate: <b>boolean</b> / stock / metered</span>
+      <span>enforce: UI · API · <b>DB</b></span>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TIERS ===== -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <span class="sec-title">Tier ladder</span>
+      <span class="sec-note th">คลิกการ์ดเพื่อไฮไลต์คอลัมน์นั้นในตาราง — ดูว่าแต่ละแพ็กปลดล็อกอะไร</span>
+    </div>
+    <div class="tiers" id="tierCards"></div>
+  </div>
+</section>
+
+<!-- ===== MATRIX ===== -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Entitlement matrix</span>
+      <span class="sec-note th">ฟีเจอร์ไหนอยู่ tier ไหน + วิธี gate — ตารางนี้คือ source of truth เดียวกับ <code>plan_entitlements</code> ใน DB</span>
+    </div>
+    <div class="controls">
+      <div class="seg" id="tierSeg">
+        <button data-t="all" class="on">ALL</button>
+        <button data-t="free">FREE</button>
+        <button data-t="plus">PLUS</button>
+        <button data-t="advance">ADVANCE</button>
+        <button data-t="enterprise">ENTERPRISE</button>
+      </div>
+      <div class="search"><input id="q" type="text" placeholder="ค้นหาฟีเจอร์ หรือ feature_key…" aria-label="ค้นหาฟีเจอร์"></div>
+    </div>
+    <div class="chips" id="catChips"></div>
+    <div class="matrix-scroll">
+      <table id="matrix">
+        <thead>
+          <tr>
+            <th style="min-width:280px">Feature</th>
+            <th class="tier-col" data-t="free"><span class="cn">Free</span>bool/quota</th>
+            <th class="tier-col" data-t="plus"><span class="cn">Plus</span>฿590</th>
+            <th class="tier-col" data-t="advance"><span class="cn">Advance</span>฿2,900</th>
+            <th class="tier-col" data-t="enterprise"><span class="cn">Enterprise</span>custom</th>
+          </tr>
+        </thead>
+        <tbody id="mbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GATING ===== -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <span class="sec-title">Gating mechanics</span>
+      <span class="sec-note th">gate มี 3 แบบเท่านั้น — เก็บเป็น <code>gate_kind</code> enum ใน DB</span>
+    </div>
+    <div class="g3">
+      <div class="gcard b">
+        <div class="gt">boolean</div>
+        <div class="gd th">เปิด/ปิดฟีเจอร์ตรง ๆ เช่น export เครื่องยุโรป (P2P native) ตรวจก่อนเปิดเมนูหรือก่อน action</div>
+        <div class="gex"><b>เก็บ:</b> bool_value &nbsp;·&nbsp; <b>ตรวจ:</b> has_feature()</div>
+      </div>
+      <div class="gcard s">
+        <div class="gt">stock_quota</div>
+        <div class="gd th">นับ "ของที่มีอยู่ ณ ปัจจุบัน" เทียบ limit เช่น projects, seats, cloud storage — ลดลงเมื่อลบ ไม่ reset ตามรอบ</div>
+        <div class="gex"><b>เก็บ:</b> limit_value + นับ row จริง &nbsp;·&nbsp; <b>ตรวจ:</b> trigger ที่ DB</div>
+      </div>
+      <div class="gcard m">
+        <div class="gt">metered_quota</div>
+        <div class="gd th">นับ "การใช้ต่อรอบบิล" เช่น AI design assist ต่อเดือน — reset ต้นรอบใหม่</div>
+        <div class="gex"><b>เก็บ:</b> usage_counters ต่อ period &nbsp;·&nbsp; <b>ตรวจ:</b> can_consume()</div>
+      </div>
+    </div>
+    <div class="layers">
+      <span class="th" style="color:var(--ink-mute);font-family:var(--thai)">บังคับ 3 ชั้น:</span>
+      <span class="ly">UI — ซ่อน/disable</span><span class="arw">→</span>
+      <span class="ly">API / Edge Function — กันก่อนทำ</span><span class="arw">→</span>
+      <span class="ly last">DB — RLS + trigger (ด่านสุดท้าย)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SCHEMA ===== -->
+<section class="reveal">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <span class="sec-title">Supabase schema</span>
+      <span class="sec-note th">แยก plan ออกจาก entitlement → ทำ grandfathering ผ่าน override ได้โดยไม่สร้าง plan ใหม่</span>
+    </div>
+    <div class="er">auth.users ──1:1── <b>profiles</b>
+                      │
+organizations ──1:*── <b>memberships</b>   (user ↔ org, role)
+      │
+      ├──1:1── <b>subscriptions</b> ──*:1── <span class="g">plans</span> ──1:*── <span class="g">plan_entitlements</span> ──*:1── <span class="g">features</span>
+      ├──1:*── <b>entitlement_overrides</b>   (override: grandfather / ดีลพิเศษ)
+      ├──1:*── <b>usage_counters</b>          (metered ต่อ period)
+      │
+      └──1:*── <b>projects</b> · <b>machine_profiles</b> …   (domain · org-scoped + RLS)</div>
+    <div class="schema-grid">
+      <div class="tbl"><div class="tn">plans</div><div class="role th">แพ็กที่ลูกค้าซื้อ</div>
+        <ul><li>code (free/plus/…)</li><li>price_cents · interval</li></ul></div>
+      <div class="tbl"><div class="tn">plan_entitlements</div><div class="role th">ตาราง tier × feature (matrix ในรูป DB)</div>
+        <ul><li>bool_value</li><li>limit_value (null=∞)</li></ul></div>
+      <div class="tbl"><div class="tn">features</div><div class="role th">แคตตาล็อกฟีเจอร์ที่ gate ได้</div>
+        <ul><li>key · category</li><li>kind · unit</li></ul></div>
+      <div class="tbl"><div class="tn">subscriptions</div><div class="role th">org ปัจจุบันอยู่แพ็กไหน</div>
+        <ul><li>org_id → plan_code</li><li>status · period_end</li></ul></div>
+      <div class="tbl"><div class="tn">entitlement_overrides</div><div class="role th">สิทธิ์เฉพาะ org (มี expires_at)</div>
+        <ul><li>bool/limit override</li><li>reason · expires_at</li></ul></div>
+      <div class="tbl"><div class="tn">usage_counters</div><div class="role th">การใช้ metered ต่อรอบ</div>
+        <ul><li>period (YYYY-MM)</li><li>used_value</li></ul></div>
+    </div>
+    <div class="note" style="margin-top:22px">
+      <b>Resolver:</b> <code>has_feature()</code> · <code>feature_limit()</code> · <code>can_consume()</code> · <code>consume()</code> · <code>assert_feature()</code>
+      — ลำดับ resolve: <b>override (ยังไม่หมดอายุ) → plan default → ไม่มีสิทธิ์</b> ทั้งหมดเป็น security-definer เพื่ออ่านตาราง billing ข้าม RLS ได้อย่างปลอดภัย
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="th">Design proposal — review ก่อน implement ตาม MONOLITH governance flow · ราคาเป็น placeholder รอ sync กับ competitive research</div>
+    <div class="files">
+      <span>schema-draft-v0.3.sql</span>
+      <span>schema-draft-v0.4-delta.sql</span>
+      <span>.kiro/specs/installation-pm/</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const TIERS=[
+  {code:'free',name:'Free',tag:'Maker · เริ่มต้น',price:'฿0',per:'/เดือน',note:'ออกแบบ + nesting พื้นฐาน + G-code 1 เครื่อง — ให้ครบพอทำงานจริงเพื่อสร้าง habit'},
+  {code:'plus',name:'Plus',tag:'Pro · ร้านเล็ก',price:'฿590',per:'/เดือน',note:'ปลดความเร็ว/ปริมาณ · Auto Fitting · Edge Auto · BOM & Label ขั้นสูง · Nesting Advance'},
+  {code:'advance',name:'Advance',tag:'Factory · โรงงาน',price:'฿2,900',per:'/เดือน',note:'CAM เต็ม + เครื่องยุโรป P2P (Biesse/Homag) + panel saw + six-side + ทีม + ERP',featured:true},
+  {code:'enterprise',name:'Enterprise',tag:'ติดต่อฝ่ายขาย',price:'Custom',per:'',note:'SSO · self-host · Public API · custom hardware library · SLA'}
+];
+// value: true/false (bool) | number (quota) | 'INF' (∞) | string (display)
+const CATS=['Design','Fitting','Detailing','BOM','Label','Nesting','CAM / Export','Platform','Integration','Trust','Site PM'];
+const F=[
+ ['design.create_component','Create new component','Design','bool',true,true,true,true],
+ ['design.cabinet_generator','Parametric Cabinet Generator','Design','bool',true,true,true,true],
+ ['design.divide_cell','Divide frame / cell','Design','bool',false,true,true,true],
+ ['design.door_drawer_builder','Door / drawer auto-builder','Design','bool',false,true,true,true],
+ ['design.custom_hardware_lib','Custom hardware library','Design','bool',false,false,false,true,'road'],
+ ['design.clearance_check','Collision & clearance check (บานสวิง/ลิ้นชักดึง)','Design','bool',false,true,true,true,'impl'],
+ ['design.multi_cabinet','Multi-cabinet snap layout','Design','bool',false,true,true,true,'impl'],
+ ['fitting.manual','Manual Fitting','Fitting','bool',true,true,true,true],
+ ['fitting.auto','Auto Fitting','Fitting','bool',false,true,true,true],
+ ['fitting.drawer_slide','รางลิ้นชัก (drawer slide)','Fitting','bool',true,true,true,true],
+ ['hardware.engine_packs','Hardware engine packs (AVENTOS/Box/Lamello/Ixconnect)','Fitting','bool',false,false,true,true,'road'],
+ ['edge.manual','Edge Banding Manual','Detailing','bool',true,true,true,true],
+ ['edge.auto','Edge Banding Auto','Detailing','bool',false,true,true,true],
+ ['bom.basic','Basic B.O.M','BOM','bool',true,true,true,true],
+ ['bom.advance','Advance B.O.M','BOM','bool',false,true,true,true],
+ ['bom.export_xlsx','Export XLSX','BOM','bool',false,true,true,true],
+ ['label.basic','Label Basic','Label','bool',true,true,true,true,'road'],
+ ['label.advance','Label Advance (barcode/QR)','Label','bool',false,true,true,true,'road'],
+ ['label.no_watermark','ป้าย/export ไม่มีลายน้ำ','Label','bool',false,true,true,true,'road'],
+ ['nest.basic','Nesting Basic (rectangular)','Nesting','bool',true,true,true,true],
+ ['nest.advance','Nesting Advance (true-shape/NFP)','Nesting','bool',false,true,true,true,'road'],
+ ['nest.max_sheets','Max sheets / job','Nesting','param',5,50,'INF','INF'],
+ ['nest.offcut_inventory','Offcut inventory ข้าม job','Nesting','bool',false,false,true,true,'road'],
+ ['nest.optimizer_pro','Nesting Optimizer Pro (SA/GA + cut sequence)','Nesting','bool',false,false,true,true,'road'],
+ ['cam.dogbone','Dog Bone','CAM / Export','bool',false,true,true,true,'road'],
+ ['cam.machine_origin','Machine Origin Setting','CAM / Export','bool',false,true,true,true],
+ ['cam.advance_machine','Advance Machine','CAM / Export','bool',false,false,true,true],
+ ['cam.kerf_bending','Kerf bending / curved panels','CAM / Export','bool',false,false,true,true,'road'],
+ ['export.gcode','G-code export (Mastrox/Syntec)','CAM / Export','bool',true,true,true,true],
+ ['export.dxf','DXF export','CAM / Export','bool',true,true,true,true],
+ ['export.p2p_native','P2P native (Biesse/Homag/…)','CAM / Export','bool',false,false,true,true],
+ ['export.panel_saw','Panel saw cutting-list','CAM / Export','bool',false,false,true,true],
+ ['export.six_side_drill','Six-side drilling data','CAM / Export','bool',false,false,true,true,'road'],
+ ['export.step','STEP 3D export','CAM / Export','bool',false,false,true,true,'impl'],
+ ['export.pdf_report','PDF report export','CAM / Export','bool',false,true,true,true,'impl'],
+ ['export.cutlist_dialects','Cut-list CSV dialects (HOMAG/BIESSE/SCM)','CAM / Export','bool',false,false,true,true,'impl'],
+ ['cam.tool_wear','Tool Wear Intelligence','CAM / Export','bool',false,false,true,true,'impl'],
+ ['machine.profiles','Machine profiles','CAM / Export','stock',1,3,'INF','INF'],
+ ['storage.cloud_enabled','Cloud storage เปิดใช้','Platform','bool',true,true,true,true,'road'],
+ ['storage.cloud_mb','Cloud storage','Platform','stock','500 MB','20 GB','200 GB','INF','road'],
+ ['platform.projects','Projects','Platform','stock',3,'INF','INF','INF'],
+ ['platform.cabinets_per_project','Cabinets / project','Platform','param',20,'INF','INF','INF'],
+ ['platform.seats','Seats','Platform','stock',1,3,10,'INF','road'],
+ ['platform.local_first','Offline / local-first','Platform','bool',true,true,true,true],
+ ['report.co2','CO2 / sustainability report','Platform','bool',false,true,true,true,'impl'],
+ ['ai.design_assist','AI design assist','Integration','meter','5/เดือน','100/เดือน','1000/เดือน','INF','road'],
+ ['integration.erp','ERP integration','Integration','bool',false,false,true,true,'road'],
+ ['integration.api','Public API / webhook','Integration','bool',false,false,false,true,'road'],
+ ['platform.sso','SSO / SAML','Integration','bool',false,false,false,true,'road'],
+ ['platform.self_host','Self-host / on-prem','Integration','bool',false,false,false,true,'road'],
+ ['support.priority','Priority support / SLA','Integration','bool',false,false,true,true],
+ ['trust.signed_export','Signed export + offline verify (Ed25519 receipt)','Trust','bool',false,false,true,true,'impl'],
+ ['trust.audit_chain','Audit manifest chain + Merkle proof','Trust','bool',false,false,false,true,'impl'],
+ ['sitepm.projects','Installation projects + tasks + board','Site PM','bool',false,true,true,true,'road'],
+ ['sitepm.line_approval','Customer approval via LINE','Site PM','bool',false,true,true,true,'road'],
+ ['sitepm.photo_storage_gb','Site photo storage','Site PM','stock','—','20 GB','200 GB','INF','road'],
+ ['sitepm.mobile_offline','Mobile app + offline sync','Site PM','bool',false,true,true,true,'road'],
+ ['sitepm.gantt','Gantt + project dashboard','Site PM','bool',false,false,true,true,'road'],
+ ['sitepm.custom_report','Custom report / digital forms + e-sign','Site PM','bool',false,false,true,true,'road'],
+ ['sitepm.company_dashboard','Company-wide dashboard','Site PM','bool',false,false,false,true,'road'],
+ ['sitepm.ai_voice_report','AI voice reporting','Site PM','meter','—','50/เดือน','500/เดือน','INF','road']
+];
+const COLS=['free','plus','advance','enterprise'];
+const idx={free:4,plus:5,advance:6,enterprise:7};
+let curTier='all', curCat='all', curQ='';
+
+// unlocked count per tier (bool true, or quota with any limit i.e. entitled)
+function entitled(row,t){const v=row[idx[t]];return v===true||typeof v==='number'||v==='INF'||(typeof v==='string');}
+function countUnlocked(t){return F.filter(r=>entitled(r,t)).length;}
+
+// ---- tier cards ----
+const tc=document.getElementById('tierCards');
+TIERS.forEach(t=>{
+  const el=document.createElement('div');
+  el.className='tier'+(t.featured?' featured':'');
+  el.dataset.t=t.code;
+  el.innerHTML=`<div class="tname">${t.name}</div><div class="tag">${t.tag}</div>
+    <div class="price">${t.price}<span class="per"> ${t.per}</span></div>
+    <div class="tnote th">${t.note}</div>
+    <div class="unlock">${countUnlocked(t.code)} <span>/ ${F.length} ปลดล็อก</span></div>`;
+  el.addEventListener('click',()=>selectTier(t.code===curTier?'all':t.code));
+  tc.appendChild(el);
+});
+
+// ---- category chips ----
+const cc=document.getElementById('catChips');
+['all',...CATS].forEach(c=>{
+  const b=document.createElement('button');
+  b.className='chip'+(c==='all'?' on':'');b.textContent=c==='all'?'ทั้งหมด':c;b.dataset.c=c;
+  b.addEventListener('click',()=>{curCat=c;[...cc.children].forEach(x=>x.classList.toggle('on',x.dataset.c===c));render();});
+  cc.appendChild(b);
+});
+
+// ---- render matrix ----
+const mb=document.getElementById('mbody');
+function cellHTML(v){
+  if(v===true) return '<span class="yes">✓</span>';
+  if(v===false) return '<span class="no">✕</span>';
+  if(v==='INF') return '<span class="inf">∞</span>';
+  return '<span class="num">'+v+'</span>';
+}
+function render(){
+  mb.innerHTML='';
+  let lastCat=null;
+  const q=curQ.trim().toLowerCase();
+  F.forEach(r=>{
+    const [key,name,cat,gate]=r;
+    if(curCat!=='all'&&cat!==curCat) return;
+    if(q&&!(name.toLowerCase().includes(q)||key.toLowerCase().includes(q))) return;
+    if(cat!==lastCat){
+      lastCat=cat;
+      const cr=document.createElement('tr');cr.className='cat-row';
+      cr.innerHTML=`<td colspan="5">${cat}</td>`;mb.appendChild(cr);
+    }
+    const tr=document.createElement('tr');tr.className='feat';
+    const gb=`<span class="gate-b ${gate}">${gate}</span>`;
+    const rb=(r[8]==='road')?`<span class="road-b">roadmap</span>`:'';
+    let cells='';
+    COLS.forEach(t=>{const hl=(curTier===t)?' hl':'';cells+=`<td class="cell${hl}" data-t="${t}">${cellHTML(r[idx[t]])}</td>`;});
+    tr.innerHTML=`<td><span class="fname">${name}</span>${gb}${rb}<span class="fkey">${key}</span></td>${cells}`;
+    mb.appendChild(tr);
+  });
+}
+
+// ---- select tier (sync cards + seg + column highlight) ----
+function selectTier(t){
+  curTier=t;
+  document.querySelectorAll('.tier').forEach(c=>c.classList.toggle('on',c.dataset.t===t));
+  document.querySelectorAll('#tierSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.querySelectorAll('thead th.tier-col').forEach(h=>h.classList.toggle('hl',h.dataset.t===t));
+  render();
+}
+document.querySelectorAll('#tierSeg button').forEach(b=>b.addEventListener('click',()=>selectTier(b.dataset.t)));
+document.querySelectorAll('thead th.tier-col').forEach(h=>h.addEventListener('click',()=>selectTier(curTier===h.dataset.t?'all':h.dataset.t)));
+document.getElementById('q').addEventListener('input',e=>{curQ=e.target.value;render();});
+
+document.getElementById('fcount').textContent=F.length;
+render();
+
+// ---- reveal on scroll ----
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.08});
+document.querySelectorAll('.reveal').forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

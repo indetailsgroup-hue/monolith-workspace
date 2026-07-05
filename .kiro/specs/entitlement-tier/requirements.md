@@ -8,6 +8,8 @@
 
 **Working artifacts (ทั้งหมดอยู่ในโฟลเดอร์ spec นี้):** `schema-draft-v0.3.sql` (DDL — SSOT ของ schema) · `tests-negative.sql` (negative tests) · `schema-design-v0.3.md/.html` (design rationale + changelog) · `tier-matrix-v0.3.html` (ตาราง 53 features interactive) · `entitlement-tier-spec.html` (spec bundle) · `research-oneclickcabinet-v4.1.md` (competitive research ต้นทางของ freemium ladder) — สำเนาประวัติ v0.1/v0.2 อยู่ที่ `one clik/` นอก repo
 
+**v0.4 delta (ข้อเสนอ — รอ owner review):** `schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html` — เพิ่มหมวด Site PM 8 features (roadmap ทั้งหมด, 53→61) จาก `.kiro/specs/installation-pm/` — v0.3 ยังเป็น SSOT จนกว่า delta จะถูกอนุมัติ
+
 **Reuse-not-fork (เงื่อนไข):** ถ้าคำตอบ Req 10 คือ "รวม DB" ต้อง map `organizations ↔ sites` และใช้ C12 pattern (`resolve_actor`, `has_site_access`) — ห้ามมี identity สองระบบใน DB เดียว
 
 ## Glossary
