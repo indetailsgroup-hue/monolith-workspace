@@ -4,13 +4,13 @@
 
 เอกสารนี้กำหนด requirements ของโมดูล **Entitlement & Multi-Tier SaaS** — ระบบ plan/tier (Free/Plus/Advance/Enterprise) + entitlement resolution + quota enforcement สำหรับ MONOLITH ในรูปแบบ SaaS (แนว OneClickCabinet freemium ladder) — multi-tenant (org-based) บน Supabase/Postgres
 
-**สถานะ:** design-stage — DDL draft ผ่าน security review 2 รอบแล้ว (v0.1→v0.2 ปิด S1–S4/L5–L9, v0.2→v0.3 เพิ่มธง roadmap) — **ยังไม่ deploy** รอ owner decision ข้อ C12 (Req 10)
+**สถานะ:** design-stage — DDL draft ผ่าน security review 2 รอบแล้ว (v0.1→v0.2 ปิด S1–S4/L5–L9, v0.2→v0.3 เพิ่มธง roadmap) — **Req 10 ตัดสินแล้ว (ADR-034, 5 ก.ค. 2026): แยก DB** — Phase 1 ปลดล็อก เริ่มเมื่อตัดสินใจเปิดขาย SaaS
 
 **Working artifacts (ทั้งหมดอยู่ในโฟลเดอร์ spec นี้):** `schema-draft-v0.3.sql` (DDL — SSOT ของ schema) · `tests-negative.sql` (negative tests) · `schema-design-v0.3.md/.html` (design rationale + changelog) · `tier-matrix-v0.3.html` (ตาราง 53 features interactive) · `entitlement-tier-spec.html` (spec bundle) · `research-oneclickcabinet-v4.1.md` (competitive research ต้นทางของ freemium ladder) — สำเนาประวัติ v0.1/v0.2 อยู่ที่ `one clik/` นอก repo
 
 **v0.4 delta (ข้อเสนอ — รอ owner review):** `schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html` — เพิ่มหมวด Site PM 8 features (roadmap ทั้งหมด, 53→61) จาก `.kiro/specs/installation-pm/` — v0.3 ยังเป็น SSOT จนกว่า delta จะถูกอนุมัติ
 
-**Reuse-not-fork (เงื่อนไข):** ถ้าคำตอบ Req 10 คือ "รวม DB" ต้อง map `organizations ↔ sites` และใช้ C12 pattern (`resolve_actor`, `has_site_access`) — ห้ามมี identity สองระบบใน DB เดียว
+**Reuse-not-fork (ปิดแล้ว):** Req 10 = แยก DB (ADR-034) → ใช้ `organizations` ตาม draft ตรง ๆ **ไม่ต้อง** map org↔site / ปรับเข้า C12 convention — เงื่อนไขเดิมของทางเลือก (ข) ตกไป
 
 ## Glossary
 
@@ -75,10 +75,10 @@
 
 1. THE test suite SHALL ยืนยัน: ข้าม org อ่าน/เขียนไม่ได้ · `consume` ข้าม org ได้ `org_access_denied` · insert เกิน quota ถูก block ทุก trigger · roadmap ถูก block แม้ plan map · beta override ปลด roadmap ได้ · past_due เกิน grace ตกเป็น free · anon เห็นเฉพาะ plan สาธารณะ (ดู `tests-negative.sql`)
 
-### Requirement 10: Owner Decision — สถาปัตยกรรม DB (blocking)
+### Requirement 10: Owner Decision — สถาปัตยกรรม DB ✅ ตัดสินแล้ว
 
-1. Owner SHALL ตัดสิน: (ก) SaaS **แยก DB** (โปรเจกต์ Supabase ใหม่) หรือ (ข) **รวม DB** กับ line-oa/workflow — ถ้า (ข) ต้อง map org↔site + ใช้ C12 + ปรับ RLS ให้เข้า convention (`TO authenticated` + `resolve_actor`)
-2. ห้าม deploy DDL จนกว่าจะตัดสิน — บันทึกผลเป็น ADR
+1. ~~Owner SHALL ตัดสิน: (ก) แยก DB หรือ (ข) รวม DB กับ line-oa/workflow~~ → **มติ (ก) แยก DB** — ADR-034 (5 ก.ค. 2026): DB ปัจจุบันเป็น internal ops บริษัทเดียว (C12 single-site, ไม่มีตาราง tenancy) ส่วน SaaS เป็นลูกค้าภายนอกหลายองค์กร — สร้างโปรเจกต์ Supabase แยกเมื่อเปิดขาย ใช้ draft v0.3 ตรง ๆ
+2. Deploy DDL ได้เมื่อตัดสินใจเปิดขาย SaaS (Phase 1) — ไม่มี blocker สถาปัตยกรรมแล้ว
 
 ## Correctness Properties (สำหรับ test)
 

@@ -1,6 +1,6 @@
 # Design Document — Installation PM
 
-> สถานะ: design proposal — รอ owner decisions (requirements Req 12) ก่อน implement
+> สถานะ: approved design (grill 5 ก.ค. 2026 — ADR-034/035): v1 = dogfood ภายใน DAPH บน DB เดิม (C12) · MVP = PWA + offline-lite · D-6 full sync = design สำรอง รอ baseline
 > อ่านคู่กับ `requirements.md` — เลข D-x อ้างถึงการตัดสินใจเชิงออกแบบในเอกสารนี้
 
 ## D-1: Naming — เลี่ยงคำ `site`
@@ -9,9 +9,11 @@
 
 ## D-2: Data Model (org-scoped + RLS ทุกตาราง — convention C12)
 
+**Tenancy (มติ ADR-035):** v1 อยู่ DB เดิม — **ไม่มี org_id/tenant col** ใช้ convention C12 ตรง ๆ (roles + site_code จาก JWT, `resolve_actor` เป็น audit actor) + `installation_memberships` คุมการเข้าถึงของช่างภายนอกรายโปรเจกต์; เวอร์ชัน SaaS ในอนาคตอยู่ DB แยก (ADR-034) ค่อย re-scope tenancy ตอนนั้น
+
 ```
-tenants (ตาม decision PRD §11 ข้อ 8: organizations ใหม่ หรือ sites เดิมของ C12)
-  ─1:*─ installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
+(C12 DB เดิม — single company)
+  installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
                                ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
                                │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
                                ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
@@ -57,7 +59,15 @@ installation_projects (customer_review)
 - ต้องเพิ่ม: template 1 ตัว (ผ่าน template governance เดิม), postback route 1 ตัว, identity mapping ลูกค้า↔โปรเจกต์ (reuse `line_oa_customer_identity`)
 - ลูกค้าไม่มี LINE → Phase 3: secure link (signed URL อายุสั้น) ผลเข้า table เดียวกัน
 
-## D-6: Offline Sync Protocol (ล็อกก่อนเขียน mobile — Req 8.1)
+## D-6a: Offline-Lite Upload Queue (MVP — ADR-035)
+
+- Service worker + IndexedDB: report submission + รูป เข้าคิวเมื่อ offline → Background Sync/retry เมื่อกลับ online
+- Idempotent ด้วย client-generated submission id (UNIQUE ที่ server — retry ไม่ซ้ำ)
+- UI สถานะคิว: pending/sent/failed ต่อรายการ — ช่างเห็นว่าของค้างส่งกี่ชิ้น
+- **อ่านอย่างเดียวตอน offline** ใช้ cache ล่าสุด (stale-while-revalidate) — ไม่มีการแก้ข้อมูลสองทาง = ไม่มี conflict
+- Metric baseline: นับ submission ที่เข้าคิว offline vs ส่งตรง + timestamp gap → ใช้ตัดสิน Phase 2
+
+## D-6: Full Sync Protocol (design สำรอง — ห้าม implement ก่อน baseline ยืนยัน; Req 8.4)
 
 - ทุก row ที่ sync ได้: `updated_at` (server), `client_rev` (uuid ต่อ write), `deleted_at` (tombstone)
 - Pull: delta ตาม `updated_at > last_sync` ต่อโปรเจกต์ · Push: batch พร้อม `base_rev` ต่อ row
@@ -74,9 +84,10 @@ installation_projects (customer_review)
 - Push: FCM (Android/web) + APNs (iOS) ผ่าน Edge Function fan-out — เก็บ device tokens ใต้ RLS ของผู้ใช้
 - แจ้งเตือน: task assigned, @mention, approval result, report submitted
 
-## D-8: Entitlement Integration
+## D-8: Entitlement Integration (เฉพาะเวอร์ชัน SaaS — v1 internal ไม่ gate)
 
-- Delta v0.4: +8 features หมวด `site_pm` — **roadmap ทั้งหมด** — ดู `../entitlement-tier/schema-draft-v0.4-delta.sql` (53→61 features, seed 244 rows)
+- v1 dogfood: ไม่แตะ entitlement เลย (ADR-035) — คุมด้วย C12 roles
+- Delta v0.4: +8 features หมวด `site_pm` — **roadmap ทั้งหมด** — availability ของเวอร์ชัน SaaS (DB แยก, ADR-034) — ดู `../entitlement-tier/schema-draft-v0.4-delta.sql` (53→61 features, seed 244 rows)
 - ความสัมพันธ์กับ `storage.cloud_mb` (มีอยู่แล้ว, roadmap): `sitepm.photo_storage_gb` เป็นโควตา**แยก**สำหรับ media หน้างาน (ต้นทุน/ราคาแยกจาก cloud project storage) — ตั้งใจไม่รวม
 - UI 3 สถานะเดิม (enabled/locked/coming-soon) ใช้ได้ทันทีเมื่อ entitlement landing
 
@@ -101,5 +112,5 @@ installation_projects (customer_review)
 1. **Sync (D-6)** — ผิดแล้วแก้ยากสุด → Phase 0.3 prototype ก่อนเขียนจริง
 2. **Storage cost (D-4)** — quota + lifecycle ตั้งแต่วันแรก
 3. **Realtime ยังไม่เคยใช้ในเรโป (D-7)** — spike + load test ก่อนผูกกับ MVP
-4. **Decision ข้อ 8 ค้าง** — schema นี้เขียนลง DB ไหนยังไม่รู้ → ทุก DDL ในเอกสารนี้เป็น draft จนกว่า ADR ออก
+4. ~~Decision ข้อ 8 ค้าง~~ → ✅ ปิดแล้ว (ADR-034/035): v1 ลง DB เดิม convention C12 — DDL ใน D-2 พร้อมแปลงเป็น migration
 5. **KANNA อยู่ในตลาดไทยแล้ว** (ยืนยันจากภายนอก 2026-07-05: 70,000+ บริษัท/100+ ประเทศ, ISO27001, รองรับภาษาไทย) — แข่งด้วย vertical integration + LINE ไม่ใช่ความกว้างฟีเจอร์

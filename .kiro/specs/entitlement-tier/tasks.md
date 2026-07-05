@@ -2,11 +2,11 @@
 
 > Gate แรกคือการตัดสินใจ ไม่ใช่โค้ด — ห้ามข้าม Phase 0
 
-## Phase 0: Owner Decision (blocking)
+## Phase 0: Owner Decision — ✅ ปิดแล้ว (5 ก.ค. 2026)
 
-- [ ] 0.1 ตัดสิน Req 10: SaaS แยก DB หรือรวม DB กับ line-oa/workflow (C12) — บันทึกเป็น ADR ใน `.kiro/steering/architecture-decisions.md`
-- [ ] 0.2 ถ้ารวม DB: ออกแบบ mapping `organizations ↔ sites` + ปรับ RLS ให้ใช้ C12 (`resolve_actor`, `has_site_access`) แล้วแก้ draft DDL ตาม
-- [ ] 0.3 ยืนยันราคา/ชื่อ tier กับ competitive research (OCC/PolyBoard/Mozaik) — ตอนนี้เป็น placeholder
+- [x] 0.1 ตัดสิน Req 10 → **แยก DB** — ADR-034 ใน `.kiro/steering/architecture-decisions.md`
+- [x] ~~0.2 ถ้ารวม DB: mapping org↔site + C12~~ — ตกไปตามมติ 0.1 (แยก DB ใช้ draft ตรง ๆ)
+- [ ] 0.3 ยืนยันราคา/ชื่อ tier กับ competitive research (OCC/PolyBoard/Mozaik) — ตอนนี้เป็น placeholder (ทำก่อนเปิดขาย ไม่ block Phase 1)
 
 ## Phase 1: Schema Landing
 

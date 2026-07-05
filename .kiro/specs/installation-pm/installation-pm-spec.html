@@ -71,7 +71,7 @@
 <h1>Requirements Document — Installation PM (Field/Site Project Management)</h1>
 <h2>Introduction</h2>
 <p>เอกสารนี้กำหนด requirements ของโมดูล <strong>Installation PM</strong> — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: <code>ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน</code> — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)</p>
-<p><strong>สถานะ:</strong> design proposal — แปลงจาก build plan ภายนอก (5 ก.ค. 2026) ผ่านการ verify กับเรโปจริงแล้ว 1 รอบ (แก้ over-claim 4 จุด — ดู §Reuse Map) — <strong>ยังไม่ implement</strong> รอ owner decisions (Req 12)</p>
+<p><strong>สถานะ:</strong> approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — <strong>มติ 3 ข้อ (ADR-034/035):</strong> (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง</p>
 <p><strong>ขอบเขต IP:</strong> ลอกได้เฉพาะ<em>แนวคิดฟีเจอร์/เวิร์กโฟลว์</em> (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล</p>
 <p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
 <h2>Glossary</h2>
@@ -193,18 +193,18 @@
 <li>THE ผลอนุมัติ SHALL ผูกกับ packet/report ที่เกี่ยวข้อง → provenance ครบ: ใคร อนุมัติอะไร ของที่ผลิตล็อตไหน</li>
 <li>WHEN ลูกค้าไม่มี LINE THE ระบบ SHALL มี fallback (secure link อีเมล/SMS) — Phase 3</li>
 </ol>
-<h3>Requirement 8: Offline-First Mobile</h3>
+<h3>Requirement 8: Offline — MVP = offline-lite; full sync = conditional-on-baseline (ADR-035)</h3>
 <ol>
-<li>THE sync protocol (client_rev + updated_at + tombstone + กติกา conflict ต่อ entity) SHALL ถูกล็อกเป็นเอกสาร<strong>ก่อน</strong>เขียนโค้ด mobile (design.md §D-6)</li>
-<li>THE conflict default SHALL เป็น last-write-wins ต่อ row ยกเว้น report values ใช้ field-merge — <strong>ห้าม silent data loss</strong>: ฝั่งแพ้ถูกเก็บเป็น conflict copy ให้ผู้ใช้กู้ได้</li>
-<li>THE mobile app (React Native) SHALL ใช้ Supabase backend + RLS + entitlement เดิมร่วมกัน — ไม่มี backend แยก</li>
-<li>THE MVP web (Phase 1) SHALL เป็น responsive + PWA (ออนไลน์) — offline เต็มรูปแบบเป็น Phase 2 track แยก</li>
+<li>THE MVP (Phase 1) SHALL เป็น web responsive + PWA + <strong>offline-lite upload queue</strong>: service worker + IndexedDB เก็บ report/รูปตอนเน็ตหลุด ส่งเมื่อสัญญาณกลับ — <strong>คิวทางเดียว ไม่มี two-way sync = ไม่มี conflict resolution ใน v1</strong></li>
+<li>THE offline-lite queue SHALL idempotent (client-generated id ต่อ submission — retry ไม่สร้างซ้ำ) และแสดงสถานะคิวให้ช่างเห็น (pending/sent/failed)</li>
+<li>THE ระบบ SHALL เก็บ baseline จากงานจริง: อัตรา submit ผ่านคิว offline, จุด/ความถี่ที่ไม่มีสัญญาณ — เป็นข้อมูลตัดสิน Phase 2</li>
+<li>IF baseline ยืนยันว่าจำเป็น THEN mobile (React Native) + full sync protocol (design.md D-6: LWW + conflict copy + field-merge) SHALL ถูก implement เป็น Phase 2 — sync protocol ต้องล็อก + prototype ก่อนเขียนโค้ด; <strong>ห้าม implement ก่อน baseline ยืนยัน</strong></li>
 </ol>
-<h3>Requirement 9: Entitlement Gating (v0.4 delta)</h3>
+<h3>Requirement 9: Entitlement Gating — เฉพาะเวอร์ชัน SaaS (ADR-034/035)</h3>
 <ol>
-<li>THE ฟีเจอร์ Site-PM ทั้ง 8 keys SHALL เพิ่มใน matrix เป็น <strong><code>status=&#39;roadmap&#39;</code> ทั้งหมด</strong> จนกว่าแต่ละตัวจะ ship (กติกา anti-vaporware v0.3)</li>
-<li>THE gate SHALL ใช้ kind จริงของ schema: <code>boolean</code>/<code>stock_quota</code>/<code>metered_quota</code>/<code>limit_param</code> — ดู <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code></li>
-<li>THE การพลิก roadmap→implemented SHALL ผูก release checklist ต่อฟีเจอร์ (สืบทอด entitlement Req 6.5)</li>
+<li>THE <strong>v1 internal (dogfood) SHALL ไม่ gate ด้วย entitlement</strong> — ของใช้เองในบริษัท ควบคุมด้วย C12 roles ตามปกติ</li>
+<li>THE ฟีเจอร์ <code>sitepm.*</code> ทั้ง 8 keys ใน matrix v0.4 = availability ของ<strong>เวอร์ชัน SaaS ในอนาคต</strong> (DB แยกตาม ADR-034) — คงเป็น <code>status=&#39;roadmap&#39;</code> จนกว่าเวอร์ชันขายจะ ship จริง (กติกา anti-vaporware v0.3)</li>
+<li>THE การพลิก roadmap→implemented SHALL ผูก release checklist ของ<strong>เวอร์ชัน SaaS</strong> — dogfood ship ภายในไม่นับเป็นเหตุ flip</li>
 </ol>
 <h3>Requirement 10: PDPA</h3>
 <ol>
@@ -217,11 +217,11 @@
 <li>THE เหตุการณ์สำคัญ (สร้าง/ปิดโปรเจกต์, ผูก packet, submit/sign report, approval) SHALL เขียน append-only audit ตาราง <code>installation_audit_log</code> (pattern <code>line_oa_audit_log</code>)</li>
 <li>THE audit SHALL ไม่แก้/ลบได้ และ query ได้ตาม RLS org</li>
 </ol>
-<h3>Requirement 12: Owner Decisions (blocking)</h3>
+<h3>Requirement 12: Owner Decisions ✅ ตัดสินครบ (grill 5 ก.ค. 2026 — ADR-034/035)</h3>
 <ol>
-<li>Owner SHALL ตัดสิน <strong>PRD §11 ข้อ 8</strong> (แยก DB vs รวม C12) ก่อน — โมดูลนี้เป็น<strong>หลักฐานเพิ่มน้ำหนักฝั่ง &quot;รวม DB&quot;</strong> (ต้อง join line_oa_*, workflow, packet_registry)</li>
-<li>Owner SHALL ยืนยัน MVP scope: (ก) web-PWA ก่อน + mobile ทีหลัง (ข้อเสนอของ spec นี้) หรือ (ข) mobile ตั้งแต่ Phase 1 (ตาม draft ภายนอก — เสี่ยง timeline)</li>
-<li>ห้าม implement จนกว่าจะตัดสินทั้ง 2 ข้อ — บันทึกเป็น ADR</li>
+<li><del>PRD §11 ข้อ 8</del> → <strong>แยก DB</strong> (ADR-034) — หมายเหตุ: ข้อสันนิษฐานเดิมของ spec ที่ว่าโมดูลนี้เป็น &quot;หลักฐานฝั่งรวม DB&quot; <strong>ถูกหักล้างใน grill</strong> — join line_oa_*/workflow เป็นเรื่อง internal v1 (อยู่ DB เดิมอยู่แล้ว) ไม่เกี่ยวกับลูกค้า SaaS</li>
+<li><del>MVP scope</del> → <strong>dogfood ภายใน + PWA + offline-lite</strong> (ADR-035) — ไม่ใช่ทั้ง (ก) เดิมและ (ข): เพิ่มคิว upload ทางเดียวเข้า Phase 1 โดยไม่แตะ two-way sync</li>
+<li>Implement เริ่มได้ — เหลือ spikes ใน tasks Phase 0 (Realtime load test) ก่อนผูก chat กับ MVP</li>
 </ol>
 <h2>Correctness Properties (สำหรับ test)</h2>
 <ol>
@@ -235,14 +235,15 @@
 <hr>
 <h1>Design Document — Installation PM</h1>
 <blockquote>
-<p>สถานะ: design proposal — รอ owner decisions (requirements Req 12) ก่อน implement
+<p>สถานะ: approved design (grill 5 ก.ค. 2026 — ADR-034/035): v1 = dogfood ภายใน DAPH บน DB เดิม (C12) · MVP = PWA + offline-lite · D-6 full sync = design สำรอง รอ baseline
 อ่านคู่กับ <code>requirements.md</code> — เลข D-x อ้างถึงการตัดสินใจเชิงออกแบบในเอกสารนี้</p>
 </blockquote>
 <h2>D-1: Naming — เลี่ยงคำ <code>site</code></h2>
 <p>ใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) ถ้าตั้ง <code>site_projects</code> จะสับสนใน RLS policy ทันที → ใช้ <strong><code>installation_projects</code></strong> และ prefix <code>installation_*</code>/<code>field_*</code> ทั้งชุด (feature keys ใน entitlement ใช้ <code>sitepm.*</code> ได้เพราะเป็น namespace การขาย ไม่ใช่ชื่อตาราง)</p>
 <h2>D-2: Data Model (org-scoped + RLS ทุกตาราง — convention C12)</h2>
-<pre><code>tenants (ตาม decision PRD §11 ข้อ 8: organizations ใหม่ หรือ sites เดิมของ C12)
-  ─1:*─ installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
+<p><strong>Tenancy (มติ ADR-035):</strong> v1 อยู่ DB เดิม — <strong>ไม่มี org_id/tenant col</strong> ใช้ convention C12 ตรง ๆ (roles + site_code จาก JWT, <code>resolve_actor</code> เป็น audit actor) + <code>installation_memberships</code> คุมการเข้าถึงของช่างภายนอกรายโปรเจกต์; เวอร์ชัน SaaS ในอนาคตอยู่ DB แยก (ADR-034) ค่อย re-scope tenancy ตอนนั้น</p>
+<pre><code>(C12 DB เดิม — single company)
+  installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
                                ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
                                │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
                                ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
@@ -283,7 +284,15 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>ต้องเพิ่ม: template 1 ตัว (ผ่าน template governance เดิม), postback route 1 ตัว, identity mapping ลูกค้า↔โปรเจกต์ (reuse <code>line_oa_customer_identity</code>)</li>
 <li>ลูกค้าไม่มี LINE → Phase 3: secure link (signed URL อายุสั้น) ผลเข้า table เดียวกัน</li>
 </ul>
-<h2>D-6: Offline Sync Protocol (ล็อกก่อนเขียน mobile — Req 8.1)</h2>
+<h2>D-6a: Offline-Lite Upload Queue (MVP — ADR-035)</h2>
+<ul>
+<li>Service worker + IndexedDB: report submission + รูป เข้าคิวเมื่อ offline → Background Sync/retry เมื่อกลับ online</li>
+<li>Idempotent ด้วย client-generated submission id (UNIQUE ที่ server — retry ไม่ซ้ำ)</li>
+<li>UI สถานะคิว: pending/sent/failed ต่อรายการ — ช่างเห็นว่าของค้างส่งกี่ชิ้น</li>
+<li><strong>อ่านอย่างเดียวตอน offline</strong> ใช้ cache ล่าสุด (stale-while-revalidate) — ไม่มีการแก้ข้อมูลสองทาง = ไม่มี conflict</li>
+<li>Metric baseline: นับ submission ที่เข้าคิว offline vs ส่งตรง + timestamp gap → ใช้ตัดสิน Phase 2</li>
+</ul>
+<h2>D-6: Full Sync Protocol (design สำรอง — ห้าม implement ก่อน baseline ยืนยัน; Req 8.4)</h2>
 <ul>
 <li>ทุก row ที่ sync ได้: <code>updated_at</code> (server), <code>client_rev</code> (uuid ต่อ write), <code>deleted_at</code> (tombstone)</li>
 <li>Pull: delta ตาม <code>updated_at &gt; last_sync</code> ต่อโปรเจกต์ · Push: batch พร้อม <code>base_rev</code> ต่อ row</li>
@@ -302,9 +311,10 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>Push: FCM (Android/web) + APNs (iOS) ผ่าน Edge Function fan-out — เก็บ device tokens ใต้ RLS ของผู้ใช้</li>
 <li>แจ้งเตือน: task assigned, @mention, approval result, report submitted</li>
 </ul>
-<h2>D-8: Entitlement Integration</h2>
+<h2>D-8: Entitlement Integration (เฉพาะเวอร์ชัน SaaS — v1 internal ไม่ gate)</h2>
 <ul>
-<li>Delta v0.4: +8 features หมวด <code>site_pm</code> — <strong>roadmap ทั้งหมด</strong> — ดู <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> (53→61 features, seed 244 rows)</li>
+<li>v1 dogfood: ไม่แตะ entitlement เลย (ADR-035) — คุมด้วย C12 roles</li>
+<li>Delta v0.4: +8 features หมวด <code>site_pm</code> — <strong>roadmap ทั้งหมด</strong> — availability ของเวอร์ชัน SaaS (DB แยก, ADR-034) — ดู <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> (53→61 features, seed 244 rows)</li>
 <li>ความสัมพันธ์กับ <code>storage.cloud_mb</code> (มีอยู่แล้ว, roadmap): <code>sitepm.photo_storage_gb</code> เป็นโควตา<strong>แยก</strong>สำหรับ media หน้างาน (ต้นทุน/ราคาแยกจาก cloud project storage) — ตั้งใจไม่รวม</li>
 <li>UI 3 สถานะเดิม (enabled/locked/coming-soon) ใช้ได้ทันทีเมื่อ entitlement landing</li>
 </ul>
@@ -354,7 +364,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><strong>Sync (D-6)</strong> — ผิดแล้วแก้ยากสุด → Phase 0.3 prototype ก่อนเขียนจริง</li>
 <li><strong>Storage cost (D-4)</strong> — quota + lifecycle ตั้งแต่วันแรก</li>
 <li><strong>Realtime ยังไม่เคยใช้ในเรโป (D-7)</strong> — spike + load test ก่อนผูกกับ MVP</li>
-<li><strong>Decision ข้อ 8 ค้าง</strong> — schema นี้เขียนลง DB ไหนยังไม่รู้ → ทุก DDL ในเอกสารนี้เป็น draft จนกว่า ADR ออก</li>
+<li><del>Decision ข้อ 8 ค้าง</del> → ✅ ปิดแล้ว (ADR-034/035): v1 ลง DB เดิม convention C12 — DDL ใน D-2 พร้อมแปลงเป็น migration</li>
 <li><strong>KANNA อยู่ในตลาดไทยแล้ว</strong> (ยืนยันจากภายนอก 2026-07-05: 70,000+ บริษัท/100+ ประเทศ, ISO27001, รองรับภาษาไทย) — แข่งด้วย vertical integration + LINE ไม่ใช่ความกว้างฟีเจอร์</li>
 </ol>
 <hr>
@@ -362,31 +372,33 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <blockquote>
 <p>Gate แรกคือการตัดสินใจ ไม่ใช่โค้ด — ห้ามข้าม Phase 0 (pattern เดียวกับ entitlement-tier)</p>
 </blockquote>
-<h2>Phase 0: Decisions + Spikes (blocking)</h2>
+<h2>Phase 0: Decisions + Spikes</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 0.1 Owner ตัดสิน PRD §11 ข้อ 8 (แยก DB vs รวม C12) — โมดูลนี้คือหลักฐานฝั่ง &quot;รวม DB&quot; (join line_oa_*/workflow/packet_registry) — บันทึก ADR</li>
-<li><input disabled="" type="checkbox"> 0.2 Owner ยืนยัน MVP scope: (ก) web-PWA ก่อน [ข้อเสนอ spec นี้] vs (ข) mobile ตั้งแต่แรก [draft ภายนอก]</li>
-<li><input disabled="" type="checkbox"> 0.3* Spike: sync prototype (D-6) — 2 clients + conflict ทุก scenario ใน Correctness Property 4; เลือก client store (PowerSync/WatermelonDB/RxDB)</li>
+<li><input checked="" disabled="" type="checkbox"> 0.1 <del>Owner ตัดสิน PRD §11 ข้อ 8</del> → <strong>แยก DB</strong> (ADR-034, grill 5 ก.ค. 2026) — ข้อสันนิษฐาน &quot;หลักฐานฝั่งรวม DB&quot; ถูกหักล้าง: v1 เป็น internal อยู่ DB เดิมอยู่แล้ว</li>
+<li><input checked="" disabled="" type="checkbox"> 0.2 <del>MVP scope</del> → <strong>dogfood + PWA + offline-lite upload queue</strong> (ADR-035)</li>
+<li><input disabled="" type="checkbox"> 0.3* Spike: offline-lite queue prototype (D-6a) — service worker + IndexedDB + Background Sync + idempotent submission id (แทน sync prototype เดิม — full sync D-6 เลื่อนไปตาม baseline)</li>
 <li><input disabled="" type="checkbox"> 0.4* Spike: Supabase Realtime load test (การใช้ครั้งแรกในเรโป — D-7)</li>
 <li><input disabled="" type="checkbox"> 0.5 ยืนยันฟีเจอร์ AI voice ของ KANNA จาก App Store changelog (ตอนนี้ unverified) — มีผลแค่ลำดับความสำคัญ Phase 4</li>
 </ul>
-<h2>Phase 1: Web MVP (หลัง 0.1–0.2)</h2>
+<h2>Phase 1: Web MVP — PWA + offline-lite (ปลดล็อกแล้ว เริ่มได้หลัง spikes)</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log + RLS ตาม convention จาก ADR 0.1</li>
+<li><input disabled="" type="checkbox"> 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log — <strong>convention C12 เดิม ไม่มี tenant col</strong> (ADR-035) + RLS fail-closed</li>
 <li><input disabled="" type="checkbox"> 1.2 Packet Registry + RPC <code>register_packet</code> (idempotent) + ผูก export flow เดิม</li>
 <li><input disabled="" type="checkbox"> 1.3 Web UI: project list/detail + Kanban + task CRUD (responsive + PWA)</li>
-<li><input disabled="" type="checkbox"> 1.4 Media pipeline: upload → compress/thumbnail Edge Function + storage_usage counter + quota check</li>
+<li><input disabled="" type="checkbox"> 1.4 Media pipeline: upload → compress/thumbnail Edge Function + นับ storage ต่อโปรเจกต์ (v1 ไม่มี quota gate — internal; เก็บตัวเลขไว้เป็น baseline ต้นทุน)</li>
 <li><input disabled="" type="checkbox"> 1.5 Daily report (template คงที่) + แนบรูป + PDF export</li>
-<li><input disabled="" type="checkbox"> 1.6 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications</li>
-<li><input disabled="" type="checkbox"> 1.7 LINE approval: template &#39;inst_approval_request&#39; + postback route + approvals table (D-5)</li>
-<li><input disabled="" type="checkbox"> 1.8* Negative tests: Correctness Properties 1, 2, 3, 5 + RLS external member</li>
+<li><input disabled="" type="checkbox"> 1.6 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)</li>
+<li><input disabled="" type="checkbox"> 1.7 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications</li>
+<li><input disabled="" type="checkbox"> 1.8 LINE approval: template &#39;inst_approval_request&#39; + postback route + approvals table (D-5)</li>
+<li><input disabled="" type="checkbox"> 1.9* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency</li>
 </ul>
-<h2>Phase 2: Mobile + Offline (track แยก — เริ่มได้หลัง 0.3)</h2>
+<h2>Phase 2: Mobile + Full Offline — <strong>conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น</strong> (Req 8.4)</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 2.1 React Native shell + auth + โปรเจกต์/task แบบ online</li>
-<li><input disabled="" type="checkbox"> 2.2 Offline sync ตาม protocol D-6 (client store จาก spike) + sync_conflicts UI</li>
-<li><input disabled="" type="checkbox"> 2.3 Media offline queue + reconcile local id</li>
-<li><input disabled="" type="checkbox"> 2.4 Push: FCM/APNs + device tokens + fan-out Edge Function</li>
+<li><input disabled="" type="checkbox"> 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้</li>
+<li><input disabled="" type="checkbox"> 2.1 Sync prototype (D-6) — 2 clients + conflict ทุก scenario Property 4; เลือก client store (PowerSync/WatermelonDB/RxDB)</li>
+<li><input disabled="" type="checkbox"> 2.2 React Native shell + auth + โปรเจกต์/task</li>
+<li><input disabled="" type="checkbox"> 2.3 Offline sync ตาม protocol D-6 + sync_conflicts UI</li>
+<li><input disabled="" type="checkbox"> 2.4 Push: FCM/APNs + device tokens + fan-out Edge Function (ถ้าไม่ทำ Phase 2 → web push แทนใน Phase 3)</li>
 <li><input disabled="" type="checkbox"> 2.5* Sync convergence tests (Property 4) — ทุก conflict matrix ต้องเขียว</li>
 </ul>
 <h2>Phase 3: Commercial</h2>

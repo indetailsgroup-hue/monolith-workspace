@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entitlement & Multi-Tier SaaS — Spec v0.3 (requirements · design · tasks)</title>
+<title>Entitlement &amp; Multi-Tier — Spec (MONOLITH)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -71,9 +71,10 @@
 <h1>Requirements Document</h1>
 <h2>Introduction</h2>
 <p>เอกสารนี้กำหนด requirements ของโมดูล <strong>Entitlement &amp; Multi-Tier SaaS</strong> — ระบบ plan/tier (Free/Plus/Advance/Enterprise) + entitlement resolution + quota enforcement สำหรับ MONOLITH ในรูปแบบ SaaS (แนว OneClickCabinet freemium ladder) — multi-tenant (org-based) บน Supabase/Postgres</p>
-<p><strong>สถานะ:</strong> design-stage — DDL draft ผ่าน security review 2 รอบแล้ว (v0.1→v0.2 ปิด S1–S4/L5–L9, v0.2→v0.3 เพิ่มธง roadmap) — <strong>ยังไม่ deploy</strong> รอ owner decision ข้อ C12 (Req 10)</p>
-<p><strong>Working artifacts:</strong> <code>schema-draft-v0.3.sql</code> (DDL — SSOT ของ schema), <code>tests-negative.sql</code> (negative tests), เอกสาร/matrix HTML ใน <code>one clik/</code> (v0.3)</p>
-<p><strong>Reuse-not-fork (เงื่อนไข):</strong> ถ้าคำตอบ Req 10 คือ &quot;รวม DB&quot; ต้อง map <code>organizations ↔ sites</code> และใช้ C12 pattern (<code>resolve_actor</code>, <code>has_site_access</code>) — ห้ามมี identity สองระบบใน DB เดียว</p>
+<p><strong>สถานะ:</strong> design-stage — DDL draft ผ่าน security review 2 รอบแล้ว (v0.1→v0.2 ปิด S1–S4/L5–L9, v0.2→v0.3 เพิ่มธง roadmap) — <strong>Req 10 ตัดสินแล้ว (ADR-034, 5 ก.ค. 2026): แยก DB</strong> — Phase 1 ปลดล็อก เริ่มเมื่อตัดสินใจเปิดขาย SaaS</p>
+<p><strong>Working artifacts (ทั้งหมดอยู่ในโฟลเดอร์ spec นี้):</strong> <code>schema-draft-v0.3.sql</code> (DDL — SSOT ของ schema) · <code>tests-negative.sql</code> (negative tests) · <code>schema-design-v0.3.md/.html</code> (design rationale + changelog) · <code>tier-matrix-v0.3.html</code> (ตาราง 53 features interactive) · <code>entitlement-tier-spec.html</code> (spec bundle) · <code>research-oneclickcabinet-v4.1.md</code> (competitive research ต้นทางของ freemium ladder) — สำเนาประวัติ v0.1/v0.2 อยู่ที่ <code>one clik/</code> นอก repo</p>
+<p><strong>v0.4 delta (ข้อเสนอ — รอ owner review):</strong> <code>schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code> — เพิ่มหมวด Site PM 8 features (roadmap ทั้งหมด, 53→61) จาก <code>.kiro/specs/installation-pm/</code> — v0.3 ยังเป็น SSOT จนกว่า delta จะถูกอนุมัติ</p>
+<p><strong>Reuse-not-fork (ปิดแล้ว):</strong> Req 10 = แยก DB (ADR-034) → ใช้ <code>organizations</code> ตาม draft ตรง ๆ <strong>ไม่ต้อง</strong> map org↔site / ปรับเข้า C12 convention — เงื่อนไขเดิมของทางเลือก (ข) ตกไป</p>
 <h2>Glossary</h2>
 <ul>
 <li><strong>Plan</strong>: bundle ที่ลูกค้าซื้อ (<code>free</code>/<code>plus</code>/<code>advance</code>/<code>enterprise</code>)</li>
@@ -136,10 +137,10 @@
 <ol>
 <li>THE test suite SHALL ยืนยัน: ข้าม org อ่าน/เขียนไม่ได้ · <code>consume</code> ข้าม org ได้ <code>org_access_denied</code> · insert เกิน quota ถูก block ทุก trigger · roadmap ถูก block แม้ plan map · beta override ปลด roadmap ได้ · past_due เกิน grace ตกเป็น free · anon เห็นเฉพาะ plan สาธารณะ (ดู <code>tests-negative.sql</code>)</li>
 </ol>
-<h3>Requirement 10: Owner Decision — สถาปัตยกรรม DB (blocking)</h3>
+<h3>Requirement 10: Owner Decision — สถาปัตยกรรม DB ✅ ตัดสินแล้ว</h3>
 <ol>
-<li>Owner SHALL ตัดสิน: (ก) SaaS <strong>แยก DB</strong> (โปรเจกต์ Supabase ใหม่) หรือ (ข) <strong>รวม DB</strong> กับ line-oa/workflow — ถ้า (ข) ต้อง map org↔site + ใช้ C12 + ปรับ RLS ให้เข้า convention (<code>TO authenticated</code> + <code>resolve_actor</code>)</li>
-<li>ห้าม deploy DDL จนกว่าจะตัดสิน — บันทึกผลเป็น ADR</li>
+<li><del>Owner SHALL ตัดสิน: (ก) แยก DB หรือ (ข) รวม DB กับ line-oa/workflow</del> → <strong>มติ (ก) แยก DB</strong> — ADR-034 (5 ก.ค. 2026): DB ปัจจุบันเป็น internal ops บริษัทเดียว (C12 single-site, ไม่มีตาราง tenancy) ส่วน SaaS เป็นลูกค้าภายนอกหลายองค์กร — สร้างโปรเจกต์ Supabase แยกเมื่อเปิดขาย ใช้ draft v0.3 ตรง ๆ</li>
+<li>Deploy DDL ได้เมื่อตัดสินใจเปิดขาย SaaS (Phase 1) — ไม่มี blocker สถาปัตยกรรมแล้ว</li>
 </ol>
 <h2>Correctness Properties (สำหรับ test)</h2>
 <ol>
@@ -233,11 +234,11 @@ effective_plan: active/trialing → plan · past_due grace 7d · else &#39;free&
 <blockquote>
 <p>Gate แรกคือการตัดสินใจ ไม่ใช่โค้ด — ห้ามข้าม Phase 0</p>
 </blockquote>
-<h2>Phase 0: Owner Decision (blocking)</h2>
+<h2>Phase 0: Owner Decision — ✅ ปิดแล้ว (5 ก.ค. 2026)</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 0.1 ตัดสิน Req 10: SaaS แยก DB หรือรวม DB กับ line-oa/workflow (C12) — บันทึกเป็น ADR ใน <code>.kiro/steering/architecture-decisions.md</code></li>
-<li><input disabled="" type="checkbox"> 0.2 ถ้ารวม DB: ออกแบบ mapping <code>organizations ↔ sites</code> + ปรับ RLS ให้ใช้ C12 (<code>resolve_actor</code>, <code>has_site_access</code>) แล้วแก้ draft DDL ตาม</li>
-<li><input disabled="" type="checkbox"> 0.3 ยืนยันราคา/ชื่อ tier กับ competitive research (OCC/PolyBoard/Mozaik) — ตอนนี้เป็น placeholder</li>
+<li><input checked="" disabled="" type="checkbox"> 0.1 ตัดสิน Req 10 → <strong>แยก DB</strong> — ADR-034 ใน <code>.kiro/steering/architecture-decisions.md</code></li>
+<li><input checked="" disabled="" type="checkbox"> <del>0.2 ถ้ารวม DB: mapping org↔site + C12</del> — ตกไปตามมติ 0.1 (แยก DB ใช้ draft ตรง ๆ)</li>
+<li><input disabled="" type="checkbox"> 0.3 ยืนยันราคา/ชื่อ tier กับ competitive research (OCC/PolyBoard/Mozaik) — ตอนนี้เป็น placeholder (ทำก่อนเปิดขาย ไม่ block Phase 1)</li>
 </ul>
 <h2>Phase 1: Schema Landing</h2>
 <ul>

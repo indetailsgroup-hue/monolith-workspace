@@ -4,7 +4,7 @@
 
 เอกสารนี้กำหนด requirements ของโมดูล **Installation PM** — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: `ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน` — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)
 
-**สถานะ:** design proposal — แปลงจาก build plan ภายนอก (5 ก.ค. 2026) ผ่านการ verify กับเรโปจริงแล้ว 1 รอบ (แก้ over-claim 4 จุด — ดู §Reuse Map) — **ยังไม่ implement** รอ owner decisions (Req 12)
+**สถานะ:** approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — **มติ 3 ข้อ (ADR-034/035):** (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง
 
 **ขอบเขต IP:** ลอกได้เฉพาะ*แนวคิดฟีเจอร์/เวิร์กโฟลว์* (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล
 
@@ -84,18 +84,18 @@
 3. THE ผลอนุมัติ SHALL ผูกกับ packet/report ที่เกี่ยวข้อง → provenance ครบ: ใคร อนุมัติอะไร ของที่ผลิตล็อตไหน
 4. WHEN ลูกค้าไม่มี LINE THE ระบบ SHALL มี fallback (secure link อีเมล/SMS) — Phase 3
 
-### Requirement 8: Offline-First Mobile
+### Requirement 8: Offline — MVP = offline-lite; full sync = conditional-on-baseline (ADR-035)
 
-1. THE sync protocol (client_rev + updated_at + tombstone + กติกา conflict ต่อ entity) SHALL ถูกล็อกเป็นเอกสาร**ก่อน**เขียนโค้ด mobile (design.md §D-6)
-2. THE conflict default SHALL เป็น last-write-wins ต่อ row ยกเว้น report values ใช้ field-merge — **ห้าม silent data loss**: ฝั่งแพ้ถูกเก็บเป็น conflict copy ให้ผู้ใช้กู้ได้
-3. THE mobile app (React Native) SHALL ใช้ Supabase backend + RLS + entitlement เดิมร่วมกัน — ไม่มี backend แยก
-4. THE MVP web (Phase 1) SHALL เป็น responsive + PWA (ออนไลน์) — offline เต็มรูปแบบเป็น Phase 2 track แยก
+1. THE MVP (Phase 1) SHALL เป็น web responsive + PWA + **offline-lite upload queue**: service worker + IndexedDB เก็บ report/รูปตอนเน็ตหลุด ส่งเมื่อสัญญาณกลับ — **คิวทางเดียว ไม่มี two-way sync = ไม่มี conflict resolution ใน v1**
+2. THE offline-lite queue SHALL idempotent (client-generated id ต่อ submission — retry ไม่สร้างซ้ำ) และแสดงสถานะคิวให้ช่างเห็น (pending/sent/failed)
+3. THE ระบบ SHALL เก็บ baseline จากงานจริง: อัตรา submit ผ่านคิว offline, จุด/ความถี่ที่ไม่มีสัญญาณ — เป็นข้อมูลตัดสิน Phase 2
+4. IF baseline ยืนยันว่าจำเป็น THEN mobile (React Native) + full sync protocol (design.md D-6: LWW + conflict copy + field-merge) SHALL ถูก implement เป็น Phase 2 — sync protocol ต้องล็อก + prototype ก่อนเขียนโค้ด; **ห้าม implement ก่อน baseline ยืนยัน**
 
-### Requirement 9: Entitlement Gating (v0.4 delta)
+### Requirement 9: Entitlement Gating — เฉพาะเวอร์ชัน SaaS (ADR-034/035)
 
-1. THE ฟีเจอร์ Site-PM ทั้ง 8 keys SHALL เพิ่มใน matrix เป็น **`status='roadmap'` ทั้งหมด** จนกว่าแต่ละตัวจะ ship (กติกา anti-vaporware v0.3)
-2. THE gate SHALL ใช้ kind จริงของ schema: `boolean`/`stock_quota`/`metered_quota`/`limit_param` — ดู `../entitlement-tier/schema-draft-v0.4-delta.sql`
-3. THE การพลิก roadmap→implemented SHALL ผูก release checklist ต่อฟีเจอร์ (สืบทอด entitlement Req 6.5)
+1. THE **v1 internal (dogfood) SHALL ไม่ gate ด้วย entitlement** — ของใช้เองในบริษัท ควบคุมด้วย C12 roles ตามปกติ
+2. THE ฟีเจอร์ `sitepm.*` ทั้ง 8 keys ใน matrix v0.4 = availability ของ**เวอร์ชัน SaaS ในอนาคต** (DB แยกตาม ADR-034) — คงเป็น `status='roadmap'` จนกว่าเวอร์ชันขายจะ ship จริง (กติกา anti-vaporware v0.3)
+3. THE การพลิก roadmap→implemented SHALL ผูก release checklist ของ**เวอร์ชัน SaaS** — dogfood ship ภายในไม่นับเป็นเหตุ flip
 
 ### Requirement 10: PDPA
 
@@ -108,11 +108,11 @@
 1. THE เหตุการณ์สำคัญ (สร้าง/ปิดโปรเจกต์, ผูก packet, submit/sign report, approval) SHALL เขียน append-only audit ตาราง `installation_audit_log` (pattern `line_oa_audit_log`)
 2. THE audit SHALL ไม่แก้/ลบได้ และ query ได้ตาม RLS org
 
-### Requirement 12: Owner Decisions (blocking)
+### Requirement 12: Owner Decisions ✅ ตัดสินครบ (grill 5 ก.ค. 2026 — ADR-034/035)
 
-1. Owner SHALL ตัดสิน **PRD §11 ข้อ 8** (แยก DB vs รวม C12) ก่อน — โมดูลนี้เป็น**หลักฐานเพิ่มน้ำหนักฝั่ง "รวม DB"** (ต้อง join line_oa_*, workflow, packet_registry)
-2. Owner SHALL ยืนยัน MVP scope: (ก) web-PWA ก่อน + mobile ทีหลัง (ข้อเสนอของ spec นี้) หรือ (ข) mobile ตั้งแต่ Phase 1 (ตาม draft ภายนอก — เสี่ยง timeline)
-3. ห้าม implement จนกว่าจะตัดสินทั้ง 2 ข้อ — บันทึกเป็น ADR
+1. ~~PRD §11 ข้อ 8~~ → **แยก DB** (ADR-034) — หมายเหตุ: ข้อสันนิษฐานเดิมของ spec ที่ว่าโมดูลนี้เป็น "หลักฐานฝั่งรวม DB" **ถูกหักล้างใน grill** — join line_oa_*/workflow เป็นเรื่อง internal v1 (อยู่ DB เดิมอยู่แล้ว) ไม่เกี่ยวกับลูกค้า SaaS
+2. ~~MVP scope~~ → **dogfood ภายใน + PWA + offline-lite** (ADR-035) — ไม่ใช่ทั้ง (ก) เดิมและ (ข): เพิ่มคิว upload ทางเดียวเข้า Phase 1 โดยไม่แตะ two-way sync
+3. Implement เริ่มได้ — เหลือ spikes ใน tasks Phase 0 (Realtime load test) ก่อนผูก chat กับ MVP
 
 ## Correctness Properties (สำหรับ test)
 

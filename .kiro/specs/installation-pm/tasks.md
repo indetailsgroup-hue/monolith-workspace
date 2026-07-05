@@ -2,31 +2,33 @@
 
 > Gate แรกคือการตัดสินใจ ไม่ใช่โค้ด — ห้ามข้าม Phase 0 (pattern เดียวกับ entitlement-tier)
 
-## Phase 0: Decisions + Spikes (blocking)
+## Phase 0: Decisions + Spikes
 
-- [ ] 0.1 Owner ตัดสิน PRD §11 ข้อ 8 (แยก DB vs รวม C12) — โมดูลนี้คือหลักฐานฝั่ง "รวม DB" (join line_oa_*/workflow/packet_registry) — บันทึก ADR
-- [ ] 0.2 Owner ยืนยัน MVP scope: (ก) web-PWA ก่อน [ข้อเสนอ spec นี้] vs (ข) mobile ตั้งแต่แรก [draft ภายนอก]
-- [ ] 0.3* Spike: sync prototype (D-6) — 2 clients + conflict ทุก scenario ใน Correctness Property 4; เลือก client store (PowerSync/WatermelonDB/RxDB)
+- [x] 0.1 ~~Owner ตัดสิน PRD §11 ข้อ 8~~ → **แยก DB** (ADR-034, grill 5 ก.ค. 2026) — ข้อสันนิษฐาน "หลักฐานฝั่งรวม DB" ถูกหักล้าง: v1 เป็น internal อยู่ DB เดิมอยู่แล้ว
+- [x] 0.2 ~~MVP scope~~ → **dogfood + PWA + offline-lite upload queue** (ADR-035)
+- [ ] 0.3* Spike: offline-lite queue prototype (D-6a) — service worker + IndexedDB + Background Sync + idempotent submission id (แทน sync prototype เดิม — full sync D-6 เลื่อนไปตาม baseline)
 - [ ] 0.4* Spike: Supabase Realtime load test (การใช้ครั้งแรกในเรโป — D-7)
 - [ ] 0.5 ยืนยันฟีเจอร์ AI voice ของ KANNA จาก App Store changelog (ตอนนี้ unverified) — มีผลแค่ลำดับความสำคัญ Phase 4
 
-## Phase 1: Web MVP (หลัง 0.1–0.2)
+## Phase 1: Web MVP — PWA + offline-lite (ปลดล็อกแล้ว เริ่มได้หลัง spikes)
 
-- [ ] 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log + RLS ตาม convention จาก ADR 0.1
+- [ ] 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
 - [ ] 1.2 Packet Registry + RPC `register_packet` (idempotent) + ผูก export flow เดิม
 - [ ] 1.3 Web UI: project list/detail + Kanban + task CRUD (responsive + PWA)
-- [ ] 1.4 Media pipeline: upload → compress/thumbnail Edge Function + storage_usage counter + quota check
+- [ ] 1.4 Media pipeline: upload → compress/thumbnail Edge Function + นับ storage ต่อโปรเจกต์ (v1 ไม่มี quota gate — internal; เก็บตัวเลขไว้เป็น baseline ต้นทุน)
 - [ ] 1.5 Daily report (template คงที่) + แนบรูป + PDF export
-- [ ] 1.6 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications
-- [ ] 1.7 LINE approval: template 'inst_approval_request' + postback route + approvals table (D-5)
-- [ ] 1.8* Negative tests: Correctness Properties 1, 2, 3, 5 + RLS external member
+- [ ] 1.6 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)
+- [ ] 1.7 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications
+- [ ] 1.8 LINE approval: template 'inst_approval_request' + postback route + approvals table (D-5)
+- [ ] 1.9* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency
 
-## Phase 2: Mobile + Offline (track แยก — เริ่มได้หลัง 0.3)
+## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 
-- [ ] 2.1 React Native shell + auth + โปรเจกต์/task แบบ online
-- [ ] 2.2 Offline sync ตาม protocol D-6 (client store จาก spike) + sync_conflicts UI
-- [ ] 2.3 Media offline queue + reconcile local id
-- [ ] 2.4 Push: FCM/APNs + device tokens + fan-out Edge Function
+- [ ] 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้
+- [ ] 2.1 Sync prototype (D-6) — 2 clients + conflict ทุก scenario Property 4; เลือก client store (PowerSync/WatermelonDB/RxDB)
+- [ ] 2.2 React Native shell + auth + โปรเจกต์/task
+- [ ] 2.3 Offline sync ตาม protocol D-6 + sync_conflicts UI
+- [ ] 2.4 Push: FCM/APNs + device tokens + fan-out Edge Function (ถ้าไม่ทำ Phase 2 → web push แทนใน Phase 3)
 - [ ] 2.5* Sync convergence tests (Property 4) — ทุก conflict matrix ต้องเขียว
 
 ## Phase 3: Commercial

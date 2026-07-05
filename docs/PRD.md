@@ -700,9 +700,9 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
 1. **[ตอนนี้]** ปิด workflow-copilot Phase 13 (notification delivery + retry), Phase 14 (delegation routing) และ Req 21 (revision/design-lock/re-quote) — ส่วน ADR-017/018 (order-key + multi-approver) ลง migration `0031` แล้ว → เมื่อปิดแล้วเปิด Pilot Wave 2 (workflow/LINE)
 1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
-1.6. **[SaaS — รอ owner]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) พร้อมแล้ว; **Phase 0 = ตัดสิน แยก DB vs รวม C12** แล้วจึง landing เป็น migration จริง
+1.6. **[SaaS — สถาปัตยกรรมตัดสินแล้ว]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) + delta v0.4 Site PM; **Phase 0 ปิดแล้ว: แยก DB (ADR-034)** — Phase 1 landing เริ่มเมื่อตัดสินใจเปิดขาย SaaS
 1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด
-1.8. **[ข้อเสนอ 📝 — รอ owner]** Installation PM (field PM แนว KANNA — ปิด loop ผลิต→ติดตั้ง→ลูกค้าอนุมัติผ่าน LINE) — spec ร่างแล้วที่ `.kiro/specs/installation-pm/` (verify กับโค้ดจริงแล้ว: reuse ~40–50%, packet registry + media pipeline + offline sync = net-new) + entitlement delta v0.4 (8 features — roadmap ทั้งหมด, 53→61); **block ที่ decision §11 ข้อ 8 + MVP scope (ก/ข)**
+1.8. **[อนุมัติแล้ว — dogfood]** Installation PM (field PM แนว KANNA — ปิด loop ผลิต→ติดตั้ง→ลูกค้าอนุมัติผ่าน LINE) — spec ที่ `.kiro/specs/installation-pm/` ผ่าน grill แล้ว (ADR-035): **v1 = ทีม DAPH ใช้เองบน DB เดิม (C12), MVP = PWA + offline-lite upload queue, ไม่ gate entitlement**; mobile + full sync = Phase 2 conditional รอ baseline จากงานจริง; เวอร์ชัน SaaS อนาคต = matrix v0.4 (roadmap 8 ตัว)
 2. **[ถัดไป]** mcp-layer unit tests ที่เหลือ + ADR-019 write-gate
 3. **[Phase 3]** accounting เต็มรูป: bank feed จริง, งบการเงิน TFRS, multi-currency เต็ม
 4. **[รอ owner]** owner decisions ข้อ 1–7 (§11) → ปลดล็อก design-hub WO-0 และ capture Wave 2
@@ -712,7 +712,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 ## 11. Open Questions
 
-**Owner Decisions ค้าง 8 ข้อ — ข้อ 1–7 จาก REQUIREMENTS-OVERVIEW §4.2 (blocking Phase 3/design-hub), ข้อ 8 เพิ่มใน Edition 2.0 (blocking entitlement Phase 0):**
+**Owner Decisions — ค้าง 7 ข้อ (ข้อ 1–7 จาก REQUIREMENTS-OVERVIEW §4.2, blocking Phase 3/design-hub) · ข้อ 8 ✅ ตัดสินแล้ว (grill 5 ก.ค. 2026):**
 
 | # | คำถาม | ใครตอบ |
 |---|-------|--------|
@@ -723,7 +723,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | 5 | Released_Spec contract เวอร์ชันถัดไป (CAM ↔ capture) | Owner + วิศวกรรม |
 | 6 | MCP exposure — เปิด tool ไหนให้ AI client ภายนอก | Owner + governance |
 | 7 | Auto-approve policy — งานประเภทไหน (ถ้ามี) อนุญาต tier สูงขึ้น | Owner + governance |
-| 8 | **Entitlement SaaS: แยก DB ใหม่ หรือรวม DB กับ C12** (ถ้ารวมต้อง map org↔site + RLS convention เดิม) — blocking Phase 0 ของ `.kiro/specs/entitlement-tier/` | Owner + วิศวกรรม |
+| 8 | ~~Entitlement SaaS: แยก DB ใหม่ หรือรวม DB กับ C12~~ → ✅ **มติ: แยก DB** (ADR-034) + Installation PM v1 = dogfood ภายในบน DB เดิม, MVP = PWA + offline-lite (ADR-035) | ตัดสินแล้ว 5 ก.ค. 2026 |
 
 **Docs drift ที่ตรวจพบ (อ่าน specs/ ครบชุด 2026-07-05) — ต้อง reconcile:**
 
