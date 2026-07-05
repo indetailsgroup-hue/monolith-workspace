@@ -4,7 +4,7 @@
 
 เอกสารนี้กำหนด requirements ของโมดูล **Installation PM** — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: `ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน` — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)
 
-**สถานะ:** approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — **มติ 3 ข้อ (ADR-034/035):** (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง
+**สถานะ:** approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — **มติ 4 ข้อ (ADR-034/035 + amendment):** (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง, (4) **MVP เกาะ line_oa + workflow spine**: งานติดตั้ง = work_item ขั้น Installation, รูป = capture `installation_proof`, แจ้งเตือนช่างผ่าน LINE — ห้ามสร้างระบบขนาน
 
 **ขอบเขต IP:** ลอกได้เฉพาะ*แนวคิดฟีเจอร์/เวิร์กโฟลว์* (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล
 
@@ -28,7 +28,9 @@
 | PDPA machinery | ✅ ใช้ได้วันนี้ | `Data_Minimization_Boundary` + PII redaction จาก MCP layer |
 | Customer approval ผ่าน LINE | 🔧 infra มี ต้องต่อยอด | outbound + template governance มี; **approval Flex flow = งานใหม่** |
 | Supabase Realtime (chat/presence) | 🔧 platform-only | **ไม่มีการใช้ใน `src/` เลย** — chat เป็น net-new ทั้งก้อน |
-| Storage + media pipeline + push (FCM/APNs) | 🔴 net-new | ไม่พบ `storage.from(`/FCM/APNs ในโค้ด |
+| Photo ingest + verify + ปิดงาน | ✅ ใช้ได้วันนี้ | capture spine: `installation_proof` (0051) → verified → **commit ปิด work item** (0063); `site_survey` → SiteSurveyZone (0073) |
+| Workflow ขั้น Installation | ✅ ใช้ได้วันนี้ | canonical process มี Sub_Process_Group Installation + approval start/finish (หัวหน้าทีม) + auto-notify Sale/PM |
+| Media processing (thumbnail/compress) + push (FCM/APNs) | 🔴 net-new | ไม่พบ `storage.from(`/FCM/APNs ในโค้ด — push เลื่อนได้เพราะแจ้งเตือนหลักใช้ LINE |
 | MFA/2FA | 🔧 platform รองรับ | ยังไม่ได้เปิด/บังคับใช้ในระบบ |
 | Entitlement gate | 📝 draft | v0.3 ยังไม่ deploy — block ที่ owner decision PRD §11 ข้อ 8 |
 | Factory Packet ใน DB | 🔴 net-new | packet เป็น ZIP+receipt ฝั่ง client — ต้องมี Packet Registry (Req 3) |
@@ -43,12 +45,13 @@
 2. THE ตาราง/คอลัมน์ใหม่ SHALL ไม่ใช้คำ `site` นำหน้า (ชนความหมาย C12) — ใช้ `installation_*` / `field_*`
 3. THE External Member SHALL เข้าถึงได้เฉพาะ installation project ที่มี membership และเห็นเฉพาะข้อมูลของโปรเจกต์นั้น (ไม่เห็นข้อมูล org อื่น ๆ)
 
-### Requirement 2: Installation Project + Task + Board
+### Requirement 2: Installation Project + Task + Board — **เกาะ workflow spine (มติ owner 5 ก.ค. 2026)**
 
-1. THE ระบบ SHALL มี installation_projects (ลูกค้า, สถานที่, ช่วงเวลา, สถานะ lifecycle: draft → scheduled → installing → customer_review → closed)
-2. THE ระบบ SHALL มี installation_tasks (assignee, due, status, %progress) + มุมมอง Kanban board
-3. WHEN โปรเจกต์เข้าสถานะ customer_review THE ระบบ SHALL สร้าง approval request ได้ (Req 7)
-4. Gantt + company dashboard เป็น Phase 3 (ดู tasks.md) — ไม่อยู่ใน MVP
+1. THE ระบบ SHALL มี installation_projects (ลูกค้า, สถานที่, ช่วงเวลา, สถานะ lifecycle: draft → scheduled → installing → customer_review → closed) **ผูกกับ work_item ของขั้น Installation ใน canonical process** (`work_item_id` link — ไม่สร้าง lifecycle ขนาน)
+2. THE งานติดตั้ง start/finish SHALL เดินผ่าน workflow RPCs เดิม (`rpc_handoff_work_item` ฯลฯ) เพื่อให้ approval + notification เดิมทำงาน (workflow Req: approver = หัวหน้าทีม Installation, auto-notify Sale/PM) — **ห้าม bypass workflow**
+3. THE installation_tasks SHALL เป็น **subtask ระดับหน้างาน** (จุดติดตั้งย่อย/checklist) ใต้ work_item — ไม่ซ้ำซ้อนกับ process step; มุมมอง Kanban board รวมทั้งสอง
+4. WHEN โปรเจกต์เข้าสถานะ customer_review THE ระบบ SHALL สร้าง approval request ได้ (Req 7)
+5. Gantt + company dashboard เป็น Phase 3 (ดู tasks.md) — ไม่อยู่ใน MVP
 
 ### Requirement 3: Packet Registry — สะพานผลิต↔ติดตั้ง (moat)
 
@@ -57,12 +60,14 @@
 3. THE รูป/รายงานติดตั้ง SHALL ผูกถึงระดับ cabinet/panel id ใน packet ได้ (optional ต่อรูป)
 4. THE การ verify SHALL ตรวจ SHA-256 กับ receipt ได้ตาม flow `monolith-receipt-verify` เดิม
 
-### Requirement 4: Photo/Media Pipeline + Quota
+### Requirement 4: Photo/Media — **เข้า capture spine (มติ owner 5 ก.ค. 2026)**
 
-1. THE upload SHALL ผ่าน media pipeline: บีบอัด + thumbnail (Edge Function) + จัดโฟลเดอร์ต่อโปรเจกต์
-2. THE รูป SHALL เก็บ metadata: เวลา, ผู้ถ่าย, geo (ถ้ามี consent), ผูก task/panel ได้
-3. THE annotation (วาด/มาร์กบนรูป) SHALL เก็บเป็น layer แยก ไม่ทำลายไฟล์ต้นฉบับ
-4. THE storage ต่อ org SHALL enforce ด้วย `sitepm.photo_storage_gb` (stock_quota) — นับผ่าน `storage_usage` hook (net-new — entitlement tasks Phase 4.1)
+1. THE รูปหลักฐานติดตั้ง SHALL ingest ผ่าน capture spine เดิม (`rpc_capture_ingest`, capture_type **`installation_proof`** — มีอยู่แล้ว 0051 พร้อม verify rules; ADR-033: manual entry, cloud_allowed=false) — verified แล้ว **commit ปิด work item อัตโนมัติ** (0063) — ห้ามสร้าง pipeline ขนาน
+2. THE ช่าง SHALL ส่งรูปได้ 2 ทาง: (ก) PWA upload → capture ingest (ข) **ส่งผ่าน LINE** → line_oa webhook → capture (channel เดิมตาม ADR-033)
+3. THE media processing (บีบอัด + thumbnail Edge Function) SHALL ทำงานบน capture artifact — เป็นส่วน net-new เดียวของ Req นี้
+4. THE รูป SHALL เก็บ metadata: เวลา, ผู้ถ่าย, geo (ถ้ามี consent), ผูก work_item/subtask/panel ได้; annotation เก็บเป็น layer แยก ไม่ทำลายต้นฉบับ
+5. THE ข้อมูลวัดหน้างานก่อนติดตั้ง SHALL อ่านจาก **SiteSurveyZone** เดิม (0073 — capture_type `site_survey`) แสดงในหน้าโปรเจกต์ — read-only reuse
+6. v1 internal ไม่มี quota gate — นับ storage เป็น baseline ต้นทุน; `sitepm.photo_storage_gb` ใช้กับเวอร์ชัน SaaS (ADR-034)
 
 ### Requirement 5: Field Reports + Form Builder + e-Signature
 
@@ -71,11 +76,12 @@
 3. THE ลายเซ็น SHALL เก็บพร้อม timestamp + ผู้เซ็น + report version — report ที่เซ็นแล้ว immutable
 4. THE report SHALL export เป็น PDF ได้
 
-### Requirement 6: Chat + Notifications
+### Requirement 6: Notifications ผ่าน LINE OA + Chat
 
-1. THE แชท SHALL ผูกต่อ installation project (Supabase Realtime) — internal + external members
-2. THE push notification (FCM/APNs) SHALL แจ้ง: assigned task, mention, approval result, report submitted
-3. THE ข้อความ SHALL อยู่ใต้ RLS เดียวกับโปรเจกต์ (external member เห็นเฉพาะห้องของโปรเจกต์ตน)
+1. THE notification หลักของช่าง SHALL ส่งผ่าน **line_oa outbound เดิม** (pre-approved template + named slots): งานใหม่/handoff, approval result, เตือนส่งรายงาน — ช่างไทยอยู่บน LINE อยู่แล้ว ไม่ต้องรอ push infra (มติ owner 5 ก.ค. 2026)
+2. THE แชท in-app ต่อโปรเจกต์ (Supabase Realtime) SHALL เป็นส่วนเสริม — ผลจาก spike 0.4 ตัดสินว่าเข้า MVP หรือเลื่อน (การคุยหลักช่วงแรกอยู่ใน LINE ได้)
+3. THE web push (FCM) SHALL เป็น Phase 2/3 — ไม่ block MVP
+4. THE ข้อความ/การแจ้งเตือน SHALL อยู่ใต้ RLS เดียวกับโปรเจกต์ (external member เห็นเฉพาะของโปรเจกต์ตน)
 
 ### Requirement 7: Customer Approval ผ่าน LINE (reuse line-oa)
 

@@ -13,7 +13,8 @@
 
 ```
 (C12 DB เดิม — single company)
-  installation_projects ─┬─1:*─ installation_tasks      (assignee, due, status, progress_pct)
+  installation_projects ─*:1─ work_items (ขั้น Installation — lifecycle จริงอยู่ที่ workflow; ดู D-11)
+  installation_projects ─┬─1:*─ installation_tasks      (subtask หน้างานใต้ work_item — ไม่ใช่ process step)
                                ├─1:*─ installation_photos     (storage_path, thumb_path, meta, panel_ref?)
                                │        └─1:*─ photo_annotations (layer JSON — ไม่แตะไฟล์ต้นฉบับ)
                                ├─1:*─ field_reports            (template_ref, values jsonb, signature?, status)
@@ -106,6 +107,21 @@ installation_projects (customer_review)
 | MVP 3–5 เดือนรวม mobile offline | แยก track: Phase 1 web-PWA, Phase 2 mobile | N5 เดี่ยว ๆ ก็กินเวลาระดับนั้น; ทีมปัจจุบันเป็น web/R3F |
 | ชื่อ `site_project` | เปลี่ยน `installation_projects` | ชน C12 (D-1) |
 | "Entitlement v0.3 ✅ มีแล้ว" | ระบุตรง: 📝 draft ยังไม่ deploy | block ที่ PRD §11 ข้อ 8 |
+
+## D-11: Workflow + Capture Integration (มติ owner 5 ก.ค. 2026 — "line_oa/workflow ด้วย")
+
+หลักการ: **Installation PM เป็น lens บน spine เดิม ไม่ใช่ระบบขนาน** — สิ่งที่มีอยู่แล้วและต้องเกาะ:
+
+| Spine เดิม | ใช้ทำอะไรใน Installation PM |
+|---|---|
+| `work_items` + `process_model` (ขั้น Installation ใน canonical process) | lifecycle งานติดตั้งจริง — start/finish ผ่าน `rpc_handoff_work_item`/completion → approval หัวหน้าทีม Installation + auto-notify Sale/PM ทำงานเองตาม workflow spec |
+| capture `installation_proof` (0051, verify rules + manual entry ตาม ADR-033) | รูปหลักฐานติดตั้ง: ingest → verify → promote → **commit 'Work_Item complete' (0063)** — การปิดงานด้วยรูปมีอยู่แล้ว |
+| capture `site_survey` → `SiteSurveyZone` (0062/0073) | ข้อมูลวัดหน้างานก่อนติดตั้ง — แสดง read-only ในหน้าโปรเจกต์ |
+| line_oa webhook/outbound + templates | (ก) ช่างส่งรูปผ่าน LINE → capture (ข) แจ้งเตือนช่าง: งานใหม่/approval/เตือนรายงาน (ค) ลูกค้าอนุมัติ (D-5) |
+
+สิ่งที่ Installation PM **เพิ่ม** (ไม่ทับของเดิม): มุมมองโปรเจกต์ (จัดกลุ่ม work items ต่อ job ลูกค้า + Kanban), subtask หน้างาน, media processing (thumbnail/compress บน capture artifact), annotation layer, field report + PDF, offline-lite queue (D-6a), packet registry (D-3)
+
+ข้อควรระวัง: `installation_tasks` ห้ามมี state ที่ขัด work_item (single source of truth = workflow) — subtask เสร็จครบไม่ auto-complete work item (ต้องผ่าน capture proof ตาม flow เดิม)
 
 ## ความเสี่ยงหลัก (สืบทอด + เพิ่ม)
 

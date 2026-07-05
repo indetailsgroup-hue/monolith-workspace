@@ -10,17 +10,18 @@
 - [ ] 0.4* Spike: Supabase Realtime load test (การใช้ครั้งแรกในเรโป — D-7)
 - [ ] 0.5 ยืนยันฟีเจอร์ AI voice ของ KANNA จาก App Store changelog (ตอนนี้ unverified) — มีผลแค่ลำดับความสำคัญ Phase 4
 
-## Phase 1: Web MVP — PWA + offline-lite (ปลดล็อกแล้ว เริ่มได้หลัง spikes)
+## Phase 1: Web MVP — PWA + offline-lite เกาะ line_oa/workflow spine (D-11)
 
-- [ ] 1.1 Migrations: installation_projects / tasks / memberships / photos / annotations / field_reports / chat / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
-- [ ] 1.2 Packet Registry + RPC `register_packet` (idempotent) + ผูก export flow เดิม
-- [ ] 1.3 Web UI: project list/detail + Kanban + task CRUD (responsive + PWA)
-- [ ] 1.4 Media pipeline: upload → compress/thumbnail Edge Function + นับ storage ต่อโปรเจกต์ (v1 ไม่มี quota gate — internal; เก็บตัวเลขไว้เป็น baseline ต้นทุน)
-- [ ] 1.5 Daily report (template คงที่) + แนบรูป + PDF export
-- [ ] 1.6 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)
-- [ ] 1.7 Chat ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4) + in-app notifications
-- [ ] 1.8 LINE approval: template 'inst_approval_request' + postback route + approvals table (D-5)
-- [ ] 1.9* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency
+- [ ] 1.1 Migrations: installation_projects (**+work_item_id link**) / installation_tasks (subtask ใต้ work_item) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
+- [ ] 1.2 Wire lifecycle เข้า workflow: start/finish ผ่าน `rpc_handoff_work_item`/completion เดิม — approval หัวหน้าทีม Installation + auto-notify ทำงานตาม workflow spec (ห้าม bypass); subtask ครบ ≠ auto-complete (ปิดงานผ่าน capture proof เท่านั้น)
+- [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
+- [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)
+- [ ] 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA
+- [ ] 1.6 Daily report (template คงที่) + แนบรูป + PDF export
+- [ ] 1.7 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)
+- [ ] 1.8 LINE templates: 'inst_approval_request' (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม
+- [ ] 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)
+- [ ] 1.10* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency + subtask-ไม่-complete-work-item
 
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 

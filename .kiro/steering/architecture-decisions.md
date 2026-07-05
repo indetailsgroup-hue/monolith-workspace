@@ -369,3 +369,9 @@ inclusion: always
   2. **MVP = web responsive + PWA + offline-lite**: คิว upload ทางเดียว (service worker + IndexedDB เก็บ report/รูปตอนเน็ตหลุด ส่งเมื่อสัญญาณกลับ) — **ไม่มี two-way sync** = ไม่มี conflict resolution ใน v1
   3. เก็บ baseline จากงานจริง (อัตรา submit ผ่านคิว offline, จุด/ความถี่ที่ไม่มีสัญญาณ) → ตัดสิน mobile RN + full sync (Phase 2) ด้วยข้อมูล ไม่ใช่สมมติฐาน — หลัก baseline-first เดียวกับ PRD
 - **Consequences:** requirements Req 8 (offline-first mobile) เลื่อนสถานะเป็น conditional-on-baseline; sync protocol D-6 คงไว้ในเอกสารเป็น design สำรอง (ห้าม implement ก่อน baseline ยืนยัน); Realtime spike (tasks 0.4) ยังจำเป็น (chat MVP); เมื่อยกเป็น SaaS ค่อย re-scope tenancy ตาม ADR-034
+
+### ADR-035 Amendment (owner, 5 ก.ค. 2026) — MVP ต้องเกาะ line_oa/workflow spine
+
+- **Decision (owner):** MVP ไม่ใช่ PWA เดี่ยว ๆ — งานติดตั้ง = `work_items` ขั้น Installation ใน canonical process (lifecycle/approval/notify ของ workflow ทำงานเดิม ห้าม bypass), รูปหลักฐาน = capture `installation_proof` (ingest→verify→commit ปิด work item — 0063 มีอยู่แล้ว), แจ้งเตือนช่าง+รับรูปจากช่าง = line_oa (webhook/outbound/templates), ข้อมูลวัดหน้างาน = SiteSurveyZone read-only
+- **Verified reuse เพิ่มเติม:** canonical process มี Sub_Process_Group {Office, Factory, Installation} + workflow Req "Installation start/finish → approver หัวหน้าทีม Installation + notify Sale/PM"; capture types `installation_proof` (0051, commit_target='Work_Item complete') และ `site_survey`→SiteSurveyZone (0062/0073) — spec ฉบับก่อน amendment ออกแบบ task system + media pipeline ขนานโดยไม่จำเป็น
+- **Consequences:** `installation_tasks` ลดบทบาทเป็น subtask หน้างานใต้ work_item (single source of truth = workflow); media net-new เหลือแค่ thumbnail/compress + annotation; push FCM/APNs เลื่อนได้ (แจ้งเตือนหลัก = LINE); chat in-app กลายเป็น optional ตามผล Realtime spike — design.md D-11
