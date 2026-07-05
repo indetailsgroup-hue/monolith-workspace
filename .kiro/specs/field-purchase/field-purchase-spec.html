@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Purchase — Spec (MONOLITH)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Requirements — Field Purchase (ซื้อของหน้างาน: ขออนุมัติ → ซื้อ → เบิกคืน)</h1>
+<h2>Introduction</h2>
+<p>โมดูล <strong>Field Purchase</strong> ปิด loop &quot;ช่างหน้างานเจออุปกรณ์เสีย/ขาด ต้องซื้อด่วน&quot; ให้ครบและ audit ได้ — ตั้งแต่ขออนุมัติก่อนซื้อ จนถึงส่งใบเสร็จเบิกคืน — โดย<strong>ออกแบบจากไม้บรรทัด UX Tenet เป็นตัวตั้ง</strong> (PRD §1): ช่างเห็นแค่ 2 การกระทำ ความยากทั้งหมดอยู่หลังบ้าน</p>
+<p><strong>สถานะ:</strong> design proposal — reuse ของที่มี (capture <code>expense_document</code> ✅, approval-postback ✅, authority ใน JD) + net-new เฉพาะ capture type <code>field_purchase_request</code> + approval routing
+<strong>ปิดช่องว่างที่พบใน:</strong> LINE-Architecture-System-Complete §4.3 (ขั้น &quot;ขออนุมัติก่อนซื้อ&quot; ยังไม่มีสเปค)</p>
+<h2>หลักการออกแบบ (front-first)</h2>
+<blockquote>
+<p><strong>สิ่งที่ช่างเห็น/ทำ — ทั้งหมด:</strong></p>
+<ol>
+<li>ของหัก → ในกลุ่ม LINE ของบ้าน <strong>ถ่ายรูป + พิมพ์บรรทัดเดียว</strong> เช่น &quot;ดอกสว่านหัก 350&quot; (หรือส่งรูปเฉย ๆ → bot ถามจำนวนด้วยปุ่ม)</li>
+<li>เด้งกลับ <strong>&quot;อนุมัติแล้ว ✅ ซื้อได้เลย&quot;</strong> (หรือ &quot;ยังไม่อนุมัติ: เหตุผล&quot;)</li>
+<li>ซื้อเสร็จ → <strong>ถ่ายใบเสร็จส่งเข้า LINE</strong> → จบ</li>
+<li>เงินคืนเข้าช่างอัตโนมัติ</li>
+</ol>
+<p>ช่าง<strong>ไม่เห็น</strong>: capture type, work item, vendor master, RACI, double-entry, job cost, ใครอนุมัติ — และ<strong>ไม่กรอกฟอร์ม ไม่เลือกโปรเจกต์</strong></p>
+</blockquote>
+<h2>Requirements</h2>
+<h3>Requirement 1: ขอซื้อจากหน้างาน (front = 1 การกระทำ)</h3>
+<ol>
+<li>THE ช่าง SHALL เปิดคำขอด้วย <strong>รูป + จำนวนเงิน + เหตุผลสั้น</strong> ผ่าน LINE กลุ่ม internal ของบ้าน — ส่งรูปแล้ว bot เสนอปุ่ม &quot;แจ้งซื้อของ&quot; หรือพิมพ์สั้น (ไม่มีฟอร์ม, ไม่มี command บังคับ)</li>
+<li>THE ระบบ SHALL <strong>infer อัตโนมัติ</strong>: บ้าน/ห้อง/work_item (จาก group binding + assignment), ผู้ขอ (จาก staff identity), เวลา/พิกัด — ช่างไม่ต้องเลือก</li>
+<li>THE คำขอ SHALL สร้างเป็น capture <code>field_purchase_request</code> (net-new) — cloud_allowed=false (มีบริบทงานลูกค้า/ตำแหน่ง)</li>
+</ol>
+<h3>Requirement 2: อนุมัติตามวงเงิน (routing = หลังบ้าน, ผู้อนุมัติ = 1 tap)</h3>
+<ol>
+<li>THE ระบบ SHALL route คำขอไปผู้อนุมัติ<strong>ตามวงเงินอัตโนมัติ</strong> ตามตารางอำนาจใน JD (ไม่ให้ช่างเลือกว่าใครอนุมัติ):<ul>
+<li>ของใช้สิ้นเปลืองเล็ก (≤ เพดาน A) → <strong>หัวหน้าทีมติดตั้ง</strong> (JD: จัดซื้อของใช้สิ้นเปลืองติดตั้ง)</li>
+<li>วัสดุ/เครื่องมือ (≤ เพดาน B) → <strong>ผู้จัดการโครงการ</strong> (JD: จัดซื้อวัสดุ/เครื่องมือติดตั้ง)</li>
+<li>เกินเพดาน B → <strong>กรรมการผู้จัดการ (MD)</strong> (JD จัดซื้อ: PO ต้อง MD อนุมัติ)</li>
+</ul>
+</li>
+<li>THE ผู้อนุมัติ SHALL เห็น <strong>Flex การ์ดเดียวในกลุ่ม/แชท</strong> (รูปของหัก + จำนวน + เหตุผล + ใครขอ + บ้านไหน) → <strong>กดปุ่มเดียว</strong> อนุมัติ/ปฏิเสธ (reuse approval-postback, HMAC, idempotent)</li>
+<li>THE เพดาน A/B SHALL เป็น config (ไม่ hardcode) — owner ตั้งได้ · resolver ผูก RACI/role จริง (pattern เดียวกับ gate confirmer ADR-031: ตรวจว่าผู้กดเป็นผู้มีอำนาจจริง ไม่ใช่แค่ flag)</li>
+<li>WHEN ผู้อนุมัติไม่ตอบใน SLA THE ระบบ SHALL escalate ขึ้นระดับถัดไป (ไม่ให้ช่างค้างรอเงียบ ๆ)</li>
+<li>THE ผลอนุมัติ SHALL แจ้งช่างเป็นภาษาคน (&quot;ซื้อได้เลย&quot;/&quot;ยังไม่อนุมัติ: เหตุผล&quot;) + บันทึก audit</li>
+</ol>
+<h3>Requirement 3: ส่งใบเสร็จ + เบิกคืน (reuse expense_document ✅)</h3>
+<ol>
+<li>THE ช่าง SHALL ถ่ายใบเสร็จส่งเข้า LINE → capture <code>expense_document</code> (มีอยู่แล้ว: OCR + fraud flags + รอบัญชียืนยัน)</li>
+<li>THE ใบเสร็จ SHALL <strong>ผูกกับ <code>field_purchase_request</code> ที่อนุมัติแล้วอัตโนมัติ</strong> (match ด้วย ผู้ขอ+บ้าน+ช่วงเวลา+จำนวนใกล้เคียง) — ช่างไม่ต้องอ้างเลขคำขอ</li>
+<li>WHEN ร้านไม่อยู่ใน vendor master (ร้านฮาร์ดแวร์ข้างไซต์) THE ระบบ SHALL mark <code>manual_review_required</code> ให้บัญชีตรวจ (พฤติกรรมถูกต้องอยู่แล้ว — ไม่ auto-ลง)</li>
+<li>WHEN บัญชียืนยัน THE ระบบ SHALL ลง ledger (double-entry, VAT/WHT) + <strong>ผูก job cost เข้าบ้าน/work_item</strong> (ADR-027: บัญชีเป็นเจ้าของอัตราต้นทุน) + ตั้งเบิกคืนช่าง</li>
+<li>THE ยอดใบเสร็จที่ต่างจากที่อนุมัติเกิน tolerance SHALL flag ให้ผู้อนุมัติ/บัญชีทราบ (กันซื้อเกินวงเงิน)</li>
+</ol>
+<h3>Requirement 4: Traceability + Audit (หลังบ้าน)</h3>
+<ol>
+<li>THE ทุกคำขอ SHALL traceable ครบ loop: ขอ (ใคร/บ้าน/work_item) → อนุมัติ (ใคร/เมื่อ/วงเงิน) → ใบเสร็จ (vendor/VAT) → ledger → เบิกคืน — append-only audit</li>
+<li>THE คำขอที่ยังไม่ปิด (อนุมัติแล้วแต่ไม่มีใบเสร็จเกิน N วัน) SHALL ขึ้น dashboard หัวหน้า/บัญชี (กันเงินสำรองจ่ายค้าง)</li>
+</ol>
+<h3>Requirement 5: บังคับ UX Tenet (ทวนก่อน implement)</h3>
+<ol>
+<li>ช่าง: ทำคำขอจบใน ≤ 2 การกระทำ (รูป + จำนวน), ส่งใบเสร็จ 1 การกระทำ — เห็นศัพท์ระบบ 0 คำ</li>
+<li>ผู้อนุมัติ: 1 tap ในที่ที่อยู่แล้ว (LINE) — ไม่เปิด console</li>
+<li>บัญชี: fraud/mismatch ที่ flag ช่วยงาน ไม่ใช่ภาระช่าง</li>
+</ol>
+<h2>Correctness Properties</h2>
+<ol>
+<li><strong>Front simplicity</strong>: ช่างเปิดคำขอ + ส่งใบเสร็จ โดยไม่เลือก project/vendor/approver และไม่เห็น id/key ใด ๆ</li>
+<li><strong>Authority correctness</strong>: คำขอเกินเพดานของผู้กด → ปฏิเสธที่หลังบ้าน (ผู้กดต้องเป็นผู้มีอำนาจจริงตามวงเงิน ไม่ใช่แค่กดได้)</li>
+<li><strong>Receipt-request linkage</strong>: ใบเสร็จ match กับคำขอที่อนุมัติแล้วเสมอ (ไม่มีใบเสร็จลอย, ไม่มีคำขอปิดโดยไม่มีใบเสร็จ)</li>
+<li><strong>No silent overspend</strong>: ใบเสร็จเกินวงเงินอนุมัติ + tolerance → flag ไม่ auto-ลง</li>
+<li><strong>Full trace</strong>: ทุกรายการ trace ครบ ขอ→อนุมัติ→ซื้อ→ลง→เบิกคืน + audit</li>
+</ol>
+<hr>
+<h1>Design — Field Purchase</h1>
+<blockquote>
+<p>อ่านคู่กับ <code>requirements.md</code> · ออกแบบจาก UX Tenet เป็นตัวตั้ง (front-first): เริ่มจาก &quot;ช่างเห็นแค่ 2 การกระทำ&quot; แล้วดันความยากลงหลังบ้าน</p>
+</blockquote>
+<h2>D-1: Flow เต็ม (front ↔ back)</h2>
+<pre><code>ช่าง (LINE กลุ่ม internal)              หลังบ้าน (ซ่อนจากช่าง)
+─────────────────────────              ──────────────────────────────────
+1. ถ่ายรูปของหัก + &quot;350&quot;    ──────→    capture field_purchase_request
+   (หรือรูป → ปุ่ม &quot;แจ้งซื้อของ&quot;        · infer บ้าน/ห้อง/work_item จาก group binding + assignment
+    → bot ถามจำนวนด้วยปุ่ม)             · infer ผู้ขอ จาก staff identity
+                                        · route ตามวงเงิน → เลือกผู้อนุมัติ (เพดาน A/B config)
+                                              │
+2.                          ←──────    Flex การ์ดไปผู้อนุมัติ (รูป+จำนวน+เหตุผล+ผู้ขอ+บ้าน)
+   &quot;อนุมัติแล้ว ✅ ซื้อได้เลย&quot; ←──────   ผู้อนุมัติกดปุ่มเดียว → postback → resolver ตรวจอำนาจจริง
+                                        · audit + แจ้งช่างภาษาคน
+                                              │
+3. ซื้อ + ถ่ายใบเสร็จส่ง LINE ─────→    capture expense_document (มีอยู่แล้ว)
+                                        · OCR + fraud (VAT/vendor/ซ้ำ)
+                                        · MATCH ใบเสร็จ ↔ field_purchase_request อัตโนมัติ
+                                        · vendor ไม่อยู่ master → manual_review (ถูกต้อง)
+                                              │
+4. (ไม่ต้องทำอะไร)          ←──────    บัญชียืนยัน → ledger (double-entry, VAT/WHT)
+   เงินคืนเข้าช่าง                       · job cost → บ้าน/work_item (ADR-027)
+                                        · ตั้งเบิกคืนช่าง + audit ครบ loop
+</code></pre>
+<h2>D-2: capture_type <code>field_purchase_request</code> (net-new)</h2>
+<p>field_schema: <code>amount</code> (number), <code>reason</code> (string), <code>photo</code> (array), <code>item_hint</code> (string, optional) — <strong>แค่นี้</strong> (ช่างกรอกแค่ amount+reason; ที่เหลือ infer)
+commit_target: <code>purchase_approval</code> (L3 adapter ใหม่ — สร้าง approval routing) · cloud_allowed=false · critical_fields: <code>amount</code>
+verify_rules (pfmea-style):</p>
+<ul>
+<li>checkpoint &quot;จำนวนเงินสมเหตุผล + มีรูป&quot; → กันคำขอมั่ว</li>
+<li>checkpoint &quot;ผู้ขอมี staff identity + เป็นสมาชิกโปรเจกต์&quot; → กันคนนอก</li>
+</ul>
+<h2>D-3: Inference หลังบ้าน (นี่คือส่วนที่ต้องคิดรอบคอบสุด)</h2>
+<table>
+<thead>
+<tr>
+<th>ต้อง infer</th>
+<th>จากอะไร</th>
+<th>ถ้ากำกวม</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>บ้าน (project)</td>
+<td>group binding (<code>line_groups.project_id</code> ของกลุ่มที่ส่งมา)</td>
+<td>กลุ่ม 1 = บ้าน 1 → ไม่กำกวม</td>
+</tr>
+<tr>
+<td>work_item/ห้อง</td>
+<td>subtask assignment ของช่างคนนี้วันนี้</td>
+<td>ถ้าหลายห้อง → ปุ่มเลือก (ชื่อภาษาคน)</td>
+</tr>
+<tr>
+<td>ผู้ขอ</td>
+<td><code>line_staff_identity</code> (LINE user_id → พนักงาน)</td>
+<td>ไม่มี identity → bot ชวนผูกก่อน (ครั้งเดียว)</td>
+</tr>
+<tr>
+<td>ผู้อนุมัติ</td>
+<td>เพดาน A/B (config) → RACI/role จาก JD authority</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>หลักการ:</strong> infer ให้ได้มากที่สุดก่อนถาม; ถามเฉพาะที่ระบบไม่มั่นใจ และถามด้วย<strong>ปุ่มภาษาคน</strong> ไม่ใช่ text input</p>
+<h2>D-4: Approval routing (reuse ADR-031 pattern)</h2>
+<ul>
+<li>เพดาน A/B ใน config table <code>field_purchase_thresholds</code> (owner ตั้ง)</li>
+<li>resolver: amount → level → ผู้อนุมัติ = ผู้ถือ role/RACI นั้นของบ้านนี้ (หัวหน้าทีม/PM/MD)</li>
+<li><strong>ตรวจอำนาจจริงตอน postback</strong> (เหมือน gate confirmer ADR-031): ผู้กดต้องเป็นผู้มีอำนาจตามวงเงินจริง ไม่ใช่แค่เห็นการ์ด → กันอนุมัติข้ามระดับ</li>
+<li>SLA + escalate ขึ้นระดับถัดไปถ้าไม่ตอบ (reuse workflow escalation — <strong>พึ่ง Phase 13</strong>)</li>
+</ul>
+<h2>D-5: Receipt ↔ Request matching (auto)</h2>
+<p>match <code>expense_document</code> กับ <code>field_purchase_request</code> ที่ approved &amp; open ด้วย: ผู้ขอเดียวกัน + บ้านเดียวกัน + ช่วงเวลา (หลังอนุมัติ ≤ N วัน) + จำนวนใกล้เคียง (± tolerance)</p>
+<ul>
+<li>match ชัด 1 คู่ → ผูกอัตโนมัติ</li>
+<li>หลายคู่/ไม่ชัด → บัญชีเลือกใน review queue (ไม่รบกวนช่าง)</li>
+<li>ใบเสร็จเกินวงเงินอนุมัติ + tolerance → flag ผู้อนุมัติ/บัญชี (Req 3.5)</li>
+</ul>
+<h2>D-6: Data model (net-new + reuse)</h2>
+<pre><code class="language-sql">-- net-new
+field_purchase_request (id, project_id, work_item_id, requester (staff), amount, reason,
+                        photo_refs, status: pending|approved|rejected|purchased|closed,
+                        approver, approved_at, approval_level, created_at)  -- RLS C12
+field_purchase_thresholds (level, max_amount, role_key)  -- config เพดาน A/B
+-- reuse
+capture_type_config += &#39;field_purchase_request&#39;
+expense_document + field_purchase_request_id (link)  -- ผูกใบเสร็จ↔คำขอ
+approval-postback function  -- reuse Flex + HMAC + idempotent
+ledger + job_cost link (ADR-027)
+</code></pre>
+<p>ทั้งหมด append-only audit + RLS fail-closed</p>
+<h2>D-7: Dependencies</h2>
+<ol>
+<li><strong>workflow Phase 13</strong> (notification/escalation) — การส่ง Flex + SLA escalate พึ่งชั้นนี้ (ยังไม่ปิด ⏸)</li>
+<li><code>line_staff_identity</code> + group binding (installation-pm net-new) — infer ผู้ขอ/บ้านพึ่งอันนี้</li>
+<li>capture spine + expense_document (✅ มีแล้ว) + job cost/ledger (accounting)</li>
+</ol>
+<h2>D-8: ทำไมไม่ทำเป็นฟอร์มในแอป</h2>
+<p>ฟอร์มในแอป = ผลักภาระให้ช่าง (เปิดแอป, กรอก, เลือกโปรเจกต์/หมวด) — ขัด UX Tenet ตรง ๆ · LINE + รูป + จำนวน = การกระทำที่ช่างทำอยู่แล้วทุกวัน → adoption สูงสุด ความยากไปอยู่หลังบ้าน (inference/routing/matching) ตามที่ owner ต้องการ</p>
+<hr>
+<h1>Implementation Plan — Field Purchase</h1>
+<blockquote>
+<p>Gate: ตรวจ UX Tenet ทุก task (ช่างเห็น ≤ 2 การกระทำ, 0 ศัพท์ระบบ)</p>
+</blockquote>
+<h2>Phase 0: Decisions (blocking)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 0.1 Owner ตั้งเพดาน A/B (วงเงินหัวหน้าทีม / PM / MD) → <code>field_purchase_thresholds</code></li>
+<li><input disabled="" type="checkbox"> 0.2 ยืนยัน tolerance การ match ใบเสร็จ↔คำขอ (จำนวน ± เท่าไร, ภายในกี่วัน) + SLA อนุมัติ</li>
+<li><input disabled="" type="checkbox"> 0.3 depends: workflow Phase 13 (notification/escalation) — Flex + SLA escalate พึ่งชั้นนี้</li>
+</ul>
+<h2>Phase 1: คำขอ + อนุมัติ</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 1.1 Migration <code>field_purchase_request</code> + <code>field_purchase_thresholds</code> + RLS (C12) + audit</li>
+<li><input disabled="" type="checkbox"> 1.2 capture_type <code>field_purchase_request</code> (field_schema 4 ช่อง) + verify rules + cloud_allowed=false</li>
+<li><input disabled="" type="checkbox"> 1.3 Bot flow: ช่างส่งรูป → ปุ่ม &quot;แจ้งซื้อของ&quot; → ถามจำนวนด้วยปุ่ม/พิมพ์สั้น → สร้างคำขอ + <strong>infer บ้าน/ห้อง/work_item/ผู้ขอ</strong> (D-3)</li>
+<li><input disabled="" type="checkbox"> 1.4 Approval routing (D-4): resolver ตามวงเงิน + Flex การ์ด (reuse approval-postback) + ตรวจอำนาจจริงตอน postback + SLA escalate</li>
+<li><input disabled="" type="checkbox"> 1.5 แจ้งช่างผลอนุมัติภาษาคน + audit</li>
+<li><input disabled="" type="checkbox"> 1.6* Negative tests: Property 1 (front simplicity), 2 (authority — กันอนุมัติข้ามระดับ)</li>
+</ul>
+<h2>Phase 2: ใบเสร็จ + เบิกคืน</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 2.1 <code>expense_document</code> + <code>field_purchase_request_id</code> link</li>
+<li><input disabled="" type="checkbox"> 2.2 Auto-match ใบเสร็จ↔คำขอ (D-5) + review queue เมื่อไม่ชัด</li>
+<li><input disabled="" type="checkbox"> 2.3 ledger double-entry + job cost → บ้าน/work_item (ADR-027) + ตั้งเบิกคืน</li>
+<li><input disabled="" type="checkbox"> 2.4 Overspend flag (ใบเสร็จ &gt; อนุมัติ + tolerance)</li>
+<li><input disabled="" type="checkbox"> 2.5* Negative tests: Property 3 (linkage), 4 (no silent overspend), 5 (full trace)</li>
+</ul>
+<h2>Phase 3: Dashboard + ปิดหลุด</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 3.1 คำขอค้าง (อนุมัติแล้วไม่มีใบเสร็จเกิน N วัน) → dashboard หัวหน้า/บัญชี</li>
+<li><input disabled="" type="checkbox"> 3.2 รายงาน job cost ต่อบ้าน (ต้นทุนติดตั้งจริงรวมของซื้อหน้างาน)</li>
+</ul>
+<h2>Deferred</h2>
+<ul>
+<li>ซื้อล่วงหน้าแบบมีแผน (PR ปกติ → MD) — คนละ flow กับ urgent field purchase</li>
+<li>บัตรเครดิตบริษัท/วงเงินสำรองต่อทีม (แทน reimburse)</li>
+</ul>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>

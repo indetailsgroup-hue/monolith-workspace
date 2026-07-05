@@ -127,6 +127,16 @@ installation_projects (customer_review)
 
 ข้อควรระวัง: `installation_tasks` ห้ามมี state ที่ขัด work_item (single source of truth = workflow) — subtask เสร็จครบไม่ auto-complete work item (ต้องผ่าน capture proof ตาม flow เดิม)
 
+## D-12: UX Tenet — หน้าบ้านง่าย หลังบ้านรับความยาก (ผ่าน audit `ux-tenet-audit-v1.md`)
+
+กติกาถาวรที่ทุก touchpoint ของ Installation PM ต้องผ่าน (PRD §1 Governing UX Tenet):
+1. **ไม่มี command บังคับ** — action เริ่มจากการกระทำธรรมชาติ (ส่งรูป/เข้ากลุ่ม/กดปุ่ม) แล้ว bot เสนอ**ปุ่ม**; hashtag = shortcut ทางเลือก
+2. **ห้ามโชว์ id/key/ศัพท์ระบบ** ให้ผู้ใช้หน้างาน — ห้อง = ชื่อภาษาคน, งาน = "งานของคุณ"; id/version/key/capture_type = หลังบ้านล้วน
+3. **หลังบ้านเดาก่อนถาม** — infer ห้อง/เลน/โปรเจกต์จาก subtask assignment + group binding → ถามเฉพาะเมื่อกำกวม (ถามด้วยปุ่มภาษาคน)
+4. **approval = Flex การ์ดเดียวในกลุ่ม LINE** — หัวหน้า approve start/finish จากการ์ด ไม่ต้องเปิด workflow console
+5. **default view ต่อบทบาท** — ช่าง = "งานของฉันวันนี้" (เลนตัวเอง); หัวหน้า = ภาพรวมบ้าน/Kanban; ลูกค้า = เฉพาะ curated
+6. **ราคาหลังบ้าน:** ทุกข้อข้างบนย้ายภาระ inference/routing มาที่ back-end → group binding ต้องแน่น, subtask assignment ต้องชัด, การ match ต้องแม่น (ส่วนที่ต้องคิดรอบคอบที่สุดตามมติ owner)
+
 ## ความเสี่ยงหลัก (สืบทอด + เพิ่ม)
 
 1. **Sync (D-6)** — ผิดแล้วแก้ยากสุด → Phase 0.3 prototype ก่อนเขียนจริง

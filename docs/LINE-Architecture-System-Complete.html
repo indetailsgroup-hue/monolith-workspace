@@ -355,6 +355,11 @@ line_oa_inbound_messages  + source_type (&#39;user&#39;|&#39;group&#39;) + line_
 <td>📝</td>
 <td>reuse approval-postback</td>
 </tr>
+<tr>
+<td><strong>Field Purchase</strong> (ซื้อของหน้างาน: ขออนุมัติ→ซื้อ→เบิกคืน)</td>
+<td>📝</td>
+<td><code>.kiro/specs/field-purchase/</code> — front-first (ช่างเห็น 2 การกระทำ); reuse expense_document ✅ + approval-postback ✅; net-new = capture <code>field_purchase_request</code> + approval routing ตามวงเงิน</td>
+</tr>
 </tbody></table>
 <hr>
 <h2>9. Dependencies (สำคัญก่อน implement)</h2>

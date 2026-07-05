@@ -240,7 +240,8 @@
 <h3>Requirement 13: LINE Groups + Staff Identity (มติ owner 5 ก.ค. 2026 — ดู <code>line-architecture-v0.1.md</code>)</h3>
 <ol>
 <li>THE บ้าน 1 หลัง SHALL มี LINE <strong>2 กลุ่ม</strong> อายุยาวตลอดโปรเจกต์: internal (sale ตลอด + สมาชิกหมุนตามเฟส — ทีมวัด→designer/3D→หัวหน้า+ช่าง; คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — ความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ ตั้งแต่เฟสออกแบบ) — ผูกกับ <code>installation_projects</code> ผ่าน <code>line_groups</code> + รหัสผูกบ้าน; ตำแหน่งงานครบชุด (Sale/วัด/Designer/3D/PP/Factory/ติดตั้ง/GM + support) ดู <code>line-architecture-v0.1.md</code> §1.1</li>
-<li>THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: capture รูป (→<code>installation_proof</code>) + <code>#ปัญหา</code> + แจ้งเตือนทีม; กลุ่ม customer: <strong>เฉพาะ template ที่ <code>audience=&#39;customer&#39;</code></strong> — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)</li>
+<li>THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: <strong>ช่างส่งรูปเฉย ๆ → bot เสนอปุ่ม (&quot;รูปงานเสร็จ / แจ้งปัญหา&quot;)</strong> ไม่ต้องจำ command (hashtag <code>#ปัญหา</code>/<code>#ผูก</code> เป็น shortcut ทางเลือกของ power user) → capture <code>installation_proof</code>/issue; กลุ่ม customer: <strong>เฉพาะ template ที่ <code>audience=&#39;customer&#39;</code></strong> — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)
+2a. <strong>[UX tenet]</strong> ผู้ใช้หน้างาน SHALL ไม่เห็น id/key/ศัพท์โครงสร้างใด ๆ (room_id, work_item_id, template_key, capture_type) — เห็นแค่ชื่อภาษาคน (&quot;ครัว&quot;, &quot;งานของคุณ&quot;); หลังบ้าน <strong>infer ห้อง/เลน/โปรเจกต์จาก assignment + group binding ก่อนถาม</strong> ถามเฉพาะเมื่อกำกวมจริงและถามด้วยปุ่ม; การผูกกลุ่มใช้ปุ่ม (&quot;นี่กลุ่มทีม / นี่กลุ่มลูกค้า&quot;) + deep-link ไม่ให้พิมพ์รหัส (ดู <code>ux-tenet-audit-v1.md</code>)</li>
 <li>THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี <strong>ครั้งเดียวผ่านลิงก์ + LINE Login</strong> (<code>line_staff_identity</code>, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit &quot;ใครทำอะไรที่ไหนเมื่อไหร่&quot;</li>
 <li>THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (<code>line_group_members</code> sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน</li>
 <li>THE สิทธิ์เข้าถึงข้อมูล SHALL มาจาก <code>installation_memberships</code> + RLS เท่านั้น — <strong>การอยู่ในกลุ่ม LINE ไม่ให้สิทธิ์ใด ๆ ใน DB</strong> (กลุ่มเป็นช่องทาง ไม่ใช่ authorization)</li>
@@ -418,6 +419,16 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 </tbody></table>
 <p>สิ่งที่ Installation PM <strong>เพิ่ม</strong> (ไม่ทับของเดิม): มุมมองโปรเจกต์ (จัดกลุ่ม work items ต่อ job ลูกค้า + Kanban), subtask หน้างาน, media processing (thumbnail/compress บน capture artifact), annotation layer, field report + PDF, offline-lite queue (D-6a), packet registry (D-3)</p>
 <p>ข้อควรระวัง: <code>installation_tasks</code> ห้ามมี state ที่ขัด work_item (single source of truth = workflow) — subtask เสร็จครบไม่ auto-complete work item (ต้องผ่าน capture proof ตาม flow เดิม)</p>
+<h2>D-12: UX Tenet — หน้าบ้านง่าย หลังบ้านรับความยาก (ผ่าน audit <code>ux-tenet-audit-v1.md</code>)</h2>
+<p>กติกาถาวรที่ทุก touchpoint ของ Installation PM ต้องผ่าน (PRD §1 Governing UX Tenet):</p>
+<ol>
+<li><strong>ไม่มี command บังคับ</strong> — action เริ่มจากการกระทำธรรมชาติ (ส่งรูป/เข้ากลุ่ม/กดปุ่ม) แล้ว bot เสนอ<strong>ปุ่ม</strong>; hashtag = shortcut ทางเลือก</li>
+<li><strong>ห้ามโชว์ id/key/ศัพท์ระบบ</strong> ให้ผู้ใช้หน้างาน — ห้อง = ชื่อภาษาคน, งาน = &quot;งานของคุณ&quot;; id/version/key/capture_type = หลังบ้านล้วน</li>
+<li><strong>หลังบ้านเดาก่อนถาม</strong> — infer ห้อง/เลน/โปรเจกต์จาก subtask assignment + group binding → ถามเฉพาะเมื่อกำกวม (ถามด้วยปุ่มภาษาคน)</li>
+<li><strong>approval = Flex การ์ดเดียวในกลุ่ม LINE</strong> — หัวหน้า approve start/finish จากการ์ด ไม่ต้องเปิด workflow console</li>
+<li><strong>default view ต่อบทบาท</strong> — ช่าง = &quot;งานของฉันวันนี้&quot; (เลนตัวเอง); หัวหน้า = ภาพรวมบ้าน/Kanban; ลูกค้า = เฉพาะ curated</li>
+<li><strong>ราคาหลังบ้าน:</strong> ทุกข้อข้างบนย้ายภาระ inference/routing มาที่ back-end → group binding ต้องแน่น, subtask assignment ต้องชัด, การ match ต้องแม่น (ส่วนที่ต้องคิดรอบคอบที่สุดตามมติ owner)</li>
+</ol>
 <h2>ความเสี่ยงหลัก (สืบทอด + เพิ่ม)</h2>
 <ol>
 <li><strong>Sync (D-6)</strong> — ผิดแล้วแก้ยากสุด → Phase 0.3 prototype ก่อนเขียนจริง</li>
@@ -449,7 +460,8 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><input disabled="" type="checkbox"> 1.5b Seed capture_type <code>customer_requirement</code> (จาก <code>capture-type-customer-requirement-draft.sql</code>) + L3 adapter <code>work_item_open</code> (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified</li>
 <li><input disabled="" type="checkbox"> 1.5c Seed <code>form_templates</code> จาก <code>form-templates-installation-v0.1.md</code> (<strong>owner ตอบคำถามเปิดครบ 3 ข้อแล้ว</strong> — ประปา = conditional item, 3 ช่าง/ห้อง + หัวหน้า 1/บ้าน, preset บ้านมาตรฐาน 5 ห้อง) — sanity check กับหัวหน้าทีมตอน rollout</li>
 <li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export</li>
-<li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)</li>
+<li><input disabled="" type="checkbox"> 1.6b <strong>[UX tenet]</strong> default view ต่อบทบาท: ช่าง = &quot;งานของฉันวันนี้&quot; (เลนตัวเอง, ชื่อห้องภาษาคน, ไม่มี id/key), หัวหน้า = ภาพรวมบ้าน; bot ใช้<strong>ปุ่ม</strong>ไม่ใช่ command; หลังบ้าน infer ห้อง/เลนก่อนถาม (D-12)</li>
+<li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว (บอก &quot;ค้างส่ง N&quot; ไม่ใช้ศัพท์ sync/queue) + baseline metrics</li>
 <li><input disabled="" type="checkbox"> 1.8 LINE groups + staff identity (Req 13, <code>line-architecture-v0.1.md</code>): migrations <code>line_staff_identity</code>/<code>line_groups</code>/<code>line_group_members</code>/<code>line_bind_codes</code> + extend templates (<code>audience</code>) + outbound (<code>target_type/target_id</code>) + inbound (<code>source_type/line_group_id</code>) — <strong>guardrail audience เป็น DB CHECK</strong></li>
 <li><input disabled="" type="checkbox"> 1.8b Bot flows: join event → <code>#ผูก</code> → binding; member sync; รูปกลุ่ม internal → capture <code>installation_proof</code> + quick reply เลือกห้อง/เลน; <code>#ปัญหา</code> → issue + แจ้งหัวหน้า; ลิงก์ผูก staff identity (LINE Login + consent)</li>
 <li><input disabled="" type="checkbox"> 1.8c LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5, <code>audience=&#39;customer&#39;</code>) + curated progress update + แจ้งเตือนทีม internal (งานใหม่/approval result/เตือนรายงาน)</li>
@@ -980,6 +992,136 @@ line_oa_inbound_messages + source_type (&#39;user&#39;|&#39;group&#39;) + line_g
 <li><del>ยุบ Bedroom</del> → <strong>โอเค</strong> — บ้านส่วนมากมี 3 ห้องนอน → เกิด preset บ้านมาตรฐาน 5 ห้อง (ดู §โมเดล)</li>
 </ol>
 <p>(หมายเหตุการสะกด &quot;เพลส/Wraping/เก็นงาน&quot; ในไฟล์ต้นทาง — draft นี้ normalize แล้ว)</p>
+<hr>
+<h1>UX Tenet Audit — Installation PM (v1)</h1>
+<h3>&quot;หน้าบ้านง่ายจนคนรัก หลังบ้านรับความยากไว้เอง&quot;</h3>
+<blockquote>
+<p>ตรวจ Installation PM spec ทั้งชุดด้วยไม้บรรทัด Governing UX Tenet (PRD §1) — หาจุดที่เผลอผลักความยากไปให้ผู้ใช้หน้างาน แล้วเสนอวิธีดันกลับเข้าหลังบ้าน
+<strong>เกณฑ์วัด:</strong> ต่อ 1 งาน วัด <strong>(a) จำนวน tap/การกระทำ</strong> และ <strong>(b) จำนวนศัพท์ระบบที่ผู้ใช้เห็น</strong> — ยิ่งน้อยยิ่งดี · เป้า: ช่างที่ไม่เคยอบรมทำจบได้เอง
+สถานะ: การแก้ที่ ✅ = apply แล้วในรอบนี้ · 📝 = บันทึกเป็นข้อกำหนดหลังบ้านให้ทำตอน implement</p>
+</blockquote>
+<h2>วิธีให้คะแนน</h2>
+<table>
+<thead>
+<tr>
+<th>ระดับ</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>🟢 ผ่าน</td>
+<td>ผู้ใช้ทำจบด้วยการกระทำธรรมชาติ (ถ่ายรูป/กดปุ่ม/พิมพ์สั้น) ไม่เห็นศัพท์ระบบ</td>
+</tr>
+<tr>
+<td>🟡 เสี่ยง</td>
+<td>มีจุดที่ผู้ใช้ต้องจำ/พิมพ์/เลือกเกินจำเป็น — ดันเข้าหลังบ้านได้</td>
+</tr>
+<tr>
+<td>🔴 leak</td>
+<td>ผู้ใช้เห็นศัพท์ระบบ/ต้องกรอกฟอร์ม/ต้องรู้โครงสร้างภายใน</td>
+</tr>
+</tbody></table>
+<h2>ผลตรวจรายจุด (มุมช่าง/หัวหน้า/ลูกค้า)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>จุด (touchpoint)</th>
+<th>ก่อนแก้</th>
+<th>คะแนน</th>
+<th>leak ที่พบ</th>
+<th>วิธีดันเข้าหลังบ้าน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><strong>ผูกกลุ่มบ้าน</strong> — เดิม: พิมพ์ <code>#ผูก &lt;รหัส 48ชม.&gt; &lt;ทีม|ลูกค้า&gt;</code></td>
+<td>ช่าง/หัวหน้าต้องจำ syntax + คัดลอกรหัส + ระบุประเภทกลุ่มเอง</td>
+<td>🔴</td>
+<td>พิมพ์ command + รหัส + คำว่า &quot;ทีม/ลูกค้า&quot;</td>
+<td>bot เชิญเข้ากลุ่ม → <strong>โพสต์ปุ่ม 2 อัน &quot;นี่กลุ่มทีม / นี่กลุ่มลูกค้า&quot;</strong> กดปุ่มเดียว; รหัสฝังใน deep-link ที่หัวหน้าเปิดจาก PWA (ไม่ต้องคัดลอก) — ช่างไม่ต้องทำอะไรเลย</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>แจ้งของเสีย/ปัญหา</strong> — เดิม: พิมพ์ <code>#ปัญหา</code> + ข้อความ</td>
+<td>ต้องจำ hashtag</td>
+<td>🟡</td>
+<td>คำว่า <code>#ปัญหา</code></td>
+<td><strong>ส่งรูปเฉย ๆ → bot ถามด้วยปุ่ม &quot;รูปงานเสร็จ / แจ้งปัญหา / อื่นๆ&quot;</strong>; ไม่ต้องจำ hashtag (hashtag เป็น power-user shortcut ทางเลือก)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>ถ่ายรูปจบงาน → ปิด work item</strong> — เดิม: ส่งรูป + quick reply เลือกห้อง/เลน</td>
+<td>เลือกห้อง/เลนเองทุกครั้ง</td>
+<td>🟡</td>
+<td>ต้องเลือก &quot;ห้อง/เลน&quot; (ศัพท์โครงสร้าง)</td>
+<td>หลังบ้าน<strong>เดาห้อง/เลนจากบริบท</strong> (ช่างคนนี้ถูก assign เลนไหนของห้องไหนวันนี้ — รู้จาก subtask assignment) → ถ้ามั่นใจ &gt;1 ตัวเลือกค่อยถามด้วยปุ่มที่เป็น<strong>ชื่อห้องภาษาคน</strong> (&quot;ครัว&quot; ไม่ใช่ &quot;room_id&quot;)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ติ๊ก checklist</strong> — เดิม: template <code>inst_kitchen_tech1</code> มี items</td>
+<td>ถ้าโชว์ key ดิบ = ศัพท์ระบบ</td>
+<td>🟡</td>
+<td>ชื่อ template <code>inst_kitchen_tech1</code></td>
+<td>ผู้ใช้เห็นแค่ <strong>&quot;ครัว — งานของคุณ&quot;</strong> + รายการภาษาคน; key/version เป็นเรื่องหลังบ้าน; ติ๊กทีละข้อ 1 tap</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>offline ตอนเน็ตหลุด</strong> — คิว upload</td>
+<td>ช่างเห็นสถานะคิว</td>
+<td>🟢</td>
+<td>—</td>
+<td>ดีอยู่แล้ว: ถ่าย/ติ๊กได้ตามปกติ, bar เล็ก ๆ บอก &quot;ค้างส่ง 3 – จะส่งเมื่อมีเน็ต&quot;; ไม่มีศัพท์ sync/queue</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>ผูกตัวตนพนักงาน (staff identity)</strong> — LINE Login ครั้งเดียว</td>
+<td>ทำครั้งเดียว</td>
+<td>🟢</td>
+<td>—</td>
+<td>ยอมรับได้: admin ส่งลิงก์ → ช่างกด login 1 ครั้งตลอดชีพ; หลังจากนั้นระบบรู้ว่าใครส่งอะไรเอง (ช่างไม่ต้องเซ็นชื่อ/พิมพ์รหัสพนักงานอีก)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>ลูกค้าอนุมัติแบบ/งาน</strong> — Flex + ปุ่ม</td>
+<td>กดปุ่มเดียว</td>
+<td>🟢</td>
+<td>—</td>
+<td>ดีอยู่แล้ว: การ์ดเดียว รูป+ปุ่มอนุมัติ/ไม่อนุมัติ; ไม่ต้องสมัคร account</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>หัวหน้าทีม approve start/finish</strong> — เดิม: workflow RPC</td>
+<td>ถ้าให้ไปกดใน PWA แยก = สลับ context</td>
+<td>🟡</td>
+<td>ต้องเปิดหน้าจออื่น</td>
+<td>ส่ง <strong>Flex การ์ดเดียวในกลุ่ม</strong> (&quot;บ้าน X พร้อมเริ่ม? เช็คหน้างาน 8 ข้อ ✓ครบ&quot;) → กดปุ่มเดียว; ไม่ต้องเปิด workflow console</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>ดูงานวันนี้</strong> — เดิม: Kanban ทั้งบ้าน</td>
+<td>ข้อมูลเยอะ</td>
+<td>🟡</td>
+<td>Kanban = ศัพท์/มุมมองซับซ้อนสำหรับช่าง</td>
+<td>ช่างเห็น <strong>&quot;งานของฉันวันนี้&quot;</strong> (รายการเลนตัวเอง) เป็นค่าเริ่มต้น; Kanban เต็มบ้านเป็นมุมของหัวหน้า</td>
+</tr>
+</tbody></table>
+<h2>สรุปหลักที่ได้จาก audit (กติกาหลังบ้านถาวร)</h2>
+<ol>
+<li><strong>ไม่มี hashtag/command บังคับ</strong> — ทุก action เริ่มจากการกระทำธรรมชาติ (ส่งรูป) แล้ว bot เสนอ<strong>ปุ่ม</strong>; hashtag เป็น shortcut ทางเลือกของ power user เท่านั้น</li>
+<li><strong>ห้ามโชว์ id/key/ศัพท์โครงสร้าง</strong> ให้ผู้ใช้หน้างาน — ห้อง = ชื่อภาษาคน (&quot;ครัว&quot;), งาน = &quot;งานของคุณ&quot;, ไม่มี room_id/work_item_id/template_key/capture_type บนจอช่าง</li>
+<li><strong>หลังบ้านเดาให้มากที่สุดก่อนถาม</strong> — ห้อง/เลน/โปรเจกต์ infer จาก assignment + group binding; ถามเฉพาะเมื่อกำกวมจริง และถามด้วยปุ่มภาษาคน</li>
+<li><strong>ทุก approval = Flex การ์ดเดียวในที่ที่คนอยู่แล้ว (LINE)</strong> — ไม่ต้องสลับไปเปิด console/PWA</li>
+<li><strong>default view ต่อบทบาท</strong> — ช่างเห็น &quot;งานของฉันวันนี้&quot;, หัวหน้าเห็นภาพรวมบ้าน, ลูกค้าเห็นเฉพาะที่ curated</li>
+</ol>
+<h2>การแก้ที่ apply เข้า spec รอบนี้ ✅</h2>
+<ul>
+<li>requirements Req 13.2 + line-arch §4: เปลี่ยน &quot;ช่างพิมพ์ #ปัญหา/#ผูก&quot; → <strong>&quot;ส่งรูป/เข้ากลุ่ม แล้ว bot เสนอปุ่ม; hashtag = ทางเลือก&quot;</strong></li>
+<li>design D-11 + form-templates: เพิ่มกติกา <strong>&quot;ผู้ใช้หน้างานเห็นชื่อภาษาคนเท่านั้น ห้ามโชว์ id/key&quot;</strong> + <strong>&quot;หลังบ้าน infer ห้อง/เลนก่อนถาม&quot;</strong></li>
+<li>tasks: เพิ่ม 1.6b (default view &quot;งานของฉันวันนี้&quot;) + note บน 1.7/1.8 ว่าใช้ปุ่มไม่ใช่ command</li>
+</ul>
+<h2>ตามด้วย: field_purchase_request ออกแบบ front-first ตั้งแต่ต้น</h2>
+<p>flow ซื้อของหน้างานถูกออกแบบด้วยไม้บรรทัดนี้ตั้งแต่แรก (ช่างเห็นแค่ 2 การกระทำ) — ดู <code>.kiro/specs/field-purchase/</code></p>
 </div>
 <button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>
