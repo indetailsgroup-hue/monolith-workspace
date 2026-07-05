@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ร่าง JD ตำแหน่งที่ขาด (DAPH)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>ร่าง Job Descriptions — ตำแหน่งที่ยังไม่มีในชุด JD ทางการ (2026-07-05)</h1>
+<blockquote>
+<p><strong>สถานะ:</strong> ร่าง [ข้อเสนอ 📝] — ยังไม่ผ่าน owner/HR อนุมัติ · ทำตาม <strong>template เดียวกับ JD ทางการ 27 ฉบับ</strong> (ก.ค. 2025)
+<strong>แหล่งเนื้อหา (ของจริง):</strong> <code>สำหรับคุณชุ.xlsx</code> (breakdown งาน 2025) · PFMEA/Control Plan รายแผนก (2020) · workflow-copilot spec (Department/RACI) · <code>MONOLITH_Brand_System_Spec_v1.docx</code> · <code>ข้อมูลออกวัดพื้นที่...docx</code> · JD ข้างเคียงที่มีอยู่แล้ว
+<strong>วิธีใช้:</strong> ให้ HR นำไปลงฟอร์ม .doc ทางการ (มี block ผู้จัดทำ/อนุมัติ/ผู้ดำรงตำแหน่ง + Training Road Map เหมือนใบอื่น) — ที่นี่เก็บเฉพาะเนื้อหาสาระ
+ครอบ 6 ตำแหน่ง: (1) หัวหน้าฝ่ายวัดพื้นที่ (2) เจ้าหน้าที่วัดพื้นที่ (3) เจ้าหน้าที่ 3D Rendering (4) ผู้จัดการฝ่ายการตลาด (5) เจ้าหน้าที่การตลาดดิจิทัล/มีเดีย (6) หัวหน้าฝ่ายโลจิสติกส์ — พร้อมหมายเหตุ R&amp;D/ความปลอดภัย</p>
+</blockquote>
+<hr>
+<h2>JD-1 · หัวหน้าฝ่ายวัดพื้นที่ (Area Measurement Head)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> วัดพื้นที่ (Area Measurement) · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการฝ่ายขาย หรือ ผู้จัดการโครงการ (ยืนยันกับ owner — workflow วาง Area Measurement ต่อจาก Sale) · <strong>ระดับ:</strong> ปฏิบัติการ/หัวหน้างาน</li>
+<li><strong>Job Purpose:</strong> วางแผนและควบคุมทีมวัดพื้นที่หน้างานให้ได้ข้อมูลพื้นที่ + ความต้องการลูกค้าครบถ้วนแม่นยำ ส่งต่อฝ่ายออกแบบได้ทันเวลา</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>วางแผนคิวงานวัดพื้นที่รายวัน/สัปดาห์ (จัดทีม ~10 คนตามโซน กทม./ต่างจังหวัด) + จัดสรรอุปกรณ์วัดให้แต่ละทีม</li>
+<li><strong>ควบคุมความพร้อมก่อนออกงาน</strong> (PFMEA Area Measurement sev 8): ตรวจข้อมูลจากฝ่ายขายครบ (ชื่อ/ที่อยู่/เบอร์/เวลานัด/พื้นที่), เตรียมเอกสาร+แบบแปลนล่วงหน้า 2-3 วัน, ตรวจอุปกรณ์ (เลเซอร์/ตลับเมตร/ฉาก/เทปกาว/ใบบันทึก) ให้ใช้งานได้จริง</li>
+<li>ควบคุมคุณภาพการบันทึกข้อมูลพื้นที่: ความเอียงผนัง/พื้น, กว้าง×ยาว×สูง, ตำแหน่งประตู/หน้าต่าง/ไฟ + แบบฟอร์มเก็บความต้องการ (เช่น ตู้เสื้อผ้า: นับจำนวนเสื้อ/รองเท้า/กระเป๋าเพื่อออกแบบช่องเก็บ)</li>
+<li>สรุปรายงานผลการวัดประจำวันต่อผู้บังคับบัญชา + ส่งมอบข้อมูลให้ Designer</li>
+<li><strong>KPI:</strong> % งานวัดตรงเวลานัด, % ข้อมูลครบไม่ต้องกลับไปวัดซ้ำ, ข้อร้องเรียนลูกค้าช่วงวัดพื้นที่</li>
+</ul>
+<p><strong>Major Challenges:</strong> ข้อมูลจากฝ่ายขายไม่ครบ/หน้างานไม่ตรงนัด, การเดินทาง/จราจร, หน้างานจริงต่างจากแบบแปลน
+<strong>Subordinates:</strong> เจ้าหน้าที่วัดพื้นที่ (JD-2)
+<strong>อำนาจอนุมัติ:</strong> จัดคิว/มอบหมายทีมวัด (เอง) · จัดซื้ออุปกรณ์วัดทดแทน (ขอคำแนะนำ)
+<strong>Working Relationship:</strong> ฝ่ายขาย (รับข้อมูลลูกค้า — ทุกวัน), ฝ่ายออกแบบ (ส่งข้อมูลวัด — ทุกงาน)
+<strong>Job Specs:</strong> ปวส.-ป.ตรี ก่อสร้าง/สถาปัตย์/ที่เกี่ยวข้อง · อ่านแบบแปลนได้ · ใช้เลเซอร์วัดระยะ · ประสบการณ์วัดพื้นที่/หน้างาน ≥ 3 ปี
+<strong>Competencies:</strong> อ่านแบบ, ใช้อุปกรณ์วัด, วางแผนคิวงาน, ความละเอียดรอบคอบ (งานต้นน้ำ — ผิดแล้วกระทบทั้งโครงการ)</p>
+<hr>
+<h2>JD-2 · เจ้าหน้าที่วัดพื้นที่ (Area Measurement Officer / Surveyor)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> วัดพื้นที่ · <strong>ผู้บังคับบัญชา:</strong> หัวหน้าฝ่ายวัดพื้นที่ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Job Purpose:</strong> ออกวัดพื้นที่หน้างานและบันทึกข้อมูลพื้นที่ + ความต้องการลูกค้าให้ครบถ้วนแม่นยำ</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>ตรวจข้อมูลจากฝ่ายขายก่อนออกงาน (JES-002 step 1); ศึกษาเส้นทาง; เตรียม+ทดสอบอุปกรณ์วัดก่อนออกเดินทางทุกครั้ง</li>
+<li>วัดและบันทึก: ความเอียงผนัง/พื้น, ระยะกว้าง×ยาว×สูง, ตำแหน่งประตู/หน้าต่าง/ไฟ (ใบบันทึกมาตรฐาน)</li>
+<li>เก็บ<strong>แบบฟอร์มความต้องการ</strong>ต่อห้อง (เช่น wardrobe: function + นับจำนวนสิ่งของเพื่อกำหนดช่องเก็บ)</li>
+<li><strong>ลงบันทึกรายงานประจำวัน</strong> (หน้าที่ตาม Control Plan): วันนี้/พรุ่งนี้วัดโซนไหน งานอะไร</li>
+<li><strong>KPI:</strong> ความครบถ้วน/แม่นยำของข้อมูล, ตรงเวลานัด, รายงานประจำวัน</li>
+</ul>
+<p><strong>Major Challenges:</strong> ลืมอุปกรณ์/อุปกรณ์เสื่อม, ไปผิดที่/ไม่ทันนัด, ลืมปริ้นเอกสาร/แบบแปลน (ทั้งหมด PFMEA sev 8)
+<strong>Job Specs:</strong> ปวช.-ปวส. ก่อสร้าง/ที่เกี่ยวข้อง · อ่านแบบเบื้องต้น · ใช้เลเซอร์/ตลับเมตร · มีรถ/เดินทางต่างจังหวัดได้
+<strong>Competencies:</strong> ใช้อุปกรณ์วัด, บันทึกข้อมูลละเอียด, การวางแผนเดินทาง, ความรอบคอบ</p>
+<hr>
+<h2>JD-3 · เจ้าหน้าที่ 3D Rendering (3D Visualization Artist)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> ออกแบบ/3D (สังกัดฝ่ายออกแบบ ต่อจาก Designer) · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการฝ่ายออกแบบ · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Job Purpose:</strong> สร้างภาพ 3D perspective + rendering คุณภาพสูงจากแบบของ Designer เพื่อนำเสนอลูกค้าและยืนยัน material ก่อนผลิต</li>
+</ul>
+<p><strong>Key Responsibilities</strong> (จาก PFMEA 3D Perspective + workbook, ทุกจุด sev 8)</p>
+<ul>
+<li><strong>3D Model:</strong> Build each room / build structure / import cabinet / check all corner / check all filler / recheck position</li>
+<li><strong>3D Rendering:</strong> ตรวจสอบระยะและความถูกต้องของไฟล์ 3D, Furniture Selection, Decoration Selection, Lighting setup, Material Installation setting (rawmat/finishing/fitting/aluminium/laminate/edgeband check list)</li>
+<li><strong>Recheck 3D final จากฝ่ายวางแผนการผลิต</strong> ก่อนส่ง rendering (กันคลาดเคลื่อน model↔ผลิต)</li>
+<li>ส่งมอบภาพ render ให้ฝ่ายขาย/Designer เพื่อนำเสนอลูกค้า (curated เข้ากลุ่ม LINE ลูกค้า)</li>
+<li><strong>KPI:</strong> ความถูกต้องของระยะ/material vs แบบจริง, ตรงเวลานำเสนอ, จำนวนรอบแก้จากลูกค้า</li>
+</ul>
+<p><strong>Major Challenges:</strong> ระยะ/material ใน 3D ไม่ตรงของผลิตจริง → ลูกค้าคาดหวังผิด; งานต้นน้ำก่อนผลิต ผิดแล้วกระทบทั้งโครงการ
+<strong>Job Specs:</strong> ปวส.-ป.ตรี ออกแบบ/มัลติมีเดีย · 3D Max + rendering (V-Ray/Corona), SketchUp, ใช้ Pytha/ไฟล์จากฝ่ายวางแผนได้ · ประสบการณ์ 3D interior ≥ 2 ปี
+<strong>Competencies:</strong> 3D modeling+rendering, material/lighting, ความละเอียดเรื่องระยะ, สื่อสารกับทีมผลิต</p>
+<hr>
+<h2>JD-4 · ผู้จัดการฝ่ายการตลาด (Marketing Manager)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> การตลาด · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการทั่วไป (ตาม JD GM: มี &quot;ผู้จัดการฝ่ายการตลาด&quot; เป็นลูกน้อง) · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Job Purpose:</strong> บริหารงานการตลาดออนไลน์+ออฟไลน์ สร้างภาพลักษณ์แบรนด์ระดับสากล (ตาม MONOLITH Brand System: &quot;Calm Luxury + Engineering Precision&quot;, &quot;The Benchmark of Luxury Residential Design in Bangkok&quot;) เพื่อสร้าง lead ให้ฝ่ายขาย</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>กำหนดกลยุทธ์+งบการตลาด (workbook: Google/Facebook/YouTube ads, Architecture Expo, บ้านและสวนแฟร์, Interior Company Visit) — คุมให้อยู่ในงบ</li>
+<li>คุมภาพลักษณ์แบรนด์ตาม Brand System spec (สี #1F3D2B/#C7A86A, typography Playfair/Inter/JetBrains Mono, icon system, โทน quiet luxury — ห้าม playful)</li>
+<li>บริหารทีม digital marketing + team media (Production House) ให้ผลิต content ตรง brand</li>
+<li>วัดผล lead/ยอด แล้วส่งต่อฝ่ายขาย; รายงานผู้บริหารรายเดือน</li>
+<li><strong>KPI:</strong> จำนวน lead รายใหม่, cost per lead, brand consistency, ROI แคมเปญ</li>
+</ul>
+<p><strong>Major Challenges:</strong> รักษา brand ระดับ luxury พร้อมสร้าง lead จริง, คุม ROI ของ ad spend สูง
+<strong>Subordinates:</strong> เจ้าหน้าที่การตลาดดิจิทัล/มีเดีย (JD-5)
+<strong>อำนาจอนุมัติ:</strong> งบแคมเปญตามวงเงินที่กำหนด (เอง/ขอคำแนะนำตามระดับ)
+<strong>Working Relationship:</strong> ฝ่ายขาย (ส่ง lead — ทุกสัปดาห์), ฝ่ายออกแบบ (ภาพผลงาน/3D — ไม่แน่นอน), GM (กลยุทธ์/งบ — ทุกเดือน)
+<strong>Job Specs:</strong> ป.ตรี การตลาด/นิเทศ/ที่เกี่ยวข้อง · ประสบการณ์การตลาด/แบรนด์ luxury หรือ interior ≥ 7 ปี · เข้าใจ digital + brand building
+<strong>Competencies:</strong> กลยุทธ์การตลาด, brand management, digital analytics, ภาวะผู้นำ, การนำเสนอ</p>
+<hr>
+<h2>JD-5 · เจ้าหน้าที่การตลาดดิจิทัล / มีเดีย (Digital Marketing &amp; Media Officer)</h2>
+<blockquote>
+<p>ครอบกลุ่มตำแหน่งใน workbook: Content Strategy, Digital PM, Data &amp; Analytics, SEO, Website Design, E-Commerce + Production House (motion graphic, graphic designer, writer, director, camera man, editor) — HR อาจแตกเป็นหลายใบตามจริง; ร่างนี้เป็นแกนกลาง</p>
+</blockquote>
+<ul>
+<li><strong>ฝ่าย:</strong> การตลาด · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการฝ่ายการตลาด · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Job Purpose:</strong> ผลิตและบริหาร content ดิจิทัล + สื่อ (ภาพ/วิดีโอ) ตาม brand เพื่อสร้างการรับรู้และ lead</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>Content + ช่องทางดิจิทัล: social, SEO, website, e-commerce, ยิง ad (Google/Facebook/YouTube) + วิเคราะห์ data/analytics</li>
+<li>ผลิตสื่อ: ถ่ายภาพ/วิดีโอผลงานหน้างาน (motion graphic, graphic, editing) — <strong>เข้าไซต์ถ่ายงานเป็นครั้งคราว → ขอ membership ชั่วคราวต่อบ้าน (external) เข้ากลุ่ม LINE internal เฉพาะช่วงถ่าย</strong> (ตาม LINE architecture)</li>
+<li>คุมทุกชิ้นงานให้ตรง Brand System (สี/ฟอนต์/โทน quiet luxury)</li>
+<li><strong>KPI:</strong> engagement/reach, งานผลิตตามแผน, brand consistency</li>
+</ul>
+<p><strong>Major Challenges:</strong> ผลิต content ปริมาณมากให้คงคุณภาพแบรนด์, PDPA เมื่อถ่ายบ้านลูกค้า (ต้องมี consent)
+<strong>Job Specs:</strong> ปวส.-ป.ตรี นิเทศ/ดิจิทัล/มัลติมีเดีย · ทักษะตามสายย่อย (ตัดต่อ/กราฟิก/SEO/ads) · portfolio
+<strong>Competencies:</strong> content/สื่อดิจิทัล, เครื่องมือ creative, analytics, ทำงานตาม brand guide</p>
+<hr>
+<h2>JD-6 · หัวหน้าฝ่ายโลจิสติกส์ (Logistics Head)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> ผลิตและงานคุณภาพ · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการโรงงาน (JD Factory Manager ระบุ &quot;หัวหน้าฝ่ายโลจิตติกส์&quot; เป็นลูกน้อง — หน้าที่: จัดส่งเจ้าหน้าที่ติดตั้ง + ชิ้นงานที่ต้องนำไปติดตั้ง) · <strong>ระดับ:</strong> จัดการ/หัวหน้างาน</li>
+<li><strong>Job Purpose:</strong> วางแผนและควบคุมการจัดส่งชิ้นงานสำเร็จ + ทีมช่างติดตั้งไปหน้างานให้ตรงเวลาและครบถ้วน</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>วางแผนคิวจัดส่ง: จับคู่ packet/ชิ้นงานที่ผ่าน QA + ทีมช่าง + รถ + เวลานัดหน้างาน (จุดเชื่อม Factory→Installation)</li>
+<li>ควบคุมการโหลด/ตรวจนับชิ้นงานก่อนออกจากโรงงาน (กันชิ้นงานขาด/ผิดบ้าน) ประสานคลังสินค้า+ฝ่ายติดตั้ง</li>
+<li>ติดตามสถานะจัดส่ง + แจ้งทีมติดตั้ง/หัวหน้าทีม (ผ่าน LINE internal)</li>
+<li><strong>KPI:</strong> % จัดส่งตรงเวลา, ความครบถ้วนของชิ้นงานที่ส่ง, ความเสียหายระหว่างขนส่ง</li>
+</ul>
+<p><strong>Major Challenges:</strong> ประสานเวลาผลิตเสร็จ↔คิวติดตั้ง↔รถ, ชิ้นงานเสียหาย/สูญหายระหว่างขนส่ง, งานหลายบ้านพร้อมกัน
+<strong>Working Relationship:</strong> ฝ่ายผลิต+QA (รับของเสร็จ), คลังสินค้า (เบิกอุปกรณ์), ฝ่ายติดตั้ง (นัดส่ง — ทุกวัน)
+<strong>Job Specs:</strong> ปวส.ขึ้นไป · ประสบการณ์โลจิสติกส์/คลัง/จัดส่ง ≥ 3 ปี · วางแผนเส้นทาง/คิวรถ
+<strong>Competencies:</strong> วางแผนโลจิสติกส์, ประสานงานหลายฝ่าย, การติดตามงาน</p>
+<hr>
+<h2>JD-7 · Software Development Lead / Product Manager (ทีมพัฒนา MONOLITH)</h2>
+<blockquote>
+<p>workbook หมวด Software ระบุ SDLC เต็มเฟส: Functional Spec → System Architecture → Preliminary/Detailed Design → Acceptance Test Plan → Develop Components → Unit/Integration Test → Config Management → QA → Overall PM → Install/Train/Acceptance/Post-Project Review → On-Cloud Server. เป็นทีม<strong>สร้าง MONOLITH เอง</strong> (internal tech ไม่ใช่สายผลิตเฟอร์นิเจอร์)</p>
+</blockquote>
+<ul>
+<li><strong>ฝ่าย:</strong> เทคโนโลยี/ซอฟต์แวร์ · <strong>ผู้บังคับบัญชา:</strong> ผู้จัดการทั่วไป / owner · <strong>ระดับ:</strong> จัดการ</li>
+<li><strong>Job Purpose:</strong> นำทีมพัฒนา MONOLITH Manufacturing OS (CAD→CAM→Factory→ติดตั้ง) ตามหลัก spec-driven + governance ที่วางไว้ (SPEC-08, trust chain, gate) ส่งมอบซอฟต์แวร์ที่ deterministic และ verify ได้</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>ควบคุม SDLC ตาม workflow: spec (requirements/design/tasks ต่อ feature) → implement → test (Vitest/Playwright) → release gate</li>
+<li>คุมสถาปัตยกรรม + decision (ADR ใน <code>.kiro/steering/architecture-decisions.md</code>), รักษาหลัก &quot;Design is Free — Manufacturing is Deterministic&quot;</li>
+<li>วางแผน roadmap + จัดลำดับงานร่วม owner (PRD §10); คุมงาน spec ที่ค้าง (curved panel, entitlement, installation-pm ฯลฯ)</li>
+<li>Configuration management (git, branch, CI), release process ผูกธง feature status</li>
+<li><strong>KPI:</strong> % งานผ่าน gate/verify จริง (ไม่ใช่แผน), test coverage critical path, defect escape, ส่งมอบตาม roadmap</li>
+</ul>
+<p><strong>Major Challenges:</strong> สมดุล velocity กับ governance (gate/verify), รักษา provenance/determinism, decision ที่รอ owner ไม่บล็อกงาน
+<strong>Subordinates:</strong> Software Engineer (JD-8), (QA/Test engineer)
+<strong>อำนาจอนุมัติ:</strong> merge/release ภายใน spec ที่อนุมัติ (เอง) · สถาปัตยกรรมใหญ่/งบ tool-infra (นำเสนอ owner)
+<strong>Working Relationship:</strong> owner (roadmap/decision — สม่ำเสมอ), ทุกฝ่ายผลิต/ติดตั้ง/บัญชี (requirement จริง — ตามงาน)
+<strong>Job Specs:</strong> ป.ตรี วิศวกรรมคอมพิวเตอร์/วิทยาการคอมพิวเตอร์ · ประสบการณ์ lead ทีมซอฟต์แวร์ ≥ 5 ปี · เข้าใจ full-stack + domain manufacturing/CAD จะพิจารณาพิเศษ
+<strong>Competencies:</strong> สถาปัตยกรรมซอฟต์แวร์, spec-driven dev, ภาวะผู้นำทีม tech, การตัดสินใจเชิงสถาปัตยกรรม</p>
+<hr>
+<h2>JD-8 · Software Engineer (Full-stack — MONOLITH)</h2>
+<ul>
+<li><strong>ฝ่าย:</strong> เทคโนโลยี/ซอฟต์แวร์ · <strong>ผู้บังคับบัญชา:</strong> Software Development Lead · <strong>ระดับ:</strong> ปฏิบัติการ</li>
+<li><strong>Job Purpose:</strong> พัฒนาและดูแลฟีเจอร์ของ MONOLITH ตาม spec + test ให้ผ่าน gate</li>
+</ul>
+<p><strong>Key Responsibilities</strong></p>
+<ul>
+<li>พัฒนา front-end 3D/CAD (<strong>React 18 + TypeScript 5 + Vite 5 + Three.js/React-Three-Fiber + Zustand</strong>) และ back-end (<strong>Supabase/Postgres — migration, RLS, Edge Functions</strong>)</li>
+<li>เขียนโค้ดตาม spec (requirements/design/tasks) + <strong>เขียนเทสต์ (Vitest unit + Playwright e2e)</strong> ให้ครอบ critical path/CCP/RLS</li>
+<li>ดูแล CAM/export (DXF/G-code), drill map, trust chain, capture spine ตาม engineering spec ที่มีอยู่</li>
+<li>แก้ตาม code review + รักษา type safety (ไม่มี <code>any</code> หลุด), ทำตาม ADR</li>
+<li><strong>KPI:</strong> งานผ่าน gate/CI, test coverage, ข้อ review ที่ต้องแก้ซ้ำ, defect</li>
+</ul>
+<p><strong>Major Challenges:</strong> โดเมนซับซ้อน (geometry/CAM/manufacturing), determinism (ผลต้องซ้ำได้), integration หลายชั้น (UI→API→DB)
+<strong>Job Specs:</strong> ปวส.-ป.ตรี วิศวกรรม/วิทยาการคอมพิวเตอร์ · TypeScript + React · ถ้ามี Three.js/WebGL หรือ Postgres/Supabase จะพิจารณาพิเศษ · ประสบการณ์ ≥ 2 ปี
+<strong>Competencies:</strong> TS/React, 3D/WebGL หรือ back-end/SQL, การเขียนเทสต์, อ่าน/ทำตาม spec, การคิดเชิงระบบ
+<strong>หมายเหตุ:</strong> On-Cloud Server / infra (workbook) — ถ้าทีมโต ควรแยก DevOps/Infra engineer (Supabase, CI/CD, deployment) เป็นใบ JD-9</p>
+<hr>
+<h2>หมายเหตุ — ตำแหน่งที่อ้างใน JD โรงงานแต่ยังไม่ร่างแยก (รอ owner ยืนยันว่ามีจริง/ต้องการ JD ไหม)</h2>
+<ul>
+<li><strong>หัวหน้าฝ่ายความปลอดภัย (Safety Head)</strong> — JD Factory Manager ระบุเป็นลูกน้อง แต่ scope ที่เขียนคือ &quot;รับ/จัดเก็บ/จ่ายสินค้า&quot; (ดูเหมือน copy จาก คลัง/โลจิสติกส์ — เอกสารต้นทางสับสน) → ต้องถาม owner ว่ามีตำแหน่งนี้จริงหรือรวมกับ HSE</li>
+<li><strong>หัวหน้าฝ่าย R&amp;D</strong> — JD Factory Manager ระบุเป็นลูกน้อง (พัฒนา/วิจัยผลิตภัณฑ์) แต่ workbook ปัจจุบันไม่มีทีมนี้ → อาจเป็นแผนอนาคต</li>
+<li><del><strong>Software team</strong></del> → <strong>ร่างแล้ว JD-7 (Software Dev Lead/PM) + JD-8 (Software Engineer)</strong> ด้านบน; เผื่อ JD-9 DevOps/Infra เมื่อทีมโต</li>
+<li><strong>ผู้จัดการฝ่ายบุคคล</strong> มี JD แล้ว (<code>JD_HR_Manager</code>) แต่ <code>JD_HR_Officer</code> เนื้อหาในไฟล์เป็นงาน HR แต่ <strong>หัวเอกสารพิมพ์ผิดเป็น &quot;Sales Manager&quot;</strong> → ควรแก้ไฟล์ต้นทาง (ดู <code>DAPH-org-structure-from-JD-2025.md</code> §ปัญหาเอกสาร)</li>
+</ul>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>

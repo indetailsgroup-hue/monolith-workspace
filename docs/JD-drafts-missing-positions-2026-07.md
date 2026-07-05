@@ -122,9 +122,51 @@
 
 ---
 
+## JD-7 · Software Development Lead / Product Manager (ทีมพัฒนา MONOLITH)
+
+> workbook หมวด Software ระบุ SDLC เต็มเฟส: Functional Spec → System Architecture → Preliminary/Detailed Design → Acceptance Test Plan → Develop Components → Unit/Integration Test → Config Management → QA → Overall PM → Install/Train/Acceptance/Post-Project Review → On-Cloud Server. เป็นทีม**สร้าง MONOLITH เอง** (internal tech ไม่ใช่สายผลิตเฟอร์นิเจอร์)
+
+- **ฝ่าย:** เทคโนโลยี/ซอฟต์แวร์ · **ผู้บังคับบัญชา:** ผู้จัดการทั่วไป / owner · **ระดับ:** จัดการ
+- **Job Purpose:** นำทีมพัฒนา MONOLITH Manufacturing OS (CAD→CAM→Factory→ติดตั้ง) ตามหลัก spec-driven + governance ที่วางไว้ (SPEC-08, trust chain, gate) ส่งมอบซอฟต์แวร์ที่ deterministic และ verify ได้
+
+**Key Responsibilities**
+- ควบคุม SDLC ตาม workflow: spec (requirements/design/tasks ต่อ feature) → implement → test (Vitest/Playwright) → release gate
+- คุมสถาปัตยกรรม + decision (ADR ใน `.kiro/steering/architecture-decisions.md`), รักษาหลัก "Design is Free — Manufacturing is Deterministic"
+- วางแผน roadmap + จัดลำดับงานร่วม owner (PRD §10); คุมงาน spec ที่ค้าง (curved panel, entitlement, installation-pm ฯลฯ)
+- Configuration management (git, branch, CI), release process ผูกธง feature status
+- **KPI:** % งานผ่าน gate/verify จริง (ไม่ใช่แผน), test coverage critical path, defect escape, ส่งมอบตาม roadmap
+
+**Major Challenges:** สมดุล velocity กับ governance (gate/verify), รักษา provenance/determinism, decision ที่รอ owner ไม่บล็อกงาน
+**Subordinates:** Software Engineer (JD-8), (QA/Test engineer)
+**อำนาจอนุมัติ:** merge/release ภายใน spec ที่อนุมัติ (เอง) · สถาปัตยกรรมใหญ่/งบ tool-infra (นำเสนอ owner)
+**Working Relationship:** owner (roadmap/decision — สม่ำเสมอ), ทุกฝ่ายผลิต/ติดตั้ง/บัญชี (requirement จริง — ตามงาน)
+**Job Specs:** ป.ตรี วิศวกรรมคอมพิวเตอร์/วิทยาการคอมพิวเตอร์ · ประสบการณ์ lead ทีมซอฟต์แวร์ ≥ 5 ปี · เข้าใจ full-stack + domain manufacturing/CAD จะพิจารณาพิเศษ
+**Competencies:** สถาปัตยกรรมซอฟต์แวร์, spec-driven dev, ภาวะผู้นำทีม tech, การตัดสินใจเชิงสถาปัตยกรรม
+
+---
+
+## JD-8 · Software Engineer (Full-stack — MONOLITH)
+
+- **ฝ่าย:** เทคโนโลยี/ซอฟต์แวร์ · **ผู้บังคับบัญชา:** Software Development Lead · **ระดับ:** ปฏิบัติการ
+- **Job Purpose:** พัฒนาและดูแลฟีเจอร์ของ MONOLITH ตาม spec + test ให้ผ่าน gate
+
+**Key Responsibilities**
+- พัฒนา front-end 3D/CAD (**React 18 + TypeScript 5 + Vite 5 + Three.js/React-Three-Fiber + Zustand**) และ back-end (**Supabase/Postgres — migration, RLS, Edge Functions**)
+- เขียนโค้ดตาม spec (requirements/design/tasks) + **เขียนเทสต์ (Vitest unit + Playwright e2e)** ให้ครอบ critical path/CCP/RLS
+- ดูแล CAM/export (DXF/G-code), drill map, trust chain, capture spine ตาม engineering spec ที่มีอยู่
+- แก้ตาม code review + รักษา type safety (ไม่มี `any` หลุด), ทำตาม ADR
+- **KPI:** งานผ่าน gate/CI, test coverage, ข้อ review ที่ต้องแก้ซ้ำ, defect
+
+**Major Challenges:** โดเมนซับซ้อน (geometry/CAM/manufacturing), determinism (ผลต้องซ้ำได้), integration หลายชั้น (UI→API→DB)
+**Job Specs:** ปวส.-ป.ตรี วิศวกรรม/วิทยาการคอมพิวเตอร์ · TypeScript + React · ถ้ามี Three.js/WebGL หรือ Postgres/Supabase จะพิจารณาพิเศษ · ประสบการณ์ ≥ 2 ปี
+**Competencies:** TS/React, 3D/WebGL หรือ back-end/SQL, การเขียนเทสต์, อ่าน/ทำตาม spec, การคิดเชิงระบบ
+**หมายเหตุ:** On-Cloud Server / infra (workbook) — ถ้าทีมโต ควรแยก DevOps/Infra engineer (Supabase, CI/CD, deployment) เป็นใบ JD-9
+
+---
+
 ## หมายเหตุ — ตำแหน่งที่อ้างใน JD โรงงานแต่ยังไม่ร่างแยก (รอ owner ยืนยันว่ามีจริง/ต้องการ JD ไหม)
 
 - **หัวหน้าฝ่ายความปลอดภัย (Safety Head)** — JD Factory Manager ระบุเป็นลูกน้อง แต่ scope ที่เขียนคือ "รับ/จัดเก็บ/จ่ายสินค้า" (ดูเหมือน copy จาก คลัง/โลจิสติกส์ — เอกสารต้นทางสับสน) → ต้องถาม owner ว่ามีตำแหน่งนี้จริงหรือรวมกับ HSE
 - **หัวหน้าฝ่าย R&D** — JD Factory Manager ระบุเป็นลูกน้อง (พัฒนา/วิจัยผลิตภัณฑ์) แต่ workbook ปัจจุบันไม่มีทีมนี้ → อาจเป็นแผนอนาคต
-- **Software team** (workbook: Develop Functional Spec/System Architecture/Unit Test/On-Cloud Server) = ทีมพัฒนา MONOLITH เอง — เป็น internal tech ไม่ใช่สายผลิตเฟอร์นิเจอร์ → JD แนววิศวกรซอฟต์แวร์ (ถ้าต้องการค่อยร่างชุดแยก)
+- ~~**Software team**~~ → **ร่างแล้ว JD-7 (Software Dev Lead/PM) + JD-8 (Software Engineer)** ด้านบน; เผื่อ JD-9 DevOps/Infra เมื่อทีมโต
 - **ผู้จัดการฝ่ายบุคคล** มี JD แล้ว (`JD_HR_Manager`) แต่ `JD_HR_Officer` เนื้อหาในไฟล์เป็นงาน HR แต่ **หัวเอกสารพิมพ์ผิดเป็น "Sales Manager"** → ควรแก้ไฟล์ต้นทาง (ดู `DAPH-org-structure-from-JD-2025.md` §ปัญหาเอกสาร)

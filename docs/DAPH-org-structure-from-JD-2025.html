@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAPH — โครงสร้างองค์กร (จาก JD ทางการ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>โครงสร้างองค์กร DAPH — สกัดจาก Job Descriptions ทางการ (27 ฉบับ, ก.ค. 2025)</h1>
+<blockquote>
+<p><strong>ที่มา:</strong> <code>OneDrive/Documents/MONOLITH/.../Furniture_Hardware_Specs/Documents/JD*.doc</code> (แก้ไขล่าสุด 2–3 ก.ค. 2025) — อ่านครบทุกฉบับ 2026-07-05
+ใช้เป็น <strong>แหล่งอ้างอิงหลักเรื่องตำแหน่ง/สายบังคับบัญชา/อำนาจอนุมัติ</strong> สำหรับ workflow RACI, Installation PM, LINE architecture และ IAM roles
+สถานะ: สรุปตามเอกสารจริง — จุดที่เอกสารต้นทางขัดกันเอง ติดธง ⚠ ไว้ท้ายไฟล์</p>
+</blockquote>
+<h2>ผังบังคับบัญชา (จาก ผู้บังคับบัญชา/ผู้ใต้บังคับบัญชา ในทุก JD)</h2>
+<pre><code>กรรมการผู้จัดการ (MD) ← จัดซื้อต้องนำเสนอ MD อนุมัติใบสั่งซื้อ
+└─ ผู้จัดการทั่วไป (GM)
+   ├─ ผู้จัดการโรงงาน (Plant Manager) — ฝ่ายผลิตและงานคุณภาพ
+   │   ├─ หัวหน้าฝ่ายผลิต (Production Head) ─ เจ้าหน้าที่ฝ่ายผลิต
+   │   ├─ หัวหน้าฝ่ายซ่อมบำรุง (Maintenance Head)
+   │   ├─ เจ้าหน้าที่/หัวหน้าฝ่ายประกันคุณภาพ (QA — ขึ้นตรงผู้จัดการโรงงาน)
+   │   ├─ หัวหน้าฝ่ายความปลอดภัย
+   │   ├─ หัวหน้าฝ่ายคลังสินค้า ─ เจ้าหน้าที่คลังสินค้า (Warehouse)
+   │   ├─ หัวหน้าฝ่ายโลจิสติกส์ — จัดส่ง &quot;เจ้าหน้าที่ติดตั้ง + ชิ้นงาน&quot; ไปหน้างาน
+   │   └─ หัวหน้าฝ่าย R&amp;D
+   ├─ ผู้จัดการโครงการ (Project Manager) — สังกัด &quot;ฝ่ายงานติดตั้ง&quot; = เจ้าของเส้นส่งมอบ
+   │   ├─ ที่ปรึกษา/ผู้ช่วย PM (Assistant PM) — คุมหัวหน้าทีมติดตั้ง
+   │   ├─ หัวหน้าฝ่ายติดตั้ง (Installation Dept Head)
+   │   │   └─ หัวหน้าทีมติดตั้ง (Team Lead — ต่อทีม/บ้าน)
+   │   │       └─ หัวหน้าช่างติดตั้ง (Chief Technician)
+   │   │           ├─ ช่างติดตั้ง (Technician)
+   │   │           └─ ผู้ช่วยช่างติดตั้ง (Assistant Technician)
+   │   └─ หัวหน้าฝ่ายวางแผนการผลิต
+   │       ├─ เจ้าหน้าที่วางแผนการผลิต (Production Planning Staff — AUTO CAD, ถอดแบบ/วัสดุ, ประเมินราคา)
+   │       └─ เจ้าหน้าที่เขียนแบบ (Draftsman — ไฟล์งานตัด/งานเจาะ → ฝ่ายผลิต)
+   ├─ ผู้จัดการฝ่ายบัญชีและการเงิน
+   │   ├─ เจ้าหน้าที่บัญชี (AP/AR/ต้นทุน — ภพ.30, ภงด.1/3/53, สปส.10-1, รายงานอายุหนี้)
+   │   ├─ เจ้าหน้าที่การเงิน (invoice/ใบกำกับ, เช็ค/โอน, petty cash)
+   │   └─ เจ้าหน้าที่จัดซื้อ (Purchasing — **สังกัดฝ่ายบัญชีการเงิน**; PR→เสนอ MD อนุมัติ→PO, ประเมิน Supplier)
+   ├─ ผู้จัดการฝ่ายบุคคล (HR Manager) ─ เจ้าหน้าที่ HR
+   ├─ ผู้จัดการฝ่ายการตลาด (JD ยังไม่มีในชุด)
+   ├─ ผู้จัดการฝ่ายขาย (Sales Manager) ─ เจ้าหน้าที่ฝ่ายขาย (เก็บ requirement, ใบเสนอราคา, **ตอบแชทลูกค้า**, after-sales)
+   └─ ผู้จัดการฝ่ายออกแบบ (Designer Manager) ─ Designer (พบลูกค้า, 3D → ลูกค้า/ฝ่ายวางแผนฯ, Floorplan → ฝ่ายติดตั้ง)
+</code></pre>
+<h2>ข้อเท็จจริงสำคัญต่อระบบ (ยกจาก JD ตรง ๆ)</h2>
+<table>
+<thead>
+<tr>
+<th>เรื่อง</th>
+<th>JD ระบุ</th>
+<th>ผลต่อระบบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>สายติดตั้ง 4 ชั้น</td>
+<td>หัวหน้าฝ่าย → หัวหน้าทีม → หัวหน้าช่าง → ช่าง+ผู้ช่วย</td>
+<td>&quot;หัวหน้างาน 1 คน/บ้าน&quot; ในโมเดล installation-pm = <strong>หัวหน้าทีมติดตั้ง</strong>; approver &quot;หัวหน้าทีม Installation&quot; ใน workflow spec ตรงกับ JD ตรง ๆ</td>
+</tr>
+<tr>
+<td>PM คุมทั้งติดตั้ง + วางแผนการผลิต</td>
+<td>subordinates: หัวหน้างานติดตั้ง + หัวหน้าฝ่ายวางแผนการผลิต</td>
+<td>escalation งานติดตั้ง → PM (ตรง workflow spec: timeout → project_manager); Draftsman/PP staff ขึ้น PM ไม่ใช่โรงงาน</td>
+</tr>
+<tr>
+<td>ช่าง/ผู้ช่วย/หัวหน้าทุกระดับ: &quot;ส่งรายงานการติดตั้งให้ผู้บังคับบัญชา<strong>ทุกครั้ง</strong>&quot; + KPI &quot;รายงานประจำวัน&quot;; หัวหน้า: &quot;สรุปรายงานผล<strong>ทุกวัน</strong>&quot; + ควบคุมเวลาเข้า-ออกไซต์</td>
+<td>หน้าที่ตามใบงานจริง</td>
+<td><strong>field_reports รายวัน = ข้อผูกพันตาม JD</strong> ไม่ใช่ฟีเจอร์เสริม; เวลาเข้า-ออกไซต์ควรเก็บใน daily report</td>
+</tr>
+<tr>
+<td>Purchasing: PR → <strong>เสนอกรรมการผู้จัดการอนุมัติ</strong> → PO</td>
+<td>อำนาจอนุมัติการสั่งซื้อ = MD</td>
+<td>approval chain จัดซื้อในระบบต้องจบที่ MD ไม่ใช่ GM/ผู้จัดการฝ่าย</td>
+</tr>
+<tr>
+<td>โลจิสติกส์ (ใต้โรงงาน) จัดส่ง &quot;ช่างติดตั้ง + ชิ้นงาน&quot;</td>
+<td>JD Factory Manager</td>
+<td>การนัดส่งของ+ทีมเข้าหน้างาน = จุดเชื่อม Factory↔Installation ที่ระบบต้องมี (packet + คน + รถ)</td>
+</tr>
+<tr>
+<td>QA เป็นด่านสุดท้ายก่อนส่งมอบ, อนุมัติของดี/ของเสียได้เอง, คุมเครื่องมือวัด+สอบเทียบ</td>
+<td>JD QA</td>
+<td>gate คุณภาพก่อนส่งมอบ → ตรงกับ capture verify / trust chain มุมโรงงาน</td>
+</tr>
+<tr>
+<td>Sales: &quot;ตอบแชทให้ข้อมูลลูกค้า ติดตามสินค้า รับเรื่องร้องเรียน&quot; + บริการหลังการขาย</td>
+<td>JD Sales Staff</td>
+<td>ยืนยันบทบาท Sale ใน LINE OA (ผู้ตอบหลักของกลุ่ม customer) + after-sales อยู่กับ Sale</td>
+</tr>
+<tr>
+<td>Designer ส่งมอบ 3 ทาง: 3D→ลูกค้า, 3D→ฝ่ายวางแผนฯ, Floorplan→ฝ่ายติดตั้ง</td>
+<td>JD Designer/Manager</td>
+<td>เส้นทางแบบใน data model: design → PP → installation ตรงตามนี้</td>
+</tr>
+<tr>
+<td>Warehouse: เบิก-จ่ายทั้ง<strong>งานผลิตและงานติดตั้ง</strong>, FIFO, NC Product, รายงานสต๊อกรายวัน/เดือน</td>
+<td>JD Warehouse</td>
+<td>คลังแตะโปรเจกต์ติดตั้งด้วย (เบิกอุปกรณ์ให้ทีมช่าง) — เพิ่มใน access matrix</td>
+</tr>
+</tbody></table>
+<h2>ตำแหน่งที่ยังไม่มี JD ในชุดนี้ (gap — เทียบกับ &quot;สำหรับคุณชุ.xlsx&quot;)</h2>
+<p>ทีมวัดพื้นที่ (measure, 10 คน) · 3D rendering (5 คน) · ผู้จัดการ/เจ้าหน้าที่ฝ่ายการตลาด, digital marketing, team media · หัวหน้าฝ่ายโลจิสติกส์/ความปลอดภัย/R&amp;D (ถูกอ้างใน JD โรงงานแต่ไม่มีใบแยก) · Software team</p>
+<p>→ <strong>ร่าง JD ของตำแหน่งที่ขาดแล้ว 6 ตำแหน่ง</strong> (วัดพื้นที่ หัวหน้า/เจ้าหน้าที่ · 3D Rendering · การตลาด ผจก./เจ้าหน้าที่ดิจิทัล-มีเดีย · โลจิสติกส์) ที่ <a href="JD-drafts-missing-positions-2026-07.md">docs/JD-drafts-missing-positions-2026-07.md</a> — ดึงเนื้อหาจาก workbook/PFMEA/workflow spec/Brand System จริง; Safety/R&amp;D/Software รอ owner ยืนยันว่ามีจริง</p>
+<h2>⚠ ปัญหาคุณภาพเอกสารต้นทาง (ควรแก้ไฟล์ .doc)</h2>
+<ol>
+<li><code>JD_HR_Officer.doc</code> — หัวเอกสารเป็น &quot;ผู้จัดการฝ่ายขาย / Sales Manager&quot; แต่เนื้อหาเป็นงาน HR ทั้งหมด (title ผิด)</li>
+<li><code>JD_Accounting_Officer.doc</code> — ข้างในเป็น &quot;เจ้าหน้าที่การเงิน / Finance Officer&quot; (ซ้ำ title กับ <code>JD_Finance_Officer.doc</code>) แต่เนื้อหาเป็นงานบัญชี AP/AR/ต้นทุน — title ควรเป็น &quot;เจ้าหน้าที่บัญชี&quot;</li>
+<li><code>JD- Desinger Manager.doc</code> — ช่องชื่อตำแหน่งเขียน &quot;เจ้าหน้าที่ฝ่ายออกแบบ&quot; ทั้งที่เนื้อหา+ลูกน้องเป็นของผู้จัดการฝ่ายออกแบบ</li>
+<li><code>JD_Installation_TeamLead.doc</code> (ไม่มี suffix) เนื้อหา = หัวหน้าฝ่ายติดตั้ง ซ้ำกับไฟล์ <code>-หัวหน้าฝ่าย</code> — ควรลบ/รวม</li>
+<li>ชื่อไฟล์สะกด &quot;Desinger&quot; (ควรเป็น Designer)</li>
+</ol>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
