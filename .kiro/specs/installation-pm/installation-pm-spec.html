@@ -434,7 +434,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><input disabled="" type="checkbox"> 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)</li>
 <li><input disabled="" type="checkbox"> 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA</li>
 <li><input disabled="" type="checkbox"> 1.5b Seed capture_type <code>customer_requirement</code> (จาก <code>capture-type-customer-requirement-draft.sql</code>) + L3 adapter <code>work_item_open</code> (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified</li>
-<li><input disabled="" type="checkbox"> 1.5c Review <code>form-templates-installation-v0.1.md</code> กับหัวหน้าทีม Installation (ปม ⚠ home_office ประปา + assignee model ทีม 5 คน/3 เลน) → seed <code>form_templates</code></li>
+<li><input disabled="" type="checkbox"> 1.5c Seed <code>form_templates</code> จาก <code>form-templates-installation-v0.1.md</code> (<strong>owner ตอบคำถามเปิดครบ 3 ข้อแล้ว</strong> — ประปา = conditional item, 3 ช่าง/ห้อง + หัวหน้า 1/บ้าน, preset บ้านมาตรฐาน 5 ห้อง) — sanity check กับหัวหน้าทีมตอน rollout</li>
 <li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export</li>
 <li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)</li>
 <li><input disabled="" type="checkbox"> 1.8 LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม</li>
@@ -477,11 +477,11 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
 </ul>
 <hr>
-<h1>Form Templates — Installation Checklists v0.1 (draft)</h1>
+<h1>Form Templates — Installation Checklists v0.1 (ผ่าน owner review แล้ว — พร้อม seed)</h1>
 <blockquote>
 <p><strong>ที่มา:</strong> <code>New folder/Installation.xlsx</code> (2020-10-03) sheet &quot;Installation&quot; + ยืนยันซ้ำใน <code>สำหรับคุณชุ.xlsx</code> (2025-07-03 — เนื้อหาเดียวกันเกือบคำต่อคำ = SOP นิ่ง ใช้จริง 5 ปี)
 <strong>Correction จาก owner (5 ก.ค. 2026):</strong> <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> (เลนงานขนานต่อคน) — ไม่ใช่เฟสตามลำดับ; sheet ตารางรายวัน (time-box 15 นาที) คือเลนของช่างแต่ละคนในวันเดียวกัน
-<strong>สถานะ:</strong> draft รอ review กับหัวหน้าทีม Installation ก่อน seed เป็น <code>form_templates</code> จริง (tasks Phase 1.1/1.6) — โดยเฉพาะรายการที่ mark ⚠ (ข้อมูลสองไฟล์ไม่ตรงกันเล็กน้อย)</p>
+<strong>สถานะ:</strong> ✅ คำถามเปิดทั้ง 3 ข้อได้คำตอบจาก owner ครบ (5 ก.ค. 2026 — ดูท้ายไฟล์) — พร้อม seed เป็น <code>form_templates</code> ใน tasks Phase 1.5c (เหลือ sanity check กับหัวหน้าทีมตอน rollout จริง)</p>
 </blockquote>
 <h2>โมเดล (owner ยืนยัน 5 ก.ค. 2026)</h2>
 <ul>
@@ -490,7 +490,9 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>Template = <strong>ต่อประเภทห้อง × เลนช่าง</strong> — เปิดห้องหนึ่ง = สร้าง subtask 3 เลน มอบ assignee ช่างจริงคนละเลน</li>
 <li><strong>บทบาทหัวหน้างาน:</strong> ติ๊ก T0 site-readiness + เป็น approver start/finish ของ work item (= &quot;หัวหน้าทีม Installation&quot; ใน workflow spec) + รับ escalation จากทุกห้อง</li>
 <li><strong>กติกาความคืบหน้า:</strong> ห้องเสร็จ = ทุกเลนของห้องนั้นติ๊กครบ + ถ่ายรูป <strong>Wrapping</strong> เข้า capture <code>installation_proof</code> (ทุกเลนจบด้วย ทำความสะอาด → Wrapping = จุดถ่ายรูปธรรมชาติ); บ้านเสร็จ = ทุกห้องเสร็จ → เข้าสถานะ customer_review (ลูกค้าอนุมัติผ่าน LINE)</li>
+<li><strong>ทักษะช่าง (owner):</strong> ช่างทุกคนทำงานไฟฟ้าและประปาได้ — งานประปา/ไฟฟ้าไม่ใช่ช่างเฉพาะทางแยก อยู่ใน 3 คนต่อห้องอยู่แล้ว → รายการประปาเป็น <strong>conditional ต่อห้อง</strong> (ห้องไหนมีงานประปาก็ใส่) ไม่ต้องแตก template variant</li>
 <li>เลนของห้องครัวเป็นชุดเต็ม (มี Top, ประปา, เช็คหน้าบาน) — ห้องอื่นใช้ชุดเดียวกันตัดรายการครัวออก</li>
+<li><strong>Preset บ้านมาตรฐาน (owner):</strong> บ้านส่วนมากมี 3 ห้องนอน → default preset = kitchen + living + master_bedroom + bedroom ×2 = <strong>5 ห้อง / 15 ช่าง + หัวหน้างาน 1 = 16 คน</strong> (ตอนเปิด installation project ให้เสนอ preset นี้ก่อน แล้วปรับตามบ้านจริง)</li>
 <li>ทุก template: org-scoped, versioned, immutable หลัง publish (requirements Req 5)</li>
 </ul>
 <h2>T0 — Site Readiness (ก่อนเริ่มติดตั้ง — ผูกกับ work item start)</h2>
@@ -538,14 +540,15 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 ] }
 </code></pre>
 <pre><code class="language-json">{ &quot;key&quot;: &quot;inst_room_tech2&quot;, &quot;lane&quot;: &quot;ช่างคนที่ 2&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
-  &quot;ไฟฟ้าผนัง&quot;, &quot;ตรวจสอบผนัง&quot;, &quot;ตรวจสอบประตู&quot;,
+  &quot;ไฟฟ้าผนัง&quot;, { &quot;item&quot;: &quot;ระบบน้ำประปา&quot;, &quot;optional&quot;: true, &quot;note&quot;: &quot;เฉพาะห้องที่มีงานประปา เช่น home office/pantry&quot; },
+  &quot;ตรวจสอบผนัง&quot;, &quot;ตรวจสอบประตู&quot;,
   &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;, &quot;ติดตั้งตู้&quot;,
   &quot;จัดตู้วางตำแหน่งแต่ละจุด&quot;, &quot;ติดตั้งผนังระหว่างตู้&quot;,
   &quot;ติดตั้งอุปกรณ์ภายในตู้&quot;, &quot;ระบบไฟฟ้าภายในตู้&quot;,
   &quot;เก็บงานซิลิโคน&quot;, &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
 ] }
 </code></pre>
-<p>⚠ home_office เลนช่าง 2: ไฟล์ระบุ &quot;ระบบน้ำประปา&quot; เพิ่มด้วย (แถว 156) — ยืนยันกับหัวหน้าทีมว่า home office มีงานประปาจริงไหม (เช่น pantry) แล้วค่อยแตก variant</p>
+<p>✅ <strong>ตอบแล้ว (owner):</strong> ช่างทุกคนทำไฟฟ้า/ประปาได้ — ไม่แตก variant; ใส่ item <code>&quot;ระบบน้ำประปา&quot;</code> แบบ <strong>conditional</strong> (<code>&quot;optional&quot;: true</code>) ในเลนช่าง 2 ของ T2 — เปิดใช้เฉพาะห้องที่มีงานประปา (เช่น home office ที่มี pantry)</p>
 <pre><code class="language-json">{ &quot;key&quot;: &quot;inst_room_tech3&quot;, &quot;lane&quot;: &quot;ช่างคนที่ 3&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
   &quot;Check point of measure&quot;, &quot;Offset point&quot;, &quot;Point of x=0,y=0&quot;,
   &quot;ตรวจสอบขนาดอลูมิเนียม&quot;, &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;,
@@ -562,12 +565,13 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li>ตาราง time-box 15 นาที (sheet 2) = มุมมอง daily plan — <strong>Phase 3</strong> (MVP แสดงแค่รายการวันนี้ต่อช่าง)</li>
 <li>รายการเหล่านี้ยังใช้เป็นแหล่ง<strong>ชื่อรูปมาตรฐาน</strong> ได้ (รูปผูก checklist item → ค้นย้อนหลังได้ว่า &quot;รูปติดตั้ง Top ครัว&quot; อยู่ไหน)</li>
 </ol>
-<h2>สิ่งที่ต้องยืนยันกับหน้างานก่อน seed จริง</h2>
-<ul>
-<li>⚠ home_office ประปา (ด้านบน) · การสะกด &quot;เพลส/Wraping/เก็นงาน&quot; ในไฟล์ต้นทาง — draft นี้ normalize แล้ว</li>
-<li><del>ทีม 5 คนแต่ checklist มี 3 เลน</del> → ✅ <strong>ตอบแล้ว (owner):</strong> ห้องละ 3 ช่างคนละเลน ขนานทุกห้อง + หัวหน้างาน 1/บ้าน (บ้าน 5 ห้อง = 16 คน) — เลข &quot;5&quot; ในไฟล์เป็น manpower planning ต่อแผนก ไม่ใช่ crew ต่อห้อง</li>
-<li>Bed Room 2/3 checklist เหมือนกันทุกข้อ — ยุบเป็น bedroom เดียว (ทำแล้วใน T2) โอเคไหม</li>
-</ul>
+<h2>คำถามเปิด — ✅ ตอบครบทั้ง 3 ข้อ (owner, 5 ก.ค. 2026)</h2>
+<ol>
+<li><del>home_office ประปา</del> → <strong>ไม่แตก variant</strong> — ช่างทุกคนทำไฟฟ้า/ประปาได้ อยู่ใน 3 คนต่อห้องแล้ว; ใส่เป็น conditional item ใน T2 เลนช่าง 2</li>
+<li><del>ทีม 5 คน/3 เลน</del> → <strong>ห้องละ 3 ช่างคนละเลน ขนานทุกห้อง + หัวหน้างาน 1/บ้าน</strong> (บ้าน 5 ห้อง = 16 คน) — เลข &quot;5&quot; ในไฟล์เป็น manpower planning ต่อแผนก</li>
+<li><del>ยุบ Bedroom</del> → <strong>โอเค</strong> — บ้านส่วนมากมี 3 ห้องนอน → เกิด preset บ้านมาตรฐาน 5 ห้อง (ดู §โมเดล)</li>
+</ol>
+<p>(หมายเหตุการสะกด &quot;เพลส/Wraping/เก็นงาน&quot; ในไฟล์ต้นทาง — draft นี้ normalize แล้ว)</p>
 </div>
 <button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>

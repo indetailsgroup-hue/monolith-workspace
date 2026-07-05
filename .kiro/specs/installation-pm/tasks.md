@@ -18,7 +18,7 @@
 - [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)
 - [ ] 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA
 - [ ] 1.5b Seed capture_type `customer_requirement` (จาก `capture-type-customer-requirement-draft.sql`) + L3 adapter `work_item_open` (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified
-- [ ] 1.5c Review `form-templates-installation-v0.1.md` กับหัวหน้าทีม Installation (ปม ⚠ home_office ประปา + assignee model ทีม 5 คน/3 เลน) → seed `form_templates`
+- [ ] 1.5c Seed `form_templates` จาก `form-templates-installation-v0.1.md` (**owner ตอบคำถามเปิดครบ 3 ข้อแล้ว** — ประปา = conditional item, 3 ช่าง/ห้อง + หัวหน้า 1/บ้าน, preset บ้านมาตรฐาน 5 ห้อง) — sanity check กับหัวหน้าทีมตอน rollout
 - [ ] 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export
 - [ ] 1.7 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)
 - [ ] 1.8 LINE templates: 'inst_approval_request' (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม
