@@ -8,7 +8,7 @@
 
 **ขอบเขต IP:** ลอกได้เฉพาะ*แนวคิดฟีเจอร์/เวิร์กโฟลว์* (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล
 
-**Working artifacts (ในโฟลเดอร์นี้):** `design.md` · `tasks.md` · `build-plan-external-draft-2026-07-05.md` (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) — entitlement delta อยู่ที่ `../entitlement-tier/schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html`
+**Working artifacts (ในโฟลเดอร์นี้):** `design.md` · `tasks.md` · `build-plan-external-draft-2026-07-05.md` (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · **`capture-type-customer-requirement-draft.sql`** (ใบบันทึกความต้องการ — 9 field จาก "สำหรับคุณชุ.xlsx" 2025 + verify rules ตาม PFMEA Sale) · **`form-templates-installation-v0.1.md`** (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; **P1/P2/P3 = ช่างคนที่ 1/2/3** ยืนยันโดย owner) — entitlement delta อยู่ที่ `../entitlement-tier/schema-draft-v0.4-delta.sql` + `tier-matrix-v0.4.html`
 
 ## Glossary
 
@@ -72,7 +72,7 @@
 ### Requirement 5: Field Reports + Form Builder + e-Signature
 
 1. THE daily report SHALL กรอกจากมือถือ แนบรูป และทำงาน**ออฟไลน์ได้** (Req 8)
-2. THE custom form builder (field types: text/number/date/photo/signature/คำนวณ) เป็น Phase 3 — MVP ใช้ template คงที่
+2. THE custom form builder (field types: text/number/date/photo/signature/คำนวณ) เป็น Phase 3 — MVP ใช้ template คงที่จาก SOP จริง: `form-templates-installation-v0.1.md` (T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 3 เลน)
 3. THE ลายเซ็น SHALL เก็บพร้อม timestamp + ผู้เซ็น + report version — report ที่เซ็นแล้ว immutable
 4. THE report SHALL export เป็น PDF ได้
 

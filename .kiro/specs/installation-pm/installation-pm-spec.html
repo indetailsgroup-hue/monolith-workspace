@@ -73,7 +73,7 @@
 <p>เอกสารนี้กำหนด requirements ของโมดูล <strong>Installation PM</strong> — การจัดการโปรเจกต์ติดตั้งหน้างาน (แนว KANNA) ฝังใน MONOLITH เพื่อปิด loop: <code>ออกแบบ → ผลิต → ส่งของ → ติดตั้งหน้างาน → รายงานภาพ → ลูกค้าอนุมัติ → ปิดงาน</code> — ปัจจุบัน MONOLITH จบที่ประตูโรงงาน (Factory Packet)</p>
 <p><strong>สถานะ:</strong> approved design — ผ่าน verify กับเรโปจริง + grill owner decisions แล้ว (5 ก.ค. 2026) — <strong>มติ 4 ข้อ (ADR-034/035 + amendment):</strong> (1) v1 = dogfood ภายใน DAPH บน DB เดิม (C12) ไม่ gate ด้วย entitlement, (2) entitlement SaaS แยก DB, (3) MVP = PWA + offline-lite upload queue (ไม่มี two-way sync) → mobile/full-sync ตัดสินด้วย baseline จากงานจริง, (4) <strong>MVP เกาะ line_oa + workflow spine</strong>: งานติดตั้ง = work_item ขั้น Installation, รูป = capture <code>installation_proof</code>, แจ้งเตือนช่างผ่าน LINE — ห้ามสร้างระบบขนาน</p>
 <p><strong>ขอบเขต IP:</strong> ลอกได้เฉพาะ<em>แนวคิดฟีเจอร์/เวิร์กโฟลว์</em> (field PM เป็นแนวคิดทั่วไป) — ห้ามคัดลอกโค้ด/แบรนด์/ชื่อ KANNA/ไอคอน/UI พิกเซล-ต่อ-พิกเซล</p>
-<p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
+<p><strong>Working artifacts (ในโฟลเดอร์นี้):</strong> <code>design.md</code> · <code>tasks.md</code> · <code>build-plan-external-draft-2026-07-05.md</code> (ต้นฉบับภายนอก — archive พร้อมบันทึกแก้) · <strong><code>capture-type-customer-requirement-draft.sql</code></strong> (ใบบันทึกความต้องการ — 9 field จาก &quot;สำหรับคุณชุ.xlsx&quot; 2025 + verify rules ตาม PFMEA Sale) · <strong><code>form-templates-installation-v0.1.md</code></strong> (checklist ติดตั้งจาก Installation.xlsx — T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 1/2/3; <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> ยืนยันโดย owner) — entitlement delta อยู่ที่ <code>../entitlement-tier/schema-draft-v0.4-delta.sql</code> + <code>tier-matrix-v0.4.html</code></p>
 <h2>Glossary</h2>
 <ul>
 <li><strong>Installation Project</strong>: โปรเจกต์ติดตั้งหน้างาน 1 งาน (ลูกค้า/สถานที่/ช่วงเวลา) — <strong>ตั้งใจไม่ใช้คำว่า <code>site</code></strong> เพราะใน C12 <code>site</code> = ขอบเขต tenant (<code>has_site_access</code>) คนละความหมาย</li>
@@ -189,7 +189,7 @@
 <h3>Requirement 5: Field Reports + Form Builder + e-Signature</h3>
 <ol>
 <li>THE daily report SHALL กรอกจากมือถือ แนบรูป และทำงาน<strong>ออฟไลน์ได้</strong> (Req 8)</li>
-<li>THE custom form builder (field types: text/number/date/photo/signature/คำนวณ) เป็น Phase 3 — MVP ใช้ template คงที่</li>
+<li>THE custom form builder (field types: text/number/date/photo/signature/คำนวณ) เป็น Phase 3 — MVP ใช้ template คงที่จาก SOP จริง: <code>form-templates-installation-v0.1.md</code> (T0 site-readiness + ครัว/ห้องทั่วไป × เลนช่าง 3 เลน)</li>
 <li>THE ลายเซ็น SHALL เก็บพร้อม timestamp + ผู้เซ็น + report version — report ที่เซ็นแล้ว immutable</li>
 <li>THE report SHALL export เป็น PDF ได้</li>
 </ol>
@@ -430,7 +430,9 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><input disabled="" type="checkbox"> 1.3 Photo path: PWA upload → <code>rpc_capture_ingest</code> (<code>installation_proof</code>) + <strong>LINE photo → capture</strong> route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)</li>
 <li><input disabled="" type="checkbox"> 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)</li>
 <li><input disabled="" type="checkbox"> 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA</li>
-<li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่) + แนบรูป + PDF export</li>
+<li><input disabled="" type="checkbox"> 1.5b Seed capture_type <code>customer_requirement</code> (จาก <code>capture-type-customer-requirement-draft.sql</code>) + L3 adapter <code>work_item_open</code> (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified</li>
+<li><input disabled="" type="checkbox"> 1.5c Review <code>form-templates-installation-v0.1.md</code> กับหัวหน้าทีม Installation (ปม ⚠ home_office ประปา + assignee model ทีม 5 คน/3 เลน) → seed <code>form_templates</code></li>
+<li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export</li>
 <li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)</li>
 <li><input disabled="" type="checkbox"> 1.8 LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม</li>
 <li><input disabled="" type="checkbox"> 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)</li>
@@ -470,6 +472,95 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <h2>Deferred</h2>
 <ul>
 <li>IP/device restriction ต่อ org, หลายภาษา (EN), partner/reseller access, BIM/แปลนอาคาร</li>
+</ul>
+<hr>
+<h1>Form Templates — Installation Checklists v0.1 (draft)</h1>
+<blockquote>
+<p><strong>ที่มา:</strong> <code>New folder/Installation.xlsx</code> (2020-10-03) sheet &quot;Installation&quot; + ยืนยันซ้ำใน <code>สำหรับคุณชุ.xlsx</code> (2025-07-03 — เนื้อหาเดียวกันเกือบคำต่อคำ = SOP นิ่ง ใช้จริง 5 ปี)
+<strong>Correction จาก owner (5 ก.ค. 2026):</strong> <strong>P1/P2/P3 = ช่างคนที่ 1/2/3</strong> (เลนงานขนานต่อคน) — ไม่ใช่เฟสตามลำดับ; sheet ตารางรายวัน (time-box 15 นาที) คือเลนของช่างแต่ละคนในวันเดียวกัน
+<strong>สถานะ:</strong> draft รอ review กับหัวหน้าทีม Installation ก่อน seed เป็น <code>form_templates</code> จริง (tasks Phase 1.1/1.6) — โดยเฉพาะรายการที่ mark ⚠ (ข้อมูลสองไฟล์ไม่ตรงกันเล็กน้อย)</p>
+</blockquote>
+<h2>โมเดล</h2>
+<ul>
+<li>Template = <strong>ต่อประเภทห้อง × เลนช่าง</strong> — ทีมมาตรฐาน 5 คน แบ่ง 3 เลน (ช่าง 1/2/3 ตาม checklist; อีก 2 คนหมุนช่วย)</li>
+<li><strong>กติกาความคืบหน้า:</strong> ห้องเสร็จ = ทุกเลนของห้องนั้นติ๊กครบ + ถ่ายรูป <strong>Wrapping</strong> เข้า capture <code>installation_proof</code> (ทุกเลนจบด้วย ทำความสะอาด → Wrapping = จุดถ่ายรูปธรรมชาติ)</li>
+<li>เลนของห้องครัวเป็นชุดเต็ม (มี Top, ประปา, เช็คหน้าบาน) — ห้องอื่นใช้ชุดเดียวกันตัดรายการครัวออก</li>
+<li>ทุก template: org-scoped, versioned, immutable หลัง publish (requirements Req 5)</li>
+</ul>
+<h2>T0 — Site Readiness (ก่อนเริ่มติดตั้ง — ผูกกับ work item start)</h2>
+<p>จาก &quot;รับเอกสารข้อมูล Production plan&quot; — ใช้เป็น checklist ที่<strong>หัวหน้าทีม Installation ต้องยืนยันก่อน approve เริ่มงาน</strong> (workflow Req: Installation start → approver หัวหน้าทีม):</p>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_site_readiness&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;Check all area 3D final จาก Production Planning&quot;,
+  &quot;Floor checking&quot;, &quot;Defect checking&quot;, &quot;Electricity checking&quot;,
+  &quot;Water supply system&quot;, &quot;Wall checking&quot;, &quot;Door checking&quot;, &quot;Ceiling checking&quot;
+] }
+</code></pre>
+<h2>T1 — ครัว (applies_to: master_kitchen, kitchen)</h2>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_kitchen_tech1&quot;, &quot;applies_to&quot;: [&quot;master_kitchen&quot;,&quot;kitchen&quot;], &quot;lane&quot;: &quot;ช่างคนที่ 1&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;เช็คพื้น&quot;, &quot;ตรวจสอบ Defect&quot;, &quot;ตรวจสอบฝ้า&quot;,
+  &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;,
+  &quot;ตรวจสอบขนาดตู้&quot;, &quot;จัดตู้วางตำแหน่งแต่ละจุด&quot;, &quot;ติดตั้งผนังระหว่างตู้&quot;,
+  &quot;ติดตั้งงาน Top&quot;, &quot;ติดตั้งอุปกรณ์ภายในตู้&quot;, &quot;ระบบไฟฟ้า&quot;,
+  &quot;เก็บงานซิลิโคน&quot;, &quot;ตรวจสอบหน้าบานให้เรียบร้อย&quot;,
+  &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_kitchen_tech2&quot;, &quot;applies_to&quot;: [&quot;master_kitchen&quot;,&quot;kitchen&quot;], &quot;lane&quot;: &quot;ช่างคนที่ 2&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;ไฟฟ้าผนัง&quot;, &quot;ระบบน้ำประปา&quot;, &quot;ตรวจสอบผนัง&quot;, &quot;ตรวจสอบประตู&quot;,
+  &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;, &quot;ติดตั้งตู้&quot;,
+  &quot;จัดตู้วางตำแหน่งแต่ละจุด&quot;, &quot;ติดตั้งผนังระหว่างตู้&quot;, &quot;ติดตั้งงาน Top&quot;,
+  &quot;ติดตั้งอุปกรณ์ภายในตู้&quot;, &quot;ระบบไฟฟ้าภายในตู้&quot;,
+  &quot;เก็บงานซิลิโคน&quot;, &quot;ตรวจสอบระบบไฟอีกรอบ&quot;,
+  &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_kitchen_tech3&quot;, &quot;applies_to&quot;: [&quot;master_kitchen&quot;,&quot;kitchen&quot;], &quot;lane&quot;: &quot;ช่างคนที่ 3&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;Check point of measure&quot;, &quot;Offset point&quot;, &quot;Point of x=0,y=0&quot;,
+  &quot;ตรวจสอบขนาดอลูมิเนียม&quot;, &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;,
+  &quot;ติดตั้งตู้&quot;, &quot;ปรับประตูตู้&quot;, &quot;ติดตั้งงาน Top&quot;,
+  &quot;ระบบน้ำประปา&quot;, &quot;เก็บงานฝ้า&quot;, &quot;เก็บงานซิลิโคน TOP&quot;,
+  &quot;เช็คอุปกรณ์ภายในตู้&quot;, &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<h2>T2 — ห้องทั่วไป (applies_to: living, home_office, office, master_bedroom, bedroom_2, bedroom_3)</h2>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_room_tech1&quot;, &quot;lane&quot;: &quot;ช่างคนที่ 1&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;เช็คพื้น&quot;, &quot;ตรวจสอบ Defect&quot;, &quot;ตรวจสอบฝ้า&quot;,
+  &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;,
+  &quot;ตรวจสอบขนาดตู้&quot;, &quot;จัดตู้วางตำแหน่งแต่ละจุด&quot;, &quot;ติดตั้งผนังระหว่างตู้&quot;,
+  &quot;ติดตั้งอุปกรณ์ภายในตู้&quot;, &quot;ระบบไฟฟ้า&quot;,
+  &quot;เก็บงานซิลิโคน&quot;, &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_room_tech2&quot;, &quot;lane&quot;: &quot;ช่างคนที่ 2&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;ไฟฟ้าผนัง&quot;, &quot;ตรวจสอบผนัง&quot;, &quot;ตรวจสอบประตู&quot;,
+  &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;, &quot;ติดตั้งตู้&quot;,
+  &quot;จัดตู้วางตำแหน่งแต่ละจุด&quot;, &quot;ติดตั้งผนังระหว่างตู้&quot;,
+  &quot;ติดตั้งอุปกรณ์ภายในตู้&quot;, &quot;ระบบไฟฟ้าภายในตู้&quot;,
+  &quot;เก็บงานซิลิโคน&quot;, &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<p>⚠ home_office เลนช่าง 2: ไฟล์ระบุ &quot;ระบบน้ำประปา&quot; เพิ่มด้วย (แถว 156) — ยืนยันกับหัวหน้าทีมว่า home office มีงานประปาจริงไหม (เช่น pantry) แล้วค่อยแตก variant</p>
+<pre><code class="language-json">{ &quot;key&quot;: &quot;inst_room_tech3&quot;, &quot;lane&quot;: &quot;ช่างคนที่ 3&quot;, &quot;version&quot;: 1, &quot;items&quot;: [
+  &quot;Check point of measure&quot;, &quot;Offset point&quot;, &quot;Point of x=0,y=0&quot;,
+  &quot;ตรวจสอบขนาดอลูมิเนียม&quot;, &quot;ประกอบอลูมิเนียม&quot;, &quot;ติดตั้งอลูมิเนียม&quot;,
+  &quot;ติดตั้งตู้&quot;, &quot;ปรับประตูตู้&quot;, &quot;เก็บงานฝ้า&quot;,
+  &quot;ตรวจสอบประตูตู้อีกรอบ&quot;, &quot;ตรวจสอบระบบไฟอีกรอบ&quot;,
+  &quot;เช็คอุปกรณ์ภายในตู้&quot;, &quot;ทำความสะอาด&quot;, &quot;Wrapping 📷&quot;
+] }
+</code></pre>
+<h2>การใช้ใน MVP (โยงกับ spec)</h2>
+<ol>
+<li><strong>T0</strong> render ตอน work item ขั้น Installation จะ start — หัวหน้าทีมติ๊กครบ → approve start (workflow flow เดิม)</li>
+<li>เปิดห้องหนึ่งใน installation project → สร้าง subtask 3 เลนจาก template ตามประเภทห้อง มอบ assignee ช่างจริงต่อเลน (<code>installation_tasks</code> — D-11: subtask ครบ ≠ ปิด work item)</li>
+<li>ทุกเลนจบด้วย Wrapping 📷 → PWA/LINE ถ่ายรูปเข้า capture <code>installation_proof</code> → verified → commit ปิด work item (0063)</li>
+<li>ตาราง time-box 15 นาที (sheet 2) = มุมมอง daily plan — <strong>Phase 3</strong> (MVP แสดงแค่รายการวันนี้ต่อช่าง)</li>
+<li>รายการเหล่านี้ยังใช้เป็นแหล่ง<strong>ชื่อรูปมาตรฐาน</strong> ได้ (รูปผูก checklist item → ค้นย้อนหลังได้ว่า &quot;รูปติดตั้ง Top ครัว&quot; อยู่ไหน)</li>
+</ol>
+<h2>สิ่งที่ต้องยืนยันกับหน้างานก่อน seed จริง</h2>
+<ul>
+<li>⚠ home_office ประปา (ด้านบน) · การสะกด &quot;เพลส/Wraping/เก็นงาน&quot; ในไฟล์ต้นทาง — draft นี้ normalize แล้ว</li>
+<li>ทีม 5 คนแต่ checklist มี 3 เลน — อีก 2 คนทำเลนไหน (หมุนช่วย? งานยก?) → มีผล assignee model</li>
+<li>Bed Room 2/3 checklist เหมือนกันทุกข้อ — ยุบเป็น bedroom เดียว (ทำแล้วใน T2) โอเคไหม</li>
 </ul>
 </div>
 <button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>

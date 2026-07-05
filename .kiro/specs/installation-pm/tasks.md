@@ -17,7 +17,9 @@
 - [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
 - [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)
 - [ ] 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA
-- [ ] 1.6 Daily report (template คงที่) + แนบรูป + PDF export
+- [ ] 1.5b Seed capture_type `customer_requirement` (จาก `capture-type-customer-requirement-draft.sql`) + L3 adapter `work_item_open` (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified
+- [ ] 1.5c Review `form-templates-installation-v0.1.md` กับหัวหน้าทีม Installation (ปม ⚠ home_office ประปา + assignee model ทีม 5 คน/3 เลน) → seed `form_templates`
+- [ ] 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export
 - [ ] 1.7 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว + baseline metrics (อัตราเข้าคิว offline)
 - [ ] 1.8 LINE templates: 'inst_approval_request' (ลูกค้า — D-5) + แจ้งเตือนช่าง (งานใหม่/approval result/เตือนรายงาน) ผ่าน outbound เดิม
 - [ ] 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)
