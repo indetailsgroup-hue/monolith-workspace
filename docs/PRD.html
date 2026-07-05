@@ -122,6 +122,7 @@
 <li><a href="#68-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-capture-spine">6.8 โมดูล Capture Spine</a></li>
 <li><a href="#69-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-accounting">6.9 โมดูล Accounting — Ledger / Tax / Costing</a></li>
 <li><a href="#610-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5-iam--c12-foundation">6.10 โมดูล IAM — Identity &amp; Access (C12)</a></li>
+<li><a href="#611-%E0%B9%82%E0%B8%A1%E0%B8%94%E0%B8%B9%E0%B8%A5%E0%B8%A3%E0%B8%B0%E0%B8%AB%E0%B8%A7%E0%B9%88%E0%B8%B2%E0%B8%87%E0%B8%AD%E0%B8%AD%E0%B8%81%E0%B9%81%E0%B8%9A%E0%B8%9A-design-stage">6.11 โมดูลระหว่างออกแบบ (Design-stage)</a></li>
 </ul>
 </li>
 <li><a href="#7-invariants-%E0%B9%81%E0%B8%A5%E0%B8%B0-contracts">Invariants และ Contracts ของระบบ</a></li>
@@ -869,6 +870,45 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 <li>RLS ทุกตารางธุรกิจ: fail-closed default; SELECT = governance | site_access; governance bypass เฉพาะที่กำหนด</li>
 <li>Scope enforcement ฝั่ง code: <code>isRowVisible</code>, <code>authorizeCrossDept</code> (fail-closed throw)</li>
 </ul>
+<hr>
+<h3>6.11 โมดูลระหว่างออกแบบ (Design-stage)</h3>
+<blockquote>
+<p>โมดูลที่มีตัวตนเป็นเอกสาร/spec/contract แล้ว แต่ยังไม่ implement หรือยังไม่เข้า repo — ห้ามนับเป็นความสามารถปัจจุบัน</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>โมดูล</th>
+<th>สถานะ</th>
+<th>ที่อยู่</th>
+<th>ประเด็นค้าง</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Entitlement &amp; Multi-Tier SaaS</strong> (Free/Plus/Advance/Enterprise, 42 features, gate 4 แบบ, RLS multi-tenant)</td>
+<td>📋 Design v0.2 ผ่าน security review แล้ว (แก้ S1–S4, L5–L9)</td>
+<td>นอก repo: <code>one clik/MONOLITH-schema-multitier-v0.2.sql</code> + docs + Tier-Matrix HTML</td>
+<td><strong>Owner decision: SaaS แยก DB หรือรวมกับ C12</strong> (org↔site); ย้ายเข้า <code>.kiro/specs/entitlement-tier/</code> เมื่อตัดสิน</td>
+</tr>
+<tr>
+<td><strong>Curved Panel System</strong> (kerf bending: rounded corner / ARC / S-curve / mating slots)</td>
+<td>📋 Spec ครบ + grill แล้ว (Req 9 ข้อ, G12 10 codes, Phase 0–7)</td>
+<td><code>.kiro/specs/curved-panel-system/</code> + kerf doc v1.1</td>
+<td>เริ่ม Phase 0 (reconcile KerfBending.ts) ได้ทันที; รายละเอียด §6.1.7</td>
+</tr>
+<tr>
+<td><strong>Kernel Truth Service</strong> (&quot;Plasticity-DNA&quot; SPEC-08 v8.2 — B-Rep geometric truth, TS↔Python/PyOCC, KernelDelta chain)</td>
+<td>📋 Contract types พร้อม; ตัว service ยังไม่มี</td>
+<td><code>contracts/kernel/types.ts</code> + design-hub phase 2 spec</td>
+<td>รอ owner decisions 7 ข้อของ design-hub (§11)</td>
+</tr>
+<tr>
+<td><strong>Cloud Sync / Collaboration</strong> (Yjs + IndexedDB, anti-loop bridge กับ Zustand)</td>
+<td>📋 Design doc + dependencies ติดตั้งแล้ว (yjs, y-indexeddb)</td>
+<td><code>docs/architecture/CLOUD_SYNC_ARCHITECTURE.md</code></td>
+<td>out-of-scope v2.0 เดิม; ยังไม่มี conflict-resolution design</td>
+</tr>
+</tbody></table>
 <hr>
 <h2>7. Invariants และ Contracts</h2>
 <h3>7.1 ค่าคงที่การผลิต (Manufacturing Constants)</h3>

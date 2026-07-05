@@ -34,6 +34,7 @@
    - [6.8 โมดูล Capture Spine](#68-โมดูล-capture-spine)
    - [6.9 โมดูล Accounting — Ledger / Tax / Costing](#69-โมดูล-accounting)
    - [6.10 โมดูล IAM — Identity & Access (C12)](#610-โมดูล-iam--c12-foundation)
+   - [6.11 โมดูลระหว่างออกแบบ (Design-stage)](#611-โมดูลระหว่างออกแบบ-design-stage)
 7. [Invariants และ Contracts ของระบบ](#7-invariants-และ-contracts)
 8. [ข้อกำหนดที่ไม่ใช่ฟังก์ชัน (Non-Functional Requirements)](#8-non-functional-requirements)
 9. [ตัวชี้วัดความสำเร็จ (Success Metrics)](#9-success-metrics)
@@ -587,6 +588,19 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 - Roles: governance, site_admin, employee, customer_approver, sale, designer, production, finance
 - RLS ทุกตารางธุรกิจ: fail-closed default; SELECT = governance | site_access; governance bypass เฉพาะที่กำหนด
 - Scope enforcement ฝั่ง code: `isRowVisible`, `authorizeCrossDept` (fail-closed throw)
+
+---
+
+### 6.11 โมดูลระหว่างออกแบบ (Design-stage)
+
+> โมดูลที่มีตัวตนเป็นเอกสาร/spec/contract แล้ว แต่ยังไม่ implement หรือยังไม่เข้า repo — ห้ามนับเป็นความสามารถปัจจุบัน
+
+| โมดูล | สถานะ | ที่อยู่ | ประเด็นค้าง |
+|-------|-------|--------|-------------|
+| **Entitlement & Multi-Tier SaaS** (Free/Plus/Advance/Enterprise, 42 features, gate 4 แบบ, RLS multi-tenant) | 📋 Design v0.2 ผ่าน security review แล้ว (แก้ S1–S4, L5–L9) | นอก repo: `one clik/MONOLITH-schema-multitier-v0.2.sql` + docs + Tier-Matrix HTML | **Owner decision: SaaS แยก DB หรือรวมกับ C12** (org↔site); ย้ายเข้า `.kiro/specs/entitlement-tier/` เมื่อตัดสิน |
+| **Curved Panel System** (kerf bending: rounded corner / ARC / S-curve / mating slots) | 📋 Spec ครบ + grill แล้ว (Req 9 ข้อ, G12 10 codes, Phase 0–7) | `.kiro/specs/curved-panel-system/` + kerf doc v1.1 | เริ่ม Phase 0 (reconcile KerfBending.ts) ได้ทันที; รายละเอียด §6.1.7 |
+| **Kernel Truth Service** ("Plasticity-DNA" SPEC-08 v8.2 — B-Rep geometric truth, TS↔Python/PyOCC, KernelDelta chain) | 📋 Contract types พร้อม; ตัว service ยังไม่มี | `contracts/kernel/types.ts` + design-hub phase 2 spec | รอ owner decisions 7 ข้อของ design-hub (§11) |
+| **Cloud Sync / Collaboration** (Yjs + IndexedDB, anti-loop bridge กับ Zustand) | 📋 Design doc + dependencies ติดตั้งแล้ว (yjs, y-indexeddb) | `docs/architecture/CLOUD_SYNC_ARCHITECTURE.md` | out-of-scope v2.0 เดิม; ยังไม่มี conflict-resolution design |
 
 ---
 
