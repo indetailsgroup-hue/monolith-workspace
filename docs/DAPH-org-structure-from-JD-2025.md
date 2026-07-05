@@ -55,6 +55,8 @@
 
 ทีมวัดพื้นที่ (measure, 10 คน) · 3D rendering (5 คน) · ผู้จัดการ/เจ้าหน้าที่ฝ่ายการตลาด, digital marketing, team media · หัวหน้าฝ่ายโลจิสติกส์/ความปลอดภัย/R&D (ถูกอ้างใน JD โรงงานแต่ไม่มีใบแยก) · Software team
 
+→ **ร่าง JD ของตำแหน่งที่ขาดแล้ว 6 ตำแหน่ง** (วัดพื้นที่ หัวหน้า/เจ้าหน้าที่ · 3D Rendering · การตลาด ผจก./เจ้าหน้าที่ดิจิทัล-มีเดีย · โลจิสติกส์) ที่ [docs/JD-drafts-missing-positions-2026-07.md](JD-drafts-missing-positions-2026-07.md) — ดึงเนื้อหาจาก workbook/PFMEA/workflow spec/Brand System จริง; Safety/R&D/Software รอ owner ยืนยันว่ามีจริง
+
 ## ⚠ ปัญหาคุณภาพเอกสารต้นทาง (ควรแก้ไฟล์ .doc)
 
 1. `JD_HR_Officer.doc` — หัวเอกสารเป็น "ผู้จัดการฝ่ายขาย / Sales Manager" แต่เนื้อหาเป็นงาน HR ทั้งหมด (title ผิด)
