@@ -25,7 +25,7 @@
 1. รูปจริงเก็บเป็น Blob ใน object store แยก (spike เก็บ payload เป็น JSON) — reconcile local id → storage path ตอนส่ง
 2. ผู้ส่งจริง = `rpc_capture_ingest` (`installation_proof`) — spike รับเป็น `SubmitFn` dependency แล้ว เสียบได้เลย
 3. Service worker ไฟล์จริง + `SYNC_TAG` registration (โครงใน sw-bridge พร้อม)
-4. Server: UNIQUE constraint บน client submission id ที่ตาราง capture/report (คู่กับ D-2 DDL)
+4. Server: UNIQUE constraint บน client submission id ที่ตาราง capture/report (ลงแล้วใน 0090 — `client_submission_id` partial unique) — **สัญญาสำคัญ (scrutiny S3): endpoint ที่รับ submit ต้อง treat duplicate submissionId เป็น success** (upsert/on conflict do nothing แล้วตอบ 200) เพราะ race ข้าม context (window↔service worker) กันที่ client ไม่ได้; ระดับ instance กันแล้วด้วย in-flight guard
 
 ## Correctness property ที่ล็อกไว้ในเทสต์
 

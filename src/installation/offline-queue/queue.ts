@@ -30,6 +30,14 @@ export interface FlushSummary {
 }
 
 export class OfflineQueue {
+  /**
+   * Scrutiny S3: 'online' + 'visibilitychange' ยิงพร้อมกันได้ (ปลดล็อกจอตอนเน็ตกลับ)
+   * → flush ซ้อนกัน double-submit รายการเดียวกัน. กันระดับ instance ด้วย in-flight set;
+   * ข้าม instance (window กับ service worker คนละ context) กันไม่ได้ที่นี่ —
+   * สัญญาของ SubmitFn: server ต้อง treat duplicate submissionId เป็น success (UNIQUE + on conflict)
+   */
+  private readonly inFlight = new Set<string>();
+
   constructor(
     private readonly storage: QueueStorage,
     private readonly newId: () => string = () => crypto.randomUUID(),
@@ -69,8 +77,9 @@ export class OfflineQueue {
   async flush(submit: SubmitFn): Promise<FlushSummary> {
     const t = this.now();
     const due = (await this.storage.list()).filter(
-      (i) => i.status === 'pending' && i.nextAttemptAt <= t,
+      (i) => i.status === 'pending' && i.nextAttemptAt <= t && !this.inFlight.has(i.submissionId),
     );
+    for (const item of due) this.inFlight.add(item.submissionId); // จองก่อนถึงจุด await แรก
     const summary: FlushSummary = { attempted: due.length, sent: 0, deferred: 0, failed: 0 };
 
     for (const item of due) {
@@ -94,6 +103,8 @@ export class OfflineQueue {
           });
           summary.deferred += 1;
         }
+      } finally {
+        this.inFlight.delete(item.submissionId);
       }
     }
     return summary;

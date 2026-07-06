@@ -135,6 +135,46 @@ describe('OfflineQueue — backoff + poison item (mirror นโยบาย noti
   });
 });
 
+describe('OfflineQueue — concurrent flush (scrutiny S3: online + visibilitychange ยิงพร้อมกัน)', () => {
+  it('flush ซ้อนกัน → รายการเดียวถูก submit ครั้งเดียว (in-flight guard)', async () => {
+    const { queue } = makeQueue();
+    await queue.enqueue({ kind: 'field_report', payload: {} });
+    const submitted: string[] = [];
+    const slowSubmit = async (i: QueueItem) => {
+      submitted.push(i.submissionId);
+      await new Promise((r) => setTimeout(r, 30)); // network ช้า — เปิดหน้าต่าง race
+    };
+    const [a, b] = await Promise.all([queue.flush(slowSubmit), queue.flush(slowSubmit)]);
+    expect(submitted).toHaveLength(1); // ไม่ double-submit
+    expect(a.sent + b.sent).toBe(1);
+    expect((await queue.items())[0].status).toBe('sent');
+  });
+
+  it('flush ระหว่างที่อีก flush ค้าง → รอบสองเห็นเฉพาะของที่ไม่ in-flight', async () => {
+    const { queue, tick } = makeQueue();
+    await queue.enqueue({ kind: 'field_report', payload: { n: 1 } });
+    tick(1);
+    let releaseFirst!: () => void;
+    const gate = new Promise<void>((r) => (releaseFirst = r));
+    const submitted: string[] = [];
+    // flush แรกค้างอยู่ที่ item แรก
+    const first = queue.flush(async (i) => {
+      submitted.push(i.submissionId);
+      await gate;
+    });
+    await new Promise((r) => setTimeout(r, 10));
+    await queue.enqueue({ kind: 'photo', payload: { n: 2 } });
+    // flush สอง: ต้องส่งเฉพาะ item ใหม่ ไม่แตะตัวที่ in-flight
+    const second = await queue.flush(async (i) => {
+      submitted.push(i.submissionId);
+    });
+    expect(second.attempted).toBe(1);
+    releaseFirst();
+    await first;
+    expect(new Set(submitted).size).toBe(2); // สองรายการ สองครั้ง ไม่ซ้ำ
+  });
+});
+
 describe('OfflineQueue — housekeeping', () => {
   it('pruneSent ลบเฉพาะ sent ที่เก่ากว่า maxAge — pending/failed ไม่โดนแตะ', async () => {
     const { queue, tick } = makeQueue();

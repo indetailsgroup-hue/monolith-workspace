@@ -46,6 +46,27 @@
 
 **มติ ops จาก grill:** ADR-036 (hosted SG bridge + exit criteria) · cron = pg_cron+pg_net ผ่าน migration (repo-as-code) · แผนเต็ม = `docs/OPS-RUNBOOK-Wave2.md`
 
+## Scrutiny รอบสอง — งาน Wave2 B1–B5 + installation-pm 0090–0092 (6 ก.ค. 2026)
+
+> ขอบเขต: commits `1f13922e`/`9bfc0c3b`/`a8499b5d` (migrations 0085–0092 + offline-queue TS + scheduler)
+> วิธีเดิม: ไล่ producer→consumer จริง + พิสูจน์ทุกข้อสงสัยด้วยการรันบน DB/เทสต์ ไม่ตัดสินจากการอ่าน
+
+| # | ระดับ | เรื่อง | สถานะ |
+|---|-------|--------|--------|
+| S1 | 🟠 กลาง | `installation_memberships_sel` (0090) ไม่มี branch `has_site_access` — office staff เขียน memberships ได้ (ins/upd มี site branch) แต่**อ่านไม่ได้** → จัดทีมแล้วมองไม่เห็นรายชื่อ | ✅ แก้ (0093) — ทดสอบจริง: office เห็น 1 / stranger เห็น 0 |
+| S2 | 🟡 ต่ำ (UX tenet) | Template 0085 หลุดศัพท์ระบบถึงผู้ใช้: `tpl_sla_timeout_pm` render `{{escalate_to}}` (= 'project_manager' ref ดิบ), `tpl_daily_digest` render `{{categories}}` (= JSON array) — ขัด D-12 "ห้ามโชว์ศัพท์ระบบ" | ✅ แก้ (0093) — ตัด slot ออกจาก body (ค่ายังอยู่ใน notification.slots ให้หลังบ้าน); ยืนยัน render ไม่เหลือ ref + ≤200 |
+| S3 | 🟠 กลาง | **Offline queue double-submit**: `online` + `visibilitychange` ยิงพร้อมกัน (ปลดล็อกจอตอนเน็ตกลับ) → flush ซ้อน → รายการเดียวถูก submit 2 ครั้ง — พิสูจน์ด้วยเทสต์ (fail ก่อนแก้จริง) | ✅ แก้: in-flight guard ระดับ instance + 2 regression tests; ข้าม context (window↔SW) กันไม่ได้ที่ client → **สัญญา SubmitFn: server ต้อง treat duplicate submissionId เป็น success** (จดใน spike doc + type doc) |
+| S4 | 🟡 ต่ำ | 0087 revert: gate ที่ map เป็น step ซึ่งไม่อยู่ใน process_model ปัจจุบัน (knowledge เปลี่ยนระหว่างรอ requote) → set `current_step` ใหม่แต่ `current_order` ค้างเก่า = ไม่ตรงกัน | ✅ แก้ (0093): fail-safe — revert เฉพาะเมื่อ map ครบทั้ง step+order; ไม่ครบ = ปลด lock ตามปกติ คง step เดิม + audit `revert_skipped_unmapped`; ทดสอบทั้ง mapped (revert ✓) และ unmapped (คงเดิม ✓) |
+
+### ตรวจแล้วสะอาด (พิสูจน์ด้วยหลักฐาน ไม่ใช่อ่านผ่าน)
+
+- **F10 ปิดสนิท**: ไล่ caller ของ `rpc_dispatch_notification` ทั้งเรโป — ไม่มีใคร hardcode `p_in_quiet_hours` เหลือ (0034 ถูก 0035→0086 ทับตามลำดับ chain)
+- ไม่มี caller `rpc_request_scope_change(uuid)` 1-arg ค้าง (0083 เป็นไฟล์ประวัติศาสตร์ — chain apply ผ่านจริงทั้งเส้น)
+- `rpc_complete_work_item` ทุก caller (adapter 0063→0092) เรียก 2-arg → ได้ default null = DB คำนวณ quiet hours ✓
+- FK chain ลบ project ที่มีรูปผูกห้อง: **ไม่ block** (photos โดน cascade ผ่าน project_id ในคำสั่งเดียวกัน — NO ACTION ตรวจท้าย statement) — พิสูจน์ด้วย DELETE จริง
+- 0092 rebase บน 0079 (ตัวล่าสุดจริง — ตรวจ replacement chain 6 ชั้น) ไม่ใช่ 0063 ที่ task เดิมอ้าง
+- ข้อสังเกตบันทึกไว้: RLS policy ที่มี subquery ไปตารางอื่น ต้องการ SELECT grant บนตารางนั้นด้วยถ้าวันหนึ่งเปิด direct-table access (สถาปัตยกรรมปัจจุบัน RPC-only จึงไม่กระทบ)
+
 ## ปิดรอบ B1–B5 (go-ahead 6 ก.ค. 2026 — migrations 0085–0089)
 
 - `0085` seed templates (F9 ✅) · `0086` quiet-hours DB default (F10 ✅) · `0087` requote full revert (F8 ✅, ADR-037) · `0088` identity_binding lifecycle cols (ADR-038) · `0089` cron pg_cron+pg_net (Vault refs `wf_edge_base_url`/`wf_edge_service_key`)
