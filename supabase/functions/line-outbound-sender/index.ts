@@ -95,23 +95,32 @@ export interface ClaimedOutbound {
   readonly replyToken?: string;
 }
 
-/** A LINE message object (text only in this wave). */
+/** A LINE text message object. */
 export interface LineTextMessage {
   readonly type: "text";
   readonly text: string;
 }
+
+/** A LINE Flex message (0098 — 1.8c: การ์ดอนุมัติลูกค้า D-5). */
+export interface LineFlexMessage {
+  readonly type: "flex";
+  readonly altText: string;
+  readonly contents: Record<string, unknown>;
+}
+
+export type LineMessage = LineTextMessage | LineFlexMessage;
 
 /** A fully-built LINE Messaging API request (endpoint + body), no token yet. */
 export type LineSendRequest =
   | {
       readonly endpoint: "reply";
       readonly replyToken: string;
-      readonly messages: readonly LineTextMessage[];
+      readonly messages: readonly LineMessage[];
     }
   | {
       readonly endpoint: "push";
       readonly to: string;
-      readonly messages: readonly LineTextMessage[];
+      readonly messages: readonly LineMessage[];
     };
 
 /** Outcome of a single LINE API call. */
@@ -248,7 +257,7 @@ export function createScrubbingLogger(
 export function renderOutboundText(
   row: ClaimedOutbound,
 ):
-  | { ok: true; text: string }
+  | { ok: true; text: string; kind: "text" | "flex" }
   | { ok: false; reason: string } {
   const resolution = resolveTemplate(
     row.candidateTemplates,
@@ -258,11 +267,47 @@ export function renderOutboundText(
   if (!resolution.ok) {
     return { ok: false, reason: `template_${resolution.reason}` };
   }
+  const kind = resolution.template.messageKind ?? "text";
   const substitution = substituteSlots(resolution.template.body, row.slotValues);
   if (!substitution.ok) {
     return { ok: false, reason: `missing_slot:${substitution.missing.join(",")}` };
   }
-  return { ok: true, text: substitution.body };
+  return { ok: true, text: substitution.body, kind };
+}
+
+/**
+ * แปลงผล render เป็น LINE message object (0098 — 1.8c):
+ * kind 'flex' → body ที่ substitute แล้วต้อง parse เป็น {"altText", "contents"};
+ * รูปแบบไม่ถูกต้อง = failure (บันทึกเป็นเหตุผล ไม่ส่งมั่ว)
+ */
+export function buildOutboundMessage(
+  text: string,
+  kind: "text" | "flex",
+):
+  | { ok: true; message: LineMessage }
+  | { ok: false; reason: string } {
+  if (kind === "text") {
+    return { ok: true, message: { type: "text", text } };
+  }
+  try {
+    const parsed = JSON.parse(text) as { altText?: unknown; contents?: unknown };
+    if (
+      typeof parsed.altText !== "string" || parsed.altText.length === 0 ||
+      parsed.contents === null || typeof parsed.contents !== "object"
+    ) {
+      return { ok: false, reason: "flex_shape_invalid" };
+    }
+    return {
+      ok: true,
+      message: {
+        type: "flex",
+        altText: parsed.altText,
+        contents: parsed.contents as Record<string, unknown>,
+      },
+    };
+  } catch {
+    return { ok: false, reason: "flex_json_invalid" };
+  }
 }
 
 /**
@@ -274,9 +319,12 @@ export function renderOutboundText(
  */
 export function buildLineRequest(
   row: ClaimedOutbound,
-  text: string,
+  message: LineMessage | string,
 ): LineSendRequest {
-  const messages: LineTextMessage[] = [{ type: "text", text }];
+  // รับ string เดิมได้เพื่อ backward-compat (แปลงเป็น text message)
+  const messages: LineMessage[] = [
+    typeof message === "string" ? { type: "text", text: message } : message,
+  ];
   const hasUsableReplyToken =
     row.sendType === "reply" &&
     typeof row.replyToken === "string" &&
@@ -374,8 +422,14 @@ async function processOne(
     return failure(row, rendered.reason, logger);
   }
 
+  // 2b. แปลงเป็น LINE message ตามชนิด template (flex = การ์ด D-5 — 0098)
+  const built = buildOutboundMessage(rendered.text, rendered.kind);
+  if (!built.ok) {
+    return failure(row, built.reason, logger);
+  }
+
   // 3. Build the concrete LINE request and send it with the resolved token.
-  const request = buildLineRequest(row, rendered.text);
+  const request = buildLineRequest(row, built.message);
   let outcome: LineSendOutcome;
   try {
     outcome = await line.send(request, token);
@@ -531,7 +585,7 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
         // Candidate templates for resolution + slot substitution.
         const { data: templates } = await client
           .from("line_oa_message_templates")
-          .select("template_key, vertical_context, body, is_active")
+          .select("template_key, vertical_context, body, is_active, message_kind")
           .eq("template_key", r.template_key)
           .or(`vertical_context.eq.${verticalContext},vertical_context.is.null`);
 
@@ -549,6 +603,7 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
             verticalContext: t.vertical_context,
             body: t.body,
             isActive: t.is_active,
+            messageKind: (t.message_kind ?? "text") as "text" | "flex",
           })),
         });
       }

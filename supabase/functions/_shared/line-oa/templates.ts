@@ -44,6 +44,11 @@ export interface MessageTemplate {
   readonly verticalContext: VerticalContext | null;
   readonly body: string;
   readonly isActive: boolean;
+  /**
+   * ชนิดข้อความ (0098 — 1.8c): 'text' (default) = body คือข้อความตรง ๆ;
+   * 'flex' = body คือ JSON {"altText": "...", "contents": {bubble}} (หลัง substitute slots)
+   */
+  readonly messageKind?: "text" | "flex";
 }
 
 /**

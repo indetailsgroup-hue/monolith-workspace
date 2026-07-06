@@ -36,7 +36,12 @@
   - **PDPA v1**: แชทธรรมดา**ไม่เก็บ** (ไม่มี inbound row — ไม่มี side effect จึง idempotent-safe); เก็บเฉพาะ event ที่ระบบทำงานด้วย
   - ทดสอบ 7 flows บน DB จริง (join/bind guest fail/bind ok/member kinds/photo→capture/issue+notify/plain ignored); เหลือของ 1.8b เดิม: **ลิงก์ผูก staff identity (LINE Login + consent)** → ย้ายไปทำกับ PWA (1.5/1.6b — ต้องมีหน้า consent)
   - ⚠️ note ส่งต่อ 1.4: capture รูปจาก LINE เก็บ `raw_uri='line-message://<id>'` — ต้องมี worker fetch content จาก LINE API เข้า Storage ภายในช่วงที่ LINE ยังเก็บ content
-- [ ] 1.8c LINE templates: 'inst_approval_request' (ลูกค้า — D-5, `audience='customer'`) + curated progress update + แจ้งเตือนทีม internal (งานใหม่/approval result/เตือนรายงาน)
+- [x] 1.8c — ✅ **`0098_customer_acceptance_flex.sql` (2026-07-06)**: flow ตรวจรับลูกค้า D-5 ครบเส้น:
+  - `rpc_request_customer_acceptance(project)` — idempotent (pending เดิม = คืนใบเดิม ไม่ spam ลูกค้า); project → customer_review + สร้าง approvals พร้อม `approve_token` (secret ต่อใบ กันปลอม postback) + enqueue Flex เข้ากลุ่ม customer
+  - templates: `tpl_inst_approval_request` (**Flex** — `message_kind='flex'` คอลัมน์ใหม่, audience customer, ปุ่ม รับงาน/ขอแก้ไข) + acceptance_ack (customer) + acceptance_result (internal) + progress_update (customer — curated flow ใช้จาก PWA)
+  - postback branch ใน `fn_line_handle_group_event` (rebase 0097): validate id+token+pending+กลุ่มตรงบ้าน → approved = project completed / rejected = คง customer_review (punch list — ADR-039 มติ 5, ไม่ reopen work item) + ack ลูกค้า + แจ้งกลุ่ม internal + audit
+  - sender รองรับ Flex: `MessageTemplate.messageKind` + `buildOutboundMessage` (JSON พัง/รูปแบบผิด = failed ไม่ส่งมั่ว) — 6 unit tests
+  - ทดสอบ DB จริง 5 เคส: ส่งตรวจรับ→Flex 1 ใบ · idempotent · token ผิด block · approve→completed+ack+แจ้งทีม · กดซ้ำ→already_decided; เตือนรายงานประจำวัน = 1.6 (template ตอน daily report landing)
 - [ ] 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)
 - [ ] 1.10* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency + subtask-ไม่-complete-work-item
 
