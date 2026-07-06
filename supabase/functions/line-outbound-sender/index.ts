@@ -65,15 +65,18 @@ export type SendResultStatus = "sent" | "failed";
 export interface ClaimedOutbound {
   /** `line_oa_outbound_messages.id`. */
   readonly outboundId: string;
-  /** Owning conversation id. */
-  readonly conversationId: string;
+  /** Owning conversation id — null สำหรับแถวส่งเข้ากลุ่ม (0097: target_type='group'). */
+  readonly conversationId: string | null;
   /** Resolved send kind from the staged row. */
   readonly sendType: SendType;
   /** Template the row is bound to. */
   readonly templateKey: string;
   /** Named-slot values recorded at composition time (Req 5.6). */
   readonly slotValues: Readonly<Record<string, string>>;
-  /** Recipient LINE userId (from the conversation) — used for push. */
+  /**
+   * Push target: LINE userId (1:1 จาก conversation) หรือ LINE groupId
+   * (แถว group — LINE push API รับ groupId ใน `to` ตรง ๆ เหมือน userId)
+   */
   readonly lineUserId: string;
   /** Conversation vertical, selecting the template scope + channel. */
   readonly verticalContext: string;
@@ -479,13 +482,15 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
 
   const data: SenderDataAccess = {
     async claimPending(limit) {
-      // Read pending rows joined with their conversation. Template candidates and
-      // the channel token ref are fetched per row. Ordered oldest-first.
+      // Read pending rows joined with their conversation (left join — แถว group
+      // ไม่มี conversation; 0097). Template candidates and the channel token ref
+      // are fetched per row. Ordered oldest-first.
       const { data: rows, error } = await client
         .from("line_oa_outbound_messages")
         .select(
           "id, conversation_id, send_type, template_key, slot_values, " +
-            "line_oa_conversations!inner(line_user_id, vertical_context)",
+            "target_type, target_id, " +
+            "line_oa_conversations(line_user_id, vertical_context)",
         )
         .eq("status", "pending")
         .order("id", { ascending: true })
@@ -498,7 +503,21 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
         const convo = Array.isArray(r.line_oa_conversations)
           ? r.line_oa_conversations[0]
           : r.line_oa_conversations;
-        const verticalContext: string = convo?.vertical_context;
+        const isGroup = r.target_type === "group";
+
+        // แถว group: push ไปที่ groupId ตรง ๆ; vertical จาก line_groups (จำตอน #ผูก — 0097)
+        let groupVertical: string | undefined;
+        if (isGroup) {
+          const { data: grp } = await client
+            .from("line_groups")
+            .select("vertical_context")
+            .eq("line_group_id", r.target_id)
+            .maybeSingle();
+          groupVertical = grp?.vertical_context ?? undefined;
+        }
+        const verticalContext: string = isGroup
+          ? (groupVertical ?? "monolith")
+          : convo?.vertical_context;
 
         // Resolve the active channel for this vertical (centralized topology).
         const { data: channel } = await client
@@ -518,11 +537,11 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
 
         claimed.push({
           outboundId: r.id,
-          conversationId: r.conversation_id,
+          conversationId: r.conversation_id ?? null,
           sendType: r.send_type as SendType,
           templateKey: r.template_key,
           slotValues: (r.slot_values ?? {}) as Record<string, string>,
-          lineUserId: convo?.line_user_id,
+          lineUserId: isGroup ? r.target_id : convo?.line_user_id,
           verticalContext,
           channelAccessTokenRef: channel?.channel_access_token_ref ?? "",
           candidateTemplates: (templates ?? []).map((t) => ({
