@@ -52,7 +52,7 @@ export function buildDispatchParams(item: SweepItem): Record<string, unknown> {
       escalate_to: item.escalate_to ?? null,
     },
     p_muted: false,
-    p_in_quiet_hours: false,
+    // B2/F10 (0086): ไม่ส่ง p_in_quiet_hours → DB คำนวณเองจากนาฬิกา Asia/Bangkok (fn_wf_in_quiet_hours)
     p_has_active_binding: true,
     p_dept_head_target: null,
     p_site_code: item.site_code,

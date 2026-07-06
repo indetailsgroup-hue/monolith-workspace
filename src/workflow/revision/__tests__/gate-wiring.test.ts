@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   gateForStep,
+  stepForGate,
   isCustomerGate,
   rejectRoute,
   LOCKABLE_STEPS,
@@ -32,6 +33,29 @@ describe('gateForStep — step → gate mapping (Req 21.3)', () => {
     // exactly four lockable steps, each mapping to a distinct gate
     const gates = LOCKABLE_STEPS.map((s) => gateForStep(s));
     expect(new Set(gates)).toEqual(new Set<DesignGate>(['G1', 'G2', 'G3', 'G4']));
+  });
+});
+
+describe('stepForGate — inverse mapping สำหรับ requote revert (ADR-037, mirror fn_wf_step_for_gate 0087)', () => {
+  it('maps G1–G4 back to their lock steps', () => {
+    expect(stepForGate('G1')).toBe('Designer');
+    expect(stepForGate('G2')).toBe('3D_Presentation');
+    expect(stepForGate('G3')).toBe('3D_Rendering_Final');
+    expect(stepForGate('G4')).toBe('Production Planning');
+  });
+
+  it('roundtrip: stepForGate(gateForStep(step)) = step สำหรับทุก lockable step', () => {
+    for (const step of LOCKABLE_STEPS) {
+      const gate = gateForStep(step);
+      expect(gate).not.toBeNull();
+      expect(stepForGate(gate as DesignGate)).toBe(step);
+    }
+  });
+
+  it('roundtrip: gateForStep(stepForGate(gate)) = gate สำหรับทุก gate', () => {
+    for (const gate of ['G1', 'G2', 'G3', 'G4'] as const) {
+      expect(gateForStep(stepForGate(gate))).toBe(gate);
+    }
   });
 });
 

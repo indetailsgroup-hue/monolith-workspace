@@ -88,4 +88,13 @@ describe("buildDispatchParams routing (Req 20.11)", () => {
     expect(p.p_template_key).toBe("tpl_sla_reminder");
     expect(p.p_intent).toBe("personal_responsibility");
   });
+
+  // B2/F10 (0086): quiet hours คำนวณที่ DB — caller ห้าม hardcode ค่า (เดิมส่ง false ตายตัว → digest ไม่เคยเกิด)
+  it("ไม่ส่ง p_in_quiet_hours → DB default (fn_wf_in_quiet_hours) เป็นคนตัดสิน", () => {
+    const p = buildDispatchParams({
+      approval_request_id: "r", work_item_id: "w", process_step: "Designer", site_code: "S0",
+      action: "reminder_50",
+    });
+    expect("p_in_quiet_hours" in p).toBe(false);
+  });
 });

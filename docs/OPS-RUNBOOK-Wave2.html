@@ -89,7 +89,7 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 <li><strong>A3</strong> LINE Official Account: เก็บ <code>channel_secret</code> + <code>channel_access_token</code> เข้า <strong>Vault</strong> (ชื่อ ref จดไว้ใช้ใน C3) — Edge Functions ไม่ถือ secret ตรง (pattern เดิม)</li>
 <li><strong>A4</strong> <code>supabase link</code> + เก็บ project ref/keys ใน password manager ของ owner (ไม่ commit)</li>
 </ul>
-<h2>B. โค้ดค้างจาก grill (แต่ละข้อ = ขอ go-ahead ก่อนทำ)</h2>
+<h2>B. โค้ดค้างจาก grill — ✅ <strong>implement ครบ 5 ข้อแล้ว (2026-07-06, migrations 0085–0089)</strong></h2>
 <table>
 <thead>
 <tr>
@@ -97,6 +97,7 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 <th>งาน</th>
 <th>ที่มา</th>
 <th>สาระ</th>
+<th>สถานะ</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -104,30 +105,35 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 <td><strong>Seed workflow templates</strong></td>
 <td><strong>F9 (พบใน grill)</strong> — keys <code>tpl_sla_reminder</code>, <code>tpl_sla_timeout</code>, <code>tpl_sla_timeout_pm</code>, <code>tpl_celebrate</code> (0033–0035/scheduler) ถูกอ้างแต่<strong>ไม่เคย seed</strong> → ถ้า deploy วันนี้ทุก notification = <code>template_unresolvable</code></td>
 <td>migration seed เข้า <code>line_oa_message_templates</code> (vertical null = shared, ≤200 ตัวอักษร, น้ำเสียงไทยอบอุ่นตาม Req 12.2) — ต้องผ่าน template governance review</td>
+<td>✅ <code>0085</code> — 5 keys (เพิ่ม <code>tpl_daily_digest</code> ที่ 0060 อ้างด้วย); review ผ่าน PR นี้</td>
 </tr>
 <tr>
 <td>B2</td>
 <td><strong>คำนวณ <code>in_quiet_hours</code> ที่ DB</strong></td>
 <td><strong>F10 (พบใน grill)</strong> — ทุก caller ส่ง default false → digest ไม่มีทางเกิดจริง</td>
 <td>แก้ <code>rpc_dispatch_notification</code>: default ของ <code>p_in_quiet_hours</code> = คำนวณจากนาฬิกา DB (<code>Asia/Bangkok</code> ∈ 20:00–08:00) เมื่อ caller ไม่ส่งค่า — ค่าตาม glossary ที่ owner กำหนด</td>
+<td>✅ <code>0086</code> — <code>fn_wf_in_quiet_hours()</code> + default null ทั้ง dispatch/complete + scheduler เลิก hardcode false + TS mirror <code>quiet-hours.ts</code></td>
 </tr>
 <tr>
 <td>B3</td>
 <td><strong>Cron migration (pg_cron + pg_net)</strong></td>
 <td>มติ grill Q2 — schedule เป็น code ใน repo</td>
 <td>migration เดียว: enable <code>pg_cron</code>+<code>pg_net</code> → <code>cron.schedule</code> 3 รายการ: <code>notification-retry</code> ทุก 1 นาที · <code>sla-sweep</code> ทุก 15 นาที · <code>daily-digest</code> <code>0 1 * * *</code> UTC (= 08:00 ไทย, POST body <code>{&quot;assemble_digest&quot;:true}</code>) — ยิง HTTP ไป Edge Functions โดย service key อ่านจาก Vault (ห้าม hardcode)</td>
+<td>✅ <code>0089</code> — Vault refs: <code>wf_edge_base_url</code> + <code>wf_edge_service_key</code> (seed ใน C3); local dev ไม่มี extension → ข้ามอย่างปลอดภัย</td>
 </tr>
 <tr>
 <td>B4</td>
 <td><strong>F8 requote full-revert</strong></td>
 <td>ADR-037</td>
 <td><code>rpc_request_scope_change(+p_gate)</code> เก็บ gate ใน <code>_requote</code> → accept ครบคู่: ปลด lock gate นั้น + revert <code>current_step</code> (inverse <code>fn_wf_gate_for_step</code>) → เข้าวงจรอนุมัติใหม่ → trigger 0084 re-lock เอง + tests</td>
+<td>✅ <code>0087</code> — <code>fn_wf_step_for_gate</code> + revert step/order + เคลียร์ <code>_requote</code>; mirror+tests ใน <code>requote-fsm.ts</code>/<code>gate-wiring.ts</code></td>
 </tr>
 <tr>
 <td>B5</td>
 <td><strong>ADR-038 binding extension</strong></td>
 <td>grill Q5</td>
 <td>migration: <code>identity_binding</code> += <code>consent_at</code>,<code>bound_at</code>,<code>revoked_at</code> (โครงรองรับ bind-link/LINE Login flow ของ installation-pm Phase 1.8)</td>
+<td>✅ <code>0088</code> — backfill <code>bound_at</code>=created_at; <code>consent_at</code> คง null จนมี PDPA flow จริง</td>
 </tr>
 </tbody></table>
 <h2>C. Deploy + Seed</h2>
@@ -136,9 +142,10 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 <li><strong>C2</strong> <code>supabase functions deploy</code> ×7: <code>line-webhook</code>, <code>line-outbound-sender</code>, <code>approval-postback</code>, <code>web-fallback-api</code>, <code>notification-retry-worker</code>, <code>sla-sweep-scheduler</code>, <code>capture-ingest</code>/<code>field-capture</code> ตามที่ Wave 2 ใช้ · ตั้ง LINE webhook URL ชี้ <code>line-webhook</code></li>
 <li><strong>C3 Seed data (ลำดับสำคัญ):</strong><ol>
 <li><code>line_oa_channels</code> 1 แถว (vertical <code>monolith</code>, Vault refs จาก A3)</li>
-<li>Templates จาก B1 (ผ่าน governance review ก่อน)</li>
+<li><del>Templates จาก B1</del> ✅ อยู่ใน migration <code>0085</code> แล้ว — มากับ <code>db push</code> (C1) เอง</li>
 <li>Knowledge import: <code>rpc_import_knowledge</code> จาก Knowledge_Export ฉบับ approved (RACI/process model — ถ้าไม่มี import ที่ <code>is_current</code> ทุก resolve จะ fail-safe block)</li>
 <li><strong><code>identity_binding</code></strong>: ผู้ใช้ Wave 2 ทุกคน (LINE Login ผูกครั้งเดียว) + <strong><code>app_role</code> สำหรับผู้อนุมัติ</strong> (map approver ref → คน — ไม่มีข้อมูลนี้ reminder/timeout จะ <code>recipient_unresolvable</code> ตามดีไซน์ 0084)</li>
+<li><strong>Vault secrets สำหรับ cron (B3/0089)</strong>: <code>wf_edge_base_url</code> = <code>https://&lt;ref&gt;.supabase.co</code> + <code>wf_edge_service_key</code> = service role key (Dashboard → Vault) — ยังไม่ seed ก็ไม่ error: job จะ audit <code>cron_secrets_missing</code> แล้วข้ามจนกว่าจะครบ</li>
 </ol>
 </li>
 <li><strong>C4</strong> Env ของ functions: <code>SUPABASE_URL</code>/<code>SERVICE_ROLE_KEY</code> (อัตโนมัติ) — ไม่มี secret เพิ่ม</li>
@@ -161,6 +168,7 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 <li>CI auto-deploy ของ functions/migrations — รอบแรก manual ตาม runbook เพื่อคุมลำดับ seed; ตั้ง CI หลัง D3 เสถียร</li>
 <li>Self-host ไทย — เป็น exit ของ ADR-036 ไม่ใช่เงื่อนไขเปิด Wave 2</li>
 </ul>
+
 </div>
 <button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>

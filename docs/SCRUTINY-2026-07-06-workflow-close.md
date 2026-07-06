@@ -15,7 +15,7 @@
 | F5 | 🟡 ต่ำ | Delegation dedup: สอง approver เดิม delegate ไปคนเดียวกัน → 1 request → quorum unanimous เหลือเสียงเดียว (คนเดียวถืออำนาจสองสาย) | 🗒 ยอมรับ: spec ไม่ได้ห้าม และสอดคล้อง unique index เดิม; ทางป้องกันเชิงนโยบาย = ไม่ตั้ง delegation ซ้อนไปคนเดียวกัน — บันทึกเป็นข้อสังเกตใน 0082 |
 | F6 | 🟡 ต่ำ | เอกสาร/คอมเมนต์ 0082 + `resolve-with-delegation.ts` บอก identity = email/uid (`resolve_actor`) แต่ความจริง = **approver ref (role ref)** — โค้ดทำงานถูก (opaque text) แต่คนอ่านจะผูก delegation ผิด | ✅ แก้ (0084): `comment on function rpc_create_delegation` ระบุ semantics จริง + แก้ doc ใน TS |
 | F7 | 🟡 ต่ำ | Ordering contract ของ reject→classify: ถ้าเรียก `rpc_reject_design_gate` ก่อน decision RPC, สถานะ `awaiting_requote` จะถูก decision ทับเป็น `rework` | 🗒 บันทึก contract: caller (UI/Edge) ต้องบันทึก reject ผ่าน decision RPC ก่อน แล้วค่อย classify — เขียนใน 0083 header แล้ว + tasks |
-| F8 | 🟡 ต่ำ | **Pre-existing:** `rpc_accept_requote` (0024) เมื่อครบทั้งคู่ → in_progress แต่**ไม่ revert/ไม่ re-lock** ตาม Req 21.10 | 📐 **Design แล้ว (ADR-037, grill-with-docs 6 ก.ค.):** full revert ผ่านวงจรอนุมัติเดิม — เก็บ gate ตอน scope_change → accept ครบคู่: ปลด lock + revert current_step → trigger 0084 re-lock เองเมื่อ gate ผ่านใหม่; รอ go-ahead implement (runbook B4) |
+| F8 | 🟡 ต่ำ | **Pre-existing:** `rpc_accept_requote` (0024) เมื่อครบทั้งคู่ → in_progress แต่**ไม่ revert/ไม่ re-lock** ตาม Req 21.10 | ✅ แก้ (`0087`, ADR-037): `rpc_request_scope_change(+p_gate)` เก็บ gate ใน `_requote` → accept ครบคู่: ปลด lock gate + revert `current_step`/`current_order` (inverse `fn_wf_step_for_gate`) + เคลียร์ `_requote` → trigger 0084 re-lock เองเมื่อ gate ผ่านใหม่; mirror+tests `requote-fsm.ts`/`gate-wiring.ts` |
 
 ## สิ่งที่ scrutiny ยืนยันว่าถูกต้อง (ไม่ใช่ finding)
 
@@ -40,8 +40,14 @@
 
 | # | ระดับ | เรื่อง | สถานะ |
 |---|-------|--------|--------|
-| F9 | 🔴 สูง | **Workflow templates ไม่เคยถูก seed** — keys `tpl_sla_reminder/timeout/timeout_pm/celebrate` ถูกอ้างใน 0033–0035 + scheduler แต่ไม่มี insert เข้า `line_oa_message_templates` เลย → deploy วันนี้ทุก notification = `template_unresolvable` | 📐 runbook B1 (seed migration + governance review) |
-| F10 | 🟠 กลาง | **`in_quiet_hours` ไม่มีใครคำนวณ** — เป็น boolean param ที่ทุก caller ปล่อย default false → digest ไม่มีทางเกิดจริง; และ Quiet_Hours ไม่เคยมีค่าจริงจนกระทั่ง grill นี้ (owner กำหนด **20:00–08:00 ไทย, digest 08:00**) | 📐 runbook B2 (คำนวณที่ DB default) + glossary อัปเดตแล้ว |
+| F9 | 🔴 สูง | **Workflow templates ไม่เคยถูก seed** — keys `tpl_sla_reminder/timeout/timeout_pm/celebrate` ถูกอ้างใน 0033–0035 + scheduler แต่ไม่มี insert เข้า `line_oa_message_templates` เลย → deploy วันนี้ทุก notification = `template_unresolvable` | ✅ แก้ (`0085`): seed 5 keys (รวม `tpl_daily_digest` ที่ 0060 อ้าง — ไล่ให้ครบทุก key จริงตามสปิริต F9) vertical null, ≤200, น้ำเสียง Req 12.2 |
+| F10 | 🟠 กลาง | **`in_quiet_hours` ไม่มีใครคำนวณ** — เป็น boolean param ที่ทุก caller ปล่อย default false → digest ไม่มีทางเกิดจริง; และ Quiet_Hours ไม่เคยมีค่าจริงจนกระทั่ง grill นี้ (owner กำหนด **20:00–08:00 ไทย, digest 08:00**) | ✅ แก้ (`0086`): `fn_wf_in_quiet_hours()` (Asia/Bangkok) + `p_in_quiet_hours` default null=DB คำนวณ ทั้ง dispatch/complete + scheduler เลิก hardcode false + mirror `quiet-hours.ts` (regression guard: caller ห้ามส่ง flag) |
 | F11 | 🟡 ต่ำ | **ตาราง staff↔LINE binding ซ้ำสองระบบ** — `identity_binding` (มีจริง) vs `line_staff_identity` (installation-pm spec) → ผูกสองรอบ/drift | ✅ ADR-038: ยุบเป็น `identity_binding` เดียว + แก้ spec ครบ (requirements/line-architecture/tasks/LINE system doc) |
 
 **มติ ops จาก grill:** ADR-036 (hosted SG bridge + exit criteria) · cron = pg_cron+pg_net ผ่าน migration (repo-as-code) · แผนเต็ม = `docs/OPS-RUNBOOK-Wave2.md`
+
+## ปิดรอบ B1–B5 (go-ahead 6 ก.ค. 2026 — migrations 0085–0089)
+
+- `0085` seed templates (F9 ✅) · `0086` quiet-hours DB default (F10 ✅) · `0087` requote full revert (F8 ✅, ADR-037) · `0088` identity_binding lifecycle cols (ADR-038) · `0089` cron pg_cron+pg_net (Vault refs `wf_edge_base_url`/`wf_edge_service_key`)
+- Verification: `tsc -b` 0 errors · full vitest **4,455/4,455 (246 files)** — เพิ่ม 11 tests (quiet-hours mirror 4, stepForGate roundtrip 3, requote revert 3, scheduler no-hardcode guard 1)
+- เหลือฝั่ง ops ตาม runbook: A (provision) → C (deploy+seed รวม Vault cron secrets) → D (verify)

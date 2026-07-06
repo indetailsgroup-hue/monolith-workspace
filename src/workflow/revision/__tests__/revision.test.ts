@@ -92,6 +92,43 @@ describe('re-quote FSM (Req 21.6, 21.10, 21.17)', () => {
     expect(out.status).toBe('awaiting_customer_acceptance');
     expect(out.proceed).toBe(false);
   });
+
+  // ADR-037 (0087) — full revert: proceed + รู้ gate → revert กลับ step ของ gate
+  it('ADR-037: ครบคู่ + รู้ gate → revertToStep = step ของ gate (inverse map)', () => {
+    const first = acceptRequote(
+      { internalAccepted: false, customerAccepted: false, gate: 'G2' },
+      'internal',
+    );
+    expect(first.proceed).toBe(false);
+    expect(first.revertToStep).toBeNull(); // ยังไม่ครบคู่ ห้าม revert
+    expect(first.state.gate).toBe('G2'); // gate ต้องคงอยู่ระหว่างรอ
+
+    const done = acceptRequote(first.state, 'customer');
+    expect(done.proceed).toBe(true);
+    expect(done.revertToStep).toBe('3D_Presentation'); // G2 → 3D_Presentation
+  });
+
+  it('ADR-037: ครบคู่แต่ไม่รู้ gate (legacy ก่อน 0087) → proceed โดยไม่ revert', () => {
+    const out = acceptRequote({ internalAccepted: true, customerAccepted: false }, 'customer');
+    expect(out.proceed).toBe(true);
+    expect(out.revertToStep).toBeNull();
+  });
+
+  it('ADR-037: ทุก gate revert กลับ step ตัวเองถูกต้อง', () => {
+    const expected = {
+      G1: 'Designer',
+      G2: '3D_Presentation',
+      G3: '3D_Rendering_Final',
+      G4: 'Production Planning',
+    } as const;
+    for (const gate of ['G1', 'G2', 'G3', 'G4'] as const) {
+      const out = acceptRequote(
+        { internalAccepted: true, customerAccepted: false, gate },
+        'customer',
+      );
+      expect(out.revertToStep).toBe(expected[gate]);
+    }
+  });
 });
 
 describe('customer approver set (Req 20)', () => {

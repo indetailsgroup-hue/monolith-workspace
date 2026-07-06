@@ -33,6 +33,21 @@ export function gateForStep(step: ProcessStep): DesignGate | null {
 /** step ที่มีการตั้ง design lock (สำหรับ iterate/validate) */
 export const LOCKABLE_STEPS: readonly ProcessStep[] = Object.keys(STEP_TO_GATE) as ProcessStep[];
 
+const GATE_TO_STEP: Record<DesignGate, ProcessStep> = {
+  G1: 'Designer',
+  G2: '3D_Presentation',
+  G3: '3D_Rendering_Final',
+  G4: 'Production Planning',
+};
+
+/**
+ * ADR-037 (requote full revert) — inverse ของ gateForStep: step ที่งานต้อง revert กลับไป
+ * เมื่อ scope change ของ gate นั้นผ่านการ accept ครบคู่ (mirror fn_wf_step_for_gate — 0087)
+ */
+export function stepForGate(gate: DesignGate): ProcessStep {
+  return GATE_TO_STEP[gate];
+}
+
 /** customer gate = G1/G2/G3 (ลูกค้าเซ็น), internal = G4 (Production Planning) */
 export function isCustomerGate(gate: DesignGate): boolean {
   return gate === 'G1' || gate === 'G2' || gate === 'G3';
