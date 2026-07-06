@@ -25,12 +25,14 @@ export interface NotificationRow {
   slots?: Record<string, unknown>;
   retry_count: number;
   site_code?: string | null;
-  /** ผู้รับที่ resolve แล้วจาก identity_binding — null = recipient_unresolvable */
+  /** ผู้รับที่ resolve แล้ว (chain: direct → employee uuid → approval_request role/customer → escalate_to) */
   line_user_id: string | null;
   /** ข้อความที่ render จาก template ที่ approve แล้ว — null = template_unresolvable */
   rendered_text: string | null;
   /** Vault reference ของ channel access token (ไม่ใช่ตัว token) */
   token_ref: string | null;
+  /** เหตุผลที่ DB ตัดสินว่าส่งไม่ได้ (0084): recipient_unresolvable | template_unresolvable | segment_too_long */
+  resolve_error?: string | null;
 }
 
 export type ClaimFn = (limit: number) => Promise<NotificationRow[]>;
@@ -79,16 +81,18 @@ export async function runWorker(deps: WorkerDeps, limit = 20): Promise<WorkerSum
   let failed = 0;
   let unresolvable = 0;
   for (const row of rows) {
-    // Poison rows: resolve ไม่ได้ → record fail ทันที (ไม่เรียก send) — retry ตาม backoff
-    // เผื่อ binding/template ถูกเพิ่มภายหลัง; ครบ maxAttempts → failed ถาวร + audit (0019)
-    if (row.line_user_id === null || row.line_user_id === "") {
-      await deps.recordResult(row.id, false, "recipient_unresolvable", row.retry_count);
-      unresolvable += 1;
-      failed += 1;
-      continue;
-    }
-    if (row.rendered_text === null || row.rendered_text === "") {
-      await deps.recordResult(row.id, false, "template_unresolvable", row.retry_count);
+    // Poison rows: DB ตัดสินว่าส่งไม่ได้ (resolve_error จาก claim v3 — 0084) หรือ field ขาด →
+    // record fail ทันที (ไม่เรียก send) — retry ตาม backoff เผื่อ binding/template ถูกเพิ่มภายหลัง;
+    // ครบ maxAttempts → failed ถาวร + audit (0019). รวมกติกา ≤200 ของ non-Direct (segment_too_long).
+    const poison =
+      row.resolve_error ??
+      (row.line_user_id === null || row.line_user_id === ""
+        ? "recipient_unresolvable"
+        : row.rendered_text === null || row.rendered_text === ""
+          ? "template_unresolvable"
+          : null);
+    if (poison !== null) {
+      await deps.recordResult(row.id, false, poison, row.retry_count);
       unresolvable += 1;
       failed += 1;
       continue;

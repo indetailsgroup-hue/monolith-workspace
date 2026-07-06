@@ -5,10 +5,12 @@
 // delegation before an Approval_Request is created, so a valid Acting_Approver
 // receives the request in place of the delegating approver.
 //
-// Identity note: approver identities here are the SAME actor-identity strings that
-// `resolve_actor()` returns and that `approval_request.resolved_approver` holds
-// (email/uid), NOT employee uuids — this is the alignment that was missing and is
-// why routing could not be wired before.
+// Identity note (แก้ตาม scrutiny F6, 2026-07-06): approver identities here are the
+// SAME opaque strings that `approval_request.resolved_approver` holds — which per
+// ADR-018 are **approver refs (app-role refs)** from raciMap approvers[].ref /
+// accountable (0031 authorizes the button press via has_any_app_role([ref])) —
+// NOT emails and NOT employee uuids. The old delegation table was keyed by
+// employee uuid, which is why routing could never be wired before 0082.
 
 import { routeApprover } from './delegation-routing';
 

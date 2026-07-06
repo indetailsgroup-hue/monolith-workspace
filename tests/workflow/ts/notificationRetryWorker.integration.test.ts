@@ -107,6 +107,21 @@ describe("notification-retry-worker — runWorker orchestration", () => {
     ]);
   });
 
+  it("honors the DB's resolve_error verdict (0084) — e.g. segment_too_long never reaches send", async () => {
+    // claim v3 enforces the ≤200 rule for non-Direct at the DB (Req 12.5/12.6):
+    // the worker must trust resolve_error even when recipient/text look present.
+    const tooLong = row({ channel: "group_message", resolve_error: "segment_too_long" });
+    const { deps, sends, recorded } = makeDeps([tooLong], () => true);
+
+    const summary = await runWorker(deps);
+
+    expect(sends).toHaveLength(0);
+    expect(summary).toEqual({ claimed: 1, sent: 0, failed: 1, unresolvable: 1 });
+    expect(recorded).toEqual([
+      { id: tooLong.id, success: false, errorDetail: "segment_too_long", retryCount: 0 },
+    ]);
+  });
+
   it("every claimed row terminates in exactly one recordResult, even when a send throws mid-batch", async () => {
     const a = row({});
     const b = row({ retry_count: 1 });
