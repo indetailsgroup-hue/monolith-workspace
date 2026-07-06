@@ -25,6 +25,8 @@
 - **Production Milestone**: จุดรายงานการผลิตต่อบ้าน — รายงาน 6 สถานี (FYI) + designer gate 2 จุด (Assembly / Packing) → รูปที่ approve แล้ว curated เข้ากลุ่มลูกค้าอัตโนมัติ (ADR-041 มติ 2)
 - **ตรวจหน้างานร่วม (`site_design_verification`)**: capture โดยทีมวัด+designer ที่บ้านลูกค้า — เงื่อนไขก่อนส่งการ์ดเซ็นแบบ final G3 (ADR-041 มติ 3; soft+audit)
 - **แผนงวด (Payment Plan)**: โครงงวดต่อบ้าน default **50/30/15/5** (สัญญา 50 · G3 30 · ก่อนจัดส่ง 15 · ตรวจรับ 5) — การ์ดแจ้งงวดอัตโนมัติ + F3 บันทึกรับ + soft gate ก่อนปล่อยผลิต (override โดย PM/GM พร้อมเหตุผล — ADR-041 มติ 5/5.1)
+- **Punch List (รายการเก็บงาน)**: issues ที่ลูกค้าจุดประเด็นตอนตรวจรับ (source customer_review) — แก้ครบทุกข้อจึงส่งตรวจรับรอบใหม่ (ADR-042)
+- **Warranty Until**: วันหมดประกันต่อบ้าน = ตรวจรับ + 1 ปี (งาน DAPH); ฟิตติ้งตามแบรนด์ pass-through; กลุ่มบ้าน active ถึงวันนี้ (ADR-042)
 - **T0 Snapshot**: สถานะเช็คลิสต์ site readiness ณ วินาทีที่หัวหน้าทีมกด approve start — แนบลง audit log เสมอ (soft gate — ADR-039 ข้อ 4)
 
 ## Reuse Map (ผลตรวจกับเรโปจริง 2026-07-05)

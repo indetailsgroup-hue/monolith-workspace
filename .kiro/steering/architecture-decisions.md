@@ -440,3 +440,14 @@ inclusion: always
   6. **โครงงวด DAPH: 4 งวดหน้าหนัก งวดส่งมอบ 5%** ผูก 4 จุด (สัญญา · G3 · ก่อนจัดส่ง · ตรวจรับ); default = **50/30/15/5 (ยืนยันแล้ว 7 ก.ค. 2026)** — ปรับได้ต่อสัญญา
   - โครงเสริมที่ทุกมติพึ่ง: **Phase Roster** — ตาราง "ใครควรอยู่กลุ่มไหนช่วงไหน" ต่อบ้าน + assignment approval โดยหัวหน้าฝ่าย (C1 วัด / B1 ออกแบบ+จับคู่ designer / D3 ติดตั้ง)
 - **Consequences:** delta 8 ชิ้น (tasks Phase J2): factory group + roster + milestones/curated + payment plan + site verification + QC gate + install plan send + designer matching; กลุ่มลูกค้าย้ายจุดเกิดจากเฟสติดตั้งมาที่ Qualify (0095 รองรับอยู่แล้ว — installation_projects เปิดได้ตั้งแต่ต้น); after-sales + lead pipeline = เฟสถัดไป (จดใน draft); journey v1 HTML จะถูกเขียนใหม่หลัง J2 landing
+
+## ADR-042 — After-Sales: punch list ใช้ตาราง issue เดียว · กลุ่มบ้านมีชีวิตตลอดประกัน · ขอรีวิวแบบรู้กาลเทศะ
+
+- **Status:** Accepted (grill after-sales, 7 ก.ค. 2026) — design แล้ว รอ go-ahead (tasks J2.9–J2.11)
+- **Context:** journey จบห้วนที่ completed (จุดวิจารณ์ข้อ 4 ของ v1); ADR-039 มติ 5 defer punch list ไว้; ไม่มี spec ไหนแตะ warranty/รีวิว; ลูกค้าคนที่ 2 ที่ถูกที่สุดมาจากลูกค้าคนที่ 1
+- **Decision (owner, 3+1 มติ):**
+  1. **Punch list = reuse `installation_issues` + source `customer_review`** — แก้ครบทุกข้อจึงส่งตรวจรับรอบใหม่ได้ (การ์ดใหม่/token ใหม่); ไม่มีตารางใหม่ ไม่ reopen work item; ได้ metric defect ต่อบ้าน/ทีมฟรี
+  2. **กลุ่มบ้านคง active ตลอดประกัน** — ปุ่ม "แจ้งซ่อม" ถาวรหลังส่งมอบ (กด = issue source `warranty` + แจ้งทีม; ไม่ดักแชท — PDPA เดิม); หมดประกัน → การ์ดสรุป → archive
+  2.1 **ประกัน: งาน DAPH 1 ปีนับจากตรวจรับ · ฟิตติ้งตามประกันแบรนด์ (pass-through — เก็บแบรนด์/รุ่นจาก BOM ไว้อ้างเคลม)**; `warranty_until = acceptance_date + 1 ปี`; การ์ดส่งมอบระบุสองชั้นชัด
+  3. **รีวิว+referral: 2 สัปดาห์หลังตรวจรับ + ไม่มี issue ค้าง** (มีค้าง → เลื่อนจนปิด); การ์ดสองปุ่ม (รีวิว / แนะนำเพื่อน — ลิงก์ฝังรหัสผู้แนะนำ → tag lead อัตโนมัติ); incentive v1 = ไม่มี (วัดก่อน)
+- **Consequences:** delta 3 ชิ้น (tasks J2.9–J2.11): issue sources ใหม่ 2 + gate ส่งตรวจรับรอบใหม่ · warranty_until + ปุ่มแจ้งซ่อม + cron การ์ดอำลา/archive · scheduled card รีวิว (เช็ค issue ค้าง) + referral tag บน lead ใหม่; journey ครบวงจรแล้ว: add OA → ... → ตรวจรับ → ประกัน → รีวิว → **ลูกค้าคนถัดไป**

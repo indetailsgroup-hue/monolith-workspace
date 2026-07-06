@@ -59,6 +59,9 @@
 - [ ] J2.5 **Phase Roster + assignment approval** — ตาราง roster ต่อบ้านต่อเฟส + คำขอ assign (C1/B1/D3 approve) + bot เช็ค join เทียบ roster/ตามคนขาด/แจ้งคนเกิน + เตือนคนออกเมื่อจบเฟส; รวม designer matching แบบ manual (B1 เลือกจาก list ที่ระบบเรียงตาม Mood&Tone)
 - [ ] J2.6 QC gate ภายในก่อนเชิญลูกค้าตรวจรับ — E5 ตรวจที่บ้าน (capture) → ผ่านแล้ว rpc_request_customer_acceptance ค่อยยิงได้ (soft→hard ตามผล dogfood)
 - [ ] J2.7 แผนติดตั้งฉบับลูกค้า — ระบบร่างจากคิว E7 → D1 PM กดยืนยันส่ง (template + version tracking)
+- [ ] J2.9 **Punch list** (ADR-042): issue source `customer_review`/`warranty` + gate "ทุกข้อ resolved → ส่งตรวจรับรอบใหม่ได้" ใน rpc_request_customer_acceptance + ปุ่มแจ้งซ่อมถาวรบนการ์ดขอบคุณ
+- [ ] J2.10 **Warranty lifecycle** (ADR-042): installation_projects += warranty_until (ตรวจรับ+1ปี) · เก็บแบรนด์ฟิตติ้งจาก BOM · cron หมดประกัน → การ์ดสรุป → archive กลุ่ม
+- [ ] J2.11 **Review/Referral card** (ADR-042): scheduled 2 สัปดาห์หลังตรวจรับ + เช็คไม่มี issue ค้าง (มี → เลื่อน) · ปุ่มรีวิว + ลิงก์แนะนำเพื่อน (tag ที่มาบน conversation ใหม่)
 - [ ] J2.8 กลุ่มลูกค้าเกิดตั้งแต่ Qualify — ปรับ flow เปิดบ้าน (Wave A) ให้ออกรหัสผูกทันทีหลัง work_item_open + คู่มือ Sale ตั้งกลุ่ม
 
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
