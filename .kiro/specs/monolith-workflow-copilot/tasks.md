@@ -116,7 +116,7 @@
 - [x] 6. Checkpoint — ตรวจฐาน data layer + handoff
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Approver resolver + escalation + delegation routing (Req 3, 8, 14)
+- [x] 7. Approver resolver + escalation + delegation routing (Req 3, 8, 14) — **Phase 14 routing ปิด (2026-07-06)**
   - [x] 7.1 สร้างโมดูล logic หา Approver จาก RACI + C12 (pure)
     - สร้าง `src/workflow/resolver/approver.ts`: เซ็ต Approver = Accountable ใน RACI_Map ∩ `has_any_app_role()`; หลายคน → ครบทุกคน + ผูก quorum; ว่าง → fail-safe block + escalate executive_owner + audit; ใช้ RACI ฉบับล่าสุด
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
@@ -129,6 +129,11 @@
   - [x] 7.4 สร้าง `rpc_resolve_approver` SECURITY DEFINER
     - สร้าง `supabase/migrations/0014_rpc_resolve_approver.sql`: รวม resolver + escalation + delegation routing, สร้าง Approval_Request ครบทุกคน + บันทึก quorum จาก Knowledge_Export, audit escalation พร้อมเงื่อนไข/ค่า
     - _Requirements: 3.1, 3.3, 8.8, 15.5_
+  - [x] 7.4b **wire delegation routing เข้า resolver จริง (พบ+แก้ 2026-07-06)**
+    - **บั๊กเดิม:** 0014 ไม่เคยเรียก delegation routing → Approval_Request ไป approver เดิมเสมอแม้มี delegation active; ต้นเหตุ = identity ไม่ align (resolved_approver/RACI = actor identity text แต่ `delegation` คีย์ด้วย employee uuid)
+    - **แก้:** `0082_delegation_routing_wiring.sql` — เพิ่มคอลัมน์ actor-identity (approver_actor/acting_actor) ให้ delegation, `rpc_create_delegation` รับ actor text, `fn_wf_route_delegation` (mirror routeApprover), `rpc_resolve_approver` v2 route ต่อรายก่อน insert + dedup effective + audit รายที่ route
+    - **Logic mirror + test:** `src/workflow/resolver/resolve-with-delegation.ts` + `__tests__/resolve-with-delegation.test.ts` (10 tests: step/site/revoked/window filter, dedup, property in-window)
+    - _Requirements: 14.4, 14.5, 14.6_
   - [x]* 7.5 เขียน property test การหา Approver + fail-safe escalation
     - **Property 6: การหา Approver จาก RACI + C12 และ fail-safe escalation**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
@@ -169,12 +174,12 @@
   - [ ]* 8.10 เขียน unit test render LINE Flex ปุ่ม Encrypted_Postback
     - _Requirements: 4.1_
 
-- [ ] 9. Delegation RPCs (Req 14)
+- [x] 9. Delegation RPCs (Req 14) — **routing wired 2026-07-06 (0082)**
   - [x] 9.1 สร้างโมดูล logic อนุญาตการมอบหมาย (pure)
     - สร้าง `src/workflow/delegation/authorize.ts`: อนุญาต iff Acting_Approver มี C12_Role เพียงพอตาม Process_Step (`has_any_app_role()`) มิฉะนั้น reject
     - _Requirements: 14.2, 14.3_
   - [x] 9.2 สร้าง `rpc_create_delegation` SECURITY DEFINER
-    - สร้าง `supabase/migrations/0016_rpc_create_delegation.sql`: ตรวจสิทธิ์ Acting_Approver, บันทึก delegation + start/end, audit ผู้กระทำผ่าน `resolve_actor()`
+    - สร้าง `supabase/migrations/0016_rpc_create_delegation.sql`; **v2 (0082): เปลี่ยนคีย์เป็น actor identity (approver_actor/acting_actor) ให้ align กับ resolved_approver** — ไม่งั้น routing จับคู่ไม่ได้
     - _Requirements: 14.1, 14.2, 14.3, 14.5_
   - [x] 9.3 สร้าง `rpc_revoke_delegation` SECURITY DEFINER
     - สร้าง `supabase/migrations/0017_rpc_revoke_delegation.sql`: executive_owner เพิกถอน → Approval_Request ถัดไปกลับ Approver เดิม + audit
