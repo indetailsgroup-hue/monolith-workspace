@@ -42,6 +42,7 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
   3. Knowledge import: `rpc_import_knowledge` จาก Knowledge_Export ฉบับ approved (RACI/process model — ถ้าไม่มี import ที่ `is_current` ทุก resolve จะ fail-safe block)
   4. **`identity_binding`**: ผู้ใช้ Wave 2 ทุกคน (LINE Login ผูกครั้งเดียว) + **`app_role` สำหรับผู้อนุมัติ** (map approver ref → คน — ไม่มีข้อมูลนี้ reminder/timeout จะ `recipient_unresolvable` ตามดีไซน์ 0084)
   5. **Vault secrets สำหรับ cron (B3/0089)**: `wf_edge_base_url` = `https://<ref>.supabase.co` + `wf_edge_service_key` = service role key (Dashboard → Vault) — ยังไม่ seed ก็ไม่ error: job จะ audit `cron_secrets_missing` แล้วข้ามจนกว่าจะครบ
+  6. **LINE OA console (ศูนย์โค้ด — G1 จากคำถาม "ลูกค้าคนที่ 1")**: ตั้ง Greeting Message ตอน add เพื่อน (ข้อความต้อนรับ + แนะนำให้ทักได้เลย) — flow ต่อจากนั้น (conversation + customer identity) ระบบสร้างเองอัตโนมัติ
 - **C4** Env ของ functions: `SUPABASE_URL`/`SERVICE_ROLE_KEY` (อัตโนมัติ) — ไม่มี secret เพิ่ม
 
 ## D. Verify + เปิด Wave 2

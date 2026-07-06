@@ -23,7 +23,7 @@
 - [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
 - [x] 1.4 Media pipeline (ครึ่ง load-bearing) — ✅ **`0099` + Edge Fn `capture-media-worker` (2026-07-06)**: ดึง content จาก LINE API (`line-message://<id>` **มีอายุจำกัด — ต้องดึงก่อนหาย**) → Storage bucket `installation-media` (private, path คีย์ artifact id = idempotent upsert) + **นับ `media_bytes` = storage baseline ต้นทุน (D-4)**; claim/record ผ่าน RPC (สถาปัตยกรรม RPC-only), Vault token name-then-id, attempts≤5, cron ทุก 5 นาที (`wf-media-fetch`); ทดสอบ RPC บน DB จริง + 7 unit tests; **follow-up ที่เหลือของ 1.4: compress/thumbnail** (ไม่ block dogfood — ต้นฉบับปลอดภัยแล้ว; ทำตอนต้นทุน storage เริ่มมีนัยจาก baseline)
 - [ ] 1.5 Field PWA — **grill ผ่านแล้ว (ADR-040, 5 มติ owner 7 ก.ค. 2026) — พร้อม implement รอ go-ahead**; build เป็น 3 Waves ปล่อยใช้ทันทีต่อ Wave:
-  - **Wave A — office console** (`packages/field-app` scaffold + ครั้งเดียว: Vite+React+PWA manifest+SW, DAPH field tokens, supabase client, GitHub Pages CI):
+  - **Wave A — office console** (`packages/field-app` scaffold + ครั้งเดียว: Vite+React+PWA manifest+SW, DAPH field tokens, supabase client, GitHub Pages CI) — **G2 (คำถาม "ลูกค้าคนที่ 1" 7 ก.ค.): เพิ่มหน้าฟอร์มใบบันทึกความต้องการ** (ประตูทางเข้า pipeline — backend เสร็จแล้ว 0092/0100; ฟอร์มต้องส่ง `customer_id` จากแชท/รายชื่อลูกค้าเพื่อผูก primary_customer_id — G3) → ผู้ใช้แรกจริงคือ **Sale**:
     (a) RPC ชุด field (RPC-only): `rpc_field_create_project` (เปิดบ้าน + **preset 5 ห้อง** + สร้างเลน 3/ห้องจาก form_templates ตาม room_type) · `rpc_field_assign_lane` (มอบช่างเข้าเลน) · `rpc_field_issue_bind_code` (ออกรหัส #ผูก 48ชม./2ครั้ง) · `rpc_field_list_projects`/`rpc_field_project_detail`
     (b) หน้าจอ: login (magic link — office ก่อน) → รายการบ้าน → เปิดบ้านใหม่ (ชื่อ+โฟร์แมน+preset) → รายละเอียดบ้าน (ห้อง/เลน/มอบช่าง/รหัสผูก/สถานะกลุ่ม LINE)
   - **Wave B — มุมหัวหน้าทีม**: edge fn `line-login` (session+binding+consent จังหวะเดียว — ADR-040 ข้อ 2) → T0 checklist (audit snapshot ตอน approve start — ADR-039 ข้อ 4) → ภาพรวมบ้าน/ทุกเลน → ปุ่ม "ส่งปิดบ้าน" (capture installation_proof → RACI gate) → "ส่งตรวจรับ" (`rpc_request_customer_acceptance` — มีแล้ว 0098) → รายการ #ปัญหา (`installation_issues`)
@@ -60,6 +60,8 @@
 - [ ] 2.5* Sync convergence tests (Property 4) — ทุก conflict matrix ต้องเขียว
 
 ## Phase 3: Commercial
+
+- [ ] 3.0 **Sale pipeline view** (backlog จากคำถาม "ลูกค้าคนที่ 2" 7 ก.ค. 2026): หน้ารวม lead — ใครอยู่ขั้นไหน เงียบไปกี่วัน (conversation + requirement + work_item มีข้อมูลครบแล้ว ขาดแค่ view) — เข้าคิวเมื่อ dogfood พิสูจน์ volume (LINE OA Manager พอสำหรับ ~10 ราย); พ่วง: กันช่างถูกมอบเลนซ้อนข้ามบ้าน (จัดคิวทีม = Gantt 3.x)
 
 - [ ] 3.1 Gantt + project dashboard
 - [ ] 3.2 Form builder (versioned templates) + e-signature + photo report
