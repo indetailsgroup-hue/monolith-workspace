@@ -20,6 +20,11 @@
 - **รูปจบเลน (`installation_room_proof`)**: รูป Wrapping ที่ช่างถ่ายตอนจบเลนของห้อง — capture evidence รายห้อง (`commit_target='evidence_only'`, link `installation_room`) **ไม่ปิดงาน** (ADR-039 ข้อ 3)
 - **ใบปิดบ้าน (`installation_proof`)**: capture ใบเดียวต่อบ้านที่**หัวหน้าทีม Installation** ส่งเมื่อทุกห้องเสร็จ → promote ผ่าน RACI gate → ปิด work item (ADR-039 ข้อ 2–3) — คนอื่น promote ไม่ได้ (fail-safe ที่ adapter)
 - **การตรวจรับบ้าน (Customer Acceptance)**: closure **ระดับ project** (`active → customer_review → completed`) เกิดหลัง work item ปิดแล้ว — ลูกค้าไม่รับ → punch list flow ใหม่ ไม่ reopen work item (ADR-039 ข้อ 5); เป็น subject เดียวที่เหลือใน `installation_approvals`
+- **Phase Roster**: ตาราง "ใครควรอยู่กลุ่มไหนช่วงไหน" ต่อบ้าน — ระบบสั่ง-เช็ค-ตาม (LINE ไม่ให้ bot ดึงคนเข้ากลุ่ม): แจ้งคนที่ถูก assign → คนในกลุ่มเชิญ → bot จับ join เทียบ roster → ตามคนขาด/แจ้งคนเกิน; assignment approve โดยหัวหน้าฝ่าย (ADR-041)
+- **กลุ่มโรงงาน (factory group)**: กลุ่ม LINE ถาวรกลุ่มเดียวระดับบริษัท (ไม่ผูกบ้าน) — E2 + 6 สถานี + E5 + E6 ประจำ; bot แยกงานต่อบ้านด้วยชื่อบ้านนำหน้าโพสต์ (ADR-041 มติ 1)
+- **Production Milestone**: จุดรายงานการผลิตต่อบ้าน — รายงาน 6 สถานี (FYI) + designer gate 2 จุด (Assembly / Packing) → รูปที่ approve แล้ว curated เข้ากลุ่มลูกค้าอัตโนมัติ (ADR-041 มติ 2)
+- **ตรวจหน้างานร่วม (`site_design_verification`)**: capture โดยทีมวัด+designer ที่บ้านลูกค้า — เงื่อนไขก่อนส่งการ์ดเซ็นแบบ final G3 (ADR-041 มติ 3; soft+audit)
+- **แผนงวด (Payment Plan)**: โครงงวดต่อบ้าน default 4 งวดหน้าหนัก (สัญญา · G3 · ก่อนจัดส่ง · ตรวจรับ 5%) — การ์ดแจ้งงวดอัตโนมัติ + F3 บันทึกรับ + soft gate ก่อนปล่อยผลิต (override โดย PM/GM พร้อมเหตุผล — ADR-041 มติ 5/5.1)
 - **T0 Snapshot**: สถานะเช็คลิสต์ site readiness ณ วินาทีที่หัวหน้าทีมกด approve start — แนบลง audit log เสมอ (soft gate — ADR-039 ข้อ 4)
 
 ## Reuse Map (ผลตรวจกับเรโปจริง 2026-07-05)

@@ -50,6 +50,17 @@
 - [ ] 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)
 - [ ] 1.10* Negative tests: Correctness Properties 1, 2, 5 + RLS external member + queue idempotency + subtask-ไม่-complete-work-item
 
+## Phase J2: Customer Journey v2 (ADR-041 — grill 7 ก.ค. 2026; ลำดับตาม dependency/คุณค่า)
+
+- [ ] J2.1 group_type `factory` + กลุ่มโรงงานถาวร (ขยาย 0095: กลุ่มไม่ผูก project + กติกาโพสต์ชื่อบ้านนำหน้า + guardrail เดิมครอบ)
+- [ ] J2.2 **Production milestones** — รายงาน 6 สถานี (capture ต่อสถานีต่อบ้าน pattern รูปจบเลน) + designer gate 2 จุด (Assembly/Packing — RACI B1/B2) + **auto-curated เข้ากลุ่มลูกค้า** (3 จังหวะ: เริ่มผลิต/ตู้เสร็จ/ขึ้นรถ) — ปิด pain ช่วงเงียบ
+- [ ] J2.3 **Payment plan + การ์ดแจ้งงวด + soft gate** — ตารางแผนงวดต่อบ้าน (default 4 งวดหน้าหนัก x/x/x/5 — รอยืนยันสามงวดแรก) · trigger อัตโนมัติ 4 จุด · F3 กดบันทึกรับ · เตือน+override(PM/GM+เหตุผล) ก่อนปล่อยผลิต; reuse ledger โครงเดิมได้บางส่วน
+- [ ] J2.4 capture `site_design_verification` (C2+B2) + เงื่อนไข soft ก่อนส่งการ์ด G3 + แนบหลักฐานเข้า audit ของ G3
+- [ ] J2.5 **Phase Roster + assignment approval** — ตาราง roster ต่อบ้านต่อเฟส + คำขอ assign (C1/B1/D3 approve) + bot เช็ค join เทียบ roster/ตามคนขาด/แจ้งคนเกิน + เตือนคนออกเมื่อจบเฟส; รวม designer matching แบบ manual (B1 เลือกจาก list ที่ระบบเรียงตาม Mood&Tone)
+- [ ] J2.6 QC gate ภายในก่อนเชิญลูกค้าตรวจรับ — E5 ตรวจที่บ้าน (capture) → ผ่านแล้ว rpc_request_customer_acceptance ค่อยยิงได้ (soft→hard ตามผล dogfood)
+- [ ] J2.7 แผนติดตั้งฉบับลูกค้า — ระบบร่างจากคิว E7 → D1 PM กดยืนยันส่ง (template + version tracking)
+- [ ] J2.8 กลุ่มลูกค้าเกิดตั้งแต่ Qualify — ปรับ flow เปิดบ้าน (Wave A) ให้ออกรหัสผูกทันทีหลัง work_item_open + คู่มือ Sale ตั้งกลุ่ม
+
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 
 - [ ] 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้

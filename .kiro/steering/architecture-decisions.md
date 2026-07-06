@@ -426,3 +426,17 @@ inclusion: always
   4. **DAPH brand tokens บนโครง field-first** — #1F3D2B/#C7A86A เป็น identity, field physics ชนะเมื่อขัด (Noto Sans Thai, ปุ่ม ≥48px, contrast AA)
   5. **GitHub Pages** — static ไม่มีข้อมูล at rest, vendor เดิม, ย้ายตาม ADR-036 exit ได้ทันที
 - **Consequences:** frontend ตัวแรกที่ต่อ Supabase → ต้องมี **RPC ชุด field** (สถาปัตยกรรม RPC-only — API roles ไม่มี table DML): เปิดบ้าน/preset ห้อง/มอบเลน/ออกรหัสผูก/รายการงาน; edge fn line-login = infra auth ตัวแรก; ops A3 เพิ่ม LINE Login channel; CI เพิ่ม build+deploy pages
+
+## ADR-041 — Customer Journey v2: group-centric ทั้งเส้น (กลุ่มบ้านเกิดตั้งแต่ Qualify · กลุ่มโรงงานถาวร · milestone ผลิตถึงตาลูกค้า · การเงิน soft-gate)
+
+- **Status:** Accepted (grill-with-docs journey-v2, 7 ก.ค. 2026) — design แล้ว รอ go-ahead implement (tasks Phase J2)
+- **Context:** Journey v1 (เอกสาร Customer-Journey-End-to-End) ถูก owner ชี้ว่า "ยังไม่ใช่" 4 จุด: ไม่มีการเงินทั้งเส้น · ช่วงผลิตเงียบ · ข้ามช่วงต่อรอง · จบห้วนหลังส่งมอบ; owner วาง flow ใหม่แบบ group-centric (กลุ่ม LINE ของบ้านเกิดตั้งแต่ Qualify + สมาชิกหมุนตามเฟส + โรงงานรายงานเข้ากลุ่ม + designer approve คุณภาพ); ข้อจำกัดจริง: LINE bot สร้างกลุ่ม/ดึงคนเข้ากลุ่มไม่ได้ → "อัตโนมัติ" ต้องเป็น "ระบบสั่ง-เช็ค-ตาม" (roster + ตามคนขาด/แจ้งคนเกิน)
+- **Decision (owner, 5+1 มติ — รายละเอียดเต็มใน `.kiro/specs/installation-pm/customer-journey-v2-draft.md`):**
+  1. **กลุ่มโรงงาน = กลุ่มถาวรกลุ่มเดียว** (ไม่เปิดต่อบ้าน — กลุ่มตามธรรมชาติของทีม: ทีมหมุนตามบ้านใช้กลุ่มต่อบ้าน ทีมอยู่กับที่ใช้กลุ่มประจำ); bot แยกงานต่อบ้านด้วยชื่อบ้านนำหน้าโพสต์; schema: group_type += 'factory' แบบไม่ผูก project
+  2. **Designer gate 2 จุด รายงาน 6 จุด**: ทุกสถานี (Laminate→Cutting→Edging→CNC→Assembly→Packing) รายงานเข้ากลุ่มโรงงานเป็น FYI; gate จริง = หลัง Assembly (approve → รูปตู้จริง curated เข้ากลุ่มลูกค้า) + หลัง Packing (approve รวม + E5 QA ด่านสุดท้าย → แจ้งจัดส่ง); ลูกค้าเห็น 3 จังหวะ: เริ่มผลิต → ตู้เสร็จ → ขึ้นรถ — ปิด pain "ช่วงเงียบ"
+  3. **ตรวจหน้างานร่วมก่อนผลิต = เงื่อนไขก่อนส่งการ์ด G3** (capture `site_design_verification` โดย C2+B2 ที่บ้าน) — ไม่เพิ่มขั้น canonical, ไม่ reopen ADR-039; ลายเซ็น G3 = อนุมัติหลังเห็นของจริง; enforcement soft+audit (ยก hard ได้ภายหลัง)
+  4. **แผนติดตั้งถึงลูกค้า**: E7 โลจิสติกส์จัดคิว → ระบบร่าง → **D1 PM กดยืนยันส่ง** (คำสัญญาวันต้องมีเจ้าของมนุษย์; เก็บทุก version — เลื่อนกี่ครั้งวัดได้)
+  5. **การเงินเฟสแรก = แจ้ง + บันทึก + soft gate**: payment plan ต่อบ้าน → การ์ดแจ้งงวดอัตโนมัติเข้ากลุ่มลูกค้า → F3 บันทึกรับ → ปล่อยผลิตทั้งที่งวดไม่เข้า = เตือน + PM/GM override พร้อมเหตุผล (ห้าม hard block — exception มีจริง, บทเรียน T0); ไม่มี payment gateway
+  6. **โครงงวด DAPH: 4 งวดหน้าหนัก งวดส่งมอบ 5%** ผูก 4 จุด (สัญญา · G3 · ก่อนจัดส่ง · ตรวจรับ); default สัดส่วนสามงวดแรกปรับได้ต่อสัญญา (เสนอ 40/30/25/5 — รอยืนยันตัวเลข)
+  - โครงเสริมที่ทุกมติพึ่ง: **Phase Roster** — ตาราง "ใครควรอยู่กลุ่มไหนช่วงไหน" ต่อบ้าน + assignment approval โดยหัวหน้าฝ่าย (C1 วัด / B1 ออกแบบ+จับคู่ designer / D3 ติดตั้ง)
+- **Consequences:** delta 8 ชิ้น (tasks Phase J2): factory group + roster + milestones/curated + payment plan + site verification + QC gate + install plan send + designer matching; กลุ่มลูกค้าย้ายจุดเกิดจากเฟสติดตั้งมาที่ Qualify (0095 รองรับอยู่แล้ว — installation_projects เปิดได้ตั้งแต่ต้น); after-sales + lead pipeline = เฟสถัดไป (จดใน draft); journey v1 HTML จะถูกเขียนใหม่หลัง J2 landing
