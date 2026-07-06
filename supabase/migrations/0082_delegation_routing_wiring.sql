@@ -124,12 +124,15 @@ $$;
 revoke all on function public.fn_wf_route_delegation(text, text, text, timestamptz) from public;
 
 -- ---------------------------------------------------------------------------
--- (4) rpc_resolve_approver v2 — route ผู้อนุมัติแต่ละรายผ่าน delegation ก่อน insert (Req 14.4)
---     mirror src/workflow/resolver/resolve-with-delegation.ts (resolve → route → dedup effective)
+-- (4) rpc_resolve_approver v3 — วางบนฐาน 0031 (order-keyed + ADR-018 + customer + attempt)
+--     เพิ่มเฉพาะ delegation routing ของ employee approver (Req 14.4); customer ไม่ delegate.
+--     สำคัญ: base คือ 0031 (ตัวล่าสุด) ไม่ใช่ 0014 — คง signature (uuid, int, int), gate_order,
+--     wf_approvers_for_step, customer approver, attempt, on-conflict ทั้งหมด.
+--     mirror ฝั่ง TS: resolve-with-delegation.ts (route ต่อ ref; dedup ด้วย on-conflict เดิม).
 -- ---------------------------------------------------------------------------
 create or replace function public.rpc_resolve_approver(
   p_work_item_id uuid,
-  p_process_step text,
+  p_canonical_order int,
   p_sla_minutes int default 1440
 )
 returns int
@@ -139,77 +142,108 @@ set search_path = public
 as $$
 declare
   v_site text;
-  v_quorum public.wf_approval_quorum;
+  v_customer uuid;
+  v_step text;
+  v_pm_quorum public.wf_approval_quorum;
   v_requires boolean;
+  v_quorum public.wf_approval_quorum;
   v_payload jsonb;
-  v_accountable jsonb;
-  v_role text;
+  v_approvers jsonb;
+  v_ref text;
   v_effective text;
+  v_with_customer boolean;
   v_count int := 0;
-  v_seen text[] := array[]::text[];
+  v_attempt int;
+  v_latest_attempt int;
+  v_latest_terminal boolean;
+  v_latest_pending boolean;
   v_now timestamptz := timezone('utc', now());
   v_deadline timestamptz := timezone('utc', now()) + make_interval(mins => greatest(1, p_sla_minutes));
 begin
-  select site_code into v_site from public.work_item where id = p_work_item_id;
+  select site_code, primary_customer_id into v_site, v_customer from public.work_item where id = p_work_item_id;
   if not found then
     raise exception 'work item not found' using errcode = 'no_data_found';
   end if;
 
-  select approval_quorum, requires_approval into v_quorum, v_requires
-  from public.process_model where process_step = p_process_step;
-  if not found then
-    raise exception 'unknown step: %', p_process_step using errcode = 'foreign_key_violation';
+  select process_step, approval_quorum, requires_approval into v_step, v_pm_quorum, v_requires
+  from public.process_model where canonical_order = p_canonical_order;
+  if v_step is null then
+    raise exception 'unknown step at order %', p_canonical_order using errcode = 'foreign_key_violation';
   end if;
 
-  v_quorum := coalesce(v_quorum, 'unanimous');
+  v_with_customer := public.wf_is_customer_approval_step(v_step) and v_customer is not null;
+  v_quorum := case when v_with_customer then 'unanimous'::public.wf_approval_quorum else coalesce(v_pm_quorum, 'first_response') end;
 
+  -- ADR-018: approver set ตาม quorum (unanimous → approvers[].ref; อื่น ๆ → accountable)
   select payload into v_payload from public.knowledge_import where is_current limit 1;
-  v_accountable := v_payload #> array['raciMap', p_process_step, 'accountable'];
+  v_approvers := public.wf_approvers_for_step(coalesce(v_payload, '{}'::jsonb), v_step, v_quorum::text);
 
-  -- Req 3.4 — ว่าง → fail-safe block + escalate + audit (คงเดิม)
-  if v_accountable is null or jsonb_typeof(v_accountable) <> 'array' or jsonb_array_length(v_accountable) = 0 then
+  if (v_approvers is null or jsonb_array_length(v_approvers) = 0) and not v_with_customer then
     update public.work_item set status = 'blocked' where id = p_work_item_id;
     insert into public.workflow_audit_log (event_type, work_item_id, process_step, site_code, performed_by, detail)
-    values ('escalation', p_work_item_id, p_process_step, v_site, public.resolve_actor(),
-      jsonb_build_object('reason', 'no_eligible_approver', 'escalate_to', 'executive_owner', 'fail_safe', true));
+    values ('escalation', p_work_item_id, v_step, v_site, public.resolve_actor(),
+      jsonb_build_object('reason', 'no_eligible_approver', 'escalate_to', 'executive_owner', 'fail_safe', true, 'gate_order', p_canonical_order));
     return 0;
   end if;
 
-  for v_role in select jsonb_array_elements_text(v_accountable) loop
-    -- Req 14.4 — route ผ่าน delegation active ก่อน (identity aligned กับ resolved_approver)
-    v_effective := public.fn_wf_route_delegation(v_role, p_process_step, v_site, v_now);
+  -- attempt scope ต่อ (work_item, gate_order)
+  select attempt,
+         bool_or(status in ('approved', 'rejected')),
+         bool_or(status = 'pending')
+    into v_latest_attempt, v_latest_terminal, v_latest_pending
+  from public.approval_request
+  where work_item_id = p_work_item_id and gate_order = p_canonical_order
+  group by attempt
+  order by attempt desc
+  limit 1;
 
-    -- dedup: ถ้าสอง approver เดิมถูก delegate ไปคนเดียวกัน → 1 request
-    if v_effective = any(v_seen) then
-      continue;
-    end if;
-    v_seen := array_append(v_seen, v_effective);
+  if v_latest_attempt is null then v_attempt := 1;
+  elsif v_latest_pending and not v_latest_terminal then v_attempt := v_latest_attempt;
+  else v_attempt := v_latest_attempt + 1;
+  end if;
 
+  if v_approvers is not null and jsonb_array_length(v_approvers) > 0 then
+    for v_ref in select jsonb_array_elements_text(v_approvers) loop
+      -- Req 14.4 — route employee approver ผ่าน delegation active ก่อน (identity aligned กับ resolved_approver)
+      v_effective := public.fn_wf_route_delegation(v_ref, v_step, v_site, v_now);
+
+      insert into public.approval_request
+        (work_item_id, process_step, site_code, resolved_approver, approver_kind, quorum, sla_deadline, timeout_at, status, attempt, gate_order)
+      values (p_work_item_id, v_step, v_site, v_effective, 'employee', v_quorum, v_deadline, v_deadline, 'pending', v_attempt, p_canonical_order)
+      on conflict (work_item_id, gate_order, resolved_approver, attempt) where status = 'pending' do nothing;
+
+      -- audit เฉพาะรายที่ถูก route ไป acting (Req 14.5); dedup ได้จาก on-conflict ข้างบน
+      if v_effective is distinct from v_ref then
+        insert into public.workflow_audit_log (event_type, work_item_id, process_step, site_code, performed_by, detail)
+        values ('delegation', p_work_item_id, v_step, v_site, public.resolve_actor(),
+          jsonb_build_object('op', 'route', 'from', v_ref, 'to', v_effective, 'gate_order', p_canonical_order));
+      end if;
+    end loop;
+  end if;
+
+  -- ลูกค้าไม่ delegate — insert ตรง (คงเดิม 0031)
+  if v_with_customer then
     insert into public.approval_request
-      (work_item_id, process_step, site_code, resolved_approver, approver_kind, quorum, sla_deadline, timeout_at, status)
-    values
-      (p_work_item_id, p_process_step, v_site, v_effective, 'employee', v_quorum, v_deadline, v_deadline, 'pending');
-    v_count := v_count + 1;
-
-    -- audit เฉพาะรายที่ถูก route ไป acting (Req 14.5)
-    if v_effective is distinct from v_role then
-      insert into public.workflow_audit_log (event_type, work_item_id, process_step, site_code, performed_by, detail)
-      values ('delegation', p_work_item_id, p_process_step, v_site, public.resolve_actor(),
-        jsonb_build_object('op', 'route', 'from', v_role, 'to', v_effective));
-    end if;
-  end loop;
+      (work_item_id, process_step, site_code, resolved_approver, approver_kind, quorum, sla_deadline, timeout_at, status, attempt, gate_order)
+    values (p_work_item_id, v_step, v_site, v_customer::text, 'customer', v_quorum, v_deadline, v_deadline, 'pending', v_attempt, p_canonical_order)
+    on conflict (work_item_id, gate_order, resolved_approver, attempt) where status = 'pending' do nothing;
+  end if;
 
   update public.work_item set status = 'awaiting_approval' where id = p_work_item_id;
 
+  select count(*) into v_count
+  from public.approval_request
+  where work_item_id = p_work_item_id and gate_order = p_canonical_order and status = 'pending' and attempt = v_attempt;
+
   insert into public.workflow_audit_log (event_type, work_item_id, process_step, site_code, performed_by, detail)
-  values ('approval_resolve', p_work_item_id, p_process_step, v_site, public.resolve_actor(),
-    jsonb_build_object('approver_count', v_count, 'quorum', v_quorum));
+  values ('approval_resolve', p_work_item_id, v_step, v_site, public.resolve_actor(),
+    jsonb_build_object('approver_count', v_count, 'quorum', v_quorum, 'with_customer', v_with_customer, 'attempt', v_attempt, 'gate_order', p_canonical_order));
 
   return v_count;
 end;
 $$;
 
-revoke all on function public.rpc_resolve_approver(uuid, text, int) from public;
+revoke all on function public.rpc_resolve_approver(uuid, int, int) from public;
 
 -- grants (service/authenticated ตาม pattern เดิมของ workflow RPC)
 do $$

@@ -74,10 +74,12 @@ export interface RoutedApprover {
 }
 
 /**
- * Req 3 + 14.4 — input = identity ของ Accountable ที่ eligible แล้ว (จาก resolveApprovers);
+ * Req 3 + 14.4 — input = identity ของ Accountable/approvers ที่ eligible แล้ว;
  * output = ผู้รับจริงต่อราย พร้อมธง delegated.
- * mirror ลำดับใน rpc_resolve_approver: resolve → route ต่อราย → insert approval_request(effective).
- * ตัด effective ซ้ำ (สอง approver เดิมถูก delegate ไปคนเดียวกัน → 1 request) อย่าง deterministic.
+ * mirror ลำดับใน rpc_resolve_approver (0082 v3, วางบน 0031): resolve → route ต่อราย →
+ * insert approval_request(effective). ใน SQL การ dedup effective ซ้ำทำโดย partial-unique
+ * index (work_item, gate_order, resolved_approver, attempt) + ON CONFLICT DO NOTHING;
+ * ที่นี่จำลองด้วย seenEffective เพื่อให้ผลลัพธ์ตรวจสอบได้ (1 request ต่อ effective).
  */
 export function resolveApproversWithDelegation(
   eligibleApproverActors: readonly string[],
