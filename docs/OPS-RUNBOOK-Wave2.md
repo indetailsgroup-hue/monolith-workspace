@@ -35,7 +35,7 @@ A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3
 ## C. Deploy + Seed
 
 - **C1** `supabase db push` — apply migrations ทั้งหมด (0000…0084 + ของใหม่จาก B) — ตรวจ `supabase migration list` ตรงกับ repo
-- **C2** `supabase functions deploy` ×7: `line-webhook`, `line-outbound-sender`, `approval-postback`, `web-fallback-api`, `notification-retry-worker`, `sla-sweep-scheduler`, `capture-ingest`/`field-capture` ตามที่ Wave 2 ใช้ · ตั้ง LINE webhook URL ชี้ `line-webhook`
+- **C2** `supabase functions deploy` ×8: `line-webhook`, `line-outbound-sender`, `approval-postback`, `web-fallback-api`, `notification-retry-worker`, `sla-sweep-scheduler`, `capture-ingest`/`field-capture`, **`capture-media-worker` (0099 — ดึงรูป LINE เข้า Storage)** · ตั้ง LINE webhook URL ชี้ `line-webhook`
 - **C3 Seed data (ลำดับสำคัญ):**
   1. `line_oa_channels` 1 แถว (vertical `monolith`, Vault refs จาก A3)
   2. ~~Templates จาก B1~~ ✅ อยู่ใน migration `0085` แล้ว — มากับ `db push` (C1) เอง
