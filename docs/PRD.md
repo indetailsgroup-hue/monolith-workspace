@@ -468,7 +468,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 **ไฟล์หลัก:** `src/workflow/`, `supabase/migrations/0001–0035`, Edge Functions: `sla-sweep-scheduler`, `approval-postback`, `notification-retry-worker`, `customer-design-view`, `web-fallback-api`
 
-#### ข้อกำหนด 21 ข้อ (Req 1–21) — 🔵 ~119/134 tasks; **Phase 13 + 14 + Req 21 ปิดแล้ว 2026-07-06** — พบบั๊กประเภทเดียวกัน 3 จุด (logic ครบ + test เขียว แต่ wiring ขาด → feature ไม่เคยทำงานจริง): (1) notification delivery ไม่เคยส่ง → 0081 + worker push LINE ตรง; (2) delegation routing ไม่เคยถูกเรียก + identity ไม่ align → 0082 (คีย์ actor identity + `fn_wf_route_delegation`, rebase บน 0031); (3) revision discipline ไม่มี map step→gate → 0083 (`fn_wf_gate_for_step` + apply-lock + reject-classify wiring); เพิ่มเทสต์รวม 29 ตัว; **หมายเหตุ:** ระหว่างทางจับ regression ที่ตัวเองทำ (0082 เผลอ rebase บน 0014 แทน 0031) แล้วแก้ก่อน ship; ค้าง: ops (cron/deploy) + tests ปลีกย่อย
+#### ข้อกำหนด 21 ข้อ (Req 1–21) — ✅ **134/134 tasks ครบ (2026-07-06)** — รอบปิดท้ายพบบั๊กประเภทเดียวกัน 3 จุด (logic ครบ + test เขียว แต่ wiring ขาด → feature ไม่เคยทำงานจริง): (1) notification delivery ไม่เคยส่ง → 0081 + worker push LINE ตรง; (2) delegation routing ไม่เคยถูกเรียก + identity ไม่ align → 0082 (คีย์ actor identity + `fn_wf_route_delegation`, rebase บน 0031); (3) revision discipline ไม่มี map step→gate → 0083 (`fn_wf_gate_for_step` + apply-lock + reject-classify wiring); ปิด tests ค้างทั้งหมด (7.7 RACI-latest, 11.12 digest, 8.10 postback-consume + ยืนยัน 4.5/5.10/15.5 ว่าครอบอยู่แล้ว) — เพิ่มเทสต์รอบนี้รวม 47 ตัว; **เหลือเฉพาะ ops:** cron registration (2 workers) + deploy Edge Functions → เปิด Pilot Wave 2
 
 **[P0] Process Model & Work Items ✅**
 - Canonical 8 ขั้น (order 0–7): Sale → Area Measurement → Designer → 3D_Presentation → Production Planning → 3D_Rendering_Final → Factory → Installation
@@ -713,7 +713,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 | Designer Workspace v2.0 spec (specs/main) | 🔵 25/36 tasks | T001–T023 เสร็จ (เว้น T004); ค้าง T024–T035 (docs, v2.1 prep, config externalization, advanced) |
 | Knowledge Layer | ✅ 100% | Vault 224 ไฟล์; pipeline idempotent (PBT) |
 | line-oa-commerce | ✅ 100% | 20/20 tasks; 31 properties |
-| workflow-copilot | 🔵 ~89% | ~119/134 tasks; **Phase 13 + 14 + Req 21 ปิดแล้ว (2026-07-06)**; ค้าง ops (cron/deploy) + tests ปลีกย่อย |
+| workflow-copilot | ✅ 100% (code) | **134/134 tasks (2026-07-06)**; เหลือเฉพาะ ops: cron registration + deploy → เปิด Wave 2 |
 | capture-spine | ✅ Wave 0+1 | 42/43 tasks; migrations ถึง 0080 |
 | mcp-layer | 🔵 88% | 43/49 tasks |
 | accounting | 🟡 36% | 37/103 tasks (ตรรกะแกนมีแล้ว) |
@@ -722,7 +722,7 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 ### Roadmap ถัดไป (เรียงตาม dependency)
 
 0. **[Pilot Wave 1 — มติ grilling]** เปิดใช้เส้นทาง Designer → Factory บนแกน CAD/CAM จริง + เริ่มเก็บ baseline BG-1 (defect rate ผ่าน `qc_capture`) และข้อมูลเวลา Freeze→Download ทันที 30–60 วัน
-1. **[ตอนนี้]** ~~Phase 13 + 14 + Req 21~~ ✅ **ปิดฝั่งโค้ดครบแล้ว** (2026-07-06 — notification delivery จริง + delegation routing + revision gate wiring; แก้บั๊ก wiring-ขาด 3 จุด, จับ+แก้ regression ของตัวเอง 1 จุด); เหลือ **ops เท่านั้น**: cron registration (2 workers) + deploy Edge Functions + tests ปลีกย่อย → จากนั้นเปิด Pilot Wave 2 (workflow/LINE)
+1. **[ตอนนี้]** ~~workflow-copilot~~ ✅ **โค้ดครบ 134/134 tasks** (2026-07-06 — ปิด Phase 13/14/Req 21 + tests ค้างทั้งหมด; แก้บั๊ก wiring-ขาด 3 จุด, จับ+แก้ regression ของตัวเอง 1 จุด); เหลือ **ops เท่านั้น**: cron registration (notification-retry ~1 นาที + sla-sweep ~15 นาที + digest รอบวัน — pattern ใน 0061) + deploy Edge Functions → เปิด Pilot Wave 2 (workflow/LINE)
 1.5. **[ฟีเจอร์ CAD ถัดไป]** Curved Panel System — spec grill แล้วพร้อมที่ `.kiro/specs/curved-panel-system/` + kerf doc v1.1 (✅ arc toolpath + kerf engine มีแล้ว; เริ่มได้ที่ Phase 0 reconcile engine)
 1.6. **[SaaS — สถาปัตยกรรมตัดสินแล้ว]** Entitlement & Multi-Tier v0.3 (`.kiro/specs/entitlement-tier/`) — DDL draft + negative tests (ไฟล์พร้อม **ยังไม่ได้รันบน DB จริง** — Phase 1.2) + matrix 53 features (impl 34/roadmap 19) + delta v0.4 Site PM; **Phase 0 ปิดแล้ว: แยก DB (ADR-034)** — Phase 1 landing เริ่มเมื่อตัดสินใจเปิดขาย SaaS
 1.7. **[สุขภาพเอกสาร]** ปิด Docs Drift D-1..D-10 (§11) — เร่ง D-2 (นิยาม Cut Size สองความหมาย) ก่อนแตะโค้ดสูตรตัด

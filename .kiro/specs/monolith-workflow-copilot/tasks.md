@@ -29,7 +29,7 @@
     - สร้าง `src/workflow/domain/config.ts`: `RPN_Threshold`, `Budget_Ceiling`, ค่า SLA (สำหรับ 50%/100%/timeout), freshness threshold, retry/backoff count — อ่านจาก config
     - _Requirements: 8.7, 13.1, 13.4, 17.2, 18.3_
 
-- [ ] 2. Data layer: ตาราง + RLS + audit immutability
+- [x] 2. Data layer: ตาราง + RLS + audit immutability
   - [x] 2.1 สร้าง migration ตารางหลัก + RLS `TO authenticated`
     - สร้าง `supabase/migrations/0002_tables_rls.sql`: `identity_binding` (partial unique `(line_user_id) WHERE is_active`), `work_item` (version counter, data jsonb), `process_model`, `approval_request`, `approval_decision` (unique `webhook_event_id`), `delegation`, `copilot_suggestion` (CHECK options 2–3), `notification`, `capture_item`, `knowledge_import` (is_valid/is_current สำหรับ last-good)
     - ทุกตารางเปิด RLS, มีเฉพาะ `SELECT` policy `USING (public.is_governance_role() OR public.has_site_access(site_code))`, **ไม่มี** client write policy; ตาราง site_code ใช้ `text NULL`
@@ -50,7 +50,7 @@
     - ตรวจ RLS เปิด + `TO authenticated` reuse C12 helpers, ไม่มี client write policy, RPC เป็น SECURITY DEFINER + เรียก `public.resolve_actor()`, audit append-only + trigger ปฏิเสธ UPDATE/DELETE
     - _Requirements: 4.2, 9.2, 10.3, 10.4_
 
-- [ ] 3. Knowledge import (read-only, last-good)
+- [x] 3. Knowledge import (read-only, last-good)
   - [x] 3.1 สร้างโมดูล validate schema + last-good (pure)
     - สร้าง `src/workflow/knowledge/import.ts`: validate โครงสร้าง Knowledge_Export (PFMEA_Risk_Row, process model + canonical order เริ่มที่ 0, RACI_Map, Approval_Quorum/step, Knowledge_Freshness); invalid → ปฏิเสธและคง last-good
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.8, 11.9, 11.10_
@@ -64,7 +64,7 @@
     - ตรวจ PFMEA_Risk_Row / process model / RACI_Map / Knowledge_Freshness / Approval_Quorum ครบรูปแบบ
     - _Requirements: 11.2, 11.3, 11.4, 11.9, 11.10, 15.1_
 
-- [ ] 4. Identity binding (Req 1)
+- [x] 4. Identity binding (Req 1)
   - [x] 4.1 สร้างโมดูล logic identity binding (pure)
     - สร้าง `src/workflow/identity/binding.ts`: บังคับความไม่ซ้ำของ LINE_User_Id ต่อ binding ที่ active, resolve บทบาทผ่าน `current_app_roles()` (ไม่เก็บซ้ำ), ตรรกะ revoke-มีผลทันที (ไม่ส่ง direct push แม้ระเบียนยัง active)
     - _Requirements: 1.2, 1.3, 1.5_
@@ -77,11 +77,11 @@
   - [x]* 4.4 เขียน property test การเพิกถอน binding หยุด direct notification
     - **Property 3: การเพิกถอน binding หยุด direct notification ทันที**
     - **Validates: Requirements 1.5**
-  - [ ]* 4.5 เขียน unit test การสร้าง Identity_Binding
+  - [x]* 4.5 เขียน unit test การสร้าง Identity_Binding — ครอบแล้วใน `identity/__tests__/binding.test.ts` (canCreateBinding; ยืนยัน 2026-07-06)
     - ตรวจการบันทึก binding พร้อม Department/บทบาท
     - _Requirements: 1.1_
 
-- [ ] 5. Handoff engine + concurrency (Req 2, 16, 12.1)
+- [x] 5. Handoff engine + concurrency (Req 2, 16, 12.1)
   - [x] 5.1 สร้างโมดูล logic บังคับลำดับ canonical (pure)
     - สร้าง `src/workflow/handoff/canonical.ts`: อนุญาต handoff เฉพาะขั้นถัดไปติดกัน + ต้องมีใน process model; มิฉะนั้น error invalid sequence / unknown step; กำหนดเจ้าของใหม่จาก RACI_Map; ตรวจ site_code ∈ active
     - _Requirements: 2.1, 2.3, 2.5, 2.6, 2.7, 10.6_
@@ -109,7 +109,7 @@
   - [x]* 5.9 เขียน property test capture-once-reuse
     - **Property 24: Capture-once-reuse**
     - **Validates: Requirements 12.1**
-  - [ ]* 5.10 เขียน unit test current step/owner
+  - [x]* 5.10 เขียน unit test current step/owner — ครอบแล้วใน `handoff/__tests__/canonical.test.ts` (unknown_current_step, nextCanonicalStep, isLastStep; owner เป็น DB-side; ยืนยัน 2026-07-06)
     - ตรวจการเก็บ current Process_Step + เจ้าของปัจจุบัน
     - _Requirements: 2.2_
 
@@ -140,10 +140,10 @@
   - [x]* 7.6 เขียน property test เกณฑ์ escalation ตามความเสี่ยง/งบประมาณ
     - **Property 17: เกณฑ์การยกระดับการอนุมัติตามความเสี่ยง/งบประมาณ**
     - **Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6**
-  - [ ]* 7.7 เขียน unit test RACI ฉบับล่าสุดถูกใช้กับ request ใหม่
+  - [x]* 7.7 เขียน unit test RACI ฉบับล่าสุดถูกใช้กับ request ใหม่ — `src/workflow/knowledge/__tests__/raci-latest.test.ts` (2026-07-06)
     - _Requirements: 3.6_
 
-- [ ] 8. Approval decision RPC + quorum (Req 4, 15, 16)
+- [x] 8. Approval decision RPC + quorum (Req 4, 15, 16)
   - [x] 8.1 สร้างโมดูล logic รวมผล quorum (pure)
     - สร้าง `src/workflow/approval/quorum.ts`: unanimous/majority/first_response รวม fail-fast เมื่อ rejected; ผลล้มเหลว → rework path
     - _Requirements: 15.2, 15.3, 15.4, 15.6, 15.7, 15.8_
@@ -171,7 +171,7 @@
   - [x]* 8.9 เขียน property test ความหมายการรวมผล Approval_Quorum
     - **Property 28: ความหมายการรวมผล Approval_Quorum (ผ่าน/ล้มเหลว)**
     - **Validates: Requirements 15.2, 15.3, 15.4, 15.6, 15.7, 15.8**
-  - [ ]* 8.10 เขียน unit test render LINE Flex ปุ่ม Encrypted_Postback
+  - [x]* 8.10 เขียน unit test ปุ่ม Encrypted_Postback — `tests/workflow/ts/approvalPostback.integration.test.ts` (8 tests; ตัว Flex card = template DB ที่ governance review, โค้ดที่ unit-test ได้คือ consume path; 2026-07-06)
     - _Requirements: 4.1_
 
 - [x] 9. Delegation RPCs (Req 14) — **routing wired 2026-07-06 (0082)**
@@ -191,7 +191,7 @@
 - [x] 10. Checkpoint — ตรวจ resolver/approval/delegation
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Notification engine + suppression matrix + queue (Req 6, 1.4, 12.3)
+- [x] 11. Notification engine + suppression matrix + queue (Req 6, 1.4, 12.3)
   - [x] 11.1 สร้างโมดูล logic จัดเส้นทาง direct vs group (pure)
     - สร้าง `src/workflow/notification/routing.ts`: ความรับผิดชอบ/อนุมัติส่วนตัว → direct_push; handoff ข้ามทีม/FYI → group_message
     - _Requirements: 6.1, 6.2_
@@ -225,7 +225,7 @@
   - [x]* 11.11 เขียน property test celebrate completion
     - **Property 25: การแสดงความยินดีเมื่อจบขั้นสุดท้ายเท่านั้น**
     - **Validates: Requirements 12.3, 12.7**
-  - [ ]* 11.12 เขียน unit test การส่ง Daily_Digest รวม
+  - [x]* 11.12 เขียน unit test การส่ง Daily_Digest รวม — `tests/workflow/ts/slaSweepScheduler.digest.test.ts` (2026-07-06; semantics รวมข้อความเดียว/ต่อ site อยู่ใน SQL 0060/0061)
     - _Requirements: 6.4_
 
 - [x] 12. Notification retry worker logic + web fallback (Req 18) — **Phase 13 ปิดแล้ว (2026-07-06)**
@@ -252,7 +252,7 @@
     - **Property 26: SLA reminder และ timeout escalation**
     - **Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5**
 
-- [ ] 14. Copilot suggestion builder (Req 5, 17, 12.4)
+- [x] 14. Copilot suggestion builder (Req 5, 17, 12.4)
   - [x] 14.1 สร้างโมดูล logic Copilot builder (pure)
     - สร้าง `src/workflow/copilot/builder.ts`: 2–3 ตัวเลือก (≥4 → ปฏิเสธ), แต่ละตัวมี pros/cons, อ้าง PFMEA_Risk_Row + RPN เสมอ, จัด Autonomy_Tier ตาม D2 ก่อนนำเสนอ, advisory-only ไม่เปลี่ยน state อัตโนมัติ, tier ต้องอนุมัติ/Approval_Mechanism ไม่พร้อม → fail-safe block
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.9, 12.4_
@@ -269,7 +269,7 @@
     - **Property 30: ความสดใหม่และความน่าเชื่อถือของความรู้**
     - **Validates: Requirements 17.1, 17.2, 17.3, 17.4**
 
-- [ ] 15. Field view + atomic capture (Req 7)
+- [x] 15. Field view + atomic capture (Req 7)
   - [x] 15.1 สร้างโมดูล logic Field_View (pure)
     - สร้าง `src/workflow/field/view.ts`: แสดง Process_Step ปัจจุบัน + เช็กลิสต์จาก SOS/JES; มีความรู้ → Obsidian_Deep_Link, ไม่มี → ซ่อน link + ข้อความ "ยังไม่มีเอกสารมาตรฐาน"
     - _Requirements: 7.1, 7.2, 7.4, 7.5_
@@ -286,10 +286,10 @@
   - [x]* 15.4 เขียน property test ความเป็น atomic ของการบันทึก Capture_Item
     - **Property 16: ความเป็น atomic ของการบันทึก Capture_Item**
     - **Validates: Requirements 7.3, 7.7, 7.8**
-  - [ ]* 15.5 เขียน unit test Field_View แสดงขั้นตอน/เช็กลิสต์ (ทางเลือก `*`)
+  - [x]* 15.5 เขียน unit test Field_View แสดงขั้นตอน/เช็กลิสต์ — ครอบแล้วใน `field/__tests__/view.test.ts` (buildFieldView; ยืนยัน 2026-07-06)
     - _Requirements: 7.1, 7.2_
 
-- [ ] 16. Audit completeness + secret-scrub-preserve (Req 9)
+- [x] 16. Audit completeness + secret-scrub-preserve (Req 9)
   - [x] 16.1 สร้างโมดูล logic audit writer + secret scrub (pure)
     - สร้าง `src/workflow/audit/writer.ts`: ประกอบรายการ audit ครบ field (event_type, work_item, process_step, site_code เมื่อทราบ, ผู้กระทำผ่าน `resolve_actor()`, UTC); scrub ความลับทุกเส้นทาง; เขียนแถวก่อนแล้ว scrub best-effort retry — คงแถว audit เสมอแม้ scrub ล้มเหลว
     - _Requirements: 9.1, 9.3, 9.5, 9.6_
@@ -334,7 +334,7 @@
 - [x] 19. Checkpoint — core Phase 1 (Req 1–18) ครบ
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 20. Action Type Registry & Autonomy Classification (Req 19) — **Phase 1** · classify เท่านั้น (D2 ตัวเลือก C)
+- [x] 20. Action Type Registry & Autonomy Classification (Req 19) — **Phase 1** · classify เท่านั้น (D2 ตัวเลือก C)
   - [x] 20.1 สร้าง migration `0004_autonomy_registry.sql`
     - enum `autonomy_ladder_tier` ('L0_advisory','L1_propose','L2_auto_within_guardrail','L3_auto_with_notify' — นิยาม 4 ใช้ L0/L1) + enum `risk_class` ('low','medium','high')
     - table `action_type_registry` (action_type PK, risk_class, max_allowed_tier, r02_bound, risk_source manual/derived, description)
