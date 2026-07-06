@@ -54,7 +54,7 @@
 
 - [ ] J2.1 group_type `factory` + กลุ่มโรงงานถาวร (ขยาย 0095: กลุ่มไม่ผูก project + กติกาโพสต์ชื่อบ้านนำหน้า + guardrail เดิมครอบ)
 - [ ] J2.2 **Production milestones** — รายงาน 6 สถานี (capture ต่อสถานีต่อบ้าน pattern รูปจบเลน) + designer gate 2 จุด (Assembly/Packing — RACI B1/B2) + **auto-curated เข้ากลุ่มลูกค้า** (3 จังหวะ: เริ่มผลิต/ตู้เสร็จ/ขึ้นรถ) — ปิด pain ช่วงเงียบ
-- [ ] J2.3 **Payment plan + การ์ดแจ้งงวด + soft gate** — ตารางแผนงวดต่อบ้าน (default 4 งวดหน้าหนัก x/x/x/5 — รอยืนยันสามงวดแรก) · trigger อัตโนมัติ 4 จุด · F3 กดบันทึกรับ · เตือน+override(PM/GM+เหตุผล) ก่อนปล่อยผลิต; reuse ledger โครงเดิมได้บางส่วน
+- [ ] J2.3 **Payment plan + การ์ดแจ้งงวด + soft gate** — ตารางแผนงวดต่อบ้าน (default **50/30/15/5** — ยืนยันแล้ว; ปรับได้ต่อสัญญา) · trigger อัตโนมัติ 4 จุด · F3 กดบันทึกรับ · เตือน+override(PM/GM+เหตุผล) ก่อนปล่อยผลิต; reuse ledger โครงเดิมได้บางส่วน
 - [ ] J2.4 capture `site_design_verification` (C2+B2) + เงื่อนไข soft ก่อนส่งการ์ด G3 + แนบหลักฐานเข้า audit ของ G3
 - [ ] J2.5 **Phase Roster + assignment approval** — ตาราง roster ต่อบ้านต่อเฟส + คำขอ assign (C1/B1/D3 approve) + bot เช็ค join เทียบ roster/ตามคนขาด/แจ้งคนเกิน + เตือนคนออกเมื่อจบเฟส; รวม designer matching แบบ manual (B1 เลือกจาก list ที่ระบบเรียงตาม Mood&Tone)
 - [ ] J2.6 QC gate ภายในก่อนเชิญลูกค้าตรวจรับ — E5 ตรวจที่บ้าน (capture) → ผ่านแล้ว rpc_request_customer_acceptance ค่อยยิงได้ (soft→hard ตามผล dogfood)
