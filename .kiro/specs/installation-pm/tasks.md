@@ -13,13 +13,13 @@
 ## Phase 1: Web MVP — PWA + offline-lite เกาะ line_oa/workflow spine (D-11)
 
 - [x] 1.1 Migrations — ✅ **`0090_installation_pm_core.sql` (2026-07-06, apply ผ่าน local DB จริงทั้ง chain)**: 8 ตาราง + audit (9 รวม annotations) — projects (+work_item_id partial-unique + foreman_employee_id) / rooms (room_type + display_name ภาษาคน) / tasks (lane 1–3 = ช่างคนที่ N, unique(room,lane)) / memberships (+`fn_installation_is_member` security definer กัน RLS recursion) / photos+annotations / field_reports / approvals (postback_id UNIQUE) / audit_log; RLS fail-closed ทุกตาราง (governance | site | member); immutability triggers (audit append-only, report เซ็นแล้ว, approval ตัดสินแล้ว — ทดสอบ reject จริงบน DB); **client_submission_id partial-UNIQUE บน photos/reports = จุดเสียบ idempotency ของ spike 0.3**; หมายเหตุ: คอลัมน์ `values` ใน D-2 → `report_values` (VALUES เป็น reserved keyword)
-- [ ] 1.2 Wire lifecycle เข้า workflow — **grill ผ่านแล้ว (ADR-039, 5 มติ owner 6 ก.ค. 2026) — พร้อม implement รอ go-ahead**:
-  - (a) migration: แก้ CHECK `installation_approvals.subject` → เหลือ `customer_acceptance` เดียว (มติ 1 — start/finish วิ่ง workflow รางเดียว)
-  - (b) adapter 'Work_Item complete': RACI gate เมื่อ `current_step='Installation'` (pattern ADR-031 — ผู้ promote ต้องมี app role ตรง approver ref ขั้น Installation จาก knowledge_import หรือ governance; ว่าง = fail-safe block) + แจ้ง Sale/PM (fyi) ตอน complete สำเร็จ (มติ 2, Req 8.6)
-  - (c) seed capture_type `installation_room_proof` (`commit_target=null` — evidence รายห้อง link `installation_room`; ศูนย์โค้ด adapter) + comment แยกหน้าที่จาก `installation_proof` = ใบปิดบ้านใบเดียว (มติ 3); soft verify "ทุกห้องมีรูป" อยู่ฝั่ง UI (1.5)
-  - (d) T0 snapshot: จุดกด approve start (UI/bot 1.6b/1.8b) แนบสถานะ T0 ลง audit event (มติ 4 — soft, ไม่ hard-block ที่ DB)
-  - (e) `installation_projects` status flow `active → customer_review → completed` + จุดเข้า D-5 (มติ 5 — ตรวจรับลูกค้าเป็น closure ระดับ project; ลูกค้าไม่รับ → reason + แจ้งทีม ไม่ reopen work item)
-  - (f) tests: non-lead promote ใบปิดบ้าน → block · room proof promote → ไม่ complete work item · RACI ว่าง → block · complete → notify Sale/PM
+- [x] 1.2 Wire lifecycle เข้า workflow — ✅ **`0094_installation_lifecycle_wiring.sql` (2026-07-06, ADR-039)**:
+  - (a) ✅ CHECK `installation_approvals.subject` → `customer_acceptance` เดียว + comment table (มติ 1)
+  - (b) ✅ RACI gate ใน adapter (rebase บน 0092 ตัวล่าสุด): `current_step='Installation'` → ผู้ promote ต้องมี app role ตรง `wf_approvers_for_step(knowledge, 'Installation', 'unanimous')` หรือ governance; ว่าง = fail-safe (มติ 2, Req 8.6); แจ้ง Sale/PM = **reuse tpl_celebrate ที่ rpc_complete_work_item ยิงอยู่แล้ว** (0034/0035 — ไม่ยิงซ้ำ)
+  - (c) ✅ seed `installation_room_proof` — `commit_target='evidence_only'` (คอลัมน์ NOT NULL — ค่าไม่ตรง branch ไหน = emit+link เท่านั้น); soft verify "ทุกห้องมีรูป" อยู่ฝั่ง UI (1.5)
+  - (d) 📝 T0 snapshot = ฝั่ง UI/bot — convention: insert `installation_audit_log` event `t0_snapshot` ตอนกด approve start (ลงกับ 1.6b/1.8b; ไม่มีงาน DB — insert policy รองรับแล้ว)
+  - (e) ✅ `installation_projects.status` += `customer_review` (flow: active → customer_review → completed; จุดเข้า D-5 ลงกับ 1.8c)
+  - (f) ✅ tests บน DB จริง 4 เคส: office promote ใบปิดบ้าน → block "ต้องเป็นหัวหน้าทีม" · room proof → emitted + work item ยัง in_progress · RACI/knowledge ว่าง → fail-safe block · หัวหน้าทีม (role ตรง RACI) → completed
 - [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
 - [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)
 - [ ] 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA
