@@ -51,6 +51,16 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 
 ## D-5: LINE Approval Flow (reuse line-oa)
 
+> **มติ grill 1.2 ข้อ 1 (owner, 6 ก.ค. 2026):** `installation_approvals` มีหน้าที่เดียว = **customer_acceptance** (ลูกค้าตรวจรับบ้าน); subject `start`/`finish` ตัดออกจาก CHECK ของ 0090 ตอน implement 1.2 — start/finish เป็นของ workflow approval loop 100% (Req 8.6 workflow: entry gate เข้าขั้น Installation = start · completion ผ่าน capture proof = finish); การ์ด Flex ในกลุ่ม LINE เป็นแค่*ช่องทางกด*ที่ยิงเข้า decision RPC เดิม ไม่ใช่ระบบอนุมัติที่สอง (หลักเดียวกับ "กลุ่ม LINE ≠ authorization")
+>
+> **มติ grill 1.2 ข้อ 2 (owner, 6 ก.ค. 2026):** enforce "finish ต้องเป็นหัวหน้าทีม Installation" (Req 8.6) ด้วย **RACI gate ใน adapter 'Work_Item complete' — pattern ADR-031**: เมื่อ `current_step='Installation'` ผู้ promote ต้องมี app role ตรง approver ref ของขั้น Installation จาก `knowledge_import` current (แหล่งอำนาจเดียวกับ start) หรือ governance; RACI ว่าง → fail-safe block; ไม่สร้าง approval รอบสอง (SLA ของการรอ finish = SLA ของขั้น Installation เอง); พ่วง: adapter ยิงแจ้ง Sale/PM (fyi group) ตอน complete ถ้ายังไม่มีใครยิง
+>
+> **มติ grill 1.2 ข้อ 3 (owner, 6 ก.ค. 2026):** แยกสอง capture type — **`installation_room_proof`** (รูป Wrapping รายเลน/ห้อง, `commit_target=null` → promote = verify+เก็บ evidence+link `installation_room`; ศูนย์โค้ด adapter) vs **`installation_proof`** (= **ใบปิดบ้านใบเดียว** หัวหน้าทีมส่งเมื่อทุกห้องเสร็จ → complete ผ่าน RACI gate มติข้อ 2); verify rule ของใบปิดบ้าน "ทุกห้องมี room proof" = **soft** (เตือนใน UI ไม่ block ที่ DB — บ้านอาจมีห้องยกเลิกกลางทาง อำนาจตัดสินอยู่ที่หัวหน้า + เหตุผลลง audit); UX: ช่างแค่ถ่ายรูปจบเลน หลังบ้าน route เป็น room proof เอง — ปุ่ม "ส่งปิดบ้าน" มีเฉพาะมุมหัวหน้า
+>
+> **มติ grill 1.2 ข้อ 4 (owner, 6 ก.ค. 2026):** T0 site readiness ผูกกับ start แบบ **soft + audit snapshot** — UI/Flex แสดง T0 ก่อนปุ่มอนุมัติ; ตอน approve start แนบ snapshot สถานะ T0 (ครบ/ขาดข้อไหน) ลง audit log; **ไม่ hard-block ที่ DB** เพราะ T0 มีข้อ conditional ตามบ้าน (เช่น Water supply ในบ้านไม่มีงานประปา) — hard gate บนเช็คลิสต์ conditional = สอนให้ติ๊กเพื่อผ่าน เสีย signal จริง; อำนาจ+ความรับผิดอยู่ที่หัวหน้าทีมซึ่ง Req 8.6 แต่งตั้งเป็น approver อยู่แล้ว
+>
+> **มติ grill 1.2 ข้อ 5 (owner, 6 ก.ค. 2026):** การตรวจรับของลูกค้า = **closure ระดับ project แยกชั้นจาก workflow** — work item ปิดเมื่อใบปิดบ้านผ่าน (งานช่างจบ = นาฬิกา operational หยุด); จากนั้น `installation_projects`: `active → customer_review → completed`; ลูกค้าไม่รับ → **ไม่ reopen work item** — บันทึกเหตุผลลง `installation_approvals.reason` + แจ้งทีม แล้วเดินเป็น punch list/rework flow ใหม่ (นิยามละเอียด Phase ถัดไป); ห้ามเพิ่ม Installation เข้า `wf_is_customer_approval_step` (นั่นคุม entry gate — ลูกค้าจะกลายเป็นผู้อนุมัติ "เริ่มติดตั้ง" ซึ่งผิดความหมาย)
+
 ```
 installation_projects (customer_review)
   → สร้าง installation_approvals (pending)

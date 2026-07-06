@@ -17,6 +17,10 @@
 - **Field Report**: รายงานหน้างาน (daily/custom form) กรอกจากมือถือ แนบรูป/ลายเซ็น
 - **External Member**: ช่าง/พาร์ตเนอร์ภายนอกที่เข้าถึงได้เฉพาะโปรเจกต์ที่ถูกเชิญ
 - **Sync Protocol**: กติกา offline sync (`client_rev` + `updated_at` + tombstone) — ต้องล็อกก่อนเขียน mobile
+- **รูปจบเลน (`installation_room_proof`)**: รูป Wrapping ที่ช่างถ่ายตอนจบเลนของห้อง — capture evidence รายห้อง (`commit_target=null`, link `installation_room`) **ไม่ปิดงาน** (ADR-039 ข้อ 3)
+- **ใบปิดบ้าน (`installation_proof`)**: capture ใบเดียวต่อบ้านที่**หัวหน้าทีม Installation** ส่งเมื่อทุกห้องเสร็จ → promote ผ่าน RACI gate → ปิด work item (ADR-039 ข้อ 2–3) — คนอื่น promote ไม่ได้ (fail-safe ที่ adapter)
+- **การตรวจรับบ้าน (Customer Acceptance)**: closure **ระดับ project** (`active → customer_review → completed`) เกิดหลัง work item ปิดแล้ว — ลูกค้าไม่รับ → punch list flow ใหม่ ไม่ reopen work item (ADR-039 ข้อ 5); เป็น subject เดียวที่เหลือใน `installation_approvals`
+- **T0 Snapshot**: สถานะเช็คลิสต์ site readiness ณ วินาทีที่หัวหน้าทีมกด approve start — แนบลง audit log เสมอ (soft gate — ADR-039 ข้อ 4)
 
 ## Reuse Map (ผลตรวจกับเรโปจริง 2026-07-05)
 
