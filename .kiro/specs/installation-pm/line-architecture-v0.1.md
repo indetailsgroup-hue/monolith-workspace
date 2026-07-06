@@ -10,7 +10,7 @@
 | Actor | Identity | ที่เก็บ | หมายเหตุ |
 |---|---|---|---|
 | **ลูกค้า** | LINE user_id → canonical customer | `line_oa_customer_identity` (มีแล้ว) | ไม่เป็น DB principal (Edge Function mediate — pattern เดิม) |
-| **พนักงานทุกตำแหน่ง** (ดู §1.1) | LINE user_id ↔ บัญชีพนักงาน (auth user) | **`line_staff_identity`** (ใหม่ — ตารางเดียวทุกตำแหน่ง) | ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; `line_user_id` UNIQUE; **role/แผนก มาจากระบบ (C12 roles + memberships) ไม่ใช่จาก LINE** |
+| **พนักงานทุกตำแหน่ง** (ดู §1.1) | LINE user_id ↔ บัญชีพนักงาน (auth user) | **`identity_binding`** (ตารางเดิมของ workflow ขยายตาม ADR-038 — ตารางเดียวทุกตำแหน่ง; ยุบ `line_staff_identity` ที่เคย spec) | ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; `line_user_id` UNIQUE; **role/แผนก มาจากระบบ (C12 roles + memberships) ไม่ใช่จาก LINE** |
 | **Bot** | OA channel เดิม | `line_oa_channels` (Vault refs) | ตัวเดียว ทำงานต่างกันตาม group_type |
 
 **ทำไมต้องแยก staff identity จาก customer identity:** ตาราง customer มี match_confidence/manual_review (จับคู่โดยอนุมาน) แต่พนักงานต้อง**ยืนยันตัวเองแบบ deterministic** (LINE Login) เพื่อให้ `resolve_actor` audit ได้ว่า "ช่างคนไหนส่งรูปนี้" — ห้ามอนุมาน
@@ -57,7 +57,7 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
                     — ตอบคำถาม "ใครอยู่กลุ่มไหนบ้าง" ได้จาก DB ตลอดเวลา + ย้อนประวัติได้
 ```
 
-- สมาชิกที่ join แล้ว **match กับ `line_staff_identity`** → รู้ชื่อพนักงาน; match กับ customer identity → รู้ว่าเป็นลูกค้า; ไม่ match ทั้งคู่ → bot ส่งลิงก์ผูกตัวตน (ถ้าอยู่กลุ่ม internal) หรือ mark เป็น guest (กลุ่มลูกค้า เช่น ญาติ/ผู้รับเหมาฝั่งลูกค้า)
+- สมาชิกที่ join แล้ว **match กับ `identity_binding` (ADR-038)** → รู้ชื่อพนักงาน; match กับ customer identity → รู้ว่าเป็นลูกค้า; ไม่ match ทั้งคู่ → bot ส่งลิงก์ผูกตัวตน (ถ้าอยู่กลุ่ม internal) หรือ mark เป็น guest (กลุ่มลูกค้า เช่น ญาติ/ผู้รับเหมาฝั่งลูกค้า)
 - **คนแปลกหน้าในกลุ่ม internal** (ไม่ยอมผูกตัวตนภายใน N วัน) → แจ้งหัวหน้างาน — กันข้อมูลภายในรั่ว
 
 ## 3. Linkage — ลิงก์กลุ่มกับบ้านอย่างไร (provisioning)
@@ -118,7 +118,7 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
 ## 7. Data Model เพิ่ม (net-new — เข้า tasks Phase 1)
 
 ```sql
-line_staff_identity   (line_user_id text UNIQUE, user_id uuid → auth, display_name, bound_at, consent_at, revoked_at)
+identity_binding += consent_at, bound_at, revoked_at   -- ADR-038: ขยายตารางเดิม (มี employee_id/line_user_id/department/app_role แล้ว) ไม่สร้างใหม่
 line_groups           (id, line_group_id text UNIQUE, project_id → installation_projects, group_type internal|customer, status, bound_by, bound_at)
 line_group_members    (group_id, line_user_id, display_name, member_kind staff|customer|guest, joined_at, left_at)
 line_bind_codes       (code, project_id, expires_at, uses_left)          -- รหัสผูกบ้าน

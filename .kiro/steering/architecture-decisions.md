@@ -375,3 +375,30 @@ inclusion: always
 - **Decision (owner):** MVP ไม่ใช่ PWA เดี่ยว ๆ — งานติดตั้ง = `work_items` ขั้น Installation ใน canonical process (lifecycle/approval/notify ของ workflow ทำงานเดิม ห้าม bypass), รูปหลักฐาน = capture `installation_proof` (ingest→verify→commit ปิด work item — 0063 มีอยู่แล้ว), แจ้งเตือนช่าง+รับรูปจากช่าง = line_oa (webhook/outbound/templates), ข้อมูลวัดหน้างาน = SiteSurveyZone read-only
 - **Verified reuse เพิ่มเติม:** canonical process มี Sub_Process_Group {Office, Factory, Installation} + workflow Req "Installation start/finish → approver หัวหน้าทีม Installation + notify Sale/PM"; capture types `installation_proof` (0051, commit_target='Work_Item complete') และ `site_survey`→SiteSurveyZone (0062/0073) — spec ฉบับก่อน amendment ออกแบบ task system + media pipeline ขนานโดยไม่จำเป็น
 - **Consequences:** `installation_tasks` ลดบทบาทเป็น subtask หน้างานใต้ work_item (single source of truth = workflow); media net-new เหลือแค่ thumbnail/compress + annotation; push FCM/APNs เลื่อนได้ (แจ้งเตือนหลัก = LINE); chat in-app กลายเป็น optional ตามผล Realtime spike — design.md D-11
+
+## ADR-036 — Deployment: Supabase hosted (Singapore) เป็น bridge ชั่วคราวของ DAPH internal ops — ผ่อน SPINE-8/ADR-021 แบบมีเงื่อนไขไข (pattern ADR-033)
+
+- **Status:** Accepted (grill-with-docs, 6 ก.ค. 2026)
+- **Context:** โค้ด workflow/LINE/capture ครบ (134/134 + scrutiny 0084) เหลือ ops แต่ยังไม่มี deployment target จริง (config.toml = local dev เท่านั้น); ADR-021 + Property SPINE-8 บังคับ Finance/PII at-rest ใน Thai_Data_Center ขณะที่ Supabase hosted ไม่มี region ไทย (ใกล้สุดสิงคโปร์); ทางเลือก self-host บนโครงสร้างไทย (แนว INET ตาม Feasibility workbook) สอดคล้องเอกสารตรง ๆ แต่ต้องมีคนดูแล (JD DevOps เพิ่งร่าง ยังไม่มีคนจริง) และจะหน่วง dogfood ทั้งสาย
+- **Decision (owner, grill Q1):** ใช้ **Supabase hosted (ap-southeast-1 สิงคโปร์) เป็น bridge เฉพาะช่วง dogfood** — ผ่อน SPINE-8/ADR-021 ชั่วคราวแบบมีเงื่อนไขไข:
+  1. **Exit criteria (ต้องย้ายเข้าโครงสร้างไทยก่อน):** (ก) เปิดใช้บัญชี/การเงินจริง (ledger production data) หรือ (ข) เก็บข้อมูลลูกค้าจริงเต็มระบบเกินขอบเขต pilot dogfood — อย่างใดถึงก่อน
+  2. ระหว่าง bridge: จำกัดข้อมูลใน DB ให้เป็นข้อมูล dogfood/pilot; DPA กับ Supabase; ไม่เปิด foreign-SaaS egress เพิ่ม (ADR-021 ข้ออื่นคงเดิม)
+  3. การย้าย = `supabase db dump/restore` + repoint functions — ทุกอย่างเป็น migration/repo-as-code อยู่แล้วจึงย้ายได้จริง (กัน "bridge ถาวร" ที่ ADR-033 เตือน)
+- **Consequences:** ปลดล็อก ops ทั้งชุด (apply 0081–0084, deploy Edge Functions, pg_cron/Vault มีให้ใน hosted); SPINE-8 มีสถานะ "ผ่อนชั่วคราวโดย ADR-036" ต้อง track exit ใน roadmap; งาน follow-up: ตั้ง billing alert + backup policy ตั้งแต่วันแรก
+
+## ADR-037 — Re-quote complete = full revert ผ่านวงจรอนุมัติเดิม (ปลด lock → ย้อน step → trigger re-lock เอง)
+
+- **Status:** Accepted (grill-with-docs, 6 ก.ค. 2026) — design แล้ว รอ go-ahead implement (scrutiny F8)
+- **Context:** Req 21.10 สั่ง "revert ไป gate ที่ field ถูกแก้แล้ว re-lock" แต่ `rpc_accept_requote` (0024) แค่ set `in_progress` — ไม่ revert ไม่ re-lock; และ Req 21.11 ห้าม silent unlock (ปลดได้เฉพาะ approved scope_change); ทางเลือก "re-lock อย่างเดียวไม่ย้อน step" เบากว่าแต่ทำให้แบบใหม่ที่แพงขึ้นไม่ถูกเซ็นซ้ำโดยผู้อนุมัติ gate
+- **Decision (owner, grill Q4):** **Full revert ผ่านวงจรอนุมัติเดิม** — กลไก:
+  1. `rpc_request_scope_change` รับ `p_gate` (0083 reject flow มีค่าจาก classify อยู่แล้ว) เก็บใน `design_locks._requote.gate`
+  2. เมื่อ accept ครบทั้งคู่ (internal PM+exec single-consolidated + customer): **ปลด lock ของ gate นั้น** (นี่คือ "approved scope_change" เพียงเส้นทางเดียวที่ปลดได้ — Req 21.11 คงจริง) + **revert `current_step`** ไป step ของ gate (inverse ของ `fn_wf_gate_for_step`)
+  3. งานเดินเข้าวงจรอนุมัติของ gate นั้นใหม่ตามปกติ → เมื่อผ่าน **trigger 0084 re-lock ให้เองอัตโนมัติ** — ไม่มีโค้ด re-lock พิเศษ, แบบใหม่ถูกเซ็นจริงโดยผู้มีอำนาจของ gate
+- **Consequences:** reuse ทั้งเส้น (resolver + decision + trigger เดิม); ต้องแก้ 2 จุดตอน implement: `rpc_request_scope_change(p_work_item_id, p_gate)` + branch complete ของ `rpc_accept_requote` (unlock+revert แทน set in_progress ตรง ๆ); trigger 0084 ไม่ยิงซ้ำระหว่าง requote เพราะเงื่อนไข OLD=awaiting_approval; งานที่ revert จะนับ attempt ใหม่ใน approval_request (พฤติกรรมที่ต้องการ — เป็นการเซ็นรอบใหม่จริง)
+
+## ADR-038 — Staff↔LINE binding = ตาราง `identity_binding` เดียว (ยุบ `line_staff_identity` ที่ spec ไว้)
+
+- **Status:** Accepted (grill-with-docs, 6 ก.ค. 2026)
+- **Context:** grill พบตารางผูกพนักงาน↔LINE ซ้ำสองระบบ: `identity_binding` (workflow — มีจริง, 0084 เพิ่ม `app_role` สำหรับ resolve approver ref) กับ `line_staff_identity` (installation-pm spec 📝 ยังไม่สร้าง — มี consent/LINE Login/bound_at) — ถ้าสร้างทั้งคู่ พนักงานต้องผูกสองรอบ + ข้อมูล drift
+- **Decision (owner, grill Q5):** ตารางเดียว = **ขยาย `identity_binding`** (เพิ่ม `consent_at`, `bound_at`, `revoked_at` + flow ผูกครั้งเดียวผ่านลิงก์+LINE Login ตามมติ installation-pm เดิม) — installation-pm อ้างตารางนี้แทน `line_staff_identity` ทุกจุด (reuse-not-fork)
+- **Consequences:** ผูกครั้งเดียวใช้ทั้ง notification (workflow), กลุ่ม LINE, รูป/`#ปัญหา` attribution (installation); แก้ spec: installation-pm requirements Req 13.3, line-architecture §3/§7, tasks 1.8 — done ในรอบ grill นี้; `app_role` = จุดที่ HR ผูก approver ref ให้ผู้อนุมัติ (ไม่ใช่ช่างทุกคนต้องมี)

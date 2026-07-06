@@ -15,7 +15,7 @@
 | F5 | 🟡 ต่ำ | Delegation dedup: สอง approver เดิม delegate ไปคนเดียวกัน → 1 request → quorum unanimous เหลือเสียงเดียว (คนเดียวถืออำนาจสองสาย) | 🗒 ยอมรับ: spec ไม่ได้ห้าม และสอดคล้อง unique index เดิม; ทางป้องกันเชิงนโยบาย = ไม่ตั้ง delegation ซ้อนไปคนเดียวกัน — บันทึกเป็นข้อสังเกตใน 0082 |
 | F6 | 🟡 ต่ำ | เอกสาร/คอมเมนต์ 0082 + `resolve-with-delegation.ts` บอก identity = email/uid (`resolve_actor`) แต่ความจริง = **approver ref (role ref)** — โค้ดทำงานถูก (opaque text) แต่คนอ่านจะผูก delegation ผิด | ✅ แก้ (0084): `comment on function rpc_create_delegation` ระบุ semantics จริง + แก้ doc ใน TS |
 | F7 | 🟡 ต่ำ | Ordering contract ของ reject→classify: ถ้าเรียก `rpc_reject_design_gate` ก่อน decision RPC, สถานะ `awaiting_requote` จะถูก decision ทับเป็น `rework` | 🗒 บันทึก contract: caller (UI/Edge) ต้องบันทึก reject ผ่าน decision RPC ก่อน แล้วค่อย classify — เขียนใน 0083 header แล้ว + tasks |
-| F8 | 🟡 ต่ำ | **Pre-existing (ไม่ใช่ของรอบนี้):** `rpc_accept_requote` (0024) เมื่อครบทั้งคู่ → in_progress แต่**ไม่ re-lock gate ที่แก้** ตาม Req 21.10 ("revert ไป gate ที่ field ถูกแก้แล้ว re-lock") | 📌 Follow-up: ต้องรู้ว่า field ไหนถูกแก้ (มาจาก scope_change payload) — เพิ่ม param ให้ accept_requote หรือเก็บ gate ใน `_requote` state; ไม่บล็อก Wave 2 (soft model) |
+| F8 | 🟡 ต่ำ | **Pre-existing:** `rpc_accept_requote` (0024) เมื่อครบทั้งคู่ → in_progress แต่**ไม่ revert/ไม่ re-lock** ตาม Req 21.10 | 📐 **Design แล้ว (ADR-037, grill-with-docs 6 ก.ค.):** full revert ผ่านวงจรอนุมัติเดิม — เก็บ gate ตอน scope_change → accept ครบคู่: ปลด lock + revert current_step → trigger 0084 re-lock เองเมื่อ gate ผ่านใหม่; รอ go-ahead implement (runbook B4) |
 
 ## สิ่งที่ scrutiny ยืนยันว่าถูกต้อง (ไม่ใช่ finding)
 
@@ -35,3 +35,13 @@
 1. **"wiring ปิดแล้ว" ต้องพิสูจน์ด้วย caller จริง ไม่ใช่ RPC ที่พร้อมให้เรียก** — F2 คือผมทำผิด pattern ที่ตัวเองเพิ่งวิจารณ์ ภายในวันเดียวกัน
 2. **ตาม identity ให้สุดสาย producer→consumer** — ผมยืนยัน "identity align" ที่ชั้น delegation↔resolved_approver แต่ไม่ได้ตามต่อว่า resolved_approver คืออะไรจริง ๆ (role ref) และ target ของ notification จริงหน้าตาเป็นยังไง (F1)
 3. Pure logic ที่ property-test เขียว **ไม่นับว่า requirement ถูก enforce** จนกว่าจะชี้ได้ว่าใครเรียกมันบน path จริง (F3 — composeMessage)
+
+## Findings เพิ่มจาก grill-with-docs (6 ก.ค. 2026 — รอบ ops/F8)
+
+| # | ระดับ | เรื่อง | สถานะ |
+|---|-------|--------|--------|
+| F9 | 🔴 สูง | **Workflow templates ไม่เคยถูก seed** — keys `tpl_sla_reminder/timeout/timeout_pm/celebrate` ถูกอ้างใน 0033–0035 + scheduler แต่ไม่มี insert เข้า `line_oa_message_templates` เลย → deploy วันนี้ทุก notification = `template_unresolvable` | 📐 runbook B1 (seed migration + governance review) |
+| F10 | 🟠 กลาง | **`in_quiet_hours` ไม่มีใครคำนวณ** — เป็น boolean param ที่ทุก caller ปล่อย default false → digest ไม่มีทางเกิดจริง; และ Quiet_Hours ไม่เคยมีค่าจริงจนกระทั่ง grill นี้ (owner กำหนด **20:00–08:00 ไทย, digest 08:00**) | 📐 runbook B2 (คำนวณที่ DB default) + glossary อัปเดตแล้ว |
+| F11 | 🟡 ต่ำ | **ตาราง staff↔LINE binding ซ้ำสองระบบ** — `identity_binding` (มีจริง) vs `line_staff_identity` (installation-pm spec) → ผูกสองรอบ/drift | ✅ ADR-038: ยุบเป็น `identity_binding` เดียว + แก้ spec ครบ (requirements/line-architecture/tasks/LINE system doc) |
+
+**มติ ops จาก grill:** ADR-036 (hosted SG bridge + exit criteria) · cron = pg_cron+pg_net ผ่าน migration (repo-as-code) · แผนเต็ม = `docs/OPS-RUNBOOK-Wave2.md`

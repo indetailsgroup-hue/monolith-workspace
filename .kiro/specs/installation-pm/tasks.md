@@ -22,7 +22,7 @@
 - [ ] 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export
 - [ ] 1.6b **[UX tenet]** default view ต่อบทบาท: ช่าง = "งานของฉันวันนี้" (เลนตัวเอง, ชื่อห้องภาษาคน, ไม่มี id/key), หัวหน้า = ภาพรวมบ้าน; bot ใช้**ปุ่ม**ไม่ใช่ command; หลังบ้าน infer ห้อง/เลนก่อนถาม (D-12)
 - [ ] 1.7 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว (บอก "ค้างส่ง N" ไม่ใช้ศัพท์ sync/queue) + baseline metrics
-- [ ] 1.8 LINE groups + staff identity (Req 13, `line-architecture-v0.1.md`): migrations `line_staff_identity`/`line_groups`/`line_group_members`/`line_bind_codes` + extend templates (`audience`) + outbound (`target_type/target_id`) + inbound (`source_type/line_group_id`) — **guardrail audience เป็น DB CHECK**
+- [ ] 1.8 LINE groups + staff identity (Req 13, `line-architecture-v0.1.md`): migrations **ขยาย `identity_binding` (ADR-038: +consent_at/bound_at/revoked_at — ไม่สร้าง line_staff_identity)**/`line_groups`/`line_group_members`/`line_bind_codes` + extend templates (`audience`) + outbound (`target_type/target_id`) + inbound (`source_type/line_group_id`) — **guardrail audience เป็น DB CHECK**
 - [ ] 1.8b Bot flows: join event → `#ผูก` → binding; member sync; รูปกลุ่ม internal → capture `installation_proof` + quick reply เลือกห้อง/เลน; `#ปัญหา` → issue + แจ้งหัวหน้า; ลิงก์ผูก staff identity (LINE Login + consent)
 - [ ] 1.8c LINE templates: 'inst_approval_request' (ลูกค้า — D-5, `audience='customer'`) + curated progress update + แจ้งเตือนทีม internal (งานใหม่/approval result/เตือนรายงาน)
 - [ ] 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)

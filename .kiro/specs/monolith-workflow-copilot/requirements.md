@@ -56,8 +56,9 @@
 - **Notification**: ข้อความแจ้งเตือนที่ส่งทาง LINE หนึ่งค่าจากชุดช่องทาง {direct_push, group_message}
 - **Notification_Category**: หมวดของการแจ้งเตือนที่ผู้ใช้สามารถปิดเสียง (mute) ได้ เช่น handoff, FYI, digest
 - **Direct_Responsibility_Item**: การแจ้งเตือนที่เกี่ยวกับความรับผิดชอบหรือการอนุมัติโดยตรงของบุคคล ซึ่งข้าม Quiet_Hours ได้
-- **Quiet_Hours**: ช่วงเวลาที่ตั้งค่าได้ซึ่งระงับการแจ้งเตือนที่ไม่ใช่ Direct_Responsibility_Item
-- **Daily_Digest**: สรุปการแจ้งเตือนที่สะสมไว้ ส่งรวมเป็นครั้งเดียวตามรอบที่กำหนด
+- **Approver ref**: identity แบบ opaque ที่ใช้ใน `approval_request.resolved_approver` และ delegation — เป็น **app-role ref ตาม ADR-018** (จาก raciMap approvers[].ref/accountable) ไม่ใช่ email/uuid; การ map ref → LINE ทำผ่าน `identity_binding.app_role` (0084) — นิยามชัดหลัง scrutiny F6 กันเข้าใจผิดซ้ำ
+- **Quiet_Hours**: ช่วงเวลาที่ตั้งค่าได้ซึ่งระงับการแจ้งเตือนที่ไม่ใช่ Direct_Responsibility_Item — **ค่าจริง (owner, grill-with-docs 6 ก.ค. 2026): 20:00–08:00 เวลาไทย** (ช่างทำงาน 08:00–17:00 ตามตาราง time-box); การคำนวณ `in_quiet_hours` ทำที่ dispatch path ฝั่ง DB (Asia/Bangkok) — เดิมเป็น boolean ที่ไม่มีใครคำนวณ (พบจาก grill)
+- **Daily_Digest**: สรุปการแจ้งเตือนที่สะสมไว้ ส่งรวมเป็นครั้งเดียวตามรอบที่กำหนด — **ค่าจริง: ส่ง 08:00 เวลาไทย** (จบ Quiet_Hours พอดี — ทุกคนเปิดวันด้วยสรุปเดียว)
 - **Field_View**: มุมมองบน LINE rich menu สำหรับทีมหน้างาน แสดง "ขั้นตอนที่ต้องทำตอนนี้" พร้อมการถ่ายภาพ/เช็กลิสต์
 - **Capture_Item**: ภาพถ่ายหรือรายการเช็กลิสต์ที่ทีมหน้างานบันทึกผ่าน Field_View
 - **Obsidian_Deep_Link**: ลิงก์ที่เปิดโน้ตรายละเอียดเต็ม (SOS/JES) ใน Obsidian Vault ของชั้นความรู้

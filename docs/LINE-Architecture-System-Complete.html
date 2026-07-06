@@ -166,7 +166,7 @@
 <tr>
 <td><strong>พนักงาน</strong> (ช่าง/หัวหน้า/sale/บัญชี)</td>
 <td>LINE user_id ↔ auth user</td>
-<td><code>line_staff_identity</code> 📝</td>
+<td><code>identity_binding</code> (ขยาย — ADR-038) 📝</td>
 <td><strong>deterministic</strong> (ลิงก์ + LINE Login + consent, ครั้งเดียว) — เพื่อ audit &quot;ใครทำ&quot;</td>
 </tr>
 <tr>
@@ -196,8 +196,8 @@
 <li><strong>รูปหลักฐานติดตั้ง</strong> → capture <code>installation_proof</code> → verified → <strong>ปิด work item อัตโนมัติ</strong> (0063) · cloud_allowed=false</li>
 <li><strong>ข้อมูลวัดพื้นที่</strong> → <code>site_survey</code> → SiteSurveyZone (0073)</li>
 </ul>
-<h3>4.4 พนักงานออฟฟิศ — อนุมัติ work item ผ่าน LINE 🔵 (รอ Phase 13)</h3>
-<p>Office staff (ขาย/วัด/วางแผน) เห็นสถานะงานใน canonical process + กดอนุมัติ/ส่งต่อขั้นจาก LINE · <strong>ขึ้นกับ workflow Phase 13 (notification delivery + retry) ที่ยังไม่ปิด</strong> ⏸</p>
+<h3>4.4 พนักงานออฟฟิศ — อนุมัติ work item ผ่าน LINE 🔵 (โค้ดครบ — รอ ops)</h3>
+<p>Office staff (ขาย/วัด/วางแผน) เห็นสถานะงานใน canonical process + กดอนุมัติ/ส่งต่อขั้นจาก LINE · <strong>Phase 13 ปิดแล้ว (2026-07-06)</strong> — เหลือ ops ตาม <code>docs/OPS-RUNBOOK-Wave2.md</code> (deploy + cron + seeds)</p>
 <h3>4.5 Executive — escalation ผ่าน LINE 🔵</h3>
 <p>งานเสี่ยง RPN เกิน threshold / งบเกิน → escalate ทันที (Copilot) · Phase 13/14</p>
 <h3>4.6 ช่างหน้างาน — รูป + #ปัญหา + แจ้งเตือน (กลุ่ม) 📝</h3>
@@ -296,7 +296,7 @@
 <h2>7. Data Model รวม</h2>
 <p><strong>มีแล้ว ✅:</strong> <code>line_oa_channels</code> · <code>line_oa_conversations</code> · <code>line_oa_inbound_messages</code> · <code>line_oa_outbound_messages</code> · <code>line_oa_customer_identity</code> · <code>line_oa_message_templates</code> · <code>line_oa_orders</code> · <code>line_oa_audit_log</code></p>
 <p><strong>เพิ่มสำหรับ groups + staff 📝</strong> (installation-pm):</p>
-<pre><code class="language-sql">line_staff_identity   (line_user_id UNIQUE, user_id → auth, display_name, bound_at, consent_at, revoked_at)
+<pre><code class="language-sql">identity_binding += consent_at, bound_at, revoked_at   -- ADR-038: ขยายตารางเดิมของ workflow (app_role มีจาก 0084) ไม่สร้าง line_staff_identity
 line_groups           (line_group_id UNIQUE, project_id, group_type internal|customer, status, bound_by)
 line_group_members    (group_id, line_user_id, display_name, member_kind staff|customer|guest, joined_at, left_at)
 line_bind_codes       (code, project_id, expires_at, uses_left)
@@ -365,7 +365,7 @@ line_oa_inbound_messages  + source_type (&#39;user&#39;|&#39;group&#39;) + line_
 <h2>9. Dependencies (สำคัญก่อน implement)</h2>
 <ol>
 <li><del>workflow Phase 13</del> → <strong>ปิดแล้ว (2026-07-06)</strong>: delivery chain จริงครบ — <code>rpc_claim_pending_notifications</code> v2 (0081: resolve ผู้รับจาก identity_binding + render template + Vault token ref) → <code>notification-retry-worker</code> ส่ง LINE push ตรง → record/backoff ถูกสูตร (แก้บั๊กเดิมที่ mark &#39;sent&#39; โดยไม่เคยส่งจริง) — เหลือ <strong>ops: ลงทะเบียน cron (pg_cron → worker ทุก 1 นาที) + deploy</strong> ก่อนเปิดใช้จริง</li>
-<li>Installation groups พึ่ง <code>line_staff_identity</code> + group tables (net-new) — landing พร้อม installation-pm migrations (Phase 1.1)</li>
+<li>Installation groups พึ่ง <code>identity_binding</code> ที่ขยาย (ADR-038) + group tables (net-new) — landing พร้อม installation-pm migrations (Phase 1.1)</li>
 <li>capture types ใหม่พึ่ง L3 adapter (customer_requirement → work_item_open; ดู <code>installation-pm/tasks 1.5b</code>)</li>
 </ol>
 <hr>

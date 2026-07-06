@@ -242,7 +242,7 @@
 <li>THE บ้าน 1 หลัง SHALL มี LINE <strong>2 กลุ่ม</strong> อายุยาวตลอดโปรเจกต์: internal (sale ตลอด + สมาชิกหมุนตามเฟส — ทีมวัด→designer/3D→หัวหน้า+ช่าง; คุยงาน/ปัญหา/ต้นทุน) และ customer (ลูกค้า+sale+หัวหน้า — ความคืบหน้า/แบบ/นัดหมาย/ขออนุมัติ ตั้งแต่เฟสออกแบบ) — ผูกกับ <code>installation_projects</code> ผ่าน <code>line_groups</code> + รหัสผูกบ้าน; ตำแหน่งงานครบชุด (Sale/วัด/Designer/3D/PP/Factory/ติดตั้ง/GM + support) ดู <code>line-architecture-v0.1.md</code> §1.1</li>
 <li>THE bot SHALL เข้าทุกกลุ่ม — กลุ่ม internal: <strong>ช่างส่งรูปเฉย ๆ → bot เสนอปุ่ม (&quot;รูปงานเสร็จ / แจ้งปัญหา&quot;)</strong> ไม่ต้องจำ command (hashtag <code>#ปัญหา</code>/<code>#ผูก</code> เป็น shortcut ทางเลือกของ power user) → capture <code>installation_proof</code>/issue; กลุ่ม customer: <strong>เฉพาะ template ที่ <code>audience=&#39;customer&#39;</code></strong> — enforce ที่ DB CHECK + Edge Function (Guardrail — ส่งผิดกลุ่ม = error)
 2a. <strong>[UX tenet]</strong> ผู้ใช้หน้างาน SHALL ไม่เห็น id/key/ศัพท์โครงสร้างใด ๆ (room_id, work_item_id, template_key, capture_type) — เห็นแค่ชื่อภาษาคน (&quot;ครัว&quot;, &quot;งานของคุณ&quot;); หลังบ้าน <strong>infer ห้อง/เลน/โปรเจกต์จาก assignment + group binding ก่อนถาม</strong> ถามเฉพาะเมื่อกำกวมจริงและถามด้วยปุ่ม; การผูกกลุ่มใช้ปุ่ม (&quot;นี่กลุ่มทีม / นี่กลุ่มลูกค้า&quot;) + deep-link ไม่ให้พิมพ์รหัส (ดู <code>ux-tenet-audit-v1.md</code>)</li>
-<li>THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี <strong>ครั้งเดียวผ่านลิงก์ + LINE Login</strong> (<code>line_staff_identity</code>, UNIQUE ต่อ line_user_id, มี consent) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit &quot;ใครทำอะไรที่ไหนเมื่อไหร่&quot;</li>
+<li>THE พนักงาน SHALL ผูกตัวตน LINE↔บัญชี <strong>ครั้งเดียวผ่านลิงก์ + LINE Login</strong> (<strong><code>identity_binding</code> ตารางเดียว — ADR-038 ยุบ <code>line_staff_identity</code></strong>: ขยาย +consent_at/bound_at/revoked_at, UNIQUE ต่อ line_user_id) — รูป/ข้อความจาก LINE ต้อง resolve เป็นพนักงานตัวจริงเพื่อ audit &quot;ใครทำอะไรที่ไหนเมื่อไหร่&quot;</li>
 <li>THE ระบบ SHALL รู้สมาชิกทุกกลุ่มตลอดเวลา (<code>line_group_members</code> sync จาก member events, idempotent) — สมาชิกกลุ่ม internal ที่ไม่ผูกตัวตนภายในกำหนด → แจ้งหัวหน้างาน</li>
 <li>THE สิทธิ์เข้าถึงข้อมูล SHALL มาจาก <code>installation_memberships</code> + RLS เท่านั้น — <strong>การอยู่ในกลุ่ม LINE ไม่ให้สิทธิ์ใด ๆ ใน DB</strong> (กลุ่มเป็นช่องทาง ไม่ใช่ authorization)</li>
 <li>THE รูปจากกลุ่ม internal SHALL ไม่ถูก forward ไปกลุ่ม customer อัตโนมัติ — curated โดยมนุษย์ผ่าน PWA เท่านั้น</li>
@@ -462,7 +462,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <li><input disabled="" type="checkbox"> 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export</li>
 <li><input disabled="" type="checkbox"> 1.6b <strong>[UX tenet]</strong> default view ต่อบทบาท: ช่าง = &quot;งานของฉันวันนี้&quot; (เลนตัวเอง, ชื่อห้องภาษาคน, ไม่มี id/key), หัวหน้า = ภาพรวมบ้าน; bot ใช้<strong>ปุ่ม</strong>ไม่ใช่ command; หลังบ้าน infer ห้อง/เลนก่อนถาม (D-12)</li>
 <li><input disabled="" type="checkbox"> 1.7 <strong>Offline-lite queue (D-6a)</strong>: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว (บอก &quot;ค้างส่ง N&quot; ไม่ใช้ศัพท์ sync/queue) + baseline metrics</li>
-<li><input disabled="" type="checkbox"> 1.8 LINE groups + staff identity (Req 13, <code>line-architecture-v0.1.md</code>): migrations <code>line_staff_identity</code>/<code>line_groups</code>/<code>line_group_members</code>/<code>line_bind_codes</code> + extend templates (<code>audience</code>) + outbound (<code>target_type/target_id</code>) + inbound (<code>source_type/line_group_id</code>) — <strong>guardrail audience เป็น DB CHECK</strong></li>
+<li><input disabled="" type="checkbox"> 1.8 LINE groups + staff identity (Req 13, <code>line-architecture-v0.1.md</code>): migrations <strong>ขยาย <code>identity_binding</code> (ADR-038: +consent_at/bound_at/revoked_at — ไม่สร้าง line_staff_identity)</strong>/<code>line_groups</code>/<code>line_group_members</code>/<code>line_bind_codes</code> + extend templates (<code>audience</code>) + outbound (<code>target_type/target_id</code>) + inbound (<code>source_type/line_group_id</code>) — <strong>guardrail audience เป็น DB CHECK</strong></li>
 <li><input disabled="" type="checkbox"> 1.8b Bot flows: join event → <code>#ผูก</code> → binding; member sync; รูปกลุ่ม internal → capture <code>installation_proof</code> + quick reply เลือกห้อง/เลน; <code>#ปัญหา</code> → issue + แจ้งหัวหน้า; ลิงก์ผูก staff identity (LINE Login + consent)</li>
 <li><input disabled="" type="checkbox"> 1.8c LINE templates: &#39;inst_approval_request&#39; (ลูกค้า — D-5, <code>audience=&#39;customer&#39;</code>) + curated progress update + แจ้งเตือนทีม internal (งานใหม่/approval result/เตือนรายงาน)</li>
 <li><input disabled="" type="checkbox"> 1.9 Chat in-app ต่อโปรเจกต์ (Realtime — ตามผล spike 0.4; ถ้า spike ไม่ผ่าน → LINE พอสำหรับ MVP)</li>
@@ -537,7 +537,7 @@ packet_registry (packet_id, sha256, receipt_ref, manifest jsonb: cabinet/panel i
 <tr>
 <td><strong>พนักงานทุกตำแหน่ง</strong> (ดู §1.1)</td>
 <td>LINE user_id ↔ บัญชีพนักงาน (auth user)</td>
-<td><strong><code>line_staff_identity</code></strong> (ใหม่ — ตารางเดียวทุกตำแหน่ง)</td>
+<td><strong><code>identity_binding</code></strong> (ตารางเดิมของ workflow ขยายตาม ADR-038 — ตารางเดียวทุกตำแหน่ง; ยุบ <code>line_staff_identity</code> ที่เคย spec)</td>
 <td>ผูกครั้งเดียว: admin ส่งลิงก์ → พนักงานกด → LINE Login → บันทึก mapping + consent; <code>line_user_id</code> UNIQUE; <strong>role/แผนก มาจากระบบ (C12 roles + memberships) ไม่ใช่จาก LINE</strong></td>
 </tr>
 <tr>
@@ -657,7 +657,7 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
                     — ตอบคำถาม &quot;ใครอยู่กลุ่มไหนบ้าง&quot; ได้จาก DB ตลอดเวลา + ย้อนประวัติได้
 </code></pre>
 <ul>
-<li>สมาชิกที่ join แล้ว <strong>match กับ <code>line_staff_identity</code></strong> → รู้ชื่อพนักงาน; match กับ customer identity → รู้ว่าเป็นลูกค้า; ไม่ match ทั้งคู่ → bot ส่งลิงก์ผูกตัวตน (ถ้าอยู่กลุ่ม internal) หรือ mark เป็น guest (กลุ่มลูกค้า เช่น ญาติ/ผู้รับเหมาฝั่งลูกค้า)</li>
+<li>สมาชิกที่ join แล้ว <strong>match กับ <code>identity_binding</code> (ADR-038)</strong> → รู้ชื่อพนักงาน; match กับ customer identity → รู้ว่าเป็นลูกค้า; ไม่ match ทั้งคู่ → bot ส่งลิงก์ผูกตัวตน (ถ้าอยู่กลุ่ม internal) หรือ mark เป็น guest (กลุ่มลูกค้า เช่น ญาติ/ผู้รับเหมาฝั่งลูกค้า)</li>
 <li><strong>คนแปลกหน้าในกลุ่ม internal</strong> (ไม่ยอมผูกตัวตนภายใน N วัน) → แจ้งหัวหน้างาน — กันข้อมูลภายในรั่ว</li>
 </ul>
 <h2>3. Linkage — ลิงก์กลุ่มกับบ้านอย่างไร (provisioning)</h2>
@@ -886,7 +886,7 @@ line_group_members (group_id, line_user_id, display_name snapshot, joined_at, le
 <li>Scrub logs (pattern เดิม) + รูป/ข้อความกลุ่ม = ข้อมูลส่วนบุคคล → PDPA: consent ตอน bind staff identity; privacy notice ปักในกลุ่ม (bot ส่งตอน join); retention ตาม lifecycle policy (D-4)</li>
 </ol>
 <h2>7. Data Model เพิ่ม (net-new — เข้า tasks Phase 1)</h2>
-<pre><code class="language-sql">line_staff_identity   (line_user_id text UNIQUE, user_id uuid → auth, display_name, bound_at, consent_at, revoked_at)
+<pre><code class="language-sql">identity_binding += consent_at, bound_at, revoked_at   -- ADR-038: ขยายตารางเดิม (มี employee_id/line_user_id/department/app_role แล้ว) ไม่สร้างใหม่
 line_groups           (id, line_group_id text UNIQUE, project_id → installation_projects, group_type internal|customer, status, bound_by, bound_at)
 line_group_members    (group_id, line_user_id, display_name, member_kind staff|customer|guest, joined_at, left_at)
 line_bind_codes       (code, project_id, expires_at, uses_left)          -- รหัสผูกบ้าน

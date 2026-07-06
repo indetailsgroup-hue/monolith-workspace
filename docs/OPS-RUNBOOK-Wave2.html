@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ops Runbook — Wave 2 (MONOLITH)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Ops Runbook — เปิด Pilot Wave 2 (workflow/LINE)</h1>
+<h3>ผลจาก grill-with-docs · 6 กรกฎาคม 2026</h3>
+<blockquote>
+<p>แผน ops ที่คมแล้วสำหรับพาระบบ workflow/LINE (โค้ดครบ 134/134 + scrutiny 0084) ขึ้นใช้งานจริง
+<strong>มติที่ยึด:</strong> ADR-036 (hosted SG bridge + exit criteria) · ADR-037 (requote full-revert — รอ go-ahead implement) · ADR-038 (identity_binding ตารางเดียว) · Quiet_Hours 20:00–08:00 ไทย / Digest 08:00 ไทย (glossary workflow spec)
+<strong>ตาม skill:</strong> เอกสารนี้คือ deliverable — การ implement แต่ละข้อเป็นขั้นแยกที่ต้องขอ go-ahead</p>
+</blockquote>
+<h2>0. ภาพรวมลำดับงาน</h2>
+<pre><code>A. Provision (ครั้งเดียว)          B. Code ที่ค้างจาก grill (ขอ go-ahead)   C. Deploy + Seed        D. Verify + เปิด Wave 2
+A1 สร้าง Supabase project SG   →  B1 seed templates (F9)                →  C1 db push (มิเกรชันทั้งหมด) →  D1 sweep แห้ง (dry-run)
+A2 DPA + billing alert + backup    B2 คำนวณ in_quiet_hours ใน DB (F10)      C2 functions deploy ×7        D2 ทดสอบ 1 work item จริง
+A3 LINE channel (secrets→Vault)    B3 cron migration (pg_cron+pg_net)       C3 seed data (§C3)            D3 เปิดผู้ใช้ Wave 2
+                                   B4 F8 requote revert (ADR-037)
+</code></pre>
+<h2>A. Provision (ops ครั้งเดียว — ADR-036)</h2>
+<ul>
+<li><strong>A1</strong> สร้าง project: region <code>ap-southeast-1</code> (สิงคโปร์) · Postgres 17 (ตรง config.toml) · ตั้งชื่อสื่อ bridge เช่น <code>daph-ops-bridge-sg</code></li>
+<li><strong>A2</strong> ตั้งแต่วันแรก: DPA กับ Supabase · billing alert · backup policy (PITR) · <strong>บันทึก exit criteria ของ ADR-036 ลง issue tracker</strong>: ย้ายเข้าโครงสร้างไทยก่อน (ก) เปิด ledger production หรือ (ข) ข้อมูลลูกค้าจริงเต็มระบบ</li>
+<li><strong>A3</strong> LINE Official Account: เก็บ <code>channel_secret</code> + <code>channel_access_token</code> เข้า <strong>Vault</strong> (ชื่อ ref จดไว้ใช้ใน C3) — Edge Functions ไม่ถือ secret ตรง (pattern เดิม)</li>
+<li><strong>A4</strong> <code>supabase link</code> + เก็บ project ref/keys ใน password manager ของ owner (ไม่ commit)</li>
+</ul>
+<h2>B. โค้ดค้างจาก grill (แต่ละข้อ = ขอ go-ahead ก่อนทำ)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>งาน</th>
+<th>ที่มา</th>
+<th>สาระ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>B1</td>
+<td><strong>Seed workflow templates</strong></td>
+<td><strong>F9 (พบใน grill)</strong> — keys <code>tpl_sla_reminder</code>, <code>tpl_sla_timeout</code>, <code>tpl_sla_timeout_pm</code>, <code>tpl_celebrate</code> (0033–0035/scheduler) ถูกอ้างแต่<strong>ไม่เคย seed</strong> → ถ้า deploy วันนี้ทุก notification = <code>template_unresolvable</code></td>
+<td>migration seed เข้า <code>line_oa_message_templates</code> (vertical null = shared, ≤200 ตัวอักษร, น้ำเสียงไทยอบอุ่นตาม Req 12.2) — ต้องผ่าน template governance review</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>คำนวณ <code>in_quiet_hours</code> ที่ DB</strong></td>
+<td><strong>F10 (พบใน grill)</strong> — ทุก caller ส่ง default false → digest ไม่มีทางเกิดจริง</td>
+<td>แก้ <code>rpc_dispatch_notification</code>: default ของ <code>p_in_quiet_hours</code> = คำนวณจากนาฬิกา DB (<code>Asia/Bangkok</code> ∈ 20:00–08:00) เมื่อ caller ไม่ส่งค่า — ค่าตาม glossary ที่ owner กำหนด</td>
+</tr>
+<tr>
+<td>B3</td>
+<td><strong>Cron migration (pg_cron + pg_net)</strong></td>
+<td>มติ grill Q2 — schedule เป็น code ใน repo</td>
+<td>migration เดียว: enable <code>pg_cron</code>+<code>pg_net</code> → <code>cron.schedule</code> 3 รายการ: <code>notification-retry</code> ทุก 1 นาที · <code>sla-sweep</code> ทุก 15 นาที · <code>daily-digest</code> <code>0 1 * * *</code> UTC (= 08:00 ไทย, POST body <code>{&quot;assemble_digest&quot;:true}</code>) — ยิง HTTP ไป Edge Functions โดย service key อ่านจาก Vault (ห้าม hardcode)</td>
+</tr>
+<tr>
+<td>B4</td>
+<td><strong>F8 requote full-revert</strong></td>
+<td>ADR-037</td>
+<td><code>rpc_request_scope_change(+p_gate)</code> เก็บ gate ใน <code>_requote</code> → accept ครบคู่: ปลด lock gate นั้น + revert <code>current_step</code> (inverse <code>fn_wf_gate_for_step</code>) → เข้าวงจรอนุมัติใหม่ → trigger 0084 re-lock เอง + tests</td>
+</tr>
+<tr>
+<td>B5</td>
+<td><strong>ADR-038 binding extension</strong></td>
+<td>grill Q5</td>
+<td>migration: <code>identity_binding</code> += <code>consent_at</code>,<code>bound_at</code>,<code>revoked_at</code> (โครงรองรับ bind-link/LINE Login flow ของ installation-pm Phase 1.8)</td>
+</tr>
+</tbody></table>
+<h2>C. Deploy + Seed</h2>
+<ul>
+<li><strong>C1</strong> <code>supabase db push</code> — apply migrations ทั้งหมด (0000…0084 + ของใหม่จาก B) — ตรวจ <code>supabase migration list</code> ตรงกับ repo</li>
+<li><strong>C2</strong> <code>supabase functions deploy</code> ×7: <code>line-webhook</code>, <code>line-outbound-sender</code>, <code>approval-postback</code>, <code>web-fallback-api</code>, <code>notification-retry-worker</code>, <code>sla-sweep-scheduler</code>, <code>capture-ingest</code>/<code>field-capture</code> ตามที่ Wave 2 ใช้ · ตั้ง LINE webhook URL ชี้ <code>line-webhook</code></li>
+<li><strong>C3 Seed data (ลำดับสำคัญ):</strong><ol>
+<li><code>line_oa_channels</code> 1 แถว (vertical <code>monolith</code>, Vault refs จาก A3)</li>
+<li>Templates จาก B1 (ผ่าน governance review ก่อน)</li>
+<li>Knowledge import: <code>rpc_import_knowledge</code> จาก Knowledge_Export ฉบับ approved (RACI/process model — ถ้าไม่มี import ที่ <code>is_current</code> ทุก resolve จะ fail-safe block)</li>
+<li><strong><code>identity_binding</code></strong>: ผู้ใช้ Wave 2 ทุกคน (LINE Login ผูกครั้งเดียว) + <strong><code>app_role</code> สำหรับผู้อนุมัติ</strong> (map approver ref → คน — ไม่มีข้อมูลนี้ reminder/timeout จะ <code>recipient_unresolvable</code> ตามดีไซน์ 0084)</li>
+</ol>
+</li>
+<li><strong>C4</strong> Env ของ functions: <code>SUPABASE_URL</code>/<code>SERVICE_ROLE_KEY</code> (อัตโนมัติ) — ไม่มี secret เพิ่ม</li>
+</ul>
+<h2>D. Verify + เปิด Wave 2</h2>
+<ul>
+<li><strong>D1</strong> Dry-run: เรียก <code>sla-sweep-scheduler</code> (POST เปล่า) + <code>notification-retry-worker</code> ด้วยมือ → summary ต้อง 200; แถว notification ทดสอบ 1 แถวต้องเดินครบ queued→sent (LINE push ถึงจริง)</li>
+<li><strong>D2</strong> ทดสอบ end-to-end 1 work item: create → handoff → resolve approver (มี delegation ทดสอบ 1 ราย → ต้อง route) → กดอนุมัติจาก LINE → reject 1 รอบที่ design gate → classify → (ถ้า B4 แล้ว) scope_change → requote loop</li>
+<li><strong>D3</strong> เช็ค audit log ครบทุก event + ไม่มี secret/PII ใน function logs → เปิดผู้ใช้ Wave 2 (office staff ตาม PRD §4)</li>
+<li><strong>D4</strong> สัปดาห์แรก: ดู <code>notification</code> failed rate + <code>delivery_failure</code> audit — ถ้า <code>recipient_unresolvable</code> สูง = app_role bindings ไม่ครบ (C3.4)</li>
+</ul>
+<h2>Findings ใหม่จาก grill (เพิ่มเข้า scrutiny report)</h2>
+<ul>
+<li><strong>F9</strong>: workflow template keys ไม่เคย seed → B1</li>
+<li><strong>F10</strong>: <code>in_quiet_hours</code> ไม่มีใครคำนวณ (Quiet_Hours เพิ่งได้ค่าจริง 20:00–08:00 จาก grill นี้) → B2</li>
+<li><strong>F11 (terminology)</strong>: ตาราง binding ซ้ำสองระบบ → ยุบแล้วตาม ADR-038</li>
+</ul>
+<h2>สิ่งที่จงใจไม่ทำตอนนี้</h2>
+<ul>
+<li>CI auto-deploy ของ functions/migrations — รอบแรก manual ตาม runbook เพื่อคุมลำดับ seed; ตั้ง CI หลัง D3 เสถียร</li>
+<li>Self-host ไทย — เป็น exit ของ ADR-036 ไม่ใช่เงื่อนไขเปิด Wave 2</li>
+</ul>
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
