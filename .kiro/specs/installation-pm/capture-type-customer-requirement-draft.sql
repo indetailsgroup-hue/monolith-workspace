@@ -1,6 +1,8 @@
 -- =====================================================================
 -- DRAFT — capture_type 'customer_requirement' (ใบบันทึกความต้องการลูกค้า)
--- สถานะ: ร่างใน spec folder — ยังไม่ใช่ migration (แปลงเป็น supabase/migrations/
+-- สถานะ: ✅ landed แล้วเป็น migration 0092_capture_workitem_open_adapter.sql (2026-07-06 — seed verbatim + adapter #6)
+--        (ไฟล์นี้คงไว้เป็นที่มา/เหตุผลของแต่ละ field — แก้ seed = แก้ที่ migration ใหม่ ไม่แก้ 0092 ย้อนหลัง)
+-- เดิม: ร่างใน spec folder (แปลงเป็น supabase/migrations/
 --        ตอน installation-pm tasks Phase 1.1 พร้อม L3 commit adapter — ดูหมายเหตุท้ายไฟล์)
 -- ที่มา (ของจริงทั้งหมด):
 --   [1] "สำหรับคุณชุ.xlsx" (2025-07-03) — on Line sales → Qualify ลูกค้า: 9 field
