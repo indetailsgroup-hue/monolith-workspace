@@ -387,7 +387,7 @@
     - **Property 36: CAR-2 — design/3D ผ่านเมื่อ unanimous {internal lead + customer}**
     - **Validates: Requirements 20.2, 8.4**
 
-- [ ] 22. Revision Discipline & Design Locks (Req 21) — **Phase 1.5** (queue แยกได้ ไม่บล็อก core)
+- [x] 22. Revision Discipline & Design Locks (Req 21) — **Phase 1.5 · wired 2026-07-06 (0083)**
   - [x] 22.1 สร้าง migration `0024_revision_discipline.sql`
     - `revision_event` (gate, reason enum, reason_classified_by, classification_basis, appeal_status, customer_comment, billable); `design_lock_field_config` seed **4-gate** (G1/G2/G3 customer, G4 internal — ตาม DESIGN_LOCK_FIELDS)
     - `work_item` += `revision_count int`, `design_locks jsonb`; status enum += `awaiting_requote`, `awaiting_customer_acceptance`
@@ -413,6 +413,11 @@
   - [x]* 22.8 เขียน property test re-quote ไม่ proceed ก่อน customer accept
     - **Property 41: re-quote ไม่ proceed ก่อน customer accept (§2)** — ปลด lock/เดินต่อ เกิดเมื่อ internal (PM+exec single consolidated) **และ** customer accept ครบทั้งคู่เท่านั้น
     - **Validates: Requirements 21.6, 21.10, 21.17**
+  - [x] 22.9 **wire revision discipline เข้า approve/reject จริง (พบ+แก้ 2026-07-06)**
+    - **บั๊กเดิม:** RPCs (0024) เป็น building block คีย์ด้วย GATE แต่ไม่มี map Process_Step → gate → feature ไม่เคย engage ตอน approve/reject (เหมือน Phase 13/14: logic ครบ wiring ขาด)
+    - **แก้:** `0083_revision_gate_wiring.sql` — `fn_wf_gate_for_step` (Designer→G1, 3D_Presentation→G2, 3D_Rendering_Final→G3, Production Planning→G4), `rpc_apply_design_lock_for_step` (idempotent, เรียกหลัง gate ผ่านอนุมัติ — Req 21.3), `rpc_reject_design_gate` (classify → scope_change เข้า awaiting_requote / else rework — Req 21.10); ไม่แตะ decision RPC ที่ test แล้ว (ลด regression risk)
+    - **Logic + test:** `src/workflow/revision/gate-wiring.ts` + `__tests__/gate-wiring.test.ts` (14 tests: mapping ครบ 4 gate + null สำหรับ non-lock, customer/internal gate, reject route)
+    - _Requirements: 21.3, 21.10, 21.12_
 
 - [x] 23. Final checkpoint — ตรวจ Phase 1 + Phase 1.5 ครบ
   - Ensure all tests pass, ask the user if questions arise.
