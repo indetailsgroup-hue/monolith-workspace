@@ -6,19 +6,19 @@
 
 - [x] 0.1 ~~Owner ตัดสิน PRD §11 ข้อ 8~~ → **แยก DB** (ADR-034, grill 5 ก.ค. 2026) — ข้อสันนิษฐาน "หลักฐานฝั่งรวม DB" ถูกหักล้าง: v1 เป็น internal อยู่ DB เดิมอยู่แล้ว
 - [x] 0.2 ~~MVP scope~~ → **dogfood + PWA + offline-lite upload queue** (ADR-035)
-- [ ] 0.3* Spike: offline-lite queue prototype (D-6a) — service worker + IndexedDB + Background Sync + idempotent submission id (แทน sync prototype เดิม — full sync D-6 เลื่อนไปตาม baseline)
-- [ ] 0.4* Spike: Supabase Realtime load test (การใช้ครั้งแรกในเรโป — D-7)
-- [ ] 0.5 ยืนยันฟีเจอร์ AI voice ของ KANNA จาก App Store changelog (ตอนนี้ unverified) — มีผลแค่ลำดับความสำคัญ Phase 4
+- [x] 0.3* Spike: offline-lite queue prototype (D-6a) — ✅ **ผ่าน 2026-07-06**: `src/installation/offline-queue/` (queue core + IndexedDB adapter + sw-bridge, 21 tests) — idempotent id/restart survival/backoff/poison isolation พิสูจน์ครบ; ข้อค้นพบ: Background Sync = Chromium เท่านั้น → รองรับ 2 กลยุทธ์ตั้งแต่แรก (`pickSyncStrategy`) — ผล+งานต่อยอดใน `spike-0.3-offline-lite-queue.md`
+- [ ] 0.4* Spike: Supabase Realtime load test (D-7) — 🟡 **harness เสร็จ 2026-07-06** (`scripts/spikes/realtime-load-test.mjs` — 51 subscribers/3 บ้าน, เกณฑ์ delivery ≥99.5% + p95 <2s); **การรันจริงรอ provisioning (runbook Wave2 ขั้น A — ops)**; ผลชี้ทาง task 1.9 (FAIL → ใช้ LINE พอ) — `spike-0.4-realtime-load-test.md`
+- [x] 0.5 ~~ยืนยันฟีเจอร์ AI voice ของ KANNA~~ → ✅ **ยืนยันแล้ว 2026-07-06**: หน้า features ทางการ (lp.kanna4u.com/en/features) ระบุ **"AI Voice Reporting"** (dictate site reports hands-free) + AI MCP + AI Assistance → Phase 4 voice-to-report เป็นฟีเจอร์ที่คู่แข่งมีจริง คงลำดับความสำคัญเดิม
 
 ## Phase 1: Web MVP — PWA + offline-lite เกาะ line_oa/workflow spine (D-11)
 
-- [ ] 1.1 Migrations: installation_projects (**+work_item_id link + foreman**) / **installation_rooms** (room_type — ชั้นห้องตาม staffing model) / installation_tasks (เลนช่างใต้ห้อง) / memberships / photo metadata+annotations / field_reports / approvals / audit_log — **convention C12 เดิม ไม่มี tenant col** (ADR-035) + RLS fail-closed
+- [x] 1.1 Migrations — ✅ **`0090_installation_pm_core.sql` (2026-07-06, apply ผ่าน local DB จริงทั้ง chain)**: 8 ตาราง + audit (9 รวม annotations) — projects (+work_item_id partial-unique + foreman_employee_id) / rooms (room_type + display_name ภาษาคน) / tasks (lane 1–3 = ช่างคนที่ N, unique(room,lane)) / memberships (+`fn_installation_is_member` security definer กัน RLS recursion) / photos+annotations / field_reports / approvals (postback_id UNIQUE) / audit_log; RLS fail-closed ทุกตาราง (governance | site | member); immutability triggers (audit append-only, report เซ็นแล้ว, approval ตัดสินแล้ว — ทดสอบ reject จริงบน DB); **client_submission_id partial-UNIQUE บน photos/reports = จุดเสียบ idempotency ของ spike 0.3**; หมายเหตุ: คอลัมน์ `values` ใน D-2 → `report_values` (VALUES เป็น reserved keyword)
 - [ ] 1.2 Wire lifecycle เข้า workflow: start/finish ผ่าน `rpc_handoff_work_item`/completion เดิม — approval หัวหน้าทีม Installation + auto-notify ทำงานตาม workflow spec (ห้าม bypass); subtask ครบ ≠ auto-complete (ปิดงานผ่าน capture proof เท่านั้น)
 - [ ] 1.3 Photo path: PWA upload → `rpc_capture_ingest` (`installation_proof`) + **LINE photo → capture** route; verify → promote → commit ปิด work item (0063 — มีแล้ว แค่ต่อ UI)
 - [ ] 1.4 Media processing บน capture artifact: compress/thumbnail Edge Function + นับ storage เป็น baseline ต้นทุน (net-new เดียวของ media)
 - [ ] 1.5 Web UI: project list/detail (จัดกลุ่ม work items ต่อ job + SiteSurveyZone read-only) + Kanban (work item + subtask) + PWA
 - [ ] 1.5b Seed capture_type `customer_requirement` (จาก `capture-type-customer-requirement-draft.sql`) + L3 adapter `work_item_open` (pattern 0063) — เปิดโปรเจกต์ลูกค้าจากใบบันทึกความต้องการ verified
-- [ ] 1.5c Seed `form_templates` จาก `form-templates-installation-v0.1.md` (**owner ตอบคำถามเปิดครบ 3 ข้อแล้ว** — ประปา = conditional item, 3 ช่าง/ห้อง + หัวหน้า 1/บ้าน, preset บ้านมาตรฐาน 5 ห้อง) — sanity check กับหัวหน้าทีมตอน rollout
+- [x] 1.5c Seed `form_templates` — ✅ **`0091_installation_form_templates.sql` (2026-07-06)**: ตาราง form_templates (versioned, unique(key,version), immutable หลัง publish — trigger อนุญาตเฉพาะ retire, ทดสอบ reject จริงบน DB) + seed 7 templates published (T0 site readiness 8 items + ครัว 3 เลน + ห้องทั่วไป 3 เลน; ประปา = conditional item เลน 2 ตามมติ owner; Wrapping = `photo_required:true`); RLS: อ่านทุกคน เขียน governance — **เหลือ sanity check กับหัวหน้าทีมตอน rollout จริง**
 - [ ] 1.6 Daily report (template คงที่จาก 1.5c) + แนบรูป + PDF export
 - [ ] 1.6b **[UX tenet]** default view ต่อบทบาท: ช่าง = "งานของฉันวันนี้" (เลนตัวเอง, ชื่อห้องภาษาคน, ไม่มี id/key), หัวหน้า = ภาพรวมบ้าน; bot ใช้**ปุ่ม**ไม่ใช่ command; หลังบ้าน infer ห้อง/เลนก่อนถาม (D-12)
 - [ ] 1.7 **Offline-lite queue (D-6a)**: report+รูปเข้าคิวตอนเน็ตหลุด + UI สถานะคิว (บอก "ค้างส่ง N" ไม่ใช้ศัพท์ sync/queue) + baseline metrics
