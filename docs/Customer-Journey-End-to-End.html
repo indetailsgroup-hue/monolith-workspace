@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เส้นทางลูกค้า DAPH — ต้นจนจบส่งมอบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2332; --muted: #5b6a80; --line: #dde4ee; --bg: #ffffff;
+    --accent: #14532d; --accent-soft: #e8f3ec; --code-bg: #f4f6fa;
+    --warn: #92400e; --table-stripe: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, 'Segoe UI', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .5em; margin-top: 0; }
+  h2 { font-size: 1.45rem; margin-top: 2.4em; padding: .35em .6em; background: var(--accent-soft); border-left: 5px solid var(--accent); border-radius: 4px; }
+  h3 { font-size: 1.15rem; margin-top: 1.8em; color: var(--accent); }
+  h4 { font-size: 1.02rem; margin-top: 1.5em; }
+  h2, h3, h4 { scroll-margin-top: 16px; line-height: 1.4; }
+  a { color: #0b5ed7; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+  strong { font-weight: 600; }
+  blockquote { margin: 1em 0; padding: .6em 1em; background: #fff8eb; border-left: 4px solid var(--warn); border-radius: 4px; color: #533f1f; }
+  blockquote p { margin: .3em 0; }
+  code {
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: .85em;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: .08em .35em; word-break: break-word;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 1em 1.2em; border-radius: 8px;
+    overflow-x: auto; line-height: 1.55; font-size: .85rem;
+  }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .92rem; display: block; overflow-x: auto; }
+  thead th { background: var(--accent); color: #fff; text-align: left; white-space: nowrap; }
+  th, td { border: 1px solid var(--line); padding: .5em .75em; vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  ul, ol { padding-left: 1.6em; }
+  li { margin: .25em 0; }
+  li input[type=checkbox] { margin-right: .45em; }
+  .doc-meta { color: var(--muted); font-size: .9rem; margin-bottom: 2em; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; width: 44px; height: 44px;
+    border-radius: 50%; border: none; background: var(--accent); color: #fff;
+    font-size: 20px; cursor: pointer; opacity: 0; transition: opacity .25s; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  #toTop.show { opacity: .85; }
+  #toTop:hover { opacity: 1; }
+  @media print {
+    body { font-size: 11pt; }
+    .page { max-width: none; padding: 0; }
+    h2 { break-after: avoid; } table, pre { break-inside: avoid; }
+    #toTop { display: none; }
+    a { color: inherit; }
+  }
+  @media (max-width: 640px) { .page { padding: 24px 14px 72px; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>เส้นทางลูกค้า DAPH — ตั้งแต่เห็นโฆษณา จนส่งมอบบ้าน (ฉบับเจาะลึกทุกรายละเอียด)</h1>
+<blockquote>
+<p>อิงระบบที่สร้างเสร็จจริง ณ 7 ก.ค. 2026 (migrations 0001–0100 · workflow 134/134 · ADR-034…040)
+ทุกก้าวระบุ: ลูกค้าเห็นอะไร · ทีมทำอะไร · ระบบทำอะไรหลังบ้าน · อะไรกันความผิดพลาดไว้
+หลักออกแบบทั้งเส้น (PRD §1): <strong>หน้าบ้านง่ายจนทุกคนรัก — หลังบ้านรับความยากไว้เอง</strong></p>
+</blockquote>
+<h2>0. แผนที่การเดินทาง (ภาพรวมก่อนเจาะ)</h2>
+<pre><code>เห็นโฆษณา/เว็บ → add LINE OA → คุยกับ Sale → ใบบันทึกความต้องการ → เปิดงานในระบบ
+      │
+      └→ [8 ขั้น canonical]
+         Sale → วัดพื้นที่ → ออกแบบ(G1) → 3D นำเสนอ(G2) → วางแผนผลิต(G4) → 3D Final(G3) → ผลิต → ติดตั้ง
+                              ▲ ลูกค้าเซ็น    ▲ ลูกค้าเซ็น                     ▲ ลูกค้าเซ็น
+      ┌──────────────────────────────────────────────────────────────────────┘
+      └→ เปิด &quot;บ้าน&quot; ในระบบติดตั้ง → กลุ่ม LINE 2 กลุ่ม → T0 → ติดตั้งรายห้อง/รายเลน
+         → ใบปิดบ้าน (หัวหน้าทีมเท่านั้น) → การ์ดตรวจรับใน LINE → ลูกค้ากดรับงาน → ปิดโปรเจกต์ 🏠
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>ช่วง</th>
+<th>ลูกค้าเห็น</th>
+<th>สถานะในระบบ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. รู้จัก</td>
+<td>โฆษณา/เว็บ → ปุ่ม add LINE</td>
+<td>conversation + ตัวตนลูกค้าเกิดอัตโนมัติ</td>
+</tr>
+<tr>
+<td>2. คุย/Qualify</td>
+<td>แชทกับ Sale ตามปกติ</td>
+<td>ใบบันทึกความต้องการ → verify → เปิด work item</td>
+</tr>
+<tr>
+<td>3. ออกแบบ</td>
+<td>การ์ดขออนุมัติแบบ 3 ครั้ง (G1/G2/G3)</td>
+<td>approval loop + design lock ต่อ gate</td>
+</tr>
+<tr>
+<td>4. ผลิต</td>
+<td>(เงียบ — ทีมทำงาน)</td>
+<td>Factory Packet + ใบงานสถานี</td>
+</tr>
+<tr>
+<td>5. ติดตั้ง</td>
+<td>อยู่กลุ่ม LINE บ้านตัวเอง เห็นเฉพาะ curated update</td>
+<td>บ้าน→ห้อง→เลนช่าง + รูปหลักฐานทุกเลน</td>
+</tr>
+<tr>
+<td>6. ส่งมอบ</td>
+<td>การ์ดตรวจรับ กดปุ่มเดียว</td>
+<td>project completed + audit ครบทั้งเส้น</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>1. รู้จัก → add LINE OA (นาทีที่ 0 ของความสัมพันธ์)</h2>
+<p><strong>ลูกค้าเห็น:</strong> โฆษณา/เว็บ → กด add เพื่อน → ได้ข้อความต้อนรับ (Greeting Message — ตั้งใน LINE console, runbook C3.6)</p>
+<p><strong>ระบบทำทันทีที่ add/ทักครั้งแรก</strong> (webhook ผ่านการตรวจลายเซ็น HMAC ทุกครั้ง — ปลอมไม่ได้):</p>
+<ol>
+<li>สร้าง <strong>conversation</strong> — แชทมีตัวตนใน DB, lead ไม่มีวันหายเงียบ</li>
+<li>สร้าง <strong>ตัวตนลูกค้า</strong> (<code>line_oa_customer_identity</code>) — <strong>ตัวตนเดียวนี้จะถูกใช้ยาวไปจนถึงวันตรวจรับบ้าน</strong>: เป็นคนเดียวกันที่เซ็นแบบ G1/G2/G3 และกดรับงานวันสุดท้าย</li>
+<li>ทุก event มี idempotency (<code>webhook_event_id</code> UNIQUE) — LINE ส่งซ้ำกี่รอบระบบก็ไม่เพี้ยน</li>
+</ol>
+<p><strong>สิ่งที่ระบบ<em>ไม่</em>ทำ (ตั้งใจ):</strong> ไม่มี bot ตอบแชทอัตโนมัติแบบ free-text (กติกา template-only — ทุกข้อความขาออกเป็นแบบที่ผ่านการอนุมัติแล้วเท่านั้น) · Sale คุยขายผ่านแอป LINE OA Manager ตามปกติ ไม่ต้องเรียนรู้อะไรใหม่</p>
+<h2>2. Qualify → ใบบันทึกความต้องการ (ประตูทางเข้าของทุกอย่าง)</h2>
+<p><strong>ลูกค้าเห็น:</strong> แค่คุยกับ Sale — คำถามที่ Sale ถามคือแบบสอบถามมาตรฐานที่ทำร่วมกับฝ่ายดีไซน์</p>
+<p><strong>Sale ทำ:</strong> กรอก <strong>ใบบันทึกความต้องการ</strong> (<code>customer_requirement</code> — ฟอร์มมากับ PWA Wave A) ครบ 3 หมวด:</p>
+<table>
+<thead>
+<tr>
+<th>หมวด</th>
+<th>ฟิลด์</th>
+<th>ทำไมพลาดไม่ได้</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ติดต่อ</td>
+<td>ชื่อ, เบอร์, email, LINE ID, ที่อยู่</td>
+<td>PFMEA Sale ขั้น 1: เก็บไม่ครบ/ผิด = <strong>&quot;Scrap 100%&quot;</strong> ทั้ง downstream</td>
+</tr>
+<tr>
+<td>ขอบเขต (9 ฟิลด์จาก Qualify)</td>
+<td>โครงการ, Type บ้าน, ตรม., ห้องที่ทำ, สไตล์, วัสดุโครงสร้าง/โครงตู้/ปิดผิว, แบรนด์ fitting</td>
+<td>เสนอราคาผิดเรทถ้าวัสดุผิด (PFMEA ขั้น 2) — ค่าที่ลูกค้ายังไม่ตัดสินใจต้องกรอก &quot;TBD&quot; ห้ามปล่อยว่าง</td>
+</tr>
+<tr>
+<td>ดีไซน์</td>
+<td>Mood &amp; Tone, Function</td>
+<td>ดีไซน์เนอร์เริ่มงานผิดทางถ้าไม่มี</td>
+</tr>
+</tbody></table>
+<p><strong>ระบบทำ (capture spine — เส้นเดียวกับเอกสารทุกชนิดของบริษัท):</strong></p>
+<pre><code>กรอก (ingest, idempotent) → verify (มนุษย์ยืนยัน critical fields ตามกฎ PFMEA) → approve
+  → promote = ระบบเปิด work_item ขั้น Sale ให้อัตโนมัติ (adapter &#39;work_item_open&#39; — 0092)
+</code></pre>
+<p>รายละเอียดที่คิดไว้แล้วในจุด promote:</p>
+<ul>
+<li><strong>ผูกตัวตนลูกค้า</strong> (0100): ฟอร์มส่ง <code>customer_id</code> (ตัวตนจากข้อ 1) → work item ได้ <code>primary_customer_id</code> → <strong>นี่คือเหตุผลที่การ์ดอนุมัติแบบ G1/G2/G3 จะถูกส่งถึงลูกค้าคนนี้จริง</strong> · ลูกค้า walk-in ไม่มี LINE → ระบบ degrade เป็นอนุมัติภายใน (ดีไซน์รองรับ) + audit บอกชัดทุกใบว่าผูกหรือไม่</li>
+<li><strong>PDPA</strong>: ข้อมูลบุคคล (ชื่อ/เบอร์/ที่อยู่) อยู่ที่ใบ capture ซึ่ง RLS คุมแน่น — <em>ไม่ copy</em> ลง work item</li>
+<li>Fail-safe ที่จุด commit: ไม่มีชื่อ/ช่องทางติดต่อ → ระบบปฏิเสธการเปิดงาน (กันข้อมูลขยะเข้า pipeline)</li>
+<li>Idempotent: promote ซ้ำ = งานใบเดิม ไม่เปิดซ้ำ</li>
+</ul>
+<h2>3. แปดขั้น canonical — เครื่องจักรที่พางานเดิน</h2>
+<p>งานทุกใบเดินตาม <strong>canonical process 8 ขั้น</strong> โดยแต่ละขั้นมีเจ้าของและผู้อนุมัติจาก <strong>RACI Master Matrix</strong> (knowledge import ที่ approve แล้วเท่านั้น — ไม่มี RACI = ระบบ block ไม่เดา):</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>ขั้น</th>
+<th>ทีม</th>
+<th>ลูกค้าเกี่ยวอย่างไร</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Sale</td>
+<td>ฝ่ายขาย</td>
+<td>คุย/ตกลงเบื้องต้น</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Area Measurement</td>
+<td>ทีมวัดพื้นที่</td>
+<td>นัดเข้าวัดหน้างาน — ข้อมูลวัด (ขนาด/MEP/รูป) เข้าระบบเป็น SiteSurveyZone มี version</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Designer</td>
+<td>ดีไซน์</td>
+<td><strong>เซ็นอนุมัติ G1</strong> — Mood &amp; Tone / สไตล์ / สี</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3D_Presentation</td>
+<td>ทีม 3D</td>
+<td><strong>เซ็นอนุมัติ G2</strong> — layout การจัดวางเฟอร์นิเจอร์</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Production Planning</td>
+<td>วางแผนผลิต</td>
+<td>(ภายใน — G4: ปล่อยงานเข้าผลิต; RPN สูง/งบเกินเพดาน → ยกระดับถึงผู้บริหาร)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>3D_Rendering_Final</td>
+<td>ทีม 3D</td>
+<td><strong>เซ็นอนุมัติ G3</strong> — วัสดุ/สีจริงขั้นสุดท้าย</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Factory</td>
+<td>โรงงาน</td>
+<td>(ภายใน — Factory Packet + ใบงานสถานี + FTR checklist)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Installation</td>
+<td>ทีมติดตั้ง</td>
+<td>ช่วงที่ลูกค้าใกล้ชิดระบบที่สุด — ดูข้อ 5</td>
+</tr>
+</tbody></table>
+<h3>กลไกอนุมัติ (ทำงานเหมือนกันทุกขั้น — สร้างครั้งเดียวใช้ทั้งบริษัท)</h3>
+<ul>
+<li>งานมาถึงขั้นที่ต้องอนุมัติ → ระบบ <strong>resolve ผู้อนุมัติจาก RACI</strong> (คน + ลูกค้า ถ้าเป็น G1/G2/G3) → quorum = <strong>unanimous</strong> (ต้องครบทุกเสียง รวมลูกค้า)</li>
+<li><strong>ลูกค้าเซ็นผ่าน LINE</strong> (Flex การ์ด) หรือ <strong>web fallback</strong> (ลิงก์อายุสั้น) — กดปุ่มเดียว ไม่ต้อง login อะไร</li>
+<li>มีคนไม่ว่าง? — ระบบ delegation: ผู้อนุมัติมอบอำนาจล่วงหน้าได้ (จำกัดขั้น/ช่วงเวลา/site) — audit ครบ</li>
+<li><strong>นาฬิกา SLA เดินทุกใบ</strong>: เตือนที่ 50%/100% (push ส่วนตัว) → เกินเวลา = escalate อัตโนมัติ (ลูกค้าเงียบ → แจ้ง PM ตามหา)</li>
+<li><strong>Quiet Hours 20:00–08:00</strong>: แจ้งเตือนทีม (ไม่เร่งด่วน) ไม่รบกวนกลางคืน — เก็บรวมเป็น <strong>สรุปเช้า 08:00</strong> ฉบับเดียว; เฉพาะงานความรับผิดชอบส่วนตัวเท่านั้นที่ข้ามได้</li>
+</ul>
+<h3>ทุกครั้งที่ gate ผ่าน = ระบบ &quot;ล็อกแบบ&quot;</h3>
+<p>G1 ผ่าน → ล็อกชุด Mood&amp;Tone · G2 → ล็อก layout · G3 → ล็อกวัสดุ · G4 → ล็อกแบบก่อสร้าง — สิ่งที่ลูกค้าเซ็นแล้วจะไม่ถูกแก้เงียบ ๆ (ปลดล็อกได้ทางเดียว: scope change ที่อนุมัติแล้ว — ดูข้อ 4)</p>
+<h2>4. ถ้าลูกค้าขอแก้แบบ (เกิดขึ้นจริงเสมอ — ระบบออกแบบรอไว้แล้ว)</h2>
+<p>ตัวอักษร G บอก<strong>ต้นทุนของการแก้</strong> (G1 แพงสุด — แก้ Mood&amp;Tone = รื้อทุกอย่างที่ตามมา):</p>
+<pre><code>ลูกค้ากด &quot;ขอแก้ไข&quot; ที่ gate ใด ๆ → ระบบ classify อัตโนมัติ:
+  • แก้ในสิ่งที่ยังไม่เคยเซ็น            → งานแก้ปกติ (ฟรี — ยังอยู่ในรอบออกแบบ)
+  • แก้สิ่งที่เซ็นล็อกไปแล้ว (scope change) → เข้าเส้น re-quote:
+      งานหยุดรอ → PM+ผู้บริหารสรุปราคาใหม่ → ลูกค้ารับราคา
+      → ครบทั้งคู่: ปลดล็อก gate นั้น + งานถอยกลับไปขั้นของ gate (ADR-037)
+      → เดินวงจรอนุมัติใหม่ตามปกติ → เซ็นใหม่ → ล็อกใหม่อัตโนมัติ
+  • ความบกพร่องของ DAPH                → แก้ฟรี + บันทึกเป็น defect
+</code></pre>
+<p>จุดสำคัญ: <strong>แบบที่แพงขึ้นถูกเซ็นซ้ำโดยผู้มีอำนาจจริงเสมอ</strong> — ไม่มีการปลดล็อกเงียบ ๆ และเกินโควตาแก้ฟรี ระบบเตือนอัตโนมัติว่าเข้าเขตคิดเงิน</p>
+<h2>5. ช่วงติดตั้ง — บ้านจริง ทีมจริง (เจาะลึกสุดเพราะลูกค้าใกล้ระบบที่สุด)</h2>
+<h3>5.1 เปิด &quot;บ้าน&quot; ในระบบ</h3>
+<p>Office เปิดโปรเจกต์บ้าน (ผูกกับ work item ขั้น Installation) พร้อม <strong>preset บ้านมาตรฐาน 5 ห้อง</strong> (ครัว + นั่งเล่น + นอนใหญ่ + นอน ×2 — ปรับตามบ้านจริง) → ระบบสร้างโครงให้ทันที:</p>
+<pre><code>บ้าน 1 หลัง (หัวหน้าทีม 1 คน = ผู้อนุมัติเริ่ม/จบงาน)
+ ├─ ห้อง ×5 (ชื่อภาษาคน เช่น &quot;ห้องนอนใหญ่ ชั้น 2&quot;)
+ │   └─ เลนช่าง ×3 ต่อห้อง = &quot;ช่างคนที่ 1/2/3&quot; ทำขนานกัน (checklist คนละชุดจาก template จริง
+ │       ที่ใช้มา 5 ปี — Installation.xlsx; งานประปาเป็นรายการ conditional ช่างทุกคนทำได้)
+ └─ ทีมรวม: 3 ช่าง × 5 ห้อง + หัวหน้า 1 = 16 คน
+</code></pre>
+<h3>5.2 กลุ่ม LINE 2 กลุ่ม — โลกของทีม กับโลกของลูกค้า แยกกันที่ระดับ DB</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>กลุ่มทีม (internal)</th>
+<th><strong>กลุ่มลูกค้า (customer)</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>สมาชิก</td>
+<td>sale + ทีมหมุนตามเฟส (วัด→ออกแบบ→ติดตั้ง)</td>
+<td><strong>ลูกค้า + sale + หัวหน้างาน</strong> (ช่างไม่อยู่)</td>
+</tr>
+<tr>
+<td>bot ทำอะไร</td>
+<td>รับรูปเข้าระบบ, รับ <code>#ปัญหา</code>, แจ้งเตือนงาน</td>
+<td>ส่งเฉพาะ<strong>ความคืบหน้าที่มนุษย์คัดแล้ว</strong> + นัดหมาย + การ์ดอนุมัติ/ตรวจรับ</td>
+</tr>
+<tr>
+<td>กันข้อมูลหลุด</td>
+<td>—</td>
+<td><strong>Guardrail ที่ DB</strong>: ข้อความเข้ากลุ่มลูกค้าได้เฉพาะ template ที่ประกาศ <code>audience=customer</code> — ต้นทุน/เรื่องภายในส่งผิดกลุ่ม = ระบบโยน error ไม่ใช่แค่เตือน; รูปกลุ่มทีม<strong>ไม่มีวัน forward อัตโนมัติ</strong></td>
+</tr>
+</tbody></table>
+<p>การผูกกลุ่มกับบ้าน: office ออก<strong>รหัสผูก</strong> (หมดอายุ 48 ชม. ใช้ได้ 2 ครั้ง) → หัวหน้า/sale ตั้งกลุ่ม + เชิญ bot → พิมพ์ <code>#ผูก &lt;รหัส&gt; ทีม|ลูกค้า</code> → <strong>bot ตอบชื่อบ้านกลับมาในกลุ่ม</strong> (&quot;เชื่อมกลุ่มนี้กับ &#39;บ้านคุณสมชาย รามอินทรา&#39; แล้วครับ ✅&quot;) — ผูกผิดหลังเห็นกันทั้งกลุ่มทันที ก่อนข้อมูลใดไหล (0100) · ผู้ผูกต้องเป็นพนักงานที่ผูกตัวตนแล้วเท่านั้น · <strong>การอยู่ในกลุ่ม ≠ สิทธิ์ในระบบ</strong> — สิทธิ์ข้อมูลมาจาก membership + RLS เสมอ</p>
+<h3>5.3 เริ่มงาน: T0 → หัวหน้าทีมอนุมัติ</h3>
+<p>ก่อนเริ่ม หัวหน้าทีมติ๊ก <strong>T0 ตรวจความพร้อมหน้างาน 8 ข้อ</strong> (พื้น/ผนัง/ฝ้า/ไฟ/น้ำ/ประตู/defect/แบบ 3D final) → กดอนุมัติเริ่มงาน — ระบบแนบ <strong>snapshot สถานะ T0 ณ วินาทีนั้นลง audit</strong> (ข้อไหนยังไม่พร้อมแล้วหัวหน้าตัดสินใจเริ่ม = มีบันทึกความรับผิดชอบ ไม่ใช่การ block แบบตายตัว เพราะบางข้อ conditional ตามบ้าน)</p>
+<h3>5.4 งานรายวัน — ช่างไม่ต้องเรียนรู้อะไรเลย</h3>
+<ul>
+<li>ช่างทำงานตามเลนตัวเอง จบเลน → <strong>ถ่ายรูป Wrapping ส่งในกลุ่มทีมตามปกติ</strong> → bot เก็บเข้าระบบเป็นหลักฐานรายห้องอัตโนมัติ + ตอบรับ (ระบบดึงไฟล์จริงจาก LINE เข้าคลังของเราภายใน 5 นาที — ก่อน LINE ลบ)</li>
+<li>เจอปัญหา → พิมพ์ <code>#ปัญหา ท่อครัวรั่ว</code> → ระบบเปิดใบปัญหาผูกบ้าน + <strong>push แจ้งหัวหน้างานทันที</strong> (ข้าม quiet hours ได้เพราะเป็นความรับผิดชอบส่วนตัว) — หลักฐานไม่หายในแชท</li>
+<li>แชทคุยเล่นทั่วไป → <strong>ระบบไม่เก็บ</strong> (PDPA — เก็บเฉพาะ รูป + #ปัญหา + เข้า/ออกกลุ่ม)</li>
+<li>เน็ตหน้างานหลุด (PWA) → รูป/รายงานเข้า<strong>คิวออฟไลน์</strong> ส่งเองเมื่อเน็ตกลับ — ช่างเห็นแค่ &quot;ค้างส่ง N รายการ&quot; ระบบกันส่งซ้ำด้วย id ต่อใบ</li>
+</ul>
+<h3>5.5 ปิดบ้าน — จุดที่ระบบเข้มที่สุด</h3>
+<p>ห้องเสร็จ = 3 เลนติ๊กครบ + รูป Wrapping → ทุกห้องเสร็จ → <strong>หัวหน้าทีมส่ง &quot;ใบปิดบ้าน&quot;</strong> (ใบเดียวต่อบ้าน):</p>
+<ul>
+<li>ระบบเตือนถ้ามีห้องที่ยังไม่มีรูป (soft — บ้านที่มีห้องยกเลิกกลางทาง หัวหน้าใช้ดุลยพินิจได้ + ลง audit)</li>
+<li><strong>คนอื่นส่งแทนไม่ได้</strong>: ระบบตรวจกับ RACI ว่าผู้ส่งเป็นหัวหน้าทีมติดตั้งจริง (ADR-039 — office มีสิทธิ์ทั้งระบบก็ปิดงานติดตั้งแทนไม่ได้)</li>
+<li>ผ่าน → work item ปิด → 🎉 ข้อความยินดีเข้ากลุ่มทีมอัตโนมัติ + แจ้ง Sale/PM</li>
+</ul>
+<h2>6. ส่งมอบ — ลูกค้ากดปุ่มเดียว</h2>
+<p>หัวหน้า/office กด &quot;ส่งตรวจรับ&quot; → บ้านเข้าสถานะ <strong>customer_review</strong> → <strong>การ์ด Flex เข้ากลุ่มลูกค้า</strong>:</p>
+<pre><code>┌─────────────────────────────┐
+│  ตรวจรับงานติดตั้ง 🏠        │
+│  บ้านคุณสมชาย รามอินทรา      │
+│  งานเสร็จเรียบร้อยแล้วครับ    │
+│  รบกวนตรวจรับงานด้วยครับ     │
+│ ┌───────────┐ ┌───────────┐ │
+│ │ รับงานครับ ✅│ │ ขอแก้ไขก่อน │ │
+│ └───────────┘ └───────────┘ │
+└─────────────────────────────┘
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>ลูกค้ากด</th>
+<th>เกิดอะไร</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>รับงานครับ ✅</strong></td>
+<td>โปรเจกต์ → <strong>completed</strong> · bot ขอบคุณลูกค้าในกลุ่ม · แจ้งผลเข้ากลุ่มทีมอัตโนมัติ · audit ปิดเส้น 🏠</td>
+</tr>
+<tr>
+<td><strong>ขอแก้ไขก่อน</strong></td>
+<td>โปรเจกต์คง customer_review · แจ้งทีมทันที → รายการเก็บงาน (punch list) → แก้เสร็จส่งตรวจรับใหม่ — <strong>งานหลักไม่ถูก reopen</strong> (นาฬิกาทีมกับนาฬิการอลูกค้าแยกกัน)</td>
+</tr>
+</tbody></table>
+<p>ความปลอดภัยที่มองไม่เห็น: การ์ดทุกใบมี <strong>secret token เฉพาะใบ</strong> (ปลอม postback ไม่ได้) · กดได้เฉพาะในกลุ่มของบ้านนั้น (ระบบตรวจกลุ่ม↔บ้านตรงกัน) · กดซ้ำ/การ์ดเก่า = ระบบรับทราบแต่ไม่เปลี่ยนผล · ส่งตรวจรับซ้ำ = ใบเดิม ไม่ spam ลูกค้า</p>
+<h2>7. สิ่งที่ลูกค้าไม่เคยเห็น (แต่คือเหตุผลที่ทุกอย่างข้างบนง่าย)</h2>
+<ul>
+<li><strong>Audit ทุกก้าว</strong> — ใครทำอะไรที่ไหนเมื่อไหร่ ตั้งแต่ add OA จนกดรับงาน ลบ/แก้ย้อนหลังไม่ได้ (append-only บังคับที่ DB)</li>
+<li><strong>เอกสารที่เซ็นแล้วแก้ไม่ได้</strong> — รายงานที่เซ็น, ผลอนุมัติ, template ที่ publish = immutable ที่ระดับ trigger</li>
+<li><strong>ทุกข้อความขาออกคือ template ที่ผ่านการอนุมัติ</strong> — ไม่มี free-text จาก bot, น้ำเสียงไทยอบอุ่นทุกข้อความ, ไม่มีศัพท์ระบบหลุดถึงผู้ใช้</li>
+<li><strong>PDPA ทั้งเส้น</strong>: consent ตอนผูกตัวตน · แชทกลุ่มไม่ถูกดักเก็บ · ข้อมูลบุคคลอยู่จุดเดียวที่คุมสิทธิ์แน่น</li>
+<li><strong>ทุก retry idempotent</strong> — webhook ซ้ำ, กดปุ่มซ้ำ, เน็ตหลุดส่งซ้ำ — ผลลัพธ์เกิดครั้งเดียวเสมอ</li>
+</ul>
+<h2>8. สถานะความพร้อม ณ วันนี้ (7 ก.ค. 2026)</h2>
+<table>
+<thead>
+<tr>
+<th>ท่อน</th>
+<th>สถานะ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ตัวตนลูกค้า + conversation + webhook</td>
+<td>✅ ทำงานแล้ว (line-oa spine)</td>
+</tr>
+<tr>
+<td>ใบบันทึกความต้องการ → เปิดงาน + ผูกลูกค้า</td>
+<td>✅ backend เสร็จ (0092/0100) — <strong>ฟอร์ม UI มากับ PWA Wave A</strong></td>
+</tr>
+<tr>
+<td>Workflow 8 ขั้น + อนุมัติ + SLA + quiet hours + revision/requote</td>
+<td>✅ 134/134 + scrutiny</td>
+</tr>
+<tr>
+<td>บ้าน/ห้อง/เลน + กลุ่ม LINE + bot + guardrail + media</td>
+<td>✅ 0090–0100 ทดสอบบน DB จริงทุก flow</td>
+</tr>
+<tr>
+<td>ตรวจรับผ่านการ์ด Flex</td>
+<td>✅ 0098 ทดสอบครบ 5 เคส</td>
+</tr>
+<tr>
+<td>หน้าจอ PWA (Sale/office/หัวหน้า/ช่าง)</td>
+<td>📐 grill เสร็จ (ADR-040) — Wave A รอ go-ahead</td>
+</tr>
+<tr>
+<td>Deploy จริง</td>
+<td>🟡 รอ provision ตาม runbook (A → C → D)</td>
+</tr>
+</tbody></table>
+
+</div>
+<button id="toTop" title="กลับขึ้นบนสุด" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+  // GitHub-style heading ids so the Thai TOC anchors work
+  document.querySelectorAll('h1,h2,h3,h4').forEach(function (h) {
+    if (!h.id) {
+      h.id = h.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N} -]/gu, '')
+        .replace(/ /g, '-');
+    }
+  });
+  var btn = document.getElementById('toTop');
+  window.addEventListener('scroll', function () {
+    btn.classList.toggle('show', window.scrollY > 600);
+  }, { passive: true });
+</script>
+</body>
+</html>
