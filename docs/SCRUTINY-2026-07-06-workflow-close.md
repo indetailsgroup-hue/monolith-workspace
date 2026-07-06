@@ -67,6 +67,28 @@
 - 0092 rebase บน 0079 (ตัวล่าสุดจริง — ตรวจ replacement chain 6 ชั้น) ไม่ใช่ 0063 ที่ task เดิมอ้าง
 - ข้อสังเกตบันทึกไว้: RLS policy ที่มี subquery ไปตารางอื่น ต้องการ SELECT grant บนตารางนั้นด้วยถ้าวันหนึ่งเปิด direct-table access (สถาปัตยกรรมปัจจุบัน RPC-only จึงไม่กระทบ)
 
+## Scrutiny รอบสาม — 0094–0101 (7 ก.ค. 2026: ADR-039/040/041 era)
+
+> ขอบเขต: installation lifecycle (0094) · LINE groups+guardrail (0095) · issues (0096) · bot flows (0097) ·
+> Flex ตรวจรับ (0098) · media worker (0099) · customer link + bind ack (0100) — ทุกข้อพิสูจน์ด้วยการรันบน DB
+
+| # | ระดับ | เรื่อง | สถานะ |
+|---|-------|--------|--------|
+| S3-1 | 🟠 กลาง-สูง | **Guardrail G1 ยิงตอน UPDATE** — governance เปลี่ยน audience หลังข้อความถูกคิว: LINE ส่งสำเร็จแต่บันทึกผล (status→sent) โดน trigger โยน → แถวค้าง pending → **sender ส่งซ้ำทุกรอบ = spam กลุ่มลูกค้า** (พิสูจน์: queue ตอน customer → เปลี่ยนเป็น internal → update fail จริง) | ✅ แก้ (0101): trigger เฉพาะ INSERT — validate ที่จุดตัดสินใจ (enqueue) การบันทึกผลห้าม re-validate; ทดสอบ: record sent ผ่าน + enqueue ใหม่ยังโดน block |
+| S3-2 | 🟡 ต่ำ/UX | **#ผูก ชนิดที่บ้านผูกแล้ว = ความเงียบ** — unique_violation → handler_error → คนผูกไม่รู้ว่าเกิดอะไร (พิสูจน์: 0 reply ในกลุ่มที่สอง) | ✅ แก้ (0101): จับ unique_violation ที่จุด insert → ตอบ tpl_inst_bind_fail + result bind_failed_already_has_group |
+
+### ตรวจแล้วสะอาด (พิสูจน์บน DB — ไม่ใช่อ่านผ่าน)
+
+- **RACI Installation gate รอดการ rebase 0100**: office (site access) promote ใบปิดบ้าน → ยัง block ถูกต้อง (0100 generate จาก 0094 จริง)
+- **Flex template body**: parse เป็น JSON + มี altText/contents ครบ (ถ้าพังจะรู้ตอน send เท่านั้น — เช็คล่วงหน้าแล้ว)
+- postback data ของการ์ดตรวจรับ ~90 ตัวอักษร < ลิมิต LINE 300 · chain ของ fn ทุกตัว rebase จากตัวล่าสุดจริง (promote: 0094→0100 · handler: 0097→0098→0100→0101 · ingest: 00022→0097)
+
+### ข้อสังเกตบันทึกไว้ (ไม่แก้ตอนนี้ — มีเหตุผล)
+
+- `approve_token` อ่านได้ผ่าน RLS ของสมาชิกโปรเจกต์ — ความเสี่ยงต่ำเพราะ postback ปลอมต้องออกจากปุ่มจริงในกลุ่มจริงผ่าน HMAC ของ LINE; ปิดสนิทต้องแยก view (จดไว้รอ SaaS)
+- Outbound เข้ากลุ่ม archived ยังผ่าน guardrail ได้ (จุดยิงปัจจุบันกรอง active เองครบ) — caller ใหม่ควรเพิ่มเช็คใน trigger
+- Media claim ใช้ channel active ตัวแรก (single-channel dogfood) — multi-channel ต้อง scope ต่อ vertical (comment ใน 0099)
+
 ## ปิดรอบ B1–B5 (go-ahead 6 ก.ค. 2026 — migrations 0085–0089)
 
 - `0085` seed templates (F9 ✅) · `0086` quiet-hours DB default (F10 ✅) · `0087` requote full revert (F8 ✅, ADR-037) · `0088` identity_binding lifecycle cols (ADR-038) · `0089` cron pg_cron+pg_net (Vault refs `wf_edge_base_url`/`wf_edge_service_key`)
