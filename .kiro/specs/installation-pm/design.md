@@ -154,3 +154,15 @@ installation_projects (customer_review)
 3. **Realtime ยังไม่เคยใช้ในเรโป (D-7)** — spike + load test ก่อนผูกกับ MVP
 4. ~~Decision ข้อ 8 ค้าง~~ → ✅ ปิดแล้ว (ADR-034/035): v1 ลง DB เดิม convention C12 — DDL ใน D-2 พร้อมแปลงเป็น migration
 5. **KANNA อยู่ในตลาดไทยแล้ว** (ยืนยันจากภายนอก 2026-07-05: 70,000+ บริษัท/100+ ประเทศ, ISO27001, รองรับภาษาไทย) — แข่งด้วย vertical integration + LINE ไม่ใช่ความกว้างฟีเจอร์
+
+## D-13: Field PWA — โครงสร้างและการเข้าถึง (grill 7 ก.ค. 2026)
+
+> **มติ grill PWA ข้อ 1 (owner, 7 ก.ค. 2026):** PWA ของหน้างาน = **แอปใหม่ใน workspace เดิม `packages/field-app`** (Vite + React แยก, deps ตัวเอง — `@supabase/supabase-js` ตัวแรกของ frontend ทั้ง repo) — **ห้าม**เป็น route ในแอป CAD (ช่างจะต้องโหลด Three.js ทั้งก้อนบนเน็ตหน้างาน — ขัด UX tenet) และห้ามแยก repo (เสีย reuse offline-queue/types + drift); reuse `src/installation/offline-queue` (spike 0.3) ผ่าน workspace import; audience แยกแอป — ความจริงของระบบ (DB/queue/types) อยู่ repo เดียว
+>
+> **มติ grill PWA ข้อ 2 (owner, 7 ก.ค. 2026):** Login = **LINE Login เป็นทางหลัก** (edge fn `line-login`: verify id_token → สร้าง/หา Supabase user → mint session → **จังหวะเดียวกันบันทึก `identity_binding` + `consent_at` (PDPA)** — login ครั้งแรก = ผูกตัวตนเสร็จ ปิดงาน "ลิงก์ผูก staff identity" ในตัว) + **email magic link เป็นทางเสริมของ office** (Supabase ในตัว ไม่ต้องทำเพิ่ม); ตัดทิ้ง: password (แชร์กัน = audit เพี้ยน), phone OTP (SMS provider ต่างชาติ — ชน ADR-021); identity เส้นเดียวตลอดสาย: คนเดียวกันใน PWA/กลุ่ม LINE/audit (บทเรียน F1/0084); ops A3 เพิ่ม: LINE Login channel 1 ตัว
+>
+> **มติ grill PWA ข้อ 3 (owner, 7 ก.ค. 2026):** Dogfood build ตาม dependency chain — **Wave A** office console (เปิดบ้าน + preset 5 ห้อง + มอบเลน + ออกรหัส #ผูก) → **Wave B** มุมหัวหน้าทีม (T0 → ภาพรวมบ้าน → ส่งปิดบ้าน → ส่งตรวจรับ → รายการ #ปัญหา) → **Wave C** มุมช่าง (งานของฉันวันนี้ — เลนตัวเอง + ติ๊ก + ถ่ายรูปเข้าคิว offline); ทุก Wave ปล่อยใช้จริงทันทีที่เสร็จ (ไม่รอครบชุด); ระหว่างรอ Wave C ช่างใช้กลุ่ม LINE (0097 — ใช้ได้แล้ว); เหตุผล: dogfood ต้องกินข้อมูลจริง และ office คือคนสร้างข้อมูลจริงคนแรก — ระบบโตพร้อมบ้านจริงหลังแรก
+>
+> **มติ grill PWA ข้อ 4 (owner, 7 ก.ค. 2026):** Design = **DAPH brand tokens บนโครง field-first** — เขียว `#1F3D2B` + accent ทอง `#C7A86A` เป็น identity (header/ปุ่มหลัก); **กติกาหน้างานชนะเมื่อขัดกัน**: ตัวหนังสือ Noto Sans Thai/Inter (ตัด Playfair บนมือถือ), ปุ่ม ≥48px (ถุงมือ), contrast AA (กลางแดด), หนึ่งจอหนึ่งงาน; token ชุดเล็กไฟล์เดียวใช้ทุก Wave; เหตุผล: brand = ความรู้สึก "ระบบของเรา" (owner: ทุกคนต้องรักระบบ) + field physics = ใช้ได้จริง
+>
+> **มติ grill PWA ข้อ 5 (owner, 7 ก.ค. 2026):** Hosting = **GitHub Pages** (Actions build → deploy; repo อยู่ GitHub แล้ว — ไม่เพิ่ม vendor, ฟรี, HTTPS ในตัว) — ADR-021 ไม่แตะเพราะ PWA เป็น static code ล้วน ไม่มีข้อมูลบริษัท at rest (ข้อมูลวิ่งตรง browser↔Supabase); ตอน exit ADR-036 (ย้ายโครงสร้างไทย) ยก static ตามไปใน 10 นาที

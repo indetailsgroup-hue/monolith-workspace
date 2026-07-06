@@ -414,3 +414,15 @@ inclusion: always
   4. **T0 site readiness = soft + audit snapshot** ตอน approve start (ไม่ hard-block — T0 มีข้อ conditional ตามบ้าน; hard gate บนเช็คลิสต์ conditional = สอนให้ติ๊กเพื่อผ่าน)
   5. **ตรวจรับลูกค้า = closure ระดับ project:** work item ปิดเมื่อใบปิดบ้านผ่าน (นาฬิกา operational ของทีมหยุดตรงงานช่างจบ); `installation_projects`: `active → customer_review → completed`; ลูกค้าไม่รับ → ไม่ reopen work item — reason ลง `installation_approvals` + แจ้งทีม → punch list/rework flow ใหม่ (Phase ถัดไป); ห้ามเพิ่ม Installation เข้า `wf_is_customer_approval_step` (คุม entry gate — ความหมายคนละเรื่อง)
 - **Consequences:** ไม่มี state อนุมัติซ้ำสองราง; Req 8.6 ถูก enforce จริงที่ DB ทั้ง start (มีอยู่แล้วผ่าน resolver) และ finish (gate ใหม่); การปิดบ้านยังเป็นการกระทำของมนุษย์ที่รับผิดชอบ (D-11 คงจริง — subtask ครบไม่ auto-complete); SLA workflow ไม่ปนกับการรอลูกค้า; implement = migration แก้ CHECK + adapter gate + seed `installation_room_proof` + tests (tasks 1.2)
+
+## ADR-040 — Field PWA: workspace app แยก + LINE Login เป็น session และ binding ในจังหวะเดียว
+
+- **Status:** Accepted (grill PWA, 7 ก.ค. 2026) — design แล้ว รอ go-ahead implement (tasks 1.5 Wave A)
+- **Context:** ต้องมี UI ให้ office/หัวหน้า/ช่างใช้ (tasks 1.3/1.5/1.6) แต่แอปเดียวที่มีคือ MONOLITH CAD (Three.js bundle หนัก, audience ดีไซเนอร์บน workstation, **ไม่มี supabase-js ฝั่ง client เลย**); Supabase Auth ไม่มี LINE provider ในตัว; ช่างไม่มี email บริษัทแต่มี LINE ทุกคน; งาน "ลิงก์ผูก staff identity (LINE Login + consent)" ค้างใน spec โดยมีคอลัมน์รอตั้งแต่ 0088
+- **Decision (owner, 5 มติ):**
+  1. **`packages/field-app`** — Vite+React แยกใน workspace เดิม (bundle เบาสำหรับมือถือหน้างาน; reuse `src/installation/offline-queue` + types; ห้าม route ใน CAD / ห้ามแยก repo)
+  2. **LINE Login = ทางหลัก** ผ่าน edge fn `line-login` (verify id_token → mint Supabase session → **บันทึก identity_binding + consent_at ในจังหวะเดียว** — login ครั้งแรกปิดงานผูกตัวตน) + email magic link เสริมสำหรับ office; ตัด password (audit เพี้ยน) และ phone OTP (SMS ต่างชาติ — ADR-021)
+  3. **Build ตาม dependency: Wave A office → B หัวหน้า → C ช่าง** — ทุก Wave ปล่อยใช้ทันที; ระหว่างรอ C ช่างใช้กลุ่ม LINE (0097)
+  4. **DAPH brand tokens บนโครง field-first** — #1F3D2B/#C7A86A เป็น identity, field physics ชนะเมื่อขัด (Noto Sans Thai, ปุ่ม ≥48px, contrast AA)
+  5. **GitHub Pages** — static ไม่มีข้อมูล at rest, vendor เดิม, ย้ายตาม ADR-036 exit ได้ทันที
+- **Consequences:** frontend ตัวแรกที่ต่อ Supabase → ต้องมี **RPC ชุด field** (สถาปัตยกรรม RPC-only — API roles ไม่มี table DML): เปิดบ้าน/preset ห้อง/มอบเลน/ออกรหัสผูก/รายการงาน; edge fn line-login = infra auth ตัวแรก; ops A3 เพิ่ม LINE Login channel; CI เพิ่ม build+deploy pages
