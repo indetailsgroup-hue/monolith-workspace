@@ -451,3 +451,13 @@ inclusion: always
   2.1 **ประกัน: งาน DAPH 1 ปีนับจากตรวจรับ · ฟิตติ้งตามประกันแบรนด์ (pass-through — เก็บแบรนด์/รุ่นจาก BOM ไว้อ้างเคลม)**; `warranty_until = acceptance_date + 1 ปี`; การ์ดส่งมอบระบุสองชั้นชัด
   3. **รีวิว+referral: 2 สัปดาห์หลังตรวจรับ + ไม่มี issue ค้าง** (มีค้าง → เลื่อนจนปิด); การ์ดสองปุ่ม (รีวิว / แนะนำเพื่อน — ลิงก์ฝังรหัสผู้แนะนำ → tag lead อัตโนมัติ); incentive v1 = ไม่มี (วัดก่อน)
 - **Consequences:** delta 3 ชิ้น (tasks J2.9–J2.11): issue sources ใหม่ 2 + gate ส่งตรวจรับรอบใหม่ · warranty_until + ปุ่มแจ้งซ่อม + cron การ์ดอำลา/archive · scheduled card รีวิว (เช็ค issue ค้าง) + referral tag บน lead ใหม่; journey ครบวงจรแล้ว: add OA → ... → ตรวจรับ → ประกัน → รีวิว → **ลูกค้าคนถัดไป**
+
+## ADR-043 — Reconcile ชุด Interior Design Studio System เข้า DAPH (Package sub-process · การเงินสองชั้น · กั้นเขตโปรดักต์)
+
+- **Status:** Accepted (grill reconcile, 7 ก.ค. 2026)
+- **Context:** owner สร้างชุดเทมเพลตขาย (Home Construction Planner 56 ชีต, millwork 12 ขั้น, บัญชี C6, RIBA 9-phase) แบบไม่อ้างระบบหลัก — ขัด canonical 3 จุด (workflow/payment/journey); เลือก merge แบบมี reconcile
+- **Decision (owner, 3 มติ — รายละเอียดใน customer-journey-v2-draft.md §R):**
+  1. **R-1**: Millwork 12 ขั้น = sub-process ราย **Package (MW-xxx)** ใต้ 8 ขั้น canonical — บ้านเดินด้วย 8 ขั้น (คน/อนุมัติ/SLA) ชิ้นงานเดินด้วย 12 ขั้นใต้บ้าน (ของ/ต้นทุน/คุณภาพ); Package ID เสียบ D-3 Packet Registry; shop drawing gate = G4 เดิม; Production = 6 สถานี + J2.2
+  2. **R-2**: การเงินสองชั้น — ลูกค้า 50/30/15/5 (SSOT ยืน) · WIP/Job Cost/C6 = ชั้นบัญชีวิเคราะห์ภายใน (margin จริงต่อบ้าน — ผูก ledger) · retainage = option สัญญา corporate เท่านั้น
+  3. **R-3**: ชุดเทมเพลต = โปรดักต์ขายแยก + README-STATUS.md กั้นเขต (RIBA/Sales Gate/retainage-default = ของโปรดักต์ ห้ามใช้ภายใน)
+- **Consequences:** backlog ใหม่ 2 ก้อน (tasks Phase PK): Package registry ขยายจาก D-3 (takeoff/BOM/cutlist/shop-drawing/finish ราย package) + ชั้นบัญชี C6 (job cost, Project P&L, accountant handoff); ไม่มีการแตะ canonical/ADR-041

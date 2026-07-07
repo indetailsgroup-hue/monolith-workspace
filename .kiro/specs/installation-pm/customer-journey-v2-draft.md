@@ -88,3 +88,11 @@
 ## ค้างยืนยัน (ไม่ block การ build)
 
 3. ช่วงต่อรองก่อนสัญญา (เสนอราคาเบื้องต้น→วัด→ราคาจริง→สัญญา) — มติ 5 คุมจุดเงินแล้ว แต่ pipeline view ของ lead อยู่ backlog Phase 3.0
+
+## มติ grill reconcile — Interior Design Studio System → DAPH (owner, 7 ก.ค. 2026)
+
+> ที่มา: owner สร้างชุดเทมเพลต Interior Design Studio System (Home Construction Planner 56 ชีต + millwork 12 ขั้น + บัญชี C6) แบบไม่อ้างระบบหลัก → เลือก merge (ข) → ต้อง reconcile 3 จุดที่ขัด canonical
+
+> **มติ R-1 — Millwork 12 ขั้น = sub-process ราย "Package" ใต้ 8 ขั้น canonical (ไม่แตะ canonical)**: หน่วยใหม่ Package (MW-xxx) ต่อชิ้นงานใหญ่ใต้ work item — Scope→Takeoff→BOM→Hardware→Finish→Cut List→Shop Drawing อยู่ใต้ Production Planning (gate = G4 เดิม; งานจริง B4/B5 ตาม JD) · Production ใต้ Factory (6 สถานี + milestones J2.2) · Install/Punch = Installation + punch list ADR-042 · Job Cost/WIP = ชั้นการเงินขวางทุกขั้น (มติ R-2); Package ID เสียบ D-3 Packet Registry ที่ spec รอไว้; หลัก: **บ้านเดินด้วย 8 ขั้น (คน/อนุมัติ/SLA) ชิ้นงานเดินด้วย 12 ขั้นใต้บ้าน (ของ/ต้นทุน/คุณภาพ)** — สองเลนส์ไม่แข่งกัน
+> **มติ R-2 — การเงินสองชั้นแยกกัน**: ฝั่งลูกค้า = **50/30/15/5 คงเดิม (SSOT — ADR-041 ยืน)** · **WIP/Job Cost = ชั้นบัญชีวิเคราะห์ภายใน** (adopt C6: ต้นทุนสะสมต่อ Package vs estimate → margin จริงต่อบ้าน; อ่านจากงวดรับ F3 + ต้นทุนวัสดุ/แรง — ผูก ledger เดิม) · **Retainage = option เฉพาะสัญญา corporate** (payment plan ปรับได้ต่อสัญญาตามมติ 5.1) ไม่ใช่ default บ้านลูกค้า; หลัก: รายรับเดินตามสัญญา รายจ่ายเดินตามงาน บรรจบที่ Project P&L ต่อบ้าน
+> **มติ R-3 — ชุดเทมเพลต = โปรดักต์ขายแยก + กั้นเขต**: README-STATUS.md ประกาศในโฟลเดอร์ (ไม่ใช่ source of truth ของ DAPH; ของมีค่า merge แล้ว; RIBA/retainage-default = ของโปรดักต์เท่านั้น); ปัดตก: ยุบเข้า repo หลัก (ปัญหา one-clik v0.1 ถาวร) และทิ้ง (เสียสินค้าเสร็จแล้ว)

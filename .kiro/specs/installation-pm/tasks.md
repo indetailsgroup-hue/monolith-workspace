@@ -72,6 +72,11 @@
 - [ ] SJ-4 สรุปยอดให้ H1: attribution เจ้าของบ้านต่อ Sale (เกิดเองจากใบ) + สัญญา/เดือน + มูลค่า + lost-reason; ไม่มี target/commission ใน v1 (Sale-4)
 - [ ] SJ-5 หน้าแรก Sale "งานขายของฉันวันนี้" (Wave A — รวมกับฟอร์มใบความต้องการ): lead ต้องตาม / บ้านรอ Sale / ปุ่มเปิดใบใหม่ (Sale-5)
 
+## Phase PK: Package + การเงินภายใน (ADR-043 — reconcile 7 ก.ค. 2026)
+
+- [ ] PK-1 Package registry ขยายจาก D-3: หน่วย Package (MW-xxx) ใต้ work item + sub-process 12 ขั้น (takeoff/BOM/cutlist/shop drawing log/finish schedule — data model จาก Home_Construction_Planner เป็น reference) + review gates ราย stage
+- [ ] PK-2 ชั้นบัญชี C6 ภายใน: job cost ต่อ package (estimate vs actual, cost-to-complete) + Project P&L ต่อบ้าน (รายรับงวด F3 × ต้นทุน) + accountant handoff/export; retainage = option สัญญา corporate
+
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 
 - [ ] 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้
