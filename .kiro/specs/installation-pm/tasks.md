@@ -55,7 +55,7 @@
 - [x] J2.1 — ✅ **`0107` (2026-07-08)**: group_type += 'factory' (project_id null + CHECK shape + **unique active เดียว**) + `#ผูก โรงงาน` ใน handler (staff identity; ซ้ำ → bind_fail) — ทดสอบ DB: bound_factory/dup block ✓
 - [x] J2.2 — ✅ **`0107`**: `production_milestones` (6 สถานี unique ต่อบ้าน) + rpc report_station/approve_gate/list — gate 2 จุดตรวจ **RACI ขั้น Designer** (pattern 0094; non-designer block ✓, idempotent ✓) + **curated 3 จังหวะอัตโนมัติ**เข้ากลุ่มลูกค้า (เริ่มผลิต/ตู้เสร็จ/พร้อมส่ง — templates ×3 customer) — ปิด pain ช่วงเงียบ; **follow-up**: curated เป็น text ก่อน (รูปจริงเมื่อ sender รองรับ image message) + รายงานสถานีผ่าน PWA โดย E2 (bot ขาเข้าโรงงาน = Phase หลัง)
 - [x] J2.3 — ✅ **`0108` (2026-07-08)**: `payment_installments` (default 50/30/15/5 คำนวณ amount จากราคาสัญญา; custom ต่อสัญญาได้ — ผลรวมต้อง 100; แก้แผนไม่ได้หลังมีงวดแจ้ง/จ่าย) + **trigger 4 จุดครบ**: mark_contract_signed → งวด1 · G3 approved (trigger work_item) → งวด2 · Packing gate approved (trigger 0107) → งวด3 · ตรวจรับ approved (trigger 0098) → งวด4 — การ์ดแจ้งงวดเข้ากลุ่มลูกค้าอัตโนมัติ (tpl_payment_due; idempotent) + `rpc_finance_record_payment` (F3 คลิกเดียว) + **soft gate ปล่อยผลิต**: สถานีแรกทั้งที่งวดก่อนผลิตไม่เข้า → block จนกว่า PM/governance ใส่เหตุผล override (audit `production_release_override`); ทดสอบ DB 8 เคส; การเงินมองไม่เห็นโดย member (RLS site เท่านั้น)
-- [ ] J2.4 capture `site_design_verification` (C2+B2) + เงื่อนไข soft ก่อนส่งการ์ด G3 + แนบหลักฐานเข้า audit ของ G3
+- [x] J2.4 — ✅ **`0109` (2026-07-08)**: capture `site_design_verification` (evidence_only, C2+B2, critical: project+summary) + rpc_field_submit_site_verification (idempotent) + **soft enforcement**: trigger audit `g3_sent_without_site_verification` เมื่องานเข้ารอเซ็น G3 โดยไม่มีผลตรวจ (ไม่ block — pattern T0; ยก hard ที่ handoff ได้ภายหลัง); ทดสอบ DB ✓
 - [ ] J2.5 **Phase Roster + assignment approval** — ตาราง roster ต่อบ้านต่อเฟส + คำขอ assign (C1/B1/D3 approve) + bot เช็ค join เทียบ roster/ตามคนขาด/แจ้งคนเกิน + เตือนคนออกเมื่อจบเฟส; รวม designer matching แบบ manual (B1 เลือกจาก list ที่ระบบเรียงตาม Mood&Tone)
 - [ ] J2.6 QC gate ภายในก่อนเชิญลูกค้าตรวจรับ — E5 ตรวจที่บ้าน (capture) → ผ่านแล้ว rpc_request_customer_acceptance ค่อยยิงได้ (soft→hard ตามผล dogfood)
 - [ ] J2.7 แผนติดตั้งฉบับลูกค้า — ระบบร่างจากคิว E7 → D1 PM กดยืนยันส่ง (template + version tracking)
@@ -66,7 +66,7 @@
 
 ## Phase SJ: Sales Journey (grill รายตำแหน่ง 7 ก.ค. 2026 — position-journeys.md)
 
-- [ ] SJ-1 ช่วงราคาเบื้องต้น: ตารางเรทต่อ ตรม./เกรดวัสดุ (config โดย B4/PM) + ปุ่มสร้างการ์ดช่วงราคา min–max จากใบ requirement + disclaimer + snapshot ลง audit (Sale-1)
+- [x] SJ-1 — ✅ **`0109`**: `price_rates` (เกรด×เรท min/max ต่อ ตร.ม. — B4/PM ตั้งผ่าน rpc_field_set_price_rate) + rpc_field_price_estimate → ช่วง min–max ปัดร้อย + ข้อความพร้อมส่ง + **snapshot ทุกตัวเลขลง audit** (price_estimate_issued — มติ Sale-1); เรทไม่มี = fail-safe no-guess; ทดสอบ: 45 ตร.ม. Premium → 180,000–247,500 ✓; การ์ดอัตโนมัติเข้าแชท 1:1 = follow-up เมื่อ conversation targeting พร้อม
 - [ ] SJ-2 Lead follow-up: sweep เงียบ >3 วัน → push Sale · >7 วัน → FYI H1 (config, quiet hours) + ปุ่ม "ปิด lead + เหตุผล" → lost-reason data (Sale-2)
 - [ ] SJ-3 สัญญา: template (ทนาย review) generate จากราคา B4+scope+งวด 50/30/15/5+ประกัน → PDF เข้ากลุ่ม → capture signed_contract → mark signed → การ์ดงวด 1 อัตโนมัติ (Sale-3; ผูก J2.3)
 - [ ] SJ-4 สรุปยอดให้ H1: attribution เจ้าของบ้านต่อ Sale (เกิดเองจากใบ) + สัญญา/เดือน + มูลค่า + lost-reason; ไม่มี target/commission ใน v1 (Sale-4)
