@@ -1,6 +1,7 @@
 // มุมช่าง — "งานของฉันวันนี้" (Wave C; UX tenet: เลนตัวเอง ชื่อห้องภาษาคน ไม่มีศัพท์ระบบ)
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { enqueuePhoto, flushPhotos, pendingPhotoCount } from '../lib/photoQueue';
 
 // checklist ต่อ template (SOP จริงจาก 0091 — ครัว/ห้องทั่วไป ต่อเลน)
 const ITEMS: Record<string, string[]> = {
@@ -17,11 +18,16 @@ interface Lane { task_id: string; lane: number; template_ref: string; checklist_
 export function MyWork() {
   const [lanes, setLanes] = useState<Lane[] | null>(null);
   const [err, setErr] = useState('');
+  const [pending, setPending] = useState(0);
+  const refreshPending = () => { void pendingPhotoCount().then(setPending); };
 
   useEffect(() => {
     supabase().rpc('rpc_field_my_lanes').then(({ data, error }) => {
       if (error) setErr(error.message); else setLanes((data ?? []) as Lane[]);
     });
+    refreshPending();
+    const t = setInterval(refreshPending, 4000);
+    return () => clearInterval(t);
   }, []);
 
   async function toggle(l: Lane, item: string, done: boolean) {
@@ -33,12 +39,19 @@ export function MyWork() {
     if (error) setErr(error.message);
   }
 
+  async function takePhoto(l: Lane, file: File | null) {
+    if (!file) return;
+    await enqueuePhoto(l.task_id, file);
+    refreshPending();
+    void flushPhotos().then(refreshPending);
+  }
   if (err) return <div className="page"><p className="err">{err}</p></div>;
   if (lanes === null) return <div className="page muted">กำลังโหลดงานของคุณ…</div>;
   if (lanes.length === 0) return <div className="page"><div className="card">วันนี้ยังไม่มีงานมอบหมายครับ 🙂</div></div>;
 
   return (
     <div className="page">
+      {pending > 0 && <div className="card" style={{ background: '#FFF6E5' }}>📤 ค้างส่ง {pending} รายการ — จะส่งเองเมื่อมีสัญญาณ</div>}
       {lanes.map((l) => {
         const items = ITEMS[l.template_ref] ?? [];
         const doneCount = items.filter((i) => l.checklist_state?.[i]).length;
@@ -54,7 +67,12 @@ export function MyWork() {
                 <span>{item}</span>
               </label>
             ))}
-            <p className="muted">ถ่ายรูป Wrapping ส่งในกลุ่ม LINE ของทีมได้เลย — ระบบเก็บให้อัตโนมัติ 📷</p>
+            <label className="btn btn-accent" style={{ textAlign: 'center' }}>
+              📷 ถ่ายรูปงานห้องนี้
+              <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                onChange={(e) => { void takePhoto(l, e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            </label>
+            <p className="muted">ถ่ายตรงนี้ หรือส่งในกลุ่ม LINE ก็ได้ — ระบบเก็บให้เหมือนกัน 📷 เน็ตหลุดก็ถ่ายได้ เดี๋ยวส่งให้เอง</p>
           </div>
         );
       })}
