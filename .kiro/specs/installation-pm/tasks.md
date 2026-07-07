@@ -64,6 +64,14 @@
 - [ ] J2.11 **Review/Referral card** (ADR-042): scheduled 2 สัปดาห์หลังตรวจรับ + เช็คไม่มี issue ค้าง (มี → เลื่อน) · ปุ่มรีวิว + ลิงก์แนะนำเพื่อน (tag ที่มาบน conversation ใหม่)
 - [ ] J2.8 กลุ่มลูกค้าเกิดตั้งแต่ Qualify — ปรับ flow เปิดบ้าน (Wave A) ให้ออกรหัสผูกทันทีหลัง work_item_open + คู่มือ Sale ตั้งกลุ่ม
 
+## Phase SJ: Sales Journey (grill รายตำแหน่ง 7 ก.ค. 2026 — position-journeys.md)
+
+- [ ] SJ-1 ช่วงราคาเบื้องต้น: ตารางเรทต่อ ตรม./เกรดวัสดุ (config โดย B4/PM) + ปุ่มสร้างการ์ดช่วงราคา min–max จากใบ requirement + disclaimer + snapshot ลง audit (Sale-1)
+- [ ] SJ-2 Lead follow-up: sweep เงียบ >3 วัน → push Sale · >7 วัน → FYI H1 (config, quiet hours) + ปุ่ม "ปิด lead + เหตุผล" → lost-reason data (Sale-2)
+- [ ] SJ-3 สัญญา: template (ทนาย review) generate จากราคา B4+scope+งวด 50/30/15/5+ประกัน → PDF เข้ากลุ่ม → capture signed_contract → mark signed → การ์ดงวด 1 อัตโนมัติ (Sale-3; ผูก J2.3)
+- [ ] SJ-4 สรุปยอดให้ H1: attribution เจ้าของบ้านต่อ Sale (เกิดเองจากใบ) + สัญญา/เดือน + มูลค่า + lost-reason; ไม่มี target/commission ใน v1 (Sale-4)
+- [ ] SJ-5 หน้าแรก Sale "งานขายของฉันวันนี้" (Wave A — รวมกับฟอร์มใบความต้องการ): lead ต้องตาม / บ้านรอ Sale / ปุ่มเปิดใบใหม่ (Sale-5)
+
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 
 - [ ] 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้
