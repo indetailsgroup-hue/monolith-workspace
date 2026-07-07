@@ -79,6 +79,13 @@
 - [ ] DJ-3 Issue categories + routing map (ของขาด→E6/E2/E7 · ตามแบบไม่ได้→B2/B4 · ลูกค้าขอเพิ่ม→Sale/PM+requote ADR-037 · ความปลอดภัย→D3/HSE ข้าม quiet hours) + SLA→D1 (D4-4)
 - [ ] DJ-4 หน้าแรกหัวหน้า Wave B: multi-house เรียงเร่งด่วน + ตาราง state→next-action + ทุกแจ้งเตือน tag ชื่อบ้าน (D4-1/D4-5)
 
+## Phase BJ: Designer Journey (grill 7 ก.ค. 2026 — position-journeys.md §B2)
+
+- [ ] BJ-1 Gate โรงงาน SLA + escalate B1 + delegation (reuse 0082/SLA เดิม — config ต่อ gate) (B2-1; ผูก J2.2)
+- [ ] BJ-2 Shop Drawing revision flow: rev ใหม่ผ่าน Released_Spec + แจ้งกลุ่มโรงงาน "ใช้ rev N+1" + B4 ประเมิน rework → Job Cost; กระทบของที่ลูกค้าเซ็น → บังคับ requote (B2-2; ผูก PK-1/PK-2)
+- [ ] BJ-3 Designer profile (tag สไตล์ B1 ดูแล) + matching list (tag×Mood&Tone + ประวัติ + rework + งานในมือ) (B2-3; ผูก J2.5)
+- [ ] BJ-4 หน้าแรก Designer "คิวของฉันวันนี้" เรียงตามราคาการรอ + ปุ่มเปิดใน MONOLITH (B2-4; Wave B)
+
 ## Phase PK: Package + การเงินภายใน (ADR-043 — reconcile 7 ก.ค. 2026)
 
 - [ ] PK-1 Package registry ขยายจาก D-3: หน่วย Package (MW-xxx) ใต้ work item + sub-process 12 ขั้น (takeoff/BOM/cutlist/shop drawing log/finish schedule — data model จาก Home_Construction_Planner เป็น reference) + review gates ราย stage
