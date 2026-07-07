@@ -52,8 +52,8 @@
 
 ## Phase J2: Customer Journey v2 (ADR-041 — grill 7 ก.ค. 2026; ลำดับตาม dependency/คุณค่า)
 
-- [ ] J2.1 group_type `factory` + กลุ่มโรงงานถาวร (ขยาย 0095: กลุ่มไม่ผูก project + กติกาโพสต์ชื่อบ้านนำหน้า + guardrail เดิมครอบ)
-- [ ] J2.2 **Production milestones** — รายงาน 6 สถานี (capture ต่อสถานีต่อบ้าน pattern รูปจบเลน) + designer gate 2 จุด (Assembly/Packing — RACI B1/B2) + **auto-curated เข้ากลุ่มลูกค้า** (3 จังหวะ: เริ่มผลิต/ตู้เสร็จ/ขึ้นรถ) — ปิด pain ช่วงเงียบ
+- [x] J2.1 — ✅ **`0107` (2026-07-08)**: group_type += 'factory' (project_id null + CHECK shape + **unique active เดียว**) + `#ผูก โรงงาน` ใน handler (staff identity; ซ้ำ → bind_fail) — ทดสอบ DB: bound_factory/dup block ✓
+- [x] J2.2 — ✅ **`0107`**: `production_milestones` (6 สถานี unique ต่อบ้าน) + rpc report_station/approve_gate/list — gate 2 จุดตรวจ **RACI ขั้น Designer** (pattern 0094; non-designer block ✓, idempotent ✓) + **curated 3 จังหวะอัตโนมัติ**เข้ากลุ่มลูกค้า (เริ่มผลิต/ตู้เสร็จ/พร้อมส่ง — templates ×3 customer) — ปิด pain ช่วงเงียบ; **follow-up**: curated เป็น text ก่อน (รูปจริงเมื่อ sender รองรับ image message) + รายงานสถานีผ่าน PWA โดย E2 (bot ขาเข้าโรงงาน = Phase หลัง)
 - [ ] J2.3 **Payment plan + การ์ดแจ้งงวด + soft gate** — ตารางแผนงวดต่อบ้าน (default **50/30/15/5** — ยืนยันแล้ว; ปรับได้ต่อสัญญา) · trigger อัตโนมัติ 4 จุด · F3 กดบันทึกรับ · เตือน+override(PM/GM+เหตุผล) ก่อนปล่อยผลิต; reuse ledger โครงเดิมได้บางส่วน
 - [ ] J2.4 capture `site_design_verification` (C2+B2) + เงื่อนไข soft ก่อนส่งการ์ด G3 + แนบหลักฐานเข้า audit ของ G3
 - [ ] J2.5 **Phase Roster + assignment approval** — ตาราง roster ต่อบ้านต่อเฟส + คำขอ assign (C1/B1/D3 approve) + bot เช็ค join เทียบ roster/ตามคนขาด/แจ้งคนเกิน + เตือนคนออกเมื่อจบเฟส; รวม designer matching แบบ manual (B1 เลือกจาก list ที่ระบบเรียงตาม Mood&Tone)
