@@ -79,6 +79,8 @@ export function LeadPanel({ projectId, onChanged }: { projectId: string; onChang
         ))}
       </div>
 
+      <QcCard projectId={projectId} />
+
       <div className="card">
         <strong>จบงาน</strong>
         <p className="muted">ปิดบ้านได้เฉพาะหัวหน้าทีมติดตั้ง — ระบบตรวจสิทธิ์ให้เอง</p>
@@ -91,5 +93,37 @@ export function LeadPanel({ projectId, onChanged }: { projectId: string; onChang
         {err && <p className="err">{err}</p>}
       </div>
     </>
+  );
+}
+
+// QC (E5) ตรวจก่อนเชิญลูกค้าตรวจรับ — สองชั้น (0111): ไม่ผ่าน = เปิด issue อัตโนมัติให้ทีมแก้แล้วตรวจซ้ำ
+function QcCard({ projectId }: { projectId: string }) {
+  const [notes, setNotes] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  async function submit(pass: boolean) {
+    setErr(''); setMsg('');
+    if (!pass && !notes.trim()) { setErr('QC ไม่ผ่านต้องระบุสิ่งที่พบ'); return; }
+    const { error } = await supabase().rpc('rpc_field_submit_qc_inspection', {
+      p_project_id: projectId, p_pass: pass, p_notes: notes.trim() || null, p_client_key: crypto.randomUUID(),
+    });
+    if (error) { setErr(error.message); return; }
+    setMsg(pass ? 'QC ผ่าน ✅ — ส่งตรวจรับให้ลูกค้าได้เลย' : 'บันทึกแล้ว — เปิดเรื่องให้ทีมแก้อัตโนมัติ 🔴');
+    setNotes('');
+  }
+
+  return (
+    <div className="card">
+      <strong>QC ตรวจก่อนตรวจรับ (E5)</strong>
+      <p className="muted">ลูกค้าจะได้การ์ดตรวจรับต่อเมื่อ QC ผ่านแล้ว</p>
+      <input placeholder="สิ่งที่พบ (จำเป็นเมื่อไม่ผ่าน)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => submit(true)}>ผ่าน ✅</button>
+        <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => submit(false)}>ไม่ผ่าน 🔴</button>
+      </div>
+      {msg && <p style={{ color: 'var(--ok)', fontWeight: 600 }}>{msg}</p>}
+      {err && <p className="err">{err}</p>}
+    </div>
   );
 }
