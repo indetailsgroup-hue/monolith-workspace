@@ -1,0 +1,30 @@
+# Deploy Field PWA → GitHub Pages (ADR-040 มติ 5) — static ล้วน ไม่มีข้อมูลบริษัท at rest
+name: field-app-pages
+on:
+  push:
+    branches: [main]
+    paths: ['packages/field-app/**', '.github/workflows/field-app-pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci --workspaces --include-workspace-root=false
+      - run: npm run build -w @daph/field-app
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: packages/field-app/dist }
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,35 @@
+/* DAPH Field Tokens — ADR-040 มติ 4: brand เป็น identity, field physics ชนะเมื่อขัด */
+:root {
+  --brand: #1F3D2B;        /* เขียวเข้ม DAPH */
+  --accent: #C7A86A;       /* ทอง */
+  --bg: #F7F5F1;
+  --surface: #FFFFFF;
+  --ink: #1C2420;
+  --muted: #5E6B63;
+  --line: #E3E0D8;
+  --danger: #B3402A;
+  --ok: #2E7D4F;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: 'Noto Sans Thai', system-ui, sans-serif;
+  font-size: 17px; line-height: 1.6;   /* อ่านกลางแดด */
+}
+#root { max-width: 480px; margin: 0 auto; min-height: 100dvh; }
+.app-header { background: var(--brand); color: #fff; padding: 14px 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.page { padding: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+/* ปุ่ม ≥48px — กดได้ทั้งถุงมือ */
+.btn { display: block; width: 100%; min-height: 48px; border: none; border-radius: 12px;
+  font-size: 17px; font-weight: 600; font-family: inherit; cursor: pointer; padding: 12px 16px; }
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-accent { background: var(--accent); color: #2A2213; }
+.btn-ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+.btn + .btn { margin-top: 10px; }
+input, select { width: 100%; min-height: 48px; font-size: 17px; font-family: inherit;
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 14px; background: #fff; }
+label { display: block; font-weight: 600; margin: 14px 0 6px; }
+.muted { color: var(--muted); font-size: 14px; }
+.badge { display: inline-block; background: var(--accent); color: #2A2213; border-radius: 999px; padding: 2px 10px; font-size: 13px; font-weight: 600; }
+.err { color: var(--danger); font-weight: 600; }
