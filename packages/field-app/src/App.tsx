@@ -6,11 +6,13 @@ import { Login } from './screens/Login';
 import { Projects } from './screens/Projects';
 import { NewProject } from './screens/NewProject';
 import { ProjectDetail } from './screens/ProjectDetail';
+import { RequirementForm } from './screens/RequirementForm';
 
 export type Route =
   | { name: 'projects' }
   | { name: 'new-project' }
-  | { name: 'project'; id: string };
+  | { name: 'project'; id: string }
+  | { name: 'requirement' };
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -34,7 +36,8 @@ export function App() {
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88' }}
           onClick={() => supabase().auth.signOut()}>ออก</button>
       </header>
-      {route.name === 'projects' && <Projects onNew={() => setRoute({ name: 'new-project' })} onOpen={(id) => setRoute({ name: 'project', id })} />}
+      {route.name === 'projects' && <Projects onNew={() => setRoute({ name: 'new-project' })} onOpen={(id) => setRoute({ name: 'project', id })} onRequirement={() => setRoute({ name: 'requirement' })} />}
+      {route.name === 'requirement' && <RequirementForm onDone={() => setRoute({ name: 'projects' })} />}
       {route.name === 'new-project' && <NewProject onDone={() => setRoute({ name: 'projects' })} />}
       {route.name === 'project' && <ProjectDetail id={route.id} onBack={() => setRoute({ name: 'projects' })} />}
     </>

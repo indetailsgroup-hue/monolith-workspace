@@ -7,7 +7,7 @@ interface ProjectRow {
   groups: { type: string; status: string }[];
 }
 
-export function Projects({ onNew, onOpen }: { onNew: () => void; onOpen: (id: string) => void }) {
+export function Projects({ onNew, onOpen, onRequirement }: { onNew: () => void; onOpen: (id: string) => void; onRequirement: () => void }) {
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
   const [err, setErr] = useState('');
 
@@ -19,7 +19,9 @@ export function Projects({ onNew, onOpen }: { onNew: () => void; onOpen: (id: st
 
   return (
     <div className="page">
-      <button className="btn btn-accent" onClick={onNew}>+ เปิดบ้านใหม่</button>
+      <button className="btn btn-primary" onClick={onRequirement}>📋 ใบความต้องการใหม่ (เปิดงานขาย)</button>
+      <div style={{ height: 10 }} />
+      <button className="btn btn-accent" onClick={onNew}>+ เปิดบ้านใหม่ (ช่วงติดตั้ง)</button>
       <div style={{ height: 14 }} />
       {err && <p className="err">{err}</p>}
       {rows === null && !err && <p className="muted">กำลังโหลด…</p>}

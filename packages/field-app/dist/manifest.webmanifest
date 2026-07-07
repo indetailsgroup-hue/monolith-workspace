@@ -1,9 +1,0 @@
-{
-  "name": "DAPH หน้างาน",
-  "short_name": "DAPH",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#F7F5F1",
-  "theme_color": "#1F3D2B",
-  "icons": []
-}
