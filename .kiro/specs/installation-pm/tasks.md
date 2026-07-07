@@ -72,6 +72,13 @@
 - [ ] SJ-4 สรุปยอดให้ H1: attribution เจ้าของบ้านต่อ Sale (เกิดเองจากใบ) + สัญญา/เดือน + มูลค่า + lost-reason; ไม่มี target/commission ใน v1 (Sale-4)
 - [ ] SJ-5 หน้าแรก Sale "งานขายของฉันวันนี้" (Wave A — รวมกับฟอร์มใบความต้องการ): lead ต้องตาม / บ้านรอ Sale / ปุ่มเปิดใบใหม่ (Sale-5)
 
+## Phase DJ: Installation Team Lead Journey (grill 7 ก.ค. 2026 — position-journeys.md §D4)
+
+- [ ] DJ-1 Check-in/out รวมทีมต่อบ้านต่อวัน (หัวหน้ากดคนเดียว + ติ๊กใครมาจาก roster) → ชั่วโมง×คน เข้า Job Cost PK-2 อัตโนมัติ (D4-2)
+- [ ] DJ-2 รายงานประจำวันประกอบอัตโนมัติ (เลน+รูป+ปัญหา+ชั่วโมง → หัวหน้าเติมหมายเหตุ+ส่ง → D3/D2/PM + PDF — รวม task 1.6) (D4-3)
+- [ ] DJ-3 Issue categories + routing map (ของขาด→E6/E2/E7 · ตามแบบไม่ได้→B2/B4 · ลูกค้าขอเพิ่ม→Sale/PM+requote ADR-037 · ความปลอดภัย→D3/HSE ข้าม quiet hours) + SLA→D1 (D4-4)
+- [ ] DJ-4 หน้าแรกหัวหน้า Wave B: multi-house เรียงเร่งด่วน + ตาราง state→next-action + ทุกแจ้งเตือน tag ชื่อบ้าน (D4-1/D4-5)
+
 ## Phase PK: Package + การเงินภายใน (ADR-043 — reconcile 7 ก.ค. 2026)
 
 - [ ] PK-1 Package registry ขยายจาก D-3: หน่วย Package (MW-xxx) ใต้ work item + sub-process 12 ขั้น (takeoff/BOM/cutlist/shop drawing log/finish schedule — data model จาก Home_Construction_Planner เป็น reference) + review gates ราย stage
