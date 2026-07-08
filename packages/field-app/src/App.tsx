@@ -14,6 +14,8 @@ import { DesignerHome } from './screens/DesignerHome';
 import { SalesSummary } from './screens/SalesSummary';
 import { FinanceHome } from './screens/FinanceHome';
 import { FactoryHome } from './screens/FactoryHome';
+import { SurveyHome } from './screens/SurveyHome';
+import { FactoryOpsHome } from './screens/FactoryOpsHome';
 
 export type Route =
   | { name: 'projects' }
@@ -26,7 +28,9 @@ export type Route =
   | { name: 'designer-home' }
   | { name: 'sales-summary' }
   | { name: 'finance-home' }
-  | { name: 'factory-home' };
+  | { name: 'factory-home' }
+  | { name: 'survey-home' }
+  | { name: 'factory-ops' };
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -58,6 +62,10 @@ export function App() {
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'factory-home' })}>โรงงาน</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
+          onClick={() => setRoute({ name: 'survey-home' })}>วัด</button>
+        <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
+          onClick={() => setRoute({ name: 'factory-ops' })}>ผลิต</button>
+        <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'my-work' })}>งานของฉัน</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88' }}
           onClick={() => supabase().auth.signOut()}>ออก</button>
@@ -69,6 +77,8 @@ export function App() {
       {route.name === 'sales-summary' && <SalesSummary onBack={() => setRoute({ name: 'sale-home' })} />}
       {route.name === 'finance-home' && <FinanceHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'factory-home' && <FactoryHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
+      {route.name === 'survey-home' && <SurveyHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
+      {route.name === 'factory-ops' && <FactoryOpsHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'lead-home' && <LeaderHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'designer-home' && <DesignerHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'new-project' && <NewProject onDone={() => setRoute({ name: 'projects' })} />}

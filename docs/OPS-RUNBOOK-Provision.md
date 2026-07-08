@@ -56,10 +56,10 @@
 ## P4 · Deploy (20 นาที)
 
 - [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0131 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
-- [ ] **P4.2** ตรวจ cron เกิดครบ **9 ตัว** (SQL Editor):
+- [ ] **P4.2** ตรวจ cron เกิดครบ **10 ตัว** (SQL Editor):
   ```sql
   select jobname, schedule from cron.job order by jobname;
-  -- ต้องเห็น: wf-after-sales-sweep · wf-daily-digest · wf-gate-sla-sweep · wf-issue-sla-sweep
+  -- ต้องเห็น: wf-after-sales-sweep · wf-appointment-reminder · wf-daily-digest · wf-gate-sla-sweep · wf-issue-sla-sweep
   --          wf-lead-followup-sweep · wf-media-fetch · wf-notification-retry · wf-payment-overdue-sweep · wf-sla-sweep
   ```
 - [ ] **P4.3** Deploy edge functions **11 ตัว**:

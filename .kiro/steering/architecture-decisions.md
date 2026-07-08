@@ -504,3 +504,15 @@ inclusion: always
   3. **Capacity view แบบง่าย**: จำนวน package ค้างต่อสถานี (ขั้น 7–10) — B4 เห็นคอขวดแล้วตัดสินใจเอง; ปัดตก finite scheduling (ข้อมูลยังไม่พอให้เครื่องฉลาด — pattern matching v1)
   4. **หน้าแรก B4 "คิวโรงงานวันนี้"**: ① คิว package + ขั้นปัจจุบัน + วัสดุพร้อม/ไม่พร้อม + override ② วัสดุรอรับ/รอสั่ง ③ โหลดต่อสถานี
 - **Consequences:** Phase BQ (0139): work_packages += queue_override · package_materials + RPCs (add/status/shortage→issue) · rebase rpc_field_package_stage_done (0128→0139 — เตือน machining ของไม่ครบ) · rpc_factory_queue/load/home + FactoryHome UI + ปุ่มโรงงาน
+
+## ADR-048 — C1 หัวหน้าฝ่ายวัด: entity นัดหมายกลาง · จบวัด=capture handoff · หน้าคิววัด (grill C1)
+
+- **Status:** Accepted (owner "ก", 8 ก.ค. 2026)
+- **Decision:** (1) **appointments** entity กลาง (บ้าน × ชนิด วัด/ตรวจร่วม/ติดตั้ง × วันเวลา) → การ์ด confirm เข้ากลุ่มลูกค้า + **เตือนทีมอัตโนมัติเช้าวันนัด** (dispatch ถึง roster เฟสที่ตรงชนิด; cron เช้า) — ใช้ร่วมทุกชนิดนัด ปลดล็อกช่อง "นัดวันนี้" ของ designer; (2) ปุ่ม "จบวัด–ส่งมอบให้ออกแบบ" = capture `survey_handoff` (สรุป + นับโซนจาก site_survey_zone เดิม — ไม่ fork) → แจ้ง designer ของบ้าน + mark นัดวัดเสร็จ; (3) หน้าแรก C1: นัดวัดวันนี้/พรุ่งนี้ · คำขอทีมวัดรออนุมัติ · วัดแล้วรอส่งมอบ
+- **Consequences:** Phase CQ (0140): appointments + reminder sweep (cron ที่ 10) + survey_handoff + rpc_survey_home + SurveyHome UI
+
+## ADR-049 — E2 หัวหน้าโรงงาน: รายงานเปิดแต่ visible · check-in โรงงานรวม = overhead กลาง · หน้าโรงงานวันนี้ (grill E2)
+
+- **Status:** Accepted (owner "ก", 8 ก.ค. 2026)
+- **Decision:** (1) รายงานสถานี**คงเปิดใครก็ได้ ไม่เพิ่ม approval ชั้นใหม่** (ไลน์ต้องไหล) — วินัยจากความ visible: E2 เห็นสรุป "รายงานวันนี้" สถานี×บ้าน×คนรายงาน; (2) **check-in รวมโรงงานต่อวัน** (E2 กดคนเดียว+ติ๊กใครมา ไม่ผูกบ้าน) → man-hours = **overhead กลาง** ให้ C6 กระจายตอนวิเคราะห์ (ปัดตกผูกชั่วโมงต่อ package — ช่างสลับงานทั้งวัน friction สูง บทเรียน D4-2); (3) หน้าแรก E2 แยกจาก B4 (ต่างมุม: B4 จัดคิว / E2 เดินงาน): คิวเดียวกับ B4 · gate รอ designer นานสุดก่อน · เข้างานโรงงานวันนี้ + รายงานวันนี้
+- **Consequences:** Phase EQ (0141): factory_checkins (ไม่ผูกบ้าน) + rpc_factory_ops_home + FactoryOpsHome UI (ปุ่ม "ผลิต"); production_milestones.reported_by มีอยู่แล้ว — สรุปวันนี้อ่านตรง
