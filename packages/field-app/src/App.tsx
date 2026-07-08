@@ -11,6 +11,7 @@ import { MyWork } from './screens/MyWork';
 import { SaleHome } from './screens/SaleHome';
 import { LeaderHome } from './screens/LeaderHome';
 import { DesignerHome } from './screens/DesignerHome';
+import { SalesSummary } from './screens/SalesSummary';
 
 export type Route =
   | { name: 'projects' }
@@ -20,7 +21,8 @@ export type Route =
   | { name: 'my-work' }
   | { name: 'sale-home' }
   | { name: 'lead-home' }
-  | { name: 'designer-home' };
+  | { name: 'designer-home' }
+  | { name: 'sales-summary' };
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -55,7 +57,8 @@ export function App() {
       {route.name === 'projects' && <Projects onNew={() => setRoute({ name: 'new-project' })} onOpen={(id) => setRoute({ name: 'project', id })} onRequirement={() => setRoute({ name: 'requirement' })} />}
       {route.name === 'requirement' && <RequirementForm onDone={() => setRoute({ name: 'projects' })} />}
       {route.name === 'my-work' && <MyWork />}
-      {route.name === 'sale-home' && <SaleHome onOpenProject={(id) => setRoute({ name: 'project', id })} onNewRequirement={() => setRoute({ name: 'requirement' })} />}
+      {route.name === 'sale-home' && <SaleHome onOpenProject={(id) => setRoute({ name: 'project', id })} onNewRequirement={() => setRoute({ name: 'requirement' })} onSummary={() => setRoute({ name: 'sales-summary' })} />}
+      {route.name === 'sales-summary' && <SalesSummary onBack={() => setRoute({ name: 'sale-home' })} />}
       {route.name === 'lead-home' && <LeaderHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'designer-home' && <DesignerHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'new-project' && <NewProject onDone={() => setRoute({ name: 'projects' })} />}

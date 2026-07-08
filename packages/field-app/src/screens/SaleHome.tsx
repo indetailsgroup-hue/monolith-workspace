@@ -14,8 +14,8 @@ const LOST_REASONS = [
   { key: 'other', label: 'อื่นๆ' },
 ];
 
-export function SaleHome({ onOpenProject, onNewRequirement }: {
-  onOpenProject: (id: string) => void; onNewRequirement: () => void;
+export function SaleHome({ onOpenProject, onNewRequirement, onSummary }: {
+  onOpenProject: (id: string) => void; onNewRequirement: () => void; onSummary: () => void;
 }) {
   const [home, setHome] = useState<Home | null>(null);
   const [closing, setClosing] = useState<string | null>(null);
@@ -78,6 +78,9 @@ export function SaleHome({ onOpenProject, onNewRequirement }: {
 
       <button className="btn btn-primary" style={{ fontSize: 19 }} onClick={onNewRequirement}>
         + เปิดใบความต้องการใหม่
+      </button>
+      <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 8 }} onClick={onSummary}>
+        ดูสรุปทีมขายเดือนนี้ (H1) →
       </button>
       {err && <p className="err">{err}</p>}
     </div>
