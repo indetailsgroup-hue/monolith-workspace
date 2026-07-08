@@ -21,3 +21,6 @@ daph-second-brain/**/blaetterkatalog*
 daph-second-brain/**/Catalogue*
 daph-second-brain/**/BIun*
 daph-second-brain/**/*.zip
+
+*.patch
+ธุระกิจ/
