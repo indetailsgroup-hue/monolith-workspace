@@ -79,6 +79,8 @@ export function LeadPanel({ projectId, onChanged }: { projectId: string; onChang
         ))}
       </div>
 
+      <RaiseIssueCard projectId={projectId} onRaised={loadIssues} />
+
       <QcCard projectId={projectId} />
 
       <div className="card">
@@ -93,6 +95,50 @@ export function LeadPanel({ projectId, onChanged }: { projectId: string; onChang
         {err && <p className="err">{err}</p>}
       </div>
     </>
+  );
+}
+
+// แจ้งปัญหา 4 ประเภท (0121 — มติ D4-4): เลือกปุ่ม ระบบ route เอง — หัวหน้าไม่ต้องจำว่าเรื่องไหนโทรหาใคร
+const ISSUE_CATS = [
+  { key: 'material', label: '🔩 ของขาด/ผิด' },
+  { key: 'design', label: '📐 ตามแบบไม่ได้' },
+  { key: 'scope', label: '💰 ลูกค้าขอเพิ่ม' },
+  { key: 'safety', label: '⚠️ ความปลอดภัย' },
+];
+
+function RaiseIssueCard({ projectId, onRaised }: { projectId: string; onRaised: () => void }) {
+  const [cat, setCat] = useState('');
+  const [desc, setDesc] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  async function raise() {
+    setErr(''); setMsg('');
+    if (!cat || !desc.trim()) { setErr('เลือกประเภท + ใส่รายละเอียดก่อนครับ'); return; }
+    const { error } = await supabase().rpc('rpc_field_raise_issue', {
+      p_project_id: projectId, p_category: cat, p_description: desc.trim(),
+    });
+    if (error) { setErr(error.message); return; }
+    setMsg(cat === 'scope' ? 'ส่งเรื่องแล้ว — เข้าเส้น requote อัตโนมัติ ห้ามตกลงปากเปล่าครับ' : 'ส่งเรื่องถึงคนที่เกี่ยวข้องแล้ว ✅');
+    setCat(''); setDesc('');
+    onRaised();
+  }
+
+  return (
+    <div className="card">
+      <strong>แจ้งปัญหา / ขอความช่วยเหลือ</strong>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+        {ISSUE_CATS.map((c) => (
+          <button key={c.key} className="btn btn-ghost"
+            style={{ minHeight: 44, width: 'auto', flex: '1 1 45%', borderColor: cat === c.key ? 'var(--brand)' : undefined, fontWeight: cat === c.key ? 700 : 400 }}
+            onClick={() => setCat(c.key)}>{c.label}</button>
+        ))}
+      </div>
+      <input placeholder="เกิดอะไรขึ้น (สั้นๆ)" value={desc} onChange={(e) => setDesc(e.target.value)} />
+      <button className="btn btn-primary" onClick={raise}>ส่งเรื่อง — ระบบแจ้งคนที่เกี่ยวข้องให้</button>
+      {msg && <p style={{ color: 'var(--ok)', fontWeight: 600 }}>{msg}</p>}
+      {err && <p className="err">{err}</p>}
+    </div>
   );
 }
 

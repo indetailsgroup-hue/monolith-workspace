@@ -9,6 +9,7 @@ import { ProjectDetail } from './screens/ProjectDetail';
 import { RequirementForm } from './screens/RequirementForm';
 import { MyWork } from './screens/MyWork';
 import { SaleHome } from './screens/SaleHome';
+import { LeaderHome } from './screens/LeaderHome';
 
 export type Route =
   | { name: 'projects' }
@@ -16,7 +17,8 @@ export type Route =
   | { name: 'project'; id: string }
   | { name: 'requirement' }
   | { name: 'my-work' }
-  | { name: 'sale-home' };
+  | { name: 'sale-home' }
+  | { name: 'lead-home' };
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -40,6 +42,8 @@ export function App() {
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginLeft: 'auto', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'sale-home' })}>งานขาย</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
+          onClick={() => setRoute({ name: 'lead-home' })}>หัวหน้า</button>
+        <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'my-work' })}>งานของฉัน</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88' }}
           onClick={() => supabase().auth.signOut()}>ออก</button>
@@ -48,6 +52,7 @@ export function App() {
       {route.name === 'requirement' && <RequirementForm onDone={() => setRoute({ name: 'projects' })} />}
       {route.name === 'my-work' && <MyWork />}
       {route.name === 'sale-home' && <SaleHome onOpenProject={(id) => setRoute({ name: 'project', id })} onNewRequirement={() => setRoute({ name: 'requirement' })} />}
+      {route.name === 'lead-home' && <LeaderHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'new-project' && <NewProject onDone={() => setRoute({ name: 'projects' })} />}
       {route.name === 'project' && <ProjectDetail id={route.id} onBack={() => setRoute({ name: 'projects' })} />}
     </>
