@@ -88,7 +88,7 @@
 
 ## Phase PK: Package + การเงินภายใน (ADR-043 — reconcile 7 ก.ค. 2026)
 
-- [ ] PK-1 Package registry ขยายจาก D-3: หน่วย Package (MW-xxx) ใต้ work item + sub-process 12 ขั้น (takeoff/BOM/cutlist/shop drawing log/finish schedule — data model จาก Home_Construction_Planner เป็น reference) + review gates ราย stage
+- [x] PK-1 — ✅ **`0128` (2026-07-08)**: millwork_stage_defs 12 ขั้น (takeoff→estimate→shop_drawing(G4)→drawing_approval→BOM→cutlist→machining→assembly→finishing→qc_shop→delivery→install_fit; 4 review gates + audit package_gate_passed) + work_packages (MW-xxx regex บังคับ, unique ต่อบ้าน, ผูก work_item — เสียบ D-3) + package_stages (**บังคับลำดับ — ข้ามขั้น block บอกจำนวนค้าง**; ครบ 12 → package done อัตโนมัติ) + rpc create/stage_done/status (current_stage บอกขั้นถัดไป); data model อ้าง Home_Construction_Planner ตาม ADR-043 R-1; บ้านยังเดิน 8 ขั้น canonical ไม่แตะ; ทดสอบ DB 12 เคส ✓
 - [ ] PK-2 ชั้นบัญชี C6 ภายใน: job cost ต่อ package (estimate vs actual, cost-to-complete) + Project P&L ต่อบ้าน (รายรับงวด F3 × ต้นทุน) + accountant handoff/export; retainage = option สัญญา corporate
 
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
