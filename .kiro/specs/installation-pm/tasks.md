@@ -96,6 +96,9 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase FJ — F3 การเงิน (ADR-046, grill 8 ก.ค. 2026)
+- [x] FJ-1…4 — ✅ **`0137` + FinanceHome.tsx (2026-07-08)**: capture payment_slip ผูกงวด (idempotent — F3 กระทบยอดมือ ไม่ต่อ bank API มติ 1) · **rebase rpc_finance_record_payment (0108→0137)**: ใบเสร็จ RC-YYYY-run snapshot + ลิงก์ doc-view + การ์ดขอบคุณอัตโนมัติ (1 งวด = 1 ใบ idempotent; ฟอร์มมี marker รอบัญชี/ทนาย PK-5) · fn_payment_overdue_sweep (cron 03:45 UTC — เตือนสุภาพในกลุ่ม **1 ครั้งเดียว** 5 วัน → 10 วันแจ้งภายใน F3 ครั้งเดียว + Sale เจ้าของใน audit; mapping email→employee = follow-up) + finance_config · rpc_finance_home + UI 3 ส่วน (รอตรวจ+has_slip/ค้างนาน/รับวันนี้ + ปุ่มผูกสลิป→บันทึกรับ) + ปุ่มการเงินบน header · doc_type += receipt (rebase resolve 0136→0137); ops_contacts += F3 + cron 9 ตัว (runbook); ทดสอบ DB 18 เคส ✓ build ✓
+
 ## Phase 2: Mobile + Full Offline — **conditional: เปิดเมื่อ baseline จาก 1.6 ยืนยันว่าจำเป็น** (Req 8.4)
 
 - [ ] 2.0 Gate: review baseline (อัตรา offline, จุดอับสัญญาณ, feedback ช่าง) → owner ตัดสินเปิด/ปิด Phase นี้

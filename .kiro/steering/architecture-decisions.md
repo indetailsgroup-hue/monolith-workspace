@@ -484,3 +484,13 @@ inclusion: always
   3. **ลำดับส่งมอบ**: Wave 1 = image kind + รูป curated ผลิต → Wave 2 = ลิงก์เอกสารเงิน (ใบแจ้งงวด + สัญญา/VO) → Wave 3 = เอกสาร C7/รายงาน PDF
   4. **ลิงก์เอกสารเงิน/สัญญาหมดอายุ 30 วัน** + ขอใหม่ได้จากการ์ดใหม่ + ทุกการเปิดลง audit
 - **Consequences:** sender += LineImageMessage + createSignedMediaUrl (fail-safe: ไม่มี signer/URL = ไม่ส่งมั่ว); templates message_kind += 'image' (0134); producer แรก rpc_field_send_photo_to_customer (curated — office/designer เท่านั้น); Wave 2 = document_links + edge fn doc-view
+
+## ADR-046 — F3 การเงิน: สลิป-กระทบยอดมือ · ใบเสร็จอัตโนมัติ · เตือนค้างสุภาพครั้งเดียว · หน้าเงินของฉัน (grill F3)
+
+- **Status:** Accepted (owner "ก" ทั้ง 4, 8 ก.ค. 2026)
+- **Decision (owner, 4 มติ):**
+  1. **สลิป = capture evidence ผูกงวด + F3 เช็คยอดแบงก์เองแล้วกดบันทึกรับ** — ไม่ต่อ bank API (เจ้าเดียวเช็คเองเร็วกว่า + ไม่มี integration เสี่ยง/แบงก์ไทย API ไม่นิ่ง)
+  2. **ใบเสร็จ generate จากระบบ** (เลขรัน + snapshot จากงวดจริง) → ลิงก์ doc-view ส่งเข้ากลุ่มอัตโนมัติหลังบันทึกรับ; ฟอร์มใบเสร็จ/ใบกำกับต้องผ่าน checklist บัญชี/ทนาย (PK-5) ก่อนใช้จริง — มี marker กำกับ
+  3. **เตือนค้างชำระ**: sweep รายวัน — แจ้งแล้วค้างเกิน X วัน (config, default 5) → เตือนสุภาพในกลุ่ม **1 ครั้งเดียว** → ค้างต่อเกิน Y (default 10) → แจ้งภายใน F3 (+Sale เจ้าของบ้านผ่าน audit — mapping email→employee = follow-up); ห้ามทวงซ้ำในกลุ่ม (ทวงแรง = ทำลายความรักทั้ง journey)
+  4. **หน้าแรก F3 "งานเงินของฉันวันนี้"**: ① งวดรอตรวจ/บันทึกรับ (+แนบสลิป) ② ค้างเกิน X วัน ③ รับแล้ววันนี้รวม — สูตรเดียวกับทุกตำแหน่ง
+- **Consequences:** Phase FJ (0137): capture payment_slip + receipts (RC-YYYY-run) + rebase rpc_finance_record_payment (0108→0137) + finance_config + fn_payment_overdue_sweep (cron ใหม่) + doc_type += receipt + FinanceHome UI; ops_contacts += 'F3' (runbook P5.4)
