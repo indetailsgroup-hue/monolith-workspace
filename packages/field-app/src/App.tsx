@@ -13,6 +13,7 @@ import { LeaderHome } from './screens/LeaderHome';
 import { DesignerHome } from './screens/DesignerHome';
 import { SalesSummary } from './screens/SalesSummary';
 import { FinanceHome } from './screens/FinanceHome';
+import { FactoryHome } from './screens/FactoryHome';
 
 export type Route =
   | { name: 'projects' }
@@ -24,7 +25,8 @@ export type Route =
   | { name: 'lead-home' }
   | { name: 'designer-home' }
   | { name: 'sales-summary' }
-  | { name: 'finance-home' };
+  | { name: 'finance-home' }
+  | { name: 'factory-home' };
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -54,6 +56,8 @@ export function App() {
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'finance-home' })}>การเงิน</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
+          onClick={() => setRoute({ name: 'factory-home' })}>โรงงาน</button>
+        <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88', marginRight: 8, background: 'transparent', borderRadius: 10, border: '1.5px solid #ffffff88', fontFamily: 'inherit', cursor: 'pointer' }}
           onClick={() => setRoute({ name: 'my-work' })}>งานของฉัน</button>
         <button className="btn-ghost" style={{ width: 'auto', minHeight: 36, padding: '4px 12px', color: '#fff', borderColor: '#ffffff88' }}
           onClick={() => supabase().auth.signOut()}>ออก</button>
@@ -64,6 +68,7 @@ export function App() {
       {route.name === 'sale-home' && <SaleHome onOpenProject={(id) => setRoute({ name: 'project', id })} onNewRequirement={() => setRoute({ name: 'requirement' })} onSummary={() => setRoute({ name: 'sales-summary' })} />}
       {route.name === 'sales-summary' && <SalesSummary onBack={() => setRoute({ name: 'sale-home' })} />}
       {route.name === 'finance-home' && <FinanceHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
+      {route.name === 'factory-home' && <FactoryHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'lead-home' && <LeaderHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'designer-home' && <DesignerHome onOpenProject={(id) => setRoute({ name: 'project', id })} />}
       {route.name === 'new-project' && <NewProject onDone={() => setRoute({ name: 'projects' })} />}

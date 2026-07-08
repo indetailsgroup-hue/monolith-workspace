@@ -494,3 +494,13 @@ inclusion: always
   3. **เตือนค้างชำระ**: sweep รายวัน — แจ้งแล้วค้างเกิน X วัน (config, default 5) → เตือนสุภาพในกลุ่ม **1 ครั้งเดียว** → ค้างต่อเกิน Y (default 10) → แจ้งภายใน F3 (+Sale เจ้าของบ้านผ่าน audit — mapping email→employee = follow-up); ห้ามทวงซ้ำในกลุ่ม (ทวงแรง = ทำลายความรักทั้ง journey)
   4. **หน้าแรก F3 "งานเงินของฉันวันนี้"**: ① งวดรอตรวจ/บันทึกรับ (+แนบสลิป) ② ค้างเกิน X วัน ③ รับแล้ววันนี้รวม — สูตรเดียวกับทุกตำแหน่ง
 - **Consequences:** Phase FJ (0137): capture payment_slip + receipts (RC-YYYY-run) + rebase rpc_finance_record_payment (0108→0137) + finance_config + fn_payment_overdue_sweep (cron ใหม่) + doc_type += receipt + FinanceHome UI; ops_contacts += 'F3' (runbook P5.4)
+
+## ADR-047 — B4 Planner: คิวตามวันติดตั้ง+override · BOM ผูกวัสดุจริง · capacity view แบบง่าย · หน้าคิวโรงงาน (grill B4)
+
+- **Status:** Accepted (owner "ก" ทั้ง 4, 8 ก.ค. 2026)
+- **Decision (owner, 4 มติ):**
+  1. **คิวผลิตข้ามบ้าน** เรียงตามวันติดตั้งที่สัญญากับลูกค้า (แผนติดตั้ง sent ล่าสุด — ใกล้สุดก่อน; ไม่มีแผน = ท้ายคิว) + **B4 override ลำดับได้พร้อมเหตุผลลง audit** — เครื่องเรียงตามคำสัญญา คนตัดสินใจสุดท้าย; ปัดตก FIFO (ไม่สนคำสัญญาส่งมอบ)
+  2. **BOM ผูกวัสดุจริงราย package**: รายการ+จำนวน+สถานะ (รอสั่ง→สั่งแล้ว→รับแล้ว, E6 ติ๊กรับ) → รับพร้อมราคา = เข้า Job Cost ราย package อัตโนมัติ · เริ่มตัด (machining) ทั้งที่ของไม่ครบ = **เตือน+audit ไม่ block** (soft — pattern T0) · ของขาดปุ่มเดียว → issue `material` เดิม (route E6/E2/E7)
+  3. **Capacity view แบบง่าย**: จำนวน package ค้างต่อสถานี (ขั้น 7–10) — B4 เห็นคอขวดแล้วตัดสินใจเอง; ปัดตก finite scheduling (ข้อมูลยังไม่พอให้เครื่องฉลาด — pattern matching v1)
+  4. **หน้าแรก B4 "คิวโรงงานวันนี้"**: ① คิว package + ขั้นปัจจุบัน + วัสดุพร้อม/ไม่พร้อม + override ② วัสดุรอรับ/รอสั่ง ③ โหลดต่อสถานี
+- **Consequences:** Phase BQ (0139): work_packages += queue_override · package_materials + RPCs (add/status/shortage→issue) · rebase rpc_field_package_stage_done (0128→0139 — เตือน machining ของไม่ครบ) · rpc_factory_queue/load/home + FactoryHome UI + ปุ่มโรงงาน
