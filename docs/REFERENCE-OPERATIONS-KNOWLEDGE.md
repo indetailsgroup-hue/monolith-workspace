@@ -35,3 +35,17 @@
 ## เขตแดนยืนยันรอบ 3 (ADR-050)
 
 เข้าไม่ได้ตลอดไป: RIBA/retainage/WIP earned-revenue/draw schedule/markup-bid/sales pipeline · RPN ห้ามใช้ sort (null ทั้งระบบ — มีแต่ SEV) · ชีต Six-Sigma โรงพยาบาลใน Control Plan = template ปน ห้าม ingest
+
+## ADR-051 — Pattern spine จาก competitor deep-dives ×10 (C17)
+
+**3 pattern ที่ recur ทุกเจ้า (ยึดเป็นวินัยระบบ):**
+1. **ID-chain traceability** — Package ID + Revision ID ร้อยตั้งแต่ estimate → BOM → cutlist → DXF/G-code/OperationGraph/CNC manifest → Job Cost (IIMOS: MW-xxx + capture spine ครอบอยู่แล้ว)
+2. **Revision-as-delta ไม่ overwrite** — base / delta / approved total (IIMOS: VO+EOT ตรง pattern แล้ว); revision ที่กระทบ CAD/CAM ต้อง block factory release จน regenerate artifacts (มีผ่าน tpl_shop_rev "หยุดใช้ rev เดิม")
+3. **Evidence/claim boundary** — ทุก claim ต้องมี source confidence; "no live integration unless built+tested"; "claim CNC เฉพาะ machine profile ที่ verify แล้ว"
+
+**MONOLITH backlog (จาก deep dives — ฝั่ง CAD/CAM):**
+- Overlay-diff revision QA (On-Screen Takeoff pattern): เทียบ drawing rev เก่า-ใหม่เชิงภาพ → added/removed/changed → ผูก estimate delta
+- Manifest checksum ใน ID-chain (Cabinet Vision pattern): cutlist→DXF→G-code→CNC manifest มี checksum + verified_by/date
+- AI-draft-until-reviewed gate (PlanSwift): ผล auto ใดๆ = draft จนมีผู้ตรวจ + confidence + adjustment
+
+**ยืนยันเขตแดนรอบ 4 (product-only ตลอดไป):** QuickBooks pattern (invoice/retainage/AR-AP/P&L ขายลูกค้า) · Buildertrend pattern (sales pipeline/draw schedule/WIP/client billing portal) · Dynamics ส่วน inventory/fulfillment/ERP-replacement — sliver ที่ดูดแล้ว: item-master↔BOM mapping = มีใน package_materials + order-confirm gate

@@ -530,3 +530,12 @@ inclusion: always
 - **ข้อควรระวังถาวร (pins):** RPN ทั้ง QMS = null (OCC/DET ไม่เคยกรอก — มีแต่ SEV; **ห้าม logic ใด sort ตาม RPN**) · Control Plan ทุกไฟล์มีชีต Six-Sigma โรงพยาบาลปนมา (template เก่า — ห้าม ingest เป็น spec เฟอร์นิเจอร์) · P1/P2/P3 = เลนช่างขนาน (มติ 2026-07-05) · ค่า "XXX/XX N" ใน Control Plan = placeholder ไม่ใช่ตัวเลขจริง (ตัวจริงอยู่ P'Mean + Master Matrix)
 - **ทำทันทีไม่ต้องถาม:** Citadines minimums → docs reference · checklist ทนาย += หัก ณ ที่จ่าย/VAT/PDPA · design 2 สัปดาห์/ขั้น + effort weights → docs · Blum/System-32 vault specs = source ให้ MONOLITH (backlog)
 - **Consequences:** 0143 (Q1–Q3) + 0144 (Q4) + housekeeping commit + docs; kit product-only เดิมคงเขต R-3 ทุกตัว (ยืนยันรอบ 3: retainage/RIBA/draw/sales-pipeline/WIP ไม่เข้า)
+
+## ADR-051 — Reconcile รอบ 4 (C17 competitor deep-dives ×10): Package Estimating v1 + ยืนยันเขตแดน billing
+
+- **Status:** Accepted (owner "ก" ทั้ง 2, 8 ก.ค. 2026 — delta sweep 13 รายงาน)
+- **Decision:**
+  1. **Q1 Package Estimating v1 (Costimator pattern)**: ประเมินต้นทุน package จาก **ชั่วโมงต่อขั้นผลิต (7–10) × เรทแรงงาน + วัสดุจาก BOM + machine allowance** → estimated_cost อัตโนมัติ (แทนกรอกมือ 0129) + **calibration view** เทียบ estimate vs actual สะสมต่อ package ที่จบ — ข้อมูลโตเอง ไม่สัญญาว่าเป็น AI (pattern matching v1); **ห้าม copy สูตร MTI/Costimator — library สร้างจากเรทจริง DAPH**; เรทไม่มี = fail-safe no-guess
+  2. **Q2 เอกสาร/เขตแดน**: pattern spine 3 ข้อ (ID-chain / revision-as-delta ✓ VO ตรงแล้ว / claim boundary) + MONOLITH backlog (overlay-diff revision QA · manifest checksum ID-chain · claim เฉพาะ machine profile ที่ verify) ลง REFERENCE doc · **QuickBooks/Buildertrend/Dynamics(ส่วน ERP) = product-only ยืนยันรอบ 4** (retainage/WIP/draw/pipeline) · เติม C17 ลง README-STATUS ของ kit (doc-sync gap)
+- **ปัดตก/ครอบคลุมแล้ว:** Cabinet Vision chain = MONOLITH มีแล้ว · takeoff pre-layer = BOM จาก CAD ดีกว่า · assembly-pricing-unit + catalog versioning = v2 ภายหลัง (rate_version มีแล้ว) · Bord ต้อง re-verify (403) ก่อน claim ฝั่งโปรดักต์
+- **Consequences:** 0145 (package_estimates + rpc estimate/calibration — rebase estimated_cost path 0129) + docs + kit README-STATUS
