@@ -37,3 +37,21 @@ enabled = false
 
 [realtime]
 enabled = false
+
+# ---------------------------------------------------------------------------
+# Edge Functions — verify_jwt (S7-1, scrutiny รอบ 7):
+# default ของ Supabase = ต้องมี JWT → endpoint ที่ "คนนอก/LINE server" เรียกตรงต้องปิด
+# ความปลอดภัยของแต่ละตัวอยู่ข้างใน: line-webhook/approval-postback = HMAC signature (Vault),
+# line-login = แลก code กับ LINE โดยตรง, doc-view = token uuid อายุจำกัด + audit
+# ---------------------------------------------------------------------------
+[functions.line-webhook]
+verify_jwt = false
+
+[functions.approval-postback]
+verify_jwt = false
+
+[functions.line-login]
+verify_jwt = false
+
+[functions.doc-view]
+verify_jwt = false

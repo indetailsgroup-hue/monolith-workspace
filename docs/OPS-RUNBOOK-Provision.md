@@ -68,6 +68,7 @@
     web-fallback-api notification-retry-worker sla-sweep-scheduler \
     capture-ingest field-capture capture-media-worker line-login doc-view
   ```
+- [ ] **P4.3b** ตรวจว่า deploy อ่าน verify_jwt จาก config.toml: 4 endpoint สาธารณะ (line-webhook / approval-postback / line-login / doc-view) ต้องเปิดได้โดยไม่มี JWT — ทดสอบ: curl doc-view?token=มั่ว ต้องได้หน้า HTML ไม่ใช่ 401
 - [ ] **P4.4** LINE Developers (OA จาก P2.1) → Webhook URL = `https://<ref>.supabase.co/functions/v1/line-webhook` → กด Verify ต้อง 200
 - [ ] **P4.5** ตรวจ Storage bucket `installation-media` เกิดจาก migration (Dashboard → Storage) — ไม่มี = รัน 0099 ส่วน bucket ซ้ำใน SQL Editor
 - [ ] **P4.6 Field PWA**: GitHub repo → Settings → Pages → Source = GitHub Actions → รัน workflow `field-app-pages` (Actions → Run workflow) → เปิด URL ที่ได้ เห็นหน้า login = ผ่าน
