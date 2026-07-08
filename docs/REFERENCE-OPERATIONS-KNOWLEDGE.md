@@ -64,3 +64,5 @@
 ## Market Outlook 2569 (ADR-053)
 
 ดู [MARKET-OUTLOOK-2569.md](MARKET-OUTLOOK-2569.md) — reconcile รายงานตลาด 2 ฉบับ: funnel ปิรามิด (~250k งานเล็ก / 65–80k งานเต็มรูปแบบ), pocket โต = <3 ล้าน + รีโนเวท, supply บ้านใหม่แห้ง 2570–71, ไม้ +3–5%, กลยุทธ์ 4 ทางรอเจ้าของเลือก (turnkey Mass / renovation-first / smart add-on / low-VOC E0) — segment cheat sheet อยู่ใน sale_scripts (0149)
+
+**Turnkey <3M (ADR-055)**: ดู [TURNKEY-PLAYBOOK.md](TURNKEY-PLAYBOOK.md) — MONOLITH backlog เพิ่ม: modular grid SKU 30/45/60/90 ซม. + 3D closed-set configurator (HOPLA/Younique pattern) สำหรับ turnkey mass production

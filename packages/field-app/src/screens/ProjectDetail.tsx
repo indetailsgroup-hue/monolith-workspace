@@ -10,6 +10,7 @@ import { PackagePanel } from './PackagePanel';
 import { PhotoSendCard } from './PhotoSendCard';
 import { VariationPanel } from './VariationPanel';
 import { DesignerToolsPanel } from './DesignerToolsPanel';
+import { TurnkeyCard } from './TurnkeyCard';
 
 interface Lane { id: string; lane: number; assignee_employee_id: string | null; status: string }
 interface Room { id: string; display_name: string; lanes: Lane[] }
@@ -55,6 +56,7 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
         )}
         <button className="btn btn-accent" onClick={issueCode}>ออกรหัสผูกกลุ่ม LINE</button>
       </div>
+      <TurnkeyCard projectId={id} />
       <MoneyPanel projectId={id} />
       <VariationPanel projectId={id} />
       <ContractPanel projectId={id} />

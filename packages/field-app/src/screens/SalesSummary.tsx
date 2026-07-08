@@ -4,15 +4,20 @@ import { supabase } from '../lib/supabase';
 
 interface BySale { sale: string; houses_opened: number; contracts_signed: number; signed_value: number }
 interface Lost { reason: string; n: number }
+interface BySource { source: string; total: number; lost: number; converted: number }
 interface Summary {
   period: { from: string; to: string };
-  by_sale: BySale[]; lost_reasons: Lost[];
+  by_sale: BySale[]; lost_reasons: Lost[]; by_source: BySource[];
   totals: { houses_opened: number; contracts_signed: number; signed_value: number };
 }
 
 const THB = (n: number) => Number(n).toLocaleString('th-TH');
 const REASON_TH: Record<string, string> = {
   too_expensive: 'แพงไป', went_quiet: 'เงียบหายเอง', competitor: 'ไปเจ้าอื่น', other: 'อื่นๆ',
+};
+export const SOURCE_TH: Record<string, string> = {
+  developer: '🏗️ โครงการ/developer', agent: '🤝 agent แนะนำ', tiktok: '🎵 TikTok',
+  facebook: '📘 Facebook', line_organic: '💬 LINE ทักเอง', referral: '⭐ ลูกค้าเก่าแนะนำ', walk_in: '🚶 walk-in',
 };
 
 export function SalesSummary({ onBack }: { onBack: () => void }) {
@@ -48,6 +53,19 @@ export function SalesSummary({ onBack }: { onBack: () => void }) {
           <div key={r.sale} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
             <div style={{ fontWeight: 700 }}>{r.sale}</div>
             <div className="muted">เปิด {r.houses_opened} บ้าน · เซ็น {r.contracts_signed} สัญญา · {THB(r.signed_value)} บาท</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <strong>Lead ต่อช่องทาง (สะสม — วัดก่อนเทงบการตลาด)</strong>
+        {s.by_source.length === 0 && <p className="muted">ยังไม่ได้ระบุที่มา lead — กดเลือกได้ในหน้า Sale</p>}
+        {s.by_source.map((b) => (
+          <div key={b.source} style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{SOURCE_TH[b.source] ?? b.source}</span>
+              <span><strong>{b.converted}</strong>/{b.total} เป็นงาน{b.lost > 0 ? ` · หลุด ${b.lost}` : ''}</span>
+            </div>
           </div>
         ))}
       </div>

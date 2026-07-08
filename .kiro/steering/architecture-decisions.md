@@ -576,3 +576,16 @@ inclusion: always
 **ปัดตก**: B2B developer kit (margin ต่ำ+ผูก supply ที่แห้ง) · Luxury push (ตลาด −14.9%)
 
 **Consequences**: 0150 (project_type + survey renovation gate rebase 0142 + referral rebase fn_after_sales_sweep 0130 + tpl_referral + addon_catalog/package_addons + cabinet_wall_list rebase 0148 e_grade + sale_scripts health) + UI (NewProject toggle, SurveyHome, DesignerToolsPanel, PackagePanel)
+
+## ADR-055: Turnkey <3M productized + lead source attribution (2026-07-09)
+
+**บริบท**: รายงาน Turnkey Package คอนโด <3M (Gen Y/Z: Perceived Value R²=.746, Time-based Risk = ตัวยับยั้งหลัก; ช่องว่างตลาด 80–200k ระหว่าง SB กับ Richmont's) — เสริม ADR-054 ไม่ขัด (Renovation-first ยังเป็นแกน; รายงานเองชี้หนีไป resale+rental เมื่อ permit −71%)
+
+**มติ (ก ทั้งสาม)**:
+- **Q1 turnkey_offers catalog** 3 tier (Starter 55k/21วัน/ประกัน 5ปี · Standard 100k/30วัน/10ปี · Plus 175k/45วัน/15ปี — ราคากลาง เจ้าของแก้ผ่าน rpc): attach เข้าบ้าน → **stamp ราคา+วันส่งมอบสัญญา (promised_date)+scope snapshot** ลง audit — ตอบ Time-based Risk; ห้าม attach ซ้ำหลังสัญญาเซ็น; upsell ต่อด้วย addon_catalog 0150
+- **Q2 lead_source** บน line_oa_conversations (developer/agent/tiktok/facebook/line_organic/referral/walk_in) + list_leads rebase 0130 + sales_summary rebase 0119 เพิ่ม by_source (สะสม: total/lost/converted) — เส้น R-3: attribution ได้ / pipeline board+forecast ไม่ทำ
+- **Q3 docs/TURNKEY-PLAYBOOK.md** เล่มธุรกิจ (tier/COGS 55–65%/unit economics/ช่องทาง 3 ทาง + ค่าคอม/roadmap 90 วัน/KPI ปี 1/แผนที่คู่แข่ง)
+
+**ปัดตก**: agent commission ledger (รอมี agent จริง — การเงินห้ามเดาล่วงหน้า) · TikTok/CRM tooling (นอก IIMOS) · modular grid SKU + 3D configurator (MONOLITH backlog) · เฟอร์ลอยตัว/เครื่องใช้ไฟฟ้า (เข้า BOM เดิมได้)
+
+**Consequences**: 0151 + docs + UI (SaleHome source picker / SalesSummary by_source / ProjectDetail TurnkeyCard)

@@ -96,6 +96,11 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase TK — ADR-055 Turnkey <3M + lead source (9 ก.ค. 2026)
+- [x] TK-1 — ✅ **`0151`** turnkey_offers 3 tier seed + project_turnkey snapshot (ราคา/scope/promised_date = fn_business_date()+delivery_days/ประกัน) + attach block หลังสัญญาเซ็น (เปลี่ยน = เส้น VO) + rpc offers/set(governance)/attach/get; UI TurnkeyCard ใน ProjectDetail
+- [x] TK-2 — ✅ lead_source 7 ค่า + rpc set + list_leads rebase 0130 + sales_summary rebase 0119 (+by_source total/lost/converted สะสม); UI: SaleHome select ต่อ lead + SalesSummary ตารางช่องทาง; ทดสอบ 15 เคส ✓ build ผ่าน
+- [x] TK-3 — ✅ docs/TURNKEY-PLAYBOOK.md (tier/COGS/unit economics/ช่องทาง+ค่าคอม/roadmap 90 วัน/KPI/เส้นแดง) + REFERENCE เพิ่ม MONOLITH backlog (modular grid SKU + configurator); ปัดตก: agent commission ledger รอ agent จริง
+
 ## Phase ST — ADR-054 กลยุทธ์ 2569 (9 ก.ค. 2026)
 - [x] ST-1 — ✅ **`0150`** Renovation-first: project_type (create_project rebase 0102, drop เก่า) + survey_handoff rebase 0142: งานรีโนเวทบังคับเช็ค 3 เรื่อง (โครงสร้างเดิม/ไฟเก่า/ขอบเขตรื้อ — กัน hidden_condition VO) + tpl_review_referral เสริมมุมรีโนเวทห้องถัดไป (การ์ด J2.11 มีอยู่แล้ว — ไม่สร้างซ้ำ); UI: NewProject toggle + SurveyHome 3 ช่อง
 - [x] ST-2 — ✅ Smart add-on: addon_catalog 3 ตัวเริ่ม + package_addons (price snapshot — แก้ catalog ไม่เพี้ยนย้อนหลัง) + rpc catalog/set(governance)/toggle/list; UI: AddonCard ใน PackagePanel

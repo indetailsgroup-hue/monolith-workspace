@@ -2,8 +2,9 @@
 // ① lead ต้องตาม (เงียบนานสุดก่อน) ② บ้านที่รอ Sale ③ ปุ่มใหญ่เปิดใบใหม่
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { SOURCE_TH } from './SalesSummary';
 
-interface Lead { conversation_id: string; days_silent: number; last_activity_at: string }
+interface Lead { conversation_id: string; days_silent: number; last_activity_at: string; lead_source: string | null }
 interface House { project_id: string; name: string; waiting_on: { key: string; label: string }[] }
 interface Home { leads: Lead[]; houses: House[] }
 
@@ -36,6 +37,15 @@ export function SaleHome({ onOpenProject, onNewRequirement, onSummary }: {
     load();
   }
 
+  async function setSource(id: string, source: string) {
+    setErr('');
+    const { error } = await supabase().rpc('rpc_field_set_lead_source', {
+      p_conversation_id: id, p_source: source,
+    });
+    if (error) { setErr(error.message); return; }
+    load();
+  }
+
   if (err && !home) return <div className="page"><p className="err">{err}</p></div>;
   if (!home) return <div className="page muted">กำลังโหลด…</div>;
 
@@ -49,6 +59,11 @@ export function SaleHome({ onOpenProject, onNewRequirement, onSummary }: {
         {home.leads.map((l) => (
           <div key={l.conversation_id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
             <div>ลูกค้าเงียบมา <strong>{l.days_silent} วัน</strong> — ทักไปหน่อยครับ</div>
+            <select value={l.lead_source ?? ''} onChange={(e) => e.target.value && setSource(l.conversation_id, e.target.value)}
+              style={{ marginTop: 4 }}>
+              <option value="">— ลูกค้ารู้จักเราจากไหน? (วัดช่องทาง) —</option>
+              {Object.entries(SOURCE_TH).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+            </select>
             {closing !== l.conversation_id ? (
               <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 6 }}
                 onClick={() => setClosing(l.conversation_id)}>ปิด lead นี้</button>
