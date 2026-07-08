@@ -516,3 +516,17 @@ inclusion: always
 - **Status:** Accepted (owner "ก", 8 ก.ค. 2026)
 - **Decision:** (1) รายงานสถานี**คงเปิดใครก็ได้ ไม่เพิ่ม approval ชั้นใหม่** (ไลน์ต้องไหล) — วินัยจากความ visible: E2 เห็นสรุป "รายงานวันนี้" สถานี×บ้าน×คนรายงาน; (2) **check-in รวมโรงงานต่อวัน** (E2 กดคนเดียว+ติ๊กใครมา ไม่ผูกบ้าน) → man-hours = **overhead กลาง** ให้ C6 กระจายตอนวิเคราะห์ (ปัดตกผูกชั่วโมงต่อ package — ช่างสลับงานทั้งวัน friction สูง บทเรียน D4-2); (3) หน้าแรก E2 แยกจาก B4 (ต่างมุม: B4 จัดคิว / E2 เดินงาน): คิวเดียวกับ B4 · gate รอ designer นานสุดก่อน · เข้างานโรงงานวันนี้ + รายงานวันนี้
 - **Consequences:** Phase EQ (0141): factory_checkins (ไม่ผูกบ้าน) + rpc_factory_ops_home + FactoryOpsHome UI (ปุ่ม "ผลิต"); production_milestones.reported_by มีอยู่แล้ว — สรุปวันนี้อ่านตรง
+
+## ADR-050 — Reconcile รอบ 3 (ฉบับใหญ่): QMS จริง DAPH 2020 + kit C1–C17 + vault เข้าระบบ (owner "ก" ทั้ง 5 + ยืนยัน 3)
+
+- **Status:** Accepted (grill 5 สาย sweep — generators/kit HTML/superpowers/artifacts/DAPH workbooks 34 เล่ม 127 ชีต, 8 ก.ค. 2026)
+- **Decision (owner):**
+  1. **Q1 ความจริงโรงงาน**: station checklist ผูกรายงานสถานี (soft+audit) + **Special Characteristics เป็นช่องบังคับ** (Laminate: กดทับ ≥3 ชม./ทับ ≤5 แผ่น) + threshold จริง (ใบเลื่อย 150–200 แผ่น · edging เป่า 15 นาที · incoming ไม่แตก/บิ่น/โก่ง · วัดทุกชิ้นหลังตัด) + **gate ยืนยันก่อนสั่งวัสดุ (SEV 10 สูงสุดทั้งระบบ)** ใน BOM flow
+  2. **Q2 Design integrity** (จากความเจ็บจริงใน PFMEA Revise 1): capture `design_handoff` ("Final ถึง Production = 3D เท่านั้น" + ยืนยัน drawing/3D sync) · shop drawing revision บังคับยืนยันแก้คู่ (drawing+3D) · T0 เตือนถ้ายังไม่มีรูปบ้านเดิม (photo+video liability — soft+audit)
+  3. **Q3 EOT = reuse VO** (ไม่สร้างฟอร์มใหม่): VO += delay_category 6 ค่า (weather/client_decision/lead_time/hidden_condition/subcontractor/permit) + notice_date
+  4. **Q4 เสริมขาย/ออกแบบ**: quote 6 หมวด (อธิบายในเอกสาร investment + estimate) · capture `cabinet_wall_list` 7 fields · red-flag hints ตอน qualify (4 ข้อ) · script bank Sale (ปฏิเสธสุภาพ/เตรียม consult/ตาม proposal) · **อบรม Sale ทุก 3 เดือน (cron เตือน H1)**
+  5. **Q5 Housekeeping**: track `daph-second-brain/` + `docs/new-folder-workbook-audit/`; gitignore `New folder*/` + `_daph_extract/` (ต้นทาง xlsx/scripts — extract เป็น text แล้ว)
+- **ยืนยัน 3 จุด (canonical pins):** ① ลำดับ 3D_Presentation → Production_Planning → 3D_Rendering_Final ยืนตาม knowledge export ② approval quorums = design decision ที่ยืนยันแล้ว (ไม่ใช่ของเดิมบริษัท) ③ millwork 12 ขั้นของ IIMOS ยืน (kit ใช้ 13 = ของโปรดักต์)
+- **ข้อควรระวังถาวร (pins):** RPN ทั้ง QMS = null (OCC/DET ไม่เคยกรอก — มีแต่ SEV; **ห้าม logic ใด sort ตาม RPN**) · Control Plan ทุกไฟล์มีชีต Six-Sigma โรงพยาบาลปนมา (template เก่า — ห้าม ingest เป็น spec เฟอร์นิเจอร์) · P1/P2/P3 = เลนช่างขนาน (มติ 2026-07-05) · ค่า "XXX/XX N" ใน Control Plan = placeholder ไม่ใช่ตัวเลขจริง (ตัวจริงอยู่ P'Mean + Master Matrix)
+- **ทำทันทีไม่ต้องถาม:** Citadines minimums → docs reference · checklist ทนาย += หัก ณ ที่จ่าย/VAT/PDPA · design 2 สัปดาห์/ขั้น + effort weights → docs · Blum/System-32 vault specs = source ให้ MONOLITH (backlog)
+- **Consequences:** 0143 (Q1–Q3) + 0144 (Q4) + housekeeping commit + docs; kit product-only เดิมคงเขต R-3 ทุกตัว (ยืนยันรอบ 3: retainage/RIBA/draw/sales-pipeline/WIP ไม่เข้า)

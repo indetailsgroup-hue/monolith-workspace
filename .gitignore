@@ -10,3 +10,14 @@ test-results/
 supabase/.branches/
 supabase/.temp/
 packages/field-app/dist/
+
+# ADR-050 Q5: ต้นทาง xlsx/สคริปต์ extract (ความรู้ถูกดึงเป็น text ใน docs/new-folder-workbook-audit + daph-second-brain แล้ว)
+New folder/
+New folder (2)/
+_daph_extract/
+# ADR-050: vault เก็บเฉพาะความรู้ text — แคตตาล็อก binary ยักษ์อยู่นอก git (2.8GB+)
+daph-second-brain/**/*.pdf
+daph-second-brain/**/blaetterkatalog*
+daph-second-brain/**/Catalogue*
+daph-second-brain/**/BIun*
+daph-second-brain/**/*.zip
