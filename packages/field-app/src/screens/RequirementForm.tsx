@@ -78,6 +78,10 @@ export function RequirementForm({ onDone }: { onDone: () => void }) {
           </div>
         ))}
         <p className="muted">ค่าที่ลูกค้ายังไม่ตัดสินใจ ให้พิมพ์ "TBD" — อย่าปล่อยว่างถ้าคุยแล้ว</p>
+        <p className="muted" style={{ fontSize: 14 }}>
+          🚩 สัญญาณเตือนก่อนรับงาน (ADR-050): ไม่มีผู้ตัดสินใจตัวจริง · ไม่มีแบบ/เอกสารใดๆ ·
+          งานต้องขออนุญาตแต่ไม่ยอมให้ตรวจ · ปฏิเสธการอนุมัติเป็นลายลักษณ์อักษร/มัดจำ — เจอ 1 ข้อ ปรึกษาหัวหน้าก่อนเปิดงาน
+        </p>
         <button className="btn btn-primary" onClick={submit} disabled={!ok || busy}>
           {busy ? 'กำลังบันทึก…' : 'บันทึก + เปิดงาน'}
         </button>
