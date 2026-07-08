@@ -461,3 +461,15 @@ inclusion: always
   2. **R-2**: การเงินสองชั้น — ลูกค้า 50/30/15/5 (SSOT ยืน) · WIP/Job Cost/C6 = ชั้นบัญชีวิเคราะห์ภายใน (margin จริงต่อบ้าน — ผูก ledger) · retainage = option สัญญา corporate เท่านั้น
   3. **R-3**: ชุดเทมเพลต = โปรดักต์ขายแยก + README-STATUS.md กั้นเขต (RIBA/Sales Gate/retainage-default = ของโปรดักต์ ห้ามใช้ภายใน)
 - **Consequences:** backlog ใหม่ 2 ก้อน (tasks Phase PK): Package registry ขยายจาก D-3 (takeoff/BOM/cutlist/shop-drawing/finish ราย package) + ชั้นบัญชี C6 (job cost, Project P&L, accountant handoff); ไม่มีการแตะ canonical/ADR-041
+
+## ADR-044 — Reconcile kit รอบ 2 (C7–C12): Variation Order เข้าระบบ · C8 checklist เป็น legal gate · เนื้อหาลูกค้าเข้าคิว sender
+
+- **Status:** Accepted (owner "ก", 8 ก.ค. 2026)
+- **Context:** ชุด Interior Design Studio System โตจาก C6 → C12 หลัง reconcile รอบแรก (C7 แปลไทยเอกสารลูกค้า · C8 professional review guardrails · C10 contractor forms 12 ตระกูล · C11 portal sheets · C12 studio bundle); ตรวจแล้วส่วนใหญ่เป็นชั้นโปรดักต์ตาม R-3 แต่มีความรู้ 4 ก้อนที่อุดช่องว่างระบบจริง
+- **Decision (owner, 4 มติ — ดูดความรู้เข้าโครงที่มี ไม่ลาก workbook มาเป็นระบบขนาน):**
+  1. **R-4**: Variation Order (C10-04) = เอกสาร scope change ของจริงในระบบ — generate จากข้อมูลก้อนเดียว (pattern สัญญา 0117) + เซ็นกระดาษ → capture `signed_variation_order` → approve; ปิดวรรค "ห้ามตกลงปากเปล่า" (ADR-037/D4-4/B2-2) ด้วยเอกสารที่เถียงไม่ได้; กฎในฟอร์มตรงมติเดิมทุกข้อ (ไม่เริ่มงานส่วนที่เปลี่ยนจนกว่าอนุมัติ · price/time impact ชัด · แนบหลักฐาน); การปรับงวดจาก VO = F3 ปรับแผนผ่านเส้น 0108 เดิม (SSOT ยืน)
+  2. **R-5**: Progress Claim (C10-06) = ใบแจ้งงวดแนบการ์ด — เข้าคิว follow-up "sender รองรับไฟล์" (ไม่สร้างระบบใหม่ตอนนี้)
+  3. **R-6**: C8 Agreement Review Checklist + Caveat Library = **legal gate ของเอกสารบริษัท** — แปลงเป็น `docs/CONTRACT-REVIEW-CHECKLIST.md` (ปรับบริบท DAPH: สัญญา 0117 + VO) ใช้เป็น agenda ตอนส่งทนาย review skeleton + เกทใน runbook ก่อนใช้เอกสารกับลูกค้าจริง; ติ๊กครบ ≠ legal approval (เป็นเครื่องมือเตรียมส่งต่อผู้เชี่ยวชาญ)
+  4. **R-7**: เนื้อหาลูกค้า C7 (Welcome Pack / Investment Guide / Journey Timeline ไทย) = ไฟล์ส่งกลุ่มช่วง qualify/onboarding — เข้าคิว sender เดียวกับ R-5
+- **ปัดตก:** C11 portal sheets (มี PWA จริงแล้ว — workbook ด้อยกว่า) · C12 pipeline/tracker (ซ้ำ SJ-2/SJ-5 ที่เป็นระบบจริง) · artifacts ทั้งโฟลเดอร์ (build outputs + Linden reference ห้าม copy ตาม design ของ kit เอง) · RIBA/Sales Gate/retainage (คงห้ามตาม R-3)
+- **Consequences:** tasks ใหม่ PK-3 (VO — implement ทันที) · follow-up sender += ใบแจ้งงวด + เอกสารลูกค้า C7 · README-STATUS ของ kit อัปเดตรายการ merge · docs/superpowers คงเป็น log ฝั่งโปรดักต์ตามสภาพ
