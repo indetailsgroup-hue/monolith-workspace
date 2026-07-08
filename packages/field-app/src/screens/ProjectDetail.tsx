@@ -7,6 +7,7 @@ import { RosterPanel } from './RosterPanel';
 import { PlanPanel } from './PlanPanel';
 import { ContractPanel } from './ContractPanel';
 import { PackagePanel } from './PackagePanel';
+import { PhotoSendCard } from './PhotoSendCard';
 
 interface Lane { id: string; lane: number; assignee_employee_id: string | null; status: string }
 interface Room { id: string; display_name: string; lanes: Lane[] }
@@ -58,6 +59,7 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
       <ProductionPanel projectId={id} />
       <RosterPanel projectId={id} />
       <PlanPanel projectId={id} />
+      <PhotoSendCard projectId={id} />
       <LeadPanel projectId={id} onChanged={load} />
       {d.rooms.map((r) => (
         <div key={r.id} className="card">

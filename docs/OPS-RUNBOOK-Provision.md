@@ -62,11 +62,11 @@
   -- ต้องเห็น: wf-after-sales-sweep · wf-daily-digest · wf-gate-sla-sweep · wf-issue-sla-sweep
   --          wf-lead-followup-sweep · wf-media-fetch · wf-notification-retry · wf-sla-sweep
   ```
-- [ ] **P4.3** Deploy edge functions **10 ตัว**:
+- [ ] **P4.3** Deploy edge functions **11 ตัว**:
   ```
   supabase functions deploy line-webhook line-outbound-sender approval-postback \
     web-fallback-api notification-retry-worker sla-sweep-scheduler \
-    capture-ingest field-capture capture-media-worker line-login
+    capture-ingest field-capture capture-media-worker line-login doc-view
   ```
 - [ ] **P4.4** LINE Developers (OA จาก P2.1) → Webhook URL = `https://<ref>.supabase.co/functions/v1/line-webhook` → กด Verify ต้อง 200
 - [ ] **P4.5** ตรวจ Storage bucket `installation-media` เกิดจาก migration (Dashboard → Storage) — ไม่มี = รัน 0099 ส่วน bucket ซ้ำใน SQL Editor
