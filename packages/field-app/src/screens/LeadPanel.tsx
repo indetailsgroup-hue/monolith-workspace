@@ -21,9 +21,10 @@ export function LeadPanel({ projectId, onChanged }: { projectId: string; onChang
 
   async function saveT0() {
     setErr(''); setMsg('');
-    const { error } = await supabase().rpc('rpc_field_t0_snapshot', { p_project_id: projectId, p_checklist: t0 });
+    const { data, error } = await supabase().rpc('rpc_field_t0_snapshot', { p_project_id: projectId, p_checklist: t0 });
     if (error) { setErr(error.message); return; }
-    setMsg('บันทึกความพร้อมหน้างานแล้ว ✅');
+    const warn = (data as { photo_warning: string | null } | null)?.photo_warning;
+    setMsg(warn ? `บันทึกแล้ว ⚠️ ${warn}` : 'บันทึกความพร้อมหน้างานแล้ว ✅');
   }
 
   async function closeHouse() {
