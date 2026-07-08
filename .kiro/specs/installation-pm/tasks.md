@@ -76,7 +76,7 @@
 
 - [x] DJ-1 — ✅ **`0120` (2026-07-08)**: site_checkins (unique บ้าน×วัน; members ติ๊กจาก roster) — หัวหน้ากดคนเดียว เช้าเข้า/เย็นออก (idempotent ทั้งคู่; ติ๊ก 0 คน block; checkout ไม่เคย checkin = error ชัด) → man-hours = ชม.×คน → **วางฐาน job_cost_entries (labor/material/rework/other — RLS ชั้นภายใน ADR-043 R-2 member ไม่เห็นต้นทุน) + job_cost_config เรทแรงงาน (governance ตั้ง; ไม่มีเรท = บันทึก qty ไว้ amount ว่าง+note ให้ PK-2 backfill — fail-safe no-guess)**; rpc_field_today_checkin ป้อนปุ่ม next-action DJ-4; ทดสอบ DB 10 เคส ✓ (8ชม.×3คน=24mh · 4ชม.×2คน×65=520)
 - [ ] DJ-2 รายงานประจำวันประกอบอัตโนมัติ (เลน+รูป+ปัญหา+ชั่วโมง → หัวหน้าเติมหมายเหตุ+ส่ง → D3/D2/PM + PDF — รวม task 1.6) (D4-3)
-- [ ] DJ-3 Issue categories + routing map (ของขาด→E6/E2/E7 · ตามแบบไม่ได้→B2/B4 · ลูกค้าขอเพิ่ม→Sale/PM+requote ADR-037 · ความปลอดภัย→D3/HSE ข้าม quiet hours) + SLA→D1 (D4-4)
+- [x] DJ-3 — ✅ **`0121` (2026-07-08)**: issues += category/acked/escalated + **issue_routing map** (material→E6,E2,E7 sla 120น. · design→B2,B4 120น. · scope→Sale,D1 240น. **+ flag scope_change_flagged เข้าเส้น requote ADR-037 ห้ามตกลงปากเปล่า** · safety→D3,HSE 30น. **bypass quiet hours**) + ops_contacts (D1 PM กลาง — governance ตั้ง); rpc_field_raise_issue route ถึงทุก binding ที่ app_role ตรง (fail-soft รายคน; **ไม่มีคนตรง role เลย → ไต่ D1 ทันที**) + rpc_field_ack_issue (open→acknowledged idempotent) + fn_issue_sla_sweep (pg_cron */15 นาที: เกิน SLA ไม่มี ack → ไต่ D1 ครั้งเดียวต่อ issue); ทดสอบ DB 12 เคส ✓
 - [ ] DJ-4 หน้าแรกหัวหน้า Wave B: multi-house เรียงเร่งด่วน + ตาราง state→next-action + ทุกแจ้งเตือน tag ชื่อบ้าน (D4-1/D4-5)
 
 ## Phase BJ: Designer Journey (grill 7 ก.ค. 2026 — position-journeys.md §B2)
