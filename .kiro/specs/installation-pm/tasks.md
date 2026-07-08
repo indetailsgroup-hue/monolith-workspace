@@ -74,7 +74,7 @@
 
 ## Phase DJ: Installation Team Lead Journey (grill 7 ก.ค. 2026 — position-journeys.md §D4)
 
-- [ ] DJ-1 Check-in/out รวมทีมต่อบ้านต่อวัน (หัวหน้ากดคนเดียว + ติ๊กใครมาจาก roster) → ชั่วโมง×คน เข้า Job Cost PK-2 อัตโนมัติ (D4-2)
+- [x] DJ-1 — ✅ **`0120` (2026-07-08)**: site_checkins (unique บ้าน×วัน; members ติ๊กจาก roster) — หัวหน้ากดคนเดียว เช้าเข้า/เย็นออก (idempotent ทั้งคู่; ติ๊ก 0 คน block; checkout ไม่เคย checkin = error ชัด) → man-hours = ชม.×คน → **วางฐาน job_cost_entries (labor/material/rework/other — RLS ชั้นภายใน ADR-043 R-2 member ไม่เห็นต้นทุน) + job_cost_config เรทแรงงาน (governance ตั้ง; ไม่มีเรท = บันทึก qty ไว้ amount ว่าง+note ให้ PK-2 backfill — fail-safe no-guess)**; rpc_field_today_checkin ป้อนปุ่ม next-action DJ-4; ทดสอบ DB 10 เคส ✓ (8ชม.×3คน=24mh · 4ชม.×2คน×65=520)
 - [ ] DJ-2 รายงานประจำวันประกอบอัตโนมัติ (เลน+รูป+ปัญหา+ชั่วโมง → หัวหน้าเติมหมายเหตุ+ส่ง → D3/D2/PM + PDF — รวม task 1.6) (D4-3)
 - [ ] DJ-3 Issue categories + routing map (ของขาด→E6/E2/E7 · ตามแบบไม่ได้→B2/B4 · ลูกค้าขอเพิ่ม→Sale/PM+requote ADR-037 · ความปลอดภัย→D3/HSE ข้าม quiet hours) + SLA→D1 (D4-4)
 - [ ] DJ-4 หน้าแรกหัวหน้า Wave B: multi-house เรียงเร่งด่วน + ตาราง state→next-action + ทุกแจ้งเตือน tag ชื่อบ้าน (D4-1/D4-5)
