@@ -1,8 +1,8 @@
-# Ops Runbook — Provision ฉบับกดตามทีละขั้น (chain 0000→0142)
+# Ops Runbook — Provision ฉบับกดตามทีละขั้น (chain 0000→0144)
 
 > **ฉบับนี้แทน** [OPS-RUNBOOK-Wave2.md](OPS-RUNBOOK-Wave2.md) (ยุค 0099) — รวมทุกอย่างที่เพิ่มหลังจากนั้น:
 > Field PWA 8 บทบาท (ขาย/หัวหน้า/ดีไซน์/การเงิน/โรงงาน B4/ผลิต E2/วัด C1/ช่าง) · LINE Login · การเงิน 4 งวด · โรงงาน 6 สถานี · roster · after-sales · lead follow-up ·
-> Job Cost/C6 · cron 10 ตัว — **ทำตามลำดับบนลงล่าง ติ๊กทีละข้อ ห้ามข้าม** (ลำดับ seed สำคัญ)
+> Job Cost/C6 · cron 11 ตัว — **ทำตามลำดับบนลงล่าง ติ๊กทีละข้อ ห้ามข้าม** (ลำดับ seed สำคัญ)
 >
 > เวลาโดยประมาณทั้งหมด: ~2–3 ชั่วโมง (ไม่รวมรอ LINE อนุมัติ channel)
 
@@ -55,7 +55,7 @@
 
 ## P4 · Deploy (20 นาที)
 
-- [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0142 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
+- [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0144 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
 - [ ] **P4.2** ตรวจ cron เกิดครบ **11 ตัว** (SQL Editor):
   ```sql
   select jobname, schedule from cron.job order by jobname;
