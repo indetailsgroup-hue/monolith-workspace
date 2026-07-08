@@ -7,7 +7,10 @@ interface RosterRow {
   display_name: string; role_ref: string; status: string;
 }
 interface Status { roster: RosterRow[]; missing: number; unexpected_guests: number }
-interface Candidate { employee_id: string; display_name: string; active_houses: number }
+interface Candidate {
+  employee_id: string; display_name: string; active_houses: number;
+  tag_matches?: number; completed_houses?: number; rework_count?: number; style_tags?: string[];
+}
 
 const PHASE_TH: Record<string, string> = { survey: 'วัดหน้างาน', design: 'ออกแบบ', installation: 'ติดตั้ง' };
 const STATUS_TH: Record<string, string> = {
@@ -28,7 +31,7 @@ export function RosterPanel({ projectId }: { projectId: string }) {
   useEffect(load, [load]);
 
   async function openPick() {
-    const { data, error } = await supabase().rpc('rpc_field_designer_candidates');
+    const { data, error } = await supabase().rpc('rpc_field_designer_candidates', { p_project_id: projectId });
     if (error) { setErr(error.message); return; }
     setCands((data ?? []) as Candidate[]);
     setShowPick(true);
@@ -96,12 +99,13 @@ export function RosterPanel({ projectId }: { projectId: string }) {
         <button className="btn btn-accent" style={{ marginTop: 10 }} onClick={openPick}>เลือกดีไซเนอร์ให้บ้านนี้</button>
       ) : (
         <div style={{ marginTop: 10 }}>
-          <div className="muted">เรียงจากงานในมือน้อยสุด — แตะเพื่อเลือก</div>
+          <div className="muted">เรียงให้แล้ว: สไตล์ตรง Mood&Tone → rework น้อย → ประสบการณ์ → งานในมือ</div>
           {cands.length === 0 && <p className="muted">ยังไม่มีดีไซเนอร์ผูก LINE ในระบบ</p>}
           {cands.map((c) => (
-            <button key={c.employee_id} className="btn btn-ghost" style={{ display: 'block', width: '100%', marginTop: 6 }}
+            <button key={c.employee_id} className="btn btn-ghost" style={{ display: 'block', width: '100%', marginTop: 6, textAlign: 'left' }}
               onClick={() => pickDesigner(c)}>
-              {c.display_name} — งานในมือ {c.active_houses} บ้าน
+              <div>{(c.tag_matches ?? 0) > 0 ? '⭐ ' : ''}{c.display_name}{(c.style_tags ?? []).length > 0 ? ` · ${(c.style_tags ?? []).join('/')}` : ''}</div>
+              <div className="muted" style={{ fontSize: 14 }}>จบแล้ว {c.completed_houses ?? 0} บ้าน · rework {c.rework_count ?? 0} · ในมือ {c.active_houses}</div>
             </button>
           ))}
           <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 6 }} onClick={() => setShowPick(false)}>ปิด</button>
