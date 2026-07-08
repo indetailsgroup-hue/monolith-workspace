@@ -96,6 +96,14 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase UI — UI Wave ปิด gap 0143–0147 (8 ก.ค. 2026)
+- [x] UI-1 — ✅ แก้จุดพัง: FactoryHome ปุ่ม 'สั่งแล้ว' ไม่ส่ง p_order_confirmed (0143 SEV 10) → confirm dialog + ส่ง; + CalibrationCard (bias วัสดุ + รายบ้าน)
+- [x] UI-2 — ✅ ProductionPanel: ปุ่ม 'รายงานจบ' ทุกสถานี + checklist จาก factory_station_checklists (SC ⭐ ตัวหนา) + ลามิเนตกรอกชั่วโมงกดทับ/จำนวนซ้อน + แสดง checklist/sc warning จาก fn
+- [x] UI-3 — ✅ SaleHome: PriceEstimateCard (ตร.ม.×เกรดจาก price_rates → ช่วงราคา + hidden_cost_note + กรอบตลาด sqm collapsible) — มติ Sale-1 ตัวเลขมี snapshot
+- [x] UI-4 — ✅ PackagePanel: EstimateCard (ชั่วโมง 4 ขั้น + วัสดุ override/BOM + allowance + เทียบ band หมวด×ความยาว → band_warning)
+- [x] UI-5 — ✅ DesignerToolsPanel ใหม่ (ใน ProjectDetail): design handoff 2 checkbox / shop drawing rev + updated_both / cabinet & wall list builder 7 fields + ห้อง (block PB ห้องเปียกโชว์ error จาก fn)
+- [x] UI-6 — ✅ VariationPanel ใหม่ (ใน ProjectDetail): list + สร้าง VO (delay category 6 ปุ่มบังคับเมื่อวัน>0, notice_date อัตโนมัติ) + ส่งเซ็น + บันทึกเซ็นตาม vo_number; build ผ่าน (vite+tsc)
+
 ## Phase S12 — scrutinize รอบ 12 (0147) (8 ก.ค. 2026)
 - [x] S12-1 — ✅ **`0148`**: wet-area rule รั่ว 3 การสะกด (พิสูจน์บน DB: 'ปาร์ติเกิลบอร์ด' ป. ที่ C18 เองใช้ / 'ชิปบอร์ด' / 'เอ็มดีเอฟ' หลุดหมด — designer พิมพ์ไทยปกติ = rule ไม่ทำงาน) → regex ครอบ พาร์ติ|ปาร์ติ|ชิปบอร์ด|chipboard|เอ็มดีเอฟ; ทดสอบ 8 เคส ✓
 - [x] S12-2 — ✅ false positive: 'MDF V313 กันชื้น' โดน block ทั้งที่ C18 ระบุเป็นเกรดพื้นที่เปียก → ยกเว้น hmr|กันชื้น|ทนชื้น|v313; ตัวอื่นของ 0147 (band envelope กว้างข้ามเกรด = เตือนเกินทาง safe, ไม่แก้) reviewed-OK

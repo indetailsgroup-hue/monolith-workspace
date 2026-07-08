@@ -41,12 +41,18 @@ export function FactoryHome({ onOpenProject }: { onOpenProject: (id: string) => 
   async function materialStatus(id: string, status: string) {
     setErr('');
     let cost: number | null = null;
+    let confirmed = false;
     if (status === 'received') {
       const v = prompt('ราคาที่จ่ายจริง (บาท) — เว้นว่างถ้ายังไม่ทราบ (เข้า Job Cost อัตโนมัติ)');
       if (v && Number(v.replace(/[, ]/g, '')) > 0) cost = Number(v.replace(/[, ]/g, ''));
     }
+    if (status === 'ordered') {
+      // 0143: สั่งวัสดุ = SEV 10 — ต้องยืนยันว่าเช็คสเปกกับแบบ/Master Matrix แล้วจริง
+      confirmed = confirm('ยืนยันว่าเช็คสเปกวัสดุกับแบบแล้วก่อนสั่งจริง?\n(สั่งผิด = scrap 100% — SEV 10)');
+      if (!confirmed) return;
+    }
     const { error } = await supabase().rpc('rpc_factory_material_status', {
-      p_material_id: id, p_status: status, p_cost: cost,
+      p_material_id: id, p_status: status, p_cost: cost, p_order_confirmed: confirmed,
     });
     if (error) { setErr(error.message); return; }
     load();
@@ -135,8 +141,56 @@ export function FactoryHome({ onOpenProject }: { onOpenProject: (id: string) => 
         ))}
       </div>
 
+      <CalibrationCard />
+
       {msg && <p style={{ color: 'var(--ok)', fontWeight: 600 }}>{msg}</p>}
       {err && <p className="err">{err}</p>}
+    </div>
+  );
+}
+
+// ADR-051: เทียบประเมิน vs จริงของ package ที่จบ — B4 เห็นว่าตัวเองเพี้ยนทางไหน แม่นขึ้นทุกบ้าน
+interface CalibRow { code: string; project_name: string; total_est: number; material_est: number; labor_est: number; actual_material: number; actual_rework: number }
+interface Calib { note: string; packages: CalibRow[]; material_bias_ratio: number | null }
+
+function CalibrationCard() {
+  const [c, setC] = useState<Calib | null>(null);
+  const [open, setOpen] = useState(false);
+  const THB = (n: number) => Number(n).toLocaleString('th-TH');
+
+  function load() {
+    supabase().rpc('rpc_factory_estimate_calibration').then(({ data }) => setC(data as Calib));
+  }
+
+  return (
+    <div className="card">
+      <strong>📏 ความแม่นการประเมิน (estimate vs จริง)</strong>
+      {!open ? (
+        <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 6 }}
+          onClick={() => { setOpen(true); load(); }}>ดูผลเทียบ →</button>
+      ) : !c ? <p className="muted">กำลังโหลด…</p> : (
+        <>
+          {c.material_bias_ratio != null && (
+            <p style={{ fontWeight: 700, margin: '6px 0' }}>
+              bias วัสดุ: {c.material_bias_ratio}
+              <span className="muted" style={{ fontWeight: 400 }}>
+                {' '}({c.material_bias_ratio > 1 ? 'ประเมินวัสดุต่ำไป — เผื่อเพิ่ม' : c.material_bias_ratio < 1 ? 'เผื่อวัสดุเยอะไป' : 'ตรงเป๊ะ'})
+              </span>
+            </p>
+          )}
+          {c.packages.length === 0 && <p className="muted">ยังไม่มี package ที่จบพร้อมตัวเลขประเมิน</p>}
+          {c.packages.map((p) => (
+            <div key={p.code + p.project_name} style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+              <div><strong>{p.code}</strong> {p.project_name}</div>
+              <div className="muted">
+                วัสดุ: ประเมิน {THB(p.material_est)} → จริง {THB(p.actual_material)}
+                {p.actual_rework > 0 ? ` · แก้งาน ${THB(p.actual_rework)}` : ''} · ค่าแรงประเมิน {THB(p.labor_est)}
+              </div>
+            </div>
+          ))}
+          <p className="muted" style={{ marginBottom: 0 }}>{c.note}</p>
+        </>
+      )}
     </div>
   );
 }

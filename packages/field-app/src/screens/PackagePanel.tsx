@@ -69,6 +69,7 @@ export function PackagePanel({ projectId }: { projectId: string }) {
                   )}
                 </div>
               ))}
+              <EstimateCard packageId={open.package_id} />
             </div>
           )}
         </div>
@@ -79,6 +80,89 @@ export function PackagePanel({ projectId }: { projectId: string }) {
       </div>
       <button className="btn btn-accent" disabled={!code.trim() || !name.trim()} onClick={createPkg}>เปิด package (12 ขั้น)</button>
       {err && <p className="err">{err}</p>}
+    </div>
+  );
+}
+
+// ADR-051/052: ประเมินต้นทุน = ชั่วโมงขั้นผลิต × เรทจริง + วัสดุ BOM + machine allowance → เทียบกรอบตลาด
+const EST_STAGES = [
+  { key: 'machining', label: 'ตัด/แมชชีน' },
+  { key: 'assembly', label: 'ประกอบ' },
+  { key: 'finishing', label: 'ทำสี/ผิว' },
+  { key: 'qc_shop', label: 'QC โรงงาน' },
+];
+interface Band { category: string; grade_label: string; unit: string; price_min: number; price_max: number }
+
+function EstimateCard({ packageId }: { packageId: string }) {
+  const [show, setShow] = useState(false);
+  const [hours, setHours] = useState<Record<string, string>>({});
+  const [material, setMaterial] = useState('');
+  const [allowance, setAllowance] = useState('');
+  const [cats, setCats] = useState<string[]>([]);
+  const [cat, setCat] = useState('');
+  const [lengthM, setLengthM] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    if (!show) return;
+    supabase().rpc('rpc_field_market_bands', { p_unit: 'm' }).then(({ data }) => {
+      const bands = (data ?? []) as Band[];
+      setCats([...new Set(bands.map((b) => b.category))]);
+    });
+  }, [show]);
+
+  async function estimate() {
+    setErr(''); setMsg('');
+    const stageHours: Record<string, number> = {};
+    EST_STAGES.forEach((s) => {
+      const v = Number((hours[s.key] ?? '').replace(/[, ]/g, ''));
+      if (v > 0) stageHours[s.key] = v;
+    });
+    const mat = Number(material.replace(/[, ]/g, ''));
+    const len = Number(lengthM.replace(/[, ]/g, ''));
+    const { data, error } = await supabase().rpc('rpc_factory_estimate_package', {
+      p_package_id: packageId,
+      p_stage_hours: stageHours,
+      p_material_est: mat > 0 ? mat : null,
+      p_machine_allowance: Number(allowance.replace(/[, ]/g, '')) || 0,
+      p_band_category: cat && len > 0 ? cat : null,
+      p_length_m: cat && len > 0 ? len : null,
+    });
+    if (error) { setErr(error.message); return; }
+    const r = data as { total_est: number; material: number; labor: number; material_source: string; band_warning: string | null };
+    const THB = (n: number) => Number(n).toLocaleString('th-TH');
+    setMsg(`ประเมิน ${THB(r.total_est)} บาท (วัสดุ ${THB(r.material)}${r.material_source === 'bom' ? ' จาก BOM' : ''} + แรง ${THB(r.labor)})${r.band_warning ? ` ⚠️ ${r.band_warning}` : ' ✅'}`);
+  }
+
+  if (!show) {
+    return <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 6 }}
+      onClick={() => setShow(true)}>💰 ประเมินต้นทุน (B4) →</button>;
+  }
+  return (
+    <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--line)', borderRadius: 10 }}>
+      <strong>ชั่วโมงประเมินต่อขั้นผลิต</strong>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {EST_STAGES.map((s) => (
+          <input key={s.key} placeholder={s.label + ' (ชม.)'} inputMode="decimal" style={{ flex: '1 1 45%' }}
+            value={hours[s.key] ?? ''} onChange={(e) => setHours({ ...hours, [s.key]: e.target.value })} />
+        ))}
+      </div>
+      <input placeholder="วัสดุ (บาท) — เว้นว่าง = ใช้ราคาจาก BOM ที่รับแล้ว" inputMode="numeric"
+        value={material} onChange={(e) => setMaterial(e.target.value)} />
+      <input placeholder="ค่าเครื่อง/allowance (บาท) — ไม่มีใส่ 0" inputMode="numeric"
+        value={allowance} onChange={(e) => setAllowance(e.target.value)} />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <select value={cat} onChange={(e) => setCat(e.target.value)} style={{ flex: 1 }}>
+          <option value="">— เทียบกรอบตลาด (ไม่บังคับ) —</option>
+          {cats.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input placeholder="ยาว (ม.)" inputMode="decimal" style={{ flex: '0 0 90px' }}
+          value={lengthM} onChange={(e) => setLengthM(e.target.value)} />
+      </div>
+      <button className="btn btn-primary" onClick={estimate}>คำนวณ + บันทึกประเมิน</button>
+      {msg && <p style={{ color: 'var(--ok)', fontWeight: 600, margin: '6px 0 0' }}>{msg}</p>}
+      {err && <p className="err" style={{ margin: '6px 0 0' }}>{err}</p>}
     </div>
   );
 }
