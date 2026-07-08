@@ -539,3 +539,15 @@ inclusion: always
   2. **Q2 เอกสาร/เขตแดน**: pattern spine 3 ข้อ (ID-chain / revision-as-delta ✓ VO ตรงแล้ว / claim boundary) + MONOLITH backlog (overlay-diff revision QA · manifest checksum ID-chain · claim เฉพาะ machine profile ที่ verify) ลง REFERENCE doc · **QuickBooks/Buildertrend/Dynamics(ส่วน ERP) = product-only ยืนยันรอบ 4** (retainage/WIP/draw/pipeline) · เติม C17 ลง README-STATUS ของ kit (doc-sync gap)
 - **ปัดตก/ครอบคลุมแล้ว:** Cabinet Vision chain = MONOLITH มีแล้ว · takeoff pre-layer = BOM จาก CAD ดีกว่า · assembly-pricing-unit + catalog versioning = v2 ภายหลัง (rate_version มีแล้ว) · Bord ต้อง re-verify (403) ก่อน claim ฝั่งโปรดักต์
 - **Consequences:** 0145 (package_estimates + rpc estimate/calibration — rebase estimated_cost path 0129) + docs + kit README-STATUS
+
+## ADR-052: C18 ราคากลางบิลท์อินไทย — market bands + กติกาวัสดุพื้นที่เปียก (2026-07-08)
+
+**บริบท**: C18 (Thailand Built-In Furniture Pricing Research) + รายงานฉบับยาวจากเจ้าของ: ตารางราคาตลาดต่อเมตรวิ่ง/ตร.ม. แยกหมวด×เกรด, hidden costs (ดำเนินการ 10% / VAT 7% / ตจว. +20%), ข้อเท็จจริงวิศวกรรม PB ในพื้นที่เปียกพัง 1–3 ปี, spec lock ถึงรหัสสินค้า, E1/E0. ระบบเดิมมี price_rates (ตร.ม.×เกรด กรอกเอง) + Package Estimating 0145 แต่ไม่มี "กรอบตลาด" เทียบเลย
+
+**มติ (ก ทั้งสอง)**:
+- **Q1 market bands เข้าเครื่องยนต์ราคา**: ตาราง `market_price_bands` (หมวด×เกรด×หน่วย m/sqm → min/max + source + effective_date) seed จาก C18; อัปเดตผ่าน rpc (governance) ไม่แก้ migration; hook 2 จุด — price_estimate (SJ) แนบ band + hidden-cost reminder (เตือน ไม่ block), estimate_package (B4) ใส่ band category + ความยาวเมตร → ต้นทุน/เมตรชน/เกินกรอบราคาขายตลาด → เตือน+audit (band = sanity, เรทจริง DAPH คือความจริง)
+- **Q2 กติกาพื้นที่เปียก hard rule**: cabinet & wall list ชิ้นที่ระบุห้องครัว/ห้องน้ำ + โครง PB/พาร์ติเคิล/MDF ธรรมดา (ไม่ใช่ HMR) → **block** ต้อง HMR/ไม้อัด/พลาสวูด (แบบเดียวกับ material SEV 10); CONTRACT-REVIEW-CHECKLIST เพิ่มแถว 12 "ล็อกสเปกถึงรหัสสินค้า (โครง/ฟิตติ้ง/ลามิเนต)" + แถว 13 "มาตรฐาน formaldehyde E1/E0"
+
+**ปัดตก**: ราคากลางครุภัณฑ์รัฐ + Factor F (ไม่ประมูลงานราชการ — เปิด ADR ใหม่ถ้าวันหนึ่งรับ) · งวด 20/30/30/20 (มี payment plan แล้ว) · design fee models (SJ มีสคริปต์+investment doc) · ราคาฟิตติ้งปลีกรายชิ้น (BOM ใช้ราคาซื้อจริง)
+
+**Consequences**: 0147 (market_price_bands + seed C18 + rpc set/list + rebase price_estimate 0115 / estimate_package 0145 6-param / cabinet_wall_list 0144) + docs (REFERENCE C18 + checklist 12/13)

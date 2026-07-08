@@ -49,3 +49,14 @@
 - AI-draft-until-reviewed gate (PlanSwift): ผล auto ใดๆ = draft จนมีผู้ตรวจ + confidence + adjustment
 
 **ยืนยันเขตแดนรอบ 4 (product-only ตลอดไป):** QuickBooks pattern (invoice/retainage/AR-AP/P&L ขายลูกค้า) · Buildertrend pattern (sales pipeline/draw schedule/WIP/client billing portal) · Dynamics ส่วน inventory/fulfillment/ERP-replacement — sliver ที่ดูดแล้ว: item-master↔BOM mapping = มีใน package_materials + order-confirm gate
+
+## C18 — ราคากลางตลาดบิลท์อินไทย 2568–69 (ADR-052, seed อยู่ใน market_price_bands 0147)
+
+- โครงสร้างราคาหน้าโรงงานตลาด: วัสดุ ~25% / แรง+สี ~45% / overhead+กำไร ~30%; ยังไม่รวม ขนส่ง-ติดตั้ง-VAT — บวกดำเนินการ ~10%
+- Hidden costs ที่ต้องเช็คทุกใบเสนอราคา: ดำเนินการ +10% · VAT 7% · ต่างจังหวัด +20% · เผื่องานเพิ่ม/เปลี่ยนใจ +20%
+- กติกาวัสดุ (hard rule ในระบบ): PB/พาร์ติเคิล/MDF ธรรมดา ห้ามครัว-ห้องน้ำ (พัง 1–3 ปี = รื้อทำใหม่) → HMR/ไม้อัด/พลาสวูดเท่านั้น; E1/E0 formaldehyde เป็น spec ผูกพัน
+- ราคาแผ่น (1.2×2.4 ม. อ้างอิงตลาด): PB จาก 170 · MDF 335–800 · HMR 415–1,030 (15mm เมลามีนขาว ~590) · ไม้อัดยาง 245–885 ตามหนา · plywood กันน้ำถึง 2,300
+- ฟิตติ้ง tier: Blum (แพงสุด ~2× Hettich) > Hafele > Hettich > OEM (พัง 2–5 ปี); ฟิตติ้งพรีเมียม +15–30% ของราคาตู้ แต่ยืดอายุ 5–7 → 15–20 ปี; ชุดตะแกรง Hafele จริง 4,190–32,900/ชุด — ตู้เดียวอัดฟิตติ้งครบทะลุ 30,000 ได้
+- เรท M&E หน้างาน (อ้างอิง): จุดปลั๊ก/สวิตช์ 300–1,500 · ย้ายจุด 650–1,250 · LED เส้น 800–1,500/ม. · sensor ตู้ 1,000 · ดูดควัน/เตาฝัง 1,500–3,000 · ประปาซิงค์ 1,500/จุด
+- design fee ตลาด: 300–2,000 บาท/ตร.ม. (sliding scale) หรือ 5–15% ของมูลค่างาน หรือเหมา 100k–300k/ยูนิต
+- **ไม่เอาเข้าระบบ** (ADR-052 ปัดตก): ราคากลางครุภัณฑ์รัฐ/Factor F 1.2999 — เก็บไว้ตรงนี้เผื่อวันหนึ่งรับงานราชการ

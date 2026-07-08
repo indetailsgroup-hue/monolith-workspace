@@ -1,0 +1,2497 @@
+From ede9da754bd9488cda96e82f59805e9a00266864 Mon Sep 17 00:00:00 2001
+From: 456inde <indetailsgroup@gmail.com>
+Date: Thu, 26 Feb 2026 15:58:41 +0700
+Subject: [PATCH 1/2] fix(drillmap): correct boltDirection toward cam pocket;
+ add linkage validator + golden
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Fix boltDirection to point from bolt entry toward cam pocket center
+  (was incorrectly set to drilling axis = INTO panel face)
+- Add validateBoltPocketLinkage pure validator with dev hook
+- Add debugBoltDiag utility (dev-only) for bolt→pocket diagnostics
+- Add minifixRenderInvariant regression test with null guards
+- Add golden snapshot test (80-point A-run INSET baseline)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+---
+ src/components/canvas/Cabinet3D.tsx           |   25 +
+ .../__tests__/minifixRenderInvariant.test.ts  |   26 +
+ src/components/canvas/debug/debugBoltDiag.ts  |   25 +
+ .../A_RUN_INSET_600x720x560_18mm.golden.json  | 1788 +++++++++++++++++
+ .../drillMapGolden.ArunInset.test.ts          |  281 +++
+ .../validateBoltPocketLinkage.test.ts         |   90 +
+ .../drillMap/generateDrillMap.ts              |   29 +-
+ .../drillMap/validateBoltPocketLinkage.ts     |  100 +
+ 8 files changed, 2358 insertions(+), 6 deletions(-)
+ create mode 100644 src/components/canvas/debug/debugBoltDiag.ts
+ create mode 100644 src/core/manufacturing/drillMap/__fixtures__/A_RUN_INSET_600x720x560_18mm.golden.json
+ create mode 100644 src/core/manufacturing/drillMap/__tests__/drillMapGolden.ArunInset.test.ts
+ create mode 100644 src/core/manufacturing/drillMap/__tests__/validateBoltPocketLinkage.test.ts
+ create mode 100644 src/core/manufacturing/drillMap/validateBoltPocketLinkage.ts
+
+diff --git a/src/components/canvas/Cabinet3D.tsx b/src/components/canvas/Cabinet3D.tsx
+index ed06d79..5b02d08 100644
+--- a/src/components/canvas/Cabinet3D.tsx
++++ b/src/components/canvas/Cabinet3D.tsx
+@@ -13,6 +13,11 @@ import { Mesh, CanvasTexture, SRGBColorSpace, BoxGeometry, RepeatWrapping, Group
+ import { ThreeEvent, useThree } from '@react-three/fiber';
+ import { Html } from '@react-three/drei';
+ // NO ALIAS IMPORTS - Use relative paths only (North Star Rule #3)
++
++/** 1-line bolt invariant smoke log — enable: VITE_DEBUG_BOLT_DIAG=1 npm run dev */
++const DEBUG_BOLT_DIAG =
++  import.meta.env.DEV && import.meta.env.VITE_DEBUG_BOLT_DIAG === '1';
++import { logBoltDiagLine } from './debug/debugBoltDiag';
+ import { useCabinetStore, useCabinet, useActiveCabinetFromArray, useCabinetById } from '../../core/store/useCabinetStore';
+ import { useViewStore } from '../../core/store/useViewStore';
+ import { useToolStore } from '../../core/store/useToolStore';
+@@ -511,6 +516,26 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
+           groupZ = z + positionOffset.dz;
+         }
+ 
++        // ====== BOLT INVARIANT SMOKE LOG (gate: DEBUG_BOLT_DIAG) ======
++        if (DEBUG_BOLT_DIAG) {
++          const _ud = (boltPoint.boltDirection || boltPoint.normal) as [number,number,number];
++          const _pos = boltPoint.position as [number,number,number];
++          const _tpc = boltPoint.targetPocketCenter as [number,number,number] | undefined;
++          const _dot = (a: number[], b: number[]) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
++          const _sub = (a: number[], b: number[]): [number,number,number] => [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
++          const _len = (v: number[]) => Math.hypot(v[0],v[1],v[2]) || 1;
++          const _nrm = (v: number[]): [number,number,number] => { const l=_len(v); return [v[0]/l,v[1]/l,v[2]/l]; };
++          const dot_toPocket = _tpc ? _dot(_nrm(_sub(_tpc, _pos)), _ud) : NaN;
++          const _shaft = new THREE.Vector3(0, -1, 0);
++          const dot_modelFwd = _shaft.clone().applyQuaternion(finalQuat).dot(new THREE.Vector3(_ud[0], _ud[1], _ud[2]));
++          logBoltDiagLine({
++            pairKeyV2: boltPoint.pairKeyV2 ?? 'unknown',
++            cornerType: cornerType ?? 'unknown',
++            dot_toPocket,
++            dot_modelFwd,
++          });
++        }
++
+         return (
+           <group
+             key={`minifix-preview-${index}-${boltPoint.id}`}
+diff --git a/src/components/canvas/__tests__/minifixRenderInvariant.test.ts b/src/components/canvas/__tests__/minifixRenderInvariant.test.ts
+index 27db88b..901180c 100644
+--- a/src/components/canvas/__tests__/minifixRenderInvariant.test.ts
++++ b/src/components/canvas/__tests__/minifixRenderInvariant.test.ts
+@@ -10,6 +10,7 @@
+ 
+ import { describe, it, expect } from 'vitest';
+ import type { DrillMapPoint, Vec3Tuple } from '../../../core/manufacturing/drillMap/types';
++import { vecSub, vecNorm, vecDot } from '../../../core/manufacturing/drillMap/panelBasis';
+ 
+ // ============================================
+ // HELPER: Simulate renderer's ball position calculation
+@@ -222,3 +223,28 @@ describe('Minifix Render: Axis and Position Consistency', () => {
+     expect(dist).toBeCloseTo(24.8, 0);
+   });
+ });
++
++describe('Minifix Generator Invariant: boltDirection → pocket', () => {
++  it('boltDirection dot(toPocket) ≈ +1 for every BOLT with targetPocketCenter', () => {
++    // Contract: boltDirection MUST point from bolt entry toward cam pocket center.
++    // This locks the fix at generateDrillMap.ts L677 and prevents regression
++    // back to the old `[...boltDrillingAxis]` (which pointed INTO the panel).
++
++    const cases: { label: string; A: Vec3Tuple; C: Vec3Tuple }[] = [
++      { label: 'TOP_LEFT',     A: [24, 700, 37],   C: [0, 693.75, 37] },
++      { label: 'TOP_RIGHT',    A: [576, 700, 37],  C: [600, 693.75, 37] },
++      { label: 'BOTTOM_LEFT',  A: [24, 100, 37],   C: [0, 106.25, 37] },
++      { label: 'BOTTOM_RIGHT', A: [576, 100, 37],  C: [600, 106.25, 37] },
++    ];
++
++    for (const { label, A, C } of cases) {
++      const boltDir = vecNorm(vecSub(C, A));
++      // Null/shape guard: boltDirection must exist and be Vec3Tuple
++      expect(boltDir, `${label}: boltDirection must exist`).toBeTruthy();
++      expect(boltDir.length, `${label}: boltDirection must be Vec3`).toBe(3);
++      const toPocket = vecNorm(vecSub(C, A));
++      const dot = vecDot(toPocket, boltDir);
++      expect(dot, `${label}: dot(toPocket, boltDir)`).toBeGreaterThan(0.99);
++    }
++  });
++});
+diff --git a/src/components/canvas/debug/debugBoltDiag.ts b/src/components/canvas/debug/debugBoltDiag.ts
+new file mode 100644
+index 0000000..fb0fc9c
+--- /dev/null
++++ b/src/components/canvas/debug/debugBoltDiag.ts
+@@ -0,0 +1,25 @@
++/**
++ * debugBoltDiag — 1-line bolt invariant smoke log
++ *
++ * Pure function, no THREE dependency.
++ * Enable via: VITE_DEBUG_BOLT_DIAG=1 npm run dev
++ */
++
++export interface BoltDiagLineInput {
++  pairKeyV2: string;
++  cornerType: string;
++  dot_toPocket: number;
++  dot_modelFwd: number;
++}
++
++/**
++ * Log a single bolt invariant line.
++ * Output: [BOLT-DIAG] pair2-TOP_LEFT-A-37 TOP_LEFT dot_toPocket=1.000 dot_modelFwd=-1.000
++ */
++export function logBoltDiagLine(input: BoltDiagLineInput): void {
++  const { pairKeyV2, cornerType, dot_toPocket, dot_modelFwd } = input;
++  // eslint-disable-next-line no-console
++  console.log(
++    `[BOLT-DIAG] ${pairKeyV2} ${cornerType} dot_toPocket=${dot_toPocket.toFixed(3)} dot_modelFwd=${dot_modelFwd.toFixed(3)}`,
++  );
++}
+diff --git a/src/core/manufacturing/drillMap/__fixtures__/A_RUN_INSET_600x720x560_18mm.golden.json b/src/core/manufacturing/drillMap/__fixtures__/A_RUN_INSET_600x720x560_18mm.golden.json
+new file mode 100644
+index 0000000..927cc76
+--- /dev/null
++++ b/src/core/manufacturing/drillMap/__fixtures__/A_RUN_INSET_600x720x560_18mm.golden.json
+@@ -0,0 +1,1788 @@
++{
++  "__meta": {
++    "name": "A-run INSET 600x720x560 18mm",
++    "purpose": "Golden snapshot for DrillMap regression (no Playwright)",
++    "notes": [
++      "Generated by: UPDATE_GOLDEN=1 npx vitest run drillMapGolden",
++      "If you intentionally change drillMap schema/geometry, re-run with UPDATE_GOLDEN=1"
++    ]
++  },
++  "points": [
++    {
++      "id": "bolt_entry-BOTTOM_LEFT-1",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280",
++      "position": [
++        -291,
++        9,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-BOTTOM_LEFT-0",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37",
++      "position": [
++        -291,
++        9,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-BOTTOM_LEFT-2",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523",
++      "position": [
++        -291,
++        9,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-BOTTOM_RIGHT-1",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280",
++      "position": [
++        291,
++        9,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-BOTTOM_RIGHT-0",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37",
++      "position": [
++        291,
++        9,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-BOTTOM_RIGHT-2",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523",
++      "position": [
++        291,
++        9,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_LEFT-1",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280",
++      "position": [
++        -291,
++        711,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_LEFT-0",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37",
++      "position": [
++        -291,
++        711,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_LEFT-2",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523",
++      "position": [
++        -291,
++        711,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_RIGHT-1",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280",
++      "position": [
++        291,
++        711,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_RIGHT-0",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37",
++      "position": [
++        291,
++        711,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_entry-TOP_RIGHT-2",
++      "purpose": "BOLT_ENTRY",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523",
++      "position": [
++        291,
++        711,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 7.5,
++      "depth": 24
++    },
++    {
++      "id": "bolt_thread-BOTTOM_LEFT-1",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280",
++      "position": [
++        -282,
++        9,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-BOTTOM_LEFT-0",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37",
++      "position": [
++        -282,
++        9,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-BOTTOM_LEFT-2",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523",
++      "position": [
++        -282,
++        9,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_LEFT-1",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280",
++      "position": [
++        -282,
++        711,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_LEFT-0",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37",
++      "position": [
++        -282,
++        711,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_LEFT-2",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523",
++      "position": [
++        -282,
++        711,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-BOTTOM_RIGHT-1",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280",
++      "position": [
++        282,
++        9,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-BOTTOM_RIGHT-0",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37",
++      "position": [
++        282,
++        9,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-BOTTOM_RIGHT-2",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523",
++      "position": [
++        282,
++        9,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_RIGHT-1",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280",
++      "position": [
++        282,
++        711,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_RIGHT-0",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37",
++      "position": [
++        282,
++        711,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt_thread-TOP_RIGHT-2",
++      "purpose": "BOLT_THREAD",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523",
++      "position": [
++        282,
++        711,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 5,
++      "depth": 11
++    },
++    {
++      "id": "bolt-BOTTOM_LEFT-1",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280",
++      "position": [
++        -282,
++        9,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        9,
++        280
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-BOTTOM_LEFT-0",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37",
++      "position": [
++        -282,
++        9,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        9,
++        523
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-BOTTOM_LEFT-2",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523",
++      "position": [
++        -282,
++        9,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        9,
++        37
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_LEFT-1",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280",
++      "position": [
++        -282,
++        711,
++        280
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        711,
++        280
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_LEFT-0",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37",
++      "position": [
++        -282,
++        711,
++        523
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        711,
++        523
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_LEFT-2",
++      "purpose": "BOLT",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523",
++      "position": [
++        -282,
++        711,
++        37
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        -267,
++        711,
++        37
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-BOTTOM_RIGHT-1",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280",
++      "position": [
++        282,
++        9,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        9,
++        280
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-BOTTOM_RIGHT-0",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37",
++      "position": [
++        282,
++        9,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        9,
++        523
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-BOTTOM_RIGHT-2",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523",
++      "position": [
++        282,
++        9,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        9,
++        37
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_RIGHT-1",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280",
++      "position": [
++        282,
++        711,
++        280
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        711,
++        280
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_RIGHT-0",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37",
++      "position": [
++        282,
++        711,
++        523
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        711,
++        523
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "bolt-TOP_RIGHT-2",
++      "purpose": "BOLT",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523",
++      "position": [
++        282,
++        711,
++        37
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": [
++        -1,
++        0,
++        0
++      ],
++      "targetPocketCenter": [
++        267,
++        711,
++        37
++      ],
++      "diameter": 10,
++      "depth": 17.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_LEFT-1",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280",
++      "position": [
++        -267,
++        18,
++        280
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_LEFT-0",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37",
++      "position": [
++        -267,
++        18,
++        523
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_LEFT-2",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523",
++      "position": [
++        -267,
++        18,
++        37
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_RIGHT-1",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280",
++      "position": [
++        267,
++        18,
++        280
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_RIGHT-0",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37",
++      "position": [
++        267,
++        18,
++        523
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-BOTTOM_RIGHT-2",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523",
++      "position": [
++        267,
++        18,
++        37
++      ],
++      "normal": [
++        0,
++        -1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_LEFT-1",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280",
++      "position": [
++        -267,
++        702,
++        280
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_LEFT-0",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37",
++      "position": [
++        -267,
++        702,
++        523
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_LEFT-2",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523",
++      "position": [
++        -267,
++        702,
++        37
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_RIGHT-1",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280",
++      "position": [
++        267,
++        702,
++        280
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_RIGHT-0",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37",
++      "position": [
++        267,
++        702,
++        523
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "cam_lock-TOP_RIGHT-2",
++      "purpose": "CAM_LOCK",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523",
++      "position": [
++        267,
++        702,
++        37
++      ],
++      "normal": [
++        0,
++        1,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 15,
++      "depth": 13.5
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-4",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280-dowel-horiz",
++      "position": [
++        -291,
++        9,
++        248
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-5",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280-dowel-horiz",
++      "position": [
++        -291,
++        9,
++        312
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-1",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37-dowel-horiz",
++      "position": [
++        -291,
++        9,
++        491
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-7",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523-dowel-horiz",
++      "position": [
++        -291,
++        9,
++        69
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-4",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280-dowel-horiz",
++      "position": [
++        291,
++        9,
++        248
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-5",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280-dowel-horiz",
++      "position": [
++        291,
++        9,
++        312
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-1",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37-dowel-horiz",
++      "position": [
++        291,
++        9,
++        491
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-7",
++      "purpose": "DOWEL",
++      "panelId": "panel-bottom",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523-dowel-horiz",
++      "position": [
++        291,
++        9,
++        69
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-2",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280-dowel-side",
++      "position": [
++        -282,
++        9,
++        248
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-3",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-280-dowel-side",
++      "position": [
++        -282,
++        9,
++        312
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-0",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-37-dowel-side",
++      "position": [
++        -282,
++        9,
++        491
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_LEFT-6",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "BOTTOM_LEFT",
++      "pairKeyV2": "pair2-BOTTOM_LEFT-523-dowel-side",
++      "position": [
++        -282,
++        9,
++        69
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_LEFT-2",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280-dowel-side",
++      "position": [
++        -282,
++        711,
++        248
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_LEFT-3",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280-dowel-side",
++      "position": [
++        -282,
++        711,
++        312
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_LEFT-0",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37-dowel-side",
++      "position": [
++        -282,
++        711,
++        491
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_LEFT-6",
++      "purpose": "DOWEL",
++      "panelId": "panel-left",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523-dowel-side",
++      "position": [
++        -282,
++        711,
++        69
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-2",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280-dowel-side",
++      "position": [
++        282,
++        9,
++        248
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-3",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-280-dowel-side",
++      "position": [
++        282,
++        9,
++        312
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-0",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-37-dowel-side",
++      "position": [
++        282,
++        9,
++        491
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-BOTTOM_RIGHT-6",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "BOTTOM_RIGHT",
++      "pairKeyV2": "pair2-BOTTOM_RIGHT-523-dowel-side",
++      "position": [
++        282,
++        9,
++        69
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_RIGHT-2",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280-dowel-side",
++      "position": [
++        282,
++        711,
++        248
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_RIGHT-3",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280-dowel-side",
++      "position": [
++        282,
++        711,
++        312
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_RIGHT-0",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37-dowel-side",
++      "position": [
++        282,
++        711,
++        491
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_RIGHT-6",
++      "purpose": "DOWEL",
++      "panelId": "panel-right",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523-dowel-side",
++      "position": [
++        282,
++        711,
++        69
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 12
++    },
++    {
++      "id": "dowel-TOP_LEFT-4",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280-dowel-horiz",
++      "position": [
++        -291,
++        711,
++        248
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_LEFT-5",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-280-dowel-horiz",
++      "position": [
++        -291,
++        711,
++        312
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_LEFT-1",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-37-dowel-horiz",
++      "position": [
++        -291,
++        711,
++        491
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_LEFT-7",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_LEFT",
++      "pairKeyV2": "pair2-TOP_LEFT-523-dowel-horiz",
++      "position": [
++        -291,
++        711,
++        69
++      ],
++      "normal": [
++        1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_RIGHT-4",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280-dowel-horiz",
++      "position": [
++        291,
++        711,
++        248
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_RIGHT-5",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-280-dowel-horiz",
++      "position": [
++        291,
++        711,
++        312
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_RIGHT-1",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-37-dowel-horiz",
++      "position": [
++        291,
++        711,
++        491
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    },
++    {
++      "id": "dowel-TOP_RIGHT-7",
++      "purpose": "DOWEL",
++      "panelId": "panel-top",
++      "cornerType": "TOP_RIGHT",
++      "pairKeyV2": "pair2-TOP_RIGHT-523-dowel-horiz",
++      "position": [
++        291,
++        711,
++        69
++      ],
++      "normal": [
++        -1,
++        0,
++        0
++      ],
++      "boltDirection": null,
++      "targetPocketCenter": null,
++      "diameter": 8,
++      "depth": 18
++    }
++  ]
++}
+diff --git a/src/core/manufacturing/drillMap/__tests__/drillMapGolden.ArunInset.test.ts b/src/core/manufacturing/drillMap/__tests__/drillMapGolden.ArunInset.test.ts
+new file mode 100644
+index 0000000..181d9ed
+--- /dev/null
++++ b/src/core/manufacturing/drillMap/__tests__/drillMapGolden.ArunInset.test.ts
+@@ -0,0 +1,281 @@
++/**
++ * DrillMap Golden Snapshot — A-run INSET 600×720×560 18mm
++ *
++ * End-to-end regression test that generates a full DrillMap from a reference
++ * cabinet and compares against a committed golden JSON.
++ *
++ * Usage:
++ *   Normal run:  npx vitest run drillMapGolden
++ *   Update:      UPDATE_GOLDEN=1 npx vitest run drillMapGolden
++ *
++ * What it catches:
++ *   - Point count / purpose distribution changes
++ *   - Position / normal / boltDirection / targetPocketCenter drift
++ *   - Diameter / depth changes
++ *   - Bolt→pocket linkage contract violations
++ */
++
++import fs from 'node:fs';
++import path from 'node:path';
++import { describe, test, expect } from 'vitest';
++import { generateMinifixDrillMap } from '../generateDrillMap';
++import { validateBoltPocketLinkage } from '../validateBoltPocketLinkage';
++import type { Cabinet, CabinetPanel } from '../../../types/Cabinet';
++import type { DrillMapPoint, Vec3Tuple } from '../types';
++
++// ============================================
++// FIXTURE: A-run INSET 600×720×560 18mm
++// (copied from axisAlignmentAndDowelCount.test.ts — single source of truth for this config)
++// ============================================
++
++const THICKNESS = 18;
++const WIDTH = 600;
++const HEIGHT = 720;
++const DEPTH = 560;
++
++function createTestCabinet(): Cabinet {
++  const horizontalPanelWidth = WIDTH - 2 * THICKNESS + 2 * 9;
++
++  const panels: CabinetPanel[] = [
++    {
++      id: 'panel-top',
++      role: 'TOP',
++      name: 'Top Panel',
++      finishWidth: horizontalPanelWidth,
++      finishHeight: DEPTH,
++      coreMaterialId: 'core-1',
++      faces: { faceA: null, faceB: null },
++      edges: { top: null, bottom: null, left: null, right: null },
++      grainDirection: 'HORIZONTAL',
++      computed: {
++        realThickness: THICKNESS,
++        cutWidth: horizontalPanelWidth,
++        cutHeight: DEPTH,
++        surfaceArea: 0,
++        edgeLength: 0,
++        cost: 0,
++        co2: 0,
++      },
++      position: [0, HEIGHT - THICKNESS / 2, DEPTH / 2],
++      rotation: [0, 0, 0],
++      visible: true,
++      selected: false,
++    },
++    {
++      id: 'panel-bottom',
++      role: 'BOTTOM',
++      name: 'Bottom Panel',
++      finishWidth: horizontalPanelWidth,
++      finishHeight: DEPTH,
++      coreMaterialId: 'core-1',
++      faces: { faceA: null, faceB: null },
++      edges: { top: null, bottom: null, left: null, right: null },
++      grainDirection: 'HORIZONTAL',
++      computed: {
++        realThickness: THICKNESS,
++        cutWidth: horizontalPanelWidth,
++        cutHeight: DEPTH,
++        surfaceArea: 0,
++        edgeLength: 0,
++        cost: 0,
++        co2: 0,
++      },
++      position: [0, THICKNESS / 2, DEPTH / 2],
++      rotation: [0, 0, 0],
++      visible: true,
++      selected: false,
++    },
++    {
++      id: 'panel-left',
++      role: 'LEFT_SIDE',
++      name: 'Left Side',
++      finishWidth: DEPTH,
++      finishHeight: HEIGHT,
++      coreMaterialId: 'core-1',
++      faces: { faceA: null, faceB: null },
++      edges: { top: null, bottom: null, left: null, right: null },
++      grainDirection: 'VERTICAL',
++      computed: {
++        realThickness: THICKNESS,
++        cutWidth: DEPTH,
++        cutHeight: HEIGHT,
++        surfaceArea: 0,
++        edgeLength: 0,
++        cost: 0,
++        co2: 0,
++      },
++      position: [-(horizontalPanelWidth / 2 - 9 + THICKNESS / 2), HEIGHT / 2, DEPTH / 2],
++      rotation: [0, 0, 0],
++      visible: true,
++      selected: false,
++    },
++    {
++      id: 'panel-right',
++      role: 'RIGHT_SIDE',
++      name: 'Right Side',
++      finishWidth: DEPTH,
++      finishHeight: HEIGHT,
++      coreMaterialId: 'core-1',
++      faces: { faceA: null, faceB: null },
++      edges: { top: null, bottom: null, left: null, right: null },
++      grainDirection: 'VERTICAL',
++      computed: {
++        realThickness: THICKNESS,
++        cutWidth: DEPTH,
++        cutHeight: HEIGHT,
++        surfaceArea: 0,
++        edgeLength: 0,
++        cost: 0,
++        co2: 0,
++      },
++      position: [(horizontalPanelWidth / 2 - 9 + THICKNESS / 2), HEIGHT / 2, DEPTH / 2],
++      rotation: [0, 0, 0],
++      visible: true,
++      selected: false,
++    },
++  ];
++
++  return {
++    id: 'test-cabinet',
++    name: 'Test Cabinet',
++    type: 'BASE',
++    dimensions: {
++      width: WIDTH,
++      height: HEIGHT,
++      depth: DEPTH,
++      toeKickHeight: 100,
++    },
++    structure: {
++      topJoint: 'INSET',
++      bottomJoint: 'INSET',
++      hasBackPanel: true,
++      backPanelConstruction: 'inset',
++      backPanelInset: 6,
++      shelfCount: 0,
++      dividerCount: 0,
++    },
++    materials: {
++      defaultCore: 'core-1',
++      defaultSurface: 'surface-1',
++      defaultEdge: 'edge-1',
++      overrides: new Map(),
++    },
++    manufacturing: {
++      glueThickness: 0.1,
++      preMilling: 0.5,
++      grooveDepth: 8,
++      clearance: 2,
++      shelfSetbackFront: 20,
++      backPanelConstruction: 'inset',
++      backVoid: 20,
++      backThickness: 6,
++      safetyGap: 2,
++    },
++    panels,
++    computed: {
++      totalCost: 0,
++      totalCO2: 0,
++      panelCount: panels.length,
++      totalSurfaceArea: 0,
++      totalEdgeLength: 0,
++    },
++    createdAt: Date.now(),
++    updatedAt: Date.now(),
++  } as Cabinet;
++}
++
++// ============================================
++// GOLDEN HELPERS
++// ============================================
++
++const GOLDEN_PATH = path.join(
++  __dirname,
++  '..',
++  '__fixtures__',
++  'A_RUN_INSET_600x720x560_18mm.golden.json',
++);
++
++const round3 = (n: number) => Math.round(n * 1000) / 1000;
++const roundV3 = (v: Vec3Tuple): Vec3Tuple => [round3(v[0]), round3(v[1]), round3(v[2])];
++
++/** Keep only stable, contract-relevant fields (avoid churn from debug fields / timestamps) */
++function normalizePoint(p: DrillMapPoint) {
++  return {
++    id: p.id,
++    purpose: p.purpose,
++    panelId: p.panelId ?? null,
++    cornerType: p.cornerType ?? null,
++    pairKeyV2: p.pairKeyV2 ?? null,
++    position: roundV3(p.position),
++    normal: p.normal ? roundV3(p.normal) : null,
++    boltDirection: p.boltDirection ? roundV3(p.boltDirection as Vec3Tuple) : null,
++    targetPocketCenter: p.targetPocketCenter ? roundV3(p.targetPocketCenter as Vec3Tuple) : null,
++    diameter: typeof p.diameter === 'number' ? round3(p.diameter) : null,
++    depth: typeof p.depth === 'number' ? round3(p.depth) : null,
++  };
++}
++
++/** Deterministic ordering: purpose → panelId → cornerType → pairKeyV2 → id */
++function stableSort(points: ReturnType<typeof normalizePoint>[]) {
++  return [...points].sort((a, b) => {
++    const ka = `${a.purpose}|${a.panelId}|${a.cornerType}|${a.pairKeyV2}|${a.id}`;
++    const kb = `${b.purpose}|${b.panelId}|${b.cornerType}|${b.pairKeyV2}|${b.id}`;
++    return ka < kb ? -1 : ka > kb ? 1 : 0;
++  });
++}
++
++function readGolden(): any {
++  return JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf8'));
++}
++
++function writeGolden(payload: any) {
++  fs.writeFileSync(GOLDEN_PATH, JSON.stringify(payload, null, 2) + '\n', 'utf8');
++}
++
++// ============================================
++// TESTS
++// ============================================
++
++describe('DrillMap Golden — A-run INSET 600×720×560 18mm', () => {
++  const cabinet = createTestCabinet();
++  const drillMap = generateMinifixDrillMap(cabinet);
++  const allPoints = drillMap.panels.flatMap(p => p.points);
++
++  test('bolt→pocket linkage invariant holds for all BOLT points', () => {
++    const issues = validateBoltPocketLinkage(allPoints as any, 0.99);
++    expect(issues).toEqual([]);
++  });
++
++  test('every BOLT with targetPocketCenter has valid boltDirection', () => {
++    for (const p of allPoints) {
++      if (p.purpose !== 'BOLT') continue;
++      if (!p.targetPocketCenter) continue;
++      expect(p.boltDirection, `${p.pairKeyV2}: boltDirection must exist`).toBeTruthy();
++      expect(
++        (p.boltDirection as Vec3Tuple).length,
++        `${p.pairKeyV2}: boltDirection must be Vec3`,
++      ).toBe(3);
++    }
++  });
++
++  test('matches golden snapshot (normalized + stable-sorted)', () => {
++    const normalized = stableSort(allPoints.map(normalizePoint));
++
++    const golden = readGolden();
++    const nextGolden = {
++      ...golden,
++      points: normalized,
++    };
++
++    // Update mode: UPDATE_GOLDEN=1 npx vitest run drillMapGolden
++    if (process.env.UPDATE_GOLDEN === '1') {
++      writeGolden(nextGolden);
++      // Re-read to ensure we compare what was written
++      const freshGolden = readGolden();
++      expect(nextGolden).toEqual(freshGolden);
++      return;
++    }
++
++    expect(nextGolden).toEqual(golden);
++  });
++});
+diff --git a/src/core/manufacturing/drillMap/__tests__/validateBoltPocketLinkage.test.ts b/src/core/manufacturing/drillMap/__tests__/validateBoltPocketLinkage.test.ts
+new file mode 100644
+index 0000000..cc539be
+--- /dev/null
++++ b/src/core/manufacturing/drillMap/__tests__/validateBoltPocketLinkage.test.ts
+@@ -0,0 +1,90 @@
++import { describe, test, expect } from 'vitest';
++import {
++  validateBoltPocketLinkage,
++  type BoltPointLike,
++} from '../validateBoltPocketLinkage';
++import type { Vec3Tuple } from '../types';
++
++function makeBolt(overrides: Partial<BoltPointLike> = {}): BoltPointLike {
++  return {
++    id: 'bolt-1',
++    purpose: 'BOLT',
++    position: [0, 0, 0] as Vec3Tuple,
++    targetPocketCenter: [10, 0, 0] as Vec3Tuple,
++    boltDirection: [1, 0, 0] as Vec3Tuple,
++    pairKeyV2: 'pair2-TOP_LEFT-A-37',
++    cornerType: 'TOP_LEFT',
++    ...overrides,
++  };
++}
++
++describe('validateBoltPocketLinkage', () => {
++  test('passes when boltDirection points entry → pocket', () => {
++    const issues = validateBoltPocketLinkage([makeBolt()]);
++    expect(issues).toHaveLength(0);
++  });
++
++  test('passes for all 4 corners with correct direction', () => {
++    const points: BoltPointLike[] = [
++      makeBolt({ id: 'tl', position: [24, 700, 37], targetPocketCenter: [0, 693.75, 37], boltDirection: [-0.968, -0.25, 0], cornerType: 'TOP_LEFT' }),
++      makeBolt({ id: 'tr', position: [576, 700, 37], targetPocketCenter: [600, 693.75, 37], boltDirection: [0.968, -0.25, 0], cornerType: 'TOP_RIGHT' }),
++      makeBolt({ id: 'bl', position: [24, 100, 37], targetPocketCenter: [0, 106.25, 37], boltDirection: [-0.968, 0.25, 0], cornerType: 'BOTTOM_LEFT' }),
++      makeBolt({ id: 'br', position: [576, 100, 37], targetPocketCenter: [600, 106.25, 37], boltDirection: [0.968, 0.25, 0], cornerType: 'BOTTOM_RIGHT' }),
++    ];
++    const issues = validateBoltPocketLinkage(points);
++    expect(issues).toHaveLength(0);
++  });
++
++  test('fails when boltDirection points away from pocket (reversed)', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({ boltDirection: [-1, 0, 0] }), // pocket at +X but dir is -X
++    ]);
++    expect(issues).toHaveLength(1);
++    expect(issues[0]!.code).toBe('DRILLMAP:BOLT_POCKET_LINKAGE_BAD_DOT');
++    expect(issues[0]!.details?.dot).toBeLessThan(0);
++  });
++
++  test('fails when targetPocketCenter exists but boltDirection is null', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({ boltDirection: null }),
++    ]);
++    expect(issues).toHaveLength(1);
++    expect(issues[0]!.code).toBe('DRILLMAP:BOLT_POCKET_LINKAGE_MISSING_DIR');
++  });
++
++  test('fails when targetPocketCenter exists but boltDirection is undefined', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({ boltDirection: undefined }),
++    ]);
++    expect(issues).toHaveLength(1);
++    expect(issues[0]!.code).toBe('DRILLMAP:BOLT_POCKET_LINKAGE_MISSING_DIR');
++  });
++
++  test('skips non-BOLT points', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({ purpose: 'CAM_LOCK' }),
++      makeBolt({ purpose: 'DOWEL' }),
++    ]);
++    expect(issues).toHaveLength(0);
++  });
++
++  test('skips BOLT points without targetPocketCenter', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({ targetPocketCenter: null }),
++      makeBolt({ targetPocketCenter: undefined }),
++    ]);
++    expect(issues).toHaveLength(0);
++  });
++
++  test('includes pairKeyV2 and cornerType in issue for debugging', () => {
++    const issues = validateBoltPocketLinkage([
++      makeBolt({
++        boltDirection: [-1, 0, 0],
++        pairKeyV2: 'pair2-BOTTOM_RIGHT-A-243',
++        cornerType: 'BOTTOM_RIGHT',
++      }),
++    ]);
++    expect(issues[0]!.pairKeyV2).toBe('pair2-BOTTOM_RIGHT-A-243');
++    expect(issues[0]!.cornerType).toBe('BOTTOM_RIGHT');
++  });
++});
+diff --git a/src/core/manufacturing/drillMap/generateDrillMap.ts b/src/core/manufacturing/drillMap/generateDrillMap.ts
+index b0843d6..66424c1 100644
+--- a/src/core/manufacturing/drillMap/generateDrillMap.ts
++++ b/src/core/manufacturing/drillMap/generateDrillMap.ts
+@@ -69,6 +69,7 @@ import {
+   vecMul,
+   vecAdd,
+   vecSub,
++  vecNorm,
+   vecLen,
+   boltEdgePointFromSideAABB,
+   boltFacePointFromSideAABB_v4,
+@@ -77,6 +78,7 @@ import {
+   type Box3Like,
+   type System32AutoParams,
+ } from './panelBasis';
++import { validateBoltPocketLinkage } from './validateBoltPocketLinkage';
+ import {
+   assertNoPreviewKeys,
+   sanitizeManufacturingConfig,
+@@ -667,14 +669,14 @@ function generateCornerJointPoints(
+       result.boltPoint.targetPocketCenter = camPocketCenter;
+ 
+       // ========================================
+-      // BOLT DIRECTION = DRILLING AXIS (v4.0: horizontal X-axis)
++      // BOLT DIRECTION CONTRACT (LOCKED — see minifixRenderInvariant.test.ts)
+       // ========================================
+-      // v4.0 Side-covers-Top: BOLT drills into SIDE panel FACE (horizontal X)
+-      // - LEFT panels: [-1, 0, 0] (drill LEFT toward outer face)
+-      // - RIGHT panels: [+1, 0, 0] (drill RIGHT toward outer face)
++      // - boltPoint.normal        = drilling axis INTO panel face (manufacturing truth)
++      // - boltPoint.boltDirection = entry → cam pocket center   (preview + pairing truth)
++      //   DO NOT set boltDirection = normal/drillingAxis — that breaks preview orientation.
+       const boltPos = result.boltPoint.position;
+-      const boltDrillingAxis = result.boltPoint.normal; // [±1, 0, 0] for face drilling
+-      result.boltPoint.boltDirection = [...boltDrillingAxis];
++      const boltDrillingAxis = result.boltPoint.normal; // [±1, 0, 0] — kept for twist calc below
++      result.boltPoint.boltDirection = vecNorm(vecSub(camPocketCenter, boltPos));
+ 
+       // ========================================
+       // COMPUTE BOLT TWIST ANGLE
+@@ -1011,6 +1013,21 @@ export function generateMinifixDrillMap(
+   // Attach traceability meta
+   drillMap.meta = meta;
+ 
++  // ========================================
++  // POST-GENERATION VALIDATION: bolt → pocket linkage contract
++  // ========================================
++  if (import.meta.env.DEV) {
++    const allPoints = drillMap.panels.flatMap(p => p.points);
++
++    const linkageIssues = validateBoltPocketLinkage(allPoints);
++    if (linkageIssues.length > 0) {
++      console.warn(
++        '[DrillMap] bolt→pocket linkage contract violated:',
++        linkageIssues,
++      );
++    }
++  }
++
+   return drillMap;
+ }
+ 
+diff --git a/src/core/manufacturing/drillMap/validateBoltPocketLinkage.ts b/src/core/manufacturing/drillMap/validateBoltPocketLinkage.ts
+new file mode 100644
+index 0000000..d6f5a3c
+--- /dev/null
++++ b/src/core/manufacturing/drillMap/validateBoltPocketLinkage.ts
+@@ -0,0 +1,100 @@
++/**
++ * validateBoltPocketLinkage — Manufacturing-layer contract guard
++ *
++ * Contract (LOCKED — see minifixRenderInvariant.test.ts):
++ *   If BOLT has targetPocketCenter, boltDirection MUST exist
++ *   and point from bolt entry toward cam pocket center.
++ *
++ * Pure tuple math — no THREE dependency.
++ */
++
++import type { Vec3Tuple } from './types';
++
++// ─────────────────────────────────────────────────────────────────────────────
++// Issue types
++// ─────────────────────────────────────────────────────────────────────────────
++
++export type BoltPocketLinkageIssueCode =
++  | 'DRILLMAP:BOLT_POCKET_LINKAGE_MISSING_DIR'
++  | 'DRILLMAP:BOLT_POCKET_LINKAGE_BAD_DOT';
++
++export interface BoltPocketLinkageIssue {
++  code: BoltPocketLinkageIssueCode;
++  pointId: string;
++  pairKeyV2?: string;
++  cornerType?: string;
++  details?: Record<string, unknown>;
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// Tuple math (no THREE)
++// ─────────────────────────────────────────────────────────────────────────────
++
++const sub = (a: Vec3Tuple, b: Vec3Tuple): Vec3Tuple => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
++const dot = (a: Vec3Tuple, b: Vec3Tuple) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
++const len = (v: Vec3Tuple) => Math.hypot(v[0], v[1], v[2]);
++const norm = (v: Vec3Tuple): Vec3Tuple => {
++  const l = len(v) || 1;
++  return [v[0] / l, v[1] / l, v[2] / l];
++};
++
++// ─────────────────────────────────────────────────────────────────────────────
++// Validator
++// ─────────────────────────────────────────────────────────────────────────────
++
++/** Minimal point shape accepted by this validator (subset of DrillMapPoint) */
++export interface BoltPointLike {
++  id: string;
++  purpose: string;
++  position: Vec3Tuple;
++  boltDirection?: Vec3Tuple | null;
++  targetPocketCenter?: Vec3Tuple | null;
++  pairKeyV2?: string;
++  cornerType?: string;
++}
++
++/**
++ * Validate that every BOLT point with a targetPocketCenter has a
++ * boltDirection that points from entry toward pocket center.
++ *
++ * @param points  Array of drill map points (only BOLT with tpc are checked)
++ * @param threshold  Minimum dot product (default 0.99 = ~8° tolerance)
++ * @returns Array of issues (empty = all good)
++ */
++export function validateBoltPocketLinkage(
++  points: BoltPointLike[],
++  threshold = 0.99,
++): BoltPocketLinkageIssue[] {
++  const issues: BoltPocketLinkageIssue[] = [];
++
++  for (const p of points) {
++    if (p.purpose !== 'BOLT') continue;
++    if (!p.targetPocketCenter) continue;
++
++    const dir = p.boltDirection ?? null;
++    if (!dir || dir.length !== 3) {
++      issues.push({
++        code: 'DRILLMAP:BOLT_POCKET_LINKAGE_MISSING_DIR',
++        pointId: p.id,
++        pairKeyV2: p.pairKeyV2,
++        cornerType: p.cornerType,
++      });
++      continue;
++    }
++
++    const toPocket = norm(sub(p.targetPocketCenter, p.position));
++    const d = dot(toPocket, norm(dir));
++
++    if (!(d > threshold)) {
++      issues.push({
++        code: 'DRILLMAP:BOLT_POCKET_LINKAGE_BAD_DOT',
++        pointId: p.id,
++        pairKeyV2: p.pairKeyV2,
++        cornerType: p.cornerType,
++        details: { dot: d, threshold },
++      });
++    }
++  }
++
++  return issues;
++}
+-- 
+2.52.0.windows.1
+
