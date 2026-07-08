@@ -563,3 +563,16 @@ inclusion: always
 **ปัดตก**: อัปเดต market_price_bands จากรายงานนี้ (หยาบกว่า C18, ไม่ขัด — อัปเดตผ่าน rpc เมื่อยืนยันจริง) · pipeline/forecast ยอดขาย (R-3) · smart add-on / E0 product line = ทางเลือกธุรกิจ รอเจ้าของตัดสินใจค่อยเปิด ADR ฟีเจอร์
 
 **Consequences**: docs/MARKET-OUTLOOK-2569.md + 0149 (sale_scripts append, idempotent guard)
+
+## ADR-054: กลยุทธ์ 2569 — Renovation-first + Smart add-on + E-grade (2026-07-09)
+
+**บริบท**: grill กลยุทธ์จาก MARKET-OUTLOOK-2569 (ADR-053) — เลือกทางที่ขายจุดแข็งที่ระบบมีแล้ว (ความน่าเชื่อถือ/หลักฐานครบ) ไม่ใช่สร้างสนามใหม่
+
+**มติ (ก ทั้งสาม)**:
+- **Q1 Renovation-first เป็นแกน + Mid sweet spot** (Mass = เมนูรอง via cheat sheet 0149, Luxury รับที่เดินเข้ามา): เหตุผล — supply บ้านใหม่แห้ง 2570–71, รีโนเวทใหญ่กว่า 2–3 เท่า, ลูกค้ารีโนเวทกลัวช่างทิ้งงาน = จุดแข็งเรา · ระบบ: project_type (new_build/renovation) + survey รีโนเวทบังคับเช็คสภาพเดิม/ไฟเก่า/ขอบเขตรื้อ (กัน hidden_condition VO) + referral card หลังจบบ้าน 30 วัน (ต่อ after-sales sweep)
+- **Q2 Smart add-on catalog**: 3 ตัวเริ่ม (ไฟ sensor ตู้ / soft-close อัปเกรด / smart lock) ราคามาตรฐานในระบบ ผูก package → SJ เสนอ upsell — ticket +10–25% ไม่เพิ่มงานไม้
+- **Q3 E-grade บังคับใน cabinet & wall list**: ไม่ระบุ → เตือน+audit · **E2 → block** (Nakhara: 4/5 เกินเกณฑ์ WHO; แบบเดียวกับ wet-area rule) + สคริปต์ขายสุขภาพเข้า sale_scripts (premium 8–15%)
+
+**ปัดตก**: B2B developer kit (margin ต่ำ+ผูก supply ที่แห้ง) · Luxury push (ตลาด −14.9%)
+
+**Consequences**: 0150 (project_type + survey renovation gate rebase 0142 + referral rebase fn_after_sales_sweep 0130 + tpl_referral + addon_catalog/package_addons + cabinet_wall_list rebase 0148 e_grade + sale_scripts health) + UI (NewProject toggle, SurveyHome, DesignerToolsPanel, PackagePanel)

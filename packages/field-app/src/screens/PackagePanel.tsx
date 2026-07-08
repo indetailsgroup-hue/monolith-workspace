@@ -70,6 +70,7 @@ export function PackagePanel({ projectId }: { projectId: string }) {
                 </div>
               ))}
               <EstimateCard packageId={open.package_id} />
+              <AddonCard packageId={open.package_id} />
             </div>
           )}
         </div>
@@ -162,6 +163,57 @@ function EstimateCard({ packageId }: { packageId: string }) {
       </div>
       <button className="btn btn-primary" onClick={estimate}>คำนวณ + บันทึกประเมิน</button>
       {msg && <p style={{ color: 'var(--ok)', fontWeight: 600, margin: '6px 0 0' }}>{msg}</p>}
+      {err && <p className="err" style={{ margin: '6px 0 0' }}>{err}</p>}
+    </div>
+  );
+}
+
+// ADR-054: smart add-on upsell — เสนอท้าย quote ทุกใบ (ticket +10–25% ไม่เพิ่มงานไม้)
+interface Addon { code: string; name: string; description: string; price: number }
+interface Attached { code: string; name: string; qty: number; price_each: number }
+
+function AddonCard({ packageId }: { packageId: string }) {
+  const [show, setShow] = useState(false);
+  const [catalog, setCatalog] = useState<Addon[]>([]);
+  const [attached, setAttached] = useState<Attached[]>([]);
+  const [total, setTotal] = useState(0);
+  const [err, setErr] = useState('');
+  const THB = (n: number) => Number(n).toLocaleString('th-TH');
+
+  function load() {
+    supabase().rpc('rpc_field_addon_catalog').then(({ data }) => setCatalog((data ?? []) as Addon[]));
+    supabase().rpc('rpc_field_package_addons', { p_package_id: packageId }).then(({ data }) => {
+      const r = data as { items: Attached[]; total: number } | null;
+      setAttached(r?.items ?? []); setTotal(Number(r?.total ?? 0));
+    });
+  }
+
+  async function toggle(code: string) {
+    setErr('');
+    const { error } = await supabase().rpc('rpc_field_toggle_package_addon', {
+      p_package_id: packageId, p_code: code,
+    });
+    if (error) { setErr(error.message); return; }
+    load();
+  }
+
+  if (!show) {
+    return <button className="btn btn-ghost" style={{ minHeight: 40, marginTop: 6 }}
+      onClick={() => { setShow(true); load(); }}>✨ Smart add-on (เสนอลูกค้าเพิ่ม) →</button>;
+  }
+  const on = new Set(attached.map((a) => a.code));
+  return (
+    <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--line)', borderRadius: 10 }}>
+      <strong>Smart add-on — เสนอท้าย quote ทุกใบ</strong>
+      {catalog.map((a) => (
+        <label key={a.code} style={{ display: 'flex', gap: 10, alignItems: 'center', fontWeight: 400, margin: '8px 0' }}>
+          <input type="checkbox" style={{ width: 22, height: 22, minHeight: 0 }}
+            checked={on.has(a.code)} onChange={() => toggle(a.code)} />
+          <span style={{ flex: 1 }}>{a.name} <span className="muted">— {a.description}</span></span>
+          <span style={{ fontWeight: 700 }}>{THB(a.price)}</span>
+        </label>
+      ))}
+      {total > 0 && <p style={{ fontWeight: 700, margin: '6px 0 0' }}>รวม add-on: {THB(total)} บาท</p>}
       {err && <p className="err" style={{ margin: '6px 0 0' }}>{err}</p>}
     </div>
   );

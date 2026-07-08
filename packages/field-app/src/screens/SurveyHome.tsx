@@ -14,6 +14,7 @@ export function SurveyHome({ onOpenProject }: { onOpenProject: (id: string) => v
   const [home, setHome] = useState<Home | null>(null);
   const [handoffPick, setHandoffPick] = useState<string | null>(null);
   const [summary, setSummary] = useState('');
+  const [reno, setReno] = useState({ existing_structure: '', old_wiring: '', demolition_scope: '' });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -32,12 +33,15 @@ export function SurveyHome({ onOpenProject }: { onOpenProject: (id: string) => v
   async function handoff(projectId: string) {
     setErr(''); setMsg('');
     if (!summary.trim()) { setErr('ใส่สรุปผลการวัดก่อนครับ'); return; }
+    const renoFilled = Object.values(reno).some((v) => v.trim());
     const { data, error } = await supabase().rpc('rpc_field_survey_handoff', {
       p_project_id: projectId, p_summary: summary.trim(), p_client_key: crypto.randomUUID(),
+      p_renovation_check: renoFilled ? reno : null,
     });
     if (error) { setErr(error.message); return; }
     setMsg(`ส่งมอบให้ออกแบบแล้ว ✅ (${(data as { zones: number }).zones} โซน — แจ้งดีไซเนอร์อัตโนมัติ)`);
     setHandoffPick(null); setSummary('');
+    setReno({ existing_structure: '', old_wiring: '', demolition_scope: '' });
     load();
   }
 
@@ -86,6 +90,13 @@ export function SurveyHome({ onOpenProject }: { onOpenProject: (id: string) => v
             ) : (
               <div style={{ marginTop: 4 }}>
                 <input placeholder="สรุปผลวัด (เช่น ครบ 5 ห้อง ผนังห้องนอนเอียง 8mm)" value={summary} onChange={(e) => setSummary(e.target.value)} />
+                <p className="muted" style={{ margin: '6px 0 2px' }}>งานรีโนเวท — ต้องเช็ค 3 เรื่องนี้ (บ้านใหม่เว้นได้):</p>
+                <input placeholder="สภาพโครงสร้างเดิม (ผนัง/พื้น/ฝ้า)" value={reno.existing_structure}
+                  onChange={(e) => setReno({ ...reno, existing_structure: e.target.value })} />
+                <input placeholder="ระบบไฟเก่า (อายุสาย/ตำแหน่งปลั๊กที่ใช้ต่อ)" value={reno.old_wiring}
+                  onChange={(e) => setReno({ ...reno, old_wiring: e.target.value })} />
+                <input placeholder="ขอบเขตรื้อถอน (รื้ออะไร เก็บอะไร)" value={reno.demolition_scope}
+                  onChange={(e) => setReno({ ...reno, demolition_scope: e.target.value })} />
                 <button className="btn btn-primary" onClick={() => handoff(w.project_id)}>ยืนยันส่งมอบ</button>
               </div>
             )}

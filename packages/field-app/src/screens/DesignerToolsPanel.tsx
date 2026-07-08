@@ -97,13 +97,14 @@ function ShopDrawingCard({ projectId }: { projectId: string }) {
 }
 
 // 7 fields ต่อชิ้นตาม Master Matrix — ขาด = ต้นทางสั่งของผิด (SEV 10); ระบบ block PB/MDF ในห้องเปียกเอง
-interface CwlItem { cabinet_number: string; wall_size_number: string; material: string; functions_detail: string; drawers_detail: string; fitting_detail: string; shelves_detail: string; room: string }
-const EMPTY_ITEM: CwlItem = { cabinet_number: '', wall_size_number: '', material: '', functions_detail: '', drawers_detail: '', fitting_detail: '', shelves_detail: '', room: '' };
+interface CwlItem { cabinet_number: string; wall_size_number: string; material: string; functions_detail: string; drawers_detail: string; fitting_detail: string; shelves_detail: string; room: string; e_grade: string }
+const EMPTY_ITEM: CwlItem = { cabinet_number: '', wall_size_number: '', material: '', functions_detail: '', drawers_detail: '', fitting_detail: '', shelves_detail: '', room: '', e_grade: '' };
 const CWL_FIELDS: { key: keyof CwlItem; ph: string }[] = [
   { key: 'cabinet_number', ph: 'เลขตู้ เช่น C1' },
   { key: 'wall_size_number', ph: 'ผนัง/ขนาด เช่น W1 2.4m' },
   { key: 'room', ph: 'ห้อง เช่น ครัว / ห้องนอน' },
   { key: 'material', ph: 'วัสดุโครง เช่น HMR 15mm ลามิเนต' },
+  { key: 'e_grade', ph: 'มาตรฐานไม้ E0 หรือ E1 (E2 ห้าม)' },
   { key: 'functions_detail', ph: 'ฟังก์ชัน' },
   { key: 'drawers_detail', ph: 'ลิ้นชัก (จำนวน/ราง)' },
   { key: 'fitting_detail', ph: 'ฟิตติ้ง (ยี่ห้อ/รุ่น)' },
@@ -129,8 +130,10 @@ function CabinetListCard({ projectId }: { projectId: string }) {
       p_project_id: projectId, p_items: items, p_client_key: crypto.randomUUID(),
     });
     if (error) { setErr(error.message); return; }
-    const r = data as { count: number };
-    setMsg(`ส่ง list ${r.count} ชิ้นแล้ว ✅ — เข้าระบบสั่งของ`);
+    const r = data as { count: number; e_grade_warning: string | null };
+    setMsg(r.e_grade_warning
+      ? `ส่ง list ${r.count} ชิ้นแล้ว ⚠️ ${r.e_grade_warning}`
+      : `ส่ง list ${r.count} ชิ้นแล้ว ✅ — เข้าระบบสั่งของ`);
     setItems([]);
   }
 
@@ -150,7 +153,7 @@ function CabinetListCard({ projectId }: { projectId: string }) {
             value={cur[f.key]} onChange={(e) => setCur({ ...cur, [f.key]: e.target.value })} />
         ))}
       </div>
-      <button className="btn btn-accent" disabled={CWL_FIELDS.some((f) => f.key !== 'room' && !cur[f.key].trim())}
+      <button className="btn btn-accent" disabled={CWL_FIELDS.some((f) => f.key !== 'room' && f.key !== 'e_grade' && !cur[f.key].trim())}
         onClick={addItem}>+ เพิ่มชิ้นนี้</button>
       <button className="btn btn-primary" disabled={items.length === 0} onClick={submit}>
         ส่ง list ทั้งหมด ({items.length} ชิ้น)
