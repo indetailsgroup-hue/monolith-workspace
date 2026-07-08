@@ -24,6 +24,7 @@ export function RequirementForm({ onDone }: { onDone: () => void }) {
   const [key] = useState(() => crypto.randomUUID()); // idempotency ต่อการเปิดฟอร์มหนึ่งครั้ง
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [bindCode, setBindCode] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
   const ok = (v.customer_name ?? '').trim() && ((v.phone ?? '').trim() || (v.line_id ?? '').trim()) && (v.project_name ?? '').trim();
@@ -31,18 +32,31 @@ export function RequirementForm({ onDone }: { onDone: () => void }) {
   async function submit() {
     setBusy(true); setErr('');
     const fields = Object.fromEntries(Object.entries(v).filter(([, x]) => x.trim() !== ''));
-    const { error } = await supabase().rpc('rpc_field_submit_requirement', {
+    const { data, error } = await supabase().rpc('rpc_field_submit_requirement', {
       p_fields: fields, p_site_code: SITE, p_client_key: key,
     });
     setBusy(false);
     if (error) { setErr(error.message); return; }
+    setBindCode((data as { bind_code: string | null }).bind_code ?? null);
     setDone(true);
   }
 
+  // J2.8: กลุ่มลูกค้าเกิดตั้งแต่ qualify — กรอกจบ = งานเปิด + บ้านเปิด + รหัสผูกออกทันที (0113)
   if (done) return (
     <div className="page"><div className="card">
       <h2 style={{ marginTop: 0 }}>เปิดงานเรียบร้อย ✅</h2>
-      <p>ใบบันทึกความต้องการถูกบันทึก และระบบเปิดงานขายให้แล้วครับ — ขั้นถัดไป: นัดวัดพื้นที่</p>
+      <p>ใบบันทึกความต้องการถูกบันทึก ระบบเปิดงานขาย + เปิดบ้านให้แล้วครับ</p>
+      {bindCode && (
+        <>
+          <p style={{ fontWeight: 700, marginBottom: 4 }}>ตั้งกลุ่ม LINE กับลูกค้าเลย (3 ขั้น):</p>
+          <ol style={{ marginTop: 0, paddingLeft: 22 }}>
+            <li>สร้างกลุ่ม LINE ใหม่ ดึงลูกค้า + DAPH OA เข้ากลุ่ม</li>
+            <li>พิมพ์ในกลุ่ม: <code style={{ fontSize: 20, fontWeight: 700 }}>#ผูก {bindCode} ลูกค้า</code></li>
+            <li>บอทตอบยืนยันชื่อบ้าน — เช็คว่าตรงกับบ้านนี้ก่อนคุยต่อ</li>
+          </ol>
+          <p className="muted">รหัสใช้ได้ 48 ชม. — ออกใหม่ได้จากหน้ารายละเอียดบ้าน</p>
+        </>
+      )}
       <button className="btn btn-primary" onClick={onDone}>กลับหน้าหลัก</button>
     </div></div>
   );

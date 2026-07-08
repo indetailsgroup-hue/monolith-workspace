@@ -62,7 +62,7 @@
 - [ ] J2.9 **Punch list** (ADR-042): issue source `customer_review`/`warranty` + gate "ทุกข้อ resolved → ส่งตรวจรับรอบใหม่ได้" ใน rpc_request_customer_acceptance + ปุ่มแจ้งซ่อมถาวรบนการ์ดขอบคุณ
 - [ ] J2.10 **Warranty lifecycle** (ADR-042): installation_projects += warranty_until (ตรวจรับ+1ปี) · เก็บแบรนด์ฟิตติ้งจาก BOM · cron หมดประกัน → การ์ดสรุป → archive กลุ่ม
 - [ ] J2.11 **Review/Referral card** (ADR-042): scheduled 2 สัปดาห์หลังตรวจรับ + เช็คไม่มี issue ค้าง (มี → เลื่อน) · ปุ่มรีวิว + ลิงก์แนะนำเพื่อน (tag ที่มาบน conversation ใหม่)
-- [ ] J2.8 กลุ่มลูกค้าเกิดตั้งแต่ Qualify — ปรับ flow เปิดบ้าน (Wave A) ให้ออกรหัสผูกทันทีหลัง work_item_open + คู่มือ Sale ตั้งกลุ่ม
+- [x] J2.8 — ✅ **`0113` (2026-07-08)**: กลุ่มลูกค้าเกิดตั้งแต่ Qualify — **rebase rpc_field_submit_requirement (0103→0113)**: กรอกจบ = งานเปิด + **บ้านเปิด (reuse rpc_field_create_project ผูก work_item_id) + รหัสผูกออกทันที (reuse issue_bind_code)** ใน tx เดียว; retry idempotent คืน project+code เดิมครบชุด; audit qualify_group_ready; UI RequirementForm โชว์รหัส + คู่มือ Sale ตั้งกลุ่ม 3 ขั้น (#ผูก CODE ลูกค้า + เช็คชื่อบ้านจาก bot ack); ทดสอบ DB 10 เคส ✓ (fixture ต้อง seed process_model)
 
 ## Phase SJ: Sales Journey (grill รายตำแหน่ง 7 ก.ค. 2026 — position-journeys.md)
 
