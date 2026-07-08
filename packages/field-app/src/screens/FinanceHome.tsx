@@ -38,10 +38,19 @@ export function FinanceHome({ onOpenProject }: { onOpenProject: (id: string) => 
     load();
   }
 
-  async function attachSlip(id: string) {
+  // S8-2: อัปโหลดรูปสลิปจริง (path ใต้ field/finance/ ตาม storage policy 0106) แล้วผูกกับงวด
+  async function attachSlip(id: string, file: File | null) {
     setErr(''); setMsg('');
+    let storagePath: string | null = null;
+    if (file) {
+      storagePath = `field/finance/${id}/${crypto.randomUUID()}.jpg`;
+      const up = await supabase().storage.from('installation-media')
+        .upload(storagePath, file, { contentType: file.type || 'image/jpeg', upsert: true });
+      if (up.error) { setErr(up.error.message); return; }
+    }
     const { error } = await supabase().rpc('rpc_finance_submit_slip', {
-      p_installment_id: id, p_client_key: crypto.randomUUID(), p_note: note.trim() || null,
+      p_installment_id: id, p_storage_path: storagePath,
+      p_client_key: crypto.randomUUID(), p_note: note.trim() || null,
     });
     if (error) { setErr(error.message); return; }
     setMsg('ผูกสลิปกับงวดแล้ว ✅ — เช็คยอดแบงก์แล้วค่อยกดบันทึกรับ');
@@ -72,8 +81,11 @@ export function FinanceHome({ onOpenProject }: { onOpenProject: (id: string) => 
                 <input placeholder="หมายเหตุ (เช่น โอน KBank 12:30)" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div style={{ display: 'flex', gap: 6 }}>
                   {!r.has_slip && (
-                    <button className="btn btn-ghost" style={{ flex: 1, minHeight: 44 }}
-                      onClick={() => attachSlip(r.installment_id)}>ผูกสลิปก่อน</button>
+                    <label className="btn btn-ghost" style={{ flex: 1, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                      📷 แนบสลิป
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={(e) => attachSlip(r.installment_id, e.target.files?.[0] ?? null)} />
+                    </label>
                   )}
                   <button className="btn btn-accent" style={{ flex: 1, minHeight: 44 }}
                     onClick={() => record(r.installment_id)}>ยอดตรง — บันทึกรับ ✅</button>
