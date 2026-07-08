@@ -96,6 +96,10 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase MO — ADR-053 Market Outlook 2569 (8 ก.ค. 2026)
+- [x] MO-1 — ✅ docs/MARKET-OUTLOOK-2569.md: reconcile 2 รายงาน (funnel ปิรามิด / pocket โต-หด / supply แห้ง 2570-71 / ต้นทุนไม้ / กลยุทธ์ 4 ทางรอเจ้าของ) + ลิงก์จาก REFERENCE
+- [x] MO-2 — ✅ `0149`: segment cheat sheet (Mass/Mid/Luxury/รีโนเวท + ประโยคชวนคุย + กติกา 'งบต่ำ = เสนอ package เล็ก ไม่ปฏิเสธ') เข้า sale_scripts; guard idempotent ทดสอบ (จับ mismatch ตอนแรกแล้วแก้)
+
 ## Phase UI — UI Wave ปิด gap 0143–0147 (8 ก.ค. 2026)
 - [x] UI-1 — ✅ แก้จุดพัง: FactoryHome ปุ่ม 'สั่งแล้ว' ไม่ส่ง p_order_confirmed (0143 SEV 10) → confirm dialog + ส่ง; + CalibrationCard (bias วัสดุ + รายบ้าน)
 - [x] UI-2 — ✅ ProductionPanel: ปุ่ม 'รายงานจบ' ทุกสถานี + checklist จาก factory_station_checklists (SC ⭐ ตัวหนา) + ลามิเนตกรอกชั่วโมงกดทับ/จำนวนซ้อน + แสดง checklist/sc warning จาก fn

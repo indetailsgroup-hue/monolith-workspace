@@ -551,3 +551,15 @@ inclusion: always
 **ปัดตก**: ราคากลางครุภัณฑ์รัฐ + Factor F (ไม่ประมูลงานราชการ — เปิด ADR ใหม่ถ้าวันหนึ่งรับ) · งวด 20/30/30/20 (มี payment plan แล้ว) · design fee models (SJ มีสคริปต์+investment doc) · ราคาฟิตติ้งปลีกรายชิ้น (BOM ใช้ราคาซื้อจริง)
 
 **Consequences**: 0147 (market_price_bands + seed C18 + rpc set/list + rebase price_estimate 0115 / estimate_package 0145 6-param / cabinet_wall_list 0144) + docs (REFERENCE C18 + checklist 12/13)
+
+## ADR-053: Market Outlook 2569 — reconcile 2 รายงานตลาด + segment cheat sheet ทีมขาย (2026-07-08)
+
+**บริบท**: เจ้าของส่งรายงานตลาดบิ้วอิน 2569 สองฉบับ (ยังไม่เข้า kit เป็นไฟล์) — ตัวเลขขัดกันแรง (ลูกค้า 65–80k vs 250k, ตลาด 33,984 ล. vs 12–18k ล.) แต่ reconcile ได้: คนละ funnel/scope; สัญญาณตรงกัน: โซนโต = <3 ล้าน + รีโนเวท, โซนหด = Luxury, supply บ้านใหม่จะแห้ง 2570–71 (ใบอนุญาต −50–71%), ไม้ +3–5%, E0/E1 ยอมจ่ายเพิ่ม 8–15%, smart add-on +10–25% ticket
+
+**มติ (ก ทั้งสอง)**:
+- **Q1**: `docs/MARKET-OUTLOOK-2569.md` ฉบับ reconcile — เอกสารตัดสินใจของเจ้าของ (funnel 2 ชั้น, pocket, กลยุทธ์ 4 ทาง) + ลิงก์จาก REFERENCE
+- **Q2**: เพิ่ม "segment cheat sheet" เข้า sale_scripts (0149): Mass/Mid/Luxury — งบคาด + จุดเน้น + ประโยคชวนคุย + กติกา "งบต่ำกว่าเกณฑ์ = เสนอ package เล็ก ไม่ปฏิเสธ"
+
+**ปัดตก**: อัปเดต market_price_bands จากรายงานนี้ (หยาบกว่า C18, ไม่ขัด — อัปเดตผ่าน rpc เมื่อยืนยันจริง) · pipeline/forecast ยอดขาย (R-3) · smart add-on / E0 product line = ทางเลือกธุรกิจ รอเจ้าของตัดสินใจค่อยเปิด ADR ฟีเจอร์
+
+**Consequences**: docs/MARKET-OUTLOOK-2569.md + 0149 (sale_scripts append, idempotent guard)
