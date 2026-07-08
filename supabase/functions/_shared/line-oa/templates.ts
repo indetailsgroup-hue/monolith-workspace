@@ -46,9 +46,10 @@ export interface MessageTemplate {
   readonly isActive: boolean;
   /**
    * ชนิดข้อความ (0098 — 1.8c): 'text' (default) = body คือข้อความตรง ๆ;
-   * 'flex' = body คือ JSON {"altText": "...", "contents": {bubble}} (หลัง substitute slots)
+   * 'flex' = body คือ JSON {"altText": "...", "contents": {bubble}} (หลัง substitute slots);
+   * 'image' (0134 — ADR-045): body ไม่ใช้ — รูปมาจาก slot `media_path` (signed URL ตอนส่ง)
    */
-  readonly messageKind?: "text" | "flex";
+  readonly messageKind?: "text" | "flex" | "image";
 }
 
 /**

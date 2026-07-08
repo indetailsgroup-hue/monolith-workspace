@@ -108,7 +108,14 @@ export interface LineFlexMessage {
   readonly contents: Record<string, unknown>;
 }
 
-export type LineMessage = LineTextMessage | LineFlexMessage;
+/** A LINE image message (0134 — ADR-045: URL ต้อง HTTPS ที่ LINE ดึงได้เอง ≤10MB). */
+export interface LineImageMessage {
+  readonly type: "image";
+  readonly originalContentUrl: string;
+  readonly previewImageUrl: string;
+}
+
+export type LineMessage = LineTextMessage | LineFlexMessage | LineImageMessage;
 
 /** A fully-built LINE Messaging API request (endpoint + body), no token yet. */
 export type LineSendRequest =
@@ -144,6 +151,16 @@ export interface SenderDataAccess {
     status: SendResultStatus,
     errorDetail: string | null,
   ): Promise<void>;
+  /**
+   * Signed URL อายุจำกัดสำหรับ object ใน bucket private (0134 — ADR-045 Q2ก:
+   * รูปคง private ทั้งหมด, LINE ดึงผ่าน signed URL ~48 ชม. ตอนส่ง).
+   * Optional เพื่อให้ fake เดิมในเทสต์ใช้ได้ต่อ — แถว image ที่ไม่มี signer
+   * fail-safe เป็น `media_signer_unavailable` (ไม่ส่งมั่ว).
+   */
+  createSignedMediaUrl?(
+    storagePath: string,
+    expiresInSeconds: number,
+  ): Promise<string | null>;
 }
 
 /** Resolves a channel access token from Supabase Vault by its reference. */
@@ -257,7 +274,7 @@ export function createScrubbingLogger(
 export function renderOutboundText(
   row: ClaimedOutbound,
 ):
-  | { ok: true; text: string; kind: "text" | "flex" }
+  | { ok: true; text: string; kind: "text" | "flex" | "image" }
   | { ok: false; reason: string } {
   const resolution = resolveTemplate(
     row.candidateTemplates,
@@ -268,6 +285,14 @@ export function renderOutboundText(
     return { ok: false, reason: `template_${resolution.reason}` };
   }
   const kind = resolution.template.messageKind ?? "text";
+  // image (0134 — ADR-045): body ของ template ไม่ใช้ — path รูปมาจาก slot `media_path`
+  if (kind === "image") {
+    const mediaPath = row.slotValues["media_path"];
+    if (typeof mediaPath !== "string" || mediaPath.trim().length === 0) {
+      return { ok: false, reason: "missing_slot:media_path" };
+    }
+    return { ok: true, text: mediaPath, kind };
+  }
   const substitution = substituteSlots(resolution.template.body, row.slotValues);
   if (!substitution.ok) {
     return { ok: false, reason: `missing_slot:${substitution.missing.join(",")}` };
@@ -364,7 +389,7 @@ export async function processOutboundBatch(
   let failed = 0;
 
   for (const row of claimed) {
-    const outcome = await processOne(row, { vault, line, logger });
+    const outcome = await processOne(row, { vault, line, logger, data });
     results.push(outcome);
     if (outcome.status === "sent") {
       sent += 1;
@@ -399,7 +424,9 @@ export async function processOutboundBatch(
  */
 async function processOne(
   row: ClaimedOutbound,
-  deps: Pick<SenderDeps, "vault" | "line" | "logger">,
+  deps: Pick<SenderDeps, "vault" | "line" | "logger"> & {
+    readonly data?: Pick<SenderDataAccess, "createSignedMediaUrl">;
+  },
 ): Promise<ProcessedRow> {
   const { vault, line, logger } = deps;
 
@@ -422,14 +449,38 @@ async function processOne(
     return failure(row, rendered.reason, logger);
   }
 
-  // 2b. แปลงเป็น LINE message ตามชนิด template (flex = การ์ด D-5 — 0098)
-  const built = buildOutboundMessage(rendered.text, rendered.kind);
-  if (!built.ok) {
-    return failure(row, built.reason, logger);
+  // 2b. แปลงเป็น LINE message ตามชนิด template (flex = การ์ด D-5 — 0098; image — 0134 ADR-045)
+  let message: LineMessage;
+  if (rendered.kind === "image") {
+    // รูปอยู่ bucket private — LINE ต้องดึงเองผ่าน signed URL อายุ ~48 ชม. (Q2ก)
+    const signer = deps.data?.createSignedMediaUrl?.bind(deps.data);
+    if (!signer) {
+      return failure(row, "media_signer_unavailable", logger);
+    }
+    let signedUrl: string | null;
+    try {
+      signedUrl = await signer(rendered.text, 172800);
+    } catch (err) {
+      return failure(row, `media_sign_error: ${stringifyError(err)}`, logger);
+    }
+    if (!signedUrl) {
+      return failure(row, "media_sign_failed", logger);
+    }
+    message = {
+      type: "image",
+      originalContentUrl: signedUrl,
+      previewImageUrl: signedUrl,
+    };
+  } else {
+    const built = buildOutboundMessage(rendered.text, rendered.kind);
+    if (!built.ok) {
+      return failure(row, built.reason, logger);
+    }
+    message = built.message;
   }
 
   // 3. Build the concrete LINE request and send it with the resolved token.
-  const request = buildLineRequest(row, built.message);
+  const request = buildLineRequest(row, message);
   let outcome: LineSendOutcome;
   try {
     outcome = await line.send(request, token);
@@ -603,7 +654,7 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
             verticalContext: t.vertical_context,
             body: t.body,
             isActive: t.is_active,
-            messageKind: (t.message_kind ?? "text") as "text" | "flex",
+            messageKind: (t.message_kind ?? "text") as "text" | "flex" | "image",
           })),
         });
       }
@@ -619,6 +670,17 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
       if (error) {
         throw new Error(error.message);
       }
+    },
+
+    // 0134 — ADR-045 Q2ก: signed URL จาก bucket private (LINE ดึงเองตอนส่ง)
+    async createSignedMediaUrl(storagePath, expiresInSeconds) {
+      const { data: signed, error } = await client.storage
+        .from("installation-media")
+        .createSignedUrl(storagePath, expiresInSeconds);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return signed?.signedUrl ?? null;
     },
   };
 

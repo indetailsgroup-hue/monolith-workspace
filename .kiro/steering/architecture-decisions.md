@@ -473,3 +473,14 @@ inclusion: always
   4. **R-7**: เนื้อหาลูกค้า C7 (Welcome Pack / Investment Guide / Journey Timeline ไทย) = ไฟล์ส่งกลุ่มช่วง qualify/onboarding — เข้าคิว sender เดียวกับ R-5
 - **ปัดตก:** C11 portal sheets (มี PWA จริงแล้ว — workbook ด้อยกว่า) · C12 pipeline/tracker (ซ้ำ SJ-2/SJ-5 ที่เป็นระบบจริง) · artifacts ทั้งโฟลเดอร์ (build outputs + Linden reference ห้าม copy ตาม design ของ kit เอง) · RIBA/Sales Gate/retainage (คงห้ามตาม R-3)
 - **Consequences:** tasks ใหม่ PK-3 (VO — implement ทันที) · follow-up sender += ใบแจ้งงวด + เอกสารลูกค้า C7 · README-STATUS ของ kit อัปเดตรายการ merge · docs/superpowers คงเป็น log ฝั่งโปรดักต์ตามสภาพ
+
+## ADR-045 — Sender รองรับไฟล์/รูป (grill PK-4: เอกสาร = ลิงก์หน้าเว็บ · รูป = signed URL · ทยอยตามผลกระทบเงิน)
+
+- **Status:** Accepted (owner "ก" ทั้ง 4 ข้อ, 8 ก.ค. 2026)
+- **Context:** ความจริงแพลตฟอร์ม: LINE bot ส่งไฟล์เอกสารตรงไม่ได้ (ไม่มี file message type) และ image message ต้องเป็น HTTPS URL ที่ LINE ดึงได้เอง — bucket เราเป็น private
+- **Decision (owner, 4 มติ):**
+  1. **เอกสาร = ลิงก์หน้าเว็บอ่าน** (edge fn render HTML จาก body ที่ generate ไว้แล้ว + token อายุจำกัด — pattern approve_token/customer-design-view; ไม่สร้าง PDF engine); ปัดตก: render PDF ฝั่ง server (ฟอนต์ไทย+revoke ไม่ได้) และรูปทีละหน้า (อ่านสัญญายาก)
+  2. **รูป = signed URL อายุ ~48 ชม. จาก bucket เดิม** ตอน dispatch — รูปคง private ทั้งหมด ศูนย์ infra ใหม่; ปัดตก bucket สาธารณะ (PDPA อ่อน)
+  3. **ลำดับส่งมอบ**: Wave 1 = image kind + รูป curated ผลิต → Wave 2 = ลิงก์เอกสารเงิน (ใบแจ้งงวด + สัญญา/VO) → Wave 3 = เอกสาร C7/รายงาน PDF
+  4. **ลิงก์เอกสารเงิน/สัญญาหมดอายุ 30 วัน** + ขอใหม่ได้จากการ์ดใหม่ + ทุกการเปิดลง audit
+- **Consequences:** sender += LineImageMessage + createSignedMediaUrl (fail-safe: ไม่มี signer/URL = ไม่ส่งมั่ว); templates message_kind += 'image' (0134); producer แรก rpc_field_send_photo_to_customer (curated — office/designer เท่านั้น); Wave 2 = document_links + edge fn doc-view
