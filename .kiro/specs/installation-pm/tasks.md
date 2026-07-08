@@ -96,6 +96,10 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase S12 — scrutinize รอบ 12 (0147) (8 ก.ค. 2026)
+- [x] S12-1 — ✅ **`0148`**: wet-area rule รั่ว 3 การสะกด (พิสูจน์บน DB: 'ปาร์ติเกิลบอร์ด' ป. ที่ C18 เองใช้ / 'ชิปบอร์ด' / 'เอ็มดีเอฟ' หลุดหมด — designer พิมพ์ไทยปกติ = rule ไม่ทำงาน) → regex ครอบ พาร์ติ|ปาร์ติ|ชิปบอร์ด|chipboard|เอ็มดีเอฟ; ทดสอบ 8 เคส ✓
+- [x] S12-2 — ✅ false positive: 'MDF V313 กันชื้น' โดน block ทั้งที่ C18 ระบุเป็นเกรดพื้นที่เปียก → ยกเว้น hmr|กันชื้น|ทนชื้น|v313; ตัวอื่นของ 0147 (band envelope กว้างข้ามเกรด = เตือนเกินทาง safe, ไม่แก้) reviewed-OK
+
 ## Phase MB — ADR-052 C18 ราคากลางตลาด + กติกาพื้นที่เปียก (8 ก.ค. 2026)
 - [x] MB-1 — ✅ **`0147` (2026-07-08)**: market_price_bands seed 38 แถวจาก C18 (หมวด×เกรด×m/sqm + effective_date) + rpc set(governance)/list; price_estimate (rebase 0115) แนบ market_bands_sqm + hidden_cost_note (ดำเนินการ 10%/VAT 7%/ตจว. 20%); estimate_package (rebase 0145→6-param, drop เก่า) + band sanity: ต้นทุน/เมตรในกรอบ=margin บาง เกิน max=ทบทวน (เตือน+audit ไม่ block); ทดสอบ 15 เคส ✓
 - [x] MB-2 — ✅ wet-area hard rule: cabinet_wall_list (rebase 0144) ชิ้น room ครัว/ห้องน้ำ + PB/พาร์ติ/MDF(ไม่ HMR) → block (HMR/ไม้อัด/พลาสวูด เท่านั้น); CONTRACT-REVIEW-CHECKLIST แถว 12 spec lock ถึงรหัสสินค้า + แถว 13 E1/E0; REFERENCE เพิ่มหมวด C18 (แผ่นไม้/ฟิตติ้ง tier/เรท M&E/ปัดตกราคากลางรัฐ)
