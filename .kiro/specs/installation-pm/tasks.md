@@ -81,7 +81,7 @@
 
 ## Phase BJ: Designer Journey (grill 7 ก.ค. 2026 — position-journeys.md §B2)
 
-- [ ] BJ-1 Gate โรงงาน SLA + escalate B1 + delegation (reuse 0082/SLA เดิม — config ต่อ gate) (B2-1; ผูก J2.2)
+- [x] BJ-1 — ✅ **`0124` (2026-07-08)**: factory_gate_config (SLA ต่อ gate, default 240 นาที) + fn_factory_gate_sla_sweep (pg_cron */15: เกิน SLA → เตือน designer ของบ้านจาก roster design ครั้งเดียว · เกิน 2×SLA → ไต่ B1 จาก ops_contacts ครั้งเดียว + audit) + **rebase rpc_factory_approve_gate (0107→0124)**: เส้นใหม่ B1 approve แทนได้เฉพาะหลัง escalated_at (ตรวจ binding auth_uid = ops_contacts B1) → audit gate_approved_by_escalation; RACI Designer เดิม + fail-safe block คงเดิมทุกบรรทัด; delegation ลา/ลงไซต์ = reuse 0082 ชั้น workflow ตามมติ (ไม่สร้างใหม่); ทดสอบ DB 10 เคส ✓ (B1 ก่อน escalate โดน block · หลัง escalate ผ่าน+curated ออก)
 - [ ] BJ-2 Shop Drawing revision flow: rev ใหม่ผ่าน Released_Spec + แจ้งกลุ่มโรงงาน "ใช้ rev N+1" + B4 ประเมิน rework → Job Cost; กระทบของที่ลูกค้าเซ็น → บังคับ requote (B2-2; ผูก PK-1/PK-2)
 - [ ] BJ-3 Designer profile (tag สไตล์ B1 ดูแล) + matching list (tag×Mood&Tone + ประวัติ + rework + งานในมือ) (B2-3; ผูก J2.5)
 - [ ] BJ-4 หน้าแรก Designer "คิวของฉันวันนี้" เรียงตามราคาการรอ + ปุ่มเปิดใน MONOLITH (B2-4; Wave B)
