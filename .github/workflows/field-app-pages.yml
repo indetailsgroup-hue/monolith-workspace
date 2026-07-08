@@ -23,6 +23,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
+          VITE_LINE_LOGIN_CHANNEL_ID: ${{ secrets.VITE_LINE_LOGIN_CHANNEL_ID }}
+          VITE_MONOLITH_URL: ${{ secrets.VITE_MONOLITH_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: packages/field-app/dist }
