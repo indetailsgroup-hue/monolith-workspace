@@ -4,7 +4,7 @@ name: field-app-pages
 on:
   push:
     branches: [main]
-    paths: ['packages/field-app/**', 'src/**', 'index.html', 'vite.config.*', '.github/workflows/field-app-pages.yml']
+    paths: ['packages/field-app/**', 'src/**', 'public/**', 'index.html', 'vite.config.*', '.github/workflows/field-app-pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
