@@ -62,7 +62,7 @@
   -- ต้องเห็น: wf-after-sales-sweep · wf-appointment-reminder · wf-sales-training-reminder · wf-daily-digest · wf-gate-sla-sweep · wf-issue-sla-sweep
   --          wf-lead-followup-sweep · wf-media-fetch · wf-notification-retry · wf-payment-overdue-sweep · wf-sla-sweep
   ```
-- [ ] **P4.3** Deploy edge functions **11 ตัว**:
+- [ ] **P4.3** Deploy edge functions **16 ตัว** (11 หลัก + mcp-server/mcp-approval-callback/mcp-pending-cleanup/capture-ocr-extract/customer-design-view):
   ```
   supabase functions deploy line-webhook line-outbound-sender approval-postback \
     web-fallback-api notification-retry-worker sla-sweep-scheduler \
