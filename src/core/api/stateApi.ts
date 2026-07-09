@@ -56,8 +56,29 @@ export type Actor = {
 // CONFIGURATION
 // ============================================
 
-// Use relative URL (proxied in development)
-const API_BASE = '';
+// ADR-060: ชี้ factory-api (Supabase Edge Function) — ตั้งผ่าน env; ว่าง = vite proxy เดิม
+const API_BASE = (import.meta.env?.VITE_FACTORY_API_BASE as string | undefined) ?? '';
+const ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
+
+/** auth headers: session จาก Field App (ADR-058) + anon key — จำเป็นเมื่อยิงตรง edge function */
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (!ANON_KEY) return h;
+  h['apikey'] = ANON_KEY;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
+      const s = JSON.parse(localStorage.getItem(key) ?? '');
+      if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
+        h['Authorization'] = 'Bearer ' + s.access_token;
+        break;
+      }
+    }
+  } catch { /* no session */ }
+  if (!h['Authorization']) h['Authorization'] = 'Bearer ' + ANON_KEY;
+  return h;
+}
 
 // Default actor for state transitions
 function getDefaultActor(): Actor {
@@ -81,6 +102,7 @@ export async function getJobState(jobId: string): Promise<StateResponse> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
       },
     });
 
@@ -110,6 +132,7 @@ export async function freezeJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
         'X-Actor-Role': actor.role,
         'X-Actor-Name': actor.name,
       },
@@ -142,6 +165,7 @@ export async function releaseJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
         'X-Actor-Role': actor.role,
         'X-Actor-Name': actor.name,
       },
@@ -174,6 +198,7 @@ export async function revokeJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
         'X-Actor-Role': actor.role,
         'X-Actor-Name': actor.name,
       },
@@ -201,6 +226,7 @@ export async function checkCanExport(jobId: string): Promise<CanExportResponse> 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
       },
     });
 
@@ -242,6 +268,7 @@ export async function isServerReachable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE}/api/health`, {
       method: 'GET',
+      headers: authHeaders(),
       signal: AbortSignal.timeout(3000), // 3 second timeout
     });
     return response.ok;
@@ -328,6 +355,7 @@ export async function getProofBundle(jobId: string): Promise<ProofBundle> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
       },
     });
 

@@ -636,3 +636,17 @@ inclusion: always
 - **ระดับ 2 โครงสร้าง**: repo GitHub iimos-workspace → **monolith-workspace** · path ย่อย /monolith/ → **/designer/** (สื่อความหมายถูก: designer workspace ใต้ MONOLITH) · ตามแก้ลูกโซ่: Pages base path, VITE_MONOLITH_URL, LINE Login callback URL, docs/memory · ไฟล์ bridge iimos* → fieldBridge*
 
 **Consequences**: index.html, src/bridge/*, App.tsx, workflow, gh repo rename + secrets, LINE console callback
+
+## ADR-060: Factory State Server — หลุมที่ทำให้ Designer "ทำงานจริงไม่ได้" (2026-07-09)
+
+**บริบท**: เจ้าของลองใช้จริงแล้วติดตาย — grill รอบ 15 พบราก: สถาปัตยกรรม P11.1 "Server-only authority" ให้ Freeze/Release/Export ผ่าน factory server (localhost:3001) ซึ่ง**ไม่เคยถูกสร้าง** → ทุกงานติด DRAFT ตลอดกาล, Export to CNC block ตลอดกาล, กด Freeze แล้วเงียบ (intent เข้า queue offline)
+
+**มติ**: สร้าง factory server บน stack ที่มีอยู่ — **Supabase Edge Function `factory-api` + Postgres (0155)**:
+- ตาราง factory_jobs (spec_state DRAFT/FROZEN/RELEASED + revision_id + anchors + timestamps) + factory_job_events (ทุก transition ลง event)
+- rpc_factory_job_state / rpc_factory_job_transition (freeze|release|revoke — validate state machine ใน SQL, gen revision id) / proof bundle (P12) — service_role only, edge fn เป็นคนเรียก
+- endpoints ตรง contract stateApi.ts: /api/factory/jobs/:id/{state,freeze,release,revoke,can-export,proof} + /api/health + CORS
+- client: stateApi ใช้ VITE_FACTORY_API_BASE + แนบ session token จาก readFieldSession (ต้องล็อกอิน Field App ก่อน — align ADR-058)
+- can-export = FROZEN หรือ RELEASED (ตาม gate message)
+- dev: supabase functions serve · prod: deploy + env ใน Pages workflow
+
+**Consequences**: 0155 + supabase/functions/factory-api + stateApi patch + env

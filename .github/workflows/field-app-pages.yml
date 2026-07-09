@@ -31,6 +31,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
+          VITE_FACTORY_API_BASE: https://kqzjqqvbrukxpjseqvua.supabase.co/functions/v1/factory-api
       - run: mkdir -p packages/field-app/dist/designer && cp -r dist/* packages/field-app/dist/designer/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
