@@ -192,52 +192,30 @@ function readDestination(rawBody: string): string | null {
 // Default RPC forwarder (Supabase service-role client)
 // ---------------------------------------------------------------------------
 
-/** Minimal client surface this function depends on. */
-interface RpcClient {
-  rpc(
-    fn: string,
-    params: Record<string, unknown>,
-  ): Promise<{ data: unknown; error: unknown }>;
-}
-
-let cachedClient: RpcClient | null = null;
-
-/** Lazily constructs a cached Supabase service-role client. */
-async function getServiceClient(): Promise<RpcClient> {
-  if (cachedClient !== null) {
-    return cachedClient;
-  }
+/** Production forwarder: invokes the ingestion RPC via PostgREST over fetch.
+ *  No third-party client dependency — `fetch` is native to the Deno edge
+ *  runtime, avoiding remote-module resolution failures at deploy time. */
+const defaultIngest: IngestFn = async (args) => {
   const supabaseUrl = getEnv("SUPABASE_URL");
   const serviceKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-  // Non-literal specifier so the editor TS toolchain does not attempt to
-  // statically resolve the remote module; Deno resolves it at deploy time.
-  const specifier = "https://esm.sh/@supabase/supabase-js@2";
-  const mod = await import(specifier);
-  const created = (mod.createClient as (
-    url: string,
-    key: string,
-    options: Record<string, unknown>,
-  ) => RpcClient)(supabaseUrl, serviceKey, {
-    auth: { persistSession: false },
+  const res = await fetch(`${supabaseUrl}/rest/v1/rpc/rpc_ingest_line_webhook`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      apikey: serviceKey,
+      authorization: `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({
+      p_raw_body: args.raw_body,
+      p_signature: args.signature,
+      p_channel_identifier: args.channel_identifier,
+    }),
   });
-
-  cachedClient = created;
-  return created;
-}
-
-/** Production forwarder: invokes the ingestion RPC via the service client. */
-const defaultIngest: IngestFn = async (args) => {
-  const client = await getServiceClient();
-  const { data, error } = await client.rpc("rpc_ingest_line_webhook", {
-    p_raw_body: args.raw_body,
-    p_signature: args.signature,
-    p_channel_identifier: args.channel_identifier,
-  });
-  return {
-    data: normalizeResult(data),
-    error: (error as IngestError | null) ?? null,
-  };
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as IngestError;
+    return { data: null, error: { code: err.code, message: err.message } };
+  }
+  return { data: normalizeResult(await res.json()), error: null };
 };
 
 /** Normalizes the RPC payload (object or single-element array) to one record. */
@@ -277,8 +255,10 @@ function getEnv(key: string): string {
 
 // Deno Deploy / Supabase Edge runtime entrypoint. Guarded so the module can be
 // imported by tests without starting a server.
-if (typeof Deno !== "undefined" && import.meta.main) {
-  Deno.serve(handleLineWebhook);
+if (typeof Deno !== "undefined") {
+  // Wrap so Deno.serve's 2nd arg (ServeHandlerInfo) does not clobber the
+  // handler's defaulted `ingest` parameter.
+  Deno.serve((req) => handleLineWebhook(req));
 }
 
 // Minimal ambient declaration so this module type-checks outside the Deno

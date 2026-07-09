@@ -89,8 +89,7 @@ async function getServiceClient(): Promise<RpcClient> {
   if (cachedClient !== null) return cachedClient;
   const supabaseUrl = getEnv("SUPABASE_URL");
   const serviceKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const specifier = "https://esm.sh/@supabase/supabase-js@2";
-  const mod = await import(specifier);
+  const mod = await import("npm:@supabase/supabase-js@2");
   cachedClient = (mod.createClient as (u: string, k: string, o: Record<string, unknown>) => RpcClient)(
     supabaseUrl,
     serviceKey,
@@ -124,8 +123,8 @@ function getEnv(key: string): string {
   return value;
 }
 
-if (typeof Deno !== "undefined" && import.meta.main) {
-  Deno.serve(handleApprovalPostback);
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) => handleApprovalPostback(req));
 }
 
 declare const Deno: {

@@ -577,7 +577,7 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
   const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   const { createClient } = await import(
-    "https://esm.sh/@supabase/supabase-js@2"
+    "npm:@supabase/supabase-js@2"
   );
   const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
@@ -774,8 +774,8 @@ function readBatchSize(req: Request): number {
 
 // Deno Deploy / Supabase Edge runtime entrypoint.
 // Guarded so the module can be imported by tests without starting a server.
-if (typeof Deno !== "undefined" && import.meta.main) {
-  Deno.serve(runOutboundSender);
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) => runOutboundSender(req));
 }
 
 // Minimal ambient declaration so this module type-checks outside the Deno

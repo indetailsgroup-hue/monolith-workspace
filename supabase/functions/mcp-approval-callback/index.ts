@@ -51,7 +51,7 @@ interface RpcClient { rpc(fn: string, params: Record<string, unknown>): Promise<
 let cachedClient: RpcClient | null = null;
 async function getServiceClient(): Promise<RpcClient> {
   if (cachedClient !== null) return cachedClient;
-  const mod = await import("https://esm.sh/@supabase/supabase-js@2");
+  const mod = await import("npm:@supabase/supabase-js@2");
   cachedClient = (mod.createClient as (u: string, k: string, o: Record<string, unknown>) => RpcClient)(
     getEnv("SUPABASE_URL"), getEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } },
   );
@@ -83,5 +83,5 @@ function getEnv(key: string): string {
   if (v === undefined || v.length === 0) throw new Error(`Missing required environment variable: ${key}`);
   return v;
 }
-if (typeof Deno !== "undefined" && import.meta.main) { const d = defaultDeps(); Deno.serve((req) => handleApprovalCallback(req, d)); }
+if (typeof Deno !== "undefined") { const d = defaultDeps(); Deno.serve((req) => handleApprovalCallback(req, d)); }
 declare const Deno: { serve: (h: (req: Request) => Response | Promise<Response>) => unknown; env: { get: (k: string) => string | undefined } } & Record<string, unknown>;

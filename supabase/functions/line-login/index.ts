@@ -84,7 +84,7 @@ interface AdminClient {
 let cached: AdminClient | null = null;
 async function getServiceClient(): Promise<AdminClient> {
   if (cached) return cached;
-  const mod = await import("https://esm.sh/@supabase/supabase-js@2");
+  const mod = await import("npm:@supabase/supabase-js@2");
   cached = (mod.createClient as (u: string, k: string, o: Record<string, unknown>) => AdminClient)(
     env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
   return cached;
@@ -107,7 +107,7 @@ function env(k: string): string {
   if (!v) throw new Error(`missing env ${k}`);
   return v;
 }
-if (typeof Deno !== "undefined" && import.meta.main) {
+if (typeof Deno !== "undefined") {
   Deno.serve((req) => req.method === "OPTIONS"
     ? new Response(null, { status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type, authorization", "access-control-allow-methods": "POST, OPTIONS" } })
     : handleLineLogin(req));

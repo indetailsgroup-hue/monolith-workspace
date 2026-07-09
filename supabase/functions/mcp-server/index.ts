@@ -120,7 +120,7 @@ interface RpcClient {
   from(t: string): { select: (c: string) => Promise<{ data: unknown; error: unknown }> };
 }
 async function getUserScopedClient(authHeader: string): Promise<RpcClient> {
-  const mod = await import("https://esm.sh/@supabase/supabase-js@2");
+  const mod = await import("npm:@supabase/supabase-js@2");
   return (mod.createClient as (u: string, k: string, o: Record<string, unknown>) => RpcClient)(
     getEnv("SUPABASE_URL"), getEnv("SUPABASE_ANON_KEY"),
     { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } },
@@ -177,7 +177,7 @@ function getEnv(key: string): string {
   return v;
 }
 
-if (typeof Deno !== "undefined" && import.meta.main) {
+if (typeof Deno !== "undefined") {
   const deps = defaultDeps();
   Deno.serve((req) => handleMcpServer(req, deps));
 }

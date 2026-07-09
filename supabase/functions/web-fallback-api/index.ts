@@ -83,8 +83,7 @@ interface RpcClient {
 async function getUserScopedClient(authHeader: string): Promise<RpcClient> {
   const supabaseUrl = getEnv("SUPABASE_URL");
   const anonKey = getEnv("SUPABASE_ANON_KEY");
-  const specifier = "https://esm.sh/@supabase/supabase-js@2";
-  const mod = await import(specifier);
+  const mod = await import("npm:@supabase/supabase-js@2");
   return (mod.createClient as (u: string, k: string, o: Record<string, unknown>) => RpcClient)(
     supabaseUrl,
     anonKey,
@@ -119,8 +118,8 @@ function getEnv(key: string): string {
   return value;
 }
 
-if (typeof Deno !== "undefined" && import.meta.main) {
-  Deno.serve(handleWebFallback);
+if (typeof Deno !== "undefined") {
+  Deno.serve((req) => handleWebFallback(req));
 }
 
 declare const Deno: {
