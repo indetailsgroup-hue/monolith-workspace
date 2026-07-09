@@ -20,6 +20,8 @@
 import { z } from 'zod';
 import { validateExternalStateSafe, parseAndValidateSafe } from './validateExternalState';
 import type { ValidationIssue } from './validateExternalState';
+// S15-3: require() ใช้ไม่ได้ในเบราว์เซอร์ ESM — import ตรงเพื่อเช็ค schema availability
+import * as projectSchemaModule from '../schema/project.schema';
 
 // ============================================
 // G9 CHECK TYPES
@@ -72,8 +74,7 @@ function checkSchemaAvailability(): G9Issue[] {
   const issues: G9Issue[] = [];
 
   try {
-    // Try to import schemas dynamically
-    const schemaModule = require('../schema/project.schema');
+    const schemaModule = projectSchemaModule as Record<string, unknown>;
 
     const requiredSchemas = [
       'ProjectDataSchema',

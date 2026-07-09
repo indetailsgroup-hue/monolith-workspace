@@ -9,6 +9,7 @@
 
 import { useViewStore } from '../../core/store/useViewStore';
 import { useDrillMapStore } from '../../core/store/useDrillMapStore';
+import { useGateStore } from './gateStore';
 import {
   getEntityPositions,
   calculateBoundingBox,
@@ -81,8 +82,6 @@ export function focusOnEntity(entityId: string): void {
  */
 export function focusAndSelectFinding(findingKey: string, entityIds: string[]): void {
   // Import here to avoid circular dependency
-  const { useGateStore } = require('./gateStore');
-
   // Update selection state
   useGateStore.getState().selectFinding(findingKey, entityIds);
 
@@ -107,8 +106,6 @@ export function focusAndSelectFinding(findingKey: string, entityIds: string[]): 
  * Clear entity focus and return to normal view.
  */
 export function clearEntityFocus(): void {
-  const { useGateStore } = require('./gateStore');
-
   // Clear selection
   useGateStore.getState().clearSelection();
 

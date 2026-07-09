@@ -28,11 +28,13 @@ import {
   getJobState,
   freezeJob as apiFreezeJob,
   releaseJob as apiReleaseJob,
+  unfreezeJob as apiUnfreezeJob,
   revokeJob as apiRevokeJob,
   checkCanExport as apiCheckCanExport,
   type SyncStatus,
   type StateResponse,
 } from '../api/stateApi';
+import { g9ToValidationRules } from '../gate/g9PersistenceGate';
 
 // ============================================
 // TYPES
@@ -392,18 +394,18 @@ function runValidation(): ValidationResult {
   });
 
   // G9: Persistence Gate - External state validation
+  // S15-3: require() ไม่มีในเบราว์เซอร์ ESM (Vite) — เดิมพัง silent ทำให้ WARN ถาวร → static import
   try {
-    const { g9ToValidationRules } = require('../gate/g9PersistenceGate');
     const g9Rules = g9ToValidationRules() as ValidationRule[];
     rules.push(...g9Rules);
   } catch {
-    // If G9 module fails to load, add a warning
+    // If G9 check fails at runtime, add a warning
     rules.push({
       id: 'g9-load-error',
       name: 'G9 Persistence Gate',
       category: 'SAFETY',
       status: 'WARN',
-      message: 'G9 persistence gate module not available',
+      message: 'G9 persistence gate check failed to run',
     });
   }
   
@@ -463,7 +465,7 @@ interface SpecStoreActions {
   setSpecState: (state: SpecState) => void;
   freezeSpec: () => Promise<boolean>;
   releaseSpec: (options?: { releasedBy?: string; note?: string }) => Promise<boolean>;
-  unfreezeSpec: () => void;
+  unfreezeSpec: () => Promise<boolean>;
   revokeSpec: () => Promise<boolean>;
 
   // Validation
@@ -712,16 +714,47 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
     }
   },
   
-  unfreezeSpec: () => {
+  unfreezeSpec: async () => {
     const { specState } = get();
-    
-    if (specState === 'RELEASED') {
-      console.warn('[SpecStore] Cannot unfreeze RELEASED spec');
-      return;
+
+    // S15-3: server เป็น authority — เดิม set local DRAFT เฉย ๆ แล้ว reload เด้งกลับ FROZEN
+    if (specState !== 'FROZEN') {
+      console.warn('[SpecStore] Cannot unfreeze: state is', specState, '(RELEASED ต้อง revoke ก่อน)');
+      return false;
     }
-    
-    set({ specState: 'DRAFT' });
-    get().updateGateStatus();
+
+    const projectMeta = useProjectStore.getState().metadata;
+    const jobId = projectMeta?.id;
+
+    if (!jobId) {
+      console.warn('[SpecStore] Cannot unfreeze: no jobId');
+      return false;
+    }
+
+    set({ syncStatus: 'pending' });
+
+    try {
+      const response = await apiUnfreezeJob(jobId, { note: 'Unfrozen to DRAFT' });
+
+      if (response.ok && response.specState) {
+        set({
+          specState: response.specState as SpecState,
+          syncStatus: 'synced',
+          lastServerResponse: response,
+          serverRevisionId: response.revisionId || null,
+        });
+        get().updateGateStatus();
+        return true;
+      }
+
+      console.warn('[SpecStore] Server rejected unfreeze:', response.error);
+      set({ syncStatus: 'error', lastServerResponse: response });
+      return false;
+    } catch (error) {
+      console.warn('[SpecStore] Unfreeze failed: server unreachable');
+      set({ syncStatus: 'offline' });
+      return false;
+    }
   },
   
   // ========== VALIDATION ==========

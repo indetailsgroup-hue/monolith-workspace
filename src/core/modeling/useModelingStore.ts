@@ -21,6 +21,7 @@ import type {
   ProfileAsset,
   ModelingCommand,
 } from './types';
+import { MODELING_COMMANDS } from './types';
 import type { PreflightResult, PanelContext } from './preflight';
 import { validateIntent } from './preflight';
 
@@ -568,9 +569,6 @@ export const useCommandPaletteOpen = (): boolean => {
 export const useAvailableCommands = () => {
   const selection = useModelingStore((s) => s.selection);
   const selectionType = selection?.type || 'none';
-
-  // Import commands list
-  const { MODELING_COMMANDS } = require('./types');
 
   return MODELING_COMMANDS.filter((cmd: any) =>
     cmd.requiresSelection.includes(selectionType) || cmd.requiresSelection.includes('none')

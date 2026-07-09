@@ -453,6 +453,15 @@ export function App() {
     writeTheme(theme); // G9 compliant via appPrefs boundary
   }, [theme]);
 
+  // S15-3: hydrate spec state จาก server ตอนเปิด/สลับโปรเจกต์ — server เป็น authority (ADR-060)
+  // ไม่งั้น reload แล้ว client เชื่อ DRAFT ทั้งที่ server FROZEN → spec drift
+  const projectId = useProjectStore((s) => s.metadata?.id);
+  useEffect(() => {
+    if (projectId) {
+      void useSpecStore.getState().syncWithServer();
+    }
+  }, [projectId]);
+
   // Glue confirmation effect - moves target cabinet when glue is confirmed
   // Subscribe to glue confirmation - when mode goes to 'idle' after 'preview', move cabinet
   useEffect(() => {

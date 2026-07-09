@@ -184,6 +184,39 @@ export async function releaseJob(
 }
 
 /**
+ * Unfreeze a job (FROZEN -> DRAFT).
+ * S15-3: เดิม client เปลี่ยน local อย่างเดียว ทำให้ drift กับ server
+ */
+export async function unfreezeJob(
+  jobId: string,
+  options?: TransitionRequest
+): Promise<StateResponse> {
+  const actor = getDefaultActor();
+
+  try {
+    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/unfreeze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        'X-Actor-Role': actor.role,
+        'X-Actor-Name': actor.name,
+      },
+      body: JSON.stringify(options || {}),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('[StateAPI] unfreezeJob failed:', error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Network error',
+    };
+  }
+}
+
+/**
  * Revoke a job (RELEASED -> FROZEN).
  * Invalidates the release for export gate.
  */

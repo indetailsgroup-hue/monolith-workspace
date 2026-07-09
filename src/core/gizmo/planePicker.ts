@@ -14,7 +14,7 @@
 import type { Vec3 } from '../types/SnapTypes';
 import type { GizmoPlane } from './gizmoTypes';
 import type { ScreenPoint, AxisPickerConfig } from './axisPicker';
-import { projectToScreen, distPointToSegment, axisParallelFactor } from './axisPicker';
+import { projectToScreen, distPointToSegment, axisParallelFactor, pickGizmoAxis } from './axisPicker';
 import { dot, cross, normalize, len, scale, add } from '../math/vec3Utils';
 import { getPlaneNormal, getPlaneBasis, getPlaneBasisLocal } from './translatePlaneDrag';
 
@@ -315,9 +315,6 @@ export function pickGizmoHandle(args: {
   axisConfig?: Partial<AxisPickerConfig>;
   planeConfig?: Partial<PlanePickerConfig>;
 }): UnifiedPickResult {
-  // Import axis picker (avoid circular dependency)
-  const { pickGizmoAxis } = require('./axisPicker');
-
   // Pick plane
   const planeResult = pickGizmoPlane({
     pointerPx: args.pointerPx,

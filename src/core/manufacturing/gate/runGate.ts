@@ -13,6 +13,7 @@
 
 import type { GateReport, CabinetGateReport, GateStatus, GateBlocker } from './types';
 import type { DesignIntent, ProfileAsset } from '../../modeling/types';
+import { BUILT_IN_PROFILES } from '../../modeling/types';
 import type { PanelContext, ToolContext } from '../../modeling/preflight';
 import type { Cabinet } from '../../types/Cabinet';
 import { validateAllIntents } from '../../modeling/preflight';
@@ -21,9 +22,7 @@ import { runMinifixGate, minifixErrorsToBlockers, type MinifixGateResult } from 
 
 // Simple profile lookup using built-in profiles
 const defaultProfileLookup = (profileId: string): ProfileAsset | undefined => {
-  // Import BUILT_IN_PROFILES dynamically to avoid circular deps
-  const { BUILT_IN_PROFILES: profiles } = require('../../modeling/types');
-  return profiles.find((p: ProfileAsset) => p.id === profileId);
+  return BUILT_IN_PROFILES.find((p: ProfileAsset) => p.id === profileId);
 };
 
 /**

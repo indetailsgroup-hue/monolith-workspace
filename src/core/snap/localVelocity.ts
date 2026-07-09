@@ -91,7 +91,7 @@ export function resolveSnapIntentLocal(args: {
 // UTILITY: GET CABINET AXES
 // ============================================
 
-import { axesFromQuat, type Quat } from '../math/quaternion';
+import { axesFromQuat, quatFromEuler, type Quat } from '../math/quaternion';
 
 /**
  * Get cabinet axes from quaternion rotation
@@ -105,7 +105,6 @@ export function getCabinetAxesFromQuat(rotation: Quat): CabinetAxes {
  */
 export function getCabinetAxesFromEuler(euler: Vec3): CabinetAxes {
   // Convert Euler to quaternion first
-  const { quatFromEuler } = require('../math/quaternion');
   const quat = quatFromEuler(euler);
   return axesFromQuat(quat);
 }

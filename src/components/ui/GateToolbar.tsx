@@ -19,8 +19,9 @@ import {
 } from '../../core/store/useSpecStore';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
 import { quickDxfExport, quickDxfExportAll } from '../../core/export/exportPipeline';
-import { exportAndDownload, type ExportFormat } from '../../core/api/exportApi';
 import { generateFactoryPacketFromStores } from '../../factory/packet';
+import { buildCutListData } from '../../factory/packet/builders';
+import { downloadCutListCsv } from '../../factory/packet/cutListCsv';
 
 const STATE_COLORS: Record<SpecState, string> = {
   DRAFT: 'bg-amber-500',
@@ -79,11 +80,16 @@ export function GateToolbar() {
 
       switch (format) {
         case 'CUT_LIST': {
-          // Export cut list CSV using the core export API
-          const bundleId = activeCabinet?.id || 'default-bundle';
+          // S15-3: สร้าง CSV client-side จาก builder เดียวกับ factory packet
+          // (เดิมยิง localhost:3001 ซึ่งไม่เคยมีเซิร์ฟเวอร์จริง)
           const jobName = activeCabinet?.name || 'cabinet';
-          await exportAndDownload(bundleId, 'CUTLIST_CSV', jobName);
-          console.log('[GateToolbar] Cut list export completed');
+          const cutListData = buildCutListData(cabinets.length > 0 ? cabinets : (activeCabinet ? [activeCabinet] : []));
+          if (cutListData.rows.length === 0) {
+            setExportError('No panels to export');
+            break;
+          }
+          downloadCutListCsv(cutListData, jobName);
+          console.log('[GateToolbar] Cut list export completed:', cutListData.summary);
           break;
         }
 
@@ -170,18 +176,31 @@ export function GateToolbar() {
       
       {/* State Action Button */}
       {specState === 'DRAFT' && (
-        <button
-          onClick={handleStateAction}
-          disabled={!gateStatus.canFreeze}
-          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors
-            ${gateStatus.canFreeze 
-              ? 'bg-blue-500 text-white hover:bg-blue-600' 
-              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-            }`}
-          title={gateStatus.canFreeze ? 'Freeze spec for export' : gateStatus.blockers.join(', ')}
-        >
-          🔒 Freeze
-        </button>
+        <>
+          <button
+            onClick={handleStateAction}
+            disabled={!gateStatus.canFreeze}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors
+              ${gateStatus.canFreeze
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              }`}
+            title={gateStatus.canFreeze ? 'Freeze spec for export' : gateStatus.blockers.join(', ')}
+          >
+            🔒 Freeze
+          </button>
+          {/* S15-3: บอกทางแก้แทนที่จะปล่อยปุ่มเงียบ — blockers เดิมซ่อนใน tooltip อย่างเดียว */}
+          {!gateStatus.canFreeze && gateStatus.blockers.length > 0 && (
+            <span
+              className="px-2 py-1 rounded text-[11px] bg-amber-500/15 text-amber-400 whitespace-nowrap"
+              title={gateStatus.blockers.join(', ')}
+            >
+              ⚠ {gateStatus.blockers[0] === 'Run validation first'
+                ? 'กด Validate ก่อน'
+                : gateStatus.blockers[0]}
+            </span>
+          )}
+        </>
       )}
       
       {specState === 'FROZEN' && (

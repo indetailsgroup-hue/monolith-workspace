@@ -93,7 +93,7 @@ export async function handleFactoryApi(req: Request): Promise<Response> {
     if (req.method === "GET" && action === "proof") {
       return json(200, await callRpc("rpc_factory_job_proof", { p_job_id: jobId }));
     }
-    if (req.method === "POST" && ["freeze", "release", "revoke"].includes(action)) {
+    if (req.method === "POST" && ["freeze", "release", "revoke", "unfreeze"].includes(action)) {
       const body = (await req.json().catch(() => ({}))) as { note?: string; changeClass?: string };
       return json(200, await callRpc("rpc_factory_job_transition", {
         p_job_id: jobId,
