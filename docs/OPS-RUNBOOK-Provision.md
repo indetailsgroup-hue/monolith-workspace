@@ -2,7 +2,7 @@
 
 > **ฉบับนี้แทน** [OPS-RUNBOOK-Wave2.md](OPS-RUNBOOK-Wave2.md) (ยุค 0099) — รวมทุกอย่างที่เพิ่มหลังจากนั้น:
 > Field PWA 8 บทบาท (ขาย/หัวหน้า/ดีไซน์/การเงิน/โรงงาน B4/ผลิต E2/วัด C1/ช่าง) · LINE Login · การเงิน 4 งวด · โรงงาน 6 สถานี · roster · after-sales · lead follow-up ·
-> Job Cost/C6 · cron 11 ตัว — **ทำตามลำดับบนลงล่าง ติ๊กทีละข้อ ห้ามข้าม** (ลำดับ seed สำคัญ)
+> Job Cost/C6 · cron 12 ตัว — **ทำตามลำดับบนลงล่าง ติ๊กทีละข้อ ห้ามข้าม** (ลำดับ seed สำคัญ)
 >
 > เวลาโดยประมาณทั้งหมด: ~2–3 ชั่วโมง (ไม่รวมรอ LINE อนุมัติ channel)
 
@@ -45,6 +45,7 @@
   | `line_login_channel_secret` | จาก P2.2 | edge fn `line-login` |
   | `wf_edge_base_url` | `https://<ref>.supabase.co` | pg_cron → edge (0089) |
   | `wf_edge_service_key` | service_role key | pg_cron → edge (0089) |
+  | `line_messaging_channel_id` | Channel ID ของ Messaging API | line-token-refresh (0154) |
 
   \* ชื่อ ref สองตัวแรกต้องตรงกับที่ seed ใน `line_oa_channels` (P5.1) — เปิดไฟล์ seed เทียบก่อนกด
 - [ ] **P3.2 GitHub repo → Settings → Secrets → Actions** — 4 รายการ:
@@ -56,13 +57,13 @@
 ## P4 · Deploy (20 นาที)
 
 - [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0152 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
-- [ ] **P4.2** ตรวจ cron เกิดครบ **11 ตัว** (SQL Editor):
+- [ ] **P4.2** ตรวจ cron เกิดครบ **12 ตัว** (รวม wf-line-token-refresh — หมุน LINE token ทุก 10 วัน, 0154) (SQL Editor):
   ```sql
   select jobname, schedule from cron.job order by jobname;
   -- ต้องเห็น: wf-after-sales-sweep · wf-appointment-reminder · wf-sales-training-reminder · wf-daily-digest · wf-gate-sla-sweep · wf-issue-sla-sweep
   --          wf-lead-followup-sweep · wf-media-fetch · wf-notification-retry · wf-payment-overdue-sweep · wf-sla-sweep
   ```
-- [ ] **P4.3** Deploy edge functions **16 ตัว** (11 หลัก + mcp-server/mcp-approval-callback/mcp-pending-cleanup/capture-ocr-extract/customer-design-view):
+- [ ] **P4.3** Deploy edge functions **17 ตัว** (11 หลัก + mcp-server/mcp-approval-callback/mcp-pending-cleanup/capture-ocr-extract/customer-design-view):
   ```
   supabase functions deploy line-webhook line-outbound-sender approval-postback \
     web-fallback-api notification-retry-worker sla-sweep-scheduler \
