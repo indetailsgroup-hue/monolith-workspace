@@ -96,6 +96,10 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase S14 — scrutinize รอบ 14: MONOLITH (9 ก.ค. 2026)
+- [x] S14-0 — ✅ สุขภาพรวม: full test suite **252 files / 4,494 tests เขียวหมด** + build ผ่าน + deep link ?work_item= พิสูจน์บนแอปจริง (sessionStorage เก็บถูก)
+- [x] S14-1 — ✅ texture อ้างไฟล์ที่ไม่มีจริง **48 รายการ** (SVG สีพื้น 41 + ไม้ hash-name 7 — เห็นเป็น Material error ใน console ตั้งแต่เปิดแอป): gen SVG swatch จาก color hex ในนิยาม (41 ไฟล์) + copy ไม้ที่มีอยู่เป็นชื่อ hash ตาม material จริง (grey-oak/natural-walnut/dark-walnut/brown-oak/light-ash/grey-walnut); re-audit MISSING=0 + fetch/decode บนแอปจริงผ่าน
+
 ## Phase S13 — scrutinize รอบ 13: LINE production hardening (9 ก.ค. 2026)
 - [x] S13-0 — ✅ bug hosted edge 500 ทั้ง 16 fn (จับระหว่างเชื่อม LINE): Deno.serve(handler) ส่ง ServeHandlerInfo ทับ default param → wrap (req)=>h(req) + esm.sh→npm: + webhook ใช้ fetch→PostgREST; official webhook test 200 + broadcast SENT; public endpoints 200/400/401 ครบไม่มี 500
 - [x] S13-1 — ✅ live bundle ไม่มี VITE_LINE_LOGIN_CHANNEL_ID (deploy ก่อน secret ถูกตั้ง + run ใหม่ค้าง waiting เพราะ env branch policy) → rerun run เดิม; ยืนยัน bundle ใหม่มี channel id + prod URL + /monolith/ 200
