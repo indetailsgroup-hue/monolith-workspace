@@ -53,16 +53,17 @@ export function readWorkItemFromUrl(
   }
 }
 
-/** aggregate cutlist ตาม material → รายการวัสดุสำหรับ IIMOS */
-export function buildBridgePayload(
-  packet: FactoryPacket,
+/** aggregate cutlist ตาม material → รายการวัสดุสำหรับ IIMOS (เฟส 2: รับ cutlist ตรง) */
+export function buildPayloadFromCutList(
+  cutList: Pick<FactoryPacket['cutList'], 'rows'>,
   workItemId: string,
   packageCode: string,
-  packageName?: string,
-  clientKey?: string,
+  packageName: string | undefined,
+  contentHash: string | null,
+  clientKey: string,
 ): BridgePayload {
   const byMaterial = new Map<string, number>();
-  for (const row of packet.cutList.rows) {
+  for (const row of cutList.rows) {
     byMaterial.set(row.materialId, (byMaterial.get(row.materialId) ?? 0) + row.qty);
   }
   const items: BridgeItem[] = [...byMaterial.entries()]
@@ -73,9 +74,72 @@ export function buildBridgePayload(
     p_package_code: packageCode.trim().toUpperCase(),
     p_package_name: packageName?.trim() || null,
     p_items: items,
-    p_content_hash: packet.manifest.contentHash ?? null,
-    p_client_key: clientKey ?? `${packet.manifest.jobId}:${packet.manifest.contentHash}`,
+    p_content_hash: contentHash,
+    p_client_key: clientKey,
   };
+}
+
+/** aggregate จาก FactoryPacket เต็มใบ (เฟส 1 — คง signature เดิม) */
+export function buildBridgePayload(
+  packet: FactoryPacket,
+  workItemId: string,
+  packageCode: string,
+  packageName?: string,
+  clientKey?: string,
+): BridgePayload {
+  return buildPayloadFromCutList(
+    packet.cutList,
+    workItemId,
+    packageCode,
+    packageName,
+    packet.manifest.contentHash ?? null,
+    clientKey ?? `${packet.manifest.jobId}:${packet.manifest.contentHash}`,
+  );
+}
+
+export interface IimosSession {
+  accessToken: string;
+  email: string;
+  expiresAt: number | null;
+}
+
+/** อ่าน session ที่ Field App ล็อกอินไว้ (origin เดียวกันบน Pages → localStorage แชร์)
+ *  คืน null เมื่อไม่มี/หมดอายุ — ให้ผู้ใช้ไปล็อกอิน Field App ก่อน */
+export function readIimosSession(
+  storage: Pick<Storage, 'getItem' | 'key' | 'length'> | null =
+    typeof localStorage !== 'undefined' ? localStorage : null,
+  now: number = Date.now(),
+): IimosSession | null {
+  if (!storage) return null;
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
+    try {
+      const raw = storage.getItem(key);
+      if (!raw) continue;
+      const s = JSON.parse(raw) as {
+        access_token?: string;
+        expires_at?: number;
+        user?: { email?: string };
+      };
+      if (!s.access_token) continue;
+      if (s.expires_at && s.expires_at * 1000 < now) continue; // หมดอายุ
+      return {
+        accessToken: s.access_token,
+        email: s.user?.email ?? 'ไม่ทราบอีเมล',
+        expiresAt: s.expires_at ?? null,
+      };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/** sha256 hex ของข้อความ (contentHash จริงของ cutlist — ID-chain) */
+export async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** ยิงเข้า IIMOS — คืน {package_id, imported, skipped, already} */

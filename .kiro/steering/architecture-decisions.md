@@ -613,3 +613,15 @@ inclusion: always
 **ขอบเขตที่ไม่ทำเฟสนี้**: MONOLITH auth + ปุ่มส่งใน UI (เฟส 2) · overlay-diff revision QA · DXF/G-code sync
 
 **Consequences**: 0153 + src/bridge/ + App.tsx param + CI (ตามผล build)
+
+## ADR-058: MONOLITH Bridge เฟส 2 — ปุ่มส่ง cutlist ใน UI + auth (2026-07-09)
+
+**บริบท**: เฟส 1 (ADR-057) วางท่อครบแต่ไม่มีปุ่มใน MONOLITH — เจ้าของสั่งเปิดเฟส 2 หลังเห็น E2E
+
+**มติ**:
+- **Auth = reuse session Field App**: บน Pages ทั้งสองแอปอยู่ origin เดียวกัน (/iimos-workspace/ + /monolith/) → localStorage แชร์กัน — ดีไซเนอร์ล็อกอิน Field App ครั้งเดียว MONOLITH หยิบ session (sb-*-auth-token) ใช้เอง **ไม่ต้องสร้างหน้า login ใหม่**
+- **IimosBridgeButton** ใน header: อ่าน session + work_item (deep link/พิมพ์เอง) + รหัส package → สร้าง cutlist จาก cabinets ใน scene (buildCutListData) → **sha256 ของ cutlist JSON เป็น contentHash จริง** (crypto.subtle) → ยิง rpc_bridge_import_cutlist
+- env MONOLITH build: VITE_SUPABASE_URL/ANON_KEY (Pages workflow ส่งให้ root build ด้วย)
+- iimosBridge.ts refactor: แยก aggregation รับ PacketCutList ตรง (ใช้ได้ทั้งจาก packet และจาก scene)
+
+**Consequences**: src/bridge/IimosBridgeButton.tsx + App.tsx header + workflow env + .env.local dev

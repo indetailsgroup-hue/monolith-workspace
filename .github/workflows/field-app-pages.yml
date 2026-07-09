@@ -28,6 +28,9 @@ jobs:
           VITE_MONOLITH_URL: ${{ secrets.VITE_MONOLITH_URL }}
       # MONOLITH (ADR-057): เสิร์ฟใต้ /monolith/ ใน Pages เดียวกัน — deep link จาก DesignerHome
       - run: npm run build -- --base=/iimos-workspace/monolith/
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
       - run: mkdir -p packages/field-app/dist/monolith && cp -r dist/* packages/field-app/dist/monolith/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

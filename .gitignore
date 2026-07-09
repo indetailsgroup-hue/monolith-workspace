@@ -24,3 +24,4 @@ daph-second-brain/**/*.zip
 
 *.patch
 ธุระกิจ/
+.env.local

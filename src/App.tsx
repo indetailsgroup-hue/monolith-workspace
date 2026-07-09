@@ -29,6 +29,7 @@ import { ProjectToolbar } from './components/ui/ProjectToolbar';
 import { GateToolbar } from './components/ui/GateToolbar';
 import { SceneToolbar } from './components/ui/SceneToolbar';
 import { readWorkItemFromUrl } from './bridge/iimosBridge';
+import { IimosBridgeButton } from './bridge/IimosBridgeButton';
 import { useCabinetStore } from './core/store/useCabinetStore';
 import { useProjectStore } from './core/store/useProjectStore';
 import { useSpecStore, useSpecState, useGateStatus } from './core/store/useSpecStore';
@@ -752,6 +753,11 @@ export function App() {
       >
         {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
       </button>
+
+      <div className="w-px h-6 bg-oi-border" />
+
+      {/* IIMOS Bridge (ADR-058 เฟส 2): ส่ง cutlist เข้าระบบหน้างาน */}
+      <IimosBridgeButton />
 
       <div className="w-px h-6 bg-oi-border" />
 
