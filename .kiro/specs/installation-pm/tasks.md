@@ -96,6 +96,11 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase BR — ADR-057 MONOLITH Bridge เฟส 1 (9 ก.ค. 2026)
+- [x] BR-1 — ✅ **`0153`** rpc_bridge_import_cutlist: resolve บ้านผ่าน work_item → สร้าง package อัตโนมัติ → import วัสดุ (dedupe ชื่อ, idempotent client_key, content_hash SHA-256 ลง audit = ID-chain); ทดสอบ 9 เคสบนเส้นจริง (submit_requirement สร้างบ้าน+work_item เอง — จับได้ตอนเทสต์)
+- [x] BR-2 — ✅ MONOLITH: src/bridge/iimosBridge.ts (buildBridgePayload aggregate ตาม material + sendCutListToIimos + readWorkItemFromUrl) + vitest 3 เคส + App.tsx อ่าน ?work_item= — ยังไม่ผูก UI (เฟส 2 รอ auth story)
+- [x] BR-3 — ✅ Deploy: Pages เดียว 2 แอป (field-app root + MONOLITH /monolith/ --base ถูกต้อง) + GitHub secrets FIELD_SUPABASE_URL/ANON_KEY/VITE_MONOLITH_URL ตั้งแล้วผ่าน gh (ค่าไม่ผ่านแชท); MONOLITH full build ผ่าน 21s
+
 ## Phase CG — ADR-056 C18-C20 delta: claim guardrails (9 ก.ค. 2026)
 - [x] CG-1 — ✅ **`0152`**: 【claim guardrails การตลาด】เข้า sale_scripts (✅ audit-backed claims / ⚠️ review ก่อน / ❌ ปลอดสาร 100%·สุดในตลาด·asset คู่แข่ง) + TURNKEY-PLAYBOOK เส้นแดง — บังคับก่อนยิง 40 คลิป (ADR-055 เดือน 2); idempotent guard ทดสอบ ✓
 - [x] CG-2 — ✅ REFERENCE: C19/C20 = ชั้นโปรดักต์ไม่แตะ IIMOS · C18 workbook align ADR-052 · ปัดตก multiplier calculator (calibration จริง 0146 > factor สมมติ) · Linden quarantine นอก repo ตรวจแล้ว

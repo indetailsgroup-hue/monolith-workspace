@@ -1,9 +1,10 @@
-# Deploy Field PWA → GitHub Pages (ADR-040 มติ 5) — static ล้วน ไม่มีข้อมูลบริษัท at rest
+# Deploy Field PWA (root) + MONOLITH (/monolith/) → GitHub Pages (ADR-040 มติ 5 + ADR-057)
+# static ล้วน ไม่มีข้อมูลบริษัท at rest
 name: field-app-pages
 on:
   push:
     branches: [main]
-    paths: ['packages/field-app/**', '.github/workflows/field-app-pages.yml']
+    paths: ['packages/field-app/**', 'src/**', 'index.html', 'vite.config.*', '.github/workflows/field-app-pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,13 +19,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm ci --workspaces --include-workspace-root=false
+      - run: npm ci
       - run: npm run build -w @daph/field-app
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
           VITE_LINE_LOGIN_CHANNEL_ID: ${{ secrets.VITE_LINE_LOGIN_CHANNEL_ID }}
           VITE_MONOLITH_URL: ${{ secrets.VITE_MONOLITH_URL }}
+      # MONOLITH (ADR-057): เสิร์ฟใต้ /monolith/ ใน Pages เดียวกัน — deep link จาก DesignerHome
+      - run: npm run build -- --base=/iimos-workspace/monolith/
+      - run: mkdir -p packages/field-app/dist/monolith && cp -r dist/* packages/field-app/dist/monolith/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: packages/field-app/dist }

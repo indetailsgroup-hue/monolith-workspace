@@ -599,3 +599,17 @@ inclusion: always
 - **Q2**: REFERENCE บันทึก delta (C19/C20 = ชั้นโปรดักต์ ไม่แตะ IIMOS) + **ปัดตก material multiplier calculator** — factor สมมติของ kit แพ้ calibration จากงานจริง (0146) เสมอ
 
 **Consequences**: 0152 (sale_scripts guard marker) + docs 2 จุด
+
+## ADR-057: MONOLITH Bridge เฟส 1 (2026-07-09)
+
+**บริบท**: เจ้าของถามเรื่องลิงก์ ERP — เลือก (ก) เฟสเริ่ม: deploy + deep link + cutlist/BOM เข้าระบบอัตโนมัติ (ไม่เอา (ข) manifest checksum เต็มระบบ — แต่พบว่า FactoryPacket ของ MONOLITH มี contentHash SHA-256 อยู่แล้ว จึงเก็บ hash ลง audit ฟรี = ID-chain เริ่มเดิน)
+
+**มติ (ก)**:
+1. **0153 rpc_bridge_import_cutlist**: MONOLITH ส่ง cutlist (aggregate ตาม material) เข้า package_materials — resolve บ้านผ่าน work_item_id, สร้าง package อัตโนมัติถ้ายังไม่มี (reuse rpc_field_create_package), dedupe ตามชื่อวัสดุ, idempotent ด้วย client_key, **content_hash ลง audit** (bridge_cutlist_imported)
+2. **MONOLITH sender**: src/bridge/iimosBridge.ts — buildBridgePayload(packet, workItem, code) + sendCutListToIimos (pure + unit test; ยังไม่ผูก UI — รอ auth story ฝั่ง MONOLITH เฟสถัดไป)
+3. **Deep link รับเข้า**: App.tsx อ่าน ?work_item= → sessionStorage (ปุ่มจาก DesignerHome ทำงานเมื่อตั้ง VITE_MONOLITH_URL)
+4. **Deploy**: ถ้า root build ผ่าน → Pages เดียวกัน 2 แอป (field-app ที่ root + MONOLITH ที่ /monolith/) + ตั้ง VITE_MONOLITH_URL
+
+**ขอบเขตที่ไม่ทำเฟสนี้**: MONOLITH auth + ปุ่มส่งใน UI (เฟส 2) · overlay-diff revision QA · DXF/G-code sync
+
+**Consequences**: 0153 + src/bridge/ + App.tsx param + CI (ตามผล build)
