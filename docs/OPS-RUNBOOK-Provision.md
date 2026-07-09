@@ -1,4 +1,4 @@
-# Ops Runbook — Provision ฉบับกดตามทีละขั้น (chain 0000→0150)
+# Ops Runbook — Provision ฉบับกดตามทีละขั้น (chain 0000→0152)
 
 > **ฉบับนี้แทน** [OPS-RUNBOOK-Wave2.md](OPS-RUNBOOK-Wave2.md) (ยุค 0099) — รวมทุกอย่างที่เพิ่มหลังจากนั้น:
 > Field PWA 8 บทบาท (ขาย/หัวหน้า/ดีไซน์/การเงิน/โรงงาน B4/ผลิต E2/วัด C1/ช่าง) · LINE Login · การเงิน 4 งวด · โรงงาน 6 สถานี · roster · after-sales · lead follow-up ·
@@ -55,7 +55,7 @@
 
 ## P4 · Deploy (20 นาที)
 
-- [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0150 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
+- [ ] **P4.1** `supabase db push` — apply migrations ทั้งหมด 0000→0152 · ตรวจ: `supabase migration list` ตรงกับ repo ทุกแถว
 - [ ] **P4.2** ตรวจ cron เกิดครบ **11 ตัว** (SQL Editor):
   ```sql
   select jobname, schedule from cron.job order by jobname;
@@ -96,6 +96,7 @@
   select rpc_field_set_price_rate('<เกรดวัสดุ>', <min>, <max>);   -- ช่วงราคา Sale ต่อเกรด (ทุกเกรดที่ขาย)
   -- market bands (0147): seed C18 มากับ migration แล้ว — ทบทวน/แก้: select rpc_field_set_market_band('<หมวด>','<เกรด>','m'|'sqm', <min>, <max>);
   -- add-on (0150): seed 3 ตัวมากับ migration — ทบทวนราคาขายจริง: select rpc_field_set_addon('<code>','<ชื่อ>','<คำอธิบาย>', <ราคา>);
+  -- turnkey (0151): seed 3 tier มากับ migration — ทบทวนราคา/scope/วันส่งมอบ: select rpc_field_set_turnkey_offer('<tier>','<ชื่อ>',<ราคา>,'[..]'::jsonb,<วัน>,<ปีประกัน>);
   -- SLA gate โรงงาน: default 240 นาที — ปรับ: update factory_gate_config set sla_minutes=... where station=...;
   ```
 - [ ] **P5.6** Designer profiles (B1 กรอก ~10 นาที): `select rpc_field_set_designer_profile('<uuid>', array['โมเดิร์น','มินิมอล']);` ต่อคน
