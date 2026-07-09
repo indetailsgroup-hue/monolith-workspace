@@ -1,7 +1,7 @@
 /**
- * IimosBridgeButton — MONOLITH Bridge เฟส 2 (ADR-058)
+ * FieldBridgeButton — MONOLITH Bridge เฟส 2 (ADR-058)
  *
- * ปุ่ม "🌉 IIMOS" ใน header: ส่ง cutlist ของ scene ปัจจุบันเข้า IIMOS
+ * ปุ่ม "🌉 ส่งเข้าหน้างาน" ใน header: ส่ง cutlist ของ scene ปัจจุบันเข้า IIMOS
  *   - auth: reuse session ของ Field App (origin เดียวกันบน Pages → localStorage แชร์)
  *   - work_item: จาก deep link ?work_item= (DesignerHome) หรือพิมพ์เอง
  *   - contentHash: sha256 ของ cutlist JSON จริง (ID-chain — ADR-051 spine ข้อ 1)
@@ -12,16 +12,16 @@ import { useCabinetStore } from '../core/store/useCabinetStore';
 import { buildCutListData } from '../factory/packet/builders/buildCutList';
 import {
   buildPayloadFromCutList,
-  readIimosSession,
+  readFieldSession,
   readWorkItemFromUrl,
   sendCutListToIimos,
   sha256Hex,
-} from './iimosBridge';
+} from './fieldBridge';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? '';
 const SUPABASE_ANON = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
 
-export function IimosBridgeButton() {
+export function FieldBridgeButton() {
   const [open, setOpen] = useState(false);
   const [workItem, setWorkItem] = useState('');
   const [pkgCode, setPkgCode] = useState('MW-001');
@@ -29,7 +29,7 @@ export function IimosBridgeButton() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const cabinets = useCabinetStore((s) => s.cabinets);
 
-  const session = useMemo(() => readIimosSession(), [open]);
+  const session = useMemo(() => readFieldSession(), [open]);
   const configured = SUPABASE_URL.length > 0 && SUPABASE_ANON.length > 0;
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export function IimosBridgeButton() {
         ok: true,
         text: r.already
           ? 'ชุดนี้เคยส่งแล้ว (idempotent) — ไม่ import ซ้ำ ✅'
-          : `ส่งเข้า IIMOS แล้ว ✅ วัสดุใหม่ ${r.imported ?? 0} · ซ้ำข้าม ${r.skipped ?? 0}`,
+          : `ส่งเข้าหน้างานแล้ว ✅ วัสดุใหม่ ${r.imported ?? 0} · ซ้ำข้าม ${r.skipped ?? 0}`,
       });
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message : String(e) });
@@ -75,13 +75,13 @@ export function IimosBridgeButton() {
       <button
         onClick={() => setOpen(!open)}
         className="px-3 py-1.5 rounded-md text-sm font-medium bg-surface-2 hover:bg-surface-3 border border-oi-border text-textc-primary"
-        title="ส่ง cutlist ของ scene นี้เข้าระบบหน้างาน IIMOS"
+        title="ส่ง cutlist ของ scene นี้เข้าระบบหน้างาน MONOLITH"
       >
-        🌉 IIMOS
+        🌉 ส่งเข้าหน้างาน
       </button>
       {open && (
         <div className="absolute right-0 top-10 z-50 w-80 p-4 rounded-lg bg-surface-1 border border-oi-border shadow-xl text-sm text-textc-primary space-y-3">
-          <div className="font-semibold">ส่ง cutlist เข้า IIMOS</div>
+          <div className="font-semibold">ส่ง cutlist เข้าระบบหน้างาน</div>
           {!configured && (
             <div className="text-amber-400">ยังไม่ได้ตั้งค่า VITE_SUPABASE_URL / ANON_KEY</div>
           )}
@@ -114,7 +114,7 @@ export function IimosBridgeButton() {
             disabled={busy || !configured || !session || !workItem.trim() || !pkgCode.trim()}
             className="w-full py-2 rounded-md font-medium bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {busy ? 'กำลังส่ง…' : 'ส่ง cutlist เข้า IIMOS'}
+            {busy ? 'กำลังส่ง…' : 'ส่ง cutlist เข้าระบบหน้างาน'}
           </button>
           {msg && (
             <div className={msg.ok ? 'text-emerald-400' : 'text-red-400'}>{msg.text}</div>

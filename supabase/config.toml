@@ -26,7 +26,8 @@ enabled = false
 enabled = true
 # C12 helpers อ่าน auth.jwt() app_metadata.{roles, site_codes} และ auth.uid()
 # (Local dev: seed JWT app_metadata ให้มี roles/site_codes ตาม C12 — เช่น site_codes=["BKK-HQ-01"])
-site_url = "http://127.0.0.1:3000"
+site_url = "http://127.0.0.1:5199"
+additional_redirect_urls = ["http://127.0.0.1:5199", "http://localhost:5199", "http://127.0.0.1:3000"]
 
 [studio]
 enabled = true

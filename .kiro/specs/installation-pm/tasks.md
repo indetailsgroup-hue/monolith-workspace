@@ -96,6 +96,10 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase NM — ADR-059 rebrand IIMOS→MONOLITH (9 ก.ค. 2026)
+- [x] NM-1 — ✅ ระดับ 1: title 'MONOLITH Designer Workspace' + ปุ่ม '🌉 ส่งเข้าหน้างาน' + ข้อความ panel; ไฟล์ bridge → fieldBridge.ts/FieldBridgeButton.tsx (identifiers FieldSession/readFieldSession/FIELD_WORK_ITEM_KEY); tests 3 เขียว
+- [x] NM-2 — ✅ ระดับ 2: repo GitHub → monolith-workspace + path /monolith/ → /designer/ + VITE_MONOLITH_URL secret ใหม่ + workflow base + runbook URLs; เหลือลูกโซ่: LINE Login callback URL (console) + verify Pages URL ใหม่
+
 ## Phase BR2 — ADR-058 MONOLITH Bridge เฟส 2 (9 ก.ค. 2026)
 - [x] BR2-1 — ✅ ปุ่ม 🌉 IIMOS ใน header MONOLITH: auth = reuse session Field App (origin เดียวบน Pages → localStorage แชร์ ไม่ต้องมีหน้า login ใหม่; dev = inject sb-127 token) + work_item เติมเองจาก deep link + cutlist จาก scene จริง (buildCutListData) + **contentHash = sha256 ของ cutlist JSON จริง** (clientKey = hash → idempotent ธรรมชาติ)
 - [x] BR2-2 — ✅ เดโม่สดในเบราว์เซอร์เจ้าของ: กดปุ่ม → 'ส่งเข้า IIMOS แล้ว ✅ วัสดุใหม่ 2 · ซ้ำข้าม 0' (core-hmr-18 x5 + core-mdf-6 x1 จากตู้ในจอ; ของเฟส 1 dedupe ไม่ซ้ำ) + hash จริงลง audit; refactor buildPayloadFromCutList + readIimosSession + sha256Hex; tests 3 เขียว + build ผ่าน; workflow ส่ง env ให้ root build แล้ว

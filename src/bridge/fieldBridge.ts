@@ -1,7 +1,7 @@
 /**
- * IIMOS Bridge — Phase 1 (ADR-057)
+ * Field Bridge (MONOLITH Designer → ระบบหน้างาน) — Phase 1 (ADR-057)
  *
- * ส่ง cutlist จาก FactoryPacket เข้า IIMOS (rpc_bridge_import_cutlist, 0153):
+ * ส่ง cutlist จาก FactoryPacket เข้าระบบหน้างาน (rpc_bridge_import_cutlist, 0153):
  *   - aggregate cutlist rows ตาม materialId (จำนวน = ชิ้นตัดรวม) — เป็นข้อมูลช่วยสั่งของ
  *   - แนบ manifest.contentHash (SHA-256) → ลง audit ฝั่ง IIMOS = ID-chain เริ่มต้น
  *   - idempotent: clientKey ต่อการส่งหนึ่งครั้ง (retry ปลอดภัย)
@@ -31,11 +31,11 @@ export interface BridgeTarget {
   url: string;
   /** anon key (public) */
   anonKey: string;
-  /** access token ของผู้ใช้ที่ล็อกอิน IIMOS แล้ว */
+  /** access token ของผู้ใช้ที่ล็อกอิน Field App แล้ว */
   accessToken: string;
 }
 
-export const IIMOS_WORK_ITEM_KEY = 'iimos_work_item';
+export const FIELD_WORK_ITEM_KEY = 'monolith_work_item';
 
 /** อ่าน ?work_item= จาก URL (deep link จาก DesignerHome) แล้วจำใน sessionStorage */
 export function readWorkItemFromUrl(
@@ -46,10 +46,10 @@ export function readWorkItemFromUrl(
   try {
     const u = new URL(href);
     const wi = u.searchParams.get('work_item');
-    if (wi && storage) storage.setItem(IIMOS_WORK_ITEM_KEY, wi);
-    return wi ?? storage?.getItem(IIMOS_WORK_ITEM_KEY) ?? null;
+    if (wi && storage) storage.setItem(FIELD_WORK_ITEM_KEY, wi);
+    return wi ?? storage?.getItem(FIELD_WORK_ITEM_KEY) ?? null;
   } catch {
-    return storage?.getItem(IIMOS_WORK_ITEM_KEY) ?? null;
+    return storage?.getItem(FIELD_WORK_ITEM_KEY) ?? null;
   }
 }
 
@@ -97,7 +97,7 @@ export function buildBridgePayload(
   );
 }
 
-export interface IimosSession {
+export interface FieldSession {
   accessToken: string;
   email: string;
   expiresAt: number | null;
@@ -105,11 +105,11 @@ export interface IimosSession {
 
 /** อ่าน session ที่ Field App ล็อกอินไว้ (origin เดียวกันบน Pages → localStorage แชร์)
  *  คืน null เมื่อไม่มี/หมดอายุ — ให้ผู้ใช้ไปล็อกอิน Field App ก่อน */
-export function readIimosSession(
+export function readFieldSession(
   storage: Pick<Storage, 'getItem' | 'key' | 'length'> | null =
     typeof localStorage !== 'undefined' ? localStorage : null,
   now: number = Date.now(),
-): IimosSession | null {
+): FieldSession | null {
   if (!storage) return null;
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
@@ -142,7 +142,7 @@ export async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** ยิงเข้า IIMOS — คืน {package_id, imported, skipped, already} */
+/** ยิงเข้าระบบหน้างาน — คืน {package_id, imported, skipped, already} */
 export async function sendCutListToIimos(
   target: BridgeTarget,
   payload: BridgePayload,
@@ -159,7 +159,7 @@ export async function sendCutListToIimos(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? `iimos_bridge_failed (${res.status})`);
+    throw new Error(err.message ?? `field_bridge_failed (${res.status})`);
   }
   return res.json();
 }

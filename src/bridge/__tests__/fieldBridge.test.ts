@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildBridgePayload, readWorkItemFromUrl, sendCutListToIimos, IIMOS_WORK_ITEM_KEY } from '../iimosBridge';
+import { buildBridgePayload, readWorkItemFromUrl, sendCutListToIimos, FIELD_WORK_ITEM_KEY } from '../fieldBridge';
 import type { FactoryPacket } from '../../factory/packet/types';
 
 function fakePacket(): FactoryPacket {
@@ -24,7 +24,7 @@ function fakePacket(): FactoryPacket {
   } as FactoryPacket;
 }
 
-describe('iimosBridge (ADR-057 Phase 1)', () => {
+describe('fieldBridge (ADR-057 Phase 1)', () => {
   it('aggregate cutlist ตาม material + แนบ contentHash + clientKey deterministic', () => {
     const p = buildBridgePayload(fakePacket(), 'wi-123', 'mw-001', 'ตู้ครัว L');
     expect(p.p_package_code).toBe('MW-001');
@@ -43,7 +43,7 @@ describe('iimosBridge (ADR-057 Phase 1)', () => {
       setItem: (k: string, v: string) => void store.set(k, v),
     };
     expect(readWorkItemFromUrl('https://x.dev/app?work_item=wi-9', storage)).toBe('wi-9');
-    expect(store.get(IIMOS_WORK_ITEM_KEY)).toBe('wi-9');
+    expect(store.get(FIELD_WORK_ITEM_KEY)).toBe('wi-9');
     expect(readWorkItemFromUrl('https://x.dev/app', storage)).toBe('wi-9');
   });
 

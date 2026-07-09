@@ -625,3 +625,14 @@ inclusion: always
 - iimosBridge.ts refactor: แยก aggregation รับ PacketCutList ตรง (ใช้ได้ทั้งจาก packet และจาก scene)
 
 **Consequences**: src/bridge/IimosBridgeButton.tsx + App.tsx header + workflow env + .env.local dev
+
+## ADR-059: Naming — IIMOS คือชื่อเก่า ระบบชื่อ MONOLITH เท่านั้น (2026-07-09)
+
+**บริบท**: เจ้าของแจ้ง — เดิมระบบชื่อ IIMOS แต่คล้าย **imos AG** (CAD/CAM เฟอร์นิเจอร์เยอรมัน) จึงรีแบรนด์เป็น MONOLITH; ซากชื่อเก่ากระจายอยู่ทำให้เข้าใจผิดว่าเป็นสองระบบ
+
+**มติ (ข — ทำทั้งสองระดับ)**:
+- **นิยาม**: MONOLITH = Manufacturing OS ทั้งก้อน; ส่วนย่อยเรียก "Designer Workspace" (CAD/CAM/gate/CNC) + "ระบบหน้างาน / Field App" — ห้ามใช้ IIMOS ในเอกสาร/หน้าจอ/ชื่อใหม่
+- **ระดับ 1 user-facing**: title → "MONOLITH Designer Workspace" · ปุ่ม bridge → "🌉 ส่งเข้าหน้างาน" · ข้อความ panel
+- **ระดับ 2 โครงสร้าง**: repo GitHub iimos-workspace → **monolith-workspace** · path ย่อย /monolith/ → **/designer/** (สื่อความหมายถูก: designer workspace ใต้ MONOLITH) · ตามแก้ลูกโซ่: Pages base path, VITE_MONOLITH_URL, LINE Login callback URL, docs/memory · ไฟล์ bridge iimos* → fieldBridge*
+
+**Consequences**: index.html, src/bridge/*, App.tsx, workflow, gh repo rename + secrets, LINE console callback
