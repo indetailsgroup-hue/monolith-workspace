@@ -66,3 +66,10 @@
 ดู [MARKET-OUTLOOK-2569.md](MARKET-OUTLOOK-2569.md) — reconcile รายงานตลาด 2 ฉบับ: funnel ปิรามิด (~250k งานเล็ก / 65–80k งานเต็มรูปแบบ), pocket โต = <3 ล้าน + รีโนเวท, supply บ้านใหม่แห้ง 2570–71, ไม้ +3–5%, กลยุทธ์ 4 ทางรอเจ้าของเลือก (turnkey Mass / renovation-first / smart add-on / low-VOC E0) — segment cheat sheet อยู่ใน sale_scripts (0149)
 
 **Turnkey <3M (ADR-055)**: ดู [TURNKEY-PLAYBOOK.md](TURNKEY-PLAYBOOK.md) — MONOLITH backlog เพิ่ม: modular grid SKU 30/45/60/90 ซม. + 3D closed-set configurator (HOPLA/Younique pattern) สำหรับ turnkey mass production
+
+## C18–C20 release train (ADR-056, 9 ก.ค. 2026)
+
+- C19 (platform export/delivery manifest/export QA) + C20 (social launch kit) = **ชั้นโปรดักต์ของ kit ล้วน — ไม่แตะ IIMOS**; claim guardrails ของ C20 ลอก pattern มาใช้กับ DAPH แล้ว (0152)
+- C18 workbook integration: สูตร Budget Guardrail (Qty×Base×Core×Finish×(1+Hidden%)) + re-quote gate — **align กับ ADR-052** (band=sanity ไม่ใช่ราคาเรา) ✓
+- **ปัดตก material multiplier calculator เข้า IIMOS**: factor ของ kit เป็นค่า default สมมติ — calibration จากงานจริง (0146) แม่นกว่าเสมอ อย่าเอาตัวเลขเดามาทับข้อมูลจริง
+- Hygiene: Linden bundle + raw research ถูก quarantine ที่ _non_customer_archive (นอก git repo — ตรวจแล้ว) ✓

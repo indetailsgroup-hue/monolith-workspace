@@ -96,6 +96,10 @@
 - [x] PK-4c (ADR-045 Wave 3) — ✅ **`0136` (2026-07-08)**: customer_docs 3 เอกสาร (welcome/journey/investment — เนื้อหาปรับจาก C7 เข้าบริบทจริง: journey 8 ช่วง + งวด 50/30/15/5 + ประกัน 1 ปี; governance แก้ผ่าน rpc_field_set_customer_doc) + doc_type += customer_doc/daily_report (rebase rpc_doc_view_resolve 0135→0136); **ผูกกลุ่มลูกค้าสำเร็จ → Welcome Pack 3 ลิงก์ส่งอัตโนมัติ** (trigger บน line_groups — ไม่แตะ handler; factory/internal ข้าม); รายงานประจำวัน → D1/D2/D3 ได้ลิงก์ฉบับเต็ม (rebase send_daily_report 0122/0130→0136 + {{doc_url}}); ทดสอบ DB 12 เคส ✓ — **PK-4 ครบ 3 Waves = ADR-045 ปิด; follow-up sender เดิมทุกตัวเคลียร์แล้ว**
 - [ ] PK-5 (ADR-044 R-6) — legal gate: ส่งทนาย review สัญญา+VO skeleton ตาม `docs/CONTRACT-REVIEW-CHECKLIST.md` → แก้ skeleton ตาม comment → ลบ marker 'รอทนาย review' (ฝั่ง owner นัดทนาย)
 
+## Phase CG — ADR-056 C18-C20 delta: claim guardrails (9 ก.ค. 2026)
+- [x] CG-1 — ✅ **`0152`**: 【claim guardrails การตลาด】เข้า sale_scripts (✅ audit-backed claims / ⚠️ review ก่อน / ❌ ปลอดสาร 100%·สุดในตลาด·asset คู่แข่ง) + TURNKEY-PLAYBOOK เส้นแดง — บังคับก่อนยิง 40 คลิป (ADR-055 เดือน 2); idempotent guard ทดสอบ ✓
+- [x] CG-2 — ✅ REFERENCE: C19/C20 = ชั้นโปรดักต์ไม่แตะ IIMOS · C18 workbook align ADR-052 · ปัดตก multiplier calculator (calibration จริง 0146 > factor สมมติ) · Linden quarantine นอก repo ตรวจแล้ว
+
 ## Phase TK — ADR-055 Turnkey <3M + lead source (9 ก.ค. 2026)
 - [x] TK-1 — ✅ **`0151`** turnkey_offers 3 tier seed + project_turnkey snapshot (ราคา/scope/promised_date = fn_business_date()+delivery_days/ประกัน) + attach block หลังสัญญาเซ็น (เปลี่ยน = เส้น VO) + rpc offers/set(governance)/attach/get; UI TurnkeyCard ใน ProjectDetail
 - [x] TK-2 — ✅ lead_source 7 ค่า + rpc set + list_leads rebase 0130 + sales_summary rebase 0119 (+by_source total/lost/converted สะสม); UI: SaleHome select ต่อ lead + SalesSummary ตารางช่องทาง; ทดสอบ 15 เคส ✓ build ผ่าน

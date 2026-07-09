@@ -589,3 +589,13 @@ inclusion: always
 **ปัดตก**: agent commission ledger (รอมี agent จริง — การเงินห้ามเดาล่วงหน้า) · TikTok/CRM tooling (นอก IIMOS) · modular grid SKU + 3D configurator (MONOLITH backlog) · เฟอร์ลอยตัว/เครื่องใช้ไฟฟ้า (เข้า BOM เดิมได้)
 
 **Consequences**: 0151 + docs + UI (SaleHome source picker / SalesSummary by_source / ProjectDetail TurnkeyCard)
+
+## ADR-056: C18–C20 release train delta — marketing claim guardrails (2026-07-09)
+
+**บริบท**: kit ปล่อย release train C18–C20 (workbook pricing integration / platform export pack / social launch kit / hygiene / DOCX QA 36 ไฟล์) — เกือบทั้งหมดฝั่งโปรดักต์; ตรวจแล้ว kit+archive อยู่นอก git repo, Linden ถูก quarantine ใน _non_customer_archive ✓; C18 workbook ("research = assumption + re-quote gate") align กับ ADR-052 ไม่ขัด
+
+**มติ (ก ทั้งสอง)**:
+- **Q1**: 【claim guardrails การตลาด】เข้า sale_scripts (0152) + เส้นแดง TURNKEY-PLAYBOOK — บังคับก่อนยิง TikTok/Facebook (roadmap ADR-055 เดือน 2): ✅ ราคานิ่ง/วันส่งมอบที่ audit ยืนยันได้ · E0/E1 ตามสเปกจริง · before/after ที่ลูกค้า consent (PDPA แถว 10) / ⚠️ ตัวเลขภายใน·เทียบคู่แข่งระบุชื่อ / ❌ ปลอดสาร 100% · ถูก/เร็วสุดในตลาด · โชว์แอปเป็นจุดขายถ้าลูกค้ายังไม่ได้ใช้จริง · asset คู่แข่ง (Linden ห้ามเด็ดขาด)
+- **Q2**: REFERENCE บันทึก delta (C19/C20 = ชั้นโปรดักต์ ไม่แตะ IIMOS) + **ปัดตก material multiplier calculator** — factor สมมติของ kit แพ้ calibration จากงานจริง (0146) เสมอ
+
+**Consequences**: 0152 (sale_scripts guard marker) + docs 2 จุด
