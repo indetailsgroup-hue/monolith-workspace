@@ -60,6 +60,13 @@ export const HAFELE_WOOD_DOWEL_PART_NUMBERS = {
 // Connector Specs
 // ──────────────────────────────────────────────────────────────────────────────
 
+// S16 arbitration: Häfele มี "สองระบบ bolt" จริงทั้งคู่ —
+//   (1) sleeve system: อัดปลอก Ø10 (SLEEVE_10X14/24, inner Ø7 — master-hardware-database)
+//       → รูเจาะ Ø10 × 17.5mm (boltBoreDepth ตาม Häfele S200, มีเทสต์ครอบใน drillMap)
+//   (2) S200 direct thread: เกลียวพิเศษขันเข้าไม้ตรง → รูเจาะ Ø7.5 × Distance B
+// โรงงาน DAPH ใช้ระบบ sleeve (generator ผลิตจริง Ø10 ทุกตู้ + E2E ผ่าน) → default = sleeve
+// variant เจาะตรงเก็บไว้เป็น spec แยกด้านล่าง; เดิมไฟล์นี้ยึด 7.5 ฝ่ายเดียวทำให้
+// G11_SPEC_PARITY ด่าตู้จริงทุกใบ (ดู docs/SPECS-RECONCILIATION-NOTES.md D-11)
 export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
   connectorId: 'HAFELE_MINIFIX_15_B24',
   brand: 'Hafele',
@@ -84,8 +91,8 @@ export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
       id: 'BOLT',
       kind: 'EDGE_BORE',
       role: 'STRUCTURAL',
-      diaMm: 7.5, // Ø7.5mm sleeve per Häfele S200 catalog
-      depthMm: 24, // Distance B = edge bore depth for B=24 variant
+      diaMm: 10, // sleeve bore Ø10 (SLEEVE_10X14 outer dia — ระบบที่โรงงานใช้จริง)
+      depthMm: 17.5, // Häfele S200 bolt bore depth (ตรง DEFAULT_MINIFIX_S200_CONFIG.boltBoreDepth)
       refFrame: 'CORE',
       refSurface: 'INNER_FACE',
       refEdgePrimary: 'JOIN_EDGE',
@@ -94,6 +101,21 @@ export const HAFELE_MINIFIX_15_B24: ConnectorSpec = {
       refEdgeSecondary: 'FRONT_EDGE',
       offsetSecondaryMm: 50,
       axisSecondary: 'V',
+    },
+  ],
+};
+
+/** Variant เจาะตรงไม่ใช้ปลอก: S200 special thread ขันเข้าไม้ (รู Ø7.5 ลึก = Distance B) */
+export const HAFELE_MINIFIX_15_B24_DIRECT: ConnectorSpec = {
+  connectorId: 'HAFELE_MINIFIX_15_B24_DIRECT',
+  brand: 'Hafele',
+  family: 'MINIFIX',
+  features: [
+    HAFELE_MINIFIX_15_B24.features[0],
+    {
+      ...HAFELE_MINIFIX_15_B24.features[1],
+      diaMm: 7.5, // Ø7.5mm drill hole per Häfele S200 direct-thread
+      depthMm: 24, // Distance B = edge bore depth for B=24 variant
     },
   ],
 };

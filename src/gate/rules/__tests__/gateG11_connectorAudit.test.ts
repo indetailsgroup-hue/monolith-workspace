@@ -48,8 +48,8 @@ function bolt(
     panelId,
     position: [0, y, 9],
     normal: [1, 0, 0],
-    diameter: 7.5,
-    depth: 24,
+    diameter: 10,
+    depth: 17.5,
     purpose: 'BOLT',
     componentType: 'BOLT',
     status: 'VALID',
@@ -141,7 +141,7 @@ describe('runConnectorOsAudit', () => {
   });
 
   it('reports spec parity drift aggregated (not per hole)', () => {
-    // catalog เก่า: CAM depth 12.5 + BOLT dia 8 — Connector OS: 13.5 + 7.5
+    // สมมุติเจาะคลาด: CAM depth 12.5 (ควร 13.5) + BOLT dia 8 (sleeve ต้อง 10)
     const b1 = bolt('SHELF', 37, { id: 'b1', diameter: 8 });
     const b2 = bolt('SHELF', 133, { id: 'b2', diameter: 8 });
     const h1 = housing('SIDE', 37, 'b1', { id: 'h1', depth: 12.5 });
@@ -152,7 +152,7 @@ describe('runConnectorOsAudit', () => {
     expect(parity).toHaveLength(2);
     const camDepth = parity.find(i => i.measured?.expectedMm === 13.5);
     expect(camDepth?.measured?.points).toBe(2);
-    const boltDia = parity.find(i => i.measured?.expectedMm === 7.5);
+    const boltDia = parity.find(i => i.measured?.expectedMm === 10);
     expect(boltDia?.measured?.actualMm).toBe(8);
   });
 

@@ -32,6 +32,7 @@ import { readWorkItemFromUrl } from './bridge/fieldBridge';
 import { FieldBridgeButton } from './bridge/FieldBridgeButton';
 import { useCabinetStore } from './core/store/useCabinetStore';
 import { useProjectStore } from './core/store/useProjectStore';
+import { useIntentPanelStore } from './designer/state/useIntentPanelStore';
 import { useSpecStore, useSpecState, useGateStatus } from './core/store/useSpecStore';
 import { useToolStore, handleToolHotkey, useToolHotkeys } from './core/store/useToolStore';
 import { useSketchStore } from './core/sketch/useSketchStore';
@@ -775,11 +776,12 @@ export function App() {
 
       <div className="w-px h-6 bg-oi-border" />
 
-      {/* Details Button */}
+      {/* Details Button — S16: เปิดแท็บ Safety จริง (Minifix+G11+Connector OS gate)
+          ไม่พาไป /diagnostics/safety ซึ่งเป็นหน้า demo/mock */}
       <button
-        onClick={() => navigate('/safety')}
+        onClick={() => useIntentPanelStore.getState().setActiveTab('safety')}
         className="px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-surface-3 rounded-md transition-all duration-200"
-        title="Open Safety & Gate Page (T)"
+        title="เปิดแท็บ Safety Gate (ตรวจ drill map จริง)"
       >
         🛡️ Details
       </button>

@@ -145,6 +145,8 @@ PRD ต้องเพิ่ม/แก้:
 7. spec.md FR4.2 (+PreMill รวม) vs formula-ref (ไม่บวก) — spec.md เก่ากว่า
 8. cross-ref index อ้าง specs/export/ ที่ไม่มีจริง (อยู่ manufacturing/)
 9. door-drawer §9/§10 engines อ้าง src/services/* — ไม่มีในโค้ดปัจจุบัน (documented-not-implemented)
+10. **[ตัดสินแล้ว S16, 10 ก.ค. 2026] Minifix bolt bore — Häfele มีสองระบบจริง**: sleeve system รู Ø10×17.5 (master-db SLEEVE_10X14 outer Ø10 + boltBoreDepth 17.5 มีเทสต์) vs S200 direct thread รู Ø7.5×B; manufacturing/hardware-drilling บอก Ø8 THRU (B34 legacy อีก variant) — **มติ: โรงงาน DAPH ใช้ sleeve → ความจริงเดียว = Ø10×17.5** (generator เจาะแบบนี้ทุกตู้ที่ส่งมอบ); Connector OS catalog เดิมยึด 7.5/24 ฝ่ายเดียวด้วยทฤษฎี "Two Domains" ซึ่งขัดกายภาพ (รูเดียวเจาะสองขนาดไม่ได้) → แก้ default = Ø10×17.5, เก็บ variant เจาะตรงไว้ที่ `HAFELE_MINIFIX_15_B24_DIRECT` (Ø7.5×24); หมายเหตุ: 24 = Distance B (ระยะขอบ→ศูนย์ cam) เคยถูกสับสนเป็นความลึกรูใน UI/เทสต์ — แก้แล้ว (MinifixConfigPanel CNC_BOLT_BORE_DEPTH, HardwareLibrary label)
+11. Minifix CAM depth สามค่า (ต่อยอดข้อ 4): manufacturing 12.5 / master-db DRILLING_SPECS 12.7 / โค้ด+drill map จริง 13.5 (Häfele FF 3.10 สำหรับไม้ 18mm) — โค้ดมีเทสต์+ผลิตจริง = ความจริงล่าสุด; docs สองไฟล์ยังไม่อัปเดต (ค้างฝั่งเอกสาร ไม่กระทบการผลิต)
 - [ ] reference: formula-reference, master-hardware-database, cross-reference-index, api-documentation
 - [ ] manufacturing: hardware-drilling (10.7k!), door-drawer, cut-optimization, dxf-export-specs
 - [ ] technical: 10 ไฟล์

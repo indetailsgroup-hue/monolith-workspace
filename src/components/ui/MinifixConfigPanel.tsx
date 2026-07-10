@@ -165,16 +165,17 @@ export const CAM_SPECS_BY_WOOD_THICKNESS: Record<number, { drillingDepth: number
 
 // ============================================
 // CNC DRILLING SPEC LABELS (from Connector OS catalog)
-// These differ from assembly physical dimensions:
-//   Assembly: Ø10 sleeve, 14.25mm sleeve length, 17.5mm bore
-//   CNC Spec: Ø10 bolt bore (same as bolt shaft), 24mm bore depth (per Häfele S200 B=24)
+// S16 arbitration: ระบบ sleeve ที่โรงงานใช้จริง = รู Ø10 × 17.5mm
+// (SLEEVE_10X14 outer Ø10 per master-hardware-database; ความลึก 17.5 per Häfele S200
+//  = DEFAULT_MINIFIX_S200_CONFIG.boltBoreDepth ที่ generator เจาะจริงทุกตู้)
+// หมายเหตุ: 24 คือ Distance B (ระยะขอบ→ศูนย์ cam) ไม่ใช่ความลึกรู — เคยสับสนกัน
 // ============================================
 
-/** CNC bolt bore diameter — Ø10mm (same diameter as bolt shaft) */
+/** CNC bolt bore diameter — Ø10mm (sleeve bore, ระบบที่โรงงานใช้) */
 const CNC_BOLT_BORE_DIA = 10;
 
-/** CNC bolt bore depth — 24mm (Distance B) per Häfele S200 B=24 variant */
-const CNC_BOLT_BORE_DEPTH = 24;
+/** CNC bolt bore depth — 17.5mm per Häfele S200 (ตรงกับ drill map จริง) */
+const CNC_BOLT_BORE_DEPTH = 17.5;
 
 export const DEFAULT_MINIFIX_CONFIG: MinifixFullConfig = {
   minifixType: '15',

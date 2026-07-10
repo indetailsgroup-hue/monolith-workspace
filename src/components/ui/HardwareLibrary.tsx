@@ -1193,7 +1193,7 @@ function SavedPresetCard({ preset, isSelected, onSelect, onEdit, onDelete, onApp
         </div>
       </div>
       <div className="text-[8px] text-gray-500 mt-1">
-        Cam: Ø{preset.config.camDia}×{preset.config.camDepth} | Bore: Ø7.5×24
+        Cam: Ø{preset.config.camDia}×{preset.config.camDepth} | Bore: Ø10×17.5
       </div>
       {preset.description && (
         <div className="text-[8px] text-gray-600 mt-0.5 italic truncate">{preset.description}</div>

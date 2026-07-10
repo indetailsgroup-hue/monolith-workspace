@@ -5,14 +5,15 @@
  * catalog and compiler output. They exist because three bugs were found
  * where 3D preview labels showed wrong values:
  *
- *   BUG 1: Bolt bore dia showed Ø10 (assembly sleeve) instead of Ø7.5 (S200 sleeve)
- *   BUG 2: Bolt bore depth showed 17.5mm (drillMap domain) instead of 24mm (Distance B)
  *   BUG 3: CAM depth showed 12.5mm (16mm wood) instead of 13.5mm (18mm default)
  *
- * ARCHITECTURE NOTE — Two Domains:
- *   Connector OS catalog (catalog.ts) → CNC drilling truth (Ø7.5, 24mm)
- *   DrillMap manufacturing (minifixDefaults.ts) → panel bore depth (17.5mm)
- *   These are DIFFERENT domains with different correct values.
+ * S16 ARBITRATION — One Physical Hole, One Truth:
+ *   Häfele มีสองระบบ bolt จริงทั้งคู่ — sleeve system (รู Ø10×17.5, SLEEVE_10X14 ตาม
+ *   master-hardware-database) กับ S200 direct thread (รู Ø7.5×B)
+ *   โรงงาน DAPH ใช้ sleeve → default spec = Ø10×17.5 (ตรง drill map จริง)
+ *   ทฤษฎี "Two Domains" เดิม (catalog 7.5 vs drillMap 17.5) ขัดกายภาพ —
+ *   รูเดียวกันเจาะสองขนาดไม่ได้ (ดู SPECS-RECONCILIATION-NOTES D-11)
+ *   variant เจาะตรงเก็บไว้ที่ HAFELE_MINIFIX_15_B24_DIRECT (Ø7.5×24)
  *
  * @see catalog.ts HAFELE_MINIFIX_15_B24, HAFELE_WOOD_DOWEL_8x30
  * @see MinifixConfigPanel.tsx CNC_BOLT_BORE_DIA, CNC_BOLT_BORE_DEPTH
@@ -22,6 +23,7 @@ import { describe, it, expect } from 'vitest';
 import { compileConnectorOps } from '../compiler';
 import {
   HAFELE_MINIFIX_15_B24,
+  HAFELE_MINIFIX_15_B24_DIRECT,
   HAFELE_WOOD_DOWEL_8x30,
   IF_TARGET_J10,
   HMR18_HPL08x2_PVC1,
@@ -72,25 +74,26 @@ describe('Catalog Spec Pinning: HAFELE_MINIFIX_15_B24', () => {
     expect(cam.offsetPrimaryMm).toBe(24);
   });
 
-  // --- BOLT feature pinning ---
-  it('BOLT: dia=7.5mm — Ø7.5 sleeve per Häfele S200 catalog', () => {
+  // --- BOLT feature pinning (S16: sleeve system = ระบบโรงงานจริง) ---
+  it('BOLT: dia=10mm — sleeve bore Ø10 (SLEEVE_10X14 outer dia)', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
+    expect(bolt.diaMm).toBe(10);
+  });
+
+  it('BOLT: depth=17.5mm per Häfele S200 (ตรง DEFAULT_MINIFIX_S200_CONFIG.boltBoreDepth)', () => {
+    const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
+    expect(bolt.depthMm).toBe(17.5);
+  });
+
+  it('BOLT: depth must NOT be 24 (Distance B คือระยะขอบ→cam ไม่ใช่ความลึกรู)', () => {
+    const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
+    expect(bolt.depthMm).not.toBe(24);
+  });
+
+  it('DIRECT variant: Ø7.5×24 เก็บไว้สำหรับ S200 direct thread', () => {
+    const bolt = HAFELE_MINIFIX_15_B24_DIRECT.features.find(f => f.id === 'BOLT')!;
     expect(bolt.diaMm).toBe(7.5);
-  });
-
-  it('BOLT: dia must NOT be 10 (assembly sleeve diameter confusion)', () => {
-    const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.diaMm).not.toBe(10);
-  });
-
-  it('BOLT: depth=24mm — Distance B for B=24 variant per Häfele S200', () => {
-    const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     expect(bolt.depthMm).toBe(24);
-  });
-
-  it('BOLT: depth must NOT be 17.5 (drillMap domain confusion)', () => {
-    const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.depthMm).not.toBe(17.5);
   });
 
   it('BOLT: kind=EDGE_BORE (bolt enters from panel edge)', () => {
@@ -149,41 +152,33 @@ describe('Catalog Spec Pinning: HAFELE_WOOD_DOWEL_8x30', () => {
 // ──────────────────────────────────────────────────────────────────────────────
 
 describe('Compiler Output: BOLT diameter and depth validation', () => {
-  it('BOLT output dia=7.5mm after compilation (S200 sleeve, not assembly sleeve)', () => {
+  it('BOLT output dia=10mm after compilation (sleeve bore — ตรงโรงงานจริง)', () => {
     const ops = compileConnectorOps(
       TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
       HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
     );
     const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
     expect(boltOp).toBeDefined();
+    expect(boltOp.params.dia).toBe(10);
+  });
+
+  it('BOLT output depth=17.5mm after compilation (Häfele S200 bore depth)', () => {
+    const ops = compileConnectorOps(
+      TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
+      HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
+    );
+    const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
+    expect(boltOp.params.depth).toBe(17.5);
+  });
+
+  it('DIRECT variant output: Ø7.5×24 (S200 direct thread)', () => {
+    const ops = compileConnectorOps(
+      TEST_CONTEXT, HAFELE_MINIFIX_15_B24_DIRECT, [37],
+      HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
+    );
+    const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
     expect(boltOp.params.dia).toBe(7.5);
-  });
-
-  it('BOLT output dia must NOT be 10 (regression: assembly sleeve contamination)', () => {
-    const ops = compileConnectorOps(
-      TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
-      HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
-    );
-    const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
-    expect(boltOp.params.dia).not.toBe(10);
-  });
-
-  it('BOLT output depth=24mm after compilation (Distance B)', () => {
-    const ops = compileConnectorOps(
-      TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
-      HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
-    );
-    const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
     expect(boltOp.params.depth).toBe(24);
-  });
-
-  it('BOLT output depth must NOT be 17.5 (regression: drillMap domain leak)', () => {
-    const ops = compileConnectorOps(
-      TEST_CONTEXT, HAFELE_MINIFIX_15_B24, [37],
-      HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED',
-    );
-    const boltOp = ops.find(op => op.meta.featureId === 'BOLT')!;
-    expect(boltOp.params.depth).not.toBe(17.5);
   });
 
   it('CAM output dia=15mm, depth=13.5mm (confirms existing behavior)', () => {
@@ -279,16 +274,14 @@ describe('Cross-Domain Consistency: Catalog vs Assembly vs DrillMap', () => {
   /** Wrong CAM depth for 16mm wood (not 18mm default) */
   const WRONG_CAM_DEPTH_16MM = 12.5;
 
-  it('Catalog BOLT dia (7.5mm) differs from assembly sleeve dia (10mm)', () => {
+  it('S16: Catalog BOLT dia = sleeve bore dia (10mm) — โดเมนเดียว รูเดียว', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.diaMm).not.toBe(ASSEMBLY_SLEEVE_DIA);
-    expect(bolt.diaMm).toBe(7.5);
+    expect(bolt.diaMm).toBe(ASSEMBLY_SLEEVE_DIA);
   });
 
-  it('Catalog BOLT depth (24mm) differs from drillMap boltBoreDepth (17.5mm)', () => {
+  it('S16: Catalog BOLT depth = drillMap boltBoreDepth (17.5mm) — ตรงกันทั้งระบบ', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
-    expect(bolt.depthMm).not.toBe(DRILLMAP_BOLT_BORE_DEPTH);
-    expect(bolt.depthMm).toBe(24);
+    expect(bolt.depthMm).toBe(DRILLMAP_BOLT_BORE_DEPTH);
   });
 
   it('Catalog CAM depth (13.5mm) is for 18mm wood — NOT 12.5mm (16mm wood)', () => {
@@ -297,21 +290,21 @@ describe('Cross-Domain Consistency: Catalog vs Assembly vs DrillMap', () => {
     expect(cam.depthMm).toBe(13.5);
   });
 
-  it('Catalog BOLT dia (7.5) < CAM dia (15) — bolt is always smaller bore', () => {
+  it('Catalog BOLT dia (10) < CAM dia (15) — bolt is always smaller bore', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const cam = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'CAM')!;
     expect(bolt.diaMm).toBeLessThan(cam.diaMm);
   });
 
-  it('Wood Dowel dia (8mm) differs from BOLT dia (7.5mm) — different drill bits', () => {
+  it('Wood Dowel dia (8mm) differs from BOLT dia (10mm) — different drill bits', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const dowelEdge = HAFELE_WOOD_DOWEL_8x30.features.find(f => f.id === 'DOWEL_EDGE')!;
     expect(bolt.diaMm).not.toBe(dowelEdge.diaMm);
-    expect(bolt.diaMm).toBe(7.5);
+    expect(bolt.diaMm).toBe(10);
     expect(dowelEdge.diaMm).toBe(8);
   });
 
-  it('BOLT depth (24mm) > Wood Dowel depth (15mm) — bolt bores deeper', () => {
+  it('BOLT depth (17.5mm) > Wood Dowel depth (15mm) — bolt bores deeper', () => {
     const bolt = HAFELE_MINIFIX_15_B24.features.find(f => f.id === 'BOLT')!;
     const dowelEdge = HAFELE_WOOD_DOWEL_8x30.features.find(f => f.id === 'DOWEL_EDGE')!;
     expect(bolt.depthMm).toBeGreaterThan(dowelEdge.depthMm);
@@ -342,12 +335,12 @@ describe('Full Compilation Round-Trip: Minifix at 3 S-positions', () => {
     }
   });
 
-  it('every BOLT op has dia=7.5, depth=24, U=0', () => {
+  it('every BOLT op has dia=10, depth=17.5, U=0 (sleeve system S16)', () => {
     const boltOps = ops.filter(op => op.meta.featureId === 'BOLT');
     expect(boltOps.length).toBe(3);
     for (const op of boltOps) {
-      expect(op.params.dia).toBe(7.5);
-      expect(op.params.depth).toBe(24);
+      expect(op.params.dia).toBe(10);
+      expect(op.params.depth).toBe(17.5);
       expect(op.params.u).toBe(0);
     }
   });
