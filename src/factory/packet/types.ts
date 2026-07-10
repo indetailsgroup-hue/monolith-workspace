@@ -297,6 +297,8 @@ export interface FactoryPacket {
   cutList: PacketCutList;
   /** Gate validation result */
   gateResult: PacketGateResult;
+  /** ADR-061(c): Connector OS compiler ops — artifact คู่ขนาน (ยังไม่แทน drillMap) */
+  connectorOps?: import('./builders/buildConnectorOps').PacketConnectorOps;
 }
 
 // ============================================
@@ -330,6 +332,7 @@ export interface BuildFactoryPacketOutput {
     'connectors.minifix.json': string;
     'cutlist.json': string;
     'gate-result.json': string;
+    'connector-ops.json': string;
   };
   /** Combined content hash */
   contentHash: string;

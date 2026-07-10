@@ -17,6 +17,7 @@
 import type { Cabinet } from '../../core/types/Cabinet';
 import type { DrillMap } from '../../core/manufacturing/drillMap/types';
 import type { GateResult } from '../../gate/ui/gateTypes';
+import { buildConnectorOpsData } from './builders/buildConnectorOps';
 import type {
   FactoryPacket,
   BuildFactoryPacketInput,
@@ -93,12 +94,15 @@ export async function buildFactoryPacket(
   const connectorsData = buildConnectorsData(drillMap);
   const cutListData = buildCutListData(cabinets);
   const gateResultData = buildGateResultData(gateResult);
+  // ADR-061(c): compiler สังเคราะห์ ops คู่ขนาน — emitToOpNodes caller จริงตัวแรกใน production artifact
+  const connectorOpsData = buildConnectorOpsData(drillMap);
 
   // 2. Serialize to JSON strings
   const drillMapJson = serializeDeterministicPretty(drillMapData);
   const connectorsJson = serializeDeterministicPretty(connectorsData);
   const cutListJson = serializeDeterministicPretty(cutListData);
   const gateResultJson = serializeDeterministicPretty(gateResultData);
+  const connectorOpsJson = serializeDeterministicPretty(connectorOpsData);
 
   // 3. Compute file entries with hashes
   const fileEntries: ManifestFileEntry[] = await Promise.all([
@@ -106,6 +110,7 @@ export async function buildFactoryPacket(
     computeFileEntry('connectors.minifix.json', connectorsJson),
     computeFileEntry('cutlist.json', cutListJson),
     computeFileEntry('gate-result.json', gateResultJson),
+    computeFileEntry('connector-ops.json', connectorOpsJson),
   ]);
 
   // 4. Compute content hash from all file hashes
@@ -134,6 +139,7 @@ export async function buildFactoryPacket(
     connectors: connectorsData,
     cutList: cutListData,
     gateResult: gateResultData,
+    connectorOps: connectorOpsData,
   };
 
   return {
@@ -144,6 +150,7 @@ export async function buildFactoryPacket(
       'connectors.minifix.json': connectorsJson,
       'cutlist.json': cutListJson,
       'gate-result.json': gateResultJson,
+      'connector-ops.json': connectorOpsJson,
     },
     contentHash,
   };
