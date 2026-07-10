@@ -40,6 +40,8 @@ export interface SynthesizedBore {
   corner: CornerType;
   sys32Z: number;
   kind: 'CAM' | 'BOLT' | 'BOLT_ENTRY' | 'BOLT_THREAD' | 'DOWEL';
+  /** แผ่นเป้าหมายของรู (สำหรับ engine flip — generator ต้องรู้ panel) */
+  panel: 'HORIZONTAL' | 'VERTICAL';
   position: Vec3Tuple;
   normal: Vec3Tuple;
   diameter: number;
@@ -136,13 +138,13 @@ export function synthesizeCornerMinifixWorld(
         const b = boltFacePointFromHorizAABB_overlay(corner, horizAabb, sys32Z, distanceB);
         b.position[0] = jointAxisX;
         bores.push({
-          corner, sys32Z, kind: 'BOLT',
+          corner, sys32Z, kind: 'BOLT', panel: 'HORIZONTAL',
           position: b.position, normal: b.normal,
           diameter: bolt.diaMm, depth: bolt.depthMm,
         });
         // BOLT_THREAD: ตำแหน่ง/ทิศเดียวกับ BOLT — รูนำเกลียว
         bores.push({
-          corner, sys32Z, kind: 'BOLT_THREAD',
+          corner, sys32Z, kind: 'BOLT_THREAD', panel: 'HORIZONTAL',
           position: [b.position[0], b.position[1], b.position[2]] as Vec3Tuple,
           normal: b.normal,
           diameter: cfg.shaftDia, depth: cfg.shaftLength,
@@ -150,7 +152,7 @@ export function synthesizeCornerMinifixWorld(
         // BOLT_ENTRY: edge bore บนขอบบน/ล่างแผ่นข้าง
         const e = boltEntryEdgePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
         bores.push({
-          corner, sys32Z, kind: 'BOLT_ENTRY',
+          corner, sys32Z, kind: 'BOLT_ENTRY', panel: 'VERTICAL',
           position: e.position, normal: e.normal,
           diameter: cfg.boltEntryDia ?? 7.5, depth: distanceB,
         });
@@ -158,7 +160,7 @@ export function synthesizeCornerMinifixWorld(
         // CAM บนแผ่นข้าง inner face (OVERLAY)
         const c = camFacePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
         bores.push({
-          corner, sys32Z, kind: 'CAM',
+          corner, sys32Z, kind: 'CAM', panel: 'VERTICAL',
           position: c.position, normal: c.normal,
           diameter: cam.diaMm, depth: cam.depthMm,
         });
@@ -166,13 +168,13 @@ export function synthesizeCornerMinifixWorld(
         // CORNER DOWELS (OVERLAY): side EDGE 18 + horiz FACE 12
         for (const dz of dowelZFor(sys32Z)) {
           bores.push({
-            corner, sys32Z, kind: 'DOWEL',
+            corner, sys32Z, kind: 'DOWEL', panel: 'VERTICAL',
             position: [e.position[0], e.position[1], dz] as Vec3Tuple,
             normal: e.normal,
             diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.horizEdgeDepth,
           });
           bores.push({
-            corner, sys32Z, kind: 'DOWEL',
+            corner, sys32Z, kind: 'DOWEL', panel: 'HORIZONTAL',
             position: [b.position[0], b.position[1], dz] as Vec3Tuple,
             normal: b.normal,
             diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.sideFaceDepth,
@@ -192,13 +194,13 @@ export function synthesizeCornerMinifixWorld(
         const b = boltFacePointFromSideAABB_v4(corner, vertAabb, sys32Z, camCenterOffset);
         b.position[1] = jointAxisY;
         bores.push({
-          corner, sys32Z, kind: 'BOLT',
+          corner, sys32Z, kind: 'BOLT', panel: 'VERTICAL',
           position: b.position, normal: b.normal,
           diameter: bolt.diaMm, depth: bolt.depthMm,
         });
         // BOLT_THREAD: ตำแหน่ง/ทิศเดียวกับ BOLT
         bores.push({
-          corner, sys32Z, kind: 'BOLT_THREAD',
+          corner, sys32Z, kind: 'BOLT_THREAD', panel: 'VERTICAL',
           position: [b.position[0], b.position[1], b.position[2]] as Vec3Tuple,
           normal: b.normal,
           diameter: cfg.shaftDia, depth: cfg.shaftLength,
@@ -206,7 +208,7 @@ export function synthesizeCornerMinifixWorld(
         // BOLT_ENTRY: edge bore บนขอบซ้าย/ขวาแผ่นนอน (ทาง CAM)
         const e = boltEntryEdgePointFromHorizAABB(corner, horizAabb, sys32Z, distanceB);
         bores.push({
-          corner, sys32Z, kind: 'BOLT_ENTRY',
+          corner, sys32Z, kind: 'BOLT_ENTRY', panel: 'HORIZONTAL',
           position: e.position, normal: e.normal,
           diameter: cfg.boltEntryDia ?? 7.5, depth: distanceB,
         });
@@ -214,13 +216,13 @@ export function synthesizeCornerMinifixWorld(
         // CORNER DOWELS (INSET v4.0): side FACE 12 + horiz EDGE 18
         for (const dz of dowelZFor(sys32Z)) {
           bores.push({
-            corner, sys32Z, kind: 'DOWEL',
+            corner, sys32Z, kind: 'DOWEL', panel: 'VERTICAL',
             position: [b.position[0], b.position[1], dz] as Vec3Tuple,
             normal: b.normal,
             diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.sideFaceDepth,
           });
           bores.push({
-            corner, sys32Z, kind: 'DOWEL',
+            corner, sys32Z, kind: 'DOWEL', panel: 'HORIZONTAL',
             position: [
               isLeft ? horizAabb.min[0] : horizAabb.max[0],
               (horizAabb.min[1] + horizAabb.max[1]) / 2,
@@ -237,7 +239,7 @@ export function synthesizeCornerMinifixWorld(
         );
         const camLocalY = basisClamp(sys32Z, 10, basis.faceHeight - 10);
         bores.push({
-          corner, sys32Z, kind: 'CAM',
+          corner, sys32Z, kind: 'CAM', panel: 'HORIZONTAL',
           position: panelLocalToWorld(basis, camLocalX, camLocalY),
           normal: basis.uAxis,
           diameter: cam.diaMm, depth: cam.depthMm,

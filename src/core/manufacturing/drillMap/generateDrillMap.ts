@@ -90,6 +90,7 @@ import {
 } from './panelBasis';
 import { validateBoltPocketLinkage } from './validateBoltPocketLinkage';
 import { validateBRunDowelPairing } from './validateBRunDowelPairing';
+import { synthesizeCornerMinifixWorld } from '../../connector/worldSynthesis';
 import {
   assertNoPreviewKeys,
   sanitizeManufacturingConfig,
@@ -1846,6 +1847,9 @@ export function generateMinifixDrillMap(
     connectorCountOverrides?: Record<string, number>;
     /** ADR-061: ความถี่ Minifix ที่ผู้ใช้เลือก (default CAD_STANDARD) */
     connectorDensity?: ConnectorDensity;
+    /** ADR-061(c) FLIP: engine ของ geometry corner joints — default = Connector OS
+     *  (legacy = fallback; parity พิสูจน์ 144/144 Δ0.00 ก่อนเปิด default) */
+    cornerEngine?: 'legacy' | 'connector-os';
   }
 ): DrillMap {
   if (!cabinet || !cabinet.panels || cabinet.panels.length === 0) {
@@ -2011,6 +2015,73 @@ export function generateMinifixDrillMap(
         points.push(dowel);
         panelPointsMap.set(dowel.panelId, points);
       }
+    }
+  }
+
+  // ========================================
+  // ADR-061(c) FLIP — Connector OS เป็นเจ้าของ geometry ของ corner joints
+  // ========================================
+  // synthesis (placer+catalog+panelBasis) = ค่า authoritative ของ
+  // position/normal/dia/depth; โครง metadata (pairId/pairKey/linkage/twist)
+  // ยังประกอบโดยเส้นทางเดิม — parity 144/144 Δ0.00 พิสูจน์ก่อนเปิด default
+  // จุดที่ synthesis ไม่ครอบ (มุมไม่ 90°, corner skip) = คง legacy + log (fail-visible)
+  const cornerEngine = options?.cornerEngine ?? 'connector-os';
+  if (cornerEngine === 'connector-os') {
+    const kindOf: Record<string, 'CAM' | 'BOLT' | 'BOLT_ENTRY' | 'BOLT_THREAD' | 'DOWEL' | undefined> = {
+      CAM_LOCK: 'CAM',
+      MINIFIX: 'CAM',
+      BOLT: 'BOLT',
+      BOLT_ENTRY: 'BOLT_ENTRY',
+      BOLT_THREAD: 'BOLT_THREAD',
+      DOWEL: 'DOWEL',
+    };
+    const synth = synthesizeCornerMinifixWorld(cabinet, {
+      density,
+      firstHoleZ: fullParams.firstHoleZ,
+      distanceB: fullConfig.drillingDistanceB,
+    });
+    const skippedSet = new Set(synth.skippedCorners.map((c) => c.corner));
+    const unused = [...synth.bores];
+    let applied = 0;
+    let missed = 0;
+    const CORNER_SET = new Set(['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT']);
+    for (const pts of panelPointsMap.values()) {
+      for (const pt of pts) {
+        if (!pt.cornerType || !CORNER_SET.has(pt.cornerType)) continue;
+        if (skippedSet.has(pt.cornerType as CornerType)) continue;
+        if (pt.pairId?.startsWith('pair-B-')) continue; // B-run = ระบบแยก นอก corner scope
+        const kind = kindOf[pt.purpose];
+        if (!kind) continue;
+        let bi = -1;
+        let best = Infinity;
+        for (let i = 0; i < unused.length; i++) {
+          const b = unused[i];
+          if (b.kind !== kind || b.corner !== pt.cornerType) continue;
+          if (Math.abs(b.sys32Z - (pt.depthPosition ?? Number.NaN)) > 0.01) continue;
+          const d = Math.hypot(
+            b.position[0] - pt.position[0],
+            b.position[1] - pt.position[1],
+            b.position[2] - pt.position[2],
+          );
+          if (d < best) { best = d; bi = i; }
+        }
+        if (bi >= 0 && best <= 0.5) {
+          const b = unused.splice(bi, 1)[0];
+          pt.position = [b.position[0], b.position[1], b.position[2]];
+          pt.normal = [b.normal[0], b.normal[1], b.normal[2]];
+          pt.diameter = b.diameter;
+          pt.depth = b.depth;
+          applied += 1;
+        } else {
+          missed += 1;
+        }
+      }
+    }
+    if (missed > 0 || unused.length > 0) {
+      console.error(
+        `[DrillMap] corner engine handover mismatch: missed=${missed} unusedSynth=${unused.length} ` +
+        `(applied=${applied}) — จุดที่ไม่ match คง legacy geometry (fail-visible)`,
+      );
     }
   }
 
