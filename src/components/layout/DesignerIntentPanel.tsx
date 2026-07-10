@@ -25,6 +25,7 @@ import {
 import { CNCToolPanel } from '../ui/CNCToolPanel';
 import { SkillsPanel } from '../ui/SkillsPanel';
 import { SafetyPanel, GateStatusIndicator } from '../../gate/ui';
+import { UnderlayPanel } from '../ui/UnderlayPanel';
 import {
   CoreStructureIcon,
   SurfaceFinishIcon,
@@ -393,6 +394,8 @@ function DecorContent() {
 
   return (
     <div className="p-2 space-y-2">
+      {/* FP-1 (ADR-062): แปลนอ้างอิง underlay */}
+      <UnderlayPanel />
       {/* Section Selector (Compact) */}
       <div className="grid grid-cols-2 gap-1">
         {sections.map((section) => (

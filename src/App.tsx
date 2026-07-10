@@ -24,6 +24,8 @@ import { DesignerIntentPanel } from './components/layout/DesignerIntentPanel';
 import { ParametricContractPanel } from './components/layout/ParametricContractPanel';
 import { Cabinet3D, SceneRaycastPolicy } from './components/canvas/Cabinet3D';
 import { InfiniteGrid } from './components/canvas/InfiniteGrid';
+import { UnderlayPlane } from './components/canvas/UnderlayPlane';
+import { useUnderlayStore } from './core/store/useUnderlayStore';
 import { CameraController, ViewType, VIEW_PRESETS } from './components/canvas/ViewportController';
 import { ProjectToolbar } from './components/ui/ProjectToolbar';
 import { GateToolbar } from './components/ui/GateToolbar';
@@ -401,6 +403,9 @@ function Viewport({ currentView, showDimensions = false, hideTooltip = false, on
 
           {/* Infinite Grid - hide in Left view (grid appears as horizontal lines when viewed edge-on) */}
           {currentView !== 'Left' && <InfiniteGrid />}
+
+          {/* FP-1 (ADR-062): แปลนอ้างอิงรองพื้น — render-only ไม่แตะ manufacturing */}
+          <UnderlayPlane />
 
           {/* Controls - disable rotation for 2D ortho views */}
           <OrbitControls
@@ -789,8 +794,16 @@ export function App() {
   );
 
   // Viewport with overlays (only bottom items now)
+  const underlayActive = useUnderlayStore((s) => !!s.imageDataUrl && s.visible);
+
   const viewportWithToolbar = (
     <div className="relative w-full h-full">
+      {/* FP-1 (ADR-062): ป้ายหลักเหล็ก — underlay เป็นภาพอ้างอิง ไม่ใช่ขนาดผลิต */}
+      {underlayActive && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-1 rounded bg-amber-500/20 text-amber-300 text-[10px] pointer-events-none">
+          🗺️ REFERENCE underlay — ไม่ใช่ขนาดผลิต (ขนาดจริงต้องวัดหน้างาน)
+        </div>
+      )}
       {/* Selected Panel Info */}
       {selectedPanelId && (
         <div className="absolute bottom-4 left-4 z-10">

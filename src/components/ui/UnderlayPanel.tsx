@@ -1,0 +1,117 @@
+/**
+ * UnderlayPanel — FP-1 (ADR-062): จัดการแปลนอ้างอิง (แท็บ Decor)
+ *
+ * ป้าย "REFERENCE — ไม่ใช่ขนาดผลิต" บังคับแสดงเสมอ (หลักเหล็ก human-in-loop)
+ */
+
+import React, { useRef, useState } from 'react';
+import { useUnderlayStore, UNDERLAY_MAX_BYTES } from '../../core/store/useUnderlayStore';
+
+export function UnderlayPanel() {
+  const s = useUnderlayStore();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('รองรับไฟล์ภาพ (PNG/JPG/WebP) — PDF/DXF อยู่ใน FP-2');
+      return;
+    }
+    if (file.size > UNDERLAY_MAX_BYTES) {
+      setError(`ไฟล์ใหญ่เกิน ${Math.round(UNDERLAY_MAX_BYTES / 1024 / 1024)}MB`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const img = new Image();
+      img.onload = () => s.setImage(dataUrl, file.name, img.naturalHeight / img.naturalWidth);
+      img.onerror = () => setError('อ่านไฟล์ภาพไม่สำเร็จ');
+      img.src = dataUrl;
+    };
+    reader.onerror = () => setError('อ่านไฟล์ไม่สำเร็จ');
+    reader.readAsDataURL(file);
+  };
+
+  const num = (v: string, fallback: number) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  return (
+    <div className="rounded-lg border border-[#333] bg-surface-2 p-2 space-y-2" data-testid="underlay-panel">
+      <div className="flex items-center gap-2">
+        <span>🗺️</span>
+        <span className="text-xs font-medium text-white">แปลนอ้างอิง (Underlay)</span>
+      </div>
+
+      {/* ป้ายหลักเหล็ก — แสดงเสมอ */}
+      <div className="px-2 py-1 rounded bg-amber-500/15 text-amber-400 text-[10px]">
+        ⚠ REFERENCE — ไม่ใช่ขนาดผลิต · ขนาดจริงต้องวัดหน้างาน (verified record) และคนอนุมัติทุกขั้น
+      </div>
+
+      {!s.imageDataUrl ? (
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="w-full px-2 py-2 rounded text-[11px] bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+        >
+          📂 เลือกภาพแปลน (PNG/JPG)
+        </button>
+      ) : (
+        <>
+          <div className="flex items-center justify-between text-[10px] text-gray-400">
+            <span className="truncate max-w-[140px]" title={s.fileName ?? ''}>{s.fileName}</span>
+            <button onClick={() => s.clearImage()} className="text-red-400 hover:text-red-300">ลบ</button>
+          </div>
+
+          <label className="block text-[10px] text-gray-400">
+            ความโปร่งใส {Math.round(s.opacity * 100)}%
+            <input type="range" min={5} max={100} value={Math.round(s.opacity * 100)}
+              onChange={(e) => s.setOpacity(num(e.target.value, 50) / 100)} className="w-full" />
+          </label>
+
+          <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
+            <label>กว้าง (mm)
+              <input type="number" value={s.widthMm} disabled={s.locked}
+                onChange={(e) => s.setWidthMm(num(e.target.value, s.widthMm))}
+                className="w-full bg-black/30 rounded px-1 py-0.5 text-white" />
+            </label>
+            <label>หมุน (°)
+              <input type="number" value={s.rotationDeg} disabled={s.locked}
+                onChange={(e) => s.setRotationDeg(num(e.target.value, s.rotationDeg))}
+                className="w-full bg-black/30 rounded px-1 py-0.5 text-white" />
+            </label>
+            <label>X (mm)
+              <input type="number" value={s.position[0]} disabled={s.locked}
+                onChange={(e) => s.setPosition(num(e.target.value, s.position[0]), s.position[1])}
+                className="w-full bg-black/30 rounded px-1 py-0.5 text-white" />
+            </label>
+            <label>Z (mm)
+              <input type="number" value={s.position[1]} disabled={s.locked}
+                onChange={(e) => s.setPosition(s.position[0], num(e.target.value, s.position[1]))}
+                className="w-full bg-black/30 rounded px-1 py-0.5 text-white" />
+            </label>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => s.setVisible(!s.visible)}
+              className="flex-1 px-2 py-1 rounded text-[10px] bg-zinc-700 text-zinc-300 hover:bg-zinc-600">
+              {s.visible ? '👁 ซ่อน' : '👁 แสดง'}
+            </button>
+            <button onClick={() => s.setLocked(!s.locked)}
+              className={`flex-1 px-2 py-1 rounded text-[10px] ${s.locked ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'}`}>
+              {s.locked ? '🔒 ล็อกอยู่' : '🔓 ล็อก'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {error && <div className="text-[10px] text-red-400">{error}</div>}
+      <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" data-testid="underlay-file" />
+    </div>
+  );
+}
