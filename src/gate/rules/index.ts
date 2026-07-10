@@ -45,3 +45,12 @@ export {
   isHorizontalPanel,
   calculateExpectedConnectorCount,
 } from './gateG11_types';
+
+// G11 Connector OS Audit (catalog + placer + compiler as auditor)
+export {
+  runConnectorOsAudit,
+  groupJoints,
+  positionsAlongJoint,
+  type ConnectorAuditIssue,
+  type ConnectorAuditResult,
+} from './gateG11_connectorAudit';

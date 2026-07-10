@@ -15,6 +15,8 @@ import type { GateFinding, GateResult, Severity } from './gateTypes';
 import { SEVERITY_COLORS, SEVERITY_BG, countBySeverity } from './gateTypes';
 import { useDrillMapStore } from '../../core/store/useDrillMapStore';
 import { validateMinifixGate } from '../rules/connectors/validateMinifixConnector';
+import { validateG11FromDrillMap } from '../rules/gateG11_minifixSystem32';
+import { runConnectorOsAudit, type ConnectorAuditIssue } from '../rules/gateG11_connectorAudit';
 
 // ============================================
 // ICONS
@@ -153,51 +155,93 @@ function runGateValidation(): void {
   setTimeout(() => {
     try {
       const gateResult = validateMinifixGate(drillMap);
+      // Connector OS เป็นผู้ตรวจชั้นที่สอง (G11 rules + catalog/placer/compiler audit)
+      const g11Result = validateG11FromDrillMap(drillMap);
+      const connectorAudit = runConnectorOsAudit(drillMap);
+
+      const g11ToFinding = (i: (typeof g11Result.issues)[number]): GateFinding => ({
+        key: `${i.code}:${(i.drillPointIds ?? i.panelIds ?? []).join(',')}`,
+        code: i.code,
+        message: i.message,
+        severity: (i.severity === 'BLOCKER' ? 'BLOCKER' : i.severity === 'WARNING' ? 'WARNING' : 'INFO') as Severity,
+        entityIds: i.drillPointIds ?? i.panelIds ?? [],
+        context: i.context as Record<string, unknown> | undefined,
+      });
+      const auditToFinding = (i: ConnectorAuditIssue): GateFinding => ({
+        key: `${i.code}:${i.entityIds.slice(0, 4).join(',')}`,
+        code: i.code,
+        message: i.message,
+        severity: i.severity as Severity,
+        entityIds: i.entityIds,
+        context: i.measured,
+      });
+
+      const extraBlockers = [
+        ...g11Result.issues.filter(i => i.severity === 'BLOCKER').map(g11ToFinding),
+        ...connectorAudit.issues.filter(i => i.severity === 'BLOCKER').map(auditToFinding),
+      ];
+      const extraWarnings = [
+        ...g11Result.issues.filter(i => i.severity === 'WARNING').map(g11ToFinding),
+        ...connectorAudit.issues.filter(i => i.severity === 'WARNING').map(auditToFinding),
+      ];
+      const extraInfo = [
+        ...g11Result.issues.filter(i => i.severity !== 'BLOCKER' && i.severity !== 'WARNING').map(g11ToFinding),
+        ...connectorAudit.issues.filter(i => i.severity === 'INFO').map(auditToFinding),
+      ];
 
       // Convert MinifixGateResult to GateResult format
       const result: GateResult = {
-        passed: gateResult.status === 'PASS',
+        passed: gateResult.status === 'PASS' && g11Result.status === 'PASS' && connectorAudit.status === 'PASS',
         runAt: new Date().toISOString(),
-        policyVersion: 'minifix-v1.0',
+        policyVersion: 'minifix-v1.0+g11-connector-os-v1.1',
         findings: {
-          blockers: gateResult.findings
-            .filter(f => f.severity === 'ERROR')
-            .map(f => ({
-              key: `${f.code}:${f.entityIds.join(',')}`,
-              code: f.code,
-              message: f.message,
-              severity: 'BLOCKER' as Severity,
-              entityIds: f.entityIds,
-              patch: f.suggestedFix?.patch?.map(p => ({
-                op: p.op as 'replace' | 'add' | 'remove',
-                path: `/useDrillMapStore/drillMap${p.path}`,
-                value: p.value,
+          blockers: [
+            ...gateResult.findings
+              .filter(f => f.severity === 'ERROR')
+              .map(f => ({
+                key: `${f.code}:${f.entityIds.join(',')}`,
+                code: f.code,
+                message: f.message,
+                severity: 'BLOCKER' as Severity,
+                entityIds: f.entityIds,
+                patch: f.suggestedFix?.patch?.map(p => ({
+                  op: p.op as 'replace' | 'add' | 'remove',
+                  path: `/useDrillMapStore/drillMap${p.path}`,
+                  value: p.value,
+                })),
+                context: {
+                  ...(f.measured || {}),
+                  ...(f.tolerance || {}),
+                },
               })),
-              context: {
-                ...(f.measured || {}),
-                ...(f.tolerance || {}),
-              },
-            })),
-          warnings: gateResult.findings
-            .filter(f => f.severity === 'WARNING')
-            .map(f => ({
-              key: `${f.code}:${f.entityIds.join(',')}`,
-              code: f.code,
-              message: f.message,
-              severity: 'WARNING' as Severity,
-              entityIds: f.entityIds,
-              context: f.measured,
-            })),
-          info: [],
+            ...extraBlockers,
+          ],
+          warnings: [
+            ...gateResult.findings
+              .filter(f => f.severity === 'WARNING')
+              .map(f => ({
+                key: `${f.code}:${f.entityIds.join(',')}`,
+                code: f.code,
+                message: f.message,
+                severity: 'WARNING' as Severity,
+                entityIds: f.entityIds,
+                context: f.measured,
+              })),
+            ...extraWarnings,
+          ],
+          info: extraInfo,
         },
         metrics: {
-          errors: gateResult.summary.errors,
-          warnings: gateResult.summary.warnings,
+          errors: gateResult.summary.errors + g11Result.summary.blockers + connectorAudit.summary.blockers,
+          warnings: gateResult.summary.warnings + g11Result.summary.warnings + connectorAudit.summary.warnings,
+          connectorJointsAudited: connectorAudit.summary.jointsAudited,
         },
       };
 
       setResult(result);
-      console.log('[SafetyPanel] Gate validation completed:', gateResult.status);
+      console.log('[SafetyPanel] Gate validation completed:', gateResult.status,
+        '| G11:', g11Result.status, `(${g11Result.issues.length} issues)`,
+        '| ConnectorOS:', connectorAudit.status, `(${connectorAudit.summary.jointsAudited} joints)`);
     } catch (error) {
       console.error('[SafetyPanel] Gate validation error:', error);
       setRunning(false);

@@ -655,3 +655,102 @@ describe('G11_CONSTANTS', () => {
     expect(G11_CONSTANTS.MATING_TOLERANCE).toBe(0.1);
   });
 });
+
+// ============================================
+// S16: OVERLAY CONSTRUCTION TESTS
+// (generator OVERLAY branch: side dowel = EDGE_BORE ±Y 18mm,
+//  horiz dowel = FACE_BORE ±Y 12mm — คนละ convention กับ INSET v4.0
+//  เดิม rule hardcode ตาม role → ด่าตู้ OVERLAY ทุกใบ = false blocker)
+// ============================================
+
+function createOverlayDowel(
+  id: string,
+  panelRole: string,
+  depth: number,
+  position: [number, number, number],
+  pairId?: string
+): G11DrillPoint {
+  return createDrillPoint({
+    id,
+    purpose: 'DOWEL',
+    componentType: 'DOWEL',
+    diameter: 8,
+    depth,
+    position,
+    // OVERLAY: ทั้งคู่เจาะแนวดิ่ง (Y) — side เข้า edge บน/ล่าง, horiz เข้า face
+    normal: [0, 1, 0],
+    connectedPanelRole: panelRole,
+    pairId,
+  });
+}
+
+describe('S16 OVERLAY construction (depth follows bore type)', () => {
+  it('passes OVERLAY side dowel: EDGE_BORE (±Y) depth 18mm', () => {
+    const issues = ruleG11_DowelDepth([
+      createOverlayDowel('d-side', 'LEFT_SIDE', 18, [24, 700, 37]),
+    ]);
+    expect(issues.length).toBe(0);
+  });
+
+  it('passes OVERLAY horizontal dowel: FACE_BORE (±Y) depth 12mm', () => {
+    const issues = ruleG11_DowelDepth([
+      createOverlayDowel('d-horiz', 'TOP', 12, [24, 700, 37]),
+    ]);
+    expect(issues.length).toBe(0);
+  });
+
+  it('still blocks OVERLAY side EDGE bore with wrong depth (12 ≠ 18)', () => {
+    const issues = ruleG11_DowelDepth([
+      createOverlayDowel('d-side', 'LEFT_SIDE', 12, [24, 700, 37]),
+    ]);
+    expect(issues.length).toBe(1);
+    expect(issues[0].severity).toBe('BLOCKER');
+    expect(issues[0].context?.expected).toBe(18);
+  });
+
+  it('mating: อนุญาต offset ตามแกน dowel (ความหนาแผ่น) แต่จับ drift ตั้งฉาก', () => {
+    const base = 'pair-ov-dowel';
+    // ห่างกัน 19.6mm ตามแกน Y (แกน dowel) = geometry ปกติ
+    const ok = ruleG11_MatingAlignment([
+      createOverlayDowel('d-side', 'LEFT_SIDE', 18, [24, 719.6, 37], `${base}-side`),
+      createOverlayDowel('d-horiz', 'TOP', 12, [24, 700, 37], `${base}-horiz`),
+    ]);
+    expect(ok.length).toBe(0);
+
+    // เพี้ยน 1mm ในแกน Z (ตั้งฉากกับ dowel) = misalignment จริง
+    const bad = ruleG11_MatingAlignment([
+      createOverlayDowel('d-side2', 'LEFT_SIDE', 18, [24, 719.6, 38], `${base}2-side`),
+      createOverlayDowel('d-horiz2', 'TOP', 12, [24, 700, 37], `${base}2-horiz`),
+    ]);
+    expect(bad.length).toBe(1);
+    expect(bad[0].code).toBe('B_G11_MATING_MISALIGNMENT');
+    expect(bad[0].context?.measured).toBeCloseTo(1, 1);
+  });
+
+  it('drill type: คู่ dowel ที่เป็น FACE ทั้งคู่ = blocker (ประกอบไม่ได้)', () => {
+    const base = 'pair-bad-dowel';
+    const issues = ruleG11_DrillType([
+      // side ใช้ normal ±X (FACE ใน convention side) + horiz ใช้ ±Y (FACE) → FACE+FACE
+      createDrillPoint({
+        id: 'd-side', purpose: 'DOWEL', componentType: 'DOWEL', diameter: 8, depth: 12,
+        position: [24, 700, 37], normal: [1, 0, 0], connectedPanelRole: 'LEFT_SIDE',
+        pairId: `${base}-side`,
+      }),
+      createDrillPoint({
+        id: 'd-horiz', purpose: 'DOWEL', componentType: 'DOWEL', diameter: 8, depth: 12,
+        position: [24, 700, 37], normal: [0, 1, 0], connectedPanelRole: 'TOP',
+        pairId: `${base}-horiz`,
+      }),
+    ]);
+    expect(issues.length).toBe(1);
+    expect(issues[0].context?.purpose).toBe('DOWEL');
+  });
+
+  it('drill type: คู่ dowel EDGE+FACE ถูกต้อง — ไม่ด่า (ทั้ง OVERLAY และ INSET)', () => {
+    const overlay = ruleG11_DrillType([
+      createOverlayDowel('d-side', 'LEFT_SIDE', 18, [24, 719.6, 37], 'p1-side'),   // EDGE
+      createOverlayDowel('d-horiz', 'TOP', 12, [24, 700, 37], 'p1-horiz'),          // FACE
+    ]);
+    expect(overlay.length).toBe(0);
+  });
+});

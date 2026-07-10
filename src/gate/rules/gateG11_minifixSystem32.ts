@@ -183,7 +183,13 @@ export function ruleG11_DowelDepth(
 
     if (!panelRole) continue;
 
-    const expectedDepth = getExpectedDowelDepth(panelRole);
+    // Construction-aware (S16): ความลึกตามชนิดรูจริง ไม่ใช่ตามแผ่น —
+    // EDGE_BORE (end grain) = 18mm, FACE_BORE = 12mm, รวม 30mm ทั้ง OVERLAY และ INSET
+    // (เดิม hardcode ตาม role แบบ INSET v4.0 → ด่าตู้ OVERLAY ทุกใบทั้งที่ generator ถูก)
+    const boreType = inferBoreTypeFromNormal(point.normal, panelRole);
+    const expectedDepth = boreType === 'EDGE_BORE'
+      ? G11_CONSTANTS.DOWEL_DEPTH_HORIZ_EDGE
+      : G11_CONSTANTS.DOWEL_DEPTH_SIDE_FACE;
     const actualDepth = point.depth;
     const delta = Math.abs(actualDepth - expectedDepth);
 
@@ -192,8 +198,6 @@ export function ruleG11_DowelDepth(
       const code: G11IssueCode = isSide
         ? 'B_G11_DOWEL_DEPTH_SIDE_WRONG'
         : 'B_G11_DOWEL_DEPTH_HORIZONTAL_WRONG';
-
-      const boreType = isSide ? 'EDGE_BORE' : 'FACE_BORE';
 
       issues.push({
         id: issueId(code, point.id),
@@ -267,6 +271,11 @@ export function ruleG11_DrillType(
 
     if (!panelRole) continue;
 
+    // Construction-aware (S16): DOWEL เจาะได้ทั้งสองแบบตาม construction
+    // (OVERLAY: side EDGE + horiz FACE · INSET v4.0: side FACE + horiz EDGE)
+    // → ตรวจแบบคู่ (ต้องเป็น EDGE+FACE ผสมกัน) ด้านล่างแทน ไม่ตรวจ per-role
+    if (point.purpose === 'DOWEL') continue;
+
     // Infer actual bore type from drill normal and panel role (v4.0 context-aware)
     const actualBoreType = inferBoreTypeFromNormal(point.normal, panelRole);
     const expectedBoreType = getExpectedBoreType(panelRole, point.purpose);
@@ -289,6 +298,32 @@ export function ruleG11_DrillType(
           boreType: actualBoreType,
           expectedBoreType,
           purpose: point.purpose,
+        },
+      });
+    }
+  }
+
+  // DOWEL pair consistency: คู่ dowel ต้องเป็น EDGE_BORE + FACE_BORE เสมอ
+  // (ทั้งคู่ EDGE หรือทั้งคู่ FACE = ประกอบไม่ได้ ไม่ว่า construction ไหน)
+  const dowelPairs = findMatingPairs(drillPoints);
+  for (const pair of dowelPairs) {
+    const sideRole = pair.sidePoint.connectedPanelRole || 'SIDE';
+    const horizRole = pair.horizontalPoint.connectedPanelRole || 'TOP';
+    const sideType = inferBoreTypeFromNormal(pair.sidePoint.normal, sideRole);
+    const horizType = inferBoreTypeFromNormal(pair.horizontalPoint.normal, horizRole);
+
+    if (sideType === horizType) {
+      issues.push({
+        id: issueId('B_G11_DRILL_TYPE_SIDE_NOT_FACE', pair.sidePoint.id, pair.horizontalPoint.id),
+        severity: 'BLOCKER',
+        code: 'B_G11_DRILL_TYPE_SIDE_NOT_FACE',
+        message: `Dowel pair ${pair.sidePoint.id}↔${pair.horizontalPoint.id}: both bores are ${sideType} — a dowel joint needs one EDGE_BORE and one FACE_BORE.`,
+        drillPointIds: [pair.sidePoint.id, pair.horizontalPoint.id],
+        corner: pair.corner,
+        context: {
+          boreType: sideType,
+          expectedBoreType: sideType === 'EDGE_BORE' ? 'FACE_BORE' : 'EDGE_BORE',
+          purpose: 'DOWEL',
         },
       });
     }
@@ -325,7 +360,14 @@ export function ruleG11_MatingAlignment(
     // Skip if corner is in skip list
     if (skipMatingCheck?.includes(pair.corner)) continue;
 
-    const distance = pair.distance;
+    // Construction-aware (S16): วัดเฉพาะระนาบตั้งฉากกับแกน dowel —
+    // ระยะตามแกน (ความหนาแผ่น เช่น 19.6mm) เป็น geometry ปกติ ไม่ใช่ misalignment
+    const axis = dominantAxis(pair.sidePoint.normal);
+    const distance = perpendicularDistance(
+      pair.sidePoint.position,
+      pair.horizontalPoint.position,
+      axis,
+    );
 
     if (distance > matingTolerance) {
       issues.push({
@@ -398,13 +440,40 @@ function inferPanelRoleFromPoint(point: G11DrillPoint): string | undefined {
 }
 
 /**
+ * แกนเด่นของ normal (0=X, 1=Y, 2=Z)
+ */
+function dominantAxis(normal: [number, number, number]): number {
+  const abs = normal.map(Math.abs);
+  let axis = 0;
+  if (abs[1] > abs[axis]) axis = 1;
+  if (abs[2] > abs[axis]) axis = 2;
+  return axis;
+}
+
+/**
+ * ระยะห่างเฉพาะระนาบตั้งฉากกับแกนที่กำหนด (ตัด component ตามแกนทิ้ง)
+ */
+function perpendicularDistance(
+  a: [number, number, number],
+  b: [number, number, number],
+  axis: number,
+): number {
+  let sum = 0;
+  for (let i = 0; i < 3; i++) {
+    if (i === axis) continue;
+    sum += (a[i] - b[i]) ** 2;
+  }
+  return Math.sqrt(sum);
+}
+
+/**
  * Infer bore type from drill normal vector and panel role.
  *
- * v4.0 Side-covers-Top Construction:
- * - SIDE panels: horizontal normal [±X] = FACE_BORE (into inner face)
- * - SIDE panels: vertical normal [±Y] = EDGE_BORE (into top/bottom edge - WRONG in v4.0)
- * - HORIZ panels: vertical normal [±Y] = FACE_BORE (into face - for CAM)
- * - HORIZ panels: horizontal normal [±X] = EDGE_BORE (into left/right edge - for DOWEL)
+ * Construction-aware (S16):
+ * - SIDE panels: horizontal normal [±X] = FACE_BORE (into inner face — INSET v4.0)
+ * - SIDE panels: vertical normal [±Y] = EDGE_BORE (into top/bottom edge — OVERLAY)
+ * - HORIZ panels: vertical normal [±Y] = FACE_BORE (into face — CAM / OVERLAY dowel)
+ * - HORIZ panels: horizontal normal [±X] = EDGE_BORE (into left/right edge — INSET dowel)
  *
  * @param normal - Drill normal vector
  * @param panelRole - Optional panel role for context-aware inference
