@@ -35,6 +35,11 @@ export function UnderlayPanel() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    // FP-3 (ADR-062): DWG = ฟอร์แมตปิด — แนะนำทางที่ทุก CAD ทำได้แทนการเดา
+    if (/\.dwg$/i.test(file.name)) {
+      setError('DWG เป็นฟอร์แมตปิด — กรุณา export เป็น DXF จากโปรแกรม CAD (AutoCAD: SAVEAS → DXF) แล้วโหลดใหม่');
+      return;
+    }
     // FP-2: DXF -> reference layer เส้น
     if (/\.dxf$/i.test(file.name)) {
       file.text().then((text) => {
