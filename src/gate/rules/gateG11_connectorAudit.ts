@@ -25,6 +25,7 @@ import {
 import { getConnectorPositions } from '../../core/connector/placer';
 import { compileConnectorOps } from '../../core/connector/compiler';
 import type { AdjacencyContext, LoadClass, ConnectorDrillOp } from '../../core/connector/types';
+import type { ConnectorDensity } from '../../core/manufacturing/drillMap/generateDrillMap';
 
 // ============================================
 // TYPES
@@ -127,6 +128,9 @@ export function positionsAlongJoint(housings: DrillMapPoint[]): number[] {
 export function runConnectorOsAudit(
   drillMap: DrillMap | null,
   load: LoadClass = 'STANDARD',
+  // ADR-061: profile ที่ผู้ใช้เลือก — เลือกมาตรฐาน CAD โดยตั้งใจ = spacing เกิน AWI
+  // เป็นข้อมูลแจ้ง (INFO) ไม่ใช่คำเตือน; default เข้มไว้ก่อน (AWI)
+  density: ConnectorDensity = 'AWI_PREMIUM',
 ): ConnectorAuditResult {
   const issues: ConnectorAuditIssue[] = [];
   const profile = KITCHEN_PREMIUM_PROFILE;
@@ -189,8 +193,10 @@ export function runConnectorOsAudit(
       if (gap > maxSpacing + 0.5) {
         issues.push({
           code: 'G11_MAX_SPACING',
-          severity: 'WARNING',
-          message: `Joint ${joint.panelA}↔${joint.panelB} ช่วงห่าง connector ${gap.toFixed(1)}mm เกินเกณฑ์ ${load} (${maxSpacing}mm)`,
+          severity: density === 'CAD_STANDARD' ? 'INFO' : 'WARNING',
+          message: density === 'CAD_STANDARD'
+            ? `Joint ${joint.panelA}↔${joint.panelB} ช่วงห่าง ${gap.toFixed(1)}mm เกิน AWI ${maxSpacing}mm — โปรไฟล์มาตรฐาน CAD ที่เลือกไว้ (ตกลงกับลูกค้าได้)`
+            : `Joint ${joint.panelA}↔${joint.panelB} ช่วงห่าง connector ${gap.toFixed(1)}mm เกินเกณฑ์ ${load} (${maxSpacing}mm)`,
           entityIds: housingIds,
           measured: { gapMm: Math.round(gap * 10) / 10, maxSpacingMm: maxSpacing, load },
         });

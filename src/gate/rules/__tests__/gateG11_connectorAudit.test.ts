@@ -175,3 +175,28 @@ describe('runConnectorOsAudit', () => {
     expect(result.summary.jointsAudited).toBe(0);
   });
 });
+
+describe('ADR-061: density profile severity', () => {
+  function sparseJoint() {
+    const b1 = bolt('SHELF', 37, { id: 'db1' });
+    const b2 = bolt('SHELF', 300, { id: 'db2' });
+    const h1 = housing('SIDE', 37, 'db1', { id: 'dh1' });
+    const h2 = housing('SIDE', 300, 'db2', { id: 'dh2' });
+    return makeDrillMap({ SIDE: [h1, h2], SHELF: [b1, b2] });
+  }
+
+  it('AWI_PREMIUM (default): gap เกิน = WARNING', () => {
+    const result = runConnectorOsAudit(sparseJoint(), 'STANDARD', 'AWI_PREMIUM');
+    const found = result.issues.filter(i => i.code === 'G11_MAX_SPACING');
+    expect(found).toHaveLength(1);
+    expect(found[0].severity).toBe('WARNING');
+  });
+
+  it('CAD_STANDARD (ผู้ใช้เลือกประหยัด): gap เกิน = INFO พร้อมบอกว่าเป็น profile ที่เลือก', () => {
+    const result = runConnectorOsAudit(sparseJoint(), 'STANDARD', 'CAD_STANDARD');
+    const found = result.issues.filter(i => i.code === 'G11_MAX_SPACING');
+    expect(found).toHaveLength(1);
+    expect(found[0].severity).toBe('INFO');
+    expect(found[0].message).toContain('มาตรฐาน CAD');
+  });
+});

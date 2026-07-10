@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DrillMap, DrillMapPoint, DrillingParams, RotationOverride, CornerType, PositionOverride, Vec3Tuple } from '../manufacturing/drillMap/types';
+import type { ConnectorDensity } from '../manufacturing/drillMap/generateDrillMap';
 import { POSITION_OVERRIDE_FALLBACK_LIMITS } from '../manufacturing/drillMap/types';
 import {
   type Bounds3World,
@@ -96,6 +97,9 @@ interface DrillMapState {
   // Per-group connector count overrides
   // Keys: "main" (TOP/BOTTOM corners), "shelf_0"/"shelf_1"/... (shelves), "back" (back panel)
   connectorCountOverrides: Record<string, number>;
+
+  // ADR-061: ความถี่ Minifix ที่ผู้ใช้เลือก (persisted — คุยกับลูกค้าได้ว่าเลือกแบบไหน)
+  connectorDensity: ConnectorDensity;
 }
 
 interface DrillMapActions {
@@ -170,6 +174,7 @@ interface DrillMapActions {
 
   // Per-group connector count overrides (Add/Del buttons in ConnectorList)
   setConnectorCountOverride: (group: string, count: number) => void;
+  setConnectorDensity: (density: ConnectorDensity) => void;
   clearConnectorCountOverride: (group: string) => void;
   getConnectorCountOverride: (group: string) => number | undefined;
 }
@@ -290,6 +295,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
       cabinetBoundsWorld: FALLBACK_BOUNDS,
       drillMapVersion: 0,
       connectorCountOverrides: {},
+      connectorDensity: 'CAD_STANDARD',
 
       // Actions
       setDrillMap: (drillMap) => {
@@ -840,6 +846,11 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         });
       },
 
+      setConnectorDensity: (density) => {
+        // เปลี่ยน profile → regenerate ทันที (Cabinet3D watch ค่านี้)
+        set({ connectorDensity: density });
+      },
+
       setConnectorCountOverride: (group, count) => {
         const prev = get().connectorCountOverrides;
         const next = { ...prev, [group]: Math.max(1, count) };
@@ -1107,6 +1118,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
         // Only persist rotation/position defaults, not the drill map itself
         rotationDefaults: state.rotationDefaults,
         positionDefaults: state.positionDefaults,
+        connectorDensity: state.connectorDensity, // ADR-061
       }),
       migrate: (persistedState, version) => {
         // Version 4: Reset persisted defaults to prevent stale flip/orientation carry-over
@@ -1117,6 +1129,7 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             ...(state ?? {}),
             rotationDefaults: DEFAULT_ROTATION_DEFAULTS,
             positionDefaults: DEFAULT_POSITION_DEFAULTS,
+            connectorDensity: state?.connectorDensity ?? 'CAD_STANDARD',
             // Force drillMap regeneration by clearing it
             drillMap: null,
             drillMapVersion: (state?.drillMapVersion ?? 0) + 1,
@@ -1130,9 +1143,14 @@ export const useDrillMapStore = create<DrillMapState & DrillMapActions>()(
             ...(state ?? {}),
             rotationDefaults: DEFAULT_ROTATION_DEFAULTS,
             positionDefaults: DEFAULT_POSITION_DEFAULTS,
+            connectorDensity: state?.connectorDensity ?? 'CAD_STANDARD',
           };
         }
-        return persistedState as DrillMapState;
+        const state = persistedState as Partial<DrillMapState> | null;
+        return {
+          ...(state as DrillMapState),
+          connectorDensity: state?.connectorDensity ?? 'CAD_STANDARD',
+        };
       },
     }
   )

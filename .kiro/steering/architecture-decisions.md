@@ -650,3 +650,18 @@ inclusion: always
 - dev: supabase functions serve · prod: deploy + env ใน Pages workflow
 
 **Consequences**: 0155 + supabase/functions/factory-api + stateApi patch + env
+
+## ADR-061: Connector Density เป็นตัวเลือกผู้ใช้ + roadmap Connector OS เต็มตัว (2026-07-10)
+
+**Context**: S16 ต่อ Connector OS เป็นผู้ตรวจ drill map สำเร็จ — audit จับว่าตู้ default วาง Minifix ห่าง 243mm เกินมาตรฐาน AWI Premium (128mm) ตามกติกา CAD เดิม (≤400→2, >400→3 ตัว/joint) การถี่ขึ้น = แข็งแรงขึ้นแต่ต้นทุนฮาร์ดแวร์เพิ่ม — เป็นการตัดสินใจเชิงพาณิชย์ ไม่ใช่ถูก/ผิดทางวิศวกรรม
+
+**มติ owner (10 ก.ค. 2026)**:
+1. **ความถี่ Minifix = ตัวเลือกผู้ใช้** เพื่อตัดสินใจกับลูกค้า — สองโปรไฟล์:
+   - `CAD_STANDARD` (default): กติกา CAD เดิม — ประหยัด; spacing เกิน AWI รายงานเป็น **INFO** (เลือกเองโดยตกลงกับลูกค้า)
+   - `AWI_PREMIUM`: generator วางให้ gap ≤128mm (count = max(CAD, ceil(span/128)+1) กระจายสมมาตร); เกิน = WARNING
+   - เก็บใน useDrillMapStore (persisted `drill-map-settings`) · UI selector ใน ConnectorManager (แท็บ Hardware→Connectors) · จำนวน connector ไหลเข้า packet/BOM อัตโนมัติเพราะ drill map เป็นต้นทาง
+2. **เห็นชอบ scope ใหญ่ 2 เรื่อง (ลุยต่อ)**:
+   - **Compiler เป็นตัวสร้างรูแทน generator เดิม** (`emitToOpNodes`) — ทำแบบ staged: shadow mode เทียบ output compiler vs generator บนตู้จริงก่อน สลับเมื่อ parity 100%
+   - **FactoryApp dashboard backend** — เพิ่ม endpoints jobs list/detail/activity ใน factory-api (จาก factory_jobs/events) + client แนบ auth headers
+
+**Consequences**: generateDrillMap `connectorDensity` option + `computeConnectorCountForDensity` · useDrillMapStore.connectorDensity + setter · Cabinet3D ส่ง option · ConnectorDensitySelector ใน ConnectorManager · runConnectorOsAudit รับ density → severity ตามโปรไฟล์ · SafetyPanel ส่ง density; พิสูจน์สด: CAD → 8 INFO / AWI → All checks passed (5 ตัว gap ~121mm); tests +15

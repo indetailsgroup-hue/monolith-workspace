@@ -157,7 +157,9 @@ function runGateValidation(): void {
       const gateResult = validateMinifixGate(drillMap);
       // Connector OS เป็นผู้ตรวจชั้นที่สอง (G11 rules + catalog/placer/compiler audit)
       const g11Result = validateG11FromDrillMap(drillMap);
-      const connectorAudit = runConnectorOsAudit(drillMap);
+      // ADR-061: severity ของ spacing ตาม density profile ที่ผู้ใช้เลือก
+      const connectorDensity = useDrillMapStore.getState().connectorDensity;
+      const connectorAudit = runConnectorOsAudit(drillMap, 'STANDARD', connectorDensity);
 
       const g11ToFinding = (i: (typeof g11Result.issues)[number]): GateFinding => ({
         key: `${i.code}:${(i.drillPointIds ?? i.panelIds ?? []).join(',')}`,

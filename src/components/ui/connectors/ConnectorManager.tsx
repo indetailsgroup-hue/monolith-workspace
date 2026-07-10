@@ -20,6 +20,8 @@ import {
   DEFAULT_MINIFIX_CONFIG,
 } from '../MinifixConfigPanel';
 import { Circle, ChevronLeft, Save, RotateCcw } from 'lucide-react';
+import { useDrillMapStore } from '../../../core/store/useDrillMapStore';
+import type { ConnectorDensity } from '../../../core/manufacturing/drillMap/generateDrillMap';
 
 // ============================================
 // CONNECTOR TYPES
@@ -184,6 +186,9 @@ export function ConnectorManager({
         </div>
       </div>
 
+      {/* ADR-061: ความถี่ Minifix — ตัวเลือกคุยกับลูกค้า (มาตรฐาน CAD vs AWI Premium) */}
+      <ConnectorDensitySelector />
+
       {/* Tabs */}
       <div className="flex border-b border-[#2a3a4a] overflow-x-auto">
         <TabButton
@@ -278,3 +283,57 @@ export function ConnectorManager({
 }
 
 export default ConnectorManager;
+
+
+// ============================================
+// ADR-061: CONNECTOR DENSITY SELECTOR
+// ============================================
+
+/**
+ * ตัวเลือกความถี่ Minifix ต่อ joint — ให้ Sale/Designer ตัดสินใจกับลูกค้า
+ * มาตรฐาน CAD (2-3 ตัว ประหยัด) vs AWI Premium (ช่วงห่าง ≤128mm แข็งแรงขึ้น)
+ * เก็บใน useDrillMapStore (persisted) → drill map regenerate อัตโนมัติ
+ */
+function ConnectorDensitySelector() {
+  const density = useDrillMapStore((s) => s.connectorDensity);
+  const setDensity = useDrillMapStore((s) => s.setConnectorDensity);
+  const regenerate = useDrillMapStore((s) => s.regenerateDrillMap);
+
+  const choose = (d: ConnectorDensity) => {
+    if (d === density) return;
+    setDensity(d);
+    regenerate();
+  };
+
+  return (
+    <div className="px-4 py-2.5 border-b border-[#2a3a4a] bg-[#152030]">
+      <div className="text-[10px] text-gray-400 mb-1.5">
+        ความถี่ Minifix ต่อ joint — เลือกตามที่ตกลงกับลูกค้า
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => choose('CAD_STANDARD')}
+          className={`flex-1 px-2 py-1.5 rounded text-[11px] text-left transition-colors border ${
+            density === 'CAD_STANDARD'
+              ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+              : 'bg-transparent border-[#2a3a4a] text-gray-400 hover:border-gray-500'
+          }`}
+        >
+          <div className="font-medium">มาตรฐาน CAD</div>
+          <div className="text-[9px] opacity-75">2-3 ตัว/joint — ประหยัดฮาร์ดแวร์</div>
+        </button>
+        <button
+          onClick={() => choose('AWI_PREMIUM')}
+          className={`flex-1 px-2 py-1.5 rounded text-[11px] text-left transition-colors border ${
+            density === 'AWI_PREMIUM'
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+              : 'bg-transparent border-[#2a3a4a] text-gray-400 hover:border-gray-500'
+          }`}
+        >
+          <div className="font-medium">AWI Premium</div>
+          <div className="text-[9px] opacity-75">ช่วงห่าง ≤128mm — แข็งแรงขึ้น ต้นทุนเพิ่ม</div>
+        </button>
+      </div>
+    </div>
+  );
+}

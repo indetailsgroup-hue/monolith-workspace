@@ -1311,6 +1311,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
   const setCabinetBounds = useDrillMapStore((s) => s.setCabinetBounds);
   const drillMapVersion = useDrillMapStore((s) => s.drillMapVersion);
   const connectorCountOverrides = useDrillMapStore((s) => s.connectorCountOverrides);
+  const connectorDensity = useDrillMapStore((s) => s.connectorDensity);
 
   // Force regenerate drill map on mount to apply any config fixes
   const regenerateDrillMap = useDrillMapStore((s) => s.regenerateDrillMap);
@@ -1352,16 +1353,17 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
       activeCabinetFromArray,
       minifixConfig || {},
       drillingParams,
-      Object.keys(connectorCountOverrides).length > 0
-        ? { connectorCountOverrides }
-        : undefined
+      {
+        ...(Object.keys(connectorCountOverrides).length > 0 ? { connectorCountOverrides } : {}),
+        connectorDensity, // ADR-061: ผู้ใช้เลือกความถี่ Minifix
+      }
     );
     setDrillMap(drillMap);
 
     // Compute bounds from drill map (uses same coordinate system as hardware positions)
     const bounds = computeBoundsFromDrillMap(drillMap, 50);
     setCabinetBounds(bounds);
-  }, [xRayMode, show3DHardware, useCSGHoles, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion, connectorCountOverrides]);
+  }, [xRayMode, show3DHardware, useCSGHoles, activeCabinetFromArray, setDrillMap, setCabinetBounds, drillingParams, drillMapVersion, connectorCountOverrides, connectorDensity]);
 
   // Build drill points grouped by panelId for CSG Boolean / X-Ray mode
   // X-Ray mode implies CSG holes so bore geometry is visible on transparent panels

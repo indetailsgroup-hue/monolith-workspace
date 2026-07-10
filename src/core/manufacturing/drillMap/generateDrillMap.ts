@@ -125,6 +125,37 @@ export function computeConnectorCount(faceWidth: number): number {
 }
 
 /**
+ * Connector density profile (ADR-061 มติ owner 10 ก.ค. 2026):
+ * ให้ผู้ใช้เลือกความถี่ Minifix เพื่อตัดสินใจกับลูกค้า
+ * - CAD_STANDARD: กติกา CAD เดิม (≤400→2, >400→3) — ประหยัดฮาร์ดแวร์
+ * - AWI_PREMIUM: ช่วงห่าง ≤128mm ตามมาตรฐาน AWI Premium — แข็งแรงขึ้น แลกต้นทุน
+ */
+export type ConnectorDensity = 'CAD_STANDARD' | 'AWI_PREMIUM';
+
+/** AWI Premium: ระยะห่าง connector สูงสุด (mm) */
+export const AWI_MAX_SPACING_MM = 128;
+
+/**
+ * จำนวน connector ตาม density profile —
+ * AWI: อย่างน้อยเท่ากติกา CAD และพอให้ gap บนช่วง near..far ไม่เกิน 128mm
+ * (near/far ใช้ margin เดียวกับ buildCadConnectorRunPositions เพื่อให้ตำแหน่งสอดคล้อง)
+ */
+export function computeConnectorCountForDensity(
+  runLength: number,
+  firstHole: number,
+  density: ConnectorDensity,
+): number {
+  const base = computeConnectorCount(runLength);
+  if (density !== 'AWI_PREMIUM') return base;
+
+  const margin = Math.min(firstHole, Math.max(10, runLength / 2));
+  const span = Math.max(0, runLength - margin * 2);
+  if (span <= 0) return base;
+  const awiCount = Math.ceil(span / AWI_MAX_SPACING_MM) + 1;
+  return Math.max(base, awiCount);
+}
+
+/**
  * Build CAD-aligned connector positions for the run axis.
  *
  * This replaces generic "first N System32 holes" behavior in the production
@@ -1801,6 +1832,8 @@ export function generateMinifixDrillMap(
     /** Per-group connector count overrides from ConnectorList Add/Del buttons.
      *  Keys: "main" (TOP/BOTTOM corners), "shelf_0"/"shelf_1"/... (shelves), "back" (back panel) */
     connectorCountOverrides?: Record<string, number>;
+    /** ADR-061: ความถี่ Minifix ที่ผู้ใช้เลือก (default CAD_STANDARD) */
+    connectorDensity?: ConnectorDensity;
   }
 ): DrillMap {
   if (!cabinet || !cabinet.panels || cabinet.panels.length === 0) {
@@ -1867,7 +1900,9 @@ export function generateMinifixDrillMap(
   // Per-group overrides take priority over global connectorCount.
   const perGroupOverrides = options?.connectorCountOverrides;
   const mainOverride = perGroupOverrides?.['main'];
-  const connectorCount = mainOverride ?? maxConnectors ?? computeConnectorCount(sys32RunLength);
+  const density: ConnectorDensity = options?.connectorDensity ?? 'CAD_STANDARD';
+  const connectorCount = mainOverride ?? maxConnectors ??
+    computeConnectorCountForDensity(sys32RunLength, fullParams.firstHoleZ, density);
   const sys32Positions = buildCadConnectorRunPositions(
     sys32RunLength,
     fullParams.firstHoleZ,
