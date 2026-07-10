@@ -25,6 +25,7 @@ import { ParametricContractPanel } from './components/layout/ParametricContractP
 import { Cabinet3D, SceneRaycastPolicy } from './components/canvas/Cabinet3D';
 import { InfiniteGrid } from './components/canvas/InfiniteGrid';
 import { UnderlayPlane } from './components/canvas/UnderlayPlane';
+import { DxfUnderlay } from './components/canvas/DxfUnderlay';
 import { useUnderlayStore } from './core/store/useUnderlayStore';
 import { CameraController, ViewType, VIEW_PRESETS } from './components/canvas/ViewportController';
 import { ProjectToolbar } from './components/ui/ProjectToolbar';
@@ -406,6 +407,7 @@ function Viewport({ currentView, showDimensions = false, hideTooltip = false, on
 
           {/* FP-1 (ADR-062): แปลนอ้างอิงรองพื้น — render-only ไม่แตะ manufacturing */}
           <UnderlayPlane />
+          <DxfUnderlay />
 
           {/* Controls - disable rotation for 2D ortho views */}
           <OrbitControls
@@ -794,7 +796,7 @@ export function App() {
   );
 
   // Viewport with overlays (only bottom items now)
-  const underlayActive = useUnderlayStore((s) => !!s.imageDataUrl && s.visible);
+  const underlayActive = useUnderlayStore((s) => (!!s.imageDataUrl && s.visible) || (!!s.dxfSegments && s.dxfVisible));
 
   const viewportWithToolbar = (
     <div className="relative w-full h-full">

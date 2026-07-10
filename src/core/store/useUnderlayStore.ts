@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { DxfSegment } from '../underlay/dxfParse';
 
 export const UNDERLAY_MAX_BYTES = 10 * 1024 * 1024; // 10MB กัน dataURL บวม
 
@@ -30,6 +31,17 @@ export interface UnderlayState {
   locked: boolean;
   /** ซ่อน/แสดง */
   visible: boolean;
+
+  // ── FP-2: DXF reference layer (session-only — segments ไม่ persist กัน quota) ──
+  dxfSegments: DxfSegment[] | null;
+  dxfFileName: string | null;
+  dxfSkipped: number;
+  /** ตัวคูณหน่วยไฟล์ → mm (ไฟล์ mm อยู่แล้ว = 1) */
+  dxfScale: number;
+  dxfPosition: [number, number];
+  dxfRotationDeg: number;
+  dxfVisible: boolean;
+  dxfLocked: boolean;
 }
 
 export interface UnderlayActions {
@@ -41,6 +53,14 @@ export interface UnderlayActions {
   setRotationDeg: (d: number) => void;
   setLocked: (l: boolean) => void;
   setVisible: (v: boolean) => void;
+
+  setDxf: (segments: DxfSegment[], fileName: string, skipped: number) => void;
+  clearDxf: () => void;
+  setDxfScale: (k: number) => void;
+  setDxfPosition: (x: number, z: number) => void;
+  setDxfRotationDeg: (d: number) => void;
+  setDxfVisible: (v: boolean) => void;
+  setDxfLocked: (l: boolean) => void;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -57,6 +77,15 @@ export const useUnderlayStore = create<UnderlayState & UnderlayActions>()(
       rotationDeg: 0,
       locked: false,
       visible: true,
+
+      dxfSegments: null,
+      dxfFileName: null,
+      dxfSkipped: 0,
+      dxfScale: 1,
+      dxfPosition: [0, 0],
+      dxfRotationDeg: 0,
+      dxfVisible: true,
+      dxfLocked: false,
 
       setImage: (dataUrl, fileName, aspect) =>
         set({
@@ -81,7 +110,33 @@ export const useUnderlayStore = create<UnderlayState & UnderlayActions>()(
       },
       setLocked: (l) => set({ locked: l }),
       setVisible: (v) => set({ visible: v }),
+
+      setDxf: (segments, fileName, skipped) =>
+        set({ dxfSegments: segments, dxfFileName: fileName, dxfSkipped: skipped, dxfVisible: true }),
+      clearDxf: () => set({ dxfSegments: null, dxfFileName: null, dxfSkipped: 0 }),
+      setDxfScale: (k) => {
+        if (get().dxfLocked) return;
+        set({ dxfScale: clamp(Number.isFinite(k) && k > 0 ? k : 1, 0.001, 10000) });
+      },
+      setDxfPosition: (x, z) => {
+        if (get().dxfLocked) return;
+        set({ dxfPosition: [Number.isFinite(x) ? x : 0, Number.isFinite(z) ? z : 0] });
+      },
+      setDxfRotationDeg: (d) => {
+        if (get().dxfLocked) return;
+        set({ dxfRotationDeg: Number.isFinite(d) ? ((d % 360) + 360) % 360 : 0 });
+      },
+      setDxfVisible: (v) => set({ dxfVisible: v }),
+      setDxfLocked: (l) => set({ dxfLocked: l }),
     }),
-    { name: 'monolith-underlay' },
+    {
+      name: 'monolith-underlay',
+      // DXF segments ใหญ่ได้หลักหมื่นเส้น — ไม่ persist (โหลดใหม่ต่อ session); ที่เหลือ persist
+      partialize: (state) => {
+        const { dxfSegments, dxfFileName, dxfSkipped, ...rest } = state;
+        void dxfSegments; void dxfFileName; void dxfSkipped;
+        return rest;
+      },
+    },
   ),
 );
