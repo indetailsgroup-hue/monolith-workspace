@@ -275,6 +275,35 @@ export async function checkCanExport(jobId: string): Promise<CanExportResponse> 
   }
 }
 
+/**
+ * ADR-061 packet store: อัปโหลด packet ZIP ขึ้น server (โรงงานดึงผ่าน /export)
+ * server (edge) คำนวณ sha256 เอง — client ไม่ต้องแนบ hash
+ */
+export async function uploadPacket(
+  jobId: string,
+  zipBlob: Blob,
+): Promise<{ ok: boolean; packetSha256?: string; storagePath?: string; error?: string }> {
+  try {
+    const buf = new Uint8Array(await zipBlob.arrayBuffer());
+    let bin = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < buf.length; i += CHUNK) {
+      bin += String.fromCharCode(...buf.subarray(i, i + CHUNK));
+    }
+    const zipBase64 = btoa(bin);
+
+    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/packet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ zipBase64 }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('[StateAPI] uploadPacket failed:', error);
+    return { ok: false, error: error instanceof Error ? error.message : 'Network error' };
+  }
+}
+
 // ============================================
 // SYNC UTILITIES
 // ============================================

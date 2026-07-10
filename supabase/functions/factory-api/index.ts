@@ -51,6 +51,59 @@ async function callRpc(fn: string, body: Record<string, unknown>): Promise<unkno
   return res.json();
 }
 
+const PACKET_BUCKET = "factory-packets";
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function storagePut(path: string, bytes: Uint8Array): Promise<void> {
+  const url = getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const res = await fetch(`${url}/storage/v1/object/${PACKET_BUCKET}/${path}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${key}`, apikey: key,
+      "content-type": "application/zip", "x-upsert": "true",
+    },
+    body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+  });
+  if (!res.ok) throw new Error(`storage put failed (${res.status})`);
+}
+
+async function storageSign(path: string, expiresInSec: number): Promise<string> {
+  const url = getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const res = await fetch(`${url}/storage/v1/object/sign/${PACKET_BUCKET}/${path}`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, apikey: key, "content-type": "application/json" },
+    body: JSON.stringify({ expiresIn: expiresInSec }),
+  });
+  if (!res.ok) throw new Error(`storage sign failed (${res.status})`);
+  const j = (await res.json()) as { signedURL?: string };
+  if (!j.signedURL) throw new Error("no signedURL");
+  return `${url}/storage/v1${j.signedURL}`;
+}
+
+async function storageGet(path: string): Promise<Uint8Array> {
+  const url = getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const res = await fetch(`${url}/storage/v1/object/${PACKET_BUCKET}/${path}`, {
+    headers: { authorization: `Bearer ${key}`, apikey: key },
+  });
+  if (!res.ok) throw new Error(`storage get failed (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 export async function handleFactoryApi(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS });
@@ -106,6 +159,54 @@ export async function handleFactoryApi(req: Request): Promise<Response> {
     if (req.method === "GET" && action === "proof") {
       return json(200, await callRpc("rpc_factory_job_proof", { p_job_id: jobId }));
     }
+    // ── ADR-061 packet store: ปิดลูป design→factory ──
+    if (req.method === "POST" && action === "packet") {
+      // Designer อัปโหลด packet ZIP (base64) — edge คำนวณ sha เอง ไม่เชื่อ client
+      const body = (await req.json().catch(() => null)) as
+        { zipBase64?: string; manifestSha256?: string } | null;
+      if (!body?.zipBase64) return json(400, { ok: false, error: "missing zipBase64" });
+      const bytes = b64ToBytes(body.zipBase64);
+      if (bytes.length === 0 || bytes.length > 20 * 1024 * 1024) {
+        return json(400, { ok: false, error: "invalid packet size" });
+      }
+      const sha = await sha256Hex(bytes);
+      const path = `${encodeURIComponent(jobId)}/${sha}.zip`;
+      await storagePut(path, bytes);
+      const rec = await callRpc("rpc_factory_job_record_packet", {
+        p_job_id: jobId, p_packet_sha256: sha,
+        p_manifest_sha256: body.manifestSha256 ?? null,
+        p_storage_path: path, p_actor_role: actorRole, p_actor_name: actorName,
+      });
+      return json(200, rec);
+    }
+    if (req.method === "GET" && action === "export") {
+      const info = (await callRpc("rpc_factory_job_packet_info", { p_job_id: jobId })) as
+        { ok: boolean; canExport?: boolean; storagePath?: string; packetSha256?: string; revisionId?: string; specState?: string };
+      if (!info.ok) return json(404, info);
+      if (!info.canExport || !info.storagePath) {
+        return json(409, { ok: false, error: "no packet to export",
+          reason: info.specState === "DRAFT" ? "spec is DRAFT" : "packet not uploaded yet" });
+      }
+      const url = await storageSign(info.storagePath, 60 * 60); // 1 ชม.
+      return json(200, { ok: true, url, sha256: info.packetSha256, revisionId: info.revisionId });
+    }
+    if (req.method === "POST" && action === "verify") {
+      const info = (await callRpc("rpc_factory_job_packet_info", { p_job_id: jobId })) as
+        { ok: boolean; storagePath?: string; packetSha256?: string };
+      if (!info.ok) return json(404, info);
+      if (!info.storagePath || !info.packetSha256) {
+        return json(409, { ok: false, error: "no packet recorded" });
+      }
+      const bytes = await storageGet(info.storagePath);
+      const computed = await sha256Hex(bytes);
+      const verdict = computed === info.packetSha256 ? "PASS" : "FAIL";
+      await callRpc("rpc_factory_job_verify_result", {
+        p_job_id: jobId, p_verdict: verdict, p_computed_sha256: computed,
+        p_actor_role: actorRole, p_actor_name: actorName,
+      });
+      return json(200, { ok: true, verdict, expected: info.packetSha256, computed, bytes: bytes.length });
+    }
+
     if (req.method === "POST" && ["freeze", "release", "revoke", "unfreeze"].includes(action)) {
       const body = (await req.json().catch(() => ({}))) as { note?: string; changeClass?: string };
       return json(200, await callRpc("rpc_factory_job_transition", {

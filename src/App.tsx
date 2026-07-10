@@ -726,6 +726,19 @@ export function App() {
         compressedSize: `${(result.compressedSize / 1024).toFixed(1)} KB`,
         uncompressedSize: `${(result.uncompressedSize / 1024).toFixed(1)} KB`,
       });
+
+      // ADR-061 packet store: ส่ง packet ขึ้น server ให้โรงงานดึง (hash-anchored)
+      // job key ฝั่ง server = project id (ตัวเดียวกับ freeze)
+      const serverJobId = useProjectStore.getState().metadata?.id;
+      if (serverJobId) {
+        const { uploadPacket } = await import('./core/api/stateApi');
+        const up = await uploadPacket(serverJobId, result.blob);
+        if (up.ok) {
+          console.log('[Export] Packet uploaded to factory store:', up.packetSha256?.slice(0, 12), up.storagePath);
+        } else {
+          console.warn('[Export] Packet upload skipped/failed:', up.error);
+        }
+      }
     } catch (error) {
       console.error('[Export] Failed to export factory packet:', error);
       // Show error to user - in production, this would use a toast notification
