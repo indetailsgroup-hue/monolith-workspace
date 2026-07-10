@@ -42,6 +42,17 @@ export interface UnderlayState {
   dxfRotationDeg: number;
   dxfVisible: boolean;
   dxfLocked: boolean;
+
+  // ── FP-4a (ADR-063): ผนังอ้างอิงลากมือทับ underlay — visual-only ──
+  /** ผนังที่ลากเสร็จแล้ว (polyline บนพื้น XZ, mm) */
+  walls: Array<{ id: string; points: Array<[number, number]> }>;
+  /** ความสูงผนังอ้างอิง (mm) */
+  wallHeightMm: number;
+  wallsVisible: boolean;
+  /** โหมดลากเส้น (คลิกบนพื้นเพื่อวางจุด) */
+  tracing: boolean;
+  /** จุดของเส้นที่กำลังลาก */
+  draftPoints: Array<[number, number]>;
 }
 
 export interface UnderlayActions {
@@ -61,6 +72,15 @@ export interface UnderlayActions {
   setDxfRotationDeg: (d: number) => void;
   setDxfVisible: (v: boolean) => void;
   setDxfLocked: (l: boolean) => void;
+
+  startTracing: () => void;
+  addDraftPoint: (x: number, z: number) => void;
+  finishWall: () => void;
+  cancelTracing: () => void;
+  removeWall: (id: string) => void;
+  clearWalls: () => void;
+  setWallHeightMm: (h: number) => void;
+  setWallsVisible: (v: boolean) => void;
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -86,6 +106,12 @@ export const useUnderlayStore = create<UnderlayState & UnderlayActions>()(
       dxfRotationDeg: 0,
       dxfVisible: true,
       dxfLocked: false,
+
+      walls: [],
+      wallHeightMm: 2400,
+      wallsVisible: true,
+      tracing: false,
+      draftPoints: [],
 
       setImage: (dataUrl, fileName, aspect) =>
         set({
@@ -128,13 +154,37 @@ export const useUnderlayStore = create<UnderlayState & UnderlayActions>()(
       },
       setDxfVisible: (v) => set({ dxfVisible: v }),
       setDxfLocked: (l) => set({ dxfLocked: l }),
+
+      startTracing: () => set({ tracing: true, draftPoints: [] }),
+      addDraftPoint: (x, z) => {
+        if (!get().tracing || !Number.isFinite(x) || !Number.isFinite(z)) return;
+        set({ draftPoints: [...get().draftPoints, [x, z]] });
+      },
+      finishWall: () => {
+        const pts = get().draftPoints;
+        if (pts.length >= 2) {
+          set({
+            walls: [...get().walls, { id: `wall-${Date.now().toString(36)}-${get().walls.length}`, points: pts }],
+            tracing: false,
+            draftPoints: [],
+            wallsVisible: true,
+          });
+        } else {
+          set({ tracing: false, draftPoints: [] });
+        }
+      },
+      cancelTracing: () => set({ tracing: false, draftPoints: [] }),
+      removeWall: (id) => set({ walls: get().walls.filter((w) => w.id !== id) }),
+      clearWalls: () => set({ walls: [] }),
+      setWallHeightMm: (h) => set({ wallHeightMm: clamp(Number.isFinite(h) ? h : 2400, 500, 6000) }),
+      setWallsVisible: (v) => set({ wallsVisible: v }),
     }),
     {
       name: 'monolith-underlay',
       // DXF segments ใหญ่ได้หลักหมื่นเส้น — ไม่ persist (โหลดใหม่ต่อ session); ที่เหลือ persist
       partialize: (state) => {
-        const { dxfSegments, dxfFileName, dxfSkipped, ...rest } = state;
-        void dxfSegments; void dxfFileName; void dxfSkipped;
+        const { dxfSegments, dxfFileName, dxfSkipped, tracing, draftPoints, ...rest } = state;
+        void dxfSegments; void dxfFileName; void dxfSkipped; void tracing; void draftPoints;
         return rest;
       },
     },

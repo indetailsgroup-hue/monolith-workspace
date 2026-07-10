@@ -152,6 +152,63 @@ export function UnderlayPanel() {
         </>
       )}
 
+      {/* FP-4a (ADR-063): ผนังอ้างอิงลากมือ — visual-only */}
+      <div className="pt-2 border-t border-[#333] space-y-2" data-testid="walls-controls">
+        <div className="flex items-center justify-between text-[10px] text-gray-400">
+          <span>🧱 ผนังอ้างอิง (ลากมือ)</span>
+          <span>{s.walls.length} เส้น</span>
+        </div>
+        {!s.tracing ? (
+          <button
+            onClick={() => s.startTracing()}
+            className="w-full px-2 py-1.5 rounded text-[11px] bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+          >
+            ✏️ เริ่มลากผนัง (คลิกบนพื้นวางจุด)
+          </button>
+        ) : (
+          <div className="space-y-1">
+            <div className="text-[10px] text-amber-300">กำลังลาก — {s.draftPoints.length} จุด (คลิกบนพื้นในฉาก)</div>
+            <div className="flex gap-2">
+              <button onClick={() => s.finishWall()} disabled={s.draftPoints.length < 2}
+                className="flex-1 px-2 py-1 rounded text-[10px] bg-emerald-500/20 text-emerald-300 disabled:opacity-40">
+                ✔ จบเส้นนี้
+              </button>
+              <button onClick={() => s.cancelTracing()}
+                className="flex-1 px-2 py-1 rounded text-[10px] bg-zinc-700 text-zinc-300 hover:bg-zinc-600">
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        )}
+        {s.walls.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
+              <label>สูง (mm)
+                <input type="number" value={s.wallHeightMm}
+                  onChange={(e) => s.setWallHeightMm(num(e.target.value, s.wallHeightMm))}
+                  className="w-full bg-black/30 rounded px-1 py-0.5 text-white" />
+              </label>
+              <div className="flex items-end gap-1">
+                <button onClick={() => s.setWallsVisible(!s.wallsVisible)}
+                  className="flex-1 px-2 py-1 rounded text-[10px] bg-zinc-700 text-zinc-300 hover:bg-zinc-600">
+                  {s.wallsVisible ? '👁 ซ่อน' : '👁 แสดง'}
+                </button>
+                <button onClick={() => s.clearWalls()}
+                  className="px-2 py-1 rounded text-[10px] text-red-400 hover:bg-red-500/10">ลบหมด</button>
+              </div>
+            </div>
+            <div className="max-h-16 overflow-y-auto space-y-0.5">
+              {s.walls.map((w, i) => (
+                <div key={w.id} className="flex items-center justify-between text-[9px] text-gray-500">
+                  <span>เส้น {i + 1} · {w.points.length} จุด</span>
+                  <button onClick={() => s.removeWall(w.id)} className="text-red-400 hover:text-red-300">ลบ</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
       {s.dxfSegments && (
         <div className="pt-2 border-t border-[#333] space-y-2" data-testid="dxf-controls">
           <div className="flex items-center justify-between text-[10px] text-gray-400">

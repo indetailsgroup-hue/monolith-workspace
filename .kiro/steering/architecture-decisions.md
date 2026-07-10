@@ -676,3 +676,16 @@ inclusion: always
 3. **ข roadmap (Phase FP)**: FP-1 image/PDF underlay ในฉาก Designer (opacity/scale/lock — เบา คุ้มสุด) → FP-2 DXF import เป็น reference layer (parser เปิด) → FP-3 DWG (ต้องตัวแปลง — ประเมินก่อน) → FP-4 AI detect เป็นผู้ช่วยร่าง (ML scope ใหญ่ — ADR แยก + ROI ก่อน เพราะ SiteSurveyZone ตอบความแม่นอยู่แล้ว)
 
 **Consequences**: 0159 (claim) + tasks Phase FP-1..4 backlog; import ทุกชิ้นต้อง label "REFERENCE — ไม่ใช่ขนาดผลิต" ใน UI
+
+## ADR-063: FP-4 AI detect — Staged แบบ human-first (2026-07-11, มติ owner ก×5)
+
+**Context**: FP-4 (AI detect walls/doors/windows) จาก ADR-062; ตรวจแล้วระบบไม่มี wall/room entity เลย — AI ตรวจได้ก็ไม่มีที่ลง
+
+**มติ**:
+1. **ผู้ซื้อปัญหา = Sale ตอนเสนอราคา** — เครื่องมือขาย (ลูกค้าเห็นตู้ในโครงห้อง 3D ตั้งแต่นัดแรก) ไม่แตะ manufacturing
+2. **Staged**: FP-4a = wall tracing มือทับ underlay (reference room layer — คุณค่า 80% โดยไม่มี AI) → FP-4b = AI เสนอเส้นให้คนยืนยัน
+3. **สมอง 4b = Claude vision ผ่าน API** — เงื่อนไข: เปิด cloud_allowed เฉพาะประเภท floor_plan (pattern ADR-033) + consent + model_provenance ลง audit ทุกครั้ง
+4. **ROI gate**: เปิด 4b เมื่อการใช้ 4a จริง ≥ ~10 ครั้ง/เดือน — ต่ำกว่านั้นมือลากไม่กี่นาที ไม่คุ้ม
+5. **v1 = visual-only**: ผนังอ้างอิงเป็นระนาบโปร่งให้เห็นตู้ในห้อง + ป้าย REFERENCE — ไม่ snap ไม่วัด ไม่เข้า estimate
+
+**Consequences**: FP-4a ใน useUnderlayStore (walls + tracing) + ReferenceWalls canvas (render-only) + UI ใน UnderlayPanel; FP-4b เข้าคิวหลัง ROI gate ผ่าน

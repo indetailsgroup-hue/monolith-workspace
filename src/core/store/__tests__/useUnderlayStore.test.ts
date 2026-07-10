@@ -46,3 +46,44 @@ describe('useUnderlayStore', () => {
     expect(useUnderlayStore.getState().rotationDeg).toBe(270);
   });
 });
+
+describe('FP-4a (ADR-063): reference walls', () => {
+  beforeEach(() => {
+    const s = useUnderlayStore.getState();
+    s.clearWalls(); s.cancelTracing(); s.setWallHeightMm(2400);
+  });
+
+  it('ลากครบวงจร: start → จุด 3 → finish = 1 ผนัง, ออกจากโหมด', () => {
+    const s = useUnderlayStore.getState();
+    s.startTracing();
+    s.addDraftPoint(0, 0); s.addDraftPoint(3000, 0); s.addDraftPoint(3000, 2000);
+    expect(useUnderlayStore.getState().draftPoints).toHaveLength(3);
+    s.finishWall();
+    const st = useUnderlayStore.getState();
+    expect(st.walls).toHaveLength(1);
+    expect(st.walls[0].points).toEqual([[0, 0], [3000, 0], [3000, 2000]]);
+    expect(st.tracing).toBe(false);
+    expect(st.draftPoints).toEqual([]);
+  });
+
+  it('จุดเดียว finish = ไม่เกิดผนัง (no-guess)', () => {
+    const s = useUnderlayStore.getState();
+    s.startTracing(); s.addDraftPoint(5, 5); s.finishWall();
+    expect(useUnderlayStore.getState().walls).toHaveLength(0);
+  });
+
+  it('addDraftPoint นอกโหมด tracing = เพิกเฉย', () => {
+    useUnderlayStore.getState().addDraftPoint(1, 1);
+    expect(useUnderlayStore.getState().draftPoints).toEqual([]);
+  });
+
+  it('removeWall/clearWalls + clamp ความสูง 500–6000', () => {
+    const s = useUnderlayStore.getState();
+    s.startTracing(); s.addDraftPoint(0, 0); s.addDraftPoint(100, 0); s.finishWall();
+    const id = useUnderlayStore.getState().walls[0].id;
+    s.removeWall(id);
+    expect(useUnderlayStore.getState().walls).toHaveLength(0);
+    s.setWallHeightMm(100); expect(useUnderlayStore.getState().wallHeightMm).toBe(500);
+    s.setWallHeightMm(99999); expect(useUnderlayStore.getState().wallHeightMm).toBe(6000);
+  });
+});
