@@ -17,6 +17,7 @@ import { useDrillMapStore } from '../../core/store/useDrillMapStore';
 import { validateMinifixGate } from '../rules/connectors/validateMinifixConnector';
 import { validateG11FromDrillMap } from '../rules/gateG11_minifixSystem32';
 import { runConnectorOsAudit, type ConnectorAuditIssue } from '../rules/gateG11_connectorAudit';
+import { runShadowCompare } from '../../core/connector/shadowCompare';
 
 // ============================================
 // ICONS
@@ -160,6 +161,8 @@ function runGateValidation(): void {
       // ADR-061: severity ของ spacing ตาม density profile ที่ผู้ใช้เลือก
       const connectorDensity = useDrillMapStore.getState().connectorDensity;
       const connectorAudit = runConnectorOsAudit(drillMap, 'STANDARD', connectorDensity);
+      // ADR-061 ขั้น shadow: compiler สังเคราะห์คู่ขนาน เทียบ parity (ยังไม่สลับตัวสร้าง)
+      const shadow = runShadowCompare(drillMap);
 
       const g11ToFinding = (i: (typeof g11Result.issues)[number]): GateFinding => ({
         key: `${i.code}:${(i.drillPointIds ?? i.panelIds ?? []).join(',')}`,
@@ -186,7 +189,17 @@ function runGateValidation(): void {
         ...g11Result.issues.filter(i => i.severity === 'WARNING').map(g11ToFinding),
         ...connectorAudit.issues.filter(i => i.severity === 'WARNING').map(auditToFinding),
       ];
+      const shadowInfo: GateFinding[] = shadow.jointsCompared > 0 ? [{
+        key: 'CONNECTOR_OS_SHADOW',
+        code: 'CONNECTOR_OS_SHADOW',
+        message: `Shadow compiler parity: ${shadow.jointsMatched}/${shadow.jointsCompared} joints ตรง (นับ+gap pattern+dia/depth) — สลับตัวสร้างได้เมื่อเต็มทุกตู้`,
+        severity: 'INFO' as Severity,
+        entityIds: [],
+        context: { jointsMatched: shadow.jointsMatched, jointsCompared: shadow.jointsCompared },
+      }] : [];
+
       const extraInfo = [
+        ...shadowInfo,
         ...g11Result.issues.filter(i => i.severity !== 'BLOCKER' && i.severity !== 'WARNING').map(g11ToFinding),
         ...connectorAudit.issues.filter(i => i.severity === 'INFO').map(auditToFinding),
       ];
