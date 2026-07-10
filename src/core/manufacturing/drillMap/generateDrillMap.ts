@@ -199,6 +199,17 @@ function buildCadConnectorRunPositions(
 }
 
 /** Default Minifix S200 config for 18mm panels (project default) */
+/**
+ * สเปค corner dowel (single source — worldSynthesis อ้างตัวเดียวกัน, ADR-061c)
+ * split 30mm: ฝั่ง face 12 + ฝั่ง edge 18 (Häfele Ø8×30)
+ */
+export const CORNER_DOWEL_SPEC = {
+  dia: 8,
+  sideFaceDepth: 12,
+  horizEdgeDepth: 18,
+  offset: 32,
+} as const;
+
 const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
   minifixType: '15',
   drillingDistanceB: 24,  // Distance B = 24mm per CAD reference (Minifix 12 / Indetails standard)
@@ -228,14 +239,14 @@ const DEFAULT_MINIFIX_CONFIG: MinifixConfig = {
   camOffset: 0,
   // Dowel (enabled per CAD reference - System 32 offset)
   includeDowel: true,
-  dowelDia: 8,
+  dowelDia: CORNER_DOWEL_SPEC.dia,
   dowelLength: 30,        // Total length (12 + 18 = 30mm)
-  dowelOffset: 32,        // System 32 offset
+  dowelOffset: CORNER_DOWEL_SPEC.offset,
   // v4.0 Split depth for Side-covers-Top construction:
   // - SIDE panel: FACE bore (shallow, same side as bolt thread L)
   // - HORIZ panel: EDGE bore (deeper, same side as Cam + bolt entry B)
-  dowelDepthSideFace: 12,   // 12mm face bore into SIDE panel inner face (ฝั่ง L)
-  dowelDepthHorizEdge: 18,  // 18mm edge bore into TOP/BOTTOM panel edge (ฝั่ง Cam/B)
+  dowelDepthSideFace: CORNER_DOWEL_SPEC.sideFaceDepth,
+  dowelDepthHorizEdge: CORNER_DOWEL_SPEC.horizEdgeDepth,
   // Legacy fields (for backward compatibility, same as v3.5 naming)
   dowelDepthEdge: 18,       // @deprecated - use dowelDepthHorizEdge
   dowelDepthFace: 12,       // @deprecated - use dowelDepthSideFace

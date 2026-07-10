@@ -55,8 +55,8 @@ describe('synthesizeCornerMinifixWorld', () => {
   it('OVERLAY 4 corners: CAM+BOLT ครบทุก S-position, สเปคตรง catalog', () => {
     const r = synthesizeCornerMinifixWorld(overlayCabinet());
     expect(r.skippedCorners).toEqual([]);
-    // v3 bolt-family @560 CAD: ต่อมุม = 3 ตำแหน่ง×4 ชนิด(CAM/BOLT/ENTRY/THREAD)=12 ×4 มุม = 48
-    expect(r.bores).toHaveLength(48);
+    // v4 corner เต็ม @560 CAD: ต่อมุม = 3×4 ชนิด=12 + corner dowels 8 = 20 ×4 มุม = 80
+    expect(r.bores).toHaveLength(80);
     const bolt = r.bores.find((b) => b.kind === 'BOLT');
     expect(bolt?.diameter).toBe(10);
     expect(bolt?.depth).toBe(17.5);
@@ -76,7 +76,7 @@ describe('compareWorldParity vs generateDrillMap (ของจริง)', () =>
     const dm = generateMinifixDrillMap(cab);
     const report = compareWorldParity(cab, dm);
     expect(report.skippedCorners).toEqual([]);
-    expect(report.compared).toBe(48);
+    expect(report.compared).toBe(80);
     expect(report.mismatches).toEqual([]);
     expect(report.matched).toBe(report.compared);
     expect(report.maxDeltaMm).toBeLessThanOrEqual(0.5);
@@ -86,7 +86,7 @@ describe('compareWorldParity vs generateDrillMap (ของจริง)', () =>
     const cab = overlayCabinet();
     const dm = generateMinifixDrillMap(cab, {}, {}, { connectorDensity: 'AWI_PREMIUM' });
     const report = compareWorldParity(cab, dm, { density: 'AWI_PREMIUM' });
-    expect(report.compared).toBe(80); // 5 ตำแหน่ง × 4 ชนิด × 4 มุม
+    expect(report.compared).toBe(144); // (5×4 + dowels 16) × 4 มุม
     expect(report.mismatches).toEqual([]);
     expect(report.matched).toBe(report.compared);
   });
@@ -106,18 +106,18 @@ describe('INSET world parity (v2)', () => {
     const dm = generateMinifixDrillMap(cab);
     const report = compareWorldParity(cab, dm);
     expect(report.skippedCorners).toEqual([]);
-    expect(report.compared).toBe(48);
+    expect(report.compared).toBe(80);
     expect(report.mismatches).toEqual([]);
     expect(report.matched).toBe(report.compared);
   });
 
-  it('INSET + AWI: parity เต็ม 80 bores', () => {
+  it('INSET + AWI: parity เต็ม 144 bores', () => {
     const cab = insetCabinet();
     const dm = generateMinifixDrillMap(cab, {}, {}, { connectorDensity: 'AWI_PREMIUM' });
     const report = compareWorldParity(cab, dm, { density: 'AWI_PREMIUM' });
-    expect(report.compared).toBe(80);
+    expect(report.compared).toBe(144);
     expect(report.mismatches).toEqual([]);
-    expect(report.matched).toBe(80);
+    expect(report.matched).toBe(144);
   });
 
   it('ผสม: top INSET + bottom OVERLAY — parity เต็มทั้งคู่', () => {

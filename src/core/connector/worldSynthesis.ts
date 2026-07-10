@@ -28,6 +28,7 @@ import {
   clamp as basisClamp,
 } from '../manufacturing/drillMap/panelBasis';
 import { DEFAULT_MINIFIX_S200_CONFIG } from '../manufacturing/drillMap/minifixDefaults';
+import { CORNER_DOWEL_SPEC } from '../manufacturing/drillMap/generateDrillMap';
 import {
   computeConnectorCountForDensity,
   type ConnectorDensity,
@@ -38,7 +39,7 @@ import { KITCHEN_PREMIUM_PROFILE, HMR18_HPL08x2_PVC1, selectConnector } from './
 export interface SynthesizedBore {
   corner: CornerType;
   sys32Z: number;
-  kind: 'CAM' | 'BOLT' | 'BOLT_ENTRY' | 'BOLT_THREAD';
+  kind: 'CAM' | 'BOLT' | 'BOLT_ENTRY' | 'BOLT_THREAD' | 'DOWEL';
   position: Vec3Tuple;
   normal: Vec3Tuple;
   diameter: number;
@@ -121,6 +122,12 @@ export function synthesizeCornerMinifixWorld(
     const vertAabb = calculatePanelAABB(vertical);
 
     const cfg = DEFAULT_MINIFIX_S200_CONFIG;
+    // corner dowel: ±offset จากตำแหน่ง bolt บนแกนลึก, กรอง margin firstHole (AABB แผ่นข้าง)
+    const dowelZFor = (sys32Z: number): number[] => {
+      const zBolt = vertAabb.max[2] - sys32Z;
+      return [zBolt - CORNER_DOWEL_SPEC.offset, zBolt + CORNER_DOWEL_SPEC.offset]
+        .filter((z) => z >= vertAabb.min[2] + firstHole && z <= vertAabb.max[2] - firstHole);
+    };
 
     if (jointMode === 'OVERLAY') {
       const jointAxisX = (vertAabb.min[0] + vertAabb.max[0]) / 2;
@@ -156,6 +163,21 @@ export function synthesizeCornerMinifixWorld(
           diameter: cam.diaMm, depth: cam.depthMm,
         });
 
+        // CORNER DOWELS (OVERLAY): side EDGE 18 + horiz FACE 12
+        for (const dz of dowelZFor(sys32Z)) {
+          bores.push({
+            corner, sys32Z, kind: 'DOWEL',
+            position: [e.position[0], e.position[1], dz] as Vec3Tuple,
+            normal: e.normal,
+            diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.horizEdgeDepth,
+          });
+          bores.push({
+            corner, sys32Z, kind: 'DOWEL',
+            position: [b.position[0], b.position[1], dz] as Vec3Tuple,
+            normal: b.normal,
+            diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.sideFaceDepth,
+          });
+        }
       }
     } else {
       // INSET (Side covers Top/Bottom v4.0):
@@ -189,6 +211,25 @@ export function synthesizeCornerMinifixWorld(
           diameter: cfg.boltEntryDia ?? 7.5, depth: distanceB,
         });
 
+        // CORNER DOWELS (INSET v4.0): side FACE 12 + horiz EDGE 18
+        for (const dz of dowelZFor(sys32Z)) {
+          bores.push({
+            corner, sys32Z, kind: 'DOWEL',
+            position: [b.position[0], b.position[1], dz] as Vec3Tuple,
+            normal: b.normal,
+            diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.sideFaceDepth,
+          });
+          bores.push({
+            corner, sys32Z, kind: 'DOWEL',
+            position: [
+              isLeft ? horizAabb.min[0] : horizAabb.max[0],
+              (horizAabb.min[1] + horizAabb.max[1]) / 2,
+              dz,
+            ] as Vec3Tuple,
+            normal: (isLeft ? [1, 0, 0] : [-1, 0, 0]) as Vec3Tuple,
+            diameter: CORNER_DOWEL_SPEC.dia, depth: CORNER_DOWEL_SPEC.horizEdgeDepth,
+          });
+        }
 
         const camLocalX = basisClamp(
           isLeft ? distanceB : basis.faceWidth - distanceB,
@@ -243,6 +284,7 @@ export function compareWorldParity(
     BOLT: actual.filter((p) => p.purpose === 'BOLT'),
     BOLT_ENTRY: actual.filter((p) => p.purpose === 'BOLT_ENTRY'),
     BOLT_THREAD: actual.filter((p) => p.purpose === 'BOLT_THREAD'),
+    DOWEL: actual.filter((p) => p.purpose === 'DOWEL'),
   };
 
   for (const b of synth.bores) {
