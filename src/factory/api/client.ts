@@ -11,15 +11,36 @@ export interface ApiError extends Error {
 }
 
 const BASE_URL = (import.meta as any).env?.VITE_FACTORY_API_BASE ?? "/api";
+const ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "";
+
+/** ADR-061: แนบ session Field App + anon key แบบเดียวกับ stateApi (จำเป็นเมื่อยิง edge fn ตรง) */
+function authHeaders(): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (!ANON_KEY) return h;
+  h["apikey"] = ANON_KEY;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
+      const s = JSON.parse(localStorage.getItem(key) ?? "");
+      if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
+        h["Authorization"] = "Bearer " + s.access_token;
+        break;
+      }
+    }
+  } catch { /* no session */ }
+  if (!h["Authorization"]) h["Authorization"] = "Bearer " + ANON_KEY;
+  return h;
+}
 
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<{ data: T; headers: Headers }> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders(),
       ...(options?.headers ?? {}),
     },
     ...options,
@@ -51,8 +72,8 @@ export async function apiFetchBlob(
   options?: RequestInit
 ): Promise<{ blob: Blob; headers: Headers }> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    credentials: "include",
     headers: {
+      ...authHeaders(),
       ...(options?.headers ?? {}),
     },
     ...options,

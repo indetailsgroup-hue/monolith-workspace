@@ -65,8 +65,18 @@ export async function handleFactoryApi(req: Request): Promise<Response> {
   }
 
   const jobsIdx = segments.lastIndexOf("jobs");
-  if (jobsIdx < 0 || jobsIdx + 1 >= segments.length) {
+  if (jobsIdx < 0) {
     return json(404, { ok: false, error: "unknown route" });
+  }
+  // ADR-061: GET /factory/jobs — รายการงานสำหรับ FactoryApp dashboard
+  if (jobsIdx + 1 >= segments.length) {
+    if (req.method !== "GET") return json(404, { ok: false, error: "unknown route" });
+    try {
+      return json(200, await callRpc("rpc_factory_jobs_list", {}));
+    } catch (e) {
+      console.error(`factory-api list: ${String(e)}`);
+      return json(500, { ok: false, error: "factory-api internal error" });
+    }
   }
   const jobId = decodeURIComponent(segments[jobsIdx + 1]);
   const action = segments[jobsIdx + 2] ?? "state";
@@ -89,6 +99,9 @@ export async function handleFactoryApi(req: Request): Promise<Response> {
         revisionId: state.revisionId,
         reason: can ? undefined : "Spec must be FROZEN or RELEASED to export",
       });
+    }
+    if (req.method === "GET" && action === "activity") {
+      return json(200, await callRpc("rpc_factory_job_activity", { p_job_id: jobId }));
     }
     if (req.method === "GET" && action === "proof") {
       return json(200, await callRpc("rpc_factory_job_proof", { p_job_id: jobId }));
