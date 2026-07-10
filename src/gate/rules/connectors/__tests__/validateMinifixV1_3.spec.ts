@@ -233,7 +233,15 @@ describe('v1.3 GAP 6: CAM edge clearance uses proper tolerance (7.5mm)', () => {
 describe('v1.3 GAP 3: boltDirection cross-check (DIAG-001)', () => {
   it('should NOT warn when boltDirection matches computed axis', () => {
     const { cam, bolt } = makeValidPair('dir');
-    bolt.boltDirection = [-1, 0, 0]; // Matches default bolt→cam direction
+    // S16: แกนจริง = จาก bolt ไป pocket ที่ Dim A (ครึ่งความหนาแผ่น 18/2) ตาม generator
+    const pocket = [
+      cam.position[0] + cam.normal[0] * 9,
+      cam.position[1] + cam.normal[1] * 9,
+      cam.position[2] + cam.normal[2] * 9,
+    ];
+    const v = [pocket[0] - bolt.position[0], pocket[1] - bolt.position[1], pocket[2] - bolt.position[2]];
+    const len = Math.hypot(v[0], v[1], v[2]);
+    bolt.boltDirection = [v[0] / len, v[1] / len, v[2] / len];
 
     const drillMap = onePanel([cam, bolt]);
     const result = validateMinifixGate(drillMap);

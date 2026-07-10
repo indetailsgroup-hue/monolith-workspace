@@ -949,8 +949,22 @@ export function validateMinifixGate(
     allFindings.push(...pairFindings);
 
     // v1.3: Cross-check hardware-derived fields against computed values
-    validateBoltDirectionAlignment(bolt, pair.bolt.frame.axis, allFindings);
-    validateTargetPocketCenter(bolt, pair.cam.geometry.pocketCenter, allFindings);
+    // S16: declared fields (boltDirection/targetPocketCenter) มาจาก generator ซึ่งวาง
+    // pocket center ที่ Dim A = ครึ่งความหนาแผ่น (Häfele; ตรง 3D truth chain) —
+    // ต้องเทียบด้วย convention เดียวกัน ไม่ใช่ camDepth/2 ของ pair solver
+    // (เดิมเทียบผิดฐาน → เตือนปลอม 3.05mm/7.2° ทุกคู่บนตู้ปกติ)
+    const genPocketCenter: Vec3 = {
+      x: cam.position[0] + cam.normal[0] * (camPanelThickness / 2),
+      y: cam.position[1] + cam.normal[1] * (camPanelThickness / 2),
+      z: cam.position[2] + cam.normal[2] * (camPanelThickness / 2),
+    };
+    const genBoltAxis = vec3Normalize({
+      x: genPocketCenter.x - bolt.position[0],
+      y: genPocketCenter.y - bolt.position[1],
+      z: genPocketCenter.z - bolt.position[2],
+    });
+    validateBoltDirectionAlignment(bolt, genBoltAxis, allFindings);
+    validateTargetPocketCenter(bolt, genPocketCenter, allFindings);
 
     // v1.3: BALL_TO_POCKET diagnostic - compute what FIXED_BALL_OFFSET B would be
     if (!solveMode || solveMode === 'BALL_TO_POCKET') {

@@ -374,14 +374,21 @@ export function makeValidPairWithFields(suffix = '1'): { cam: DrillMapPoint; bol
   // Bolt hardware fields
   bolt.edgeDistance = 12;
   bolt.depth = 12; // Realistic bolt depth for 18mm panel (leaves 6mm > 2mm min)
-  bolt.boltDirection = [-1, 0, 0];
-  // Compute targetPocketCenter from cam: position + normal * (camDepth/2)
-  const camDepthHalf = 13.5 / 2;
+  // S16: declared fields ใช้ convention เดียวกับ generator จริง —
+  // pocket center ที่ Dim A = ครึ่งความหนาแผ่น (18/2) ไม่ใช่ camDepth/2
+  const dimA = 18 / 2;
   bolt.targetPocketCenter = [
-    cam.position[0] + cam.normal[0] * camDepthHalf,
-    cam.position[1] + cam.normal[1] * camDepthHalf,
-    cam.position[2] + cam.normal[2] * camDepthHalf,
+    cam.position[0] + cam.normal[0] * dimA,
+    cam.position[1] + cam.normal[1] * dimA,
+    cam.position[2] + cam.normal[2] * dimA,
   ];
+  const dirVec = [
+    bolt.targetPocketCenter[0] - bolt.position[0],
+    bolt.targetPocketCenter[1] - bolt.position[1],
+    bolt.targetPocketCenter[2] - bolt.position[2],
+  ];
+  const dirLen = Math.hypot(dirVec[0], dirVec[1], dirVec[2]);
+  bolt.boltDirection = [dirVec[0] / dirLen, dirVec[1] / dirLen, dirVec[2] / dirLen];
 
   return { cam, bolt };
 }
