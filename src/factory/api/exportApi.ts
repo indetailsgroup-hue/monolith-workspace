@@ -35,18 +35,21 @@ export async function runGatedExportApi(
   response: GatedExportResponse;
   sha256?: string;
 }> {
-  const { data, headers } = await apiFetch<GatedExportResponse>(
+  // ADR-061 packet store: export = GET signed URL (packet ที่ freeze แล้ว hash-anchored)
+  void req; // dialect/profile เดิมไม่ใช้ — packet เป็นก้อนเดียวจาก Designer
+  const { data } = await apiFetch<{ ok: boolean; url?: string; sha256?: string; revisionId?: string; error?: string; reason?: string }>(
     `/factory/jobs/${encodeURIComponent(jobId)}/export`,
-    {
-      method: "POST",
-      body: JSON.stringify(req),
-    }
+    { method: "GET" }
   );
-
-  // Extract SHA256 from response header (authoritative)
-  const sha256 = headers.get("X-MONOLITH-ZIP-SHA256") ?? undefined;
-
-  return { response: data, sha256 };
+  if (!data.ok || !data.url) {
+    throw new Error(data.reason ?? data.error ?? 'export not available');
+  }
+  const response = {
+    ok: true,
+    downloadPath: data.url,
+    revisionId: data.revisionId,
+  } as unknown as GatedExportResponse;
+  return { response, sha256: data.sha256 };
 }
 
 // ============================================================================
@@ -56,9 +59,7 @@ export async function runGatedExportApi(
 export async function downloadExportApi(
   downloadPath: string
 ): Promise<{ blob: Blob; headers: Headers; sha256?: string }> {
-  const res = await fetch(downloadPath, {
-    credentials: "include",
-  });
+  const res = await fetch(downloadPath); // signed URL — ไม่ต้องแนบ credentials
 
   if (!res.ok) {
     throw new Error(`Download failed: ${res.status}`);

@@ -67,10 +67,26 @@ export async function fetchJobsApi(): Promise<JobSummary[]> {
  * GET /factory/jobs/:jobId
  */
 export async function fetchJobDetailApi(jobId: string): Promise<JobDetailData> {
-  const { data } = await apiFetch<JobDetailData>(
-    `/factory/jobs/${encodeURIComponent(jobId)}`
-  );
-  return data;
+  // ADR-061: ประกอบ detail จาก endpoints จริง (/state — server ไม่มีตาราง detail แยก)
+  const { data } = await apiFetch<{
+    ok: boolean; jobId?: string; specState?: 'DRAFT' | 'FROZEN' | 'RELEASED';
+    revisionId?: string; packetSha256?: string; updatedAt?: string; frozenAt?: string; error?: string;
+  }>(`/factory/jobs/${encodeURIComponent(jobId)}/state`);
+  if (!data.ok) throw new Error(data.error ?? 'job not found');
+  const base = toJobSummary({
+    jobId: data.jobId ?? jobId,
+    specState: data.specState ?? 'DRAFT',
+    revisionId: data.revisionId,
+    createdAt: data.frozenAt ?? data.updatedAt ?? new Date(0).toISOString(),
+    updatedAt: data.updatedAt ?? new Date(0).toISOString(),
+  });
+  return {
+    ...base,
+    packetUrl: '',
+    materials: [],
+    estimatedRuntime: {} as JobDetailData['estimatedRuntime'],
+    toolCount: {} as JobDetailData['toolCount'],
+  };
 }
 
 // ============================================================================
