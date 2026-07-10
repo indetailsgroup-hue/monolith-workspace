@@ -62,11 +62,11 @@ describe('synthesizeCornerMinifixWorld', () => {
     expect(bolt?.depth).toBe(17.5);
   });
 
-  it('INSET → skip แบบ no-guess (ไม่เดา)', () => {
+  it('มุมไม่ 90° → skip แบบ no-guess (ไม่เดา)', () => {
     const cab = overlayCabinet();
-    (cab.structure as { topJoint: string }).topJoint = 'INSET';
+    (cab.structure as { cornerAngles?: object }).cornerAngles = { topLeft: 45 };
     const r = synthesizeCornerMinifixWorld(cab);
-    expect(r.skippedCorners.filter((s) => s.reason.includes('INSET'))).toHaveLength(2);
+    expect(r.skippedCorners.filter((s) => s.reason.includes('45'))).toHaveLength(1);
   });
 });
 
@@ -87,6 +87,45 @@ describe('compareWorldParity vs generateDrillMap (ของจริง)', () =>
     const dm = generateMinifixDrillMap(cab, {}, {}, { connectorDensity: 'AWI_PREMIUM' });
     const report = compareWorldParity(cab, dm, { density: 'AWI_PREMIUM' });
     expect(report.compared).toBe(4 * 5 * 2); // 5 ตำแหน่ง AWI @560
+    expect(report.mismatches).toEqual([]);
+    expect(report.matched).toBe(report.compared);
+  });
+});
+
+
+describe('INSET world parity (v2)', () => {
+  function insetCabinet(): Cabinet {
+    const cab = overlayCabinet();
+    (cab.structure as { topJoint: string; bottomJoint: string }).topJoint = 'INSET';
+    (cab.structure as { topJoint: string; bottomJoint: string }).bottomJoint = 'INSET';
+    return cab;
+  }
+
+  it('INSET: parity 100% ทุก bore ภายใน 0.5mm (CAD)', () => {
+    const cab = insetCabinet();
+    const dm = generateMinifixDrillMap(cab);
+    const report = compareWorldParity(cab, dm);
+    expect(report.skippedCorners).toEqual([]);
+    expect(report.compared).toBe(24);
+    expect(report.mismatches).toEqual([]);
+    expect(report.matched).toBe(report.compared);
+  });
+
+  it('INSET + AWI: parity เต็ม 40 bores', () => {
+    const cab = insetCabinet();
+    const dm = generateMinifixDrillMap(cab, {}, {}, { connectorDensity: 'AWI_PREMIUM' });
+    const report = compareWorldParity(cab, dm, { density: 'AWI_PREMIUM' });
+    expect(report.compared).toBe(40);
+    expect(report.mismatches).toEqual([]);
+    expect(report.matched).toBe(40);
+  });
+
+  it('ผสม: top INSET + bottom OVERLAY — parity เต็มทั้งคู่', () => {
+    const cab = overlayCabinet();
+    (cab.structure as { topJoint: string }).topJoint = 'INSET';
+    const dm = generateMinifixDrillMap(cab);
+    const report = compareWorldParity(cab, dm);
+    expect(report.skippedCorners).toEqual([]);
     expect(report.mismatches).toEqual([]);
     expect(report.matched).toBe(report.compared);
   });

@@ -9,7 +9,7 @@
  * ใช้เป็น parity target: ถ้า output ตรง generateDrillMap 100% บนตู้จริง →
  * ส่วน corner-minifix ของ generator สลับมาใช้ตัวนี้ได้ (drop-in)
  *
- * scope v1: OVERLAY corners 90° เท่านั้น — INSET/มุมองศา = skip แบบ no-guess (รายงานตรง)
+ * scope v2: OVERLAY + INSET corners 90° — มุมองศาอื่น = skip แบบ no-guess (รายงานตรง)
  */
 
 import type { Cabinet } from '../types/Cabinet';
@@ -18,6 +18,10 @@ import {
   calculatePanelAABB,
   boltFacePointFromHorizAABB_overlay,
   camFacePointFromSideAABB_overlay,
+  boltFacePointFromSideAABB_v4,
+  getPanelBasisFromAABB,
+  panelLocalToWorld,
+  clamp as basisClamp,
 } from '../manufacturing/drillMap/panelBasis';
 import {
   computeConnectorCountForDensity,
@@ -94,8 +98,8 @@ export function synthesizeCornerMinifixWorld(
     }
 
     const jointMode = (isTop ? cabinet.structure?.topJoint : cabinet.structure?.bottomJoint) ?? 'INSET';
-    if (jointMode !== 'OVERLAY') {
-      skipped.push({ corner, reason: `jointMode ${jointMode} นอก scope v1` });
+    if (jointMode !== 'OVERLAY' && jointMode !== 'INSET') {
+      skipped.push({ corner, reason: `jointMode ${jointMode} นอก scope` });
       continue;
     }
     const angles = cabinet.structure?.cornerAngles;
@@ -110,25 +114,57 @@ export function synthesizeCornerMinifixWorld(
 
     const horizAabb = calculatePanelAABB(horizontal);
     const vertAabb = calculatePanelAABB(vertical);
-    const jointAxisX = (vertAabb.min[0] + vertAabb.max[0]) / 2;
 
-    for (const sys32Z of sys32Positions) {
-      // BOLT บนแผ่นนอน (OVERLAY: face bore ±Y) — X ทับแกน joint (กึ่งกลางความหนา side)
-      const b = boltFacePointFromHorizAABB_overlay(corner, horizAabb, sys32Z, distanceB);
-      b.position[0] = jointAxisX;
-      bores.push({
-        corner, sys32Z, kind: 'BOLT',
-        position: b.position, normal: b.normal,
-        diameter: bolt.diaMm, depth: bolt.depthMm,
-      });
+    if (jointMode === 'OVERLAY') {
+      const jointAxisX = (vertAabb.min[0] + vertAabb.max[0]) / 2;
+      for (const sys32Z of sys32Positions) {
+        // BOLT บนแผ่นนอน (OVERLAY: face bore ±Y) — X ทับแกน joint (กึ่งกลางความหนา side)
+        const b = boltFacePointFromHorizAABB_overlay(corner, horizAabb, sys32Z, distanceB);
+        b.position[0] = jointAxisX;
+        bores.push({
+          corner, sys32Z, kind: 'BOLT',
+          position: b.position, normal: b.normal,
+          diameter: bolt.diaMm, depth: bolt.depthMm,
+        });
 
-      // CAM บนแผ่นข้าง inner face (OVERLAY)
-      const c = camFacePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
-      bores.push({
-        corner, sys32Z, kind: 'CAM',
-        position: c.position, normal: c.normal,
-        diameter: cam.diaMm, depth: cam.depthMm,
-      });
+        // CAM บนแผ่นข้าง inner face (OVERLAY)
+        const c = camFacePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
+        bores.push({
+          corner, sys32Z, kind: 'CAM',
+          position: c.position, normal: c.normal,
+          diameter: cam.diaMm, depth: cam.depthMm,
+        });
+      }
+    } else {
+      // INSET (Side covers Top/Bottom v4.0):
+      // BOLT = face bore เข้าหน้าใน SIDE (±X), Y ทับแกน joint (กึ่งกลางความหนาแผ่นนอน)
+      // CAM  = face bore บนแผ่นนอน ที่ Distance B จาก mate edge (panel-local + clamp)
+      const jointAxisY = (horizAabb.min[1] + horizAabb.max[1]) / 2;
+      const camCenterOffset = cam.depthMm / 2;
+      const basis = getPanelBasisFromAABB(horizontal, horizAabb);
+      const camMargin = cam.diaMm / 2 + 2;
+
+      for (const sys32Z of sys32Positions) {
+        const b = boltFacePointFromSideAABB_v4(corner, vertAabb, sys32Z, camCenterOffset);
+        b.position[1] = jointAxisY;
+        bores.push({
+          corner, sys32Z, kind: 'BOLT',
+          position: b.position, normal: b.normal,
+          diameter: bolt.diaMm, depth: bolt.depthMm,
+        });
+
+        const camLocalX = basisClamp(
+          isLeft ? distanceB : basis.faceWidth - distanceB,
+          camMargin, basis.faceWidth - camMargin,
+        );
+        const camLocalY = basisClamp(sys32Z, 10, basis.faceHeight - 10);
+        bores.push({
+          corner, sys32Z, kind: 'CAM',
+          position: panelLocalToWorld(basis, camLocalX, camLocalY),
+          normal: basis.uAxis,
+          diameter: cam.diaMm, depth: cam.depthMm,
+        });
+      }
     }
   }
 
