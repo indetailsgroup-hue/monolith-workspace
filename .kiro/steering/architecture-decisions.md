@@ -665,3 +665,14 @@ inclusion: always
    - **FactoryApp dashboard backend** — เพิ่ม endpoints jobs list/detail/activity ใน factory-api (จาก factory_jobs/events) + client แนบ auth headers
 
 **Consequences**: generateDrillMap `connectorDensity` option + `computeConnectorCountForDensity` · useDrillMapStore.connectorDensity + setter · Cabinet3D ส่ง option · ConnectorDensitySelector ใน ConnectorManager · runConnectorOsAudit รับ density → severity ตามโปรไฟล์ · SafetyPanel ส่ง density; พิสูจน์สด: CAD → 8 INFO / AWI → All checks passed (5 ตัว gap ~121mm); tests +15
+
+## ADR-062: Floor Plan Import — ก+ข แบบไม่ทิ้ง human-in-loop (2026-07-10)
+
+**Context**: claim สาธารณะบอกรองรับ import image/PDF/DWG/DXF + AI detect walls/doors/windows — ตรวจแล้ว**ไม่มีจริงสักส่วน**; ของจริงคือ SiteSurveyZone verified field records + Designer parametric
+
+**มติ owner**: ก+ข — แก้ claim ทันที และสร้าง import เป็น roadmap โดย**ไม่ทิ้งจุดแข็ง**:
+1. **หลักเหล็ก (ทุก Phase)**: แปลนที่ import = **ร่างอ้างอิง/underlay เท่านั้น** ไม่ใช่ความจริง — ขนาดที่ใช้ผลิตต้องมาจากการวัดจริงหน้างาน (SiteSurveyZone verified record มีคนรับผิดชอบ) และ**คนต้องวัดเช็คจริงก่อนอนุมัติทุกขั้นตอน** — AI detect (ถ้าทำ) = เสนอร่างให้คนยืนยัน ไม่ auto-commit
+2. **ก (เสร็จแล้ว — 0159)**: claim guardrail ใน sale_scripts: ห้าม claim import/AI detect; ใช้เรื่องจริง accuracy-first แทน ("ไม่เดาจากแปลนเก่า — วัดจริงทุกโซน")
+3. **ข roadmap (Phase FP)**: FP-1 image/PDF underlay ในฉาก Designer (opacity/scale/lock — เบา คุ้มสุด) → FP-2 DXF import เป็น reference layer (parser เปิด) → FP-3 DWG (ต้องตัวแปลง — ประเมินก่อน) → FP-4 AI detect เป็นผู้ช่วยร่าง (ML scope ใหญ่ — ADR แยก + ROI ก่อน เพราะ SiteSurveyZone ตอบความแม่นอยู่แล้ว)
+
+**Consequences**: 0159 (claim) + tasks Phase FP-1..4 backlog; import ทุกชิ้นต้อง label "REFERENCE — ไม่ใช่ขนาดผลิต" ใน UI
