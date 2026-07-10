@@ -18,6 +18,8 @@ import { validateMinifixGate } from '../rules/connectors/validateMinifixConnecto
 import { validateG11FromDrillMap } from '../rules/gateG11_minifixSystem32';
 import { runConnectorOsAudit, type ConnectorAuditIssue } from '../rules/gateG11_connectorAudit';
 import { runShadowCompare } from '../../core/connector/shadowCompare';
+import { compareWorldParity } from '../../core/connector/worldSynthesis';
+import { useCabinetStore } from '../../core/store/useCabinetStore';
 
 // ============================================
 // ICONS
@@ -163,6 +165,9 @@ function runGateValidation(): void {
       const connectorAudit = runConnectorOsAudit(drillMap, 'STANDARD', connectorDensity);
       // ADR-061 ขั้น shadow: compiler สังเคราะห์คู่ขนาน เทียบ parity (ยังไม่สลับตัวสร้าง)
       const shadow = runShadowCompare(drillMap);
+      // ADR-061(c): world-coordinate parity — synthesis จาก cabinet geometry ล้วน เทียบ drill map จริง
+      const activeCab = useCabinetStore.getState().cabinet;
+      const world = activeCab ? compareWorldParity(activeCab, drillMap, { density: connectorDensity }) : null;
 
       const g11ToFinding = (i: (typeof g11Result.issues)[number]): GateFinding => ({
         key: `${i.code}:${(i.drillPointIds ?? i.panelIds ?? []).join(',')}`,
@@ -192,7 +197,9 @@ function runGateValidation(): void {
       const shadowInfo: GateFinding[] = shadow.jointsCompared > 0 ? [{
         key: 'CONNECTOR_OS_SHADOW',
         code: 'CONNECTOR_OS_SHADOW',
-        message: `Shadow compiler parity: ${shadow.jointsMatched}/${shadow.jointsCompared} joints ตรง (นับ+gap pattern+dia/depth) — สลับตัวสร้างได้เมื่อเต็มทุกตู้`,
+        message: `Shadow compiler parity: ${shadow.jointsMatched}/${shadow.jointsCompared} joints ตรง` +
+          (world ? ` · world-coord: ${world.matched}/${world.compared} bores (Δmax ${world.maxDeltaMm.toFixed(2)}mm${world.skippedCorners.length > 0 ? `, skip ${world.skippedCorners.length} corner` : ''})` : '') +
+          ' — สลับตัวสร้างได้เมื่อเต็มทุกตู้',
         severity: 'INFO' as Severity,
         entityIds: [],
         context: { jointsMatched: shadow.jointsMatched, jointsCompared: shadow.jointsCompared },

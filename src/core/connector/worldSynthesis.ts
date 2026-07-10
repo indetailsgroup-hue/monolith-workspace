@@ -1,0 +1,191 @@
+/**
+ * worldSynthesis — ADR-061(c) ขั้น 3: compiler-driven corner minifix ใน "พิกัดโลกจริง"
+ *
+ * ประกอบจาก kernel เดียวกับ generator (ไม่เดาสูตรใหม่ ไม่ก็อปตรรกะ):
+ *   ตำแหน่งบนแนว = Connector OS placer (System32 grid — authority เดียวกัน)
+ *   สเปครู       = Connector OS catalog (sleeve Ø10×17.5, CAM Ø15×13.5)
+ *   พิกัดโลก     = panelBasis helpers (pure AABB-driven, มีเทสต์)
+ *
+ * ใช้เป็น parity target: ถ้า output ตรง generateDrillMap 100% บนตู้จริง →
+ * ส่วน corner-minifix ของ generator สลับมาใช้ตัวนี้ได้ (drop-in)
+ *
+ * scope v1: OVERLAY corners 90° เท่านั้น — INSET/มุมองศา = skip แบบ no-guess (รายงานตรง)
+ */
+
+import type { Cabinet } from '../types/Cabinet';
+import type { Vec3Tuple, CornerType, DrillMap } from '../manufacturing/drillMap/types';
+import {
+  calculatePanelAABB,
+  boltFacePointFromHorizAABB_overlay,
+  camFacePointFromSideAABB_overlay,
+} from '../manufacturing/drillMap/panelBasis';
+import {
+  computeConnectorCountForDensity,
+  type ConnectorDensity,
+} from '../manufacturing/drillMap/generateDrillMap';
+import { getSpreadGridPositions } from './placer';
+import { KITCHEN_PREMIUM_PROFILE, HMR18_HPL08x2_PVC1, selectConnector } from './catalog';
+
+export interface SynthesizedBore {
+  corner: CornerType;
+  sys32Z: number;
+  kind: 'CAM' | 'BOLT';
+  position: Vec3Tuple;
+  normal: Vec3Tuple;
+  diameter: number;
+  depth: number;
+}
+
+export interface WorldSynthesisResult {
+  bores: SynthesizedBore[];
+  /** corner ที่ข้ามเพราะนอก scope v1 (INSET/มุมไม่ 90°/แผ่นหาย) */
+  skippedCorners: Array<{ corner: CornerType; reason: string }>;
+}
+
+const CORNERS: CornerType[] = ['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'];
+
+/**
+ * สังเคราะห์ corner minifix (CAM+BOLT) เป็นพิกัดโลก จาก cabinet geometry ล้วน
+ */
+export function synthesizeCornerMinifixWorld(
+  cabinet: Cabinet,
+  opts: { density?: ConnectorDensity; firstHoleZ?: number; distanceB?: number } = {},
+): WorldSynthesisResult {
+  const density = opts.density ?? 'CAD_STANDARD';
+  const firstHole = opts.firstHoleZ ?? 37;
+  const distanceB = opts.distanceB ?? 24;
+
+  const bores: SynthesizedBore[] = [];
+  const skipped: WorldSynthesisResult['skippedCorners'] = [];
+
+  const byRole = new Map(cabinet.panels.map((p) => [p.role, p]));
+  const top = byRole.get('TOP');
+  const bottom = byRole.get('BOTTOM');
+  const left = byRole.get('LEFT_SIDE');
+  const right = byRole.get('RIGHT_SIDE');
+
+  // run length = ช่วงลึก (Z) ของแผ่นนอน — convention เดียวกับ generator
+  const runPanel = top ?? bottom;
+  if (!runPanel) return { bores, skippedCorners: [{ corner: 'TOP_LEFT', reason: 'no horizontal panel' }] };
+  const runAabb = calculatePanelAABB(runPanel);
+  const runLength = runAabb.max[2] - runAabb.min[2];
+
+  const count = computeConnectorCountForDensity(runLength, firstHole, density);
+  const sys32Positions = getSpreadGridPositions(
+    runLength,
+    { ...KITCHEN_PREMIUM_PROFILE.system32, firstHole },
+    count,
+  );
+
+  const spec = selectConnector(HMR18_HPL08x2_PVC1.resolved.coreThk, 'MINIFIX');
+  const cam = spec.features.find((f) => f.id === 'CAM');
+  const bolt = spec.features.find((f) => f.id === 'BOLT');
+  if (!cam || !bolt) return { bores, skippedCorners: [{ corner: 'TOP_LEFT', reason: 'spec missing features' }] };
+
+  for (const corner of CORNERS) {
+    const isTop = corner === 'TOP_LEFT' || corner === 'TOP_RIGHT';
+    const isLeft = corner === 'TOP_LEFT' || corner === 'BOTTOM_LEFT';
+    const horizontal = isTop ? top : bottom;
+    const vertical = isLeft ? left : right;
+
+    if (!horizontal || !vertical) {
+      skipped.push({ corner, reason: 'missing panel' });
+      continue;
+    }
+
+    const jointMode = (isTop ? cabinet.structure?.topJoint : cabinet.structure?.bottomJoint) ?? 'INSET';
+    if (jointMode !== 'OVERLAY') {
+      skipped.push({ corner, reason: `jointMode ${jointMode} นอก scope v1` });
+      continue;
+    }
+    const angles = cabinet.structure?.cornerAngles;
+    const angle =
+      corner === 'TOP_LEFT' ? angles?.topLeft ?? 90 :
+      corner === 'TOP_RIGHT' ? angles?.topRight ?? 90 :
+      corner === 'BOTTOM_LEFT' ? angles?.bottomLeft ?? 90 : angles?.bottomRight ?? 90;
+    if (Math.abs(angle - 90) > 0.001) {
+      skipped.push({ corner, reason: `angle ${angle}° นอก scope v1` });
+      continue;
+    }
+
+    const horizAabb = calculatePanelAABB(horizontal);
+    const vertAabb = calculatePanelAABB(vertical);
+    const jointAxisX = (vertAabb.min[0] + vertAabb.max[0]) / 2;
+
+    for (const sys32Z of sys32Positions) {
+      // BOLT บนแผ่นนอน (OVERLAY: face bore ±Y) — X ทับแกน joint (กึ่งกลางความหนา side)
+      const b = boltFacePointFromHorizAABB_overlay(corner, horizAabb, sys32Z, distanceB);
+      b.position[0] = jointAxisX;
+      bores.push({
+        corner, sys32Z, kind: 'BOLT',
+        position: b.position, normal: b.normal,
+        diameter: bolt.diaMm, depth: bolt.depthMm,
+      });
+
+      // CAM บนแผ่นข้าง inner face (OVERLAY)
+      const c = camFacePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
+      bores.push({
+        corner, sys32Z, kind: 'CAM',
+        position: c.position, normal: c.normal,
+        diameter: cam.diaMm, depth: cam.depthMm,
+      });
+    }
+  }
+
+  return { bores, skippedCorners: skipped };
+}
+
+export interface WorldParityReport {
+  compared: number;
+  matched: number;
+  maxDeltaMm: number;
+  mismatches: Array<{ kind: string; corner: string; sys32Z: number; deltaMm: number }>;
+  skippedCorners: WorldSynthesisResult['skippedCorners'];
+}
+
+const POS_TOLERANCE_MM = 0.5;
+
+/**
+ * เทียบ synthesis กับ drill map จริง: ทุก bore สังเคราะห์ต้องมีจุดจริง
+ * (purpose ตรงตระกูล + dia/depth ตรง) ห่างไม่เกิน 0.5mm
+ */
+export function compareWorldParity(
+  cabinet: Cabinet,
+  drillMap: DrillMap | null,
+  opts: Parameters<typeof synthesizeCornerMinifixWorld>[1] = {},
+): WorldParityReport {
+  const synth = synthesizeCornerMinifixWorld(cabinet, opts);
+  const report: WorldParityReport = {
+    compared: synth.bores.length,
+    matched: 0,
+    maxDeltaMm: 0,
+    mismatches: [],
+    skippedCorners: synth.skippedCorners,
+  };
+  if (!drillMap || synth.bores.length === 0) return report;
+
+  const actual = drillMap.panels.flatMap((p) => p.points ?? []);
+  const camPoints = actual.filter((p) => (p.purpose === 'MINIFIX' || p.purpose === 'CAM_LOCK') && p.componentType === 'HOUSING');
+  const boltPoints = actual.filter((p) => p.purpose === 'BOLT');
+
+  for (const b of synth.bores) {
+    const pool = b.kind === 'CAM' ? camPoints : boltPoints;
+    let best = Infinity;
+    for (const a of pool) {
+      if (Math.abs(a.diameter - b.diameter) > 0.05 || Math.abs(a.depth - b.depth) > 0.05) continue;
+      const d = Math.hypot(
+        a.position[0] - b.position[0],
+        a.position[1] - b.position[1],
+        a.position[2] - b.position[2],
+      );
+      if (d < best) best = d;
+    }
+    if (best <= POS_TOLERANCE_MM) {
+      report.matched++;
+      report.maxDeltaMm = Math.max(report.maxDeltaMm, best);
+    } else {
+      report.mismatches.push({ kind: b.kind, corner: b.corner, sys32Z: b.sys32Z, deltaMm: Math.round(best * 100) / 100 });
+    }
+  }
+  return report;
+}
