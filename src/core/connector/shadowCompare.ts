@@ -10,7 +10,7 @@
 
 import type { DrillMap } from '../manufacturing/drillMap/types';
 import { KITCHEN_PREMIUM_PROFILE, HMR18_HPL08x2_PVC1, selectConnector } from './catalog';
-import { getConnectorPositions } from './placer';
+import { getConnectorPositions, getSpreadGridPositions } from './placer';
 import { compileConnectorOps } from './compiler';
 import type { AdjacencyContext, LoadClass } from './types';
 import { groupJoints, positionsAlongJoint } from '../../gate/rules/gateG11_connectorAudit';
@@ -64,7 +64,9 @@ export function runShadowCompare(
       panelA: { panelId: joint.panelA, role: '' },
       panelB: { panelId: joint.panelB, role: '' },
     };
-    const sPositions = getConnectorPositions(jointLength, profile, load);
+    // มติ ก: ตำแหน่งคาดหวัง = grid spread ด้วยจำนวนจริง (นับตรวจแยกใน audit ผ่าน placer)
+    void getConnectorPositions; // placer count rule ใช้ใน audit (G11_UNDER_CONNECTED)
+    const sPositions = getSpreadGridPositions(jointLength, profile.system32, positions.length);
     const ops = compileConnectorOps(ctx, spec, sPositions, HMR18_HPL08x2_PVC1, 'DRILL_ON_FINISHED');
     const camOps = ops.filter((o) => o.meta.featureId === 'CAM');
 
@@ -74,8 +76,11 @@ export function runShadowCompare(
     const expectedGaps = gaps(expectedS);
 
     const countMatch = positions.length === camOps.length;
+    // world axis อาจกลับทิศจาก S (generator ใช้ maxZ - s) — เทียบทั้งเดินหน้า/ถอยหลัง
+    const fits = (a: number[], b: number[]) =>
+      a.length === b.length && a.every((g, i) => Math.abs(g - b[i]) <= GAP_TOLERANCE_MM);
     const gapPatternMatch = countMatch &&
-      actualGaps.every((g, i) => Math.abs(g - (expectedGaps[i] ?? NaN)) <= GAP_TOLERANCE_MM);
+      (fits(actualGaps, expectedGaps) || fits(actualGaps, [...expectedGaps].reverse()));
 
     const expectedCam = camOps[0];
     const featureParity = joint.housings.every(

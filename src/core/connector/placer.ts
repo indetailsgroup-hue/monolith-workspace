@@ -67,3 +67,28 @@ export function getConnectorPositions(
 
   return Array.from(new Set(positions)).sort((a, b) => a - b);
 }
+
+
+/**
+ * ADR-061 มติ ก (ขั้น 2): เลือกตำแหน่งบน System32 grid แบบกระจายเต็มช่วง
+ * — grid = firstHole..(jointLen-endOffset) step pitch; หยิบ count ตัวกระจาย index สม่ำเสมอ
+ * (ตัวแรก/ตัวท้ายอยู่หัว-ท้าย grid เสมอ) ใช้เป็นแหล่งตำแหน่งเดียวทั้ง generator และ shadow
+ */
+export function getSpreadGridPositions(
+  jointLen: number,
+  sys: { firstHole: number; pitch: number; endOffset: number },
+  count: number,
+): number[] {
+  const grid: number[] = [];
+  for (let s = sys.firstHole; s <= jointLen - sys.endOffset + 1e-6; s += sys.pitch) {
+    grid.push(Math.round(s * 10) / 10);
+  }
+  if (grid.length === 0) return [jointLen / 2];
+  if (count >= grid.length) return grid;
+  if (count <= 1) return [grid[Math.floor(grid.length / 2)]];
+  const picks = new Set<number>();
+  for (let i = 0; i < count; i++) {
+    picks.add(Math.round((i * (grid.length - 1)) / (count - 1)));
+  }
+  return [...picks].sort((a, b) => a - b).map((i) => grid[i]);
+}

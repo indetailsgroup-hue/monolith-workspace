@@ -42,6 +42,7 @@
  * | Mating Tolerance | 0.1mm                    |
  */
 
+import { getSpreadGridPositions } from '../../connector/placer';
 import type { Cabinet, CabinetPanel, PanelRole, JointType, ShelfConnectorConfig, BackPanelConnectorConfig } from '../../types/Cabinet';
 import { DEFAULT_SHELF_CONNECTOR_CONFIG, DEFAULT_BACK_PANEL_CONNECTOR_CONFIG } from '../../types/Cabinet';
 import type {
@@ -1903,9 +1904,10 @@ export function generateMinifixDrillMap(
   const density: ConnectorDensity = options?.connectorDensity ?? 'CAD_STANDARD';
   const connectorCount = mainOverride ?? maxConnectors ??
     computeConnectorCountForDensity(sys32RunLength, fullParams.firstHoleZ, density);
-  const sys32Positions = buildCadConnectorRunPositions(
+  // ADR-061 มติ ก: ตำแหน่ง snap ลง System32 grid (แหล่งเดียวกับ Connector OS placer)
+  const sys32Positions = getSpreadGridPositions(
     sys32RunLength,
-    fullParams.firstHoleZ,
+    { firstHole: fullParams.firstHoleZ, pitch: 32, endOffset: 40 },
     connectorCount
   );
 
