@@ -129,7 +129,17 @@
 - [x] S16-15 — ✅ **THE FLIP (ADR-061c จบ)**: `cornerEngine` default = **connector-os** — synthesis (placer+catalog+panelBasis+CORNER_DOWEL_SPEC) เป็นเจ้าของ position/normal/dia/depth ของ corner joints ทุกจุด (handover ทับค่า, metadata ประกอบเส้นทางเดิม); legacy = fallback flag; จุดนอก scope (มุมไม่ 90°) = คง legacy + fail-visible log; **หลักฐาน**: golden ผ่านไม่แตะ + เทสต์ flip equivalence 3 ตัว (สอง engine เท่ากัน byte-level ทุก jointMode/density + ไม่มี mismatch log) + full suite เขียว + live 144/144 Δ0.00; B-run/back/shelf ยังเป็นของ generator ตามดีไซน์
 - [x] S16-16 — ✅ **Factory packet store — ลูป design→factory ปิดจริง (0161)**: bucket `factory-packets` (private) + rpc record_packet (DRAFT block)/packet_info/verify_result (event log) + factory-api routes: POST /packet (edge คำนวณ sha256 เอง ไม่เชื่อ client, ≤20MB) · GET /export (signed URL 1ชม. + sha anchor) · POST /verify (download→hash→เทียบ anchor→PASS/FAIL ลง event) + Designer อัปโหลดอัตโนมัติหลัง Export to CNC (uploadPacket ใน stateApi); **prod E2E ผ่านครบ**: upload sha ตรง → export URL → download bytes ตรง → verify PASS; หมายเหตุ local: ไม่มี storage service (ตาม 0099) — ทดสอบ storage ได้เฉพาะ hosted
 - [x] S16-17 — ✅ **FactoryApp clients ต่อ backend จริงครบ**: verifyApi adapt ผลตรวจ hash (PASS→OK / FAIL→HASH_MISMATCH "ห้ามผลิต") · runGatedExportApi → GET signed URL (เลิก POST เดิม + เลิก credentials ที่ชน CORS) · fetchJobDetailApi ประกอบจาก /state (ไม่แต่งข้อมูล); พิสูจน์สด: fetchJobs 4 jobs (VERIFIED/audit OK) + detail ✓; 426 เขียว; หมายเหตุ: verify/export ใช้ storage = ทดสอบเต็มบน prod (ผ่านแล้วใน S16-16)
-- ค้าง (รอง): FP-4 (ADR+ROI กับ owner); ops ฝั่ง owner (Typhoon OCR, P5, V1-V10, PK-5)
+- [x] S16-18 — ✅ **รีวิว PRD v5.1** (11 ก.ค., เอกสาร owner ที่ `../docs/prd/monolith-complete-prd-v5.th.md` — audit โดย AI อื่น ณ commit d7b1c879): ผม verify P0 blockers กับโค้ดจริง = **จริงทุกตัว** (รวม AB-EXP-01 ที่ผมพลาดเอง — AppShell ยอม CNC export ที่ FROZEN); ความเห็นเต็ม `../docs/prd/monolith-prd-v5-review.th.md` — แนะนำรับเป็น canonical + เงื่อนไข: ปิด P0 ก่อน, FR ใหม่ห้ามเริ่มก่อน pilot ปิด
+
+## Phase S17 — ปิด Production Blockers จาก PRD v5 As-Built (คิวถัดไป)
+- [ ] S17-1 `AB-EXP-01` (P0 สุด): CNC export ทุกประตูต้อง RELEASED — AppShell.canExport ยอม FROZEN (GateToolbar เมนู CNC ถูกแล้ว แต่ปุ่มหลักหลุด)
+- [ ] S17-2 `AB-AUTH-01`: actor/role จาก JWT ฝั่ง server — เลิกเชื่อ x-actor-role header + localStorage role
+- [ ] S17-3 `AB-PKT-01`: job identity = project id + revision (เลิก job-${"$"}{Date.now()}-random) + deterministic ZIP metadata
+- [ ] S17-4 `AB-PKT-02`: server verify ลึก — manifest per-file hash + gate/revision เทียบ anchor (signature รอ AB-KEY-01)
+- [ ] S17-5 `AB-KEY-01`: production receipt keys จริง + rotation ceremony (ต้องมีมติ owner เรื่อง key custody)
+- [ ] S17-6 (P1) AB-TST-01 test-runner drift · AB-GATE-01 bypass-scan regex · AB-DB-01 CI DB สำหรับ Python/RLS suite · AB-FIELD-01 field-app test script+.env hygiene
+
+- ค้าง (รอง): ops ฝั่ง owner (Typhoon OCR, P5, V1-V10, PK-5)
 
 ## Phase NM — ADR-059 rebrand IIMOS→MONOLITH (9 ก.ค. 2026)
 - [x] NM-1 — ✅ ระดับ 1: title 'MONOLITH Designer Workspace' + ปุ่ม '🌉 ส่งเข้าหน้างาน' + ข้อความ panel; ไฟล์ bridge → fieldBridge.ts/FieldBridgeButton.tsx (identifiers FieldSession/readFieldSession/FIELD_WORK_ITEM_KEY); tests 3 เขียว
