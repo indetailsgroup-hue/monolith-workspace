@@ -9,7 +9,9 @@
  * ใช้เป็น parity target: ถ้า output ตรง generateDrillMap 100% บนตู้จริง →
  * ส่วน corner-minifix ของ generator สลับมาใช้ตัวนี้ได้ (drop-in)
  *
- * scope v2: OVERLAY + INSET corners 90° — มุมองศาอื่น = skip แบบ no-guess (รายงานตรง)
+ * scope v3 (bolt-family ครบ): CAM+BOLT+BOLT_ENTRY+BOLT_THREAD ทั้ง OVERLAY+INSET 90°
+ * DOWELS = นอก scope โดยตั้งใจ (harness เผยว่า dowel จริงมาจากหลายระบบ:
+ * corner-branch + B-run + depth ต่างจากสูตร corner — ต้อง mapping session แยก) — มุมองศาอื่น = skip แบบ no-guess (รายงานตรง)
  */
 
 import type { Cabinet } from '../types/Cabinet';
@@ -18,11 +20,14 @@ import {
   calculatePanelAABB,
   boltFacePointFromHorizAABB_overlay,
   camFacePointFromSideAABB_overlay,
+  boltEntryEdgePointFromSideAABB_overlay,
+  boltEntryEdgePointFromHorizAABB,
   boltFacePointFromSideAABB_v4,
   getPanelBasisFromAABB,
   panelLocalToWorld,
   clamp as basisClamp,
 } from '../manufacturing/drillMap/panelBasis';
+import { DEFAULT_MINIFIX_S200_CONFIG } from '../manufacturing/drillMap/minifixDefaults';
 import {
   computeConnectorCountForDensity,
   type ConnectorDensity,
@@ -33,7 +38,7 @@ import { KITCHEN_PREMIUM_PROFILE, HMR18_HPL08x2_PVC1, selectConnector } from './
 export interface SynthesizedBore {
   corner: CornerType;
   sys32Z: number;
-  kind: 'CAM' | 'BOLT';
+  kind: 'CAM' | 'BOLT' | 'BOLT_ENTRY' | 'BOLT_THREAD';
   position: Vec3Tuple;
   normal: Vec3Tuple;
   diameter: number;
@@ -115,6 +120,8 @@ export function synthesizeCornerMinifixWorld(
     const horizAabb = calculatePanelAABB(horizontal);
     const vertAabb = calculatePanelAABB(vertical);
 
+    const cfg = DEFAULT_MINIFIX_S200_CONFIG;
+
     if (jointMode === 'OVERLAY') {
       const jointAxisX = (vertAabb.min[0] + vertAabb.max[0]) / 2;
       for (const sys32Z of sys32Positions) {
@@ -126,6 +133,20 @@ export function synthesizeCornerMinifixWorld(
           position: b.position, normal: b.normal,
           diameter: bolt.diaMm, depth: bolt.depthMm,
         });
+        // BOLT_THREAD: ตำแหน่ง/ทิศเดียวกับ BOLT — รูนำเกลียว
+        bores.push({
+          corner, sys32Z, kind: 'BOLT_THREAD',
+          position: [b.position[0], b.position[1], b.position[2]] as Vec3Tuple,
+          normal: b.normal,
+          diameter: cfg.shaftDia, depth: cfg.shaftLength,
+        });
+        // BOLT_ENTRY: edge bore บนขอบบน/ล่างแผ่นข้าง
+        const e = boltEntryEdgePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
+        bores.push({
+          corner, sys32Z, kind: 'BOLT_ENTRY',
+          position: e.position, normal: e.normal,
+          diameter: cfg.boltEntryDia ?? 7.5, depth: distanceB,
+        });
 
         // CAM บนแผ่นข้าง inner face (OVERLAY)
         const c = camFacePointFromSideAABB_overlay(corner, vertAabb, sys32Z, distanceB);
@@ -134,6 +155,7 @@ export function synthesizeCornerMinifixWorld(
           position: c.position, normal: c.normal,
           diameter: cam.diaMm, depth: cam.depthMm,
         });
+
       }
     } else {
       // INSET (Side covers Top/Bottom v4.0):
@@ -152,6 +174,21 @@ export function synthesizeCornerMinifixWorld(
           position: b.position, normal: b.normal,
           diameter: bolt.diaMm, depth: bolt.depthMm,
         });
+        // BOLT_THREAD: ตำแหน่ง/ทิศเดียวกับ BOLT
+        bores.push({
+          corner, sys32Z, kind: 'BOLT_THREAD',
+          position: [b.position[0], b.position[1], b.position[2]] as Vec3Tuple,
+          normal: b.normal,
+          diameter: cfg.shaftDia, depth: cfg.shaftLength,
+        });
+        // BOLT_ENTRY: edge bore บนขอบซ้าย/ขวาแผ่นนอน (ทาง CAM)
+        const e = boltEntryEdgePointFromHorizAABB(corner, horizAabb, sys32Z, distanceB);
+        bores.push({
+          corner, sys32Z, kind: 'BOLT_ENTRY',
+          position: e.position, normal: e.normal,
+          diameter: cfg.boltEntryDia ?? 7.5, depth: distanceB,
+        });
+
 
         const camLocalX = basisClamp(
           isLeft ? distanceB : basis.faceWidth - distanceB,
@@ -201,11 +238,15 @@ export function compareWorldParity(
   if (!drillMap || synth.bores.length === 0) return report;
 
   const actual = drillMap.panels.flatMap((p) => p.points ?? []);
-  const camPoints = actual.filter((p) => (p.purpose === 'MINIFIX' || p.purpose === 'CAM_LOCK') && p.componentType === 'HOUSING');
-  const boltPoints = actual.filter((p) => p.purpose === 'BOLT');
+  const pools: Record<string, typeof actual> = {
+    CAM: actual.filter((p) => (p.purpose === 'MINIFIX' || p.purpose === 'CAM_LOCK') && p.componentType === 'HOUSING'),
+    BOLT: actual.filter((p) => p.purpose === 'BOLT'),
+    BOLT_ENTRY: actual.filter((p) => p.purpose === 'BOLT_ENTRY'),
+    BOLT_THREAD: actual.filter((p) => p.purpose === 'BOLT_THREAD'),
+  };
 
   for (const b of synth.bores) {
-    const pool = b.kind === 'CAM' ? camPoints : boltPoints;
+    const pool = pools[b.kind] ?? [];
     let best = Infinity;
     for (const a of pool) {
       if (Math.abs(a.diameter - b.diameter) > 0.05 || Math.abs(a.depth - b.depth) > 0.05) continue;
