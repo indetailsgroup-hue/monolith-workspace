@@ -132,12 +132,14 @@
 - [x] S16-18 — ✅ **รีวิว PRD v5.1** (11 ก.ค., เอกสาร owner ที่ `../docs/prd/monolith-complete-prd-v5.th.md` — audit โดย AI อื่น ณ commit d7b1c879): ผม verify P0 blockers กับโค้ดจริง = **จริงทุกตัว** (รวม AB-EXP-01 ที่ผมพลาดเอง — AppShell ยอม CNC export ที่ FROZEN); ความเห็นเต็ม `../docs/prd/monolith-prd-v5-review.th.md` — แนะนำรับเป็น canonical + เงื่อนไข: ปิด P0 ก่อน, FR ใหม่ห้ามเริ่มก่อน pilot ปิด
 
 ## Phase S17 — ปิด Production Blockers จาก PRD v5 As-Built (คิวถัดไป)
-- [ ] S17-1 `AB-EXP-01` (P0 สุด): CNC export ทุกประตูต้อง RELEASED — AppShell.canExport ยอม FROZEN (GateToolbar เมนู CNC ถูกแล้ว แต่ปุ่มหลักหลุด)
-- [ ] S17-2 `AB-AUTH-01`: actor/role จาก JWT ฝั่ง server — เลิกเชื่อ x-actor-role header + localStorage role
-- [ ] S17-3 `AB-PKT-01`: job identity = project id + revision (เลิก job-${"$"}{Date.now()}-random) + deterministic ZIP metadata
-- [ ] S17-4 `AB-PKT-02`: server verify ลึก — manifest per-file hash + gate/revision เทียบ anchor (signature รอ AB-KEY-01)
-- [ ] S17-5 `AB-KEY-01`: production receipt keys จริง + rotation ceremony (ต้องมีมติ owner เรื่อง key custody)
-- [ ] S17-6 (P1) AB-TST-01 test-runner drift · AB-GATE-01 bypass-scan regex · AB-DB-01 CI DB สำหรับ Python/RLS suite · AB-FIELD-01 field-app test script+.env hygiene
+> **มติ owner meta-review (11 ก.ค.)**: ทั้งห้า P0 = **hard gate ก่อน pilot ห้ามเลื่อนตัวใด** เรียงตาม dependency (ไม่ใช่ความรุนแรง); ประมาณการสมจริง ~2 สัปดาห์ impl + 2 สัปดาห์ verification/dry-run/evidence; **AI = advisory reviewer เท่านั้น** — ADR-064 (รับ PRD canonical) รอ Product Owner/Tech Lead/Factory Owner ลงชื่อ; verdict: "Target-State Canonical, ไม่ใช่ production-ready; Day-30 = P0×5 + controlled pilot 1 งาน 1 machine profile; FR ใหม่ freeze"; หลักฐาน session/manual = E0 candidate/REVERIFY จนกว่ามี CI artifact
+- [ ] S17-1 **Server-owned identity** (`AB-AUTH-01`): actor/role จาก JWT ฝั่ง server — เลิกเชื่อ x-actor-role header + localStorage role + spoofing tests
+- [ ] S17-2 **RELEASED-only invariant ทุกทางออก** (`AB-EXP-01`): บังคับฝั่ง server/exporter ทุก entry point (ไม่ใช่แก้ปุ่ม UI) — AppShell.canExport ยอม FROZEN
+- [ ] S17-3 **Canonical packet specification**: `packetContentId` (hash canonical content) + `jobRunId` (ต่อ run) + signed identity = released revision + machine profile ver + exporter ver + schema ver (มติ owner: project+revision ไม่พอ)
+- [ ] S17-4 **Deterministic packet generation** (`AB-PKT-01`): timestamp/ZIP metadata/file order/serialization ตาม spec S17-3
+- [ ] S17-5 **Full verifier** (`AB-PKT-02`): manifest per-file hash + signature + gate/revision/machine + **tamper corpus** + fail-closed proof
+- [ ] S17-6 **Key ceremony** (`AB-KEY-01`): custody/rotation/revocation + ceremony evidence + negative tests (รอมติ owner เรื่อง custody)
+- [ ] S17-7 (P1) AB-TST-01 test-runner drift · AB-GATE-01 bypass-scan regex · AB-DB-01 CI DB สำหรับ Python/RLS suite · AB-FIELD-01 field-app test script+.env hygiene
 
 - ค้าง (รอง): ops ฝั่ง owner (Typhoon OCR, P5, V1-V10, PK-5)
 
