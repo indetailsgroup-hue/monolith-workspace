@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-07-11",
+  "repository": "indetailsgroup-hue/monolith-workspace",
+  "commit": "9ac7cff39d02d9430879275645e377728bc0abc5",
+  "classification": "E0 CI PASS — scope-limited",
+  "primaryRun": {
+    "runId": "29142280872",
+    "ref": "refs/heads/main",
+    "status": "success",
+    "url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/29142280872",
+    "artifact": {
+      "id": "8245562223",
+      "name": "verify-evidence-9ac7cff39d02d9430879275645e377728bc0abc5",
+      "sizeBytes": 176334,
+      "sha256": "6fb49466fee477b54f05c8e1d2470cacc6c83cba91e889700cc1cdde7f6886fd",
+      "createdAt": "2026-07-11T06:08:32Z",
+      "expiresAt": "2026-10-09T06:06:13Z",
+      "retentionDays": 90
+    }
+  },
+  "corroboratingRun": {
+    "runId": "29142279488",
+    "ref": "refs/heads/fix/drillmap-bolt-and-brun-dowels",
+    "status": "success",
+    "url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/29142279488",
+    "artifact": {
+      "id": "8245562538",
+      "name": "verify-evidence-9ac7cff39d02d9430879275645e377728bc0abc5",
+      "sizeBytes": 176387,
+      "sha256": "d777e9a10c716665e8083ce1b5cd5c082ebcdc72afa843809d4501112c0efa78",
+      "createdAt": "2026-07-11T06:08:34Z",
+      "expiresAt": "2026-10-09T06:06:10Z",
+      "retentionDays": 90
+    }
+  },
+  "exclusions": [
+    "Two vault-builder pipeline invariants return early on CI when development-only _daph_extract data is unavailable; their evidence remains local-only.",
+    "The DB/psql test line (AB-DB-01) is not included in this workflow.",
+    "End-to-end tests are not included in this workflow.",
+    "This evidence does not prove deployment, operational readiness, production readiness, or closure of any P0 blocker."
+  ]
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CI Evidence Record — 9ac7cff3</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CI Evidence Record — 9ac7cff3</h1>
+<p>Recorded: 2026-07-11 Status: <strong>E0 CI PASS — scope-limited</strong> Commit: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Evidence-classification authority: Tech Lead decision in CT-DEC-001</p>
+<blockquote><p>This record proves only the scope actually executed by the workflow. It is not evidence of deployment, operational readiness, production readiness, or P0 closure.</p></blockquote>
+<h2>1. Primary main run</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Item</th>
+<th>Value</th>
+</tr></thead><tbody>
+<tr>
+<td>Workflow</td>
+<td><code>verify-full</code></td>
+</tr>
+<tr>
+<td>Run</td>
+<td><code>29142280872</code> — https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/29142280872</td>
+</tr>
+<tr>
+<td>Ref</td>
+<td><code>refs/heads/main</code></td>
+</tr>
+<tr>
+<td>Environment</td>
+<td><code>ubuntu-latest / node v22.23.1</code></td>
+</tr>
+<tr>
+<td>Test result</td>
+<td><strong>4,553/4,553 passed</strong>, 0 failed, 1,762 suites</td>
+</tr>
+<tr>
+<td>Successful steps</td>
+<td>checkout, install, full typecheck, automated tests, build, evidence manifest, artifact upload</td>
+</tr>
+<tr>
+<td>Artifact</td>
+<td>ID <code>8245562223</code>; 90-day retention; expires <code>2026-10-09T06:06:13Z</code></td>
+</tr>
+<tr>
+<td>Artifact ZIP SHA-256</td>
+<td><code>6fb49466fee477b54f05c8e1d2470cacc6c83cba91e889700cc1cdde7f6886fd</code></td>
+</tr>
+</tbody></table></div>
+<p>The adjacent <code>verify-evidence.json</code> is the workflow-produced payload for the main run. <code>artifact.sha256</code> preserves the GitHub-reported archive digests for both main and branch so they remain referable after the 90-day artifacts expire.</p>
+<h2>2. Corroborating branch run</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Item</th>
+<th>Value</th>
+</tr></thead><tbody>
+<tr>
+<td>Run</td>
+<td><code>29142279488</code> — https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/29142279488</td>
+</tr>
+<tr>
+<td>Ref</td>
+<td><code>refs/heads/fix/drillmap-bolt-and-brun-dowels</code></td>
+</tr>
+<tr>
+<td>Commit</td>
+<td>Same full SHA as main: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code></td>
+</tr>
+<tr>
+<td>Artifact</td>
+<td>ID <code>8245562538</code>; 90-day retention; expires <code>2026-10-09T06:06:10Z</code></td>
+</tr>
+<tr>
+<td>Artifact ZIP SHA-256</td>
+<td><code>d777e9a10c716665e8083ce1b5cd5c082ebcdc72afa843809d4501112c0efa78</code></td>
+</tr>
+</tbody></table></div>
+<h2>3. Exclusion list that must always accompany this claim</h2>
+<ol><li>Two invariants in <code>tools/vault-builder/src/pipeline.test.ts</code> return before assertion on CI when development-only <code>_daph_extract</code> data is absent; their evidence remains local-only even though the runner counts those test cases as passed.</li><li>The DB/psql test line (<code>AB-DB-01</code>) is not part of this workflow.</li><li>End-to-end tests are not part of this workflow.</li><li>This E0 set does not prove deployment, operational readiness, production readiness, P0 closure, or authorization to cut real workpieces.</li></ol>
+<h2>4. Provenance and durability</h2>
+<ul><li><code>verify-evidence.json</code>: evidence payload binding commit, environment, time, and test result</li><li><code>run-register.json</code>: register preserving run/artifact IDs, URLs, digests, creation dates, and expiry dates</li><li><code>artifact.sha256</code>: lowercase SHA-256 digests for artifact archives as reported by GitHub metadata; the ZIP files themselves are not stored in the repository</li><li><code>evidence-record.sha256</code>: manifest for this durable record set, calculated over LF UTF-8 bytes with lowercase hex</li><li>The Git commit makes this record pinned/frozen and tamper-evident, but the commit is unsigned and therefore is not called immutable</li></ul>
+</main>
+</body>
+</html>

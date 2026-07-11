@@ -1,2 +1,5 @@
-# docs/prd is content-addressed (SHA-256 manifests) — bytes must be identical on every platform/checkout
+# Content-addressed records use SHA-256 manifests — bytes must be identical on every platform/checkout.
 docs/prd/** text eol=lf
+docs/evidence/** text eol=lf
+docs/governance/** text eol=lf
+docs/specs/** text eol=lf

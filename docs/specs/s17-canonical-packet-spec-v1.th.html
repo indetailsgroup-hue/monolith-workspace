@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</h1>
+<p>ฉบับเอกสาร: 0.1 วันที่ร่าง: 2026-07-11 สถานะ: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, ADR-065</p>
+<blockquote><p>เอกสารนี้เป็น target-state contract สำหรับขออนุมัติ ไม่ได้พิสูจน์ว่าโค้ดปัจจุบัน implement แล้ว ไม่ปิด S17-3 และไม่ปลด S17-4/S17-5 จนกว่าผู้อนุมัติสามบทบาทลงชื่อครบ</p></blockquote>
+<h2>1. Approval matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>บทบาท</th>
+<th>ขอบเขตที่ต้องตรวจ</th>
+<th>สถานะ</th>
+<th>ผู้ลงนาม/วันที่</th>
+</tr></thead><tbody>
+<tr>
+<td>Tech Lead</td>
+<td>schema, canonicalization, determinism, feasibility</td>
+<td><strong>PENDING</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Factory Owner</td>
+<td>file contract, machine binding, verifier flow, factory fit</td>
+<td><strong>PENDING</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Security Owner</td>
+<td>signature, trust boundary, key semantics, fail-closed</td>
+<td><strong>PENDING</strong></td>
+<td>—</td>
+</tr>
+</tbody></table></div>
+<p>สถานะเปลี่ยนเป็น APPROVED ได้เมื่อทั้งสามช่องเป็น APPROVED เท่านั้น หากคนเดียวถือ Tech Lead และ Security Owner ต้องลงมติแยกสองบทบาท</p>
+<h2>2. วัตถุประสงค์และขอบเขต</h2>
+<p>Spec นี้นิยาม contract ขั้นต่ำของ Factory Packet v2 เพื่อปิดช่องว่างระหว่าง content identity, execution identity และ manufacturing trust:</p>
+<ol><li><code>packetContentId</code> ระบุ canonical manufacturing content</li><li><code>jobRunId</code> ระบุการ export/attestation แต่ละครั้งและต้อง server-owned</li><li>signed identity ผูก released revision, machine-profile version, exporter version, packet schema และ content/run identity</li><li>manifest ระบุทุก payload file ด้วย path, media type, byte size และ SHA-256</li><li>verifier ตรวจครบแบบ fail-closed รวม signature, release state, machine profile และ tamper corpus</li><li>shadow-mode marker <code>NOT_FOR_PRODUCTION.txt</code> และชื่อ ZIP <code>NFP-...</code> ยังคงบังคับจน real-cut gate ผ่าน</li></ol>
+<p>นอกขอบเขตของ S17-3: การ implement generator/verifier (S17-4/S17-5), key ceremony และ production key provisioning (S17-6), การเลือก cloud provider และการอนุมัติตัดจริง</p>
+<h2>3. Normative language</h2>
+<p>คำว่า <strong>MUST / MUST NOT / REQUIRED / SHOULD / MAY</strong> เป็นข้อบังคับตามความหมาย RFC 2119-style ในฉบับอังกฤษ ส่วนภาษาไทยใช้ <strong>ต้อง / ห้าม / ควร / อาจ</strong> ให้ความหมายเดียวกัน หากฉบับ TH/EN ขัดกันให้หยุดอนุมัติและแก้ทั้งคู่ ห้ามเลือกตีความข้างใดข้างหนึ่งเอง</p>
+<h2>4. หลักการแยกสอง identity</h2>
+<p>Factory Packet v2 แยกสองชั้นอย่างชัดเจน:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ชั้น</th>
+<th>ตัวระบุ</th>
+<th>คุณสมบัติ</th>
+</tr></thead><tbody>
+<tr>
+<td>Canonical content plane</td>
+<td><code>packetContentId</code></td>
+<td>deterministic; payload+manifest เดิมภายใต้ revision/profile/exporter/schema เดิมต้องได้ค่าเดิม</td>
+</tr>
+<tr>
+<td>Execution/attestation plane</td>
+<td><code>jobRunId</code></td>
+<td>server-owned; unique ต่อ accepted export run; อาจต่างกันแม้ content เดิม</td>
+</tr>
+</tbody></table></div>
+<p>เหตุผล: revision เดียวอาจ export หลายครั้งและไปหลาย profile/exporter ได้ การใช้ ID เดียวแทนทั้ง content และ run ทำให้ชนกันหรือทำ audit replay แยกไม่ได้</p>
+<h3>4.1 Determinism claim ที่อนุญาต</h3>
+<p>เมื่อ authoritative input, released revision, machine profile+version+digest, exporter build และ schema เดิมเหมือนกัน:</p>
+<ul><li>payload files ทุกไฟล์, <code>manifest.json</code> และ <code>packetContentId</code> <strong>ต้องเหมือน byte-for-byte</strong></li><li>ZIP entry order/metadata/compression ภายใต้ exporter build เดิม <strong>ต้อง deterministic</strong></li><li><code>attestation.json</code>, filename และ ZIP ทั้งก้อน <strong>อาจต่าง</strong> เฉพาะ field ที่ตั้งใจเป็น run-specific ได้แก่ <code>jobRunId</code>, <code>issuedAt</code>, actor และ signature ที่ครอบ field เหล่านั้น</li><li>ความต่างนอก allowlist นี้ถือเป็น S17-4 failure</li></ul>
+<p>ห้าม claim ว่า outer ZIP จากคนละ run ต้องเหมือน byte-for-byte เพราะจะขัดกับ requirement ที่ <code>jobRunId</code> ต้อง unique</p>
+<h2>5. Trust boundary และ ownership</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component/actor</th>
+<th>เชื่อถือได้เรื่องใด</th>
+<th>ห้ามเชื่อ/ข้อบังคับ</th>
+</tr></thead><tbody>
+<tr>
+<td>Browser/client</td>
+<td>ส่ง intent และแสดงผล</td>
+<td>เป็น untrusted input; ห้ามเป็นเจ้าของ actor, role, release state, <code>jobRunId</code>, key ID หรือ machine authorization</td>
+</tr>
+<tr>
+<td>Authenticated server</td>
+<td>actor subject, authorization, revision state, run allocation</td>
+<td>ต้อง derive จาก verified session/JWT และ server data; ห้ามเชื่อ <code>x-actor-role</code> หรือ localStorage</td>
+</tr>
+<tr>
+<td>Deterministic builder</td>
+<td>สร้าง canonical payload/manifest</td>
+<td>รับเฉพาะ normalized authoritative input; ห้ามถือ raw private key</td>
+</tr>
+<tr>
+<td>Managed KMS/HSM</td>
+<td>ลงลายเซ็น Ed25519</td>
+<td>private key non-exportable; key lifecycle อยู่ S17-6</td>
+</tr>
+<tr>
+<td>Full verifier</td>
+<td>ตรวจ bytes, identity, signature และ authoritative state</td>
+<td>ต้องอิสระจาก builder ตาม CT-DEC-001; fail closed เมื่อข้อมูลขาด/ไม่รู้จัก</td>
+</tr>
+<tr>
+<td>Factory operator</td>
+<td>ตัดสินใจตามสถานะที่ verifier แสดง</td>
+<td>ห้ามใช้ชื่อไฟล์/ป้าย UI แทนผล verifier; marker NFP หมายถึงห้ามตัดจริงเสมอ</td>
+</tr>
+</tbody></table></div>
+<h2>6. Delivery layout</h2>
+<p>ZIP v2 มีเฉพาะ root entries ต่อไปนี้:</p>
+<pre><code class="language-text">manifest.json
+attestation.json
+connector-ops.json
+connectors.minifix.json
+cutlist.json
+drillmap.json
+gate-result.json
+NOT_FOR_PRODUCTION.txt    # REQUIRED ขณะ shadow mode</code></pre>
+<p>Payload set อาจเพิ่มใน schema minor version เมื่อ approval matrix อนุมัติ แต่ทุก payload file ต้องอยู่ใน <code>manifest.files</code> ส่วน <code>manifest.json</code> และ <code>attestation.json</code> เป็น control files จึงไม่อยู่ใน <code>manifest.files</code> เพื่อเลี่ยง self-hash recursion</p>
+<p>ZIP ต้อง:</p>
+<ol><li>ไม่มี folder prefix และไม่มี directory entries</li><li>เรียง <code>manifest.json</code> ก่อน จากนั้น payload ตาม canonical path order แล้ว <code>attestation.json</code> ท้ายสุด</li><li>ตั้ง entry timestamp คงที่ <code>1980-01-01T00:00:00Z</code>, permissions/platform flags คงที่ และ compression algorithm/level ถูก pin โดย exporter version</li><li>ปฏิเสธ encrypted ZIP, data descriptor ที่ parser policy ไม่รองรับ, duplicate entry, path traversal, absolute path, symlink และ case-fold collision</li><li>จำกัดขนาด compressed/uncompressed, จำนวน entry และ compression ratio ตาม verifier policy ที่ versioned</li></ol>
+<p>ชื่อไฟล์ขณะ shadow mode:</p>
+<pre><code class="language-text">NFP-factory-packet-&lt;jobRunId&gt;-&lt;packetContentId-first12&gt;.zip</code></pre>
+<p>ชื่อไฟล์เป็น UX warning เท่านั้น ไม่เป็น input ของ hash/signature และไม่ใช้ตัดสินความถูกต้อง</p>
+<h2>7. Canonical byte rules</h2>
+<ol><li>JSON ทุกไฟล์ต้องเป็น UTF-8 ไม่มี BOM และ serialize ตาม RFC 8785 JSON Canonicalization Scheme (JCS)</li><li>JSON ห้าม duplicate keys, <code>NaN</code>, <code>Infinity</code>, <code>-Infinity</code> และค่าที่ schema ไม่รู้จักเมื่อ schema กำหนด <code>additionalProperties: false</code></li><li>ค่ามิติ manufacturing ต้อง quantize ตาม schema ก่อน JCS; v2 ใช้ millimetre precision สูงสุด 0.001 mm ห้ามให้ generic serializer แอบ round ค่า</li><li>Text files ต้อง UTF-8, LF (<code>0x0a</code>) เท่านั้น, ไม่มี BOM และไม่มี CR (<code>0x0d</code>)</li><li>Binary files hash จาก raw bytes</li><li>SHA-256 hex ต้องเป็น lowercase 64 ตัว; field identity ใช้รูป <code>sha256:&lt;64-lowercase-hex&gt;</code></li><li><code>sizeBytes</code> คือจำนวน raw bytes จริง ไม่ใช่จำนวนอักขระ</li><li>Canonical path ใช้ <code>/</code>, Unicode NFC, case-sensitive และ sort แบบ unsigned UTF-8 byte lexicographic; ห้าม <code>.</code>/<code>..</code>, empty segment, leading <code>/</code>, backslash, control character, duplicate หรือ case-fold collision</li></ol>
+<h2>8. Per-file manifest format</h2>
+<p><code>manifest.json</code> schema identifier คือ <code>monolith.factory.packet@2.0</code> และมีโครงสร้างขั้นต่ำ:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.packet@2.0&quot;,
+  &quot;manifestVersion&quot;: &quot;2.0.0&quot;,
+  &quot;packetContentId&quot;: &quot;sha256:&lt;64-lowercase-hex&gt;&quot;,
+  &quot;releasedRevision&quot;: {
+    &quot;projectId&quot;: &quot;&lt;server-owned-project-id&gt;&quot;,
+    &quot;revisionId&quot;: &quot;&lt;server-owned-released-revision-id&gt;&quot;,
+    &quot;state&quot;: &quot;RELEASED&quot;
+  },
+  &quot;machineProfile&quot;: {
+    &quot;id&quot;: &quot;kdt_mvp_v1&quot;,
+    &quot;version&quot;: &quot;1.0.0&quot;,
+    &quot;sha256&quot;: &quot;sha256:&lt;canonical-profile-digest&gt;&quot;
+  },
+  &quot;exporter&quot;: {
+    &quot;id&quot;: &quot;monolith.factory-exporter&quot;,
+    &quot;version&quot;: &quot;&lt;semver&gt;&quot;,
+    &quot;buildCommit&quot;: &quot;&lt;40-lowercase-hex&gt;&quot;
+  },
+  &quot;files&quot;: [
+    {
+      &quot;path&quot;: &quot;cutlist.json&quot;,
+      &quot;mediaType&quot;: &quot;application/json&quot;,
+      &quot;sizeBytes&quot;: 123,
+      &quot;sha256&quot;: &quot;&lt;64-lowercase-hex&gt;&quot;
+    }
+  ]
+}</code></pre>
+<p>ข้อบังคับ:</p>
+<ul><li><code>releasedRevision.state</code> ต้องเป็น literal <code>RELEASED</code>; ค่าอื่นสร้าง packet ไม่ได้</li><li><code>machineProfile.version</code> ต้องแยกจาก <code>id</code> แม้ ID มีคำว่า v1 และ <code>sha256</code> ต้องผูก canonical profile bytes เพื่อกัน profile label ถูกแก้เงียบ</li><li><code>exporter.buildCommit</code> ผูก artifact กับ source revision ของ exporter; version อย่างเดียวไม่พอ</li><li><code>files</code> เรียง canonical path, path ไม่ซ้ำ และต้องครบทุกรายการจริงใน ZIP ยกเว้น control files สองตัว</li><li><code>createdAt</code>, <code>jobRunId</code>, actor, signature และ wall-clock fields ห้ามอยู่ใน manifest เพราะทำลาย content determinism</li></ul>
+<h3>8.1 การคำนวณ <code>packetContentId</code></h3>
+<ol><li>Parse และ validate manifest draft โดยยังไม่มี field <code>packetContentId</code></li><li>เรียง/validate <code>files</code> และทุก identity field ตาม schema</li><li>สร้าง <code>contentDescriptor</code> = manifest object ทั้งหมดโดย <strong>omit เฉพาะ <code>packetContentId</code></strong></li><li><code>descriptorBytes = UTF8(JCS(contentDescriptor))</code></li><li><code>packetContentId = &quot;sha256:&quot; + lowercaseHex(SHA256(descriptorBytes))</code></li><li>ใส่ field กลับแล้ว serialize <code>manifest.json</code> ด้วย JCS</li></ol>
+<p>Path, size และ hash อยู่ใน preimage จึงป้องกันการสลับชื่อไฟล์ที่มี hash ชุดเดิม ซึ่ง <code>contentHash</code> v1 ที่ hash เฉพาะ sorted hashes ป้องกันไม่ได้</p>
+<h2>9. Server-owned <code>jobRunId</code></h2>
+<ol><li>Server ต้อง allocate หลัง authentication/authorization, RELEASED check และ machine-profile authorization ผ่าน</li><li>รูปแบบ v1 คือ lowercase RFC 4122 UUID v4 canonical string</li><li>Client-supplied <code>jobRunId</code> ต้องถูก ignore หรือ reject ห้าม trust</li><li>หนึ่ง accepted export attempt มีหนึ่ง <code>jobRunId</code>; explicit rebuild ต้องได้ ID ใหม่แม้ <code>packetContentId</code> เดิม</li><li>Retry ด้วย idempotency key เดิมต้องคืน accepted record เดิมและ <code>jobRunId</code> เดิม; idempotency key เดิมที่ payload ต่างต้อง fail conflict</li><li>ฐานข้อมูลห้ามยอมให้ <code>jobRunId</code> เดียวผูกมากกว่าหนึ่ง <code>packetContentId</code></li></ol>
+<h2>10. Signed attestation และ identity</h2>
+<p><code>attestation.json</code> เป็น run-specific control file และมีโครงสร้างขั้นต่ำ:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.packet-attestation@1.0&quot;,
+  &quot;jobRunId&quot;: &quot;&lt;server-owned-uuid-v4&gt;&quot;,
+  &quot;packetContentId&quot;: &quot;sha256:&lt;64-lowercase-hex&gt;&quot;,
+  &quot;manifestSha256&quot;: &quot;sha256:&lt;sha256-of-exact-manifest-bytes&gt;&quot;,
+  &quot;issuedAt&quot;: &quot;&lt;RFC3339-UTC&gt;&quot;,
+  &quot;actorSubjectId&quot;: &quot;&lt;server-derived-opaque-subject&gt;&quot;,
+  &quot;releasedRevision&quot;: {
+    &quot;projectId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;revisionId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;state&quot;: &quot;RELEASED&quot;
+  },
+  &quot;machineProfile&quot;: {
+    &quot;id&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;version&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;sha256&quot;: &quot;&lt;same-as-manifest&gt;&quot;
+  },
+  &quot;exporter&quot;: {
+    &quot;id&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;version&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;buildCommit&quot;: &quot;&lt;same-as-manifest&gt;&quot;
+  },
+  &quot;packetSchema&quot;: &quot;monolith.factory.packet@2.0&quot;,
+  &quot;gate&quot;: {
+    &quot;result&quot;: &quot;PASS&quot;,
+    &quot;policyVersion&quot;: &quot;&lt;version&gt;&quot;,
+    &quot;evidenceFile&quot;: &quot;gate-result.json&quot;,
+    &quot;evidenceSha256&quot;: &quot;sha256:&lt;same-file-digest-as-manifest&gt;&quot;
+  },
+  &quot;signature&quot;: {
+    &quot;algorithm&quot;: &quot;Ed25519&quot;,
+    &quot;keyId&quot;: &quot;&lt;trusted-registry-key-id&gt;&quot;,
+    &quot;valueBase64&quot;: &quot;&lt;canonical-base64-signature&gt;&quot;
+  }
+}</code></pre>
+<p>Signed identity ต้องผูกอย่างน้อย <code>jobRunId</code>, <code>packetContentId</code>, exact manifest digest, released revision, machine profile ID+version+digest, exporter ID+version+build commit, packet schema, gate result/policy/evidence digest, issued time และ server-derived actor</p>
+<h3>10.1 Signature preimage</h3>
+<ol><li>สร้าง <code>unsignedAttestation</code> โดย omit เฉพาะ top-level <code>signature</code></li><li><code>message = UTF8(&quot;MONOLITH_FACTORY_PACKET_ATTESTATION_V1\n&quot;) || UTF8(JCS(unsignedAttestation))</code></li><li>KMS/HSM ลงลายเซ็น Ed25519 บน <code>message</code></li><li><code>valueBase64</code> ใช้ RFC 4648 standard Base64 พร้อม padding ห้าม whitespace</li><li><code>keyId</code> เป็น lookup key ของ trusted public-key registry; ห้ามฝัง public key แล้วเชื่อ key จาก packet เอง</li></ol>
+<p>การเปลี่ยน identity field ใด ๆ หลัง sign ต้องทำให้ signature fail</p>
+<h2>11. Shadow mode / NOT-FOR-PRODUCTION contract</h2>
+<p>ขณะที่ real-cut gate ยังไม่ผ่านครบสี่เงื่อนไข:</p>
+<ol><li><code>NOT_FOR_PRODUCTION.txt</code> ต้องมีอยู่และอยู่ใน <code>manifest.files</code></li><li>bytes ต้องตรงค่าที่ exporter version กำหนดจาก <code>src/core/config/shadowMode.ts</code> (UTF-8, LF, ไม่มี trailing LF ใน baseline นี้)</li><li>ZIP filename ต้องขึ้นต้น <code>NFP-</code></li><li>verifier อาจให้ผล integrity ว่า PASS แต่สถานะ operational ต้องเป็น <code>VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>การหายไปของ marker หรือ prefix ไม่ยกระดับเป็น production; ต้อง fail <code>PKT_NFP_POLICY_MISMATCH</code></li><li>การปิด marker ต้องมาจาก governance-controlled configuration หลัง S17-1..5 ปิด, ADR-064 ครบสี่บทบาท, dogfood เต็มสายอย่างน้อยหนึ่งงาน และ machine profile calibrate แล้วเท่านั้น</li></ol>
+<p>ข้อความ marker ปัจจุบัน:</p>
+<pre><code class="language-text">*** NOT FOR PRODUCTION — ห้ามใช้ตัดชิ้นงานจริง ***
+
+packet นี้ออกในโหมด shadow ระหว่างช่วง dogfood (ADR-065 Q3)
+ห้ามนำไปตัดชิ้นงานจริงจนกว่า S17 production blockers จะปิดครบ
+และ gate &quot;ตัดจริง&quot; ผ่านทั้งสี่เงื่อนไข (ดู ADR-065)
+
+This packet was produced in shadow mode during the dogfood phase.
+Do NOT cut real workpieces from it until all S17 production
+blockers are closed and the four-condition real-cut gate passes.
+
+ใช้ได้เฉพาะ: เทียบกับใบสั่งผลิตเดิมของโรงงานเพื่อเก็บ evidence ป้อน S17</code></pre>
+<h2>12. Full verifier contract (S17-5 input)</h2>
+<p>Verifier ต้องตรวจตามลำดับและหยุดแบบ fail-closed:</p>
+<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema, duplicate-key rejection, exact supported versions</li><li><strong>Exact file set</strong>: payload ทุกไฟล์ตรง manifest; ไม่มี missing/extra นอกจาก control files ที่กำหนด</li><li><strong>Byte integrity</strong>: <code>sizeBytes</code> และ SHA-256 ต่อไฟล์</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> จาก descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID ใน attestation ตรง manifestทุก field</li><li><strong>Signature</strong>: key lookup จาก trusted registry, algorithm/key state, Ed25519 verify</li><li><strong>Authoritative checks</strong>: revision ยังเป็น RELEASED, project ตรง, machine profile/version/digest ได้รับอนุญาต, exporter build อยู่ allowlist, gate evidence PASS ตาม policy ที่รองรับ</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> ไม่ชน content อื่น, idempotency/replay policy ผ่าน</li><li><strong>Shadow policy</strong>: marker+prefix สอดคล้อง governance state; NFP แสดง NO_CUT เสมอ</li><li><strong>Audit result</strong>: เก็บ verifier version, policy versions, checked hashes, result code, time และ human/operator context โดยไม่เขียนทับ evidence เดิม</li></ol>
+<p>Verifier ห้าม “warn แล้วผ่าน” เมื่อ schema/key/state ไม่รู้จัก, network/state lookup ที่จำเป็นล้มเหลว หรือ evidence ขาด</p>
+<h2>13. Stable result codes ขั้นต่ำ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Code</th>
+<th>ความหมาย</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td><code>PKT_OK</code></td>
+<td>ผ่านทุกข้อและ governance อนุญาต production</td>
+<td>VERIFIED (ยังต้องผ่าน external real-cut gate)</td>
+</tr>
+<tr>
+<td><code>PKT_OK_SHADOW_ONLY</code></td>
+<td>integrity/signature ผ่านแต่ NFP ยังบังคับ</td>
+<td>VERIFIED_SHADOW_ONLY / NO_CUT</td>
+</tr>
+<tr>
+<td><code>PKT_LIMIT_EXCEEDED</code></td>
+<td>container เกิน policy</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_PATH_INVALID</code></td>
+<td>path traversal/duplicate/collision</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_SCHEMA_UNSUPPORTED</code></td>
+<td>schema/version ไม่รองรับ</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_JSON_NON_CANONICAL</code></td>
+<td>JSON ไม่ตรง canonical rules</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_FILE_MISSING</code> / <code>PKT_FILE_EXTRA</code></td>
+<td>file set ไม่ตรง</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_SIZE_MISMATCH</code> / <code>PKT_HASH_MISMATCH</code></td>
+<td>bytes ไม่ตรง manifest</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_CONTENT_ID_MISMATCH</code></td>
+<td>packetContentId คำนวณใหม่ไม่ตรง</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_MANIFEST_BINDING_MISMATCH</code></td>
+<td>attestation ไม่ผูก exact manifest</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_IDENTITY_MISMATCH</code></td>
+<td>identity ซ้ำสองชั้นไม่ตรงกัน</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_SIGNATURE_MISSING</code> / <code>PKT_SIGNATURE_INVALID</code></td>
+<td>signature ขาด/ผิด</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_KEY_UNKNOWN</code> / <code>PKT_KEY_REVOKED</code></td>
+<td>trust key ใช้ไม่ได้</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_REVISION_NOT_RELEASED</code></td>
+<td>revision ไม่ใช่ RELEASED</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_MACHINE_PROFILE_MISMATCH</code></td>
+<td>profile/version/digest ไม่อนุญาต</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_EXPORTER_UNTRUSTED</code></td>
+<td>exporter build ไม่อยู่ allowlist</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_GATE_FAILED</code></td>
+<td>gate evidence ไม่ PASS/ไม่รองรับ</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_JOB_RUN_CONFLICT</code></td>
+<td>run ID ผูก content อื่นหรือ replay ผิด policy</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_NFP_POLICY_MISMATCH</code></td>
+<td>marker/prefix ไม่ตรง governance state</td>
+<td>FAIL / NO_CUT</td>
+</tr>
+</tbody></table></div>
+<p>ข้อความ UI อาจแปลภาษา แต่ stable code และ severity ห้ามเปลี่ยนตาม locale</p>
+<h2>14. Tamper corpus ขั้นต่ำ</h2>
+<p>S17-5 ต้องมี negative fixtures อย่างน้อย:</p>
+<ol><li>เปลี่ยน payload 1 byte</li><li>สลับชื่อสองไฟล์แต่ใช้ hash set เดิม</li><li>missing file, extra file, duplicate ZIP entry และ case-fold collision</li><li>path traversal, absolute path, backslash, symlink และ ZIP bomb policy</li><li>size/hash/packetContentId/manifest digest ผิดทีละ field</li><li>duplicate JSON key, non-canonical number/encoding/BOM/CRLF</li><li>แก้ revision, profile ID, profile version, profile digest, exporter version/build commit หรือ schema หลัง sign</li><li>signature ขาด, bit-flip, wrong key, unknown key, revoked key และ placeholder key ว่าง</li><li><code>jobRunId</code> จาก client, malformed UUID, reuse กับ packetContentId อื่น และ idempotency conflict</li><li>revision DRAFT/FROZEN, gate FAIL, unsupported gate policy และ authoritative lookup unavailable</li><li>ลบ/แก้ <code>NOT_FOR_PRODUCTION.txt</code>, ลบ <code>NFP-</code>, หรือพยายามใช้ NFP packet เป็น production</li><li>same canonical inputs randomized order/timezone/locale แล้ว payload+manifest+packetContentId ต้องเหมือนเดิม</li><li>same content สอง accepted runs ต้อง packetContentId เดิมแต่ jobRunId ต่าง และต่างเฉพาะ run-specific allowlist</li></ol>
+<p>ทุก fixture ต้องระบุ expected stable code และพิสูจน์ว่า verifier ไม่สร้างสถานะ VERIFIED เมื่อ FAIL</p>
+<h2>15. As-built gap ณ baseline</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Target contract</th>
+<th>As-built <code>9ac7cff3</code></th>
+<th>สถานะ</th>
+</tr></thead><tbody>
+<tr>
+<td>server-owned <code>jobRunId</code></td>
+<td>client สร้าง <code>job-${Date.now()}-${random}</code></td>
+<td>GAP — S17-1/S17-4</td>
+</tr>
+<tr>
+<td>path-aware <code>packetContentId</code></td>
+<td><code>contentHash</code> hash เฉพาะ sorted file hashes ไม่รวม path</td>
+<td>GAP — rename ambiguity</td>
+</tr>
+<tr>
+<td>deterministic manifest</td>
+<td>มี <code>createdAt: new Date().toISOString()</code></td>
+<td>GAP — S17-4</td>
+</tr>
+<tr>
+<td>explicit machine profile/version/digest + released revision</td>
+<td>manifest v1 ไม่มี</td>
+<td>GAP</td>
+</tr>
+<tr>
+<td>exporter ID/version/build commit</td>
+<td>มีเพียง <code>toolVersion</code></td>
+<td>GAP</td>
+</tr>
+<tr>
+<td>mandatory signed attestation</td>
+<td>signature optional และ full trust path ยังไม่บังคับ</td>
+<td>GAP — S17-5/S17-6</td>
+</tr>
+<tr>
+<td>full verifier</td>
+<td>client verifier ตรวจ file/hash/contentHash/gate บางส่วน; server evidence เดิมตื้น</td>
+<td>GAP — S17-5</td>
+</tr>
+<tr>
+<td>NFP marker/file prefix</td>
+<td><code>NOT_FOR_PRODUCTION.txt</code> + <code>NFP-</code> มีจริง</td>
+<td>PRESENT — ต้อง preserve</td>
+</tr>
+<tr>
+<td>deterministic ZIP</td>
+<td>browser JSZip ใช้ runtime metadata/filename timestamp</td>
+<td>GAP — S17-4</td>
+</tr>
+</tbody></table></div>
+<p>ตารางนี้เป็น code-review finding ไม่ใช่ P0 closure</p>
+<h2>16. S17-3 acceptance criteria</h2>
+<p>S17-3 ปิดได้เมื่อ:</p>
+<ol><li>ฉบับ TH/EN และ HTML ตรงกัน พร้อม SHA-256 manifest ใน repo</li><li>Tech Lead, Factory Owner และ Security Owner ลง APPROVED แยกบทบาทครบ</li><li>ทุก normative field มี owner, source และ validation rule</li><li>packetContentId/jobRunId/signed identity ไม่มี circular hash หรือ run/content ambiguity</li><li>per-file format, canonical bytes, ZIP rules, NFP policy, verifier order/result codes และ tamper corpus ถูกอนุมัติ</li><li>มี implementation mapping สำหรับ S17-4 และ independent verifier assignment สำหรับ S17-5 โดย builder ไม่ approve งานตัวเอง</li><li>การเปลี่ยน normative contract หลังอนุมัติต้องเพิ่ม version และผ่าน approval matrix ใหม่</li></ol>
+<p>ก่อนครบเจ็ดข้อ สถานะคือ DRAFT และ Track B implementation ยังคงล็อก</p>
+<h2>17. Open approval questions</h2>
+<ol><li>Factory Owner ยืนยัน required payload set และ <code>kdt_mvp_v1</code> ID/version/profile digest contract หรือไม่</li><li>Tech Lead ยืนยัน JCS + 0.001 mm domain quantization และ UUID v4/idempotency semantics หรือไม่</li><li>Security Owner ยืนยัน Ed25519 domain separation, trusted key registry และ revocation behavior หรือไม่</li><li>ทั้งสามบทบาทยอมรับ determinism boundary ว่า canonical payload deterministic แต่ run-specific attestation ทำให้ outer ZIP ต่างข้าม run ได้หรือไม่</li><li>Verifier policy limits (max entries/bytes/ratio) จะตรึงค่าเท่าใดก่อน pilot</li></ol>
+<p>คำถามเหล่านี้ต้องปิดใน approval review ห้าม implement ด้วยการเดา</p>
+</main>
+</body>
+</html>

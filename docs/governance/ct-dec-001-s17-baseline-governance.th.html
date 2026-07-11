@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-001 — S17 Baseline Reconciliation</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-001 — S17 Baseline Reconciliation และ Execution Governance</h1>
+<p>วันที่มีผล: 2026-07-11 สถานะ: <strong>RECORDED — human decision</strong> ขอบเขต: MONOLITH S17 P0 closure Baseline ที่ตรึง: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ชื่อเดิมในแชต Control Tower: <code>SESSION 01A — D-1 Baseline Reconciliation</code> และ <code>AMENDMENT-01</code> อำนาจเอกสาร: มติมนุษย์; AI Control Tower และ Codex ทำหน้าที่ advisory/non-authoritative</p>
+<h2>1. Authority register</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>มติ</th>
+<th>บทบาทผู้อนุมัติ</th>
+<th>ขอบเขตอำนาจ</th>
+</tr></thead><tbody>
+<tr>
+<td>1. ปลด Track A</td>
+<td><strong>Tech Lead</strong></td>
+<td>dependency order และสิทธิ์เริ่ม implementation จาก baseline</td>
+</tr>
+<tr>
+<td>2. จัดชั้น CI E0</td>
+<td><strong>Tech Lead</strong></td>
+<td>technical evidence classification แบบ scope-limited</td>
+</tr>
+<tr>
+<td>3. คงสามสาย + separation of duties</td>
+<td><strong>Tech Lead</strong> และ <strong>Security Owner</strong> แยกบทบาท</td>
+<td>execution architecture และ independent verification</td>
+</tr>
+<tr>
+<td>4. Durable evidence archive</td>
+<td><strong>Tech Lead</strong></td>
+<td>CI evidence retention/provenance</td>
+</tr>
+<tr>
+<td>5. S17-3 approval matrix</td>
+<td><strong>Tech Lead</strong> และ <strong>Security Owner</strong> แยกบทบาท</td>
+<td>spec authority, trust boundary และ key semantics</td>
+</tr>
+</tbody></table></div>
+<p>ผู้อนุมัติคนเดียวกันถือสองบทบาทได้ แต่ record ต้องเก็บบทบาทแยกกัน การรับรองในบทบาทหนึ่งไม่ถูกนับแทนอีกบทบาทโดยอัตโนมัติ</p>
+<h2>2. ข้อเท็จจริงที่ reconcile แล้ว</h2>
+<h3>2.1 Commit delta ที่วัดซ้ำได้</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Commit range</th>
+<th>ผลวัด</th>
+<th>วิธีวัด</th>
+</tr></thead><tbody>
+<tr>
+<td><code>f9740559..9ac7cff3</code></td>
+<td><strong>26 files</strong>; ในจำนวนนี้ code/CI <strong>8 files</strong> (<code>.github/workflows</code> 1 + <code>src</code> 6 + <code>tools</code> 1)</td>
+<td><code>git diff --name-only f9740559 9ac7cff3</code> แล้วนับรายชื่อ; code/CI นับเฉพาะสาม path ที่ระบุ</td>
+</tr>
+<tr>
+<td><code>d7b1c879..9ac7cff3</code></td>
+<td><strong>31 files</strong></td>
+<td><code>git diff --name-only d7b1c879 9ac7cff3</code> แล้วนับรายชื่อ</td>
+</tr>
+</tbody></table></div>
+<p>ห้ามอ้าง “26/31 files” โดยไม่มี commit range และวิธีวัด</p>
+<h3>2.2 CI ที่ผูก baseline</h3>
+<ul><li>Main run <code>29142280872</code>: <code>verify-full</code>, success, commit SHA เต็มตรง baseline, full typecheck + automated tests <strong>4,553/4,553</strong> + build + evidence artifact</li><li>Branch run <code>29142279488</code>: success ที่ commit SHA เดียวกัน เป็น corroborating run</li><li>Main artifact <code>8245562223</code>, SHA-256 <code>6fb49466fee477b54f05c8e1d2470cacc6c83cba91e889700cc1cdde7f6886fd</code>, retention 90 วัน</li><li>Durable record: <code>docs/evidence/ci/9ac7cff3/</code></li></ul>
+<h2>3. มติที่ 1 — ปลด Track A ทันที (Tech Lead)</h2>
+<p><code>S17-1 Server-owned identity</code> → <code>S17-2 RELEASED-only invariant</code> <strong>เริ่ม implementation ได้ตั้งแต่บัดนี้</strong> โดยมีข้อบังคับ:</p>
+<ol><li>แตก clean worktree จาก exact baseline <code>9ac7cff39d02d9430879275645e377728bc0abc5</code></li><li>ห้ามใช้ worktree dirty หรือแชร์ working directory กับ Track B/Human-Ops</li><li>identity ต้องมาก่อน RELEASED invariant ตาม dependency order ใน Review §5</li><li>การอนุญาตนี้ไม่ขยายไป S17-3/4/5 และไม่ใช่ P0 closure</li></ol>
+<p>เหตุผล: identity ไม่พึ่ง Canonical Packet Spec การล็อก Track A รอ packet contract ขัด dependency order ที่อนุมัติแล้วและเผา schedule margin ซึ่งประมาณเป็นศูนย์</p>
+<p><strong>Track B ยังคงล็อก implementation ของ S17-4/S17-5</strong> จนกว่า S17-3 จะได้ approval matrix ครบ ส่วนการร่าง S17-3 เริ่มได้ทันทีในสถานะ DRAFT</p>
+<h2>4. มติที่ 2 — ถอน “missing CI E0” (Tech Lead)</h2>
+<p>สถานะที่ถูกต้องคือ:</p>
+<blockquote><p><strong>E0 CI PASS — scope-limited</strong>: full typecheck + automated tests 4,553/4,553 + build บน <code>ubuntu-latest / node v22.23.1</code> ณ <code>9ac7cff3</code>; main run <code>29142280872</code>, branch run <code>29142279488</code>, main artifact <code>8245562223</code>, retention 90 วัน</p></blockquote>
+<p>Exclusion list ต่อไปนี้เป็นส่วนหนึ่งของ claim และห้ามแยกออก:</p>
+<ol><li>Invariant สองตัวของ <code>tools/vault-builder/src/pipeline.test.ts</code> return ก่อนตรวจบน CI เมื่อไม่มี <code>_daph_extract</code>; หลักฐานยัง local-only</li><li>DB/psql tests (<code>AB-DB-01</code>) ไม่อยู่ใน workflow</li><li>E2E ไม่อยู่ใน workflow</li><li>E0 นี้ไม่พิสูจน์ deployment, operational readiness, production readiness หรือ P0 closure ใด ๆ</li></ol>
+<h2>5. มติที่ 3 — ไม่เปิด Track C สายที่สี่ (Tech Lead + Security Owner)</h2>
+<p>คง execution model <strong>สามสาย</strong> ตาม ADR-065:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>สาย</th>
+<th>ขอบเขต</th>
+</tr></thead><tbody>
+<tr>
+<td>Track A</td>
+<td>S17-1 → S17-2</td>
+</tr>
+<tr>
+<td>Track B</td>
+<td>S17-3 → S17-4 → S17-5</td>
+</tr>
+<tr>
+<td>Human/Ops</td>
+<td>custody, machine confirmation/calibration, factory slot, approver ceremony</td>
+</tr>
+</tbody></table></div>
+<p>เพิ่ม constraint เป็น amendment ของ ADR-065:</p>
+<blockquote><p><strong>S17-5 Full Verifier ต้อง implement และ review โดยฝ่ายที่อิสระจากผู้เขียน S17-3/S17-4 builder; builder ห้ามอนุมัติงานตรวจของตนเอง</strong></p></blockquote>
+<p>ความเป็นอิสระอาจจัดด้วย reviewer/บัญชี/ช่วงเวลาที่แยกจาก builder ภายในสามสายเดิม ไม่สร้าง Track C และไม่เพิ่ม execution stream โดยปริยาย</p>
+<h2>6. มติที่ 4 — Durable evidence archive (Tech Lead)</h2>
+<p>หลักฐาน CI ที่มี retention จำกัดต้องถูก archive ก่อนหมดอายุใน <code>docs/evidence/</code> อย่างน้อยประกอบด้วย:</p>
+<ul><li><code>verify-evidence.json</code> ที่ workflow สร้าง</li><li>run URL, run ID, commit, environment และวันที่</li><li>artifact ID, วันหมดอายุ และ SHA-256 digest ของ artifact ZIP</li><li>exclusion list และ evidence classification</li><li>manifest แบบ LF UTF-8 + lowercase hex</li></ul>
+<p>ไฟล์ archive ZIP ไม่จำเป็นต้อง commit ถ้า digest/provenance ถูกเก็บครบ แต่ห้ามอ้างว่า digest ถูกตรวจอิสระเมื่อค่ามาจาก GitHub artifact metadata; ต้องบอกแหล่งที่มาตรง ๆ</p>
+<h2>7. มติที่ 5 — S17-3 approval matrix (Tech Lead + Security Owner)</h2>
+<p>Canonical Packet Spec (<code>CT-DEC-002 / S17-3</code>) ต้องได้ลายเซ็นมนุษย์ครบสามบทบาทก่อนปลด S17-4/S17-5:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Approver</th>
+<th>ขอบเขตขั้นต่ำ</th>
+</tr></thead><tbody>
+<tr>
+<td>Tech Lead</td>
+<td>schema, canonicalization, determinism contract, implementation feasibility</td>
+</tr>
+<tr>
+<td>Factory Owner</td>
+<td>file contract, machine-profile binding, verifier usability, factory operating fit</td>
+</tr>
+<tr>
+<td>Security Owner</td>
+<td>signature, trust boundary, key semantics, fail-closed behavior</td>
+</tr>
+</tbody></table></div>
+<p>Security Owner ต้อง review อย่างน้อยส่วน signature/trust boundary/key semantics แต่การอนุมัติสามบทบาทเป็นคนละช่องและต้องบันทึกแยกกัน</p>
+<h2>8. Governance cleanup ที่มีผลทันที</h2>
+<ol><li>Control Tower decision namespace ใช้ <code>CT-DEC-xxx</code>; ห้ามใช้ <code>D-x</code> ซึ่งชนกับ task IDs ใน repo</li><li><code>SESSION 01A</code> ขึ้นทะเบียนเป็น <strong>CT-DEC-001</strong></li><li>ใช้คำ <strong>pinned/frozen + tamper-evident</strong>; ห้ามใช้ immutable กับ unsigned Git commit</li><li>Operational branch rule สำหรับ Track A ในรอบนี้คือ exact SHA <code>9ac7cff3</code>; ข้อนี้แทน dynamic “latest origin/main” ของ ADR-065 สำหรับ Track A รอบนี้โดยเฉพาะ</li><li>Chat transcripts ยังคงเป็น advisory provenance; durable authority อยู่ที่ record ใน repo + manifest + commit นี้</li></ol>
+<h2>9. ขอบเขตที่ไม่เปลี่ยน</h2>
+<ul><li>PRD v5.1 เป็น Target-State Canonical แต่ยังไม่ใช่ production-ready</li><li>มตินี้ไม่ปิด P0 ใด ๆ</li><li>ADR-064 ยังต้อง Product Owner + Tech Lead + Security Owner + Factory Owner ลงชื่อครบสี่บทบาท</li><li>Track B implementation ยังล็อกจน CT-DEC-002/S17-3 อนุมัติครบ</li><li><strong>ห้ามตัดชิ้นงานจริงจาก packet</strong> จนกว่า S17 ปิดและ gate ตัดจริงผ่านครบสี่เงื่อนไข</li></ul>
+<h2>10. Single next governance action</h2>
+<p>ร่าง <strong>CT-DEC-002 / S17-3 Canonical Packet Specification</strong> โดยต้องกำหนดอย่างน้อย <code>packetContentId</code>, <code>jobRunId</code>, signed identity ที่ผูก released revision + machine-profile version + exporter version + schema version, manifest per-file format, signature/trust boundary, full-verifier contract และ <code>NOT_FOR_PRODUCTION.txt</code> + <code>NFP-</code> prefix ที่มีอยู่จริงใน baseline</p>
+<p>CT-DEC-002 คงสถานะ DRAFT จน approval matrix ทั้งสามบทบาทลงชื่อครบ</p>
+</main>
+</body>
+</html>
