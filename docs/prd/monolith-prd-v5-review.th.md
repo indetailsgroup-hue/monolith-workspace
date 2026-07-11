@@ -1,6 +1,6 @@
 # รีวิว PRD v5.1 (Evidence-Control Revision) — AI Implementation Review
 
-วันที่รีวิว: 2026-07-11 (v2.1 — แก้ตาม owner meta-review รอบ 2: นำเข้า version control + ถ้อยคำ/ขอบเขต)
+วันที่รีวิว: 2026-07-11 (v2.2 — รอบ 3: evidence-tier ถูกชั้น + PRD/roadmap เข้า repo)
 ผู้รีวิว: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)
 เอกสารที่รีวิว: `monolith-complete-prd-v5.th.md` (v5.1, audit ณ commit `d7b1c879`)
@@ -69,4 +69,4 @@ ADR-064 (รับ canonical) ให้สร้าง**หลังจาก** 
 | S17 governance update | `8d42710a` |
 | P0 closure commits | **none** ณ v2.1 — ข้อค้นพบยังไม่ล้าสมัย |
 
-เอกสารรีวิวชุดนี้ (4 ไฟล์ + SHA-256 manifest) ถูกนำเข้า version control ที่ `determined-williams/docs/prd/` ตั้งแต่ v2.1 — เนื้อหาจึงตรึงเป็น immutable evidence ผ่าน git; สำเนาเดิมใน parent folder ถือเป็น superseded
+เอกสารรีวิวชุดนี้ (4 ไฟล์ + SHA-256 manifest) ถูกนำเข้า version control ที่ `determined-williams/docs/prd/` ตั้งแต่ v2.1 — **ชั้นหลักฐานที่ถูกต้อง: review = Git-pinned E3 synthesis (content-addressed/tamper-evident — commit ยังไม่ signed จึงไม่เรียก immutable); โค้ด/เทสต์ที่ review ชี้ = E0; ตัว commit = E0 สำหรับพิสูจน์ว่า "เนื้อหารีวิวนี้ถูกบันทึก" ไม่ใช่พิสูจน์ว่า "ข้อสรุปทุกข้อถูกต้อง"**; สำเนาเดิมใน parent folder ถือเป็น superseded; PRD v5 + roadmap v1 ที่ถูกรีวิวถูกนำเข้า repo เดียวกันแล้ว (v2.2)

@@ -1,6 +1,6 @@
 # PRD v5.1 Review (Evidence-Control Revision) — AI Implementation Review
 
-Review date: 2026-07-11 (v2.1 — revised per owner meta-review round 2: version-controlled + wording/scope)
+Review date: 2026-07-11 (v2.2 — round 3: correct evidence tiering + PRD/roadmap into repo)
 Reviewer: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)
 Document under review: `monolith-complete-prd-v5.th.md` (v5.1, audited at commit `d7b1c879`)
@@ -69,4 +69,4 @@ ADR-064 (canonical acceptance) should be created **after** the Product Owner, Te
 | S17 governance update | `8d42710a` |
 | P0 closure commits | **none** as of v2.1 — findings remain current |
 
-This review set (4 files + SHA-256 manifest) is under version control at `determined-williams/docs/prd/` as of v2.1, pinning the content as immutable evidence via git; the copies in the parent folder are superseded.
+This review set (4 files + SHA-256 manifest) is under version control at `determined-williams/docs/prd/` as of v2.1 — **correct evidence tiering: the review = Git-pinned E3 synthesis (content-addressed/tamper-evident — commits are unsigned, so not "immutable"); the code/tests it cites = E0; the commit itself is E0 for proving "this review content was recorded", not for proving "every conclusion is correct"**; parent-folder copies are superseded; the reviewed PRD v5 + roadmap v1 are now in the same repo (v2.2).

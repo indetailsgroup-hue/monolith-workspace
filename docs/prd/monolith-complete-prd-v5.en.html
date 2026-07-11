@@ -1,0 +1,2056 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Complete PRD v5.1</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1240px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22;letter-spacing:0}h1{margin:0 0 18px;font-size:clamp(2rem,4vw,3.35rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.52rem}h3{margin-top:28px;font-size:1.16rem}p{margin:13px 0}a{color:#0f5f99;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px;border-radius:8px;background:#17202a;color:#f4f7fb;line-height:1.45}pre code{background:transparent;color:inherit;padding:0;overflow-wrap:normal}ul,ol{padding-left:1.35rem}li{margin:6px 0}.table-wrap{overflow-x:auto;margin:18px 0 24px;border:1px solid var(--line);border-radius:8px}table{width:100%;min-width:820px;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-weight:760}tr:last-child td{border-bottom:0}@media(max-width:760px){main{padding:30px 20px 56px}table{min-width:720px}}@media print{body{background:#fff}main{max-width:none;padding:20px;box-shadow:none}.table-wrap{overflow:visible}table{min-width:0;font-size:9pt}a{color:inherit}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Complete PRD</h1>
+<p>Document date: 2026-07-10<br>Language edition: EN<br>Document edition: 5.1 (Evidence-Control Revision)<br>Product: MONOLITH Manufacturing OS / MONOLITH Operating System<br>Scope: Canonical PRD merged from the detailed MONOLITH PRD v3, the reviewed PRD v4 program-execution additions, Coohom/front-door research, ERP research, SpatialLM discussion, manufacturing truth doctrine, and field-execution architecture.</p>
+<h2>1. Executive Summary</h2>
+<p>MONOLITH is not a generic interior design application and not a Coohom+DAPH integration. MONOLITH is a manufacturing-safe operating system for custom interior and built-in furniture businesses where a design must become a verified factory packet and a real installed job.</p>
+<p>The product mission is:</p>
+<blockquote>
+<p>Make the first 10 minutes feel fast, visual, and confidence-building; make the last mile deterministic, gated, traceable, and field-verifiable.</p>
+</blockquote>
+<p>The permanent center of gravity is <strong>manufacturing truth + field execution</strong>. Front-door AI, rendering, catalogs, SpatialLM, ERP, LINE, and customer approvals are valuable only when they strengthen the verified chain:</p>
+<pre><code class="language-text">Lead / brief / site evidence
+  -&gt; Concept Sandbox
+  -&gt; Spatial Evidence + Capture Spine
+  -&gt; Parametric Contract
+  -&gt; Safety Gate
+  -&gt; Released Spec
+  -&gt; Factory Packet / CNC Manifest
+  -&gt; Work Order / Field Execution
+  -&gt; Customer Acceptance / Audit / Job Cost
+</code></pre>
+<p>The governing doctrine is:</p>
+<p><strong>Design is free. Manufacturing is deterministic. Field reality closes the loop.</strong></p>
+<h2>2. Strategic Positioning</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Product frame</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>What MONOLITH is</td>
+<td>A design-to-factory-to-field operating system for custom built-in furniture and interior work</td>
+</tr>
+<tr>
+<td>What MONOLITH is not</td>
+<td>A generic room planner, a decorative render tool, a generic ERP, or a Coohom clone</td>
+</tr>
+<tr>
+<td>What MONOLITH learns from Coohom</td>
+<td>Fast entry, editable scene, catalog browsing, visual confidence, presentation polish</td>
+</tr>
+<tr>
+<td>What MONOLITH must keep unique</td>
+<td>Parametric Contract, Material Stack, Connector OS, Safety Gate, signed Factory Packet, LINE-native field proof, audit, Thai operating context</td>
+</tr>
+<tr>
+<td>What SpatialLM is used for</td>
+<td>Spatial Evidence Compiler: parse point clouds/video/RGB-D/LiDAR into candidate walls/openings/bounding boxes</td>
+</tr>
+<tr>
+<td>What SpatialLM is not used for</td>
+<td>It must not create CNC paths, mutate release state, or replace Safety Gate</td>
+</tr>
+<tr>
+<td>What ERP ideas are used for</td>
+<td>Business backbone patterns: document states, item master, BOM snapshot, WIP, job cost, stock, PO, ledger</td>
+</tr>
+<tr>
+<td>What ERP must not do</td>
+<td>ERP must not edit manufacturing geometry, drill maps, CNC, or release state directly</td>
+</tr>
+</tbody></table></div>
+<h2>3. Evidence Boundary</h2>
+<p>This PRD separates:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Evidence class</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Existing system evidence</td>
+<td>Current local MONOLITH PRD, codebase docs, migrations, API docs, Connector OS docs, Safety Gate docs, LINE architecture, Customer Journey, Requirements Overview</td>
+</tr>
+<tr>
+<td>Research-backed benchmark</td>
+<td>Coohom public pages/research, NIST AI RMF, ISO 9241-210, ISO 23247, Microsoft Human-AI guidelines, SpatialLM paper</td>
+</tr>
+<tr>
+<td>Product requirement</td>
+<td>Target behavior to build or formalize in MONOLITH</td>
+</tr>
+<tr>
+<td>Roadmap item</td>
+<td>Future implementation, not a current production claim</td>
+</tr>
+</tbody></table></div>
+<p>No requirement in this PRD may be used to imply that a module is production-ready unless it is backed by code, tests, deployment evidence, and operational proof.</p>
+<p>This edition removes non-resolvable generated citation markers and uses the Evidence Tier model, Source Register, Claim Ledger, and As-Built Status at the end of the document as its traceability system. If a requirement depends on external research, the implementing team must record the source ID and exact source link in the relevant epic or design spec before development starts.</p>
+<h2>4. Product Vision</h2>
+<p>MONOLITH should become the business operating spine for manufacturing-first interior/furniture work:</p>
+<ol>
+<li>Capture messy human inputs from LINE, site surveys, photos, documents, measurements, and design briefs.</li>
+<li>Turn inputs into structured evidence through Capture Spine and Spatial Evidence Compiler.</li>
+<li>Let designers explore quickly in a Concept Sandbox.</li>
+<li>Convert only verified intent into Parametric Contract objects.</li>
+<li>Validate production readiness through Safety Gate.</li>
+<li>Release deterministic factory packets with signatures, manifests, and offline verification.</li>
+<li>Execute work in the factory and field through work orders, room/lane tasks, proofs, issues, and acceptance.</li>
+<li>Feed actual cost, defects, rework, and field deviations back into management dashboards.</li>
+</ol>
+<p>The ideal board-level promise:</p>
+<blockquote>
+<p>MONOLITH is for businesses that lose money when render, measurement, cutlist, purchase order, CNC file, installation proof, and customer approval drift apart.</p>
+</blockquote>
+<h2>5. Business Goals and Outcomes</h2>
+<h3>5.1 Strategic Goals</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Decision meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reduce design-to-factory mismatch</td>
+<td>Fewer rework loops caused by visual design, cabinet structure, material stack, connector rules, cutlist, CNC, and factory packet drifting apart</td>
+</tr>
+<tr>
+<td>Reduce field uncertainty</td>
+<td>Site reality, installation issues, proof photos, room/lane status, and customer acceptance become governed evidence rather than chat noise</td>
+</tr>
+<tr>
+<td>Improve approval integrity</td>
+<td>Customer, designer lead, production, finance, and executive approvals bind to revision, scope, timestamp, channel, and accountable owner</td>
+</tr>
+<tr>
+<td>Build an ERP-ready backbone without losing manufacturing truth</td>
+<td>Item master, BOM snapshot, stock, PO, WIP, job cost, and ledger flows receive truth from Released Spec and cannot overwrite production geometry</td>
+</tr>
+<tr>
+<td>Preserve speed at the front door</td>
+<td>Intake, concept, visual confidence, catalog browsing, and approval packet creation are fast without creating unsafe production shortcuts</td>
+</tr>
+</tbody></table></div>
+<h3>5.2 Measurable Business Outcomes</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Outcome cluster</th>
+<th>Metric examples</th>
+<th>Initial owner</th>
+<th>Measurement rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front-door speed</td>
+<td>Time to first useful concept, intake-to-qualified-brief time, approval packet preparation time</td>
+<td>Product + Sales Ops</td>
+<td>Baseline during first 30-60 days, then set target by project type</td>
+</tr>
+<tr>
+<td>Manufacturing quality</td>
+<td>First-pass Safety Gate pass rate, factory packet rejection rate, CNC/post error rate, rework/scrap cost</td>
+<td>Design Lead + Factory Lead</td>
+<td>Measure by released package and machine profile version</td>
+</tr>
+<tr>
+<td>Field execution</td>
+<td>Room/lane completion accuracy, issue aging, punch-list age, close-house cycle time</td>
+<td>Operations Lead</td>
+<td>Measure by project, room, lane, and installation phase</td>
+</tr>
+<tr>
+<td>Financial control</td>
+<td>Job cost variance, committed-vs-actual variance, capture-to-post lag, WIP accuracy</td>
+<td>Finance Owner</td>
+<td>Measure from Released Spec snapshot through actual cost and ledger posting</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Waiver count, escalation count, approval SLA, audit completeness</td>
+<td>Executive Owner</td>
+<td>Review weekly during pilot and monthly after stabilization</td>
+</tr>
+</tbody></table></div>
+<h2>6. Non-Goals</h2>
+<p>MONOLITH must explicitly avoid attractive work that weakens the operating spine:</p>
+<ul>
+<li>It is not a generic decorative room planner.</li>
+<li>It is not a Coohom clone or a dependency on Coohom.</li>
+<li>It is not a big-bang replacement for every ERP/accounting workflow on day one.</li>
+<li>It is not a public multi-tenant SaaS before the core truth chain, privacy model, and operational controls are proven.</li>
+<li>It is not an autonomous AI production-release system.</li>
+<li>It is not a SpatialLM-driven CNC generator.</li>
+<li>It is not a renderer that pretends visual confidence is manufacturing truth.</li>
+</ul>
+<h2>7. Assumptions and Constraints</h2>
+<h3>7.1 Assumptions</h3>
+<ul>
+<li>Teams will accept stricter workflows when the front door is faster and field work has lower friction.</li>
+<li>The first machine profile set is limited, versioned, and has a named owner.</li>
+<li>Released Spec is the starting point for BOM snapshot, work order, procurement, and job-cost traceability.</li>
+<li>Executives prefer phased rollout and coexistence over a big-bang rewrite.</li>
+<li>LINE/PWA surfaces remain important because customers and field teams should not need deep system training.</li>
+</ul>
+<h3>7.2 Constraints</h3>
+<ul>
+<li>Sensitive data must stay inside a controlled boundary when required by PDPA, customer confidentiality, or operational policy.</li>
+<li>SpatialLM starts as sandbox/prototype evidence and cannot touch release, CNC, or accounting paths.</li>
+<li>Accounting posting must be co-designed with finance owners; product or AI cannot decide ledger policy alone.</li>
+<li>Any workflow that can affect production, payment, customer acceptance, or factory output must have authorization, audit, rollback or correction path, and owner.</li>
+<li>Offline or degraded-mode behavior is required for factory packet verification and field proof capture.</li>
+</ul>
+<h2>8. Core Problems</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>MONOLITH answer</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Beautiful designs can be unbuildable</td>
+<td>Visual output cannot become production truth until converted and gated</td>
+</tr>
+<tr>
+<td>Site measurements are messy</td>
+<td>Site survey capture + Spatial Evidence Compiler + human verification</td>
+</tr>
+<tr>
+<td>AI can hallucinate dimensions or geometry</td>
+<td>AI is a parser/advisor, not a release authority</td>
+</tr>
+<tr>
+<td>CNC files often lack traceability</td>
+<td>Factory Packet, manifest, checksums, signed receipt, offline verify</td>
+</tr>
+<tr>
+<td>Work handoff is fragmented</td>
+<td>Canonical 8-step workflow with RACI, approvals, SLA, escalation</td>
+</tr>
+<tr>
+<td>Field proof lives in chat</td>
+<td>LINE group evidence is captured, classified, verified, linked to Work_Item</td>
+</tr>
+<tr>
+<td>ERP data can drift from production data</td>
+<td>ERP Backbone receives snapshots from Released Spec, never free-edits manufacturing truth</td>
+</tr>
+<tr>
+<td>Customer approvals can be ambiguous</td>
+<td>Approval Packet binds scope, render, revision, timestamp, identity, and channel</td>
+</tr>
+<tr>
+<td>Thai privacy/accounting context is special</td>
+<td>PDPA-by-architecture, self-host OCR/LLM, Thai VAT/WHT/eTax direction, LINE-native UX</td>
+</tr>
+</tbody></table></div>
+<h2>9. Guiding Principles</h2>
+<ol>
+<li><strong>Manufacturing Truth Wins</strong>: production output comes from Parametric Contract, Safety Gate, Released Spec, Factory Packet, OperationGraph, and manifest.</li>
+<li><strong>Visual Is Not Truth</strong>: renders and concept scenes are communication artifacts until converted.</li>
+<li><strong>Spatial AI Is Evidence, Not Authority</strong>: SpatialLM may parse the world; it must not decide release.</li>
+<li><strong>Human Verification Is Mandatory</strong>: capture, spatial interpretation, accounting, approval, and release all require accountable humans at critical gates.</li>
+<li><strong>No Silent Drift</strong>: every change after approval creates revision, reason, and audit.</li>
+<li><strong>Gate Failure Is Product Value</strong>: the system should explain why it blocks and how to fix safely.</li>
+<li><strong>LINE Is the Human Surface</strong>: customers, field teams, and approvals should work through familiar channels with strict back-end controls.</li>
+<li><strong>ERP Is a Business Layer</strong>: ERP backbone manages job cost, WIP, stock, PO, invoices, and ledger; it does not own CNC truth.</li>
+<li><strong>PDPA by Architecture</strong>: sensitive data stays controlled, redacted, and purpose-bound.</li>
+<li><strong>Append-Only Audit</strong>: approvals, capture decisions, release events, packet signatures, and field proof must be immutable.</li>
+</ol>
+<h2>10. Personas and Operating Roles</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Core job</th>
+<th>Main surfaces</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Executive Owner</td>
+<td>Decide high-risk approvals, budget exceptions, roadmap, operational KPIs</td>
+<td>Executive dashboard, escalation feed</td>
+</tr>
+<tr>
+<td>Sales / Engagement</td>
+<td>Capture lead, qualify customer, create requirement record</td>
+<td>LINE OA, PWA, CRM-lite intake</td>
+</tr>
+<tr>
+<td>Surveyor</td>
+<td>Capture site reality: dimensions, openings, MEP, photos, constraints</td>
+<td>Mobile/PWA, Spatial Survey, Capture Spine</td>
+</tr>
+<tr>
+<td>Designer</td>
+<td>Create concept, convert to parametric design, resolve gate blockers</td>
+<td>Designer Workspace, Concept Sandbox, Truth HUD</td>
+</tr>
+<tr>
+<td>Designer Lead</td>
+<td>Approve design gate, freeze/release spec, handle critical revisions</td>
+<td>Gate panel, Approval Packet, release controls</td>
+</tr>
+<tr>
+<td>3D Visualizer</td>
+<td>Prepare presentation render/deck while preserving revision truth</td>
+<td>Render deck, client view</td>
+</tr>
+<tr>
+<td>Production Planner</td>
+<td>Convert Released Spec to BOM, routing, schedule, work order</td>
+<td>ERP Backbone, Factory Packet viewer</td>
+</tr>
+<tr>
+<td>Factory Operator</td>
+<td>Execute packet, verify files, operate CNC/post outputs</td>
+<td>Factory UI, offline receipt verifier</td>
+</tr>
+<tr>
+<td>QA</td>
+<td>Validate output, capture defects/rework, link NCR to packet/spec</td>
+<td>QC capture, NCR dashboard</td>
+</tr>
+<tr>
+<td>Installation Team Lead</td>
+<td>Start T0, coordinate rooms/lanes, close house, request customer acceptance</td>
+<td>LINE group, Installation PWA</td>
+</tr>
+<tr>
+<td>Installation Crew</td>
+<td>Execute tasks, upload proof, report issues with minimal friction</td>
+<td>LINE group, mobile checklist</td>
+</tr>
+<tr>
+<td>Accountant / Purchasing</td>
+<td>Verify documents, post ledger, manage VAT/WHT, PO, stock, job cost</td>
+<td>Accounting module, Capture Spine</td>
+</tr>
+<tr>
+<td>Finance Policy Owner</td>
+<td>Own VAT/WHT/eTax, posting thresholds, approval limits, and accounting coexistence rules</td>
+<td>Finance policy console, ERP Backbone, escalation queue</td>
+</tr>
+<tr>
+<td>Data Steward</td>
+<td>Own item master, certified catalog, mapping integrity, data naming, and trust-tier hygiene</td>
+<td>Catalog admin, object registry, audit dashboard</td>
+</tr>
+<tr>
+<td>Customer</td>
+<td>Approve design and installation without system training</td>
+<td>LINE Flex, web fallback, curated client view</td>
+</tr>
+<tr>
+<td>AI Agent / MCP Client</td>
+<td>Read, summarize, propose, route, and prepare actions under governance</td>
+<td>MCP tools, pending invocation queue</td>
+</tr>
+</tbody></table></div>
+<h2>11. End-to-End Customer Journey</h2>
+<p>The canonical journey is:</p>
+<pre><code class="language-text">Ad / website
+  -&gt; Add LINE OA
+  -&gt; Sales conversation
+  -&gt; Customer requirement capture
+  -&gt; Sale
+  -&gt; Area Measurement
+  -&gt; Designer / G1
+  -&gt; 3D Presentation / G2
+  -&gt; Production Planning / G4
+  -&gt; 3D Final / G3
+  -&gt; Factory
+  -&gt; Installation
+  -&gt; Customer acceptance
+  -&gt; Closeout / warranty / analytics
+</code></pre>
+<h3>Customer-Facing Requirements</h3>
+<ul>
+<li>The customer should not need a MONOLITH account for approvals.</li>
+<li>The customer receives curated updates, not internal operational noise.</li>
+<li>The customer approves through LINE Flex or a short-lived web fallback link.</li>
+<li>Customer approval binds revision, scope, timestamp, and channel.</li>
+<li>Customer-requested changes after a lock create revision/requote workflow.</li>
+</ul>
+<h3>Internal Requirements</h3>
+<ul>
+<li>Every step has RACI, owner, approver, SLA, status, and audit.</li>
+<li>Steps cannot be skipped without allowed transition and audit reason.</li>
+<li>G1/G2/G3/G4 locks prevent silent mutation of already approved scope.</li>
+<li>RPN/budget/critical risk escalates to executive owner.</li>
+<li>Quiet hours and digest reduce notification noise.</li>
+</ul>
+<h2>12. Product Architecture</h2>
+<pre><code class="language-text">MONOLITH Front Door
+  Intake Router · Concept Sandbox · Render Deck · Approval Packet
+
+Spatial Evidence + Capture Layer
+  SpatialLM sandbox · site survey · OCR · verify · evidence graph
+
+Designer Workspace
+  3D viewport · Designer Intent · Parametric Contract · Truth HUD
+
+Truth Layer
+  Material Stack · Connector OS · Drill Map · Safety Gate · Released Spec
+
+Manufacturing Layer
+  Factory Packet · OperationGraph · DXF/G-code/MPR/CIX/XXL · signed receipt
+
+ERP Backbone
+  Item master · BOM snapshot · routing · work order · stock · PO · job cost · ledger
+
+Field Layer
+  Installation project · rooms · lanes · LINE groups · T0 · proof · issue · acceptance
+
+Governance Layer
+  IAM · RLS · MCP · audit · PDPA · approvals · D2 autonomy ladder
+</code></pre>
+<h2>13. Core Module Outcomes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Module group</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Intake Router / Concept Sandbox</td>
+<td>Start work quickly without pretending early visual exploration is production truth</td>
+</tr>
+<tr>
+<td>Spatial Evidence / Capture Spine</td>
+<td>Convert messy site and document evidence into verifiable records with provenance</td>
+</tr>
+<tr>
+<td>Designer Workspace / Parametric Contract</td>
+<td>Turn design intent into candidate manufacturing truth that can be checked</td>
+</tr>
+<tr>
+<td>Material Stack / Connector OS / Safety Gate</td>
+<td>Convert design into deterministic manufacturing decisions and explain blockers</td>
+</tr>
+<tr>
+<td>Released Spec / Factory Packet / Export</td>
+<td>Produce signed, repeatable, offline-verifiable factory packets</td>
+</tr>
+<tr>
+<td>ERP Backbone</td>
+<td>Convert released demand into business control: BOM snapshot, routing, WIP, procurement, stock, job cost, and ledger</td>
+</tr>
+<tr>
+<td>Field Layer</td>
+<td>Close the loop with installed reality, issue proof, punch list, customer acceptance, and field variance</td>
+</tr>
+<tr>
+<td>Governance / MCP</td>
+<td>Let automation help without losing authorization, audit, data minimization, or human accountability</td>
+</tr>
+</tbody></table></div>
+<h2>14. Functional Requirements</h2>
+<h3>FR-01 Front Door Intake Router</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Convert all first-touch inputs into the correct governed lane.</p>
+<p>Inputs:</p>
+<ul>
+<li>Prompt or design brief</li>
+<li>Floor plan image/PDF/DWG/DXF where supported</li>
+<li>Room/site photo</li>
+<li>Walkthrough video or RGB-D/LiDAR scan</li>
+<li>LINE message or customer requirement</li>
+<li>Existing project/job</li>
+<li>Manual template/module start</li>
+</ul>
+<p>The router must classify input into:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Meaning</th>
+<th>Allowed next step</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Concept</td>
+<td>mood, layout, visual idea</td>
+<td>Concept Sandbox</td>
+</tr>
+<tr>
+<td>Site Evidence</td>
+<td>measurement, photo, scan, site condition</td>
+<td>Spatial Evidence + human verification</td>
+</tr>
+<tr>
+<td>Production Intent</td>
+<td>cabinet/module/material/hardware request</td>
+<td>Parametric Contract candidate</td>
+</tr>
+<tr>
+<td>Business Evidence</td>
+<td>quote, receipt, PO, issue, approval</td>
+<td>Capture Spine document workflow</td>
+</tr>
+</tbody></table></div>
+<p>Acceptance criteria:</p>
+<ul>
+<li>No intake creates production data directly.</li>
+<li>Every intake has source, user, timestamp, confidence/provenance where applicable.</li>
+<li>Low-confidence or ambiguous intake requires human review.</li>
+</ul>
+<h3>FR-02 Concept Sandbox</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Give Coohom-like first-start speed without corrupting manufacturing truth.</p>
+<p>Capabilities:</p>
+<ul>
+<li>AI-assisted layout/styling alternatives</li>
+<li>Mood/material exploration</li>
+<li>Drag/drop modules and decorative assets</li>
+<li>Editable scene graph</li>
+<li>Render preview and client presentation draft</li>
+<li>&quot;Convert to production candidate&quot; workflow</li>
+</ul>
+<p>Constraints:</p>
+<ul>
+<li>Sandbox cannot create BOM, PO, cutlist, CNC, Factory Packet, or release state.</li>
+<li>Sandbox data is marked non-manufacturing truth.</li>
+<li>Every conversion produces a diff and unknowns list.</li>
+</ul>
+<h3>FR-03 Spatial Evidence Compiler</h3>
+<p><strong>Priority:</strong> P0 for sandbox prototype, P1 for production workflow<br><strong>Purpose:</strong> Use SpatialLM-like technology to read spatial reality, not to judge manufacturing.</p>
+<p>Input candidates:</p>
+<ul>
+<li>Point cloud</li>
+<li>RGB-D/LiDAR scan</li>
+<li>Mobile walkthrough video processed into point cloud</li>
+<li>Existing concept scene converted to geometry for checking</li>
+</ul>
+<p>Output candidates:</p>
+<ul>
+<li>Walls, doors, windows</li>
+<li>3D oriented bounding boxes</li>
+<li>Object category and orientation</li>
+<li>Room boundary / opening constraints</li>
+<li>Clearance and collision hints</li>
+</ul>
+<p>Governance:</p>
+<ul>
+<li>Spatial output is candidate evidence only.</li>
+<li>Human verification is required before commit to SiteSurveyZone or Parametric Contract.</li>
+<li>No direct path to CNC, drill map, Factory Packet, RELEASED state, or accounting posting.</li>
+<li>The module must log source, model version, confidence, verifier, and final accepted values.</li>
+</ul>
+<p>Phase 1 acceptance:</p>
+<ul>
+<li>Process 1-2 pilot rooms.</li>
+<li>Generate walls/openings/large-object bounding boxes.</li>
+<li>Provide overlay review UI.</li>
+<li>Commit only verified site constraints.</li>
+<li>Measure survey/recode time and spatial-error detection.</li>
+</ul>
+<h3>FR-04 Capture Spine</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Convert messy evidence into structured, verified, auditable records.</p>
+<p>Capture types include:</p>
+<ul>
+<li>customer_requirement</li>
+<li>site_survey</li>
+<li>spec_draft</li>
+<li>installation_proof</li>
+<li>qc_capture</li>
+<li>expense_document</li>
+<li>material_receipt</li>
+<li>field_purchase_request</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>proposed -&gt; approved/rejected -&gt; emitted -&gt; superseded lifecycle</li>
+<li>No guessed placeholder values.</li>
+<li>OCR/AI output is draft until human verified.</li>
+<li>Fraud flags warn; they do not silently reject unless policy says so.</li>
+<li>Commit adapters write only to allowed targets.</li>
+</ul>
+<h3>FR-05 Designer Workspace</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Provide the main production-aware design surface.</p>
+<p>Required surfaces:</p>
+<ul>
+<li>Left: Designer Intent panel</li>
+<li>Center: 2D/3D viewport with view modes</li>
+<li>Right: Parametric Contract panel</li>
+<li>Truth HUD visible in design context</li>
+</ul>
+<p>Required capabilities:</p>
+<ul>
+<li>Parametric cabinet/module modeling</li>
+<li>Material stack selection</li>
+<li>Hardware selection and preview</li>
+<li>X-Ray drill map view</li>
+<li>measurement and snap tools</li>
+<li>project save/version lineage</li>
+<li>gate status visible during design</li>
+</ul>
+<h3>FR-06 Parametric Contract</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Become the candidate manufacturing truth.</p>
+<p>Must define:</p>
+<ul>
+<li>cabinet/module identity</li>
+<li>dimensions and tolerances</li>
+<li>panel roles and quantities</li>
+<li>material stack and edge banding</li>
+<li>hardware/connector rules</li>
+<li>site constraints</li>
+<li>revision state</li>
+<li>linked concept/evidence sources</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>Contract mutation after approval requires revision reason.</li>
+<li>Contract cannot be generated from concept without conversion workflow.</li>
+<li>Contract cannot release without Safety Gate.</li>
+</ul>
+<h3>FR-07 Catalog Trust Tiers</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Allow fast browsing without contaminating production.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Example</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Decorative</td>
+<td>sofa, lamp, vase</td>
+<td>render/presentation only</td>
+</tr>
+<tr>
+<td>Spec-bound</td>
+<td>finish, paint, fixture SKU</td>
+<td>proposal/spec, no CNC</td>
+</tr>
+<tr>
+<td>Production-bound</td>
+<td>board, edge band, hinge, rail</td>
+<td>BOM/cost/gate candidate</td>
+</tr>
+<tr>
+<td>Certified</td>
+<td>verified material/hardware/machine profile</td>
+<td>Factory Packet/CNC eligible</td>
+</tr>
+</tbody></table></div>
+<p>Acceptance:</p>
+<ul>
+<li>Decorative assets cannot be converted to production items without explicit mapping.</li>
+<li>Certified assets carry version, supplier, spec, and approval owner.</li>
+</ul>
+<h3>FR-08 Material Stack + Connector OS</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Compile furniture hardware into deterministic manufacturing instructions.</p>
+<p>Requirements:</p>
+<ul>
+<li>Separate finished visual envelope from production core drilling.</li>
+<li>Support core vs surface vs glue vs edge banding thickness.</li>
+<li>Support DRILL_ON_CORE and DRILL_ON_FINISHED modes.</li>
+<li>Compile hardware specs through Selection -&gt; Placer -&gt; Synthesis -&gt; Emission.</li>
+<li>Emit OperationGraph metadata for pair, role, frame, connector, feature.</li>
+<li>Enforce System 32 and Connector OS rules through Gate.</li>
+</ul>
+<h3>FR-09 Safety Gate and Release State</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Be the manufacturing authority.</p>
+<p>Release states:</p>
+<pre><code class="language-text">DRAFT -&gt; FROZEN -&gt; GATED -&gt; RELEASED -&gt; EXPORTED
+</code></pre>
+<p>Gate must validate:</p>
+<ul>
+<li>geometry</li>
+<li>panel dimensions</li>
+<li>connector pair integrity</li>
+<li>coaxial/axis alignment</li>
+<li>arrow orientation</li>
+<li>clearance</li>
+<li>material stack consistency</li>
+<li>packet validity</li>
+<li>machine/post compatibility</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>BLOCKER prevents release/export.</li>
+<li>WARNING may be waived only with role, reason, and audit.</li>
+<li>Auto-fix patches must be deterministic.</li>
+<li>Export from non-released state is prohibited except explicitly allowed simulation outputs.</li>
+</ul>
+<h3>FR-10 Approval Packet</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Make approvals legally and operationally clear.</p>
+<p>Approval packet includes:</p>
+<ul>
+<li>render/image set</li>
+<li>scope summary</li>
+<li>room/lane/module list</li>
+<li>material/hardware summary</li>
+<li>exclusions and assumptions</li>
+<li>revision ID</li>
+<li>gate status</li>
+<li>price/variation status if available</li>
+<li>approver identity, timestamp, channel</li>
+</ul>
+<p>Gate locks:</p>
+<ul>
+<li>G1 concept/mood</li>
+<li>G2 layout/presentation</li>
+<li>G3 final materials/render</li>
+<li>G4 production planning/release</li>
+</ul>
+<h3>FR-11 Factory Packet and Multi-Machine Export</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Turn released designs into verifiable manufacturing packages.</p>
+<p>Required outputs:</p>
+<ul>
+<li>Factory Packet ZIP</li>
+<li>drillMap.json</li>
+<li>connectors.json</li>
+<li>cutList.json</li>
+<li>gateResult.json</li>
+<li>OperationGraph</li>
+<li>CNC/DXF files</li>
+<li>manifest with checksums</li>
+<li>signed receipt</li>
+</ul>
+<p>Machine outputs:</p>
+<ul>
+<li>DXF R12</li>
+<li>Generic/FANUC-style G-code fallback</li>
+<li>MPR for Homag/Weeke</li>
+<li>CIX for Biesse</li>
+<li>XXL for SCM/Morbidelli</li>
+<li>future formats behind post-processor profiles</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>Output is deterministic for same released input.</li>
+<li>Packet can be verified offline.</li>
+<li>Manifest or signature mismatch blocks trust.</li>
+</ul>
+<h3>FR-12 ERP Backbone</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> Manage business operations around manufacturing truth.</p>
+<p>Core objects:</p>
+<ul>
+<li>Party</li>
+<li>Project/Job</li>
+<li>Item Master</li>
+<li>BOM Snapshot</li>
+<li>Routing/Operation</li>
+<li>Work Order / Job Card</li>
+<li>Stock Move / Reservation</li>
+<li>Purchase Request / PO / Receipt</li>
+<li>Quality Inspection / NCR</li>
+<li>Invoice / Payment / Journal Entry</li>
+<li>Approval / Audit Event</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>BOM Snapshot comes from Released Spec.</li>
+<li>Material demand comes only from Released Spec or approved change.</li>
+<li>ERP cannot directly edit geometry, drill maps, CNC, or release state.</li>
+<li>Job cost links estimate, planned cost, committed cost, actual cost, rework, and WIP.</li>
+</ul>
+<h3>FR-13 LINE-Native Engagement</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> Make the human workflow easy while keeping back-end governance strict.</p>
+<p>Requirements:</p>
+<ul>
+<li>HMAC verification for webhook.</li>
+<li>Idempotency for all inbound events.</li>
+<li>Pre-approved outbound templates only; no free-text LLM.</li>
+<li>Customer is not a DB principal.</li>
+<li>Staff identity binding is deterministic.</li>
+<li>LINE group membership is not authorization.</li>
+<li>Customer group receives curated approved updates only.</li>
+<li>Internal proof is never auto-forwarded to customer group.</li>
+</ul>
+<h3>FR-14 Field Execution and Installation</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> Close the loop from Released Spec to installed reality.</p>
+<p>Requirements:</p>
+<ul>
+<li>Installation project maps to house -&gt; rooms -&gt; lanes.</li>
+<li>T0 readiness checklist before start.</li>
+<li>Work items per room/lane/person.</li>
+<li>Photo proof and issue capture through LINE/PWA.</li>
+<li>Punch list and NCR support.</li>
+<li>Close-house action only by authorized Installation Team Lead.</li>
+<li>Customer acceptance through LINE Flex or web fallback.</li>
+<li>Field evidence links to Released Spec and Factory Packet.</li>
+</ul>
+<h3>FR-15 Accounting, Procurement, and Job Costing</h3>
+<p><strong>Priority:</strong> P1<br><strong>Purpose:</strong> Make financial truth follow production truth.</p>
+<p>Requirements:</p>
+<ul>
+<li>Double-entry ledger.</li>
+<li>Multi-book support.</li>
+<li>VAT/WHT logic for Thai context.</li>
+<li>PO/receipt/stock/issue flow.</li>
+<li>Actual purchase price and moving average.</li>
+<li>Job cost by project/package.</li>
+<li>WIP and billing milestone visibility.</li>
+<li>Capture Spine integration for expense/material documents.</li>
+</ul>
+<h3>FR-16 MCP and AI Copilot</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> Allow AI to assist without bypassing governance.</p>
+<p>Requirements:</p>
+<ul>
+<li>Tool catalog by role and site.</li>
+<li>Read tools may execute under policy.</li>
+<li>Write/Approval tools create Pending Invocation.</li>
+<li>Human approval required for risky actions.</li>
+<li>Data minimization and PII redaction at MCP boundary.</li>
+<li>All invocations are audited.</li>
+<li>Untrusted content is treated as data, not command.</li>
+</ul>
+<h3>FR-17 Executive Dashboard and Analytics</h3>
+<p><strong>Priority:</strong> P1<br><strong>Purpose:</strong> Make the system governable by management.</p>
+<p>Dashboard categories:</p>
+<ul>
+<li>sales conversion</li>
+<li>design approval SLA</li>
+<li>gate pass/fail rate</li>
+<li>concept-to-contract conversion</li>
+<li>survey-to-verified-record lag</li>
+<li>factory packet rejection</li>
+<li>CNC/post errors</li>
+<li>material variance</li>
+<li>rework/scrap</li>
+<li>field issue rate</li>
+<li>punch-list age</li>
+<li>job cost variance</li>
+<li>WIP/cash forecast</li>
+</ul>
+<h2>15. Cross-Feature Governance Rules</h2>
+<h3>15.1 Provenance Required</h3>
+<p>Every object created by automation, AI, OCR, SpatialLM, import, customer channel, or external system must carry at least source, timestamp, processor/model version where applicable, verifier status, and final accountable owner before it can become committed truth.</p>
+<h3>15.2 Escalation by Risk</h3>
+<p>Every gate, approval, waiver, posting, export, or closeout action above a configured risk threshold must route to a higher-authority role. High-risk actions must not default to auto-pass.</p>
+<h3>15.3 Reconciliation Loop</h3>
+<p>Field variance, NCR, rework, scrap, supplier variance, and accounting variance must feed back into rule improvement, catalog certification, gate policy, machine profile governance, and executive dashboards. Incidents cannot end as isolated chat messages.</p>
+<h3>15.4 No Silent Authority Transfer</h3>
+<p>No module may acquire authority over another module&#39;s source of truth by integration side effect. Front Door cannot release production truth; ERP cannot change geometry or CNC; Field proof cannot mutate Released Spec backward; AI/MCP write actions must enter Pending Invocation and human gate.</p>
+<h2>16. Non-Functional Requirements</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Determinism</td>
+<td>Same released input produces same packet/hash/output</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>Every output links back to source evidence, revision, gate, user, timestamp</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>RLS, least privilege, secret isolation, signed artifacts</td>
+</tr>
+<tr>
+<td>Privacy</td>
+<td>PDPA-by-architecture, redaction, data minimization, controlled egress</td>
+</tr>
+<tr>
+<td>Reliability</td>
+<td>Idempotent webhooks, retries, offline field queues, offline packet verification</td>
+</tr>
+<tr>
+<td>Usability</td>
+<td>Front stage simple; back stage absorbs complexity</td>
+</tr>
+<tr>
+<td>Mobile field use</td>
+<td>One-hand flows, minimal fields, LINE/PWA first</td>
+</tr>
+<tr>
+<td>Auditability</td>
+<td>Append-only audit for approvals, capture, release, export, field proof</td>
+</tr>
+<tr>
+<td>Extensibility</td>
+<td>New capture types, machine profiles, catalog items, document types by config where possible</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Fail-safe; missing policy blocks, not passes</td>
+</tr>
+</tbody></table></div>
+<h2>17. System Invariants</h2>
+<ol>
+<li>A render cannot release production.</li>
+<li>A concept scene cannot generate CNC directly.</li>
+<li>SpatialLM output cannot bypass human verification.</li>
+<li>ERP cannot edit drill maps or CNC.</li>
+<li>Customer approval cannot silently change scope.</li>
+<li>Released Spec cannot mutate without revision workflow.</li>
+<li>Factory export requires release state and gate proof.</li>
+<li>Field completion requires evidence and authorized close.</li>
+<li>AI write actions require human gate.</li>
+<li>Sensitive evidence cannot leave the controlled boundary without policy.</li>
+</ol>
+<h2>18. Data Model Summary</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Key entities</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front Door</td>
+<td>Intake, ConceptGraph, RenderDeck, ApprovalPacket</td>
+</tr>
+<tr>
+<td>Spatial Evidence</td>
+<td>SpatialCapture, SceneCodeCandidate, SiteSurveyZone, VerificationOverlay</td>
+</tr>
+<tr>
+<td>Capture</td>
+<td>CaptureArtifact, CaptureTypeConfig, VerifyDecision, CommitAdapter</td>
+</tr>
+<tr>
+<td>Design</td>
+<td>Project, Cabinet, Panel, MaterialStack, HardwareSpec, ParametricContract</td>
+</tr>
+<tr>
+<td>Truth</td>
+<td>DrillMap, GateResult, ReleasedSpec, Revision, Waiver</td>
+</tr>
+<tr>
+<td>Manufacturing</td>
+<td>FactoryPacket, OperationGraph, ToolpathManifest, ExportReceipt</td>
+</tr>
+<tr>
+<td>ERP</td>
+<td>Item, BOMSnapshot, Routing, WorkOrder, StockMove, PO, Receipt, LedgerEntry</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>InstallationProject, Room, Lane, WorkItem, ProofPhoto, Issue, PunchList, Acceptance</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Principal, Role, SiteAccess, Approval, AuditEvent, PendingInvocation</td>
+</tr>
+<tr>
+<td>Program Execution</td>
+<td>ReleasePolicy, MetricDefinition, PilotCohort, MigrationMapping, ExceptionWaiverReasonCatalog</td>
+</tr>
+</tbody></table></div>
+<h2>19. RACI and Governance Matrix</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>Responsible</th>
+<th>Accountable</th>
+<th>Consulted</th>
+<th>Informed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front Door intake and concept</td>
+<td>Product + Sales Ops</td>
+<td>Product Owner</td>
+<td>Designer Lead, Sales Lead</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Spatial evidence pilot</td>
+<td>Survey Lead + Product</td>
+<td>Operations Lead</td>
+<td>Designer Lead, Privacy Owner</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Parametric Contract and Safety Gate</td>
+<td>Engineering + Designer Lead</td>
+<td>Manufacturing Truth Owner</td>
+<td>Factory Lead, QA</td>
+<td>Product Owner</td>
+</tr>
+<tr>
+<td>Factory Packet and export</td>
+<td>Engineering + Factory Lead</td>
+<td>Factory Lead</td>
+<td>Machine Profile Owner, QA</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>ERP Backbone and job cost</td>
+<td>Finance + Engineering</td>
+<td>Finance Policy Owner</td>
+<td>Production Planner, Accountant</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Field digital thread</td>
+<td>Operations + Field Lead</td>
+<td>Operations Lead</td>
+<td>Customer Success, QA</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>MCP/AI write actions</td>
+<td>Engineering + Governance</td>
+<td>Security/Governance Owner</td>
+<td>Product Owner, Data Steward</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Certified catalog and item master</td>
+<td>Data Steward</td>
+<td>Manufacturing Truth Owner</td>
+<td>Finance, Purchasing, Design</td>
+<td>Product Owner</td>
+</tr>
+</tbody></table></div>
+<h2>20. Release Strategy and Pilot Plan</h2>
+<h3>20.1 Rollout Philosophy</h3>
+<ul>
+<li>Do not use a big-bang rewrite.</li>
+<li>Start with modules that strengthen governance without interrupting production continuity.</li>
+<li>Use coexistence and shadow mode where accounting, field operations, or factory output could be disrupted.</li>
+<li>Keep front-door speed and production authority separate.</li>
+<li>Treat pilot evidence as the basis for target setting, not as proof of broad production readiness.</li>
+</ul>
+<h3>20.2 Suggested Release Order</h3>
+<ol>
+<li>Truth chain stabilization.</li>
+<li>Front Door + Approval Packet.</li>
+<li>Capture Spine hardening.</li>
+<li>Spatial Evidence sandbox for 1-2 rooms with no CNC/release/accounting path.</li>
+<li>Factory Packet and export integrity improvements.</li>
+<li>ERP Backbone object registry + BOM snapshot + job cost shadow mode.</li>
+<li>Field digital thread.</li>
+<li>Board dashboard intelligence.</li>
+</ol>
+<h3>20.3 Pilot Strategy</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pilot</th>
+<th>Scope</th>
+<th>Exit evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Controlled factory pilot</td>
+<td>Small project with known factory path and limited machine profile</td>
+<td>Deterministic packet, gate proof, signed receipt, packet rejection data</td>
+</tr>
+<tr>
+<td>Spatial evidence pilot</td>
+<td>1-2 rooms only, no CNC/release path</td>
+<td>Verified SiteSurveyZone candidates, human correction log, survey time baseline</td>
+</tr>
+<tr>
+<td>Accounting shadow pilot</td>
+<td>Released Spec to BOM snapshot to job cost without real posting first</td>
+<td>Variance map, finance sign-off, posting rule gaps</td>
+</tr>
+<tr>
+<td>Field pilot</td>
+<td>Moderate installation complexity with room/lane work</td>
+<td>Proof completeness, issue aging, close-house acceptance audit</td>
+</tr>
+</tbody></table></div>
+<h2>21. Migration and Coexistence Strategy</h2>
+<h3>21.1 Data Migration Principles</h3>
+<ul>
+<li>Migrated data must preserve identity, revision lineage, provenance, and source confidence.</li>
+<li>Legacy records with incomplete evidence must be marked as lower-confidence legacy data rather than normalized into false certainty.</li>
+<li>Old factory packets must not be regenerated unless evidence parity and release lineage are proven.</li>
+<li>Migration scripts must produce audit reports, reject counts, and owner review queues.</li>
+</ul>
+<h3>21.2 Coexistence Rules</h3>
+<ul>
+<li>Existing designs may remain readable, but new releases must follow the rules of the deployed modules.</li>
+<li>Accounting uses shadow mode before real posting.</li>
+<li>Field teams can run LINE/PWA in parallel with existing process until proof completion and closeout are stable.</li>
+<li>SpatialLM begins as an assistive evidence layer and does not replace manual survey.</li>
+</ul>
+<h2>22. Dependencies</h2>
+<h3>22.1 Internal Dependencies</h3>
+<ul>
+<li>Canonical PRD, blueprint, Safety Gate documents, Connector OS documents, and release/export contracts.</li>
+<li>Machine profile ownership and versioning.</li>
+<li>Finance policy owner for VAT/WHT/eTax, posting thresholds, and approval limits.</li>
+<li>Operations owner for room/lane, T0, close-house, and acceptance behavior.</li>
+<li>Data steward for certified catalog, item master, naming, mapping, and trust-tier hygiene.</li>
+</ul>
+<h3>22.2 External Dependencies</h3>
+<ul>
+<li>LINE platform stability and policy boundary.</li>
+<li>OCR/LLM/self-host infrastructure boundary.</li>
+<li>SpatialLM model/runtime feasibility for sandbox use only.</li>
+<li>ERP patterns from Odoo, ERPNext/Frappe, Acumatica, and Infor as architectural references, not runtime dependencies.</li>
+<li>Local legal/accounting review for approval language, PDPA handling, VAT/WHT/eTax, and document retention.</li>
+</ul>
+<h2>23. Risk Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Team treats concept as truth</td>
+<td>High</td>
+<td>Medium</td>
+<td>Clear badges/states, mandatory conversion workflow, no export from sandbox</td>
+</tr>
+<tr>
+<td>Safety Gate is bypassed as friction</td>
+<td>High</td>
+<td>Medium</td>
+<td>Strong gate reason UX, formal waiver policy, audit visibility, executive exception dashboard</td>
+</tr>
+<tr>
+<td>Accounting scope grows too large</td>
+<td>High</td>
+<td>High</td>
+<td>Shadow mode, phased rollout, finance co-design, restricted posting surface</td>
+</tr>
+<tr>
+<td>SpatialLM is overpromised</td>
+<td>Medium</td>
+<td>High</td>
+<td>Sandbox only, no release path, measured pilot, explicit executive policy</td>
+</tr>
+<tr>
+<td>Field adoption is low</td>
+<td>High</td>
+<td>Medium</td>
+<td>LINE/PWA-first flows, minimal required input, operations champion, digest controls</td>
+</tr>
+<tr>
+<td>Catalog mapping becomes unreliable</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Trust tiers, certified catalog owner, mapping review, data stewardship</td>
+</tr>
+<tr>
+<td>Machine profile drift</td>
+<td>High</td>
+<td>Medium</td>
+<td>Versioned machine profiles, signed packet verification, export receipt checks</td>
+</tr>
+<tr>
+<td>Notification noise causes abandonment</td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Quiet hours, role-based routing, digest, escalation thresholds</td>
+</tr>
+<tr>
+<td>Governance slows the front door</td>
+<td>High</td>
+<td>Medium</td>
+<td>Keep speed in concept/intake; enforce strictness only on release, accounting, and closeout paths</td>
+</tr>
+</tbody></table></div>
+<h2>24. Program-Level Acceptance Criteria</h2>
+<h3>24.1 Front Door Ready</h3>
+<ul>
+<li>Customers and internal teams can start a job without learning the full system.</li>
+<li>A useful concept can be created quickly.</li>
+<li>Approval Packet is readable and binds scope, revision, timestamp, identity, and channel.</li>
+<li>No shortcut exists from front door to Released Spec without conversion and gate.</li>
+</ul>
+<h3>24.2 Truth Layer Ready</h3>
+<ul>
+<li>Parametric Contract, Material Stack, Connector OS, and Safety Gate can explain blockers.</li>
+<li>Released Spec is immutable except through revision workflow.</li>
+<li>Factory Packet can be verified offline and traced back to release evidence.</li>
+</ul>
+<h3>24.3 ERP Backbone Ready</h3>
+<ul>
+<li>BOM Snapshot is created from Released Spec.</li>
+<li>Stock move, PO, receipt, actual cost, and ledger candidate trace back to project/package.</li>
+<li>Accounting post cannot be created from unverified AI/capture output.</li>
+</ul>
+<h3>24.4 Field Ready</h3>
+<ul>
+<li>Room/lane work items are usable on mobile.</li>
+<li>Proof, issue, punch list, and acceptance link back to released truth.</li>
+<li>Close-house and customer acceptance require authorization and audit.</li>
+</ul>
+<h2>25. Definition of Done and Module Readiness</h2>
+<h3>25.1 Feature Definition of Done</h3>
+<p>A feature is Done only when:</p>
+<ul>
+<li>Requirement, UX flow, edge cases, and prohibited actions are reviewed.</li>
+<li>Permissions, RLS where applicable, and audit events are specified.</li>
+<li>System invariants are encoded or guarded by verifiable controls.</li>
+<li>Required analytics events and dashboards are defined.</li>
+<li>Error states, retry behavior, offline behavior, and fallback ownership are specified.</li>
+<li>Documentation and runbook are updated.</li>
+<li>Pilot evidence proves the workflow on at least one real or representative path when the feature affects production, field, finance, or approval.</li>
+</ul>
+<h3>25.2 Module Readiness Checklist</h3>
+<p>Every module must answer:</p>
+<ul>
+<li>Who is the owner?</li>
+<li>What is the source of truth?</li>
+<li>What actions are prohibited?</li>
+<li>What is the rollback or correction path?</li>
+<li>What happens if the service is down?</li>
+<li>Where is the audit trail created?</li>
+<li>Which thresholds/escalations are configuration, and which are hardcoded?</li>
+<li>Which outputs require signatures or verification?</li>
+</ul>
+<h2>26. SpatialLM Policy</h2>
+<ul>
+<li>SpatialLM is used to read spatial evidence, not to replace engineering judgment.</li>
+<li>Output is candidate evidence until verified by an accountable human.</li>
+<li>The first phase is survey acceleration and constraint visibility only.</li>
+<li>SpatialLM must not write CNC, change release state, assert final manufacturability, or post accounting events.</li>
+<li>SpatialLM evidence may enrich SiteSurveyZone only after verification and provenance capture.</li>
+</ul>
+<h2>27. ERP Policy</h2>
+<ul>
+<li>Odoo is a reference for flow mapping, shop-floor patterns, and field-service patterns.</li>
+<li>ERPNext/Frappe is a reference for document state, object registry, permissions, naming series, and workflow.</li>
+<li>Acumatica is a benchmark for project accounting, job cost, WIP, and field-office visibility.</li>
+<li>Infor is a north-star benchmark for PLM/MES/WMS/CPQ integration and BOM lifecycle thinking.</li>
+<li>MONOLITH ERP Backbone is a business operating layer around manufacturing truth, not the owner of geometry, drill maps, CNC, release state, or factory packet truth.</li>
+</ul>
+<h2>28. Roadmap</h2>
+<h3>Phase 0: Stabilize Existing Truth Chain</h3>
+<ul>
+<li>Keep existing CAD/CAM/Factory Packet/Safety Gate as the non-negotiable core.</li>
+<li>Verify code/test status before any external production claim.</li>
+<li>Preserve current PRD/blueprint as implementation evidence.</li>
+</ul>
+<h3>Phase 1: MONOLITH Front Door Program</h3>
+<ul>
+<li>Intake Router.</li>
+<li>Concept Sandbox.</li>
+<li>Approval Packet.</li>
+<li>Catalog trust tiers.</li>
+<li>Gate Reason UX.</li>
+<li>Render deck tied to revision and approval.</li>
+</ul>
+<h3>Phase 2: Spatial Evidence Sandbox</h3>
+<ul>
+<li>SpatialLM-based prototype for 1-2 rooms.</li>
+<li>Point-cloud/video/LiDAR input.</li>
+<li>Walls/openings/bounding boxes output.</li>
+<li>Overlay human verification.</li>
+<li>Commit only verified constraints to SiteSurveyZone.</li>
+<li>No path to CNC/release in year one.</li>
+</ul>
+<h3>Phase 3: Conversion Engine</h3>
+<ul>
+<li>Concept-to-Parametric Contract diff.</li>
+<li>Material/hardware mapping.</li>
+<li>Preliminary gate.</li>
+<li>Unknowns and blockers list.</li>
+<li>Production-safe patch suggestions.</li>
+</ul>
+<h3>Phase 4: ERP Backbone</h3>
+<ul>
+<li>Document object registry.</li>
+<li>Item Master and production-bound catalog.</li>
+<li>BOM Snapshot from Released Spec.</li>
+<li>Work Order / Job Card.</li>
+<li>Stock reservation/issue/return/scrap.</li>
+<li>Job cost, WIP, procurement, PO, invoice milestones.</li>
+</ul>
+<h3>Phase 5: Field Digital Thread</h3>
+<ul>
+<li>Installation PWA polish.</li>
+<li>House/room/lane tasks.</li>
+<li>LINE groups with hard guardrails.</li>
+<li>T0, proof, issue, punch list, close-house, customer acceptance.</li>
+<li>Field-to-design feedback through deviation analytics.</li>
+</ul>
+<h3>Phase 6: Board Intelligence</h3>
+<ul>
+<li>Executive dashboards.</li>
+<li>Gate/rework/field/cost analytics.</li>
+<li>Supplier and factory throughput analytics.</li>
+<li>Closed-loop improvement of design standards and Safety Gate rules.</li>
+</ul>
+<h2>29. Success Metrics</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Time to first useful concept</td>
+<td>Front-door speed</td>
+</tr>
+<tr>
+<td>Survey-to-verified SiteSurveyZone time</td>
+<td>Spatial evidence ROI</td>
+</tr>
+<tr>
+<td>Concept-to-contract conversion rate</td>
+<td>Sandbox usefulness</td>
+</tr>
+<tr>
+<td>First-pass Safety Gate pass rate</td>
+<td>Production readiness</td>
+</tr>
+<tr>
+<td>Gate-fix cycle time</td>
+<td>Designer productivity</td>
+</tr>
+<tr>
+<td>Render approval to Released Spec drift</td>
+<td>Approval integrity</td>
+</tr>
+<tr>
+<td>Factory packet rejection rate</td>
+<td>Manufacturing quality</td>
+</tr>
+<tr>
+<td>CNC/post error rate</td>
+<td>Machine readiness</td>
+</tr>
+<tr>
+<td>Defect/rework cost</td>
+<td>Business impact</td>
+</tr>
+<tr>
+<td>Field issue rate</td>
+<td>Site execution quality</td>
+</tr>
+<tr>
+<td>Punch-list age</td>
+<td>Closeout discipline</td>
+</tr>
+<tr>
+<td>Job cost variance</td>
+<td>Financial control</td>
+</tr>
+<tr>
+<td>Capture-to-post lag</td>
+<td>Back-office efficiency</td>
+</tr>
+<tr>
+<td>Approval SLA</td>
+<td>Workflow health</td>
+</tr>
+</tbody></table></div>
+<p>Targets should be set after 30-60 days of baseline data, not invented upfront.</p>
+<p>Metric definitions must include owner, source system/table, cadence, baseline period, target policy, and escalation threshold before the metric becomes a board KPI.</p>
+<h2>30. Open Questions</h2>
+<ol>
+<li>Which pilot room/project will be used for Spatial Evidence Phase 1?</li>
+<li>Which scan source is preferred first: iPhone LiDAR, Android RGB-D, or normal video reconstructed to point cloud?</li>
+<li>Which assets qualify as Certified production-bound catalog items in v1?</li>
+<li>Which machine profile is the first production pilot target?</li>
+<li>Which ERP Backbone object should be implemented first: Item Master, BOM Snapshot, Work Order, or Job Cost?</li>
+<li>What approval language should be legally reviewed for G1/G2/G3/G4 packets?</li>
+<li>What is the deployment boundary for self-host OCR/LLM and SpatialLM processing?</li>
+<li>Which dashboards are board-critical for the first month?</li>
+<li>What initial waiver thresholds are allowed for warnings, blockers, budget variance, and schedule variance?</li>
+<li>Which roles can waive warnings without executive escalation?</li>
+<li>What is the seed set for production-bound certified catalog items?</li>
+<li>Which 90-day rollout sequence is safest for the first live business unit?</li>
+</ol>
+<h2>31. Evidence Tier and Usage Policy</h2>
+<p>The Evidence Tier model answers two separate questions: “How authoritative is this source for this type of claim?” and “Can this claim prove MONOLITH production status?” A high-tier source does not prove every kind of claim. For example, an E1 paper may prove research feasibility, but it cannot prove that a MONOLITH module has been deployed.</p>
+<h3>31.1 Evidence Tier</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Evidence type</th>
+<th>May support</th>
+<th>Must not be over-interpreted as</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>E0 — Direct As-Built Evidence</strong></td>
+<td>Source code, schema/migration, automated test, build artifact, signed packet, deployment or operational record tied to a revision</td>
+<td>Implementation status within the inspected environment and revision</td>
+<td>Production-ready when deployment, live integration, or operational proof is still missing</td>
+</tr>
+<tr>
+<td><strong>E1 — Primary / Authoritative</strong></td>
+<td>Approved canonical decision, official standard/regulator/API contract, peer-reviewed paper</td>
+<td>A requirement, policy, protocol, or research capability directly stated by the source</td>
+<td>Proof that MONOLITH has implemented the capability</td>
+</tr>
+<tr>
+<td><strong>E2 — First-Party Vendor Claim</strong></td>
+<td>Vendor product page, help center, official blog, official demo</td>
+<td>A vendor-declared capability used as a benchmark</td>
+<td>Independent test results, SLA, API compatibility, or fit with DAPH machinery</td>
+</tr>
+<tr>
+<td><strong>E3 — Secondary Synthesis</strong></td>
+<td>Research report, trade media, market analysis, review, comparison document</td>
+<td>Context, discovery, candidate requirements, and due-diligence questions</td>
+<td>Sole acceptance evidence or a production decision</td>
+</tr>
+<tr>
+<td><strong>E4 — Inference / Recommendation</strong></td>
+<td>Architectural inference, hypothesis, target, recommendation</td>
+<td>Product direction and experiments that still require validation</td>
+<td>Fact, current capability, or committed KPI</td>
+</tr>
+</tbody></table></div>
+<h3>31.2 Usage Rules</h3>
+<ul>
+<li>An <strong>implemented</strong> claim requires E0 that points to the relevant code/schema and tests.</li>
+<li>A <strong>production-ready</strong> claim requires E0 across code + tests + deployment + operational proof, with no open blocker affecting that capability.</li>
+<li>An external research decision requires E1 or E2 with an exact URL/version and an explicit label of primary evidence or vendor claim.</li>
+<li>E3/E4 may create hypotheses, roadmap items, or acceptance tests, but cannot pass those tests on their own.</li>
+<li>Claims affecting CNC, release, accounting posting, IAM, PDPA, or customer acceptance require an accountable owner and verification date.</li>
+<li>When a source changes, a URL disappears, a hash no longer matches, or the code revision changes, related claims automatically return to <code>REVERIFY</code>.</li>
+</ul>
+<h3>31.3 Freshness and Re-verification</h3>
+<p>The source owner must review production-impacting claims at least once per release candidate. Vendor/web sources must be rechecked before procurement, contract signing, or a public claim. PDF/Markdown files currently located in <code>Downloads</code> are hashed provenance pointers, but they are not a durable evidence store until archived in a controlled repository or evidence archive.</p>
+<h2>32. Source Register</h2>
+<h3>32.1 Internal MONOLITH Sources</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Artifact / Revision</th>
+<th>SHA-256 or identity</th>
+<th>Permitted use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-I01</code></td>
+<td>E1</td>
+<td><code>docs/prd/monolith-complete-prd.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>E363271C...7546C6D</code>; EN <code>299BA724...BF59F0</code></td>
+<td>Pre-v5 requirement baseline</td>
+</tr>
+<tr>
+<td><code>SRC-I02</code></td>
+<td>E3</td>
+<td><code>C:\Users\thai3\Downloads\monolith-complete-prd-v4.th.md</code></td>
+<td><code>70AEBC56...D8DD44D</code></td>
+<td>Program-execution additions; not a standalone full PRD</td>
+</tr>
+<tr>
+<td><code>SRC-I03</code></td>
+<td>E3</td>
+<td><code>docs/research/coohom-vs-monolith-comparison.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>2EEA72F3...E4B08</code>; EN <code>6BC1D2F6...18906B</code></td>
+<td>Strategic comparison and evidence caveats</td>
+</tr>
+<tr>
+<td><code>SRC-I04</code></td>
+<td>E3/E4</td>
+<td><code>docs/research/monolith-front-door-doctrine.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>9EB37FF8...A9FDD</code>; EN <code>47B5EB1D...FE0379</code></td>
+<td>Front-door doctrine, product inference, and recommendations</td>
+</tr>
+<tr>
+<td><code>SRC-I05</code></td>
+<td>E3/E4</td>
+<td><code>docs/research/erp-deep-research-for-monolith.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>2762AD44...2BE60</code>; EN <code>3D136404...99806</code></td>
+<td>ERP pattern benchmark; not a runtime dependency</td>
+</tr>
+<tr>
+<td><code>SRC-I06</code></td>
+<td>E0</td>
+<td>Local code snapshot <code>determined-williams/</code></td>
+<td>Git <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code>, branch <code>fix/drillmap-bolt-and-brun-dowels</code>, dirty worktree</td>
+<td>As-built code inspection for this snapshot only</td>
+</tr>
+<tr>
+<td><code>SRC-I07</code></td>
+<td>E0</td>
+<td>Read-only audit session 2026-07-10</td>
+<td>Root tests/build/typecheck/smoke + targeted code inspection; summary in §34</td>
+<td>As-built status; rerun when revision or environment changes</td>
+</tr>
+<tr>
+<td><code>SRC-I08</code></td>
+<td>E0</td>
+<td><code>docs/prd/monolith-complete-prd-v5.sha256</code></td>
+<td>SHA-256 values for v5.1 TH/EN Markdown and HTML</td>
+<td>Integrity check for this deliverable set</td>
+</tr>
+</tbody></table></div>
+<p>Core implementation evidence includes <code>determined-williams/docs/PRD.md</code>, <code>MASTER_BLUEPRINT.md</code>, <code>REQUIREMENTS-OVERVIEW.md</code>, <code>docs/SAFETY_GATE.md</code>, <code>docs/api/FACTORY_EXPORT_API.md</code>, <code>docs/connector-os/</code>, <code>docs/LINE-Architecture-System-Complete.md</code>, <code>docs/architecture/MULTI_MACHINE_EXPORT_DESIGN.md</code>, <code>src/</code>, <code>server/</code>, <code>supabase/migrations/</code>, <code>supabase/functions/</code>, and <code>packages/field-app/</code>. Documentation explains intent; code, tests, and schemas provide E0 as-built evidence.</p>
+<h3>32.2 User-Provided Coohom / Manycore Upstream Package</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Artifact</th>
+<th>SHA-256</th>
+<th>Limitation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-U01</code></td>
+<td>E3</td>
+<td><code>Coohom Technology Deep Dive — Architecture, Algorithms &amp; AI Research (Executive Edition).md</code></td>
+<td><code>6CF39D7A...8F969</code></td>
+<td>Mixes papers, vendor sources, and inferred internals; trace each claim separately</td>
+</tr>
+<tr>
+<td><code>SRC-U02</code></td>
+<td>E3</td>
+<td><code>Coohom Complete Suite Intelligence Report — Executive Decision-Grade Analysis.md/.pdf</code></td>
+<td>MD <code>1D24F30E...ECBA</code>; PDF <code>2EB0F260...FFBB</code></td>
+<td>Executive synthesis; the title does not elevate every claim to E1</td>
+</tr>
+<tr>
+<td><code>SRC-U03</code></td>
+<td>E3</td>
+<td><code>Coohom Deep Research Report — Complete Edition (Part 2: Strategy &amp; Expansion).pdf</code></td>
+<td><code>855C2C6D...BFAF9</code></td>
+<td>Strategy/vendor/market synthesis; numbers require original-source verification</td>
+</tr>
+<tr>
+<td><code>SRC-U04</code></td>
+<td>E3</td>
+<td><code>Coohom Manycore Tech — Technology Deep Dive for DAPH Studio 2026.md/.pdf</code></td>
+<td>MD <code>0351FCC1...04A4</code>; PDF <code>5B1B555C...A5297</code></td>
+<td>Upstream integration proposal; a direct SmartLink-to-CNC path is not MONOLITH policy</td>
+</tr>
+</tbody></table></div>
+<p>Hashes are abbreviated in the table for readability. Full values are recorded in §32.4 and must remain in the release evidence manifest if this package is archived into a controlled repository.</p>
+<h3>32.3 External Primary, Standard, and Vendor Sources</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Source</th>
+<th>Supports</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-X01</code></td>
+<td>E1</td>
+<td><a href="https://arxiv.org/abs/2506.07491">SpatialLM paper</a> and <a href="https://nips.cc/virtual/2025/poster/115535">NeurIPS 2025 record</a></td>
+<td>Point cloud → structured walls/doors/windows/object boxes and research benchmarks</td>
+</tr>
+<tr>
+<td><code>SRC-X02</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/ai-home-design">Coohom AI Home Design / AIHom</a></td>
+<td>Fast editable 2D/3D front-door benchmark</td>
+</tr>
+<tr>
+<td><code>SRC-X03</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/floor-planner">Coohom Floor Planner</a></td>
+<td>Floor-plan UX capability claim</td>
+</tr>
+<tr>
+<td><code>SRC-X04</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/3d-render-home">Coohom 3D Render</a></td>
+<td>Rendering/presentation benchmark</td>
+</tr>
+<tr>
+<td><code>SRC-X05</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/3d-models">Coohom Model Library</a></td>
+<td>Catalog-breadth claim; not a certified manufacturing catalog</td>
+</tr>
+<tr>
+<td><code>SRC-X06</code></td>
+<td>E2</td>
+<td><a href="https://blog.coohom.com/coohom-smartlink-suite-at-indiawood-2026-closing-the-gap-between-design-and-production/">Coohom SmartLink</a></td>
+<td>Vendor claims for design validation, live synchronization, and CNC workflow</td>
+</tr>
+<tr>
+<td><code>SRC-X07</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/helpcenter/model-materials-ai-modeler-user-guide">Coohom AI Modeler Guide</a></td>
+<td>Confirms Tripo 3D/HY 3D tools; does not disclose internal neural architecture</td>
+</tr>
+<tr>
+<td><code>SRC-X08</code></td>
+<td>E1</td>
+<td><a href="https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/">Microsoft Guidelines for Human-AI Interaction</a> and <a href="https://www.microsoft.com/en-us/haxtoolkit/">HAX Toolkit</a></td>
+<td>Human-AI interaction and failure-mode design</td>
+</tr>
+<tr>
+<td><code>SRC-X09</code></td>
+<td>E1</td>
+<td><a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI Risk Management Framework</a></td>
+<td>AI governance and risk framing</td>
+</tr>
+<tr>
+<td><code>SRC-X10</code></td>
+<td>E1</td>
+<td><a href="https://www.iso.org/standard/77520.html">ISO 9241-210</a> and <a href="https://www.iso.org/standard/75066.html">ISO 23247</a></td>
+<td>Human-centred design and digital-twin framework</td>
+</tr>
+<tr>
+<td><code>SRC-X11</code></td>
+<td>E1</td>
+<td><a href="https://doi.org/10.6028/NIST.AMS.300-6">NIST AMS 300-6</a></td>
+<td>Product-data traceability</td>
+</tr>
+</tbody></table></div>
+<p>External URLs were last checked on 2026-07-10 and remain dynamic sources. A production decision must record access date, version, and an archived snapshot where licensing permits.</p>
+<h3>32.4 Full Local Hash Manifest</h3>
+<pre><code class="language-text">SRC-I01-TH  E363271DCF31BD4F22F81B0886258696AB7F2D1E05F22831790DB6A6F7546C6D  monolith-complete-prd.th.md
+SRC-I01-EN  299BA72490D04112836C330D115712DE7A67D52E6DC985F7DCC8D97FCDBF59F0  monolith-complete-prd.en.md
+SRC-I02     70AEBC56DFDC7EB6A024AE6FD68D5BB5B6802D588A21EC04F0775BB9AD8DD44D  monolith-complete-prd-v4.th.md
+SRC-I03-TH  2EEA72F3DF4BF80CD7E342AB544061EB496D5EEE15A5BF94FF460F339FDE4B08  coohom-vs-monolith-comparison.th.md
+SRC-I03-EN  6BC1D2F6F66EDDFFD367DE849C3267E8D807BE509711ECEAD685F7A84618906B  coohom-vs-monolith-comparison.en.md
+SRC-I04-TH  9EB37FF85CCE2046E1C019D1EB24E9D50D3106EB9A36AB837C32B163F4CA9FDD  monolith-front-door-doctrine.th.md
+SRC-I04-EN  47B5EB1DEE81B37E7AF4BBADF5E91658EE9A8E1A5C7EE6E5A2A90533D0FE0379  monolith-front-door-doctrine.en.md
+SRC-I05-TH  2762AD44F8C9DE5DEF3051F93D259E112A4B99DD98E22751149916454A52BE60  erp-deep-research-for-monolith.th.md
+SRC-I05-EN  3D136404680D1FD4FD044C088279C04F27FDC0DBB80CAA9C2B759756BCD99806  erp-deep-research-for-monolith.en.md
+SRC-U01     6CF39D7AB95CCCA46716C99E8928390D1A9A29C49965C4352FB9B45430F8F969  Coohom Technology Deep Dive.md
+SRC-U02-MD  1D24F30E0F3ABF0D77769D0329524C923579D2BE0BE606F125960D484BCAECBA  Coohom Complete Suite Intelligence Report.md
+SRC-U02-PDF 2EB0F260483A2735FB8245A61FA7054F2AC74637ACF100C596ABC345D1C8FFBB  Coohom Complete Suite Intelligence Report.pdf
+SRC-U03-PDF 855C2C6D84E226D18A6D2D6EB13F7BD643B57C92FC96FB9DECC0D3C3443BFAF9  Coohom Deep Research Report Part 2.pdf
+SRC-U04-MD  0351FCC1AD26CD96E697B29F831006A7842E468A01A3AD690419B4C5500404A4  Coohom Manycore Tech Deep Dive.md
+SRC-U04-PDF 5B1B555C7F40C4173AC7EACDC9B2D359F56A5348A5503512062A6053F19A5297  Coohom Manycore Tech Deep Dive.pdf
+</code></pre>
+<h2>33. Claim Ledger</h2>
+<p>The Claim Ledger connects sources, PRD decisions, and as-built evidence. <code>ACCEPTED</code> means accepted as a requirement or decision; it does not mean implemented. <code>AS-BUILT GAP</code> means the current code does not yet satisfy the requirement.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Claim ID</th>
+<th>Claim</th>
+<th>Sources / Tier</th>
+<th>PRD Decision</th>
+<th>Status and proof obligation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CLM-001</code></td>
+<td>Coohom provides a fast front door and editable visual scene</td>
+<td><code>SRC-X02</code>–<code>SRC-X05</code> / E2, <code>SRC-U01</code>–<code>SRC-U04</code> / E3</td>
+<td>Use as a UX benchmark</td>
+<td><strong>ACCEPTED WITH BOUNDARY</strong> — scene/catalog data must not become production truth automatically</td>
+</tr>
+<tr>
+<td><code>CLM-002</code></td>
+<td>SmartLink supports a design-to-production/CNC workflow</td>
+<td><code>SRC-X06</code> / E2, <code>SRC-U02</code>–<code>SRC-U04</code> / E3</td>
+<td>Vendor benchmark, not runtime dependency</td>
+<td><strong>VENDOR CLAIM</strong> — require paid demo, machine matrix, API contract, and packet comparison before integration consideration</td>
+</tr>
+<tr>
+<td><code>CLM-003</code></td>
+<td>SpatialLM can parse point clouds into structured indoor elements</td>
+<td><code>SRC-X01</code> / E1</td>
+<td>Feasibility basis for Spatial Evidence Compiler</td>
+<td><strong>ACCEPTED</strong> — pilot must measure precision/recall and human correction on DAPH data</td>
+</tr>
+<tr>
+<td><code>CLM-004</code></td>
+<td>SpatialLM can create CNC or release manufacturing truth</td>
+<td>No primary evidence; E4 inference</td>
+<td>Prohibited by policy</td>
+<td><strong>REJECTED</strong> — SpatialLM output is candidate evidence only</td>
+</tr>
+<tr>
+<td><code>CLM-005</code></td>
+<td>Coohom uses the reported bidirectional DAG, U-Net, Hough/RDP, 50 mm auto-close, and internal pipelines</td>
+<td><code>SRC-U01</code> / E3-E4; <code>SRC-X07</code> confirms only the tool surface</td>
+<td>Must not be encoded as fact or dependency</td>
+<td><strong>UNVERIFIED</strong> — require official technical disclosure or reproducible black-box study</td>
+</tr>
+<tr>
+<td><code>CLM-006</code></td>
+<td>“The first 10 minutes” is a proven performance fact</td>
+<td><code>SRC-I04</code> / E4, vendor speed claims E2</td>
+<td>Product aspiration</td>
+<td><strong>TARGET, NOT BASELINE</strong> — set SLA only after 30–60 days of baseline data</td>
+</tr>
+<tr>
+<td><code>CLM-007</code></td>
+<td>Spatial AI/AI/OCR is evidence, not authority</td>
+<td><code>SRC-I01</code>, <code>SRC-I04</code>, <code>SRC-X08</code>, <code>SRC-X09</code> / E1-E4</td>
+<td>System invariant</td>
+<td><strong>ACCEPTED</strong> — write paths require provenance, verifier, and human gate</td>
+</tr>
+<tr>
+<td><code>CLM-008</code></td>
+<td>ERP is a business layer around manufacturing truth</td>
+<td><code>SRC-I01</code>, <code>SRC-I05</code> / E1-E4</td>
+<td>Architectural boundary</td>
+<td><strong>ACCEPTED</strong> — ERP must not edit geometry, drill maps, CNC, or release state</td>
+</tr>
+<tr>
+<td><code>CLM-009</code></td>
+<td>Factory Packet must be deterministic, signed, and offline-verifiable</td>
+<td><code>SRC-I01</code>, implementation docs, <code>SRC-I06</code> / E0-E1</td>
+<td>Mandatory release requirement</td>
+<td><strong>ACCEPTED; AS-BUILT GAP</strong> — see <code>AB-PKT-01</code>–<code>AB-PKT-02</code></td>
+</tr>
+<tr>
+<td><code>CLM-010</code></td>
+<td>Concept Sandbox is already implemented</td>
+<td>PRD only / E4; audit <code>SRC-I07</code></td>
+<td>Target capability</td>
+<td><strong>AS-BUILT GAP</strong> — no systematic sandbox graph separated from manufacturing truth was located</td>
+</tr>
+<tr>
+<td><code>CLM-011</code></td>
+<td>Catalog Trust Tiers are already implemented</td>
+<td>PRD only / E4; E0 catalog foundation</td>
+<td>Target capability</td>
+<td><strong>AS-BUILT GAP</strong> — catalog code exists, but Public/Project/Verified/Certified enforcement was not found end to end</td>
+</tr>
+<tr>
+<td><code>CLM-012</code></td>
+<td>LINE/Capture/Field digital thread is fully production-ready</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Target remains</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong> — migrations/functions/field app exist; DB/RLS integration and field-app automated tests remain incomplete</td>
+</tr>
+<tr>
+<td><code>CLM-013</code></td>
+<td>Factory authorization boundary is production-ready</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Mandatory control</td>
+<td><strong>AS-BUILT GAP</strong> — frontend role is stored in localStorage and the edge function trusts <code>x-actor-role/name</code></td>
+</tr>
+<tr>
+<td><code>CLM-014</code></td>
+<td>Main UI allows CNC export only from <code>RELEASED</code></td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Mandatory invariant</td>
+<td><strong>AS-BUILT GAP</strong> — <code>AppShell.tsx:174</code> permits <code>FROZEN</code> when the gate is OK</td>
+</tr>
+<tr>
+<td><code>CLM-015</code></td>
+<td>Factory packet generation is bit-identical</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Mandatory requirement</td>
+<td><strong>AS-BUILT GAP</strong> — job ID, manifest time, and ZIP time still contain runtime entropy</td>
+</tr>
+<tr>
+<td><code>CLM-016</code></td>
+<td>Server <code>/verify</code> validates manifest/files/signature/gate/machine end to end</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Mandatory verification boundary</td>
+<td><strong>AS-BUILT GAP</strong> — current behavior primarily validates the packet SHA anchor</td>
+</tr>
+<tr>
+<td><code>CLM-017</code></td>
+<td>CAD/CAM, Parametric Contract, Connector OS, and Safety Gate have real implementations</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Preserve as core</td>
+<td><strong>VERIFIED IN TEST ENVIRONMENT</strong> — not equivalent to production certification</td>
+</tr>
+<tr>
+<td><code>CLM-018</code></td>
+<td>ERP/finance/executive analytics are complete</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>Roadmap target</td>
+<td><strong>PARTIAL</strong> — schema/workflow foundations exist, but <code>/finance</code> and other routes remain placeholders</td>
+</tr>
+</tbody></table></div>
+<h2>34. As-Built Status</h2>
+<h3>34.1 Snapshot and Audit Boundary</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Audit date</td>
+<td>2026-07-10</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td><code>determined-williams/</code></td>
+</tr>
+<tr>
+<td>Git identity</td>
+<td>Commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code>, branch <code>fix/drillmap-bolt-and-brun-dowels</code></td>
+</tr>
+<tr>
+<td>Worktree</td>
+<td><strong>DIRTY</strong> — modified/untracked files predated this documentation task; results represent a local workspace snapshot, not clean-commit certification</td>
+</tr>
+<tr>
+<td>Automated evidence observed</td>
+<td>Root Vitest: 261 files / 4,545 tests passed; TypeScript check passed; Vite build passed; browser smoke: 7 scenarios passed</td>
+</tr>
+<tr>
+<td>Partial test evidence</td>
+<td>Python suite: 10 passed / 96 skipped because <code>LINE_OA_TEST_DATABASE_URL</code> was absent; live DB/RLS was not proven</td>
+</tr>
+<tr>
+<td>Toolchain variance</td>
+<td>Factory server package tests under Vitest 1.6 failed 13 tests due to CLI side effects/process exit, while the same golden tests passed under root Vitest; test-runner drift remains</td>
+</tr>
+<tr>
+<td>Excluded from certification</td>
+<td>Production deployment, live Supabase/LINE credentials, real CNC execution, receipt-key ceremony, paid Coohom/SmartLink environment, and field pilot</td>
+</tr>
+</tbody></table></div>
+<h3>34.2 Status Definitions</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>VERIFIED</strong></td>
+<td>Implementation was located and automated evidence passed in the stated environment</td>
+</tr>
+<tr>
+<td><strong>PARTIAL</strong></td>
+<td>Material implementation exists, but flow, control, integration, or proof is incomplete</td>
+</tr>
+<tr>
+<td><strong>PLANNED</strong></td>
+<td>Defined in PRD/roadmap without sufficient implementation evidence</td>
+</tr>
+<tr>
+<td><strong>BLOCKED</strong></td>
+<td>A gap prevents production release even though part of the capability exists</td>
+</tr>
+<tr>
+<td><strong>NOT VERIFIED</strong></td>
+<td>Code/schema may exist, but this audit lacked the environment or evidence to decide</td>
+</tr>
+</tbody></table></div>
+<h3>34.3 FR-01 to FR-17 As-Built Matrix</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>FR</th>
+<th>Capability</th>
+<th>Status</th>
+<th>Evidence summary</th>
+<th>Next proof required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FR-01</td>
+<td>Front Door Intake Router</td>
+<td><strong>PARTIAL</strong></td>
+<td>LINE/capture/routes exist, but unified front-door routing and a complete evidence graph were not located</td>
+<td>End-to-end intake test + role/channel routing</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Concept Sandbox</td>
+<td><strong>PLANNED</strong></td>
+<td>No sandbox graph/state separated from manufacturing truth was located</td>
+<td>Sandbox data model, conversion gate, and no-export tests</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Spatial Evidence Compiler</td>
+<td><strong>PARTIAL</strong></td>
+<td><code>site_survey_zone</code> schema/adapter exists; no SpatialLM runtime pipeline was located</td>
+<td>Model/runtime PoC, provenance schema, accuracy benchmark</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Capture Spine</td>
+<td><strong>PARTIAL</strong></td>
+<td><code>src/capture/</code>, migrations, and commit-target adapters exist</td>
+<td>Live DB/RLS integration, retries, offline, and failure proof</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Designer Workspace</td>
+<td><strong>VERIFIED</strong></td>
+<td><code>src/spec/ui/DesignerScreen.tsx</code>, designer rules/stores, and 3D/CAD tests exist</td>
+<td>Usability/pilot evidence and production telemetry</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Parametric Contract</td>
+<td><strong>VERIFIED</strong></td>
+<td>Spec/store/state machine and manufacturing transformations have test coverage</td>
+<td>Released-spec immutability proof in the deployed boundary</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Catalog Trust Tiers</td>
+<td><strong>PARTIAL</strong></td>
+<td><code>src/core/catalog/</code> and manufacturing catalogs exist; full trust-tier enforcement was not located</td>
+<td>Tier schema, certification owner, export-deny tests</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Material Stack + Connector OS</td>
+<td><strong>VERIFIED</strong></td>
+<td>Material registry, connector compiler, and drill-map/gate tests exist</td>
+<td>Machine-profile pilot and versioned catalog evidence</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Safety Gate and Release State</td>
+<td><strong>PARTIAL / BLOCKED</strong></td>
+<td>Gate engine/tests are strong; main UI export allows <code>FROZEN</code>; strict bypass scan is not operational</td>
+<td>Fix <code>AB-EXP-01</code>, bypass scanner, and release-invariant tests</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Approval Packet</td>
+<td><strong>PARTIAL</strong></td>
+<td>Approval quorum/authz/idempotency and LINE workflow foundations exist</td>
+<td>Customer-facing packet E2E, identity/quorum/audit proof</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Factory Packet and Multi-Machine Export</td>
+<td><strong>PARTIAL / BLOCKED</strong></td>
+<td>Exporters/packet paths exist; determinism, server verification, auth, and production key remain blocked</td>
+<td>Close <code>AB-PKT-01</code>–<code>AB-PKT-02</code>, <code>AB-AUTH-01</code>, <code>AB-KEY-01</code></td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>ERP Backbone</td>
+<td><strong>PARTIAL</strong></td>
+<td>Migrations/object flows exist in part; key routes remain placeholders</td>
+<td>Released demand → BOM/WO/PO/job-cost integration test</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>LINE-Native Engagement</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+<td>Supabase functions/migrations and some TS/Python tests exist</td>
+<td>Live sandbox, DB/RLS suite, delivery/retry/consent evidence</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Field Execution and Installation</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+<td><code>src/workflow/field/</code>, bridge, and <code>packages/field-app/</code> screens exist</td>
+<td>Field-app test script, offline sync, close-house pilot</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>Accounting, Procurement, Job Costing</td>
+<td><strong>PARTIAL</strong></td>
+<td>Ledger/capture/migration foundations exist; finance UI and real posting are incomplete</td>
+<td>Accountant-reviewed shadow posting and reconciliation</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>MCP and AI Copilot</td>
+<td><strong>PARTIAL</strong></td>
+<td><code>src/mcp/</code> contains authz, PDPA, redaction, autonomy, and tests</td>
+<td>Deployed IAM, Pending Invocation E2E, and audit proof</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>Executive Dashboard and Analytics</td>
+<td><strong>PARTIAL</strong></td>
+<td>Factory dashboard components exist; complete board-KPI lineage was not located</td>
+<td>Metric registry, source-table lineage, baseline, and executive acceptance</td>
+</tr>
+</tbody></table></div>
+<h3>34.4 Production Blocker Register</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Blocker ID</th>
+<th>Priority</th>
+<th>Evidence</th>
+<th>Production exit condition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AB-AUTH-01</code></td>
+<td>P0</td>
+<td><code>src/core/auth/roles.ts:67</code>; <code>supabase/functions/factory-api/index.ts:136-137</code></td>
+<td>JWT/session → server-owned actor/role mapping; client headers have no authority</td>
+</tr>
+<tr>
+<td><code>AB-EXP-01</code></td>
+<td>P0</td>
+<td><code>src/components/layout/AppShell.tsx:174</code></td>
+<td>CNC export requires <code>RELEASED</code> and the format-specific gate at every entry point</td>
+</tr>
+<tr>
+<td><code>AB-PKT-01</code></td>
+<td>P0</td>
+<td><code>src/factory/packet/useFactoryPacket.ts:352</code>; <code>src/factory/packet/buildFactoryPacket.ts:126</code></td>
+<td>Canonical job identity/time policy and deterministic ZIP metadata</td>
+</tr>
+<tr>
+<td><code>AB-PKT-02</code></td>
+<td>P0</td>
+<td><code>supabase/functions/factory-api/index.ts:193-207</code></td>
+<td>Verify manifest, per-file hash, signature, gate, revision, and machine profile</td>
+</tr>
+<tr>
+<td><code>AB-KEY-01</code></td>
+<td>P0</td>
+<td><code>server/src/crypto/production.receipt.pubkeys.v1.json:1</code></td>
+<td>Approved non-placeholder production public-key set + rotation ceremony</td>
+</tr>
+<tr>
+<td><code>AB-TST-01</code></td>
+<td>P1</td>
+<td>Factory server package Vitest 1.6 result</td>
+<td>CLI entrypoint does not run/exit on import; package/root test parity</td>
+</tr>
+<tr>
+<td><code>AB-GATE-01</code></td>
+<td>P1</td>
+<td><code>scripts/gates/bypass-scan.ts:135,147</code>; <code>.claude/gates/ci-bypass-patterns.txt:156</code></td>
+<td>Scanner parses regex alternation and the strict gate passes with usable signal-to-noise</td>
+</tr>
+<tr>
+<td><code>AB-DB-01</code></td>
+<td>P1</td>
+<td>96 Python tests skipped</td>
+<td>Provision isolated DB, run RLS/integration suite, and retain CI artifact</td>
+</tr>
+<tr>
+<td><code>AB-FIELD-01</code></td>
+<td>P1</td>
+<td><code>packages/field-app/</code> has no test script; <code>.env</code> is untracked</td>
+<td>Test/offline suite, secret hygiene, and pilot evidence</td>
+</tr>
+</tbody></table></div>
+<h3>34.5 Promotion Rule</h3>
+<p>A capability may move to <code>VERIFIED</code> or <code>production-ready</code> only when the Claim Ledger points to immutable E0 source IDs, automated tests cover the invariant, deployment evidence is tied to the revision, the operational owner signs off, and no related P0 blocker remains. A status change must update §33 and §34 together; changing roadmap prose alone is prohibited.</p>
+<h2>35. Revision Notes for v5</h2>
+<h3>v5.0</h3>
+<p>Preserved the detailed FR-01 to FR-17 requirements from PRD v3 and folded the useful PRD v4 additions into canonical sections: business goals, non-goals, assumptions and constraints, RACI, release strategy, migration and coexistence, dependencies, risk register, program-level acceptance criteria, Definition of Done, SpatialLM policy, and ERP policy.</p>
+<h3>v5.1 — Evidence-Control Revision</h3>
+<ul>
+<li>Added Evidence Tiers E0-E4 and usage policy.</li>
+<li>Converted the Source Register into a source-ID registry with hashes/revisions and added the upstream Coohom/Manycore package.</li>
+<li>Added a Claim Ledger that separates source fact, vendor claim, inference, PRD decision, and as-built gap.</li>
+<li>Added an As-Built Status Matrix for FR-01 through FR-17 and a Production Blocker Register.</li>
+<li>Bound the audit snapshot to commit/branch/worktree state and recorded test limitations.</li>
+<li>Reaffirmed that a PRD target is not a production claim and every status must be reverified when the code/source revision changes.</li>
+</ul>
+<p>The generated citation markers from v4 remain removed because they are not resolvable in a standalone document. <code>monolith-complete-prd-v5.sha256</code> is the release evidence manifest containing the full SHA-256 values of all four v5.1 TH/EN Markdown and HTML files.</p>
+</main>
+</body>
+</html>

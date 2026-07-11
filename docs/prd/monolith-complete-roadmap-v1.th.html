@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmap ฉบับสมบูรณ์ของ MONOLITH v1.0</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--blue:#0f5f99}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1280px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22;letter-spacing:0}h1{margin:0 0 18px;font-size:clamp(2rem,4vw,3.35rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.52rem;scroll-margin-top:18px}h3{margin-top:28px;font-size:1.16rem;scroll-margin-top:18px}p{margin:13px 0}a{color:var(--blue);text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px;border-radius:8px;background:#17202a;color:#f4f7fb;line-height:1.45}pre code{background:transparent;color:inherit;padding:0;overflow-wrap:normal}ul,ol{padding-left:1.35rem}li{margin:6px 0}.toc{margin:28px 0 38px;padding:20px 24px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}.toc h2{margin:0 0 12px;padding:0;border:0;font-size:1.15rem}.toc ol{columns:2;column-gap:42px;margin:0}.toc li{break-inside:avoid;margin:4px 0}.table-wrap{overflow-x:auto;margin:18px 0 24px;border:1px solid var(--line);border-radius:8px}table{width:100%;min-width:840px;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-weight:760}tr:last-child td{border-bottom:0}@media(max-width:760px){main{padding:30px 20px 56px}.toc ol{columns:1}table{min-width:760px}}@media print{body{background:#fff}main{max-width:none;padding:20px;box-shadow:none}.toc ol{columns:2}.table-wrap{overflow:visible}table{min-width:0;font-size:8.5pt}a{color:inherit}}</style>
+</head>
+<body>
+<main>
+<h1>Roadmap ฉบับสมบูรณ์ของ MONOLITH</h1><nav class="toc" aria-label="สารบัญ Roadmap"><h2>สารบัญ Roadmap</h2><ol><li><a href="#section-1">1. บทสรุปผู้บริหาร</a></li><li><a href="#section-2">2. อำนาจของ Roadmap และ Evidence Baseline</a></li><li><a href="#section-3">3. Program Objective และผลลัพธ์ 12 เดือน</a></li><li><a href="#section-4">4. Planning Principles</a></li><li><a href="#section-5">5. Assumptions and Constraints</a></li><li><a href="#section-6">6. As-Built Baseline</a></li><li><a href="#section-7">7. Workstream Model</a></li><li><a href="#section-8">8. Master Timeline</a></li><li><a href="#section-9">9. Phase 0 — Safety Closure (0–30 วัน)</a></li><li><a href="#section-10">10. Phase 1 — Factory Pilot Ready (31–60 วัน)</a></li><li><a href="#section-11">11. Phase 2 — Front Door and Approval Pilot (61–90 วัน)</a></li><li><a href="#section-12">12. Phase 3 — Spatial Evidence Sandbox and Capture Hardening (เดือน 4–6)</a></li><li><a href="#section-13">13. Phase 4 — ERP Backbone and Field Digital Thread (เดือน 7–9)</a></li><li><a href="#section-14">14. Phase 5 — Board Intelligence and Controlled Scale (เดือน 10–12)</a></li><li><a href="#section-15">15. Epic Register</a></li><li><a href="#section-16">16. Critical Path and Dependencies</a></li><li><a href="#section-17">17. Release Gate Framework</a></li><li><a href="#section-18">18. Pilot Portfolio</a></li><li><a href="#section-19">19. QA and Test Strategy</a></li><li><a href="#section-20">20. Security, PDPA, and Key Management Plan</a></li><li><a href="#section-21">21. Migration and Coexistence Plan</a></li><li><a href="#section-22">22. Team Capacity and RACI</a></li><li><a href="#section-23">23. Governance Cadence</a></li><li><a href="#section-24">24. KPI and Benefit Realization</a></li><li><a href="#section-25">25. Risk Register</a></li><li><a href="#section-26">26. Procurement and External Dependency Gates</a></li><li><a href="#section-27">27. 30/60/90-Day Action Plan</a></li><li><a href="#section-28">28. Definition of Ready and Definition of Done</a></li><li><a href="#section-29">29. FR-to-Roadmap Traceability</a></li><li><a href="#section-30">30. Open Decisions</a></li><li><a href="#section-31">31. Rebaseline and Change Control</a></li><li><a href="#section-32">32. Deliverable Register</a></li><li><a href="#section-33">33. Source Register</a></li><li><a href="#section-34">34. Program Completion Criteria</a></li></ol></nav>
+<p>วันที่เอกสาร: 2026-07-10<br>ภาษา: TH<br>ฉบับเอกสาร: 1.0<br>ระยะเวลาแผน: 2026-07-10 ถึง 2027-06-30<br>เอกสารแม่บท: <code>monolith-complete-prd-v5.th.md</code> ฉบับ 5.1<br>สถานะ: Planning Baseline — target dates ต้อง rebaseline หลังผ่าน RG-0<br>ผลิตภัณฑ์: MONOLITH Manufacturing OS / MONOLITH Operating System</p>
+<h2 id="section-1">1. บทสรุปผู้บริหาร</h2>
+<p>Roadmap นี้เปลี่ยน PRD v5.1 จาก target-state ให้เป็นโปรแกรมส่งมอบ 12 เดือนที่มี owner, dependency, release gate, evidence และ rollback ชัดเจน เป้าหมายไม่ใช่สร้างทุก module พร้อมกัน แต่คือรักษา manufacturing truth ให้ปลอดภัยก่อน แล้วค่อยเพิ่ม front-door speed, spatial evidence, ERP, field execution และ board intelligence ตามลำดับ</p>
+<p>ลำดับเชิงกลยุทธ์คือ:</p>
+<pre><code class="language-text">Evidence Baseline
+  → Identity + Release Safety
+  → Deterministic Factory Packet
+  → Controlled Factory Pilot
+  → Front Door + Approval Pilot
+  → Spatial Evidence Sandbox
+  → ERP Shadow + Field Digital Thread
+  → Board Intelligence + Controlled Scale
+</code></pre>
+<p>หลักตัดสินใจสำคัญ:</p>
+<ul>
+<li>ห้ามเปิด production pilot ขณะที่ P0 blocker ยังเปิด</li>
+<li>ห้ามให้ Concept Sandbox, SpatialLM, ERP หรือ AI/MCP มีทางลัดไป CNC/release/accounting</li>
+<li>วันที่ในแผนเป็น planning target ไม่ใช่ commitment จนกว่าจะผ่าน evidence gate ของ phase ก่อนหน้า</li>
+<li>business KPI ต้องเก็บ baseline 30–60 วันก่อนกำหนด target ยกเว้น hard safety invariant ที่ตั้งเป้าเป็นศูนย์หรือ 100% ได้ทันที</li>
+<li>ทุก release ต้องอัปเดต Source Register, Claim Ledger และ As-Built Status ใน PRD v5.1</li>
+</ul>
+<h2 id="section-2">2. อำนาจของ Roadmap และ Evidence Baseline</h2>
+<p>Roadmap นี้ subordinate ต่อ PRD v5.1 ถ้าเนื้อหาขัดกัน ให้ system invariant, prohibited action, Safety Gate policy และ production blocker ใน PRD มาก่อน schedule</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>สิ่งอ้างอิง</th>
+<th>Identity</th>
+<th>บทบาทใน Roadmap</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PRD v5.1 TH/EN</td>
+<td><code>monolith-complete-prd-v5.sha256</code></td>
+<td>target requirements, claims, as-built baseline</td>
+</tr>
+<tr>
+<td>Code snapshot</td>
+<td>commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code></td>
+<td>implementation baseline ณ 2026-07-10</td>
+</tr>
+<tr>
+<td>Worktree state</td>
+<td>dirty</td>
+<td>ผล audit ไม่ใช่ clean-commit certification</td>
+</tr>
+<tr>
+<td>Automated evidence</td>
+<td>4,545 root tests, TypeScript, build, 7 browser smoke ผ่าน</td>
+<td>test-environment confidence เท่านั้น</td>
+</tr>
+<tr>
+<td>Missing evidence</td>
+<td>live DB/RLS, production deployment, real CNC, key ceremony, field pilot</td>
+<td>ต้องปิดตาม release gates</td>
+</tr>
+</tbody></table></div>
+<p>การเปลี่ยน code revision, source hash หรือ environment ทำให้ as-built claim ที่เกี่ยวข้องกลับเป็น <code>REVERIFY</code> จนกว่าจะ rerun gate</p>
+<h2 id="section-3">3. Program Objective และผลลัพธ์ 12 เดือน</h2>
+<p>ภายใน 2027-06-30 โปรแกรมต้องส่งมอบผลลัพธ์ต่อไปนี้:</p>
+<ol>
+<li>production release path ที่ server-authorized, RELEASED-only, deterministic, signed และ verify ได้ครบ packet</li>
+<li>factory pilot ที่ใช้ machine profile จริงอย่างน้อยหนึ่งเส้น พร้อม operator runbook และ rollback</li>
+<li>front door ที่เริ่มงานเร็ว แต่ Concept Sandbox export ไป production ไม่ได้</li>
+<li>approval packet ที่ bind identity, revision, quorum และ audit</li>
+<li>spatial/capture pilot สำหรับ 1–2 ห้อง โดย output เป็น evidence เท่านั้น</li>
+<li>ERP Backbone ที่รับ BOM snapshot จาก Released Spec และทำ shadow procurement/job cost/reconciliation ได้</li>
+<li>field digital thread ที่รองรับ mobile/offline proof, issue, NCR, close-house และ customer acceptance</li>
+<li>metric registry และ executive dashboard ที่ trace ทุก KPI กลับ source table/owner ได้</li>
+<li>release evidence pack ที่ทำให้สถานะ <code>VERIFIED</code> พิสูจน์ซ้ำได้จาก immutable revision</li>
+</ol>
+<h2 id="section-4">4. Planning Principles</h2>
+<ol>
+<li><strong>Safety before speed:</strong> ปิด auth/release/packet blocker ก่อนสร้าง front-door feature</li>
+<li><strong>One truth chain:</strong> ไม่มี release path คู่ขนานผ่าน vendor, ERP, field หรือ AI</li>
+<li><strong>Pilot before scale:</strong> ทุก phase ต้องมี controlled pilot ก่อนขยายเครื่องจักร/ทีม/หน่วยธุรกิจ</li>
+<li><strong>Evidence before status:</strong> ห้ามเลื่อน status จาก <code>PARTIAL</code> เป็น <code>VERIFIED</code> จากการประชุมหรือ demo อย่างเดียว</li>
+<li><strong>Config before hardcode:</strong> machine, threshold, waiver, role และ policy ต้อง version/config ได้</li>
+<li><strong>Human authority:</strong> AI/Spatial/OCR/MCP เสนอได้ แต่ write action สำคัญต้องผ่าน accountable human</li>
+<li><strong>Coexistence over big bang:</strong> ของเดิมทำงานต่อได้จน proof chain ใหม่เสถียร</li>
+<li><strong>Rebaseline honestly:</strong> scope/date/capacity เปลี่ยนต้องบันทึก ไม่ซ่อนด้วยการลด acceptance criteria</li>
+</ol>
+<h2 id="section-5">5. Assumptions and Constraints</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ประเภท</th>
+<th>Planning assumption / constraint</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Capacity</td>
+<td>มี core squad ข้าม frontend/CAD, backend/platform, QA และ product; ถ้าต่ำกว่าสมมติฐาน §22 ต้องเลื่อน phase ไม่ลด safety gate</td>
+</tr>
+<tr>
+<td>Factory</td>
+<td>เลือกเครื่องจักร pilot ได้หนึ่ง profile และมี factory owner ร่วม UAT</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>มี project/room ที่อนุญาตใช้ pilot และทำ PDPA classification ได้</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td>finance owner ยอมทำ shadow posting ก่อน real posting</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>มี ops champion และ controlled project สำหรับ mobile/offline pilot</td>
+</tr>
+<tr>
+<td>Vendor</td>
+<td>Coohom/SmartLink เป็น benchmark จนกว่าจะผ่าน procurement gate ไม่ใช่ dependency ของ critical path</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>ต้องมี isolated test DB, staging และ key/secrets boundary ก่อน RG-2</td>
+</tr>
+<tr>
+<td>Timeline</td>
+<td>target date ทั้งหมด rebaseline หลัง RG-0 และทุก quarter</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-6">6. As-Built Baseline</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>กลุ่ม</th>
+<th>สถานะเริ่มต้น</th>
+<th>Roadmap implication</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Designer Workspace / Parametric Contract</td>
+<td>VERIFIED ใน test environment</td>
+<td>รักษา regression coverage และเพิ่ม deployed immutability proof</td>
+</tr>
+<tr>
+<td>Material Stack / Connector OS</td>
+<td>VERIFIED ใน test environment</td>
+<td>ใช้เป็น core ของ machine pilot</td>
+</tr>
+<tr>
+<td>Safety Gate / Release</td>
+<td>PARTIAL / BLOCKED</td>
+<td>เป็น critical path Phase 0</td>
+</tr>
+<tr>
+<td>Factory Packet / Export</td>
+<td>PARTIAL / BLOCKED</td>
+<td>ต้องแก้ determinism, verification, auth, key ก่อน pilot</td>
+</tr>
+<tr>
+<td>Front Door / Concept Sandbox</td>
+<td>PARTIAL / PLANNED</td>
+<td>เริ่มหลัง RG-2 เพื่อไม่แย่ง capacity จาก safety closure</td>
+</tr>
+<tr>
+<td>Spatial Evidence</td>
+<td>PARTIAL</td>
+<td>มี SiteSurveyZone substrate แต่ไม่มี model runtime</td>
+</tr>
+<tr>
+<td>Capture / LINE</td>
+<td>PARTIAL / NOT VERIFIED</td>
+<td>ต้องมี DB/RLS และ live sandbox proof</td>
+</tr>
+<tr>
+<td>ERP / Finance</td>
+<td>PARTIAL</td>
+<td>เริ่มด้วย object registry และ shadow mode</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>PARTIAL / NOT VERIFIED</td>
+<td>ต้องเพิ่ม test/offline/secret hygiene</td>
+</tr>
+<tr>
+<td>Executive Analytics</td>
+<td>PARTIAL</td>
+<td>ทำหลัง source-table lineage พร้อม</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-7">7. Workstream Model</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>Scope</th>
+<th>Accountable role</th>
+<th>Primary FR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WS-00</code> Program Evidence &amp; Governance</td>
+<td>source/claim/as-built, release evidence, change control</td>
+<td>Program Owner</td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>WS-01</code> Identity, Security &amp; PDPA</td>
+<td>IAM, JWT, secrets, service role, threat model, retention</td>
+<td>Security/Platform Lead</td>
+<td>FR-09, 13, 16</td>
+</tr>
+<tr>
+<td><code>WS-02</code> Truth and Release Integrity</td>
+<td>spec states, gate invariants, waiver, immutable release</td>
+<td>Manufacturing Tech Lead</td>
+<td>FR-06, 09</td>
+</tr>
+<tr>
+<td><code>WS-03</code> Factory Packet &amp; Machine</td>
+<td>deterministic packet, signature, verify, machine profiles</td>
+<td>Factory Integration Lead</td>
+<td>FR-08, 11</td>
+</tr>
+<tr>
+<td><code>WS-04</code> Front Door &amp; Concept</td>
+<td>intake, sandbox, conversion, presentation</td>
+<td>Product/Design Lead</td>
+<td>FR-01, 02, 05</td>
+</tr>
+<tr>
+<td><code>WS-05</code> Capture &amp; Spatial Evidence</td>
+<td>capture, survey, provenance, SpatialLM sandbox</td>
+<td>Capture/AI Lead</td>
+<td>FR-03, 04</td>
+</tr>
+<tr>
+<td><code>WS-06</code> Catalog, Material &amp; Connector</td>
+<td>trust tiers, certification, catalog/machine versions</td>
+<td>Data Steward</td>
+<td>FR-07, 08</td>
+</tr>
+<tr>
+<td><code>WS-07</code> Approval &amp; LINE</td>
+<td>customer packet, identity, quorum, retry, consent</td>
+<td>Engagement Lead</td>
+<td>FR-10, 13</td>
+</tr>
+<tr>
+<td><code>WS-08</code> ERP, Procurement &amp; Finance</td>
+<td>item/BOM/WO/WIP/PO/job cost/shadow posting</td>
+<td>Finance Systems Lead</td>
+<td>FR-12, 15</td>
+</tr>
+<tr>
+<td><code>WS-09</code> Field Execution</td>
+<td>mobile/offline, proof, issue, close-house, acceptance</td>
+<td>Field Operations Lead</td>
+<td>FR-14</td>
+</tr>
+<tr>
+<td><code>WS-10</code> Analytics &amp; Board</td>
+<td>metric registry, dashboard, benefit realization</td>
+<td>Data/Product Lead</td>
+<td>FR-17</td>
+</tr>
+<tr>
+<td><code>WS-11</code> Platform, QA &amp; Operations</td>
+<td>CI, DB/RLS, test parity, observability, DR/runbooks</td>
+<td>QA/Platform Lead</td>
+<td>all</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-8">8. Master Timeline</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase / Release</th>
+<th>Target dates</th>
+<th>Primary outcome</th>
+<th>Hard gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Phase 0 — <code>R0.1 Safety Closure</code></td>
+<td>2026-07-10 → 2026-08-09</td>
+<td>evidence baseline + P0 safety closure</td>
+<td><code>RG-1</code></td>
+</tr>
+<tr>
+<td>Phase 1 — <code>R0.2 Factory Pilot Ready</code></td>
+<td>2026-08-10 → 2026-09-08</td>
+<td>one controlled machine path, signed/verified packet</td>
+<td><code>RG-2</code></td>
+</tr>
+<tr>
+<td>Phase 2 — <code>R0.3 Front Door Pilot</code></td>
+<td>2026-09-09 → 2026-10-08</td>
+<td>intake + sandbox + conversion + approval pilot</td>
+<td><code>RG-3</code></td>
+</tr>
+<tr>
+<td>Phase 3 — <code>R0.4 Spatial Sandbox</code></td>
+<td>2026-10-09 → 2026-12-31</td>
+<td>capture hardening + 1–2 room spatial pilot</td>
+<td><code>RG-4</code></td>
+</tr>
+<tr>
+<td>Phase 4 — <code>R0.5 ERP/Field Pilot</code></td>
+<td>2027-01-01 → 2027-03-31</td>
+<td>ERP shadow + field digital thread</td>
+<td><code>RG-5</code>, <code>RG-6</code></td>
+</tr>
+<tr>
+<td>Phase 5 — <code>R1.0 Controlled Scale</code></td>
+<td>2027-04-01 → 2027-06-30</td>
+<td>board intelligence, multi-machine/BU controlled scale</td>
+<td><code>RG-7</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="section-9">9. Phase 0 — Safety Closure (0–30 วัน)</h2>
+<p>เป้าหมาย: ปิดช่องที่ทำให้ production authority, release state หรือ packet integrity ถูก bypass ได้</p>
+<h3>Scope</h3>
+<ul>
+<li><code>AB-AUTH-01</code>: server-owned actor/role mapping จาก JWT/session</li>
+<li><code>AB-EXP-01</code>: CNC export require <code>RELEASED</code> ทุก entry point</li>
+<li><code>AB-PKT-01</code>: canonical identity/time และ deterministic ZIP</li>
+<li><code>AB-PKT-02</code>: full packet verification</li>
+<li><code>AB-KEY-01</code>: production public-key set และ key rotation ceremony</li>
+<li><code>AB-TST-01</code>: factory package/root test parity</li>
+<li><code>AB-GATE-01</code>: strict bypass scanner ใช้งานได้</li>
+<li><code>AB-DB-01</code>: isolated DB/RLS CI</li>
+<li><code>AB-FIELD-01</code>: field test script และ secret hygiene</li>
+<li>owner, rollback, runbook และ evidence location ของ blocker ทุกตัว</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>P0 blocker เปิดอยู่ = 0</li>
+<li>unauthorized role/header ไม่สามารถให้ authority ได้</li>
+<li>export จาก DRAFT/FROZEN ถูก reject ทั้ง UI, API และ direct call</li>
+<li>packet จาก input เดียวกันให้ hash เดียวกันใน repeat corpus</li>
+<li>tampered file/manifest/signature/revision/machine profile ถูก reject</li>
+<li>production key ไม่ใช่ placeholder และ rotation/revocation test ผ่าน</li>
+<li>root/package/DB required suites ผ่านและเก็บ CI artifact</li>
+</ul>
+<h2 id="section-10">10. Phase 1 — Factory Pilot Ready (31–60 วัน)</h2>
+<p>เป้าหมาย: พิสูจน์ truth → packet → verify → operator flow บนเครื่องจักรเป้าหมายหนึ่งเส้นโดยไม่ขยาย scope</p>
+<h3>Scope</h3>
+<ul>
+<li>freeze <code>MachineProfileVersion</code> และ tool table ของ pilot</li>
+<li>golden jobs ครอบ normal, boundary และ tampered cases</li>
+<li>signed Factory Packet + offline verifier</li>
+<li>operator checklist, dry-run mode, abort/rollback procedure</li>
+<li>packet-to-machine adapter และ post-processor conformance</li>
+<li>production receipt, audit event และ evidence archive</li>
+<li>controlled dry run ก่อน material cutting จริง</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>factory owner และ QA sign-off packet golden set</li>
+<li>released revision, manifest, file hash, machine profile และ receipt trace กลับได้ครบ</li>
+<li>failed verify ไม่มีทางถูก run ต่อโดย default</li>
+<li>operator สามารถ verify offline และหยุดงานได้โดยไม่พึ่ง developer</li>
+<li>incident drill และ rollback ผ่าน</li>
+</ul>
+<h2 id="section-11">11. Phase 2 — Front Door and Approval Pilot (61–90 วัน)</h2>
+<p>เป้าหมาย: เพิ่มความเร็วเริ่มงานโดยไม่สร้าง production shortcut</p>
+<h3>Scope</h3>
+<ul>
+<li>Intake Router จาก LINE/web/manual intake</li>
+<li>Concept Sandbox ที่มี badge/state ชัดและ no-export invariant</li>
+<li>ConceptGraph → Parametric Contract conversion workflow</li>
+<li>Catalog Trust Tiers seed: Public, Project, Verified, Certified</li>
+<li>Approval Packet สำหรับ G1/G2/G3/G4 พร้อม identity, revision, quorum และ expiry</li>
+<li>presentation/render deck ที่ไม่ถูกตีความเป็น manufacturing approval</li>
+<li>baseline time-to-first-concept และ approval SLA</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>sandbox object ไป CNC/release โดยไม่ convert ไม่ได้</li>
+<li>conversion ทุกครั้งมี source mapping, verifier และ owner</li>
+<li>customer approval bind packet hash/revision และแยกจาก factory release</li>
+<li>pilot users ทำ flow ได้โดยไม่ต้องรู้ internal architecture</li>
+<li>feedback และ abandonment reason ถูกเก็บเพื่อ rebaseline Phase 3</li>
+</ul>
+<h2 id="section-12">12. Phase 3 — Spatial Evidence Sandbox and Capture Hardening (เดือน 4–6)</h2>
+<p>เป้าหมาย: เร่ง survey/capture โดยคง human verification และแยกจาก release path</p>
+<h3>Scope</h3>
+<ul>
+<li>Spatial Evidence Contract สำหรับ walls/openings/object boxes/confidence/provenance</li>
+<li>data boundary สำหรับ video/LiDAR/RGB-D/point cloud และ retention policy</li>
+<li>SpatialLM/runtime PoC บน 1–2 ห้อง</li>
+<li>comparison กับ manual survey และ correction workload</li>
+<li>mobile capture, offline queue, retry/idempotency และ conflict handling</li>
+<li>SiteSurveyZone version/supersede flow</li>
+<li>promote เฉพาะ verified evidence เข้า design context</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>model output ถูก mark candidate และ export production ไม่ได้</li>
+<li>measurement-critical field ต้อง human verify</li>
+<li>accuracy/correction/bias/failure taxonomy ถูกบันทึก ไม่เลือกเฉพาะ successful samples</li>
+<li>delete/retention/consent flow ผ่าน PDPA review</li>
+<li>fallback manual survey ทำงานได้เมื่อ model/service ล่ม</li>
+</ul>
+<h2 id="section-13">13. Phase 4 — ERP Backbone and Field Digital Thread (เดือน 7–9)</h2>
+<p>เป้าหมาย: เชื่อม released demand กับ business/field reality โดยไม่ย้าย manufacturing authority</p>
+<h3>Scope</h3>
+<ul>
+<li>Item Master/Object Registry และ identity mapping</li>
+<li>BOM Snapshot จาก Released Spec เท่านั้น</li>
+<li>Work Order, WIP, stock reservation และ procurement trigger</li>
+<li>committed/actual cost และ job-cost variance</li>
+<li>shadow accounting posting + reconciliation</li>
+<li>field work item, room/lane, proof, issue/NCR และ offline sync</li>
+<li>close-house/customer acceptance + authorization/audit</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>ERP แก้ geometry/drill/CNC/release ไม่ได้</li>
+<li>duplicate/retry ไม่สร้าง PO, stock move หรือ journal ซ้ำ</li>
+<li>finance owner reconcile shadow posting กับ source documents ได้</li>
+<li>field proof bind released revision/room/work item</li>
+<li>close-house ไม่ผ่านถ้า proof/issue/authorization ไม่ครบ</li>
+</ul>
+<h2 id="section-14">14. Phase 5 — Board Intelligence and Controlled Scale (เดือน 10–12)</h2>
+<p>เป้าหมาย: ทำให้ผู้บริหารเห็น speed, integrity, manufacturing, field และ financial outcome จาก source ที่ trace ได้ และขยายอย่างควบคุม</p>
+<h3>Scope</h3>
+<ul>
+<li>Metric Registry: definition, owner, source table, cadence, baseline, threshold</li>
+<li>executive dashboard และ drill-down ถึง project/package/revision</li>
+<li>closed-loop rule enrichment จาก NCR/rework/variance</li>
+<li>machine profile เพิ่มหลัง conformance gate</li>
+<li>business unit rollout playbook, training และ support model</li>
+<li>SLO, incident response, DR/restore และ release certification</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>KPI ทุกตัวมี source lineage และ owner</li>
+<li>ไม่มี vanity metric ที่ไม่มี decision/action</li>
+<li>new machine/BU ใช้ repeatable onboarding + certification</li>
+<li>benefit realization ผ่าน baseline comparison และ finance/ops sign-off</li>
+<li>R1.0 evidence pack ทำซ้ำได้จาก clean revision</li>
+</ul>
+<h2 id="section-15">15. Epic Register</h2>
+<p>Size เป็น relative planning size (<code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code>) ไม่ใช่ duration commitment</p>
+<h3>15.1 Safety, Factory, and Platform Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-000</code></td>
+<td>evidence baseline, owner map, release manifest</td>
+<td>00</td>
+<td>S</td>
+<td>none</td>
+<td>RG-0</td>
+</tr>
+<tr>
+<td><code>RM-001</code></td>
+<td>JWT/session → server-owned actor/role</td>
+<td>01</td>
+<td>L</td>
+<td>RM-000</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-002</code></td>
+<td>RELEASED-only export invariant ทุก entry point</td>
+<td>02</td>
+<td>M</td>
+<td>RM-001</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-003</code></td>
+<td>deterministic job identity/manifest/ZIP</td>
+<td>03</td>
+<td>L</td>
+<td>RM-000</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-004</code></td>
+<td>full packet verifier + negative corpus</td>
+<td>03</td>
+<td>L</td>
+<td>RM-003</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-005</code></td>
+<td>production key set, rotation, revocation</td>
+<td>01</td>
+<td>M</td>
+<td>RM-001</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-006</code></td>
+<td>package/root test-runner parity</td>
+<td>11</td>
+<td>S</td>
+<td>none</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-007</code></td>
+<td>strict bypass scanner repair</td>
+<td>11</td>
+<td>S</td>
+<td>none</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-008</code></td>
+<td>isolated DB/RLS integration CI</td>
+<td>11</td>
+<td>M</td>
+<td>DEC-05</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-009</code></td>
+<td>field test harness + secret hygiene</td>
+<td>09/11</td>
+<td>M</td>
+<td>environment</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-010</code></td>
+<td>versioned pilot machine profile/tool table</td>
+<td>03/06</td>
+<td>M</td>
+<td>RM-004, DEC-02</td>
+<td>RG-2</td>
+</tr>
+<tr>
+<td><code>RM-011</code></td>
+<td>offline verifier + receipt/archive</td>
+<td>03</td>
+<td>M</td>
+<td>RM-004, RM-005</td>
+<td>RG-2</td>
+</tr>
+<tr>
+<td><code>RM-012</code></td>
+<td>controlled factory pilot + runbook</td>
+<td>03</td>
+<td>L</td>
+<td>RM-010, RM-011</td>
+<td>RG-2</td>
+</tr>
+</tbody></table></div>
+<h3>15.2 Front Door, Catalog, Approval, and Spatial Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-020</code></td>
+<td>unified intake router and evidence identity</td>
+<td>04/07</td>
+<td>L</td>
+<td>RG-1</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-021</code></td>
+<td>Concept Sandbox + no-export enforcement</td>
+<td>04</td>
+<td>L</td>
+<td>RM-020</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-022</code></td>
+<td>verified conversion to Parametric Contract</td>
+<td>04/02</td>
+<td>XL</td>
+<td>RM-021</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-023</code></td>
+<td>revision-bound Approval Packet</td>
+<td>07</td>
+<td>L</td>
+<td>RM-020, RM-001</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-024</code></td>
+<td>Catalog Trust Tiers + certified seed set</td>
+<td>06</td>
+<td>L</td>
+<td>DEC-06</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-030</code></td>
+<td>Spatial Evidence Contract/provenance</td>
+<td>05</td>
+<td>M</td>
+<td>RM-000</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-031</code></td>
+<td>SpatialLM/runtime PoC for 1–2 rooms</td>
+<td>05</td>
+<td>L</td>
+<td>RM-030, DEC-07</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-032</code></td>
+<td>mobile/offline capture hardening</td>
+<td>05/09</td>
+<td>L</td>
+<td>RM-008</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-033</code></td>
+<td>verification/promote/fallback workflow</td>
+<td>05/02</td>
+<td>L</td>
+<td>RM-030, RM-031, RM-032</td>
+<td>RG-4</td>
+</tr>
+</tbody></table></div>
+<h3>15.3 ERP, Field, AI Governance, Analytics, and Scale Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-040</code></td>
+<td>Item Master/Object Registry</td>
+<td>08</td>
+<td>L</td>
+<td>RM-001</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-041</code></td>
+<td>BOM Snapshot → Work Order/WIP</td>
+<td>08</td>
+<td>XL</td>
+<td>RM-040, Released Spec</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-042</code></td>
+<td>procurement + committed/actual job cost</td>
+<td>08</td>
+<td>XL</td>
+<td>RM-041</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-043</code></td>
+<td>shadow accounting + reconciliation</td>
+<td>08</td>
+<td>L</td>
+<td>RM-042, DEC-08</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-050</code></td>
+<td>field work item/room/lane + offline</td>
+<td>09</td>
+<td>XL</td>
+<td>RM-009, RM-032</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-051</code></td>
+<td>proof, issue, NCR, rework loop</td>
+<td>09</td>
+<td>L</td>
+<td>RM-050</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-052</code></td>
+<td>close-house and customer acceptance</td>
+<td>09/07</td>
+<td>L</td>
+<td>RM-051, IAM</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-060</code></td>
+<td>metric registry and source lineage</td>
+<td>10</td>
+<td>M</td>
+<td>RM-041, RM-051</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-061</code></td>
+<td>executive dashboard + drill-down</td>
+<td>10</td>
+<td>L</td>
+<td>RM-060</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-062</code></td>
+<td>closed-loop rule/catalog improvement</td>
+<td>10/06</td>
+<td>L</td>
+<td>RM-051, RM-060</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-063</code></td>
+<td>Pending Invocation + governed MCP writes</td>
+<td>01/11</td>
+<td>L</td>
+<td>RM-001, RM-000</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-070</code></td>
+<td>multi-machine certification</td>
+<td>03</td>
+<td>XL</td>
+<td>RG-2 evidence</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-071</code></td>
+<td>observability, SLO, incident and DR</td>
+<td>11</td>
+<td>L</td>
+<td>RM-008, RG-2</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-072</code></td>
+<td>R1.0 release certification/evidence pack</td>
+<td>00/11</td>
+<td>M</td>
+<td>all gates</td>
+<td>RG-7</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-16">16. Critical Path and Dependencies</h2>
+<h3>Critical Path A — Production Safety</h3>
+<pre><code class="language-text">RM-000 → RM-001 → RM-002
+RM-003 → RM-004 → RM-010 → RM-011 → RM-012
+RM-005 ───────────────────────┘
+</code></pre>
+<p>Phase 1 เลื่อนไม่ได้ถ้า IAM, release invariant, determinism, verifier หรือ key ceremony ยังไม่ผ่าน</p>
+<h3>Critical Path B — Front Door</h3>
+<pre><code class="language-text">RM-020 → RM-021 → RM-022 → RM-023
+                 RM-024 ─────┘
+</code></pre>
+<h3>Critical Path C — Spatial/Capture</h3>
+<pre><code class="language-text">RM-030 → RM-031
+RM-008 → RM-032 → RM-033
+</code></pre>
+<h3>Critical Path D — ERP/Field/Analytics</h3>
+<pre><code class="language-text">RM-040 → RM-041 → RM-042 → RM-043
+RM-009 + RM-032 → RM-050 → RM-051 → RM-052
+RM-041 + RM-051 → RM-060 → RM-061 → RM-062
+</code></pre>
+<h2 id="section-17">17. Release Gate Framework</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Decision owner</th>
+<th>Required evidence</th>
+<th>Fail rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RG-0</code> Baseline Accepted</td>
+<td>Program Owner + Tech Lead</td>
+<td>scope, owner, capacity, source hashes, clean backlog</td>
+<td>no owner/evidence = no start</td>
+</tr>
+<tr>
+<td><code>RG-1</code> Safety Closed</td>
+<td>Security + Manufacturing Tech Lead</td>
+<td>P0=0, auth/release/determinism/verify/key tests</td>
+<td>any P0 = fail</td>
+</tr>
+<tr>
+<td><code>RG-2</code> Factory Pilot Ready</td>
+<td>Factory Owner + QA</td>
+<td>machine profile, golden packet, offline verify, runbook, rollback</td>
+<td>failed/tampered packet runnable = fail</td>
+</tr>
+<tr>
+<td><code>RG-3</code> Front Door Pilot Ready</td>
+<td>Product + Design Lead</td>
+<td>no-export sandbox, conversion audit, approval identity</td>
+<td>sandbox authority leak = fail</td>
+</tr>
+<tr>
+<td><code>RG-4</code> Spatial Pilot Accepted</td>
+<td>Survey Lead + PDPA Owner</td>
+<td>1–2 room results, correction data, retention/fallback</td>
+<td>model output reaches release = fail</td>
+</tr>
+<tr>
+<td><code>RG-5</code> ERP Shadow Accepted</td>
+<td>Finance Lead + Ops</td>
+<td>BOM/WO/PO/job-cost trace, idempotency, reconciliation</td>
+<td>ERP mutates manufacturing truth = fail</td>
+</tr>
+<tr>
+<td><code>RG-6</code> Field Pilot Accepted</td>
+<td>Field Ops + PM</td>
+<td>offline proof, issue closure, acceptance auth</td>
+<td>close-house without proof = fail</td>
+</tr>
+<tr>
+<td><code>RG-7</code> Controlled Scale</td>
+<td>Executive Owner</td>
+<td>KPI lineage, SLO/DR, training, release evidence</td>
+<td>stale evidence/open critical risk = fail</td>
+</tr>
+</tbody></table></div>
+<p>ทุก gate ต้องมี verdict <code>PASS</code>, <code>FAIL</code> หรือ <code>CONDITIONAL</code> พร้อม owner, timestamp, evidence links และ expiry ห้าม auto-pass จาก deadline</p>
+<h2 id="section-18">18. Pilot Portfolio</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pilot</th>
+<th>Scope</th>
+<th>Success evidence</th>
+<th>Rollback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Factory Pilot A</td>
+<td>1 known machine profile, controlled cabinet/job, dry run ก่อน cut</td>
+<td>packet/verify/receipt/operator sign-off</td>
+<td>return to approved legacy export</td>
+</tr>
+<tr>
+<td>Front Door Pilot B</td>
+<td>representative leads/projects, concept-to-approval</td>
+<td>time baseline, conversion audit, no-export proof</td>
+<td>manual intake + existing designer flow</td>
+</tr>
+<tr>
+<td>Spatial Pilot C</td>
+<td>1–2 rooms, non-production path</td>
+<td>manual comparison, correction time, failure taxonomy</td>
+<td>manual survey remains authority</td>
+</tr>
+<tr>
+<td>ERP Shadow Pilot D</td>
+<td>representative released jobs or one full accounting cycle</td>
+<td>BOM/PO/WIP/job-cost reconciliation</td>
+<td>no real posting; shadow tables only</td>
+</tr>
+<tr>
+<td>Field Pilot E</td>
+<td>one controlled project from work item to acceptance</td>
+<td>offline sync, proof binding, issue/close-house audit</td>
+<td>parallel legacy field process</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-19">19. QA and Test Strategy</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Required coverage</th>
+<th>Release evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Unit/property</td>
+<td>math, geometry, connector, state, idempotency</td>
+<td>deterministic CI results</td>
+</tr>
+<tr>
+<td>Golden/packet</td>
+<td>valid, boundary, tampered, wrong machine/revision/key</td>
+<td>immutable golden corpus</td>
+</tr>
+<tr>
+<td>Contract/API</td>
+<td>auth, schema, versioning, error codes</td>
+<td>API contract report</td>
+</tr>
+<tr>
+<td>DB/RLS</td>
+<td>role isolation, RPC, retry, duplicate, migration</td>
+<td>isolated DB artifact</td>
+</tr>
+<tr>
+<td>Browser E2E</td>
+<td>release, export, approval, failure states</td>
+<td>screenshots/report</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>header spoof, privilege escalation, secret scan, key rotation</td>
+<td>threat-test report</td>
+</tr>
+<tr>
+<td>Field/offline</td>
+<td>queue, conflict, retry, reconnect, device loss</td>
+<td>device/offline report</td>
+</tr>
+<tr>
+<td>Factory UAT</td>
+<td>dry run, operator verify, abort, receipt</td>
+<td>signed pilot checklist</td>
+</tr>
+<tr>
+<td>Finance reconciliation</td>
+<td>shadow vs source/legacy</td>
+<td>accountant sign-off</td>
+</tr>
+<tr>
+<td>Disaster recovery</td>
+<td>backup/restore, key revocation, service outage</td>
+<td>drill report</td>
+</tr>
+</tbody></table></div>
+<p>required test ห้ามถูก skip ใน release candidate ถ้า environment ยังไม่มี ให้ gate เป็น <code>NOT VERIFIED</code> ไม่ใช่ pass</p>
+<h2 id="section-20">20. Security, PDPA, and Key Management Plan</h2>
+<ul>
+<li>server derives actor/role จาก trusted session/JWT เท่านั้น</li>
+<li>service-role credential ไม่ออกสู่ client และ function ต้อง enforce authorization ก่อน privileged RPC</li>
+<li>secret inventory, owner, rotation date และ emergency revoke path ต้องอยู่ใน runbook</li>
+<li>signing key แยก environment; production private key ห้ามอยู่ใน repo</li>
+<li>public-key set ต้อง version, revoke และ verify historical receipt ได้</li>
+<li>site photos/video/point cloud/PII ต้องมี purpose, consent, residency, retention และ deletion policy</li>
+<li>vendor transfer ต้องผ่าน DPA, data-flow review และ minimum-data design</li>
+<li>audit event สำคัญเป็น append-only และผูก actor/session/revision</li>
+<li>incident response ต้องมี kill switch สำหรับ export, AI writes, vendor integration และ field closeout</li>
+</ul>
+<h2 id="section-21">21. Migration and Coexistence Plan</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Legacy behavior</th>
+<th>New behavior</th>
+<th>Exit condition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Shadow</td>
+<td>legacy remains authoritative</td>
+<td>new system observes/calculates</td>
+<td>parity report acceptable</td>
+</tr>
+<tr>
+<td>Dual-run</td>
+<td>controlled jobs use both</td>
+<td>compare packet/ERP/field outputs</td>
+<td>discrepancy within approved policy</td>
+</tr>
+<tr>
+<td>Controlled cutover</td>
+<td>selected BU/machine uses new path</td>
+<td>rollback ready</td>
+<td>pilot gate passed</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>additional machine/BU onboarded</td>
+<td>certification per profile</td>
+<td>repeatable evidence pack</td>
+</tr>
+</tbody></table></div>
+<p>migrated object ต้อง preserve identity, revision, provenance และ confidence ห้าม regenerate old packet ให้ดูเหมือน new evidence โดยไม่มี parity</p>
+<h2 id="section-22">22. Team Capacity and RACI</h2>
+<h3>22.1 Planning Capacity Assumption</h3>
+<p>สมมติฐานขั้นต่ำสำหรับ timeline นี้ ไม่ใช่ headcount commitment:</p>
+<ul>
+<li>1 Program/Product Owner</li>
+<li>1 Technical Lead/Architect</li>
+<li>2 Frontend/CAD engineers</li>
+<li>2 Backend/Platform engineers</li>
+<li>1 QA/SDET</li>
+<li>0.5 DevOps/Security</li>
+<li>0.5 Data/Analytics</li>
+<li>rotating domain owners: Factory, Survey, Field, Finance, Legal/PDPA, Data Steward</li>
+</ul>
+<p>ถ้าขาด core role เกินหนึ่ง sprint ต้อง rebaseline critical path ห้ามชดเชยด้วยการข้าม gate</p>
+<h3>22.2 RACI</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Responsible</th>
+<th>Accountable</th>
+<th>Consulted</th>
+<th>Informed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PRD/Roadmap change</td>
+<td>Product/Program</td>
+<td>Executive Owner</td>
+<td>Tech, Ops, Finance</td>
+<td>all leads</td>
+</tr>
+<tr>
+<td>IAM/release security</td>
+<td>Platform/Security</td>
+<td>Tech Lead</td>
+<td>QA, Factory</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>Factory pilot release</td>
+<td>Factory Integration</td>
+<td>Factory Owner</td>
+<td>QA, Design Lead</td>
+<td>Ops/Executive</td>
+</tr>
+<tr>
+<td>Spatial pilot</td>
+<td>Capture/AI</td>
+<td>Survey Lead</td>
+<td>PDPA, Designer</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>ERP shadow posting</td>
+<td>Finance Systems</td>
+<td>Finance Lead</td>
+<td>Ops, Accountant</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>Field close-house</td>
+<td>Field Product/Ops</td>
+<td>Ops Lead</td>
+<td>PM, QA, Customer process owner</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>KPI publication</td>
+<td>Data/Product</td>
+<td>Executive Owner</td>
+<td>Finance/Ops</td>
+<td>all leads</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-23">23. Governance Cadence</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cadence</th>
+<th>Forum</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Daily during Phase 0</td>
+<td>blocker stand-up</td>
+<td>owner, next evidence, unblock action</td>
+</tr>
+<tr>
+<td>Weekly</td>
+<td>program delivery review</td>
+<td>epic status, critical path, risk/decision log</td>
+</tr>
+<tr>
+<td>Biweekly</td>
+<td>release evidence review</td>
+<td>test/evidence freshness, claim/as-built updates</td>
+</tr>
+<tr>
+<td>Monthly</td>
+<td>executive steering</td>
+<td>scope/date/capacity tradeoff, benefit baseline</td>
+</tr>
+<tr>
+<td>Per gate</td>
+<td>gate review</td>
+<td>signed verdict, conditions, expiry, rollback</td>
+</tr>
+<tr>
+<td>Quarterly</td>
+<td>roadmap rebaseline</td>
+<td>phase dates, capacity, procurement and KPI targets</td>
+</tr>
+</tbody></table></div>
+<p>WIP limit: phase ละไม่เกิน 3 critical epics active และ workstream ละ 1 primary epic เว้นแต่ Program Owner อนุมัติ capacity/evidence plan</p>
+<h2 id="section-24">24. KPI and Benefit Realization</h2>
+<h3>24.1 Hard Invariants</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>KPI</th>
+<th>Target before production pilot</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Open P0 blocker</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Unauthorized release/export</td>
+<td>0</td>
+</tr>
+<tr>
+<td>CNC export not RELEASED</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Deterministic packet repeat</td>
+<td>100% ของ golden corpus</td>
+</tr>
+<tr>
+<td>Tampered packet rejection</td>
+<td>100% ของ negative corpus</td>
+</tr>
+<tr>
+<td>Required DB/RLS/security suites</td>
+<td>100% pass, 0 required skip</td>
+</tr>
+<tr>
+<td>Repository production secret</td>
+<td>0</td>
+</tr>
+</tbody></table></div>
+<h3>24.2 Business/Operational Metrics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cluster</th>
+<th>Metrics</th>
+<th>Target policy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Speed</td>
+<td>time-to-first-concept, survey-to-verified, approval SLA</td>
+<td>baseline 30–60 วันก่อน target</td>
+</tr>
+<tr>
+<td>Integrity</td>
+<td>render-to-release drift, approval completeness, waiver rate</td>
+<td>baseline + root-cause threshold</td>
+</tr>
+<tr>
+<td>Manufacturing</td>
+<td>first-pass gate, post error, packet rejection, scrap/rework</td>
+<td>factory-verified baseline</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>offline sync success, issue rate, punch-list age, acceptance completion</td>
+<td>pilot baseline</td>
+</tr>
+<tr>
+<td>Financial</td>
+<td>BOM-to-PO lag, WIP accuracy, job-cost variance, capture-to-post lag</td>
+<td>finance-reviewed baseline</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>stale claim/evidence, conditional gate age, unresolved P0/P1</td>
+<td>zero stale critical evidence</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-25">25. Risk Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Trigger</th>
+<th>Impact</th>
+<th>Mitigation / owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0 closure slips</td>
+<td>blocker lacks owner/evidence &gt; 3 days</td>
+<td>all later phases slip</td>
+<td>daily escalation; Tech Lead</td>
+</tr>
+<tr>
+<td>dirty worktree invalidates audit</td>
+<td>release built from unknown state</td>
+<td>evidence unreliable</td>
+<td>clean release branch + manifest; Platform</td>
+</tr>
+<tr>
+<td>machine profile drift</td>
+<td>tool/profile changes without version</td>
+<td>unsafe output</td>
+<td>signed/versioned profile; Factory</td>
+</tr>
+<tr>
+<td>DB/RLS not exercised</td>
+<td>required tests skipped</td>
+<td>data/auth leak</td>
+<td>isolated DB CI; QA/Platform</td>
+</tr>
+<tr>
+<td>front-door scope explosion</td>
+<td>render/catalog requests crowd safety work</td>
+<td>critical path slip</td>
+<td>RG-2 prerequisite; Product</td>
+</tr>
+<tr>
+<td>SpatialLM overpromise</td>
+<td>demo treated as measurement truth</td>
+<td>field/manufacturing error</td>
+<td>sandbox/no-release invariant; Survey</td>
+</tr>
+<tr>
+<td>ERP becomes truth owner</td>
+<td>ERP writes manufacturing fields</td>
+<td>silent drift</td>
+<td>contract/RLS deny; Tech/Finance</td>
+</tr>
+<tr>
+<td>field adoption low</td>
+<td>proof completion below baseline</td>
+<td>loop not closed</td>
+<td>one-hand UX, ops champion, coexistence</td>
+</tr>
+<tr>
+<td>vendor claim mismatch</td>
+<td>API/machine behavior differs from marketing</td>
+<td>procurement waste</td>
+<td>demo/contract/conformance gate</td>
+</tr>
+<tr>
+<td>key/secrets mishandled</td>
+<td>placeholder/shared keys persist</td>
+<td>forgery/incident</td>
+<td>key ceremony, rotation, secret scan</td>
+</tr>
+<tr>
+<td>capacity below plan</td>
+<td>critical roles unavailable</td>
+<td>schedule compression pressure</td>
+<td>rebaseline scope/date; Program Owner</td>
+</tr>
+<tr>
+<td>KPI gaming</td>
+<td>metric lacks source/owner/action</td>
+<td>false confidence</td>
+<td>Metric Registry + audit; Data Lead</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-26">26. Procurement and External Dependency Gates</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Before commitment</th>
+<th>Decision output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Coohom/SmartLink</td>
+<td>paid demo, machine matrix, API contract, packet sample, DPA/data residency, TCO</td>
+<td>integrate, isolate as optional adapter, or reject</td>
+</tr>
+<tr>
+<td>SpatialLM/runtime</td>
+<td>model/license, compute, data boundary, accuracy/correction benchmark</td>
+<td>sandbox continue/stop; never direct release</td>
+</tr>
+<tr>
+<td>KMS/HSM/signing</td>
+<td>key custody, rotation, revoke, audit, recovery</td>
+<td>approved production key architecture</td>
+</tr>
+<tr>
+<td>LINE</td>
+<td>consent, retry, rate limit, template/policy, outage fallback</td>
+<td>production communication boundary</td>
+</tr>
+<tr>
+<td>Supabase/DB</td>
+<td>region, backup, RLS, service-role custody, restore drill</td>
+<td>staging/production readiness</td>
+</tr>
+<tr>
+<td>CNC/post vendor</td>
+<td>file contract, units, axes, tools, error behavior, support</td>
+<td>certified MachineProfileVersion</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-27">27. 30/60/90-Day Action Plan</h2>
+<h3>Day 0–30</h3>
+<ul>
+<li>assign owner/target evidence ให้ blocker ทุกตัว</li>
+<li>close IAM, RELEASED-only export, determinism, verifier และ key P0</li>
+<li>repair package tests, bypass scanner, DB/RLS environment และ field hygiene</li>
+<li>create clean release branch and evidence archive</li>
+<li>hold RG-1; fail if any P0 remains</li>
+</ul>
+<h3>Day 31–60</h3>
+<ul>
+<li>freeze one machine profile/tool table</li>
+<li>build golden/negative packet corpus and offline verifier</li>
+<li>run controlled dry run, operator training and rollback drill</li>
+<li>collect receipt/audit evidence</li>
+<li>hold RG-2</li>
+</ul>
+<h3>Day 61–90</h3>
+<ul>
+<li>implement intake router, Concept Sandbox, conversion and Approval Packet</li>
+<li>seed Catalog Trust Tiers</li>
+<li>run representative front-door pilot</li>
+<li>baseline speed/approval metrics</li>
+<li>hold RG-3 and rebaseline months 4–12</li>
+</ul>
+<h2 id="section-28">28. Definition of Ready and Definition of Done</h2>
+<h3>Definition of Ready</h3>
+<p>epic พร้อมเริ่มเมื่อมี FR/Claim/Blocker linkage, accountable owner, dependency, data/privacy classification, acceptance tests, rollback, observability และ evidence destination</p>
+<h3>Definition of Done</h3>
+<p>epic เสร็จเมื่อ:</p>
+<ul>
+<li>code/schema/config review ผ่าน</li>
+<li>required tests ผ่านโดยไม่มี unapproved skip</li>
+<li>security/PDPA/threat cases ที่เกี่ยวข้องผ่าน</li>
+<li>failure, retry, offline และ rollback ถูกพิสูจน์</li>
+<li>runbook/owner/telemetry พร้อม</li>
+<li>pilot/UAT evidence ผูก immutable revision</li>
+<li>PRD Claim Ledger และ As-Built Status ถูกอัปเดต</li>
+<li>gate owner ลง verdict และ expiry</li>
+</ul>
+<h2 id="section-29">29. FR-to-Roadmap Traceability</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>FR</th>
+<th>Primary epics</th>
+<th>Gate</th>
+<th>Baseline → target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FR-01</td>
+<td>RM-020, RM-023</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>RM-021, RM-022</td>
+<td>RG-3</td>
+<td>PLANNED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>RM-030, RM-031, RM-033</td>
+<td>RG-4</td>
+<td>PARTIAL → VERIFIED sandbox</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>RM-008, RM-032, RM-033</td>
+<td>RG-4</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>RM-012, RM-020</td>
+<td>RG-2/RG-3</td>
+<td>VERIFIED test → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>RM-002, RM-022</td>
+<td>RG-1/RG-3</td>
+<td>VERIFIED test → deployed proof</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>RM-024</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED seed set</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>RM-010, RM-070</td>
+<td>RG-2/RG-7</td>
+<td>VERIFIED test → machine-certified</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>RM-001, RM-002, RM-007</td>
+<td>RG-1</td>
+<td>BLOCKED → VERIFIED</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>RM-023</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>RM-003, RM-004, RM-005, RM-010, RM-011, RM-012</td>
+<td>RG-1/RG-2</td>
+<td>BLOCKED → factory-certified</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>RM-040, RM-041</td>
+<td>RG-5</td>
+<td>PARTIAL → VERIFIED shadow</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>RM-008, RM-020, RM-023</td>
+<td>RG-3/RG-5</td>
+<td>NOT VERIFIED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>RM-009, RM-050, RM-051, RM-052</td>
+<td>RG-6</td>
+<td>NOT VERIFIED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>RM-042, RM-043</td>
+<td>RG-5</td>
+<td>PARTIAL → finance-approved shadow</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>RM-001, RM-063</td>
+<td>RG-5</td>
+<td>PARTIAL → governed-write verified</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>RM-060, RM-061, RM-062</td>
+<td>RG-7</td>
+<td>PARTIAL → board-accepted</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-30">30. Open Decisions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision ID</th>
+<th>Decision needed</th>
+<th>Owner</th>
+<th>Deadline</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DEC-01</code></td>
+<td>named accountable owners ทุก WS/gate</td>
+<td>Executive/Program</td>
+<td>RG-0</td>
+</tr>
+<tr>
+<td><code>DEC-02</code></td>
+<td>first machine profile/tool table</td>
+<td>Factory Owner</td>
+<td>day 15</td>
+</tr>
+<tr>
+<td><code>DEC-03</code></td>
+<td>factory/front/spatial/ERP/field pilot projects</td>
+<td>Ops/Product</td>
+<td>day 20</td>
+</tr>
+<tr>
+<td><code>DEC-04</code></td>
+<td>production key custody/KMS approach</td>
+<td>Security</td>
+<td>day 15</td>
+</tr>
+<tr>
+<td><code>DEC-05</code></td>
+<td>isolated DB/RLS CI environment</td>
+<td>Platform</td>
+<td>day 10</td>
+</tr>
+<tr>
+<td><code>DEC-06</code></td>
+<td>Certified catalog seed set</td>
+<td>Data Steward</td>
+<td>day 60</td>
+</tr>
+<tr>
+<td><code>DEC-07</code></td>
+<td>Spatial runtime/data residency/retention</td>
+<td>Survey + PDPA</td>
+<td>day 75</td>
+</tr>
+<tr>
+<td><code>DEC-08</code></td>
+<td>first ERP object and accounting shadow rules</td>
+<td>Finance</td>
+<td>day 100</td>
+</tr>
+<tr>
+<td><code>DEC-09</code></td>
+<td>field device/offline support matrix</td>
+<td>Field Ops</td>
+<td>day 150</td>
+</tr>
+<tr>
+<td><code>DEC-10</code></td>
+<td>board KPI priority and decision owners</td>
+<td>Executive</td>
+<td>day 240</td>
+</tr>
+<tr>
+<td><code>DEC-11</code></td>
+<td>committed team capacity vs §22 assumption</td>
+<td>Executive/Program</td>
+<td>RG-0</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-31">31. Rebaseline and Change Control</h2>
+<ul>
+<li>rebaseline หลัง RG-0, RG-3 และทุก quarter</li>
+<li>change request ต้องระบุผลต่อ scope, date, capacity, risk, gate และ evidence</li>
+<li>P0/security/invariant ห้ามลดเพื่อรักษาวันส่ง</li>
+<li>งานใหม่เข้า critical path ได้เมื่อเอางานเทียบเท่าออกหรือเพิ่ม capacity ที่พิสูจน์ได้</li>
+<li>vendor/AI opportunity ที่ยัง E2–E4 อยู่ใน discovery lane ไม่แทรก committed release</li>
+<li>approved change ต้องอัปเดตทั้ง TH/EN Markdown, HTML และ SHA manifest</li>
+</ul>
+<h2 id="section-32">32. Deliverable Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Required deliverables</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Phase 0</td>
+<td>threat model, auth/release contracts, deterministic spec, verifier corpus, key runbook, CI/RLS evidence</td>
+</tr>
+<tr>
+<td>Phase 1</td>
+<td>MachineProfileVersion, golden packets, offline verifier, operator/rollback runbooks, pilot report</td>
+</tr>
+<tr>
+<td>Phase 2</td>
+<td>intake map, sandbox/conversion spec, Approval Packet, catalog tier seed, UX/pilot report</td>
+</tr>
+<tr>
+<td>Phase 3</td>
+<td>Spatial Evidence Contract, DPA/retention record, model benchmark, capture/offline report</td>
+</tr>
+<tr>
+<td>Phase 4</td>
+<td>ERP object contracts, BOM/WO/PO/job-cost shadow reports, field/acceptance pilot report</td>
+</tr>
+<tr>
+<td>Phase 5</td>
+<td>Metric Registry, executive dashboard, scale playbook, SLO/DR report, R1.0 evidence pack</td>
+</tr>
+</tbody></table></div>
+<p>deliverable ที่เป็น project-facing document ต้องมี TH/EN Markdown และ HTML คู่กัน ส่วน machine-readable manifest/schema/test artifact ใช้ format canonical เดียวได้</p>
+<h2 id="section-33">33. Source Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Source</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RMAP-S01</code></td>
+<td><code>docs/prd/monolith-complete-prd-v5.th.md</code> / <code>.en.md</code></td>
+<td>requirements, evidence tiers, claims, as-built and blockers</td>
+</tr>
+<tr>
+<td><code>RMAP-S02</code></td>
+<td><code>docs/prd/monolith-complete-prd-v5.sha256</code></td>
+<td>PRD v5.1 integrity</td>
+</tr>
+<tr>
+<td><code>RMAP-S03</code></td>
+<td>code snapshot commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code></td>
+<td>as-built baseline only; dirty worktree noted</td>
+</tr>
+<tr>
+<td><code>RMAP-S04</code></td>
+<td><code>determined-williams/docs/SAFETY_GATE.md</code> และ factory/export/connector docs</td>
+<td>manufacturing/release intent</td>
+</tr>
+<tr>
+<td><code>RMAP-S05</code></td>
+<td>PRD §33 Claim Ledger</td>
+<td>claim decision and proof obligation</td>
+</tr>
+<tr>
+<td><code>RMAP-S06</code></td>
+<td>PRD §34 As-Built Status</td>
+<td>FR baseline and Production Blocker Register</td>
+</tr>
+<tr>
+<td><code>RMAP-S07</code></td>
+<td><code>docs/prd/monolith-complete-roadmap-v1.sha256</code></td>
+<td>integrity ของ Roadmap TH/EN Markdown และ HTML</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-34">34. Program Completion Criteria</h2>
+<p>Roadmap 12 เดือนถือว่าบรรลุเมื่อ:</p>
+<ol>
+<li><code>RG-1</code> ถึง <code>RG-7</code> มี signed verdict และ evidence ที่ยังไม่หมดอายุ</li>
+<li>factory release path เป็น server-authorized, RELEASED-only, deterministic, signed และ full-verified</li>
+<li>controlled factory pilot ผ่านและ onboarding machine เพิ่มใช้ certification ซ้ำได้</li>
+<li>front door/sandbox/approval ผ่าน pilot โดยไม่มี authority leak</li>
+<li>spatial capability อยู่ใน sandbox/evidence boundary และปิดได้โดยไม่กระทบ manual truth chain</li>
+<li>ERP/finance และ field flow ผ่าน shadow/controlled pilot พร้อม reconciliation/rollback</li>
+<li>KPI board ทุกตัวมี owner, source lineage, baseline และ action threshold</li>
+<li>ไม่มี P0 blocker, required test skip, production secret หรือ stale critical claim</li>
+<li>TH/EN docs, HTML, runbooks และ release evidence manifest ตรงกับ deployed revision</li>
+</ol>
+<p>คำตัดสินสุดท้าย: MONOLITH ควร scale เมื่อ truth chain พิสูจน์ได้ ไม่ใช่เมื่อ feature list ดูครบ</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,2056 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD ฉบับสมบูรณ์ของ MONOLITH v5.1</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1240px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22;letter-spacing:0}h1{margin:0 0 18px;font-size:clamp(2rem,4vw,3.35rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.52rem}h3{margin-top:28px;font-size:1.16rem}p{margin:13px 0}a{color:#0f5f99;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px;border-radius:8px;background:#17202a;color:#f4f7fb;line-height:1.45}pre code{background:transparent;color:inherit;padding:0;overflow-wrap:normal}ul,ol{padding-left:1.35rem}li{margin:6px 0}.table-wrap{overflow-x:auto;margin:18px 0 24px;border:1px solid var(--line);border-radius:8px}table{width:100%;min-width:820px;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-weight:760}tr:last-child td{border-bottom:0}@media(max-width:760px){main{padding:30px 20px 56px}table{min-width:720px}}@media print{body{background:#fff}main{max-width:none;padding:20px;box-shadow:none}.table-wrap{overflow:visible}table{min-width:0;font-size:9pt}a{color:inherit}}</style>
+</head>
+<body>
+<main>
+<h1>PRD ฉบับสมบูรณ์ของ MONOLITH</h1>
+<p>วันที่เอกสาร: 2026-07-10<br>ภาษา: TH<br>ฉบับเอกสาร: 5.1 (Evidence-Control Revision)<br>ผลิตภัณฑ์: MONOLITH Manufacturing OS / MONOLITH Operating System<br>ขอบเขต: PRD ฉบับ canonical ที่ merge จาก PRD v3 ซึ่งมี requirement รายละเอียด, ส่วน program execution ที่ตรวจทานจาก PRD v4, งานวิจัย Coohom/front door, ERP research, แนวทาง SpatialLM, doctrine ด้าน manufacturing truth และ field execution architecture</p>
+<h2>1. บทสรุปผู้บริหาร</h2>
+<p>MONOLITH ไม่ใช่ interior design app ทั่วไป และไม่ใช่ Coohom+DAPH integration. MONOLITH คือ operating system ที่ทำให้งาน custom interior และ built-in furniture เดินจาก design ไป factory packet และงานติดตั้งจริงได้อย่าง verify ได้</p>
+<p>พันธกิจของสินค้า:</p>
+<blockquote>
+<p>ทำให้ 10 นาทีแรกเร็ว เห็นภาพ และสร้างความมั่นใจ แต่ทำให้ last mile deterministic, gated, traceable และ field-verifiable</p>
+</blockquote>
+<p>ศูนย์ถ่วงถาวรของระบบคือ <strong>manufacturing truth + field execution</strong>. AI, render, catalog, SpatialLM, ERP, LINE และ approval มีคุณค่าเมื่อช่วยเสริมเส้นโซ่ที่ตรวจสอบได้เท่านั้น:</p>
+<pre><code class="language-text">Lead / brief / site evidence
+  -&gt; Concept Sandbox
+  -&gt; Spatial Evidence + Capture Spine
+  -&gt; Parametric Contract
+  -&gt; Safety Gate
+  -&gt; Released Spec
+  -&gt; Factory Packet / CNC Manifest
+  -&gt; Work Order / Field Execution
+  -&gt; Customer Acceptance / Audit / Job Cost
+</code></pre>
+<p>หลักการปกครองระบบคือ:</p>
+<p><strong>Design is free. Manufacturing is deterministic. Field reality closes the loop.</strong></p>
+<h2>2. การวางตำแหน่งเชิงยุทธศาสตร์</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>กรอบสินค้า</th>
+<th>คำตัดสิน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MONOLITH คืออะไร</td>
+<td>design-to-factory-to-field operating system สำหรับงาน built-in furniture และ interior custom</td>
+</tr>
+<tr>
+<td>MONOLITH ไม่ใช่อะไร</td>
+<td>ไม่ใช่ generic room planner, decorative render tool, generic ERP หรือ clone Coohom</td>
+</tr>
+<tr>
+<td>สิ่งที่เรียนจาก Coohom</td>
+<td>เริ่มเร็ว, editable scene, catalog browsing, visual confidence, presentation polish</td>
+</tr>
+<tr>
+<td>สิ่งที่ MONOLITH ต้องรักษา</td>
+<td>Parametric Contract, Material Stack, Connector OS, Safety Gate, signed Factory Packet, LINE-native field proof, audit, Thai operating context</td>
+</tr>
+<tr>
+<td>ใช้ SpatialLM เพื่ออะไร</td>
+<td>Spatial Evidence Compiler: อ่าน point cloud/video/RGB-D/LiDAR เป็น candidate walls/openings/bounding boxes</td>
+</tr>
+<tr>
+<td>ไม่ใช้ SpatialLM เพื่ออะไร</td>
+<td>ห้ามสร้าง CNC path, เปลี่ยน release state, หรือแทน Safety Gate</td>
+</tr>
+<tr>
+<td>ใช้ ERP idea เพื่ออะไร</td>
+<td>business backbone: document states, item master, BOM snapshot, WIP, job cost, stock, PO, ledger</td>
+</tr>
+<tr>
+<td>ERP ห้ามทำอะไร</td>
+<td>ห้ามแก้ manufacturing geometry, drill map, CNC หรือ release state โดยตรง</td>
+</tr>
+</tbody></table></div>
+<h2>3. ขอบเขตหลักฐาน</h2>
+<p>PRD นี้แยกหลักฐานเป็น:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ชั้นหลักฐาน</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Existing system evidence</td>
+<td>PRD เดิม, blueprint, migration, API docs, Connector OS, Safety Gate, LINE architecture, Customer Journey, Requirements Overview</td>
+</tr>
+<tr>
+<td>Research-backed benchmark</td>
+<td>Coohom public pages/research, NIST AI RMF, ISO 9241-210, ISO 23247, Microsoft Human-AI guidelines, SpatialLM paper</td>
+</tr>
+<tr>
+<td>Product requirement</td>
+<td>พฤติกรรมเป้าหมายที่ต้อง build หรือ formalize ใน MONOLITH</td>
+</tr>
+<tr>
+<td>Roadmap item</td>
+<td>สิ่งที่จะ implement ภายหลัง ไม่ใช่ production claim ปัจจุบัน</td>
+</tr>
+</tbody></table></div>
+<p>ห้ามใช้ requirement ใน PRD นี้ไป claim ว่า module ใด production-ready จนกว่าจะมี code, test, deployment evidence และ operational proof รองรับ</p>
+<p>ฉบับนี้ลบ citation marker แบบ generated ที่ trace กลับไม่ได้ออกทั้งหมด และใช้ Evidence Tier, Source Register, Claim Ledger และ As-Built Status ท้ายเอกสารเป็นระบบ traceability หลัก ถ้า requirement ใดอิงงานวิจัยภายนอก ทีม implementation ต้องใส่ source ID และ exact source link ใน epic หรือ design spec ก่อนเริ่ม development</p>
+<h2>4. Product Vision</h2>
+<p>MONOLITH ควรเป็น business operating spine สำหรับงาน interior/furniture ที่มี manufacturing เป็นศูนย์ถ่วง:</p>
+<ol>
+<li>รับ input ที่ messy จาก LINE, site survey, photo, document, measurement และ design brief</li>
+<li>แปลง input เป็น structured evidence ผ่าน Capture Spine และ Spatial Evidence Compiler</li>
+<li>ให้ designer explore ได้เร็วใน Concept Sandbox</li>
+<li>convert เฉพาะ intent ที่ verify แล้วเข้า Parametric Contract</li>
+<li>ตรวจ production readiness ผ่าน Safety Gate</li>
+<li>release factory packet แบบ deterministic พร้อม signature, manifest และ offline verification</li>
+<li>execute งานโรงงานและหน้างานผ่าน work order, room/lane task, proof, issue และ acceptance</li>
+<li>feed actual cost, defect, rework และ field deviation กลับเข้า dashboard ผู้บริหาร</li>
+</ol>
+<p>คำสัญญาระดับ board:</p>
+<blockquote>
+<p>MONOLITH คือระบบสำหรับธุรกิจที่เสียเงินจริงเมื่อ render, measurement, cutlist, purchase order, CNC file, installation proof และ customer approval ไม่ตรงกัน</p>
+</blockquote>
+<h2>5. Business Goals and Outcomes</h2>
+<h3>5.1 Strategic Goals</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>ความหมายต่อการตัดสินใจ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ลด design-to-factory mismatch</td>
+<td>ลด rework ที่เกิดจาก visual design, cabinet structure, material stack, connector rules, cutlist, CNC และ factory packet ไม่ตรงกัน</td>
+</tr>
+<tr>
+<td>ลด field uncertainty</td>
+<td>site reality, installation issue, proof photo, room/lane status และ customer acceptance กลายเป็น governed evidence ไม่ใช่ noise ใน chat</td>
+</tr>
+<tr>
+<td>เพิ่ม approval integrity</td>
+<td>approval ของลูกค้า, designer lead, production, finance และ executive ผูกกับ revision, scope, timestamp, channel และ owner ชัดเจน</td>
+</tr>
+<tr>
+<td>สร้าง ERP-ready backbone โดยไม่เสีย manufacturing truth</td>
+<td>item master, BOM snapshot, stock, PO, WIP, job cost และ ledger รับ truth จาก Released Spec และห้าม overwrite production geometry</td>
+</tr>
+<tr>
+<td>รักษาความเร็วของ front door</td>
+<td>intake, concept, visual confidence, catalog browsing และ approval packet เร็วขึ้นโดยไม่สร้างทางลัดอันตรายสู่ production</td>
+</tr>
+</tbody></table></div>
+<h3>5.2 Measurable Business Outcomes</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Outcome cluster</th>
+<th>ตัวอย่าง metric</th>
+<th>Owner เริ่มต้น</th>
+<th>กติกาการวัด</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front-door speed</td>
+<td>time to first useful concept, intake-to-qualified-brief time, approval packet preparation time</td>
+<td>Product + Sales Ops</td>
+<td>เก็บ baseline 30-60 วันแรก แล้วตั้ง target ตามประเภท project</td>
+</tr>
+<tr>
+<td>Manufacturing quality</td>
+<td>first-pass Safety Gate pass rate, factory packet rejection rate, CNC/post error rate, rework/scrap cost</td>
+<td>Designer Lead + Factory Lead</td>
+<td>วัดตาม released package และ machine profile version</td>
+</tr>
+<tr>
+<td>Field execution</td>
+<td>room/lane completion accuracy, issue aging, punch-list age, close-house cycle time</td>
+<td>Operations Lead</td>
+<td>วัดตาม project, room, lane และ installation phase</td>
+</tr>
+<tr>
+<td>Financial control</td>
+<td>job cost variance, committed-vs-actual variance, capture-to-post lag, WIP accuracy</td>
+<td>Finance Owner</td>
+<td>วัดตั้งแต่ Released Spec snapshot ไปถึง actual cost และ ledger posting</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>waiver count, escalation count, approval SLA, audit completeness</td>
+<td>Executive Owner</td>
+<td>review รายสัปดาห์ช่วง pilot และรายเดือนหลัง stabilize</td>
+</tr>
+</tbody></table></div>
+<h2>6. Non-Goals</h2>
+<p>MONOLITH ต้องประกาศให้ชัดว่าสิ่งต่อไปนี้ไม่ใช่เป้าหมาย เพื่อกัน scope ที่ดูน่าสนใจแต่ทำลาย operating spine:</p>
+<ul>
+<li>ไม่ใช่ generic decorative room planner</li>
+<li>ไม่ใช่ Coohom clone และไม่ใช่ dependency บน Coohom</li>
+<li>ไม่ใช่การแทน ERP/accounting workflow ทั้งหมดแบบ big-bang ตั้งแต่วันแรก</li>
+<li>ไม่ใช่ public multi-tenant SaaS ก่อนพิสูจน์ truth chain, privacy model และ operational controls</li>
+<li>ไม่ใช่ autonomous AI production-release system</li>
+<li>ไม่ใช่ SpatialLM-driven CNC generator</li>
+<li>ไม่ใช่ renderer ที่ทำให้ visual confidence ถูกเข้าใจผิดว่าเป็น manufacturing truth</li>
+</ul>
+<h2>7. Assumptions and Constraints</h2>
+<h3>7.1 Assumptions</h3>
+<ul>
+<li>ทีมจะยอมรับ workflow ที่เข้มขึ้น ถ้า front door เร็วขึ้นและ field work friction ต่ำลง</li>
+<li>machine profile ชุดแรกมีจำนวนจำกัด versioned และมี owner ชัดเจน</li>
+<li>Released Spec เป็นจุดเริ่มของ BOM snapshot, work order, procurement และ job-cost traceability</li>
+<li>ผู้บริหารเลือก phased rollout และ coexistence มากกว่า big-bang rewrite</li>
+<li>LINE/PWA ยังเป็น surface สำคัญ เพราะลูกค้าและทีมหน้างานไม่ควรถูกบังคับให้เรียนระบบลึก</li>
+</ul>
+<h3>7.2 Constraints</h3>
+<ul>
+<li>sensitive data ต้องอยู่ใน controlled boundary เมื่อ PDPA, customer confidentiality หรือ operational policy กำหนด</li>
+<li>SpatialLM เริ่มในฐานะ sandbox/prototype evidence และห้ามแตะ release, CNC หรือ accounting path</li>
+<li>accounting posting ต้อง co-design กับ finance owner; product หรือ AI ตัดสิน ledger policy เองไม่ได้</li>
+<li>workflow ใดที่กระทบ production, payment, customer acceptance หรือ factory output ต้องมี authorization, audit, rollback/correction path และ owner</li>
+<li>factory packet verification และ field proof capture ต้องมี offline/degraded-mode behavior</li>
+</ul>
+<h2>8. ปัญหาหลักที่แก้</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ปัญหา</th>
+<th>คำตอบของ MONOLITH</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>design สวยแต่ผลิตไม่ได้</td>
+<td>visual output เป็น production truth ไม่ได้จนกว่าจะ convert และผ่าน gate</td>
+</tr>
+<tr>
+<td>site measurement messy</td>
+<td>site survey capture + Spatial Evidence Compiler + human verification</td>
+</tr>
+<tr>
+<td>AI hallucinate dimension/geometry</td>
+<td>AI เป็น parser/advisor ไม่ใช่ release authority</td>
+</tr>
+<tr>
+<td>CNC files trace ไม่ได้</td>
+<td>Factory Packet, manifest, checksums, signed receipt, offline verify</td>
+</tr>
+<tr>
+<td>handoff กระจัดกระจาย</td>
+<td>canonical workflow 8 ขั้นพร้อม RACI, approval, SLA, escalation</td>
+</tr>
+<tr>
+<td>field proof อยู่ใน chat</td>
+<td>LINE group evidence ถูก capture, classify, verify และผูกกับ Work_Item</td>
+</tr>
+<tr>
+<td>ERP data drift จาก production data</td>
+<td>ERP Backbone รับ snapshot จาก Released Spec ไม่แก้ manufacturing truth เอง</td>
+</tr>
+<tr>
+<td>customer approval คลุมเครือ</td>
+<td>Approval Packet ผูก scope, render, revision, timestamp, identity และ channel</td>
+</tr>
+<tr>
+<td>บริบทไทยสำคัญ</td>
+<td>PDPA-by-architecture, self-host OCR/LLM, VAT/WHT/eTax ไทย, LINE-native UX</td>
+</tr>
+</tbody></table></div>
+<h2>9. Guiding Principles</h2>
+<ol>
+<li><strong>Manufacturing Truth Wins</strong>: production output มาจาก Parametric Contract, Safety Gate, Released Spec, Factory Packet, OperationGraph และ manifest</li>
+<li><strong>Visual Is Not Truth</strong>: render และ concept scene เป็น communication artifact จนกว่าจะถูก convert</li>
+<li><strong>Spatial AI Is Evidence, Not Authority</strong>: SpatialLM อ่านโลกได้ แต่ตัดสิน release ไม่ได้</li>
+<li><strong>Human Verification Is Mandatory</strong>: capture, spatial interpretation, accounting, approval และ release ต้องมี accountable human ในจุดสำคัญ</li>
+<li><strong>No Silent Drift</strong>: ทุก change หลัง approval ต้องมี revision, reason และ audit</li>
+<li><strong>Gate Failure Is Product Value</strong>: ระบบต้องอธิบายว่าทำไม block และ fix อย่างไรจึงปลอดภัย</li>
+<li><strong>LINE Is the Human Surface</strong>: ลูกค้า ทีมหน้างาน และ approval ใช้ช่องทางคุ้นเคย โดยมี back-end control เข้ม</li>
+<li><strong>ERP Is a Business Layer</strong>: ERP backbone ดู job cost, WIP, stock, PO, invoice, ledger แต่ไม่เป็นเจ้าของ CNC truth</li>
+<li><strong>PDPA by Architecture</strong>: sensitive data ต้อง controlled, redacted และ purpose-bound</li>
+<li><strong>Append-Only Audit</strong>: approval, capture decision, release event, packet signature และ field proof ต้อง immutable</li>
+</ol>
+<h2>10. Personas and Operating Roles</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>งานหลัก</th>
+<th>Surface หลัก</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Executive Owner</td>
+<td>ตัดสิน high-risk approval, budget exception, roadmap, KPI</td>
+<td>Executive dashboard, escalation feed</td>
+</tr>
+<tr>
+<td>Sales / Engagement</td>
+<td>รับ lead, qualify, สร้าง requirement record</td>
+<td>LINE OA, PWA, CRM-lite intake</td>
+</tr>
+<tr>
+<td>Surveyor</td>
+<td>เก็บ site reality: dimension, opening, MEP, photo, constraint</td>
+<td>Mobile/PWA, Spatial Survey, Capture Spine</td>
+</tr>
+<tr>
+<td>Designer</td>
+<td>สร้าง concept, convert เป็น parametric design, แก้ gate blocker</td>
+<td>Designer Workspace, Concept Sandbox, Truth HUD</td>
+</tr>
+<tr>
+<td>Designer Lead</td>
+<td>approve design gate, freeze/release spec, handle critical revision</td>
+<td>Gate panel, Approval Packet, release controls</td>
+</tr>
+<tr>
+<td>3D Visualizer</td>
+<td>ทำ presentation render/deck โดยรักษา revision truth</td>
+<td>Render deck, client view</td>
+</tr>
+<tr>
+<td>Production Planner</td>
+<td>แปลง Released Spec เป็น BOM, routing, schedule, work order</td>
+<td>ERP Backbone, Factory Packet viewer</td>
+</tr>
+<tr>
+<td>Factory Operator</td>
+<td>execute packet, verify files, operate CNC/post outputs</td>
+<td>Factory UI, offline receipt verifier</td>
+</tr>
+<tr>
+<td>QA</td>
+<td>ตรวจ output, capture defect/rework, link NCR to packet/spec</td>
+<td>QC capture, NCR dashboard</td>
+</tr>
+<tr>
+<td>Installation Team Lead</td>
+<td>เริ่ม T0, คุม rooms/lanes, close house, ขอ customer acceptance</td>
+<td>LINE group, Installation PWA</td>
+</tr>
+<tr>
+<td>Installation Crew</td>
+<td>ทำงาน, upload proof, report issue อย่างน้อย friction</td>
+<td>LINE group, mobile checklist</td>
+</tr>
+<tr>
+<td>Accountant / Purchasing</td>
+<td>verify document, post ledger, VAT/WHT, PO, stock, job cost</td>
+<td>Accounting module, Capture Spine</td>
+</tr>
+<tr>
+<td>Finance Policy Owner</td>
+<td>ถือ policy VAT/WHT/eTax, posting threshold, approval limit และ accounting coexistence</td>
+<td>Finance policy console, ERP Backbone, escalation queue</td>
+</tr>
+<tr>
+<td>Data Steward</td>
+<td>ถือ item master, certified catalog, mapping integrity, naming และ trust-tier hygiene</td>
+<td>Catalog admin, object registry, audit dashboard</td>
+</tr>
+<tr>
+<td>Customer</td>
+<td>approve design และ installation โดยไม่ต้องเรียนระบบ</td>
+<td>LINE Flex, web fallback, curated client view</td>
+</tr>
+<tr>
+<td>AI Agent / MCP Client</td>
+<td>read, summarize, propose, route, prepare action ภายใต้ governance</td>
+<td>MCP tools, pending invocation queue</td>
+</tr>
+</tbody></table></div>
+<h2>11. End-to-End Customer Journey</h2>
+<p>canonical journey:</p>
+<pre><code class="language-text">Ad / website
+  -&gt; Add LINE OA
+  -&gt; Sales conversation
+  -&gt; Customer requirement capture
+  -&gt; Sale
+  -&gt; Area Measurement
+  -&gt; Designer / G1
+  -&gt; 3D Presentation / G2
+  -&gt; Production Planning / G4
+  -&gt; 3D Final / G3
+  -&gt; Factory
+  -&gt; Installation
+  -&gt; Customer acceptance
+  -&gt; Closeout / warranty / analytics
+</code></pre>
+<h3>Customer-Facing Requirements</h3>
+<ul>
+<li>ลูกค้าไม่ต้องมี MONOLITH account</li>
+<li>ลูกค้าเห็น curated update ไม่ใช่ noise ภายใน</li>
+<li>ลูกค้า approve ผ่าน LINE Flex หรือ short-lived web fallback</li>
+<li>customer approval ผูก revision, scope, timestamp และ channel</li>
+<li>ลูกค้าขอแก้หลัง lock ต้องเข้า revision/requote workflow</li>
+</ul>
+<h3>Internal Requirements</h3>
+<ul>
+<li>ทุกขั้นมี RACI, owner, approver, SLA, status และ audit</li>
+<li>ข้ามขั้นไม่ได้ถ้าไม่มี allowed transition และ audit reason</li>
+<li>G1/G2/G3/G4 lock ป้องกันการแก้ scope ที่ approve แล้วแบบเงียบ ๆ</li>
+<li>RPN/budget/critical risk escalate ถึง executive owner</li>
+<li>quiet hours และ digest ลด notification noise</li>
+</ul>
+<h2>12. Product Architecture</h2>
+<pre><code class="language-text">MONOLITH Front Door
+  Intake Router · Concept Sandbox · Render Deck · Approval Packet
+
+Spatial Evidence + Capture Layer
+  SpatialLM sandbox · site survey · OCR · verify · evidence graph
+
+Designer Workspace
+  3D viewport · Designer Intent · Parametric Contract · Truth HUD
+
+Truth Layer
+  Material Stack · Connector OS · Drill Map · Safety Gate · Released Spec
+
+Manufacturing Layer
+  Factory Packet · OperationGraph · DXF/G-code/MPR/CIX/XXL · signed receipt
+
+ERP Backbone
+  Item master · BOM snapshot · routing · work order · stock · PO · job cost · ledger
+
+Field Layer
+  Installation project · rooms · lanes · LINE groups · T0 · proof · issue · acceptance
+
+Governance Layer
+  IAM · RLS · MCP · audit · PDPA · approvals · D2 autonomy ladder
+</code></pre>
+<h2>13. Core Module Outcomes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Module group</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Intake Router / Concept Sandbox</td>
+<td>เริ่มงานเร็วโดยไม่ทำให้ early visual exploration ถูกเข้าใจผิดว่าเป็น production truth</td>
+</tr>
+<tr>
+<td>Spatial Evidence / Capture Spine</td>
+<td>แปลง site/document evidence ที่ messy ให้เป็น record ที่ verify ได้และมี provenance</td>
+</tr>
+<tr>
+<td>Designer Workspace / Parametric Contract</td>
+<td>เปลี่ยน design intent เป็น candidate manufacturing truth ที่ตรวจได้</td>
+</tr>
+<tr>
+<td>Material Stack / Connector OS / Safety Gate</td>
+<td>เปลี่ยน design เป็น deterministic manufacturing decision และอธิบาย blocker ได้</td>
+</tr>
+<tr>
+<td>Released Spec / Factory Packet / Export</td>
+<td>สร้าง factory packet ที่ signed, repeatable และ verify offline ได้</td>
+</tr>
+<tr>
+<td>ERP Backbone</td>
+<td>แปลง released demand เป็น business control: BOM snapshot, routing, WIP, procurement, stock, job cost และ ledger</td>
+</tr>
+<tr>
+<td>Field Layer</td>
+<td>ปิด loop ด้วย installed reality, issue proof, punch list, customer acceptance และ field variance</td>
+</tr>
+<tr>
+<td>Governance / MCP</td>
+<td>ให้ automation ช่วยงานได้โดยไม่เสีย authorization, audit, data minimization หรือ human accountability</td>
+</tr>
+</tbody></table></div>
+<h2>14. Functional Requirements</h2>
+<h3>FR-01 Front Door Intake Router</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> แปลง first-touch input ทุกแบบให้เข้าช่อง governance ที่ถูก</p>
+<p>Inputs:</p>
+<ul>
+<li>prompt หรือ design brief</li>
+<li>floor plan image/PDF/DWG/DXF ตามที่ support จริง</li>
+<li>room/site photo</li>
+<li>walkthrough video หรือ RGB-D/LiDAR scan</li>
+<li>LINE message หรือ customer requirement</li>
+<li>existing project/job</li>
+<li>manual template/module start</li>
+</ul>
+<p>router ต้อง classify input เป็น:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>ความหมาย</th>
+<th>next step ที่อนุญาต</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Concept</td>
+<td>mood, layout, visual idea</td>
+<td>Concept Sandbox</td>
+</tr>
+<tr>
+<td>Site Evidence</td>
+<td>measurement, photo, scan, site condition</td>
+<td>Spatial Evidence + human verification</td>
+</tr>
+<tr>
+<td>Production Intent</td>
+<td>cabinet/module/material/hardware request</td>
+<td>Parametric Contract candidate</td>
+</tr>
+<tr>
+<td>Business Evidence</td>
+<td>quote, receipt, PO, issue, approval</td>
+<td>Capture Spine document workflow</td>
+</tr>
+</tbody></table></div>
+<p>Acceptance criteria:</p>
+<ul>
+<li>ไม่มี intake ใดสร้าง production data โดยตรง</li>
+<li>ทุก intake มี source, user, timestamp, confidence/provenance ถ้ามี</li>
+<li>input ที่ low-confidence หรือ ambiguous ต้อง human review</li>
+</ul>
+<h3>FR-02 Concept Sandbox</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> ให้ front-door speed แบบ Coohom โดยไม่ทำลาย manufacturing truth</p>
+<p>Capabilities:</p>
+<ul>
+<li>AI-assisted layout/styling alternatives</li>
+<li>mood/material exploration</li>
+<li>drag/drop modules และ decorative assets</li>
+<li>editable scene graph</li>
+<li>render preview และ client presentation draft</li>
+<li>workflow &quot;Convert to production candidate&quot;</li>
+</ul>
+<p>Constraints:</p>
+<ul>
+<li>sandbox สร้าง BOM, PO, cutlist, CNC, Factory Packet หรือ release state ไม่ได้</li>
+<li>sandbox data ถูก mark เป็น non-manufacturing truth</li>
+<li>conversion ทุกครั้งสร้าง diff และ unknowns list</li>
+</ul>
+<h3>FR-03 Spatial Evidence Compiler</h3>
+<p><strong>Priority:</strong> P0 สำหรับ sandbox prototype, P1 สำหรับ production workflow<br><strong>Purpose:</strong> ใช้เทคโนโลยีแบบ SpatialLM เพื่ออ่าน spatial reality ไม่ใช่ตัดสิน manufacturing</p>
+<p>Input candidates:</p>
+<ul>
+<li>point cloud</li>
+<li>RGB-D/LiDAR scan</li>
+<li>mobile walkthrough video ที่ถูก process เป็น point cloud</li>
+<li>concept scene ที่แปลงเป็น geometry เพื่อ check</li>
+</ul>
+<p>Output candidates:</p>
+<ul>
+<li>walls, doors, windows</li>
+<li>3D oriented bounding boxes</li>
+<li>object category และ orientation</li>
+<li>room boundary / opening constraints</li>
+<li>clearance และ collision hints</li>
+</ul>
+<p>Governance:</p>
+<ul>
+<li>spatial output เป็น candidate evidence เท่านั้น</li>
+<li>ต้อง human verification ก่อน commit เข้า SiteSurveyZone หรือ Parametric Contract</li>
+<li>ไม่มี direct path ไป CNC, drill map, Factory Packet, RELEASED state หรือ accounting posting</li>
+<li>ต้อง log source, model version, confidence, verifier และ final accepted values</li>
+</ul>
+<p>Phase 1 acceptance:</p>
+<ul>
+<li>process ห้อง pilot 1-2 ห้อง</li>
+<li>generate walls/openings/large-object bounding boxes</li>
+<li>มี overlay review UI</li>
+<li>commit เฉพาะ verified site constraints</li>
+<li>วัด survey/recode time และ spatial-error detection</li>
+</ul>
+<h3>FR-04 Capture Spine</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> แปลง messy evidence เป็น structured, verified, auditable records</p>
+<p>Capture types:</p>
+<ul>
+<li>customer_requirement</li>
+<li>site_survey</li>
+<li>spec_draft</li>
+<li>installation_proof</li>
+<li>qc_capture</li>
+<li>expense_document</li>
+<li>material_receipt</li>
+<li>field_purchase_request</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>lifecycle: proposed -&gt; approved/rejected -&gt; emitted -&gt; superseded</li>
+<li>ห้ามเดา placeholder</li>
+<li>OCR/AI output เป็น draft จนกว่ามนุษย์ verify</li>
+<li>fraud flags เป็น warning ไม่ใช่ reject เงียบ เว้นแต่นโยบายกำหนด</li>
+<li>commit adapters เขียนได้เฉพาะ target ที่อนุญาต</li>
+</ul>
+<h3>FR-05 Designer Workspace</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> เป็น production-aware design surface หลัก</p>
+<p>Required surfaces:</p>
+<ul>
+<li>ซ้าย: Designer Intent panel</li>
+<li>กลาง: 2D/3D viewport พร้อม view modes</li>
+<li>ขวา: Parametric Contract panel</li>
+<li>Truth HUD ที่เห็นใน context design</li>
+</ul>
+<p>Required capabilities:</p>
+<ul>
+<li>parametric cabinet/module modeling</li>
+<li>material stack selection</li>
+<li>hardware selection และ preview</li>
+<li>X-Ray drill map view</li>
+<li>measurement และ snap tools</li>
+<li>project save/version lineage</li>
+<li>gate status visible during design</li>
+</ul>
+<h3>FR-06 Parametric Contract</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> เป็น candidate manufacturing truth</p>
+<p>ต้อง define:</p>
+<ul>
+<li>cabinet/module identity</li>
+<li>dimensions และ tolerances</li>
+<li>panel roles และ quantities</li>
+<li>material stack และ edge banding</li>
+<li>hardware/connector rules</li>
+<li>site constraints</li>
+<li>revision state</li>
+<li>linked concept/evidence sources</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>mutation หลัง approval ต้องมี revision reason</li>
+<li>contract ห้ามเกิดจาก concept โดยไม่มี conversion workflow</li>
+<li>contract release ไม่ได้ถ้าไม่ผ่าน Safety Gate</li>
+</ul>
+<h3>FR-07 Catalog Trust Tiers</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> ให้ browse เร็วโดยไม่ปน production truth</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>ตัวอย่าง</th>
+<th>ใช้ได้ถึงไหน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Decorative</td>
+<td>sofa, lamp, vase</td>
+<td>render/presentation only</td>
+</tr>
+<tr>
+<td>Spec-bound</td>
+<td>finish, paint, fixture SKU</td>
+<td>proposal/spec, no CNC</td>
+</tr>
+<tr>
+<td>Production-bound</td>
+<td>board, edge band, hinge, rail</td>
+<td>BOM/cost/gate candidate</td>
+</tr>
+<tr>
+<td>Certified</td>
+<td>verified material/hardware/machine profile</td>
+<td>Factory Packet/CNC eligible</td>
+</tr>
+</tbody></table></div>
+<p>Acceptance:</p>
+<ul>
+<li>decorative asset เป็น production item ไม่ได้ถ้าไม่มี explicit mapping</li>
+<li>certified asset ต้องมี version, supplier, spec และ approval owner</li>
+</ul>
+<h3>FR-08 Material Stack + Connector OS</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> compile furniture hardware เป็น deterministic manufacturing instructions</p>
+<p>Requirements:</p>
+<ul>
+<li>แยก finished visual envelope ออกจาก production core drilling</li>
+<li>support core vs surface vs glue vs edge banding thickness</li>
+<li>support DRILL_ON_CORE และ DRILL_ON_FINISHED modes</li>
+<li>compile hardware specs ผ่าน Selection -&gt; Placer -&gt; Synthesis -&gt; Emission</li>
+<li>emit OperationGraph metadata สำหรับ pair, role, frame, connector, feature</li>
+<li>enforce System 32 และ Connector OS rules ผ่าน Gate</li>
+</ul>
+<h3>FR-09 Safety Gate and Release State</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> เป็น manufacturing authority</p>
+<p>Release states:</p>
+<pre><code class="language-text">DRAFT -&gt; FROZEN -&gt; GATED -&gt; RELEASED -&gt; EXPORTED
+</code></pre>
+<p>Gate ต้อง validate:</p>
+<ul>
+<li>geometry</li>
+<li>panel dimensions</li>
+<li>connector pair integrity</li>
+<li>coaxial/axis alignment</li>
+<li>arrow orientation</li>
+<li>clearance</li>
+<li>material stack consistency</li>
+<li>packet validity</li>
+<li>machine/post compatibility</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>BLOCKER ป้องกัน release/export</li>
+<li>WARNING waive ได้เฉพาะพร้อม role, reason และ audit</li>
+<li>auto-fix patch ต้อง deterministic</li>
+<li>export จาก non-released state ห้าม เว้น simulation output ที่กำหนดชัด</li>
+</ul>
+<h3>FR-10 Approval Packet</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> ทำให้ approval ชัดทั้งทางกฎหมายและ operational</p>
+<p>Approval packet ประกอบด้วย:</p>
+<ul>
+<li>render/image set</li>
+<li>scope summary</li>
+<li>room/lane/module list</li>
+<li>material/hardware summary</li>
+<li>exclusions และ assumptions</li>
+<li>revision ID</li>
+<li>gate status</li>
+<li>price/variation status ถ้ามี</li>
+<li>approver identity, timestamp, channel</li>
+</ul>
+<p>Gate locks:</p>
+<ul>
+<li>G1 concept/mood</li>
+<li>G2 layout/presentation</li>
+<li>G3 final materials/render</li>
+<li>G4 production planning/release</li>
+</ul>
+<h3>FR-11 Factory Packet and Multi-Machine Export</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> เปลี่ยน released design เป็น manufacturing package ที่ verify ได้</p>
+<p>Required outputs:</p>
+<ul>
+<li>Factory Packet ZIP</li>
+<li>drillMap.json</li>
+<li>connectors.json</li>
+<li>cutList.json</li>
+<li>gateResult.json</li>
+<li>OperationGraph</li>
+<li>CNC/DXF files</li>
+<li>manifest with checksums</li>
+<li>signed receipt</li>
+</ul>
+<p>Machine outputs:</p>
+<ul>
+<li>DXF R12</li>
+<li>Generic/FANUC-style G-code fallback</li>
+<li>MPR for Homag/Weeke</li>
+<li>CIX for Biesse</li>
+<li>XXL for SCM/Morbidelli</li>
+<li>future formats หลัง post-processor profiles</li>
+</ul>
+<p>Acceptance:</p>
+<ul>
+<li>output deterministic สำหรับ released input เดิม</li>
+<li>packet verify offline ได้</li>
+<li>manifest หรือ signature mismatch ต้อง block trust</li>
+</ul>
+<h3>FR-12 ERP Backbone</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> บริหาร business operations รอบ manufacturing truth</p>
+<p>Core objects:</p>
+<ul>
+<li>Party</li>
+<li>Project/Job</li>
+<li>Item Master</li>
+<li>BOM Snapshot</li>
+<li>Routing/Operation</li>
+<li>Work Order / Job Card</li>
+<li>Stock Move / Reservation</li>
+<li>Purchase Request / PO / Receipt</li>
+<li>Quality Inspection / NCR</li>
+<li>Invoice / Payment / Journal Entry</li>
+<li>Approval / Audit Event</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>BOM Snapshot มาจาก Released Spec</li>
+<li>material demand มาจาก Released Spec หรือ approved change เท่านั้น</li>
+<li>ERP ห้ามแก้ geometry, drill maps, CNC หรือ release state โดยตรง</li>
+<li>Job cost เชื่อม estimate, planned cost, committed cost, actual cost, rework และ WIP</li>
+</ul>
+<h3>FR-13 LINE-Native Engagement</h3>
+<p><strong>Priority:</strong> P0<br><strong>Purpose:</strong> ทำให้ human workflow ง่าย แต่ back-end governance เข้ม</p>
+<p>Requirements:</p>
+<ul>
+<li>HMAC verification สำหรับ webhook</li>
+<li>idempotency สำหรับ inbound events ทุกชนิด</li>
+<li>outbound templates ต้อง pre-approved เท่านั้น; ไม่มี free-text LLM</li>
+<li>customer ไม่เป็น DB principal</li>
+<li>staff identity binding ต้อง deterministic</li>
+<li>LINE group membership ไม่ใช่ authorization</li>
+<li>customer group รับเฉพาะ curated approved updates</li>
+<li>internal proof ห้าม auto-forward ไป customer group</li>
+</ul>
+<h3>FR-14 Field Execution and Installation</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> ปิด loop จาก Released Spec ไป installed reality</p>
+<p>Requirements:</p>
+<ul>
+<li>Installation project map เป็น house -&gt; rooms -&gt; lanes</li>
+<li>T0 readiness checklist ก่อน start</li>
+<li>work items ต่อ room/lane/person</li>
+<li>photo proof และ issue capture ผ่าน LINE/PWA</li>
+<li>punch list และ NCR support</li>
+<li>close-house ทำได้เฉพาะ Installation Team Lead ที่ authorized</li>
+<li>customer acceptance ผ่าน LINE Flex หรือ web fallback</li>
+<li>field evidence link กับ Released Spec และ Factory Packet</li>
+</ul>
+<h3>FR-15 Accounting, Procurement, and Job Costing</h3>
+<p><strong>Priority:</strong> P1<br><strong>Purpose:</strong> ให้ financial truth เดินตาม production truth</p>
+<p>Requirements:</p>
+<ul>
+<li>double-entry ledger</li>
+<li>multi-book support</li>
+<li>VAT/WHT logic สำหรับไทย</li>
+<li>PO/receipt/stock/issue flow</li>
+<li>actual purchase price และ moving average</li>
+<li>job cost by project/package</li>
+<li>WIP และ billing milestone visibility</li>
+<li>Capture Spine integration สำหรับ expense/material documents</li>
+</ul>
+<h3>FR-16 MCP and AI Copilot</h3>
+<p><strong>Priority:</strong> P0/P1<br><strong>Purpose:</strong> ให้ AI ช่วยโดยไม่ข้าม governance</p>
+<p>Requirements:</p>
+<ul>
+<li>tool catalog ตาม role และ site</li>
+<li>Read tools execute ได้ภายใต้นโยบาย</li>
+<li>Write/Approval tools สร้าง Pending Invocation</li>
+<li>risky action ต้อง human approval</li>
+<li>data minimization และ PII redaction ที่ MCP boundary</li>
+<li>audit ทุก invocation</li>
+<li>untrusted content ต้องถูกมองเป็น data ไม่ใช่ command</li>
+</ul>
+<h3>FR-17 Executive Dashboard and Analytics</h3>
+<p><strong>Priority:</strong> P1<br><strong>Purpose:</strong> ทำให้ผู้บริหาร govern ระบบได้จริง</p>
+<p>Dashboard categories:</p>
+<ul>
+<li>sales conversion</li>
+<li>design approval SLA</li>
+<li>gate pass/fail rate</li>
+<li>concept-to-contract conversion</li>
+<li>survey-to-verified-record lag</li>
+<li>factory packet rejection</li>
+<li>CNC/post errors</li>
+<li>material variance</li>
+<li>rework/scrap</li>
+<li>field issue rate</li>
+<li>punch-list age</li>
+<li>job cost variance</li>
+<li>WIP/cash forecast</li>
+</ul>
+<h2>15. Cross-Feature Governance Rules</h2>
+<h3>15.1 Provenance Required</h3>
+<p>object ทุกตัวที่เกิดจาก automation, AI, OCR, SpatialLM, import, customer channel หรือ external system ต้องมีอย่างน้อย source, timestamp, processor/model version ถ้าเกี่ยวข้อง, verifier status และ accountable owner ก่อนจะกลายเป็น committed truth</p>
+<h3>15.2 Escalation by Risk</h3>
+<p>gate, approval, waiver, posting, export หรือ closeout action ที่เกิน risk threshold ตาม config ต้อง route ไป role ที่มี authority สูงขึ้น action ที่ high-risk ห้าม default เป็น auto-pass</p>
+<h3>15.3 Reconciliation Loop</h3>
+<p>field variance, NCR, rework, scrap, supplier variance และ accounting variance ต้องย้อนกลับไปปรับ rule, catalog certification, gate policy, machine profile governance และ executive dashboard ไม่ใช่จบเป็น incident เดี่ยวหรือ chat message เดี่ยว</p>
+<h3>15.4 No Silent Authority Transfer</h3>
+<p>module ใดห้ามได้ authority เหนือ source of truth ของอีก module จากผลข้างเคียงของ integration Front Door release production truth ไม่ได้, ERP แก้ geometry/CNC ไม่ได้, Field proof mutate Released Spec ย้อนหลังไม่ได้ และ AI/MCP write action ต้องเข้า Pending Invocation + human gate</p>
+<h2>16. Non-Functional Requirements</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Determinism</td>
+<td>same released input ต้องได้ packet/hash/output เดิม</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>ทุก output link กลับไป source evidence, revision, gate, user, timestamp</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>RLS, least privilege, secret isolation, signed artifacts</td>
+</tr>
+<tr>
+<td>Privacy</td>
+<td>PDPA-by-architecture, redaction, data minimization, controlled egress</td>
+</tr>
+<tr>
+<td>Reliability</td>
+<td>idempotent webhooks, retries, offline field queues, offline packet verification</td>
+</tr>
+<tr>
+<td>Usability</td>
+<td>หน้าบ้านง่าย หลังบ้านรับความยาก</td>
+</tr>
+<tr>
+<td>Mobile field use</td>
+<td>one-hand flows, minimal fields, LINE/PWA first</td>
+</tr>
+<tr>
+<td>Auditability</td>
+<td>append-only audit สำหรับ approval, capture, release, export, field proof</td>
+</tr>
+<tr>
+<td>Extensibility</td>
+<td>capture types, machine profiles, catalog items, document types เพิ่มด้วย config เมื่อทำได้</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>fail-safe; policy หาย = block ไม่ใช่ pass</td>
+</tr>
+</tbody></table></div>
+<h2>17. System Invariants</h2>
+<ol>
+<li>render release production ไม่ได้</li>
+<li>concept scene สร้าง CNC โดยตรงไม่ได้</li>
+<li>SpatialLM output bypass human verification ไม่ได้</li>
+<li>ERP แก้ drill maps หรือ CNC ไม่ได้</li>
+<li>customer approval แก้ scope แบบเงียบ ๆ ไม่ได้</li>
+<li>Released Spec mutate ไม่ได้ถ้าไม่ผ่าน revision workflow</li>
+<li>Factory export ต้องมี release state และ gate proof</li>
+<li>Field completion ต้องมี evidence และ authorized close</li>
+<li>AI write actions ต้องผ่าน human gate</li>
+<li>sensitive evidence ออกนอก boundary ไม่ได้ถ้าไม่มี policy</li>
+</ol>
+<h2>18. Data Model Summary</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Key entities</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front Door</td>
+<td>Intake, ConceptGraph, RenderDeck, ApprovalPacket</td>
+</tr>
+<tr>
+<td>Spatial Evidence</td>
+<td>SpatialCapture, SceneCodeCandidate, SiteSurveyZone, VerificationOverlay</td>
+</tr>
+<tr>
+<td>Capture</td>
+<td>CaptureArtifact, CaptureTypeConfig, VerifyDecision, CommitAdapter</td>
+</tr>
+<tr>
+<td>Design</td>
+<td>Project, Cabinet, Panel, MaterialStack, HardwareSpec, ParametricContract</td>
+</tr>
+<tr>
+<td>Truth</td>
+<td>DrillMap, GateResult, ReleasedSpec, Revision, Waiver</td>
+</tr>
+<tr>
+<td>Manufacturing</td>
+<td>FactoryPacket, OperationGraph, ToolpathManifest, ExportReceipt</td>
+</tr>
+<tr>
+<td>ERP</td>
+<td>Item, BOMSnapshot, Routing, WorkOrder, StockMove, PO, Receipt, LedgerEntry</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>InstallationProject, Room, Lane, WorkItem, ProofPhoto, Issue, PunchList, Acceptance</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Principal, Role, SiteAccess, Approval, AuditEvent, PendingInvocation</td>
+</tr>
+<tr>
+<td>Program Execution</td>
+<td>ReleasePolicy, MetricDefinition, PilotCohort, MigrationMapping, ExceptionWaiverReasonCatalog</td>
+</tr>
+</tbody></table></div>
+<h2>19. RACI and Governance Matrix</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>Responsible</th>
+<th>Accountable</th>
+<th>Consulted</th>
+<th>Informed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Front Door intake and concept</td>
+<td>Product + Sales Ops</td>
+<td>Product Owner</td>
+<td>Designer Lead, Sales Lead</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Spatial evidence pilot</td>
+<td>Survey Lead + Product</td>
+<td>Operations Lead</td>
+<td>Designer Lead, Privacy Owner</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Parametric Contract and Safety Gate</td>
+<td>Engineering + Designer Lead</td>
+<td>Manufacturing Truth Owner</td>
+<td>Factory Lead, QA</td>
+<td>Product Owner</td>
+</tr>
+<tr>
+<td>Factory Packet and export</td>
+<td>Engineering + Factory Lead</td>
+<td>Factory Lead</td>
+<td>Machine Profile Owner, QA</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>ERP Backbone and job cost</td>
+<td>Finance + Engineering</td>
+<td>Finance Policy Owner</td>
+<td>Production Planner, Accountant</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Field digital thread</td>
+<td>Operations + Field Lead</td>
+<td>Operations Lead</td>
+<td>Customer Success, QA</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>MCP/AI write actions</td>
+<td>Engineering + Governance</td>
+<td>Security/Governance Owner</td>
+<td>Product Owner, Data Steward</td>
+<td>Executive Owner</td>
+</tr>
+<tr>
+<td>Certified catalog and item master</td>
+<td>Data Steward</td>
+<td>Manufacturing Truth Owner</td>
+<td>Finance, Purchasing, Design</td>
+<td>Product Owner</td>
+</tr>
+</tbody></table></div>
+<h2>20. Release Strategy and Pilot Plan</h2>
+<h3>20.1 Rollout Philosophy</h3>
+<ul>
+<li>ไม่ทำ big-bang rewrite</li>
+<li>เริ่มจาก module ที่เพิ่ม governance โดยไม่ทำให้ production continuity เสี่ยง</li>
+<li>ใช้ coexistence และ shadow mode เมื่องานบัญชี หน้างาน หรือ factory output อาจถูกกระทบ</li>
+<li>แยก front-door speed ออกจาก production authority ให้ชัด</li>
+<li>ใช้ pilot evidence เป็นฐานตั้ง target ไม่ใช่หลักฐานว่า production-ready ทั้งระบบ</li>
+</ul>
+<h3>20.2 Suggested Release Order</h3>
+<ol>
+<li>Truth chain stabilization</li>
+<li>Front Door + Approval Packet</li>
+<li>Capture Spine hardening</li>
+<li>Spatial Evidence sandbox สำหรับ 1-2 rooms โดยไม่มี CNC/release/accounting path</li>
+<li>Factory Packet และ export integrity improvements</li>
+<li>ERP Backbone object registry + BOM snapshot + job cost shadow mode</li>
+<li>Field digital thread</li>
+<li>Board dashboard intelligence</li>
+</ol>
+<h3>20.3 Pilot Strategy</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pilot</th>
+<th>Scope</th>
+<th>Exit evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Controlled factory pilot</td>
+<td>project เล็กที่ factory path ชัดและ machine profile จำกัด</td>
+<td>deterministic packet, gate proof, signed receipt, packet rejection data</td>
+</tr>
+<tr>
+<td>Spatial evidence pilot</td>
+<td>1-2 rooms เท่านั้น, ไม่มี CNC/release path</td>
+<td>verified SiteSurveyZone candidates, human correction log, survey time baseline</td>
+</tr>
+<tr>
+<td>Accounting shadow pilot</td>
+<td>Released Spec -&gt; BOM snapshot -&gt; job cost โดยยังไม่ post จริง</td>
+<td>variance map, finance sign-off, posting rule gaps</td>
+</tr>
+<tr>
+<td>Field pilot</td>
+<td>installation complexity ระดับกลางพร้อม room/lane work</td>
+<td>proof completeness, issue aging, close-house acceptance audit</td>
+</tr>
+</tbody></table></div>
+<h2>21. Migration and Coexistence Strategy</h2>
+<h3>21.1 Data Migration Principles</h3>
+<ul>
+<li>migrated data ต้อง preserve identity, revision lineage, provenance และ source confidence</li>
+<li>legacy record ที่ evidence ไม่ครบต้อง mark เป็น lower-confidence legacy data ไม่ใช่ normalize ให้ดูแน่นอนเกินจริง</li>
+<li>factory packet เก่าห้าม regenerate ถ้ายังพิสูจน์ evidence parity และ release lineage ไม่ได้</li>
+<li>migration script ต้องมี audit report, reject count และ owner review queue</li>
+</ul>
+<h3>21.2 Coexistence Rules</h3>
+<ul>
+<li>design เดิมอ่านได้ แต่ release ใหม่ต้องเข้า rule ของ module ที่ deploy แล้ว</li>
+<li>accounting ใช้ shadow mode ก่อน post จริง</li>
+<li>field team ใช้ LINE/PWA ควบคู่ process เดิมจนกว่า proof completion และ closeout จะเสถียร</li>
+<li>SpatialLM เริ่มเป็น assistive evidence layer และไม่แทน manual survey</li>
+</ul>
+<h2>22. Dependencies</h2>
+<h3>22.1 Internal Dependencies</h3>
+<ul>
+<li>canonical PRD, blueprint, Safety Gate docs, Connector OS docs และ release/export contracts</li>
+<li>machine profile ownership และ versioning</li>
+<li>finance policy owner สำหรับ VAT/WHT/eTax, posting threshold และ approval limit</li>
+<li>operations owner สำหรับ room/lane, T0, close-house และ acceptance behavior</li>
+<li>data steward สำหรับ certified catalog, item master, naming, mapping และ trust-tier hygiene</li>
+</ul>
+<h3>22.2 External Dependencies</h3>
+<ul>
+<li>LINE platform stability และ policy boundary</li>
+<li>OCR/LLM/self-host infrastructure boundary</li>
+<li>SpatialLM model/runtime feasibility สำหรับ sandbox เท่านั้น</li>
+<li>ERP patterns จาก Odoo, ERPNext/Frappe, Acumatica และ Infor เป็น architectural reference ไม่ใช่ runtime dependency</li>
+<li>legal/accounting review ในพื้นที่จริงสำหรับ approval language, PDPA handling, VAT/WHT/eTax และ document retention</li>
+</ul>
+<h2>23. Risk Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Likelihood</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ทีมตีความ concept เป็น truth</td>
+<td>สูง</td>
+<td>กลาง</td>
+<td>badge/state ชัด, mandatory conversion workflow, no export from sandbox</td>
+</tr>
+<tr>
+<td>Safety Gate ถูก bypass เพราะถูกมองว่าเป็น friction</td>
+<td>สูง</td>
+<td>กลาง</td>
+<td>gate reason UX ดี, waiver policy formal, audit visibility, executive exception dashboard</td>
+</tr>
+<tr>
+<td>accounting scope ใหญ่เกินไป</td>
+<td>สูง</td>
+<td>สูง</td>
+<td>shadow mode, phased rollout, finance co-design, restricted posting surface</td>
+</tr>
+<tr>
+<td>SpatialLM ถูก overpromise</td>
+<td>กลาง</td>
+<td>สูง</td>
+<td>sandbox only, no release path, measured pilot, explicit executive policy</td>
+</tr>
+<tr>
+<td>field adoption ต่ำ</td>
+<td>สูง</td>
+<td>กลาง</td>
+<td>LINE/PWA-first, minimal input, operations champion, digest controls</td>
+</tr>
+<tr>
+<td>catalog mapping ไม่น่าเชื่อถือ</td>
+<td>กลาง</td>
+<td>กลาง</td>
+<td>trust tiers, certified catalog owner, mapping review, data stewardship</td>
+</tr>
+<tr>
+<td>machine profile drift</td>
+<td>สูง</td>
+<td>กลาง</td>
+<td>versioned machine profiles, signed packet verification, export receipt checks</td>
+</tr>
+<tr>
+<td>notification noise ทำให้คนเลิกใช้</td>
+<td>กลาง</td>
+<td>กลาง</td>
+<td>quiet hours, role-based routing, digest, escalation thresholds</td>
+</tr>
+<tr>
+<td>governance ทำให้ front door ช้า</td>
+<td>สูง</td>
+<td>กลาง</td>
+<td>ให้ speed อยู่ที่ concept/intake และ enforce strictness เฉพาะ release, accounting, closeout path</td>
+</tr>
+</tbody></table></div>
+<h2>24. Program-Level Acceptance Criteria</h2>
+<h3>24.1 Front Door Ready</h3>
+<ul>
+<li>ลูกค้าและทีมภายในเริ่มงานได้โดยไม่ต้องเข้าใจทั้งระบบ</li>
+<li>สร้าง useful concept ได้เร็ว</li>
+<li>Approval Packet อ่านง่ายและผูก scope, revision, timestamp, identity และ channel</li>
+<li>ไม่มี shortcut จาก front door ไป Released Spec โดยไม่มี conversion และ gate</li>
+</ul>
+<h3>24.2 Truth Layer Ready</h3>
+<ul>
+<li>Parametric Contract, Material Stack, Connector OS และ Safety Gate อธิบาย blocker ได้</li>
+<li>Released Spec immutable ยกเว้นผ่าน revision workflow</li>
+<li>Factory Packet verify offline ได้และ trace กลับหา release evidence ได้</li>
+</ul>
+<h3>24.3 ERP Backbone Ready</h3>
+<ul>
+<li>BOM Snapshot สร้างจาก Released Spec</li>
+<li>stock move, PO, receipt, actual cost และ ledger candidate trace กลับหา project/package ได้</li>
+<li>accounting post สร้างจาก unverified AI/capture output ไม่ได้</li>
+</ul>
+<h3>24.4 Field Ready</h3>
+<ul>
+<li>room/lane work item ใช้งานบนมือถือได้</li>
+<li>proof, issue, punch list และ acceptance link กลับหา released truth ได้</li>
+<li>close-house และ customer acceptance ต้องมี authorization และ audit</li>
+</ul>
+<h2>25. Definition of Done and Module Readiness</h2>
+<h3>25.1 Feature Definition of Done</h3>
+<p>feature ใดจะถือว่า Done ได้เมื่อ:</p>
+<ul>
+<li>requirement, UX flow, edge cases และ prohibited actions ถูก review</li>
+<li>permissions, RLS ถ้าเกี่ยวข้อง และ audit events ถูกระบุ</li>
+<li>system invariants ถูก encode หรือมี guardrail ที่ verify ได้</li>
+<li>analytics events และ dashboard ที่จำเป็นถูกกำหนด</li>
+<li>error states, retry behavior, offline behavior และ fallback ownership ถูกระบุ</li>
+<li>docs และ runbook update แล้ว</li>
+<li>pilot evidence พิสูจน์ workflow อย่างน้อยหนึ่งเส้นจริงหรือ representative เมื่อ feature กระทบ production, field, finance หรือ approval</li>
+</ul>
+<h3>25.2 Module Readiness Checklist</h3>
+<p>ทุก module ต้องตอบได้ว่า:</p>
+<ul>
+<li>ใครคือ owner?</li>
+<li>source of truth คืออะไร?</li>
+<li>action ใดห้ามทำ?</li>
+<li>rollback หรือ correction path คืออะไร?</li>
+<li>ถ้า service ล่ม งานต้องเดินอย่างไร?</li>
+<li>audit trail ถูกสร้างตรงไหน?</li>
+<li>threshold/escalation ใดเป็น config และใด hardcode?</li>
+<li>output ใดต้อง signed หรือ verified?</li>
+</ul>
+<h2>26. SpatialLM Policy</h2>
+<ul>
+<li>SpatialLM ใช้อ่าน spatial evidence ไม่ใช่แทน engineering judgment</li>
+<li>output เป็น candidate evidence จนกว่าจะถูก verify โดย accountable human</li>
+<li>phase แรกคือ survey acceleration และ constraint visibility เท่านั้น</li>
+<li>SpatialLM ห้ามเขียน CNC, เปลี่ยน release state, ยืนยัน manufacturability ขั้นสุดท้าย หรือ post accounting event</li>
+<li>SpatialLM evidence enrich SiteSurveyZone ได้หลัง verification และ provenance capture เท่านั้น</li>
+</ul>
+<h2>27. ERP Policy</h2>
+<ul>
+<li>Odoo ใช้เป็น reference สำหรับ flow mapping, shop-floor pattern และ field-service pattern</li>
+<li>ERPNext/Frappe ใช้เป็น reference สำหรับ document state, object registry, permissions, naming series และ workflow</li>
+<li>Acumatica ใช้เป็น benchmark สำหรับ project accounting, job cost, WIP และ field-office visibility</li>
+<li>Infor ใช้เป็น north-star benchmark สำหรับ PLM/MES/WMS/CPQ integration และ BOM lifecycle thinking</li>
+<li>MONOLITH ERP Backbone เป็น business operating layer รอบ manufacturing truth ไม่ใช่เจ้าของ geometry, drill map, CNC, release state หรือ factory packet truth</li>
+</ul>
+<h2>28. Roadmap</h2>
+<h3>Phase 0: Stabilize Existing Truth Chain</h3>
+<ul>
+<li>รักษา CAD/CAM/Factory Packet/Safety Gate เดิมเป็น core ที่ห้ามต่อรอง</li>
+<li>verify code/test status ก่อน external production claim ใด ๆ</li>
+<li>preserve PRD/blueprint เดิมเป็น implementation evidence</li>
+</ul>
+<h3>Phase 1: MONOLITH Front Door Program</h3>
+<ul>
+<li>Intake Router</li>
+<li>Concept Sandbox</li>
+<li>Approval Packet</li>
+<li>Catalog trust tiers</li>
+<li>Gate Reason UX</li>
+<li>Render deck ที่ผูกกับ revision และ approval</li>
+</ul>
+<h3>Phase 2: Spatial Evidence Sandbox</h3>
+<ul>
+<li>SpatialLM-based prototype สำหรับ 1-2 ห้อง</li>
+<li>point-cloud/video/LiDAR input</li>
+<li>walls/openings/bounding boxes output</li>
+<li>overlay human verification</li>
+<li>commit เฉพาะ verified constraints เข้า SiteSurveyZone</li>
+<li>ไม่มี path ไป CNC/release ในปีแรก</li>
+</ul>
+<h3>Phase 3: Conversion Engine</h3>
+<ul>
+<li>Concept-to-Parametric Contract diff</li>
+<li>material/hardware mapping</li>
+<li>preliminary gate</li>
+<li>unknowns และ blockers list</li>
+<li>production-safe patch suggestions</li>
+</ul>
+<h3>Phase 4: ERP Backbone</h3>
+<ul>
+<li>document object registry</li>
+<li>Item Master และ production-bound catalog</li>
+<li>BOM Snapshot จาก Released Spec</li>
+<li>Work Order / Job Card</li>
+<li>stock reservation/issue/return/scrap</li>
+<li>job cost, WIP, procurement, PO, invoice milestones</li>
+</ul>
+<h3>Phase 5: Field Digital Thread</h3>
+<ul>
+<li>Installation PWA polish</li>
+<li>house/room/lane tasks</li>
+<li>LINE groups พร้อม hard guardrails</li>
+<li>T0, proof, issue, punch list, close-house, customer acceptance</li>
+<li>field-to-design feedback ผ่าน deviation analytics</li>
+</ul>
+<h3>Phase 6: Board Intelligence</h3>
+<ul>
+<li>executive dashboards</li>
+<li>gate/rework/field/cost analytics</li>
+<li>supplier และ factory throughput analytics</li>
+<li>closed-loop improvement ของ design standard และ Safety Gate rules</li>
+</ul>
+<h2>29. Success Metrics</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Time to first useful concept</td>
+<td>front-door speed</td>
+</tr>
+<tr>
+<td>Survey-to-verified SiteSurveyZone time</td>
+<td>Spatial evidence ROI</td>
+</tr>
+<tr>
+<td>Concept-to-contract conversion rate</td>
+<td>sandbox usefulness</td>
+</tr>
+<tr>
+<td>First-pass Safety Gate pass rate</td>
+<td>production readiness</td>
+</tr>
+<tr>
+<td>Gate-fix cycle time</td>
+<td>designer productivity</td>
+</tr>
+<tr>
+<td>Render approval to Released Spec drift</td>
+<td>approval integrity</td>
+</tr>
+<tr>
+<td>Factory packet rejection rate</td>
+<td>manufacturing quality</td>
+</tr>
+<tr>
+<td>CNC/post error rate</td>
+<td>machine readiness</td>
+</tr>
+<tr>
+<td>Defect/rework cost</td>
+<td>business impact</td>
+</tr>
+<tr>
+<td>Field issue rate</td>
+<td>site execution quality</td>
+</tr>
+<tr>
+<td>Punch-list age</td>
+<td>closeout discipline</td>
+</tr>
+<tr>
+<td>Job cost variance</td>
+<td>financial control</td>
+</tr>
+<tr>
+<td>Capture-to-post lag</td>
+<td>back-office efficiency</td>
+</tr>
+<tr>
+<td>Approval SLA</td>
+<td>workflow health</td>
+</tr>
+</tbody></table></div>
+<p>ตัวเลข target ต้องตั้งหลังเก็บ baseline 30-60 วัน ไม่ตั้งจากอากาศ</p>
+<p>metric definition ต้องมี owner, source system/table, cadence, baseline period, target policy และ escalation threshold ก่อนจะยกระดับเป็น board KPI</p>
+<h2>30. Open Questions</h2>
+<ol>
+<li>จะใช้ห้อง/โปรเจกต์ pilot ใดสำหรับ Spatial Evidence Phase 1?</li>
+<li>scan source แรกควรเป็น iPhone LiDAR, Android RGB-D หรือ video ปกติที่ reconstruct เป็น point cloud?</li>
+<li>asset ใดจะถูกยกระดับเป็น Certified production-bound catalog items ใน v1?</li>
+<li>machine profile ใดเป็น production pilot target แรก?</li>
+<li>ERP Backbone object ใดควร implement ก่อน: Item Master, BOM Snapshot, Work Order หรือ Job Cost?</li>
+<li>approval language สำหรับ G1/G2/G3/G4 packet ต้องให้กฎหมาย review อย่างไร?</li>
+<li>deployment boundary ของ self-host OCR/LLM และ SpatialLM processing อยู่ตรงไหน?</li>
+<li>dashboard ใดสำคัญที่สุดสำหรับ board ในเดือนแรก?</li>
+<li>waiver threshold แรกสำหรับ warning, blocker, budget variance และ schedule variance ควรตั้งที่ระดับใด?</li>
+<li>role ใด waive warning ได้โดยไม่ต้อง escalate ถึง executive?</li>
+<li>production-bound certified catalog seed set ชุดแรกคืออะไร?</li>
+<li>90-day rollout sequence ใดปลอดภัยที่สุดสำหรับ business unit แรก?</li>
+</ol>
+<h2>31. Evidence Tier and Usage Policy</h2>
+<p>Evidence Tier ใช้ตอบคำถามสองข้อแยกกัน: “แหล่งนี้น่าเชื่อถือระดับใดสำหรับ claim ประเภทนี้” และ “claim นี้พิสูจน์สถานะ production ของ MONOLITH ได้หรือไม่” แหล่งระดับสูงไม่ได้แปลว่าใช้พิสูจน์ได้ทุกเรื่อง ตัวอย่างเช่น paper ระดับ E1 พิสูจน์ research feasibility ได้ แต่พิสูจน์ว่า module ของ MONOLITH deploy แล้วไม่ได้</p>
+<h3>31.1 Evidence Tier</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>ประเภทหลักฐาน</th>
+<th>ใช้ยืนยันได้</th>
+<th>ห้ามตีความเกิน</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>E0 — Direct As-Built Evidence</strong></td>
+<td>source code, schema/migration, automated test, build artifact, signed packet, deployment/operational record ที่ผูกกับ revision</td>
+<td>สถานะ implementation ภายในขอบเขต environment และ revision ที่ตรวจ</td>
+<td>ห้ามเรียก production-ready ถ้ายังขาด deployment, live integration หรือ operational proof</td>
+</tr>
+<tr>
+<td><strong>E1 — Primary / Authoritative</strong></td>
+<td>approved canonical decision, official standard/regulator/API contract, peer-reviewed paper</td>
+<td>requirement, policy, protocol หรือ research capability ที่แหล่งระบุโดยตรง</td>
+<td>ห้ามใช้แทน E0 เพื่อ claim ว่า MONOLITH implement แล้ว</td>
+</tr>
+<tr>
+<td><strong>E2 — First-Party Vendor Claim</strong></td>
+<td>vendor product page, help center, official blog, official demo</td>
+<td>capability ที่ vendor ประกาศและใช้เป็น benchmark</td>
+<td>ห้ามถือเป็นผลทดสอบอิสระ, SLA, API compatibility หรือ fit กับเครื่องจักร DAPH</td>
+</tr>
+<tr>
+<td><strong>E3 — Secondary Synthesis</strong></td>
+<td>research report, trade media, market analysis, review, comparison document</td>
+<td>context, discovery, candidate requirement และคำถามสำหรับ due diligence</td>
+<td>ห้ามใช้เป็น sole acceptance evidence หรือ production decision</td>
+</tr>
+<tr>
+<td><strong>E4 — Inference / Recommendation</strong></td>
+<td>architectural inference, hypothesis, target, recommendation</td>
+<td>product direction และ experiment ที่ต้องพิสูจน์ต่อ</td>
+<td>ห้ามเขียนเป็น fact, current capability หรือ committed KPI</td>
+</tr>
+</tbody></table></div>
+<h3>31.2 กติกาการใช้งาน</h3>
+<ul>
+<li>claim ว่า <strong>implemented</strong> ต้องมี E0 ที่ชี้ไปยัง code/schema และ test ที่เกี่ยวข้อง</li>
+<li>claim ว่า <strong>production-ready</strong> ต้องมี E0 ครบ code + test + deployment + operational proof และไม่มี blocker ที่ยังเปิดอยู่</li>
+<li>external research decision ต้องมี E1 หรือ E2 ที่ชี้ exact URL/เวอร์ชัน และต้องระบุว่าเป็น primary evidence หรือ vendor claim</li>
+<li>E3/E4 ใช้สร้าง hypothesis, roadmap หรือ acceptance test ได้ แต่ห้ามใช้ผ่าน acceptance test ด้วยตัวเอง</li>
+<li>claim ที่ส่งผลต่อ CNC, release, accounting posting, IAM, PDPA หรือ customer acceptance ต้องมี accountable owner และ verification date</li>
+<li>เมื่อ source เปลี่ยน, URL หาย, hash ไม่ตรง หรือ code revision เปลี่ยน claim ที่เกี่ยวข้องกลับเป็น <code>REVERIFY</code> อัตโนมัติ</li>
+</ul>
+<h3>31.3 Freshness and Re-verification</h3>
+<p>Source owner ต้องทบทวน claim ที่มีผลต่อ production อย่างน้อยทุก release candidate ส่วน vendor/web source ต้อง re-check ก่อน procurement, contract signing หรือ public claim ทุกครั้ง เวอร์ชัน PDF/Markdown ที่อยู่ใน <code>Downloads</code> เป็น provenance pointer ที่ hash ไว้แล้ว แต่ยังไม่ใช่ durable evidence store จนกว่าจะย้ายเข้า controlled repository หรือ evidence archive</p>
+<h2>32. Source Register</h2>
+<h3>32.1 Internal MONOLITH Sources</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Artifact / Revision</th>
+<th>SHA-256 หรือ identity</th>
+<th>การใช้งานที่อนุญาต</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-I01</code></td>
+<td>E1</td>
+<td><code>docs/prd/monolith-complete-prd.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>E363271C...7546C6D</code>; EN <code>299BA724...BF59F0</code></td>
+<td>requirement baseline ก่อน v5</td>
+</tr>
+<tr>
+<td><code>SRC-I02</code></td>
+<td>E3</td>
+<td><code>C:\Users\thai3\Downloads\monolith-complete-prd-v4.th.md</code></td>
+<td><code>70AEBC56...D8DD44D</code></td>
+<td>program-execution additions; ไม่ใช่ standalone full PRD</td>
+</tr>
+<tr>
+<td><code>SRC-I03</code></td>
+<td>E3</td>
+<td><code>docs/research/coohom-vs-monolith-comparison.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>2EEA72F3...E4B08</code>; EN <code>6BC1D2F6...18906B</code></td>
+<td>strategic comparison และ evidence caveat</td>
+</tr>
+<tr>
+<td><code>SRC-I04</code></td>
+<td>E3/E4</td>
+<td><code>docs/research/monolith-front-door-doctrine.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>9EB37FF8...A9FDD</code>; EN <code>47B5EB1D...FE0379</code></td>
+<td>front-door doctrine, product inference และ recommendation</td>
+</tr>
+<tr>
+<td><code>SRC-I05</code></td>
+<td>E3/E4</td>
+<td><code>docs/research/erp-deep-research-for-monolith.th.md</code> / <code>.en.md</code></td>
+<td>TH <code>2762AD44...2BE60</code>; EN <code>3D136404...99806</code></td>
+<td>ERP pattern benchmark; ไม่ใช่ runtime dependency</td>
+</tr>
+<tr>
+<td><code>SRC-I06</code></td>
+<td>E0</td>
+<td>Local code snapshot <code>determined-williams/</code></td>
+<td>Git <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code>, branch <code>fix/drillmap-bolt-and-brun-dowels</code>, dirty worktree</td>
+<td>as-built code inspection เฉพาะ snapshot นี้</td>
+</tr>
+<tr>
+<td><code>SRC-I07</code></td>
+<td>E0</td>
+<td>Read-only audit session 2026-07-10</td>
+<td>root tests/build/typecheck/smoke + targeted code inspection; summary in §34</td>
+<td>as-built status; ต้อง rerun เมื่อ revision หรือ environment เปลี่ยน</td>
+</tr>
+<tr>
+<td><code>SRC-I08</code></td>
+<td>E0</td>
+<td><code>docs/prd/monolith-complete-prd-v5.sha256</code></td>
+<td>SHA-256 ของ v5.1 TH/EN Markdown และ HTML</td>
+<td>integrity check สำหรับ deliverable ชุดนี้</td>
+</tr>
+</tbody></table></div>
+<p>ไฟล์ implementation ที่เป็นหลักฐานแกนระบบรวมถึง <code>determined-williams/docs/PRD.md</code>, <code>MASTER_BLUEPRINT.md</code>, <code>REQUIREMENTS-OVERVIEW.md</code>, <code>docs/SAFETY_GATE.md</code>, <code>docs/api/FACTORY_EXPORT_API.md</code>, <code>docs/connector-os/</code>, <code>docs/LINE-Architecture-System-Complete.md</code>, <code>docs/architecture/MULTI_MACHINE_EXPORT_DESIGN.md</code>, <code>src/</code>, <code>server/</code>, <code>supabase/migrations/</code>, <code>supabase/functions/</code> และ <code>packages/field-app/</code> โดยเอกสารอธิบาย intent ส่วน code/test/schema เป็น E0 สำหรับสถานะ as-built</p>
+<h3>32.2 User-Provided Coohom / Manycore Upstream Package</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Artifact</th>
+<th>SHA-256</th>
+<th>ข้อจำกัด</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-U01</code></td>
+<td>E3</td>
+<td><code>Coohom Technology Deep Dive — Architecture, Algorithms &amp; AI Research (Executive Edition).md</code></td>
+<td><code>6CF39D7A...8F969</code></td>
+<td>ผสม paper, vendor source และ inferred internals; ต้อง trace claim ต่อรายการ</td>
+</tr>
+<tr>
+<td><code>SRC-U02</code></td>
+<td>E3</td>
+<td><code>Coohom Complete Suite Intelligence Report — Executive Decision-Grade Analysis.md/.pdf</code></td>
+<td>MD <code>1D24F30E...ECBA</code>; PDF <code>2EB0F260...FFBB</code></td>
+<td>executive synthesis; title ไม่ได้ยกระดับทุก claim เป็น E1</td>
+</tr>
+<tr>
+<td><code>SRC-U03</code></td>
+<td>E3</td>
+<td><code>Coohom Deep Research Report — ฉบับสมบูรณ์ (ภาค 2 กลยุทธ์ &amp; การขยายตัว).pdf</code></td>
+<td><code>855C2C6D...BFAF9</code></td>
+<td>strategy/vendor/market synthesis; ตัวเลขต้องตรวจ source ต้นทาง</td>
+</tr>
+<tr>
+<td><code>SRC-U04</code></td>
+<td>E3</td>
+<td><code>Coohom Manycore Tech — Technology Deep Dive for DAPH Studio 2026.md/.pdf</code></td>
+<td>MD <code>0351FCC1...04A4</code>; PDF <code>5B1B555C...A5297</code></td>
+<td>upstream integration proposal; direct SmartLink-to-CNC path ไม่ใช่ MONOLITH policy</td>
+</tr>
+</tbody></table></div>
+<p>hash แสดงแบบย่อในตารางเพื่ออ่านง่าย ค่าเต็มอยู่ใน §32.4 และต้องคงไว้ใน release evidence manifest หาก archive ชุดนี้เข้า controlled repository</p>
+<h3>32.3 External Primary, Standard, and Vendor Sources</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Tier</th>
+<th>Source</th>
+<th>ใช้รองรับ</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SRC-X01</code></td>
+<td>E1</td>
+<td><a href="https://arxiv.org/abs/2506.07491">SpatialLM paper</a> และ <a href="https://nips.cc/virtual/2025/poster/115535">NeurIPS 2025 record</a></td>
+<td>point cloud → structured walls/doors/windows/object boxes และ research benchmarks</td>
+</tr>
+<tr>
+<td><code>SRC-X02</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/ai-home-design">Coohom AI Home Design / AIHom</a></td>
+<td>fast editable 2D/3D front-door benchmark</td>
+</tr>
+<tr>
+<td><code>SRC-X03</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/floor-planner">Coohom Floor Planner</a></td>
+<td>floor-plan UX capability claim</td>
+</tr>
+<tr>
+<td><code>SRC-X04</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/case/3d-render-home">Coohom 3D Render</a></td>
+<td>rendering/presentation benchmark</td>
+</tr>
+<tr>
+<td><code>SRC-X05</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/3d-models">Coohom Model Library</a></td>
+<td>catalog breadth claim; ไม่ใช่ certified manufacturing catalog</td>
+</tr>
+<tr>
+<td><code>SRC-X06</code></td>
+<td>E2</td>
+<td><a href="https://blog.coohom.com/coohom-smartlink-suite-at-indiawood-2026-closing-the-gap-between-design-and-production/">Coohom SmartLink</a></td>
+<td>vendor claim เรื่อง design validation, live sync และ CNC workflow</td>
+</tr>
+<tr>
+<td><code>SRC-X07</code></td>
+<td>E2</td>
+<td><a href="https://www.coohom.com/helpcenter/model-materials-ai-modeler-user-guide">Coohom AI Modeler Guide</a></td>
+<td>ยืนยันการมี Tripo 3D/HY 3D tools; ไม่ยืนยัน internal neural architecture</td>
+</tr>
+<tr>
+<td><code>SRC-X08</code></td>
+<td>E1</td>
+<td><a href="https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/">Microsoft Guidelines for Human-AI Interaction</a> และ <a href="https://www.microsoft.com/en-us/haxtoolkit/">HAX Toolkit</a></td>
+<td>human-AI interaction และ failure-mode design</td>
+</tr>
+<tr>
+<td><code>SRC-X09</code></td>
+<td>E1</td>
+<td><a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI Risk Management Framework</a></td>
+<td>AI governance/risk framing</td>
+</tr>
+<tr>
+<td><code>SRC-X10</code></td>
+<td>E1</td>
+<td><a href="https://www.iso.org/standard/77520.html">ISO 9241-210</a> และ <a href="https://www.iso.org/standard/75066.html">ISO 23247</a></td>
+<td>human-centred design และ digital-twin framework</td>
+</tr>
+<tr>
+<td><code>SRC-X11</code></td>
+<td>E1</td>
+<td><a href="https://doi.org/10.6028/NIST.AMS.300-6">NIST AMS 300-6</a></td>
+<td>product-data traceability</td>
+</tr>
+</tbody></table></div>
+<p>external URLs ตรวจล่าสุด 2026-07-10 และถือเป็น dynamic sources การตัดสินใจ production ต้องบันทึก access date, version และ archived snapshot เมื่อ license อนุญาต</p>
+<h3>32.4 Full Local Hash Manifest</h3>
+<pre><code class="language-text">SRC-I01-TH  E363271DCF31BD4F22F81B0886258696AB7F2D1E05F22831790DB6A6F7546C6D  monolith-complete-prd.th.md
+SRC-I01-EN  299BA72490D04112836C330D115712DE7A67D52E6DC985F7DCC8D97FCDBF59F0  monolith-complete-prd.en.md
+SRC-I02     70AEBC56DFDC7EB6A024AE6FD68D5BB5B6802D588A21EC04F0775BB9AD8DD44D  monolith-complete-prd-v4.th.md
+SRC-I03-TH  2EEA72F3DF4BF80CD7E342AB544061EB496D5EEE15A5BF94FF460F339FDE4B08  coohom-vs-monolith-comparison.th.md
+SRC-I03-EN  6BC1D2F6F66EDDFFD367DE849C3267E8D807BE509711ECEAD685F7A84618906B  coohom-vs-monolith-comparison.en.md
+SRC-I04-TH  9EB37FF85CCE2046E1C019D1EB24E9D50D3106EB9A36AB837C32B163F4CA9FDD  monolith-front-door-doctrine.th.md
+SRC-I04-EN  47B5EB1DEE81B37E7AF4BBADF5E91658EE9A8E1A5C7EE6E5A2A90533D0FE0379  monolith-front-door-doctrine.en.md
+SRC-I05-TH  2762AD44F8C9DE5DEF3051F93D259E112A4B99DD98E22751149916454A52BE60  erp-deep-research-for-monolith.th.md
+SRC-I05-EN  3D136404680D1FD4FD044C088279C04F27FDC0DBB80CAA9C2B759756BCD99806  erp-deep-research-for-monolith.en.md
+SRC-U01     6CF39D7AB95CCCA46716C99E8928390D1A9A29C49965C4352FB9B45430F8F969  Coohom Technology Deep Dive.md
+SRC-U02-MD  1D24F30E0F3ABF0D77769D0329524C923579D2BE0BE606F125960D484BCAECBA  Coohom Complete Suite Intelligence Report.md
+SRC-U02-PDF 2EB0F260483A2735FB8245A61FA7054F2AC74637ACF100C596ABC345D1C8FFBB  Coohom Complete Suite Intelligence Report.pdf
+SRC-U03-PDF 855C2C6D84E226D18A6D2D6EB13F7BD643B57C92FC96FB9DECC0D3C3443BFAF9  Coohom Deep Research Report Part 2.pdf
+SRC-U04-MD  0351FCC1AD26CD96E697B29F831006A7842E468A01A3AD690419B4C5500404A4  Coohom Manycore Tech Deep Dive.md
+SRC-U04-PDF 5B1B555C7F40C4173AC7EACDC9B2D359F56A5348A5503512062A6053F19A5297  Coohom Manycore Tech Deep Dive.pdf
+</code></pre>
+<h2>33. Claim Ledger</h2>
+<p>Claim Ledger เป็นจุดเชื่อมระหว่าง source, PRD decision และ as-built evidence สถานะ <code>ACCEPTED</code> หมายถึงรับเป็น requirement/decision ไม่ได้หมายถึง implement แล้ว ส่วน <code>AS-BUILT GAP</code> หมายถึง code ปัจจุบันยังไม่ถึง requirement</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Claim ID</th>
+<th>Claim</th>
+<th>Sources / Tier</th>
+<th>PRD Decision</th>
+<th>สถานะและเงื่อนไขพิสูจน์</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CLM-001</code></td>
+<td>Coohom ให้ front-door ที่เริ่มเร็วและได้ editable visual scene</td>
+<td><code>SRC-X02</code>–<code>SRC-X05</code> / E2, <code>SRC-U01</code>–<code>SRC-U04</code> / E3</td>
+<td>ใช้เป็น UX benchmark</td>
+<td><strong>ACCEPTED WITH BOUNDARY</strong> — ห้าม scene/catalog กลายเป็น production truth โดยอัตโนมัติ</td>
+</tr>
+<tr>
+<td><code>CLM-002</code></td>
+<td>SmartLink รองรับ design-to-production/CNC workflow</td>
+<td><code>SRC-X06</code> / E2, <code>SRC-U02</code>–<code>SRC-U04</code> / E3</td>
+<td>ใช้เป็น vendor benchmark ไม่ใช่ runtime dependency</td>
+<td><strong>VENDOR CLAIM</strong> — ต้องมี paid demo, machine matrix, API contract และ packet comparison ก่อนพิจารณา integration</td>
+</tr>
+<tr>
+<td><code>CLM-003</code></td>
+<td>SpatialLM อ่าน point cloud เป็น structured indoor elements ได้</td>
+<td><code>SRC-X01</code> / E1</td>
+<td>ใช้เป็น feasibility ของ Spatial Evidence Compiler</td>
+<td><strong>ACCEPTED</strong> — pilot ต้องวัด precision/recall และ human correction บนข้อมูล DAPH</td>
+</tr>
+<tr>
+<td><code>CLM-004</code></td>
+<td>SpatialLM สามารถสร้าง CNC หรือ release manufacturing truth ได้</td>
+<td>ไม่มี primary evidence; inference E4</td>
+<td>ห้ามโดย policy</td>
+<td><strong>REJECTED</strong> — SpatialLM output เป็น candidate evidence เท่านั้น</td>
+</tr>
+<tr>
+<td><code>CLM-005</code></td>
+<td>Coohom ใช้ bidirectional DAG, U-Net, Hough/RDP, 50 mm auto-close และ pipeline ภายในตามรายงาน</td>
+<td><code>SRC-U01</code> / E3-E4; <code>SRC-X07</code> ยืนยันเพียง tool surface</td>
+<td>ห้าม encode เป็น fact หรือ dependency</td>
+<td><strong>UNVERIFIED</strong> — ต้องมี official technical disclosure หรือ reproducible black-box study</td>
+</tr>
+<tr>
+<td><code>CLM-006</code></td>
+<td>“10 นาทีแรก” เป็น performance fact ที่พิสูจน์แล้ว</td>
+<td><code>SRC-I04</code> / E4, vendor speed claims E2</td>
+<td>เป็น product aspiration</td>
+<td><strong>TARGET, NOT BASELINE</strong> — ตั้ง SLA หลังเก็บ baseline 30–60 วัน</td>
+</tr>
+<tr>
+<td><code>CLM-007</code></td>
+<td>Spatial AI/AI/OCR เป็น evidence ไม่ใช่ authority</td>
+<td><code>SRC-I01</code>, <code>SRC-I04</code>, <code>SRC-X08</code>, <code>SRC-X09</code> / E1-E4</td>
+<td>system invariant</td>
+<td><strong>ACCEPTED</strong> — ต้องมี provenance, verifier และ human gate ใน write path</td>
+</tr>
+<tr>
+<td><code>CLM-008</code></td>
+<td>ERP เป็น business layer รอบ manufacturing truth</td>
+<td><code>SRC-I01</code>, <code>SRC-I05</code> / E1-E4</td>
+<td>architectural boundary</td>
+<td><strong>ACCEPTED</strong> — ERP ห้ามแก้ geometry, drill map, CNC หรือ release state</td>
+</tr>
+<tr>
+<td><code>CLM-009</code></td>
+<td>Factory Packet ต้อง deterministic, signed และ verify offline ได้</td>
+<td><code>SRC-I01</code>, implementation docs, <code>SRC-I06</code> / E0-E1</td>
+<td>mandatory release requirement</td>
+<td><strong>ACCEPTED; AS-BUILT GAP</strong> — ดู <code>AB-PKT-01</code>–<code>AB-PKT-02</code></td>
+</tr>
+<tr>
+<td><code>CLM-010</code></td>
+<td>Concept Sandbox มีใช้งานแล้ว</td>
+<td>PRD only / E4; audit <code>SRC-I07</code></td>
+<td>target capability</td>
+<td><strong>AS-BUILT GAP</strong> — ไม่พบ implementation ที่แยก sandbox graph อย่างเป็นระบบ</td>
+</tr>
+<tr>
+<td><code>CLM-011</code></td>
+<td>Catalog Trust Tiers มีใช้งานแล้ว</td>
+<td>PRD only / E4; catalog foundation E0</td>
+<td>target capability</td>
+<td><strong>AS-BUILT GAP</strong> — มี catalog code แต่ไม่พบ tier enforcement ครบ Public/Project/Verified/Certified</td>
+</tr>
+<tr>
+<td><code>CLM-012</code></td>
+<td>LINE/Capture/Field digital thread พร้อม production ครบเส้น</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>target remains</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong> — มี migrations/functions/field app แต่ DB/RLS integration และ field-app automated test ยังไม่ครบ</td>
+</tr>
+<tr>
+<td><code>CLM-013</code></td>
+<td>Factory authorization boundary พร้อม production</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>mandatory control</td>
+<td><strong>AS-BUILT GAP</strong> — frontend role อยู่ localStorage และ edge function เชื่อ <code>x-actor-role/name</code></td>
+</tr>
+<tr>
+<td><code>CLM-014</code></td>
+<td>CNC export ใน main UI เปิดได้เฉพาะ <code>RELEASED</code></td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>mandatory invariant</td>
+<td><strong>AS-BUILT GAP</strong> — <code>AppShell.tsx:174</code> อนุญาต <code>FROZEN</code> เมื่อ gate OK</td>
+</tr>
+<tr>
+<td><code>CLM-015</code></td>
+<td>Factory packet generation bit-identical แล้ว</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>mandatory requirement</td>
+<td><strong>AS-BUILT GAP</strong> — job ID, manifest time และ ZIP time ยังมี runtime entropy</td>
+</tr>
+<tr>
+<td><code>CLM-016</code></td>
+<td>Server <code>/verify</code> ตรวจ manifest/files/signature/gate/machine ครบ</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>mandatory verification boundary</td>
+<td><strong>AS-BUILT GAP</strong> — ปัจจุบันตรวจ packet SHA anchor เป็นหลัก</td>
+</tr>
+<tr>
+<td><code>CLM-017</code></td>
+<td>CAD/CAM, Parametric Contract, Connector OS และ Safety Gate มี implementation จริง</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>preserve as core</td>
+<td><strong>VERIFIED IN TEST ENVIRONMENT</strong> — ไม่เท่ากับ production certification</td>
+</tr>
+<tr>
+<td><code>CLM-018</code></td>
+<td>ERP/finance/executive analytics พร้อมใช้งานครบ</td>
+<td><code>SRC-I06</code>, <code>SRC-I07</code> / E0</td>
+<td>roadmap target</td>
+<td><strong>PARTIAL</strong> — มี schema/workflow บางส่วน แต่ <code>/finance</code> และบาง route ยังเป็น placeholder</td>
+</tr>
+</tbody></table></div>
+<h2>34. As-Built Status</h2>
+<h3>34.1 Snapshot and Audit Boundary</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Audit date</td>
+<td>2026-07-10</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td><code>determined-williams/</code></td>
+</tr>
+<tr>
+<td>Git identity</td>
+<td>commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code>, branch <code>fix/drillmap-bolt-and-brun-dowels</code></td>
+</tr>
+<tr>
+<td>Worktree</td>
+<td><strong>DIRTY</strong> — มี modified/untracked files อยู่ก่อนงานเอกสารนี้ จึงต้องมองผลเป็น local workspace snapshot ไม่ใช่ clean-commit certification</td>
+</tr>
+<tr>
+<td>Automated evidence observed</td>
+<td>root Vitest 261 files / 4,545 tests passed; TypeScript check passed; Vite build passed; browser smoke 7 scenarios passed</td>
+</tr>
+<tr>
+<td>Partial test evidence</td>
+<td>Python suite 10 passed / 96 skipped เพราะไม่มี <code>LINE_OA_TEST_DATABASE_URL</code>; live DB/RLS ไม่ได้ถูกพิสูจน์</td>
+</tr>
+<tr>
+<td>Toolchain variance</td>
+<td>factory server package test ภายใต้ Vitest 1.6 ล้ม 13 tests จาก CLI side effect/process exit ขณะที่ golden tests เดียวกันผ่านภายใต้ root Vitest; ต้องแก้ test-runner drift</td>
+</tr>
+<tr>
+<td>Excluded from certification</td>
+<td>production deployment, live Supabase/LINE credentials, real CNC machine execution, receipt-key ceremony, paid Coohom/SmartLink environment และ field pilot</td>
+</tr>
+</tbody></table></div>
+<h3>34.2 Status Definitions</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>ความหมาย</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>VERIFIED</strong></td>
+<td>พบ implementation และ automated evidence ผ่านใน environment ที่ระบุ</td>
+</tr>
+<tr>
+<td><strong>PARTIAL</strong></td>
+<td>มี implementation สำคัญ แต่ flow, control, integration หรือ proof ยังไม่ครบ</td>
+</tr>
+<tr>
+<td><strong>PLANNED</strong></td>
+<td>อยู่ใน PRD/roadmap แต่ไม่พบ implementation ที่เพียงพอ</td>
+</tr>
+<tr>
+<td><strong>BLOCKED</strong></td>
+<td>มีช่องว่างที่ห้าม production release แม้ capability บางส่วนมีอยู่</td>
+</tr>
+<tr>
+<td><strong>NOT VERIFIED</strong></td>
+<td>อาจมี code/schema แต่ audit นี้ไม่มี environment หรือ evidence พอจะตัดสิน</td>
+</tr>
+</tbody></table></div>
+<h3>34.3 FR-01 to FR-17 As-Built Matrix</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>FR</th>
+<th>Capability</th>
+<th>Status</th>
+<th>Evidence summary</th>
+<th>Next proof required</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FR-01</td>
+<td>Front Door Intake Router</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี LINE/capture/routes หลายส่วน แต่ไม่พบ unified front-door routing และ evidence graph ครบ</td>
+<td>end-to-end intake test + role/channel routing</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Concept Sandbox</td>
+<td><strong>PLANNED</strong></td>
+<td>ไม่พบ sandbox graph/state ที่แยกจาก manufacturing truth</td>
+<td>sandbox data model, conversion gate และ no-export tests</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Spatial Evidence Compiler</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี <code>site_survey_zone</code> schema/adapter; ไม่พบ SpatialLM runtime pipeline</td>
+<td>model/runtime PoC, provenance schema, accuracy benchmark</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Capture Spine</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี <code>src/capture/</code>, migrations และ commit-target adapters</td>
+<td>live DB/RLS integration, retries, offline and failure proof</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Designer Workspace</td>
+<td><strong>VERIFIED</strong></td>
+<td>มี <code>src/spec/ui/DesignerScreen.tsx</code>, designer rules/stores และ 3D/CAD tests</td>
+<td>usability/pilot evidence และ production telemetry</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Parametric Contract</td>
+<td><strong>VERIFIED</strong></td>
+<td>spec/store/state machine และ manufacturing transformations มี test coverage</td>
+<td>released-spec immutability proof ใน deployed boundary</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Catalog Trust Tiers</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี <code>src/core/catalog/</code> และ manufacturing catalogs แต่ไม่พบ trust-tier enforcement ครบ</td>
+<td>tier schema, certification owner, export deny tests</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Material Stack + Connector OS</td>
+<td><strong>VERIFIED</strong></td>
+<td>material registry, connector compiler, drill-map/gate tests มีจริง</td>
+<td>machine-profile pilot และ versioned catalog evidence</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Safety Gate and Release State</td>
+<td><strong>PARTIAL / BLOCKED</strong></td>
+<td>gate engine/test แข็งแรง แต่ main UI export ยอม <code>FROZEN</code>; strict bypass scan ใช้งานไม่ได้</td>
+<td>แก้ <code>AB-EXP-01</code>, bypass scanner และ release-invariant tests</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Approval Packet</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี approval quorum/authz/idempotency และ LINE workflow foundations</td>
+<td>customer-facing packet E2E, identity/quorum/audit proof</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Factory Packet and Multi-Machine Export</td>
+<td><strong>PARTIAL / BLOCKED</strong></td>
+<td>exporters/packet path มีจริง แต่ determinism, server verify, auth และ production key ยังมี blocker</td>
+<td>ปิด <code>AB-PKT-01</code>–<code>AB-PKT-02</code>, <code>AB-AUTH-01</code>, <code>AB-KEY-01</code></td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>ERP Backbone</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี migrations/object flows บางส่วน; route หลักบางจุดยัง placeholder</td>
+<td>released-demand → BOM/WO/PO/job-cost integration test</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>LINE-Native Engagement</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+<td>มี Supabase functions/migrations และ TS/Python tests บางส่วน</td>
+<td>live sandbox, DB/RLS suite, delivery/retry/consent evidence</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Field Execution and Installation</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+<td>มี <code>src/workflow/field/</code>, bridge และ <code>packages/field-app/</code> screens</td>
+<td>field-app test script, offline sync, close-house pilot</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>Accounting, Procurement, Job Costing</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี ledger/capture/migration foundations แต่ finance UI/real posting ไม่ครบ</td>
+<td>accountant-reviewed shadow posting และ reconciliation</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>MCP and AI Copilot</td>
+<td><strong>PARTIAL</strong></td>
+<td><code>src/mcp/</code> มี authz, PDPA, redaction, autonomy และ tests</td>
+<td>deployed IAM, Pending Invocation E2E และ audit proof</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>Executive Dashboard and Analytics</td>
+<td><strong>PARTIAL</strong></td>
+<td>มี factory dashboard components แต่ไม่พบ board KPI lineage ครบ</td>
+<td>metric registry, source-table lineage, baseline และ executive acceptance</td>
+</tr>
+</tbody></table></div>
+<h3>34.4 Production Blocker Register</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Blocker ID</th>
+<th>Priority</th>
+<th>Evidence</th>
+<th>Production exit condition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AB-AUTH-01</code></td>
+<td>P0</td>
+<td><code>src/core/auth/roles.ts:67</code>; <code>supabase/functions/factory-api/index.ts:136-137</code></td>
+<td>JWT/session → server-owned actor/role mapping; client headers ไม่มี authority</td>
+</tr>
+<tr>
+<td><code>AB-EXP-01</code></td>
+<td>P0</td>
+<td><code>src/components/layout/AppShell.tsx:174</code></td>
+<td>CNC export ต้อง require <code>RELEASED</code> และ format-specific gate ทุก entry point</td>
+</tr>
+<tr>
+<td><code>AB-PKT-01</code></td>
+<td>P0</td>
+<td><code>src/factory/packet/useFactoryPacket.ts:352</code>; <code>src/factory/packet/buildFactoryPacket.ts:126</code></td>
+<td>canonical job identity/time policy และ deterministic ZIP metadata</td>
+</tr>
+<tr>
+<td><code>AB-PKT-02</code></td>
+<td>P0</td>
+<td><code>supabase/functions/factory-api/index.ts:193-207</code></td>
+<td>verify manifest, per-file hash, signature, gate, revision และ machine profile</td>
+</tr>
+<tr>
+<td><code>AB-KEY-01</code></td>
+<td>P0</td>
+<td><code>server/src/crypto/production.receipt.pubkeys.v1.json:1</code></td>
+<td>approved non-placeholder production public-key set + rotation ceremony</td>
+</tr>
+<tr>
+<td><code>AB-TST-01</code></td>
+<td>P1</td>
+<td>factory server package Vitest 1.6 result</td>
+<td>CLI entrypoint ไม่ run/exit ตอน import; package/root test parity</td>
+</tr>
+<tr>
+<td><code>AB-GATE-01</code></td>
+<td>P1</td>
+<td><code>scripts/gates/bypass-scan.ts:135,147</code>; <code>.claude/gates/ci-bypass-patterns.txt:156</code></td>
+<td>scanner parse regex alternation ได้และ strict gate ผ่านแบบ signal-to-noise ใช้งานได้</td>
+</tr>
+<tr>
+<td><code>AB-DB-01</code></td>
+<td>P1</td>
+<td>96 Python tests skipped</td>
+<td>provision isolated DB, run RLS/integration suite และเก็บ CI artifact</td>
+</tr>
+<tr>
+<td><code>AB-FIELD-01</code></td>
+<td>P1</td>
+<td><code>packages/field-app/</code> ไม่มี test script; <code>.env</code> untracked</td>
+<td>test/offline suite, secret hygiene และ pilot evidence</td>
+</tr>
+</tbody></table></div>
+<h3>34.5 Promotion Rule</h3>
+<p>capability จะเลื่อนเป็น <code>VERIFIED</code> หรือ <code>production-ready</code> ได้เมื่อ Claim Ledger ชี้ Source ID ระดับ E0 ที่ immutable, automated tests ครอบ invariant, deployment evidence ผูก revision, operational owner ลงนาม และไม่มี P0 blocker ที่เกี่ยวข้อง การเปลี่ยนสถานะต้องแก้ §33 และ §34 พร้อมกัน ห้ามแก้เฉพาะคำบรรยายใน roadmap</p>
+<h2>35. Revision Notes for v5</h2>
+<h3>v5.0</h3>
+<p>รักษา detailed FR-01 ถึง FR-17 จาก PRD v3 ไว้ครบ และนำส่วนที่มีประโยชน์จาก PRD v4 เข้ามาเป็น canonical section ได้แก่ business goals, non-goals, assumptions and constraints, RACI, release strategy, migration and coexistence, dependencies, risk register, program-level acceptance criteria, Definition of Done, SpatialLM policy และ ERP policy</p>
+<h3>v5.1 — Evidence-Control Revision</h3>
+<ul>
+<li>เพิ่ม Evidence Tier E0-E4 และ usage policy</li>
+<li>เปลี่ยน Source Register เป็น source-ID registry พร้อม hash/revision และเพิ่ม upstream Coohom/Manycore package</li>
+<li>เพิ่ม Claim Ledger เพื่อแยก source fact, vendor claim, inference, PRD decision และ as-built gap</li>
+<li>เพิ่ม As-Built Status Matrix สำหรับ FR-01 ถึง FR-17 และ Production Blocker Register</li>
+<li>ตรึง audit snapshot กับ commit/branch/worktree state และบันทึก test limitations</li>
+<li>ยืนยันว่า PRD target ไม่ใช่ production claim และทุกสถานะต้อง re-verify เมื่อ code/source revision เปลี่ยน</li>
+</ul>
+<p>citation marker แบบ generated ใน v4 ยังคงถูกตัดออกเพราะ trace กลับไม่ได้เมื่ออ่านเป็น standalone document ไฟล์ <code>monolith-complete-prd-v5.sha256</code> เป็น release evidence manifest ที่บันทึก SHA-256 เต็มของ v5.1 TH/EN Markdown และ HTML ทั้งสี่ไฟล์</p>
+</main>
+</body>
+</html>

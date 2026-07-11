@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Complete Roadmap v1.0</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--blue:#0f5f99}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1280px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22;letter-spacing:0}h1{margin:0 0 18px;font-size:clamp(2rem,4vw,3.35rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.52rem;scroll-margin-top:18px}h3{margin-top:28px;font-size:1.16rem;scroll-margin-top:18px}p{margin:13px 0}a{color:var(--blue);text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px;border-radius:8px;background:#17202a;color:#f4f7fb;line-height:1.45}pre code{background:transparent;color:inherit;padding:0;overflow-wrap:normal}ul,ol{padding-left:1.35rem}li{margin:6px 0}.toc{margin:28px 0 38px;padding:20px 24px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}.toc h2{margin:0 0 12px;padding:0;border:0;font-size:1.15rem}.toc ol{columns:2;column-gap:42px;margin:0}.toc li{break-inside:avoid;margin:4px 0}.table-wrap{overflow-x:auto;margin:18px 0 24px;border:1px solid var(--line);border-radius:8px}table{width:100%;min-width:840px;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft);font-weight:760}tr:last-child td{border-bottom:0}@media(max-width:760px){main{padding:30px 20px 56px}.toc ol{columns:1}table{min-width:760px}}@media print{body{background:#fff}main{max-width:none;padding:20px;box-shadow:none}.toc ol{columns:2}.table-wrap{overflow:visible}table{min-width:0;font-size:8.5pt}a{color:inherit}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Complete Roadmap</h1><nav class="toc" aria-label="Roadmap Contents"><h2>Roadmap Contents</h2><ol><li><a href="#section-1">1. Executive Summary</a></li><li><a href="#section-2">2. Roadmap Authority and Evidence Baseline</a></li><li><a href="#section-3">3. Program Objective and 12-Month Outcomes</a></li><li><a href="#section-4">4. Planning Principles</a></li><li><a href="#section-5">5. Assumptions and Constraints</a></li><li><a href="#section-6">6. As-Built Baseline</a></li><li><a href="#section-7">7. Workstream Model</a></li><li><a href="#section-8">8. Master Timeline</a></li><li><a href="#section-9">9. Phase 0 — Safety Closure (Days 0–30)</a></li><li><a href="#section-10">10. Phase 1 — Factory Pilot Ready (Days 31–60)</a></li><li><a href="#section-11">11. Phase 2 — Front Door and Approval Pilot (Days 61–90)</a></li><li><a href="#section-12">12. Phase 3 — Spatial Evidence Sandbox and Capture Hardening (Months 4–6)</a></li><li><a href="#section-13">13. Phase 4 — ERP Backbone and Field Digital Thread (Months 7–9)</a></li><li><a href="#section-14">14. Phase 5 — Board Intelligence and Controlled Scale (Months 10–12)</a></li><li><a href="#section-15">15. Epic Register</a></li><li><a href="#section-16">16. Critical Path and Dependencies</a></li><li><a href="#section-17">17. Release Gate Framework</a></li><li><a href="#section-18">18. Pilot Portfolio</a></li><li><a href="#section-19">19. QA and Test Strategy</a></li><li><a href="#section-20">20. Security, PDPA, and Key Management Plan</a></li><li><a href="#section-21">21. Migration and Coexistence Plan</a></li><li><a href="#section-22">22. Team Capacity and RACI</a></li><li><a href="#section-23">23. Governance Cadence</a></li><li><a href="#section-24">24. KPI and Benefit Realization</a></li><li><a href="#section-25">25. Risk Register</a></li><li><a href="#section-26">26. Procurement and External Dependency Gates</a></li><li><a href="#section-27">27. 30/60/90-Day Action Plan</a></li><li><a href="#section-28">28. Definition of Ready and Definition of Done</a></li><li><a href="#section-29">29. FR-to-Roadmap Traceability</a></li><li><a href="#section-30">30. Open Decisions</a></li><li><a href="#section-31">31. Rebaseline and Change Control</a></li><li><a href="#section-32">32. Deliverable Register</a></li><li><a href="#section-33">33. Source Register</a></li><li><a href="#section-34">34. Program Completion Criteria</a></li></ol></nav>
+<p>Document date: 2026-07-10<br>Language edition: EN<br>Document edition: 1.0<br>Planning horizon: 2026-07-10 through 2027-06-30<br>Governing document: <code>monolith-complete-prd-v5.en.md</code> edition 5.1<br>Status: Planning Baseline — target dates must be rebaselined after RG-0<br>Product: MONOLITH Manufacturing OS / MONOLITH Operating System</p>
+<h2 id="section-1">1. Executive Summary</h2>
+<p>This roadmap turns PRD v5.1 from a target state into a 12-month delivery program with explicit owners, dependencies, release gates, evidence, and rollback. The objective is not to build every module at once. It is to secure manufacturing truth first, then add front-door speed, spatial evidence, ERP, field execution, and board intelligence in that order.</p>
+<p>The strategic sequence is:</p>
+<pre><code class="language-text">Evidence Baseline
+  → Identity + Release Safety
+  → Deterministic Factory Packet
+  → Controlled Factory Pilot
+  → Front Door + Approval Pilot
+  → Spatial Evidence Sandbox
+  → ERP Shadow + Field Digital Thread
+  → Board Intelligence + Controlled Scale
+</code></pre>
+<p>Key decisions:</p>
+<ul>
+<li>No production pilot while any P0 blocker remains open.</li>
+<li>Concept Sandbox, SpatialLM, ERP, and AI/MCP must never gain a shortcut to CNC, release, or accounting.</li>
+<li>Dates are planning targets, not commitments, until the previous phase evidence gate passes.</li>
+<li>Business KPIs require 30–60 days of baseline data before target-setting, except hard safety invariants that can immediately target zero or 100%.</li>
+<li>Every release must update the PRD v5.1 Source Register, Claim Ledger, and As-Built Status.</li>
+</ul>
+<h2 id="section-2">2. Roadmap Authority and Evidence Baseline</h2>
+<p>This roadmap is subordinate to PRD v5.1. If they conflict, system invariants, prohibited actions, Safety Gate policy, and production blockers in the PRD take precedence over schedule.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Reference</th>
+<th>Identity</th>
+<th>Role in roadmap</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PRD v5.1 TH/EN</td>
+<td><code>monolith-complete-prd-v5.sha256</code></td>
+<td>Target requirements, claims, as-built baseline</td>
+</tr>
+<tr>
+<td>Code snapshot</td>
+<td>Commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code></td>
+<td>Implementation baseline as of 2026-07-10</td>
+</tr>
+<tr>
+<td>Worktree state</td>
+<td>Dirty</td>
+<td>Audit result is not clean-commit certification</td>
+</tr>
+<tr>
+<td>Automated evidence</td>
+<td>4,545 root tests, TypeScript, build, and 7 browser smoke scenarios passed</td>
+<td>Test-environment confidence only</td>
+</tr>
+<tr>
+<td>Missing evidence</td>
+<td>Live DB/RLS, production deployment, real CNC, key ceremony, field pilot</td>
+<td>Must be closed through release gates</td>
+</tr>
+</tbody></table></div>
+<p>A code revision, source hash, or environment change returns affected as-built claims to <code>REVERIFY</code> until the relevant gate is rerun.</p>
+<h2 id="section-3">3. Program Objective and 12-Month Outcomes</h2>
+<p>By 2027-06-30, the program must deliver:</p>
+<ol>
+<li>a production release path that is server-authorized, RELEASED-only, deterministic, signed, and fully packet-verifiable</li>
+<li>a factory pilot on at least one real machine path with operator runbook and rollback</li>
+<li>a fast front door whose Concept Sandbox cannot export to production</li>
+<li>an Approval Packet bound to identity, revision, quorum, and audit</li>
+<li>a spatial/capture pilot for 1–2 rooms whose outputs remain evidence only</li>
+<li>an ERP Backbone that receives BOM snapshots from Released Spec and supports shadow procurement, job costing, and reconciliation</li>
+<li>a field digital thread for mobile/offline proof, issues, NCR, close-house, and customer acceptance</li>
+<li>a Metric Registry and executive dashboard that trace every KPI to source table and owner</li>
+<li>a release evidence pack that can reproduce every <code>VERIFIED</code> status from an immutable revision</li>
+</ol>
+<h2 id="section-4">4. Planning Principles</h2>
+<ol>
+<li><strong>Safety before speed:</strong> close auth, release, and packet blockers before front-door feature expansion</li>
+<li><strong>One truth chain:</strong> no parallel release path through a vendor, ERP, field, or AI</li>
+<li><strong>Pilot before scale:</strong> every phase requires a controlled pilot before expanding machines, teams, or business units</li>
+<li><strong>Evidence before status:</strong> a meeting or demo alone cannot move <code>PARTIAL</code> to <code>VERIFIED</code></li>
+<li><strong>Config before hardcode:</strong> machine, threshold, waiver, role, and policy must be versioned/configurable</li>
+<li><strong>Human authority:</strong> AI, spatial, OCR, and MCP may propose; accountable humans approve critical writes</li>
+<li><strong>Coexistence over big bang:</strong> legacy work continues until the new proof chain is stable</li>
+<li><strong>Rebaseline honestly:</strong> scope/date/capacity changes must be recorded, not hidden by weakening acceptance criteria</li>
+</ol>
+<h2 id="section-5">5. Assumptions and Constraints</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Planning assumption / constraint</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Capacity</td>
+<td>A cross-functional core squad exists across frontend/CAD, backend/platform, QA, and product; if below §22 assumptions, phases move rather than safety gates shrinking</td>
+</tr>
+<tr>
+<td>Factory</td>
+<td>One pilot machine profile can be selected and a factory owner participates in UAT</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>A project/room is authorized for pilot use and can be PDPA-classified</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td>A finance owner accepts shadow posting before real posting</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>An operations champion and controlled project are available for mobile/offline pilot</td>
+</tr>
+<tr>
+<td>Vendor</td>
+<td>Coohom/SmartLink remains a benchmark until procurement gate approval and is not a critical-path dependency</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>Isolated test DB, staging, and key/secrets boundary exist before RG-2</td>
+</tr>
+<tr>
+<td>Timeline</td>
+<td>All target dates rebaseline after RG-0 and quarterly</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-6">6. As-Built Baseline</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Starting status</th>
+<th>Roadmap implication</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Designer Workspace / Parametric Contract</td>
+<td>VERIFIED in test environment</td>
+<td>Preserve regression coverage and add deployed immutability proof</td>
+</tr>
+<tr>
+<td>Material Stack / Connector OS</td>
+<td>VERIFIED in test environment</td>
+<td>Use as the core of the machine pilot</td>
+</tr>
+<tr>
+<td>Safety Gate / Release</td>
+<td>PARTIAL / BLOCKED</td>
+<td>Critical path for Phase 0</td>
+</tr>
+<tr>
+<td>Factory Packet / Export</td>
+<td>PARTIAL / BLOCKED</td>
+<td>Fix determinism, verification, auth, and key before pilot</td>
+</tr>
+<tr>
+<td>Front Door / Concept Sandbox</td>
+<td>PARTIAL / PLANNED</td>
+<td>Start after RG-2 so safety closure keeps capacity</td>
+</tr>
+<tr>
+<td>Spatial Evidence</td>
+<td>PARTIAL</td>
+<td>SiteSurveyZone substrate exists; no model runtime</td>
+</tr>
+<tr>
+<td>Capture / LINE</td>
+<td>PARTIAL / NOT VERIFIED</td>
+<td>Requires DB/RLS and live sandbox proof</td>
+</tr>
+<tr>
+<td>ERP / Finance</td>
+<td>PARTIAL</td>
+<td>Begin with object registry and shadow mode</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>PARTIAL / NOT VERIFIED</td>
+<td>Add tests, offline proof, and secret hygiene</td>
+</tr>
+<tr>
+<td>Executive Analytics</td>
+<td>PARTIAL</td>
+<td>Build after source-table lineage exists</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-7">7. Workstream Model</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Workstream</th>
+<th>Scope</th>
+<th>Accountable role</th>
+<th>Primary FR</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WS-00</code> Program Evidence &amp; Governance</td>
+<td>Source/claim/as-built, release evidence, change control</td>
+<td>Program Owner</td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>WS-01</code> Identity, Security &amp; PDPA</td>
+<td>IAM, JWT, secrets, service role, threat model, retention</td>
+<td>Security/Platform Lead</td>
+<td>FR-09, 13, 16</td>
+</tr>
+<tr>
+<td><code>WS-02</code> Truth and Release Integrity</td>
+<td>Spec states, gate invariants, waiver, immutable release</td>
+<td>Manufacturing Tech Lead</td>
+<td>FR-06, 09</td>
+</tr>
+<tr>
+<td><code>WS-03</code> Factory Packet &amp; Machine</td>
+<td>Deterministic packet, signature, verification, machine profiles</td>
+<td>Factory Integration Lead</td>
+<td>FR-08, 11</td>
+</tr>
+<tr>
+<td><code>WS-04</code> Front Door &amp; Concept</td>
+<td>Intake, sandbox, conversion, presentation</td>
+<td>Product/Design Lead</td>
+<td>FR-01, 02, 05</td>
+</tr>
+<tr>
+<td><code>WS-05</code> Capture &amp; Spatial Evidence</td>
+<td>Capture, survey, provenance, SpatialLM sandbox</td>
+<td>Capture/AI Lead</td>
+<td>FR-03, 04</td>
+</tr>
+<tr>
+<td><code>WS-06</code> Catalog, Material &amp; Connector</td>
+<td>Trust tiers, certification, catalog/machine versions</td>
+<td>Data Steward</td>
+<td>FR-07, 08</td>
+</tr>
+<tr>
+<td><code>WS-07</code> Approval &amp; LINE</td>
+<td>Customer packet, identity, quorum, retry, consent</td>
+<td>Engagement Lead</td>
+<td>FR-10, 13</td>
+</tr>
+<tr>
+<td><code>WS-08</code> ERP, Procurement &amp; Finance</td>
+<td>Item/BOM/WO/WIP/PO/job cost/shadow posting</td>
+<td>Finance Systems Lead</td>
+<td>FR-12, 15</td>
+</tr>
+<tr>
+<td><code>WS-09</code> Field Execution</td>
+<td>Mobile/offline, proof, issue, close-house, acceptance</td>
+<td>Field Operations Lead</td>
+<td>FR-14</td>
+</tr>
+<tr>
+<td><code>WS-10</code> Analytics &amp; Board</td>
+<td>Metric Registry, dashboard, benefit realization</td>
+<td>Data/Product Lead</td>
+<td>FR-17</td>
+</tr>
+<tr>
+<td><code>WS-11</code> Platform, QA &amp; Operations</td>
+<td>CI, DB/RLS, test parity, observability, DR/runbooks</td>
+<td>QA/Platform Lead</td>
+<td>all</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-8">8. Master Timeline</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase / Release</th>
+<th>Target dates</th>
+<th>Primary outcome</th>
+<th>Hard gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Phase 0 — <code>R0.1 Safety Closure</code></td>
+<td>2026-07-10 → 2026-08-09</td>
+<td>Evidence baseline + P0 safety closure</td>
+<td><code>RG-1</code></td>
+</tr>
+<tr>
+<td>Phase 1 — <code>R0.2 Factory Pilot Ready</code></td>
+<td>2026-08-10 → 2026-09-08</td>
+<td>One controlled machine path, signed/verified packet</td>
+<td><code>RG-2</code></td>
+</tr>
+<tr>
+<td>Phase 2 — <code>R0.3 Front Door Pilot</code></td>
+<td>2026-09-09 → 2026-10-08</td>
+<td>Intake + sandbox + conversion + approval pilot</td>
+<td><code>RG-3</code></td>
+</tr>
+<tr>
+<td>Phase 3 — <code>R0.4 Spatial Sandbox</code></td>
+<td>2026-10-09 → 2026-12-31</td>
+<td>Capture hardening + 1–2 room spatial pilot</td>
+<td><code>RG-4</code></td>
+</tr>
+<tr>
+<td>Phase 4 — <code>R0.5 ERP/Field Pilot</code></td>
+<td>2027-01-01 → 2027-03-31</td>
+<td>ERP shadow + field digital thread</td>
+<td><code>RG-5</code>, <code>RG-6</code></td>
+</tr>
+<tr>
+<td>Phase 5 — <code>R1.0 Controlled Scale</code></td>
+<td>2027-04-01 → 2027-06-30</td>
+<td>Board intelligence, multi-machine/BU controlled scale</td>
+<td><code>RG-7</code></td>
+</tr>
+</tbody></table></div>
+<h2 id="section-9">9. Phase 0 — Safety Closure (Days 0–30)</h2>
+<p>Objective: close every path that can bypass production authority, release state, or packet integrity.</p>
+<h3>Scope</h3>
+<ul>
+<li><code>AB-AUTH-01</code>: server-owned actor/role mapping from JWT/session</li>
+<li><code>AB-EXP-01</code>: CNC export requires <code>RELEASED</code> at every entry point</li>
+<li><code>AB-PKT-01</code>: canonical identity/time and deterministic ZIP</li>
+<li><code>AB-PKT-02</code>: full packet verification</li>
+<li><code>AB-KEY-01</code>: production public-key set and key rotation ceremony</li>
+<li><code>AB-TST-01</code>: factory package/root test parity</li>
+<li><code>AB-GATE-01</code>: operational strict bypass scanner</li>
+<li><code>AB-DB-01</code>: isolated DB/RLS CI</li>
+<li><code>AB-FIELD-01</code>: field test script and secret hygiene</li>
+<li>owner, rollback, runbook, and evidence location for every blocker</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>Open P0 blockers = 0.</li>
+<li>Untrusted roles/headers cannot grant authority.</li>
+<li>DRAFT/FROZEN exports are rejected in UI, API, and direct calls.</li>
+<li>Identical input produces identical hashes across the repeat corpus.</li>
+<li>Tampered file/manifest/signature/revision/machine profile is rejected.</li>
+<li>Production key is non-placeholder and rotation/revocation tests pass.</li>
+<li>Root/package/DB required suites pass and retain CI artifacts.</li>
+</ul>
+<h2 id="section-10">10. Phase 1 — Factory Pilot Ready (Days 31–60)</h2>
+<p>Objective: prove truth → packet → verify → operator flow on one target machine path without scope expansion.</p>
+<h3>Scope</h3>
+<ul>
+<li>freeze pilot <code>MachineProfileVersion</code> and tool table</li>
+<li>golden jobs covering normal, boundary, and tampered cases</li>
+<li>signed Factory Packet + offline verifier</li>
+<li>operator checklist, dry-run mode, abort/rollback procedure</li>
+<li>packet-to-machine adapter and post-processor conformance</li>
+<li>production receipt, audit event, and evidence archive</li>
+<li>controlled dry run before real material cutting</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>Factory owner and QA sign off the packet golden set.</li>
+<li>Released revision, manifest, file hash, machine profile, and receipt trace end to end.</li>
+<li>Failed verification cannot continue by default.</li>
+<li>Operator can verify offline and stop work without a developer.</li>
+<li>Incident drill and rollback pass.</li>
+</ul>
+<h2 id="section-11">11. Phase 2 — Front Door and Approval Pilot (Days 61–90)</h2>
+<p>Objective: increase starting speed without creating a production shortcut.</p>
+<h3>Scope</h3>
+<ul>
+<li>Intake Router from LINE/web/manual intake</li>
+<li>Concept Sandbox with explicit badge/state and no-export invariant</li>
+<li>ConceptGraph → Parametric Contract conversion workflow</li>
+<li>Catalog Trust Tiers seed: Public, Project, Verified, Certified</li>
+<li>G1/G2/G3/G4 Approval Packet with identity, revision, quorum, and expiry</li>
+<li>presentation/render deck that is not interpreted as manufacturing approval</li>
+<li>baseline time-to-first-concept and approval SLA</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>Sandbox objects cannot reach CNC/release without conversion.</li>
+<li>Every conversion records source mapping, verifier, and owner.</li>
+<li>Customer approval binds packet hash/revision and remains separate from factory release.</li>
+<li>Pilot users complete the flow without understanding internal architecture.</li>
+<li>Feedback and abandonment reasons are captured to rebaseline Phase 3.</li>
+</ul>
+<h2 id="section-12">12. Phase 3 — Spatial Evidence Sandbox and Capture Hardening (Months 4–6)</h2>
+<p>Objective: accelerate survey/capture while preserving human verification and isolation from release.</p>
+<h3>Scope</h3>
+<ul>
+<li>Spatial Evidence Contract for walls/openings/object boxes/confidence/provenance</li>
+<li>data boundary for video/LiDAR/RGB-D/point cloud and retention policy</li>
+<li>SpatialLM/runtime PoC on 1–2 rooms</li>
+<li>comparison against manual survey and correction workload</li>
+<li>mobile capture, offline queue, retry/idempotency, and conflict handling</li>
+<li>SiteSurveyZone version/supersede flow</li>
+<li>promote only verified evidence into design context</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>Model output is marked candidate and cannot export to production.</li>
+<li>Measurement-critical fields require human verification.</li>
+<li>Accuracy, correction, bias, and failure taxonomy include unsuccessful samples.</li>
+<li>Delete/retention/consent flows pass PDPA review.</li>
+<li>Manual survey fallback works when model/service is unavailable.</li>
+</ul>
+<h2 id="section-13">13. Phase 4 — ERP Backbone and Field Digital Thread (Months 7–9)</h2>
+<p>Objective: connect released demand to business and field reality without moving manufacturing authority.</p>
+<h3>Scope</h3>
+<ul>
+<li>Item Master/Object Registry and identity mapping</li>
+<li>BOM Snapshot from Released Spec only</li>
+<li>Work Order, WIP, stock reservation, and procurement trigger</li>
+<li>committed/actual cost and job-cost variance</li>
+<li>shadow accounting posting + reconciliation</li>
+<li>field work item, room/lane, proof, issue/NCR, and offline sync</li>
+<li>close-house/customer acceptance + authorization/audit</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>ERP cannot edit geometry, drill maps, CNC, or release.</li>
+<li>Duplicate/retry cannot create duplicate PO, stock movement, or journal.</li>
+<li>Finance owner reconciles shadow posting to source documents.</li>
+<li>Field proof binds released revision, room, and work item.</li>
+<li>Close-house fails when proof, issues, or authorization is incomplete.</li>
+</ul>
+<h2 id="section-14">14. Phase 5 — Board Intelligence and Controlled Scale (Months 10–12)</h2>
+<p>Objective: let executives see speed, integrity, manufacturing, field, and financial outcomes from traceable sources and scale them under control.</p>
+<h3>Scope</h3>
+<ul>
+<li>Metric Registry: definition, owner, source table, cadence, baseline, threshold</li>
+<li>executive dashboard and drill-down to project/package/revision</li>
+<li>closed-loop rule enrichment from NCR/rework/variance</li>
+<li>additional machine profiles only after conformance gate</li>
+<li>business-unit rollout playbook, training, and support model</li>
+<li>SLO, incident response, DR/restore, and release certification</li>
+</ul>
+<h3>Exit criteria</h3>
+<ul>
+<li>Every KPI has source lineage and owner.</li>
+<li>No vanity metric without a decision/action.</li>
+<li>New machine/BU uses repeatable onboarding + certification.</li>
+<li>Benefit realization passes baseline comparison and finance/ops sign-off.</li>
+<li>R1.0 evidence pack is reproducible from a clean revision.</li>
+</ul>
+<h2 id="section-15">15. Epic Register</h2>
+<p>Size is relative planning size (<code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code>), not a duration commitment.</p>
+<h3>15.1 Safety, Factory, and Platform Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-000</code></td>
+<td>Evidence baseline, owner map, release manifest</td>
+<td>00</td>
+<td>S</td>
+<td>none</td>
+<td>RG-0</td>
+</tr>
+<tr>
+<td><code>RM-001</code></td>
+<td>JWT/session → server-owned actor/role</td>
+<td>01</td>
+<td>L</td>
+<td>RM-000</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-002</code></td>
+<td>RELEASED-only export invariant at every entry point</td>
+<td>02</td>
+<td>M</td>
+<td>RM-001</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-003</code></td>
+<td>Deterministic job identity/manifest/ZIP</td>
+<td>03</td>
+<td>L</td>
+<td>RM-000</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-004</code></td>
+<td>Full packet verifier + negative corpus</td>
+<td>03</td>
+<td>L</td>
+<td>RM-003</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-005</code></td>
+<td>Production key set, rotation, revocation</td>
+<td>01</td>
+<td>M</td>
+<td>RM-001</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-006</code></td>
+<td>Package/root test-runner parity</td>
+<td>11</td>
+<td>S</td>
+<td>none</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-007</code></td>
+<td>Strict bypass scanner repair</td>
+<td>11</td>
+<td>S</td>
+<td>none</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-008</code></td>
+<td>Isolated DB/RLS integration CI</td>
+<td>11</td>
+<td>M</td>
+<td>DEC-05</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-009</code></td>
+<td>Field test harness + secret hygiene</td>
+<td>09/11</td>
+<td>M</td>
+<td>environment</td>
+<td>RG-1</td>
+</tr>
+<tr>
+<td><code>RM-010</code></td>
+<td>Versioned pilot machine profile/tool table</td>
+<td>03/06</td>
+<td>M</td>
+<td>RM-004, DEC-02</td>
+<td>RG-2</td>
+</tr>
+<tr>
+<td><code>RM-011</code></td>
+<td>Offline verifier + receipt/archive</td>
+<td>03</td>
+<td>M</td>
+<td>RM-004, RM-005</td>
+<td>RG-2</td>
+</tr>
+<tr>
+<td><code>RM-012</code></td>
+<td>Controlled factory pilot + runbook</td>
+<td>03</td>
+<td>L</td>
+<td>RM-010, RM-011</td>
+<td>RG-2</td>
+</tr>
+</tbody></table></div>
+<h3>15.2 Front Door, Catalog, Approval, and Spatial Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-020</code></td>
+<td>Unified intake router and evidence identity</td>
+<td>04/07</td>
+<td>L</td>
+<td>RG-1</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-021</code></td>
+<td>Concept Sandbox + no-export enforcement</td>
+<td>04</td>
+<td>L</td>
+<td>RM-020</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-022</code></td>
+<td>Verified conversion to Parametric Contract</td>
+<td>04/02</td>
+<td>XL</td>
+<td>RM-021</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-023</code></td>
+<td>Revision-bound Approval Packet</td>
+<td>07</td>
+<td>L</td>
+<td>RM-020, RM-001</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-024</code></td>
+<td>Catalog Trust Tiers + certified seed set</td>
+<td>06</td>
+<td>L</td>
+<td>DEC-06</td>
+<td>RG-3</td>
+</tr>
+<tr>
+<td><code>RM-030</code></td>
+<td>Spatial Evidence Contract/provenance</td>
+<td>05</td>
+<td>M</td>
+<td>RM-000</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-031</code></td>
+<td>SpatialLM/runtime PoC for 1–2 rooms</td>
+<td>05</td>
+<td>L</td>
+<td>RM-030, DEC-07</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-032</code></td>
+<td>Mobile/offline capture hardening</td>
+<td>05/09</td>
+<td>L</td>
+<td>RM-008</td>
+<td>RG-4</td>
+</tr>
+<tr>
+<td><code>RM-033</code></td>
+<td>Verification/promote/fallback workflow</td>
+<td>05/02</td>
+<td>L</td>
+<td>RM-030, RM-031, RM-032</td>
+<td>RG-4</td>
+</tr>
+</tbody></table></div>
+<h3>15.3 ERP, Field, AI Governance, Analytics, and Scale Epics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Outcome</th>
+<th>WS</th>
+<th>Size</th>
+<th>Dependency</th>
+<th>Target gate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RM-040</code></td>
+<td>Item Master/Object Registry</td>
+<td>08</td>
+<td>L</td>
+<td>RM-001</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-041</code></td>
+<td>BOM Snapshot → Work Order/WIP</td>
+<td>08</td>
+<td>XL</td>
+<td>RM-040, Released Spec</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-042</code></td>
+<td>Procurement + committed/actual job cost</td>
+<td>08</td>
+<td>XL</td>
+<td>RM-041</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-043</code></td>
+<td>Shadow accounting + reconciliation</td>
+<td>08</td>
+<td>L</td>
+<td>RM-042, DEC-08</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-050</code></td>
+<td>Field work item/room/lane + offline</td>
+<td>09</td>
+<td>XL</td>
+<td>RM-009, RM-032</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-051</code></td>
+<td>Proof, issue, NCR, rework loop</td>
+<td>09</td>
+<td>L</td>
+<td>RM-050</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-052</code></td>
+<td>Close-house and customer acceptance</td>
+<td>09/07</td>
+<td>L</td>
+<td>RM-051, IAM</td>
+<td>RG-6</td>
+</tr>
+<tr>
+<td><code>RM-060</code></td>
+<td>Metric Registry and source lineage</td>
+<td>10</td>
+<td>M</td>
+<td>RM-041, RM-051</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-061</code></td>
+<td>Executive dashboard + drill-down</td>
+<td>10</td>
+<td>L</td>
+<td>RM-060</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-062</code></td>
+<td>Closed-loop rule/catalog improvement</td>
+<td>10/06</td>
+<td>L</td>
+<td>RM-051, RM-060</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-063</code></td>
+<td>Pending Invocation + governed MCP writes</td>
+<td>01/11</td>
+<td>L</td>
+<td>RM-001, RM-000</td>
+<td>RG-5</td>
+</tr>
+<tr>
+<td><code>RM-070</code></td>
+<td>Multi-machine certification</td>
+<td>03</td>
+<td>XL</td>
+<td>RG-2 evidence</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-071</code></td>
+<td>Observability, SLO, incident, and DR</td>
+<td>11</td>
+<td>L</td>
+<td>RM-008, RG-2</td>
+<td>RG-7</td>
+</tr>
+<tr>
+<td><code>RM-072</code></td>
+<td>R1.0 release certification/evidence pack</td>
+<td>00/11</td>
+<td>M</td>
+<td>all gates</td>
+<td>RG-7</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-16">16. Critical Path and Dependencies</h2>
+<h3>Critical Path A — Production Safety</h3>
+<pre><code class="language-text">RM-000 → RM-001 → RM-002
+RM-003 → RM-004 → RM-010 → RM-011 → RM-012
+RM-005 ───────────────────────┘
+</code></pre>
+<p>Phase 1 cannot start if IAM, release invariant, determinism, verifier, or key ceremony is incomplete.</p>
+<h3>Critical Path B — Front Door</h3>
+<pre><code class="language-text">RM-020 → RM-021 → RM-022 → RM-023
+                 RM-024 ─────┘
+</code></pre>
+<h3>Critical Path C — Spatial/Capture</h3>
+<pre><code class="language-text">RM-030 → RM-031
+RM-008 → RM-032 → RM-033
+</code></pre>
+<h3>Critical Path D — ERP/Field/Analytics</h3>
+<pre><code class="language-text">RM-040 → RM-041 → RM-042 → RM-043
+RM-009 + RM-032 → RM-050 → RM-051 → RM-052
+RM-041 + RM-051 → RM-060 → RM-061 → RM-062
+</code></pre>
+<h2 id="section-17">17. Release Gate Framework</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Decision owner</th>
+<th>Required evidence</th>
+<th>Fail rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RG-0</code> Baseline Accepted</td>
+<td>Program Owner + Tech Lead</td>
+<td>Scope, owner, capacity, source hashes, clean backlog</td>
+<td>No owner/evidence = no start</td>
+</tr>
+<tr>
+<td><code>RG-1</code> Safety Closed</td>
+<td>Security + Manufacturing Tech Lead</td>
+<td>P0=0, auth/release/determinism/verify/key tests</td>
+<td>Any P0 = fail</td>
+</tr>
+<tr>
+<td><code>RG-2</code> Factory Pilot Ready</td>
+<td>Factory Owner + QA</td>
+<td>Machine profile, golden packet, offline verify, runbook, rollback</td>
+<td>Failed/tampered packet runnable = fail</td>
+</tr>
+<tr>
+<td><code>RG-3</code> Front Door Pilot Ready</td>
+<td>Product + Design Lead</td>
+<td>No-export sandbox, conversion audit, approval identity</td>
+<td>Sandbox authority leak = fail</td>
+</tr>
+<tr>
+<td><code>RG-4</code> Spatial Pilot Accepted</td>
+<td>Survey Lead + PDPA Owner</td>
+<td>1–2 room results, correction data, retention/fallback</td>
+<td>Model output reaches release = fail</td>
+</tr>
+<tr>
+<td><code>RG-5</code> ERP Shadow Accepted</td>
+<td>Finance Lead + Ops</td>
+<td>BOM/WO/PO/job-cost trace, idempotency, reconciliation</td>
+<td>ERP mutates manufacturing truth = fail</td>
+</tr>
+<tr>
+<td><code>RG-6</code> Field Pilot Accepted</td>
+<td>Field Ops + PM</td>
+<td>Offline proof, issue closure, acceptance auth</td>
+<td>Close-house without proof = fail</td>
+</tr>
+<tr>
+<td><code>RG-7</code> Controlled Scale</td>
+<td>Executive Owner</td>
+<td>KPI lineage, SLO/DR, training, release evidence</td>
+<td>Stale evidence/open critical risk = fail</td>
+</tr>
+</tbody></table></div>
+<p>Every gate records <code>PASS</code>, <code>FAIL</code>, or <code>CONDITIONAL</code> with owner, timestamp, evidence links, and expiry. Deadline pressure must never auto-pass a gate.</p>
+<h2 id="section-18">18. Pilot Portfolio</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Pilot</th>
+<th>Scope</th>
+<th>Success evidence</th>
+<th>Rollback</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Factory Pilot A</td>
+<td>One known machine profile, controlled cabinet/job, dry run before cutting</td>
+<td>Packet/verify/receipt/operator sign-off</td>
+<td>Return to approved legacy export</td>
+</tr>
+<tr>
+<td>Front Door Pilot B</td>
+<td>Representative leads/projects, concept-to-approval</td>
+<td>Time baseline, conversion audit, no-export proof</td>
+<td>Manual intake + existing designer flow</td>
+</tr>
+<tr>
+<td>Spatial Pilot C</td>
+<td>1–2 rooms, non-production path</td>
+<td>Manual comparison, correction time, failure taxonomy</td>
+<td>Manual survey remains authority</td>
+</tr>
+<tr>
+<td>ERP Shadow Pilot D</td>
+<td>Representative released jobs or one complete accounting cycle</td>
+<td>BOM/PO/WIP/job-cost reconciliation</td>
+<td>No real posting; shadow tables only</td>
+</tr>
+<tr>
+<td>Field Pilot E</td>
+<td>One controlled project from work item to acceptance</td>
+<td>Offline sync, proof binding, issue/close-house audit</td>
+<td>Parallel legacy field process</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-19">19. QA and Test Strategy</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Required coverage</th>
+<th>Release evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Unit/property</td>
+<td>Math, geometry, connector, state, idempotency</td>
+<td>Deterministic CI results</td>
+</tr>
+<tr>
+<td>Golden/packet</td>
+<td>Valid, boundary, tampered, wrong machine/revision/key</td>
+<td>Immutable golden corpus</td>
+</tr>
+<tr>
+<td>Contract/API</td>
+<td>Auth, schema, versioning, error codes</td>
+<td>API contract report</td>
+</tr>
+<tr>
+<td>DB/RLS</td>
+<td>Role isolation, RPC, retry, duplicate, migration</td>
+<td>Isolated DB artifact</td>
+</tr>
+<tr>
+<td>Browser E2E</td>
+<td>Release, export, approval, failure states</td>
+<td>Screenshots/report</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>Header spoof, privilege escalation, secret scan, key rotation</td>
+<td>Threat-test report</td>
+</tr>
+<tr>
+<td>Field/offline</td>
+<td>Queue, conflict, retry, reconnect, device loss</td>
+<td>Device/offline report</td>
+</tr>
+<tr>
+<td>Factory UAT</td>
+<td>Dry run, operator verify, abort, receipt</td>
+<td>Signed pilot checklist</td>
+</tr>
+<tr>
+<td>Finance reconciliation</td>
+<td>Shadow vs source/legacy</td>
+<td>Accountant sign-off</td>
+</tr>
+<tr>
+<td>Disaster recovery</td>
+<td>Backup/restore, key revocation, service outage</td>
+<td>Drill report</td>
+</tr>
+</tbody></table></div>
+<p>A required test cannot be skipped in a release candidate. If the environment is unavailable, the gate is <code>NOT VERIFIED</code>, not passed.</p>
+<h2 id="section-20">20. Security, PDPA, and Key Management Plan</h2>
+<ul>
+<li>Server derives actor/role from trusted session/JWT only.</li>
+<li>Service-role credential never reaches the client; functions enforce authorization before privileged RPC.</li>
+<li>Secret inventory records owner, rotation date, and emergency revoke path.</li>
+<li>Signing keys are environment-separated; production private keys never reside in the repository.</li>
+<li>Public-key sets are versioned/revocable and verify historical receipts.</li>
+<li>Site photos, video, point clouds, and PII have purpose, consent, residency, retention, and deletion policies.</li>
+<li>Vendor transfer requires DPA, data-flow review, and minimum-data design.</li>
+<li>Critical audit events are append-only and bind actor/session/revision.</li>
+<li>Incident response includes kill switches for export, AI writes, vendor integration, and field closeout.</li>
+</ul>
+<h2 id="section-21">21. Migration and Coexistence Plan</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Legacy behavior</th>
+<th>New behavior</th>
+<th>Exit condition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Shadow</td>
+<td>Legacy remains authoritative</td>
+<td>New system observes/calculates</td>
+<td>Parity report acceptable</td>
+</tr>
+<tr>
+<td>Dual-run</td>
+<td>Controlled jobs use both</td>
+<td>Compare packet/ERP/field outputs</td>
+<td>Discrepancy within approved policy</td>
+</tr>
+<tr>
+<td>Controlled cutover</td>
+<td>Selected BU/machine uses new path</td>
+<td>Rollback ready</td>
+<td>Pilot gate passed</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>Additional machine/BU onboarded</td>
+<td>Certification per profile</td>
+<td>Repeatable evidence pack</td>
+</tr>
+</tbody></table></div>
+<p>Migrated objects preserve identity, revision, provenance, and confidence. Old packets must not be regenerated to look like new evidence without parity.</p>
+<h2 id="section-22">22. Team Capacity and RACI</h2>
+<h3>22.1 Planning Capacity Assumption</h3>
+<p>Minimum assumption for this timeline, not a headcount commitment:</p>
+<ul>
+<li>1 Program/Product Owner</li>
+<li>1 Technical Lead/Architect</li>
+<li>2 Frontend/CAD engineers</li>
+<li>2 Backend/Platform engineers</li>
+<li>1 QA/SDET</li>
+<li>0.5 DevOps/Security</li>
+<li>0.5 Data/Analytics</li>
+<li>rotating domain owners: Factory, Survey, Field, Finance, Legal/PDPA, Data Steward</li>
+</ul>
+<p>If a core role is missing for more than one sprint, rebaseline the critical path instead of bypassing a gate.</p>
+<h3>22.2 RACI</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Responsible</th>
+<th>Accountable</th>
+<th>Consulted</th>
+<th>Informed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PRD/Roadmap change</td>
+<td>Product/Program</td>
+<td>Executive Owner</td>
+<td>Tech, Ops, Finance</td>
+<td>all leads</td>
+</tr>
+<tr>
+<td>IAM/release security</td>
+<td>Platform/Security</td>
+<td>Tech Lead</td>
+<td>QA, Factory</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>Factory pilot release</td>
+<td>Factory Integration</td>
+<td>Factory Owner</td>
+<td>QA, Design Lead</td>
+<td>Ops/Executive</td>
+</tr>
+<tr>
+<td>Spatial pilot</td>
+<td>Capture/AI</td>
+<td>Survey Lead</td>
+<td>PDPA, Designer</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>ERP shadow posting</td>
+<td>Finance Systems</td>
+<td>Finance Lead</td>
+<td>Ops, Accountant</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>Field close-house</td>
+<td>Field Product/Ops</td>
+<td>Ops Lead</td>
+<td>PM, QA, Customer process owner</td>
+<td>Executive</td>
+</tr>
+<tr>
+<td>KPI publication</td>
+<td>Data/Product</td>
+<td>Executive Owner</td>
+<td>Finance/Ops</td>
+<td>all leads</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-23">23. Governance Cadence</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cadence</th>
+<th>Forum</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Daily during Phase 0</td>
+<td>Blocker stand-up</td>
+<td>Owner, next evidence, unblock action</td>
+</tr>
+<tr>
+<td>Weekly</td>
+<td>Program delivery review</td>
+<td>Epic status, critical path, risk/decision log</td>
+</tr>
+<tr>
+<td>Biweekly</td>
+<td>Release evidence review</td>
+<td>Test/evidence freshness, claim/as-built updates</td>
+</tr>
+<tr>
+<td>Monthly</td>
+<td>Executive steering</td>
+<td>Scope/date/capacity tradeoff, benefit baseline</td>
+</tr>
+<tr>
+<td>Per gate</td>
+<td>Gate review</td>
+<td>Signed verdict, conditions, expiry, rollback</td>
+</tr>
+<tr>
+<td>Quarterly</td>
+<td>Roadmap rebaseline</td>
+<td>Phase dates, capacity, procurement, KPI targets</td>
+</tr>
+</tbody></table></div>
+<p>WIP limit: no more than three critical epics active per phase and one primary epic per workstream unless Program Owner approves an explicit capacity/evidence plan.</p>
+<h2 id="section-24">24. KPI and Benefit Realization</h2>
+<h3>24.1 Hard Invariants</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>KPI</th>
+<th>Target before production pilot</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Open P0 blocker</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Unauthorized release/export</td>
+<td>0</td>
+</tr>
+<tr>
+<td>CNC export not RELEASED</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Deterministic packet repeat</td>
+<td>100% of golden corpus</td>
+</tr>
+<tr>
+<td>Tampered packet rejection</td>
+<td>100% of negative corpus</td>
+</tr>
+<tr>
+<td>Required DB/RLS/security suites</td>
+<td>100% pass, 0 required skip</td>
+</tr>
+<tr>
+<td>Repository production secret</td>
+<td>0</td>
+</tr>
+</tbody></table></div>
+<h3>24.2 Business/Operational Metrics</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cluster</th>
+<th>Metrics</th>
+<th>Target policy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Speed</td>
+<td>Time-to-first-concept, survey-to-verified, approval SLA</td>
+<td>Baseline 30–60 days before target</td>
+</tr>
+<tr>
+<td>Integrity</td>
+<td>Render-to-release drift, approval completeness, waiver rate</td>
+<td>Baseline + root-cause threshold</td>
+</tr>
+<tr>
+<td>Manufacturing</td>
+<td>First-pass gate, post error, packet rejection, scrap/rework</td>
+<td>Factory-verified baseline</td>
+</tr>
+<tr>
+<td>Field</td>
+<td>Offline sync success, issue rate, punch-list age, acceptance completion</td>
+<td>Pilot baseline</td>
+</tr>
+<tr>
+<td>Financial</td>
+<td>BOM-to-PO lag, WIP accuracy, job-cost variance, capture-to-post lag</td>
+<td>Finance-reviewed baseline</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>Stale claim/evidence, conditional gate age, unresolved P0/P1</td>
+<td>Zero stale critical evidence</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-25">25. Risk Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Trigger</th>
+<th>Impact</th>
+<th>Mitigation / owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P0 closure slips</td>
+<td>Blocker lacks owner/evidence &gt; 3 days</td>
+<td>All later phases slip</td>
+<td>Daily escalation; Tech Lead</td>
+</tr>
+<tr>
+<td>Dirty worktree invalidates audit</td>
+<td>Release built from unknown state</td>
+<td>Evidence unreliable</td>
+<td>Clean release branch + manifest; Platform</td>
+</tr>
+<tr>
+<td>Machine profile drift</td>
+<td>Tool/profile changes without version</td>
+<td>Unsafe output</td>
+<td>Signed/versioned profile; Factory</td>
+</tr>
+<tr>
+<td>DB/RLS not exercised</td>
+<td>Required tests skipped</td>
+<td>Data/auth leak</td>
+<td>Isolated DB CI; QA/Platform</td>
+</tr>
+<tr>
+<td>Front-door scope explosion</td>
+<td>Render/catalog requests crowd safety work</td>
+<td>Critical path slip</td>
+<td>RG-2 prerequisite; Product</td>
+</tr>
+<tr>
+<td>SpatialLM overpromise</td>
+<td>Demo treated as measurement truth</td>
+<td>Field/manufacturing error</td>
+<td>Sandbox/no-release invariant; Survey</td>
+</tr>
+<tr>
+<td>ERP becomes truth owner</td>
+<td>ERP writes manufacturing fields</td>
+<td>Silent drift</td>
+<td>Contract/RLS deny; Tech/Finance</td>
+</tr>
+<tr>
+<td>Field adoption low</td>
+<td>Proof completion below baseline</td>
+<td>Loop not closed</td>
+<td>One-hand UX, ops champion, coexistence</td>
+</tr>
+<tr>
+<td>Vendor claim mismatch</td>
+<td>API/machine behavior differs from marketing</td>
+<td>Procurement waste</td>
+<td>Demo/contract/conformance gate</td>
+</tr>
+<tr>
+<td>Key/secrets mishandled</td>
+<td>Placeholder/shared keys persist</td>
+<td>Forgery/incident</td>
+<td>Key ceremony, rotation, secret scan</td>
+</tr>
+<tr>
+<td>Capacity below plan</td>
+<td>Critical roles unavailable</td>
+<td>Schedule compression pressure</td>
+<td>Rebaseline scope/date; Program Owner</td>
+</tr>
+<tr>
+<td>KPI gaming</td>
+<td>Metric lacks source/owner/action</td>
+<td>False confidence</td>
+<td>Metric Registry + audit; Data Lead</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-26">26. Procurement and External Dependency Gates</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Before commitment</th>
+<th>Decision output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Coohom/SmartLink</td>
+<td>Paid demo, machine matrix, API contract, packet sample, DPA/data residency, TCO</td>
+<td>Integrate, isolate as optional adapter, or reject</td>
+</tr>
+<tr>
+<td>SpatialLM/runtime</td>
+<td>Model/license, compute, data boundary, accuracy/correction benchmark</td>
+<td>Sandbox continue/stop; never direct release</td>
+</tr>
+<tr>
+<td>KMS/HSM/signing</td>
+<td>Key custody, rotation, revoke, audit, recovery</td>
+<td>Approved production key architecture</td>
+</tr>
+<tr>
+<td>LINE</td>
+<td>Consent, retry, rate limit, template/policy, outage fallback</td>
+<td>Production communication boundary</td>
+</tr>
+<tr>
+<td>Supabase/DB</td>
+<td>Region, backup, RLS, service-role custody, restore drill</td>
+<td>Staging/production readiness</td>
+</tr>
+<tr>
+<td>CNC/post vendor</td>
+<td>File contract, units, axes, tools, error behavior, support</td>
+<td>Certified MachineProfileVersion</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-27">27. 30/60/90-Day Action Plan</h2>
+<h3>Days 0–30</h3>
+<ul>
+<li>assign owner/target evidence to every blocker</li>
+<li>close IAM, RELEASED-only export, determinism, verifier, and key P0s</li>
+<li>repair package tests, bypass scanner, DB/RLS environment, and field hygiene</li>
+<li>create clean release branch and evidence archive</li>
+<li>hold RG-1; fail if any P0 remains</li>
+</ul>
+<h3>Days 31–60</h3>
+<ul>
+<li>freeze one machine profile/tool table</li>
+<li>build golden/negative packet corpus and offline verifier</li>
+<li>run controlled dry run, operator training, and rollback drill</li>
+<li>collect receipt/audit evidence</li>
+<li>hold RG-2</li>
+</ul>
+<h3>Days 61–90</h3>
+<ul>
+<li>implement intake router, Concept Sandbox, conversion, and Approval Packet</li>
+<li>seed Catalog Trust Tiers</li>
+<li>run representative front-door pilot</li>
+<li>baseline speed/approval metrics</li>
+<li>hold RG-3 and rebaseline months 4–12</li>
+</ul>
+<h2 id="section-28">28. Definition of Ready and Definition of Done</h2>
+<h3>Definition of Ready</h3>
+<p>An epic is ready when it has FR/Claim/Blocker linkage, accountable owner, dependencies, data/privacy classification, acceptance tests, rollback, observability, and evidence destination.</p>
+<h3>Definition of Done</h3>
+<p>An epic is done when:</p>
+<ul>
+<li>code/schema/config review passes</li>
+<li>required tests pass with no unapproved skip</li>
+<li>relevant security/PDPA/threat cases pass</li>
+<li>failure, retry, offline, and rollback are proven</li>
+<li>runbook, owner, and telemetry are ready</li>
+<li>pilot/UAT evidence binds an immutable revision</li>
+<li>PRD Claim Ledger and As-Built Status are updated</li>
+<li>gate owner records verdict and expiry</li>
+</ul>
+<h2 id="section-29">29. FR-to-Roadmap Traceability</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>FR</th>
+<th>Primary epics</th>
+<th>Gate</th>
+<th>Baseline → target</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FR-01</td>
+<td>RM-020, RM-023</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>RM-021, RM-022</td>
+<td>RG-3</td>
+<td>PLANNED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>RM-030, RM-031, RM-033</td>
+<td>RG-4</td>
+<td>PARTIAL → VERIFIED sandbox</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>RM-008, RM-032, RM-033</td>
+<td>RG-4</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>RM-012, RM-020</td>
+<td>RG-2/RG-3</td>
+<td>VERIFIED test → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>RM-002, RM-022</td>
+<td>RG-1/RG-3</td>
+<td>VERIFIED test → deployed proof</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>RM-024</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED seed set</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>RM-010, RM-070</td>
+<td>RG-2/RG-7</td>
+<td>VERIFIED test → machine-certified</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>RM-001, RM-002, RM-007</td>
+<td>RG-1</td>
+<td>BLOCKED → VERIFIED</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>RM-023</td>
+<td>RG-3</td>
+<td>PARTIAL → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>RM-003, RM-004, RM-005, RM-010, RM-011, RM-012</td>
+<td>RG-1/RG-2</td>
+<td>BLOCKED → factory-certified</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>RM-040, RM-041</td>
+<td>RG-5</td>
+<td>PARTIAL → VERIFIED shadow</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>RM-008, RM-020, RM-023</td>
+<td>RG-3/RG-5</td>
+<td>NOT VERIFIED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>RM-009, RM-050, RM-051, RM-052</td>
+<td>RG-6</td>
+<td>NOT VERIFIED → VERIFIED pilot</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>RM-042, RM-043</td>
+<td>RG-5</td>
+<td>PARTIAL → finance-approved shadow</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>RM-001, RM-063</td>
+<td>RG-5</td>
+<td>PARTIAL → governed-write verified</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>RM-060, RM-061, RM-062</td>
+<td>RG-7</td>
+<td>PARTIAL → board-accepted</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-30">30. Open Decisions</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision ID</th>
+<th>Decision needed</th>
+<th>Owner</th>
+<th>Deadline</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DEC-01</code></td>
+<td>Named accountable owners for every WS/gate</td>
+<td>Executive/Program</td>
+<td>RG-0</td>
+</tr>
+<tr>
+<td><code>DEC-02</code></td>
+<td>First machine profile/tool table</td>
+<td>Factory Owner</td>
+<td>day 15</td>
+</tr>
+<tr>
+<td><code>DEC-03</code></td>
+<td>Factory/front/spatial/ERP/field pilot projects</td>
+<td>Ops/Product</td>
+<td>day 20</td>
+</tr>
+<tr>
+<td><code>DEC-04</code></td>
+<td>Production key custody/KMS approach</td>
+<td>Security</td>
+<td>day 15</td>
+</tr>
+<tr>
+<td><code>DEC-05</code></td>
+<td>Isolated DB/RLS CI environment</td>
+<td>Platform</td>
+<td>day 10</td>
+</tr>
+<tr>
+<td><code>DEC-06</code></td>
+<td>Certified catalog seed set</td>
+<td>Data Steward</td>
+<td>day 60</td>
+</tr>
+<tr>
+<td><code>DEC-07</code></td>
+<td>Spatial runtime/data residency/retention</td>
+<td>Survey + PDPA</td>
+<td>day 75</td>
+</tr>
+<tr>
+<td><code>DEC-08</code></td>
+<td>First ERP object and accounting shadow rules</td>
+<td>Finance</td>
+<td>day 100</td>
+</tr>
+<tr>
+<td><code>DEC-09</code></td>
+<td>Field device/offline support matrix</td>
+<td>Field Ops</td>
+<td>day 150</td>
+</tr>
+<tr>
+<td><code>DEC-10</code></td>
+<td>Board KPI priority and decision owners</td>
+<td>Executive</td>
+<td>day 240</td>
+</tr>
+<tr>
+<td><code>DEC-11</code></td>
+<td>Committed team capacity vs §22 assumption</td>
+<td>Executive/Program</td>
+<td>RG-0</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-31">31. Rebaseline and Change Control</h2>
+<ul>
+<li>Rebaseline after RG-0, RG-3, and every quarter.</li>
+<li>A change request states impact on scope, date, capacity, risk, gate, and evidence.</li>
+<li>P0/security/invariants cannot be weakened to preserve a date.</li>
+<li>New work enters the critical path only when equivalent work exits or proven capacity is added.</li>
+<li>Vendor/AI opportunities at E2–E4 stay in discovery and do not interrupt committed releases.</li>
+<li>Approved changes update TH/EN Markdown, HTML, and SHA manifest together.</li>
+</ul>
+<h2 id="section-32">32. Deliverable Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Required deliverables</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Phase 0</td>
+<td>Threat model, auth/release contracts, deterministic spec, verifier corpus, key runbook, CI/RLS evidence</td>
+</tr>
+<tr>
+<td>Phase 1</td>
+<td>MachineProfileVersion, golden packets, offline verifier, operator/rollback runbooks, pilot report</td>
+</tr>
+<tr>
+<td>Phase 2</td>
+<td>Intake map, sandbox/conversion spec, Approval Packet, catalog tier seed, UX/pilot report</td>
+</tr>
+<tr>
+<td>Phase 3</td>
+<td>Spatial Evidence Contract, DPA/retention record, model benchmark, capture/offline report</td>
+</tr>
+<tr>
+<td>Phase 4</td>
+<td>ERP object contracts, BOM/WO/PO/job-cost shadow reports, field/acceptance pilot report</td>
+</tr>
+<tr>
+<td>Phase 5</td>
+<td>Metric Registry, executive dashboard, scale playbook, SLO/DR report, R1.0 evidence pack</td>
+</tr>
+</tbody></table></div>
+<p>Project-facing documents require paired TH/EN Markdown and HTML. Machine-readable manifests, schemas, and test artifacts may use one canonical format.</p>
+<h2 id="section-33">33. Source Register</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source ID</th>
+<th>Source</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RMAP-S01</code></td>
+<td><code>docs/prd/monolith-complete-prd-v5.th.md</code> / <code>.en.md</code></td>
+<td>Requirements, evidence tiers, claims, as-built, blockers</td>
+</tr>
+<tr>
+<td><code>RMAP-S02</code></td>
+<td><code>docs/prd/monolith-complete-prd-v5.sha256</code></td>
+<td>PRD v5.1 integrity</td>
+</tr>
+<tr>
+<td><code>RMAP-S03</code></td>
+<td>Code snapshot commit <code>d7b1c879b1e0397699603bd2615f6fe271fa8c9c</code></td>
+<td>As-built baseline only; dirty worktree noted</td>
+</tr>
+<tr>
+<td><code>RMAP-S04</code></td>
+<td><code>determined-williams/docs/SAFETY_GATE.md</code> and factory/export/connector docs</td>
+<td>Manufacturing/release intent</td>
+</tr>
+<tr>
+<td><code>RMAP-S05</code></td>
+<td>PRD §33 Claim Ledger</td>
+<td>Claim decision and proof obligation</td>
+</tr>
+<tr>
+<td><code>RMAP-S06</code></td>
+<td>PRD §34 As-Built Status</td>
+<td>FR baseline and Production Blocker Register</td>
+</tr>
+<tr>
+<td><code>RMAP-S07</code></td>
+<td><code>docs/prd/monolith-complete-roadmap-v1.sha256</code></td>
+<td>Integrity of Roadmap TH/EN Markdown and HTML</td>
+</tr>
+</tbody></table></div>
+<h2 id="section-34">34. Program Completion Criteria</h2>
+<p>The 12-month roadmap is achieved when:</p>
+<ol>
+<li><code>RG-1</code> through <code>RG-7</code> have signed, unexpired verdicts and evidence</li>
+<li>the factory release path is server-authorized, RELEASED-only, deterministic, signed, and fully verified</li>
+<li>the controlled factory pilot passes and additional machine onboarding uses repeatable certification</li>
+<li>front door, sandbox, and approval pass pilot without authority leakage</li>
+<li>spatial capability remains inside the sandbox/evidence boundary and can be disabled without harming the manual truth chain</li>
+<li>ERP/finance and field flows pass shadow/controlled pilots with reconciliation and rollback</li>
+<li>every board KPI has owner, source lineage, baseline, and action threshold</li>
+<li>no P0 blocker, required test skip, production secret, or stale critical claim remains</li>
+<li>TH/EN docs, HTML, runbooks, and release evidence manifest match the deployed revision</li>
+</ol>
+<p>Final decision: MONOLITH should scale when its truth chain is provable, not when its feature list merely looks complete.</p>
+</main>
+</body>
+</html>
