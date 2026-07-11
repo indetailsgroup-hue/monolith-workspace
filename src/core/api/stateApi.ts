@@ -47,11 +47,6 @@ export interface TransitionRequest {
   changeClass?: 'GEOMETRY' | 'MATERIAL' | 'HARDWARE' | 'TOOLPATHS' | 'NESTING' | 'METADATA';
 }
 
-export type Actor = {
-  role: string;
-  name: string;
-};
-
 // ============================================
 // CONFIGURATION
 // ============================================
@@ -60,7 +55,10 @@ export type Actor = {
 const API_BASE = (import.meta.env?.VITE_FACTORY_API_BASE as string | undefined) ?? '';
 const ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
 
-/** auth headers: session จาก Field App (ADR-058) + anon key — จำเป็นเมื่อยิงตรง edge function */
+/**
+ * Attach only the current end-user JWT. The anon key remains an API key, never a
+ * substitute identity: a missing/expired session is rejected by factory-api.
+ */
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {};
   if (!ANON_KEY) return h;
@@ -76,16 +74,7 @@ function authHeaders(): Record<string, string> {
       }
     }
   } catch { /* no session */ }
-  if (!h['Authorization']) h['Authorization'] = 'Bearer ' + ANON_KEY;
   return h;
-}
-
-// Default actor for state transitions
-function getDefaultActor(): Actor {
-  return {
-    role: 'DESIGNER',
-    name: 'Designer',
-  };
 }
 
 // ============================================
@@ -125,16 +114,12 @@ export async function freezeJob(
   jobId: string,
   options?: TransitionRequest
 ): Promise<StateResponse> {
-  const actor = getDefaultActor();
-
   try {
     const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/freeze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders(),
-        'X-Actor-Role': actor.role,
-        'X-Actor-Name': actor.name,
       },
       body: JSON.stringify(options || {}),
     });
@@ -158,16 +143,12 @@ export async function releaseJob(
   jobId: string,
   options?: TransitionRequest
 ): Promise<StateResponse> {
-  const actor = getDefaultActor();
-
   try {
     const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/release`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders(),
-        'X-Actor-Role': actor.role,
-        'X-Actor-Name': actor.name,
       },
       body: JSON.stringify(options || {}),
     });
@@ -191,16 +172,12 @@ export async function unfreezeJob(
   jobId: string,
   options?: TransitionRequest
 ): Promise<StateResponse> {
-  const actor = getDefaultActor();
-
   try {
     const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/unfreeze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders(),
-        'X-Actor-Role': actor.role,
-        'X-Actor-Name': actor.name,
       },
       body: JSON.stringify(options || {}),
     });
@@ -224,16 +201,12 @@ export async function revokeJob(
   jobId: string,
   options?: TransitionRequest
 ): Promise<StateResponse> {
-  const actor = getDefaultActor();
-
   try {
     const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/revoke`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders(),
-        'X-Actor-Role': actor.role,
-        'X-Actor-Name': actor.name,
       },
       body: JSON.stringify(options || {}),
     });

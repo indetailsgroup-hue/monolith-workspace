@@ -79,7 +79,6 @@ export type {
   StateResponse,
   CanExportResponse,
   TransitionRequest,
-  Actor,
   SyncStatus,
   ProofBundle,
   ProofState,
