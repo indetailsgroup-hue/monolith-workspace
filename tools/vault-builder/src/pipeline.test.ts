@@ -18,10 +18,17 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { runPipeline } from './pipeline.js';
-import { VAULT_OUTPUT } from './paths.js';
+import { EXTRACT_INDEX, VAULT_OUTPUT } from './paths.js';
+
+/** แหล่งข้อมูลจริงอยู่เฉพาะเครื่อง dev — บน CI ไม่มี ให้ข้ามแบบเดียวกับ pfmea-canonical-map */
+const hasSourceData = existsSync(EXTRACT_INDEX);
 
 describe('pipeline — smoke + idempotency (Tasks 16.1, 14.2)', () => {
   it('รัน pipeline กับข้อมูลจริง สร้าง Vault ครบโครงสร้าง', async () => {
+    if (!hasSourceData) {
+      console.log('ข้าม — ไม่พบ _daph_extract (แหล่งข้อมูลเครื่อง dev)');
+      return;
+    }
     const result = await runPipeline();
 
     // 1) สแกนเจอไฟล์จริง
@@ -50,6 +57,10 @@ describe('pipeline — smoke + idempotency (Tasks 16.1, 14.2)', () => {
   }, 120_000);
 
   it('รันซ้ำได้ (idempotent) — จำนวน scan คงที่', async () => {
+    if (!hasSourceData) {
+      console.log('ข้าม — ไม่พบ _daph_extract (แหล่งข้อมูลเครื่อง dev)');
+      return;
+    }
     const a = await runPipeline();
     const b = await runPipeline();
     expect(b.scanned).toBe(a.scanned);
