@@ -1,6 +1,6 @@
 # รีวิว PRD v5.1 — ฉบับสมบูรณ์ (Consolidated Review Record)
 
-วันที่: 2026-07-11 · ฉบับ: **v3.1 — Consolidated Complete Edition** (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว + ผ่าน scrutiny pass)
+วันที่: 2026-07-11 · ฉบับ: **v3.2 — Consolidated Complete Edition** (รวมผลรีวิวและมติทุกรอบเป็นบันทึกเดียว + scrutiny pass + มติทิศทางธุรกิจ ADR-065)
 ผู้รีวิว: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)
 เอกสารที่รีวิว: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audit ณ commit `d7b1c879`)
@@ -63,7 +63,7 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 | **B** | บัญชี AI #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
 | **Human/Ops** | มนุษย์ (เริ่มวันแรก — ไม่รอถึง S17-6) | Key custody, machine profile confirmation, จอง factory slot, รายชื่อ approvers |
 
-กติกา worktree: **Track A/B แตก clean git worktree จาก commit `f9740559` โดยตรง** (= origin/main ณ เวลามติ; หลังจากนั้น main เลื่อนด้วย docs-only commits — ตรวจแล้ว delta ทั้งหมดอยู่ใน `docs/prd/` + `tasks.md` ไม่มีโค้ด) — ห้ามแตกจาก local `main` และห้ามใช้ worktree ที่ dirty ร่วมกัน
+กติกา worktree (มติปรับ 11 ก.ค. หลัง scrutiny — owner ตอบ ก): **Track A/B แตก clean git worktree จาก head ล่าสุดของ origin/main ณ เวลาเปิด worktree** — มติเดิมชี้ `f9740559` ตายตัว ปรับได้เพราะ verify แล้วว่า delta หลังจากนั้นเป็น docs/tasks ล้วน; **เงื่อนไข: ก่อนแตกต้อง verify ซ้ำว่า delta จาก `f9740559` ยังไม่มีโค้ดปน ถ้ามีให้หยุดถาม owner** — ห้ามแตกจาก local `main` และห้ามใช้ worktree ที่ dirty ร่วมกัน
 
 ### มติ Key custody
 
@@ -79,6 +79,15 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 - Profile: **`kdt_mvp_v1`** (default export route; footprint ที่วัดซ้ำได้ ณ scrutiny 11 ก.ค.: identifier `kdt_mvp_v1` = 7 ไฟล์ / 11 จุดในโค้ด src+server · คำว่า KDT ทุกบริบท = 82 ไฟล์ / 602 จุด ในจำนวนนี้เป็นไฟล์เทสต์ 26 ไฟล์ / 346 จุด — ตัวเลขที่เคยรายงาน "8 ไฟล์/~239 refs" วัดซ้ำไม่ได้ จึงถอนออก) — **เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ** (รอยืนยันจากโรงงาน)
 - จองช่วง: **dry run/no-cut 29–31 ก.ค. 2569 · controlled cut 4–6 ส.ค. · recovery/re-run buffer 7–9 ส.ค.**
 - **ข้อสังเกตกำหนดการ (จาก scrutiny)**: ประมาณการ 2+2 สัปดาห์นับจาก 11 ก.ค. จะจบ ~8 ส.ค. — ตารางนี้พอดีก็ต่อเมื่อ Track A/B ขนานกันจริงจน implementation จบ ~25 ก.ค., dry run 29–31 ก.ค. นับเป็นส่วนหนึ่งของช่วง verification และ controlled cut 4–6 ส.ค. อยู่ปลายช่วงพอดี (margin ≈ 0) — **ถ้า implementation หลุดจาก 25 ก.ค. ให้เลื่อน slot ไป buffer 7–9 ส.ค. หรือเลื่อนจองใหม่ทันที ห้ามบีบช่วง verification**
+
+### มติทิศทางธุรกิจ (Grill Q1–Q5 — owner ตอบ ก ทั้งห้า, 11 ก.ค. 2569 → ADR-065)
+
+- **Q1 นิยาม "ทดลองใช้จริง" รอบแรก** = Business/Field dogfood: เปิดบ้านจริง 1 หลังวิ่งเต็มสาย LINE→สัญญา→เงิน→ติดตั้ง→ตรวจรับ — **การผลิตใช้กระบวนการเดิมของโรงงาน**
+- **Q2 เดินขนาน**: dogfood เริ่มทันที // S17 วิ่งสามสายตามแผน — S17 ปิดเมื่อไหร่ บ้าน dogfood ยกระดับเป็น controlled factory pilot
+- **Q3 Designer = shadow mode**: ออก packet ตามปกติ **ติดป้าย NOT-FOR-PRODUCTION** โรงงานตัดจากใบสั่งเดิม เทียบ packet กับของจริง = evidence ป้อน S17 จากงานจริงทุกใบ
+- **Q4 มือทำ**: Claude = dogfood ops + support + แปลง session evidence เป็น CI artifact (งาน REVERIFY) · บัญชี AI A/B = S17 Track A/B · owner = custody + approvers + ลูกค้า/โรงงาน
+- **Q5 Gate "ตัดจริง"**: S17 ครบ 5 + ADR-064 ลงชื่อครบ 4 + dogfood ผ่านเต็มสาย ≥1 งาน + machine profile 1 ตัว calibrate กับโรงงาน
+- **เส้นแดงเส้นเดียว**: ห้ามตัดชิ้นงานจริงจาก packet จนกว่า S17 ปิด — คนละโดเมนกับการใช้ระบบรับลูกค้า/คุมงาน/เก็บเงิน
 
 ## 7. นโยบายชั้นหลักฐานของบันทึกฉบับนี้
 
@@ -109,3 +118,4 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 | v2.2 | รอบ 3: evidence tier ถูกชั้น (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 เข้า repo |
 | **v3.0** | **ฉบับสมบูรณ์ — รวมทุกรอบเป็นบันทึกเดียว + ผนวกมติ custody / machine profile / แผนสามสายขนาน / กำหนดการ pilot** |
 | **v3.1** | **Scrutiny pass**: quote §3 เป็น verbatim · ถอนตัวเลข KDT ที่วัดซ้ำไม่ได้ (แทนด้วยค่าที่วัดได้ + วิธีวัด) · เพิ่มข้อสังเกต margin กำหนดการ · ระบุมาตรฐาน manifest (LF + lowercase hex) + `.gitattributes` · หมายเหตุ origin/main เลื่อนหลังมติ (delta docs-only) · EN แก้ "customer pilot" → "pilot" |
+| **v3.2** | **มติทิศทางธุรกิจ (ADR-065)**: owner ตอบ ก ทั้งห้า — dogfood ขนาน S17 · Designer shadow mode NOT-FOR-PRODUCTION · แบ่งมือทำสามฝ่าย · gate ตัดจริง 4 เงื่อนไข · จุด branch A/B = head ล่าสุด origin/main (แทน f9740559 ตายตัว) |

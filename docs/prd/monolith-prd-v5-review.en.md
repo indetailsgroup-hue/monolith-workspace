@@ -1,6 +1,6 @@
 # PRD v5.1 Review — Consolidated Review Record
 
-Review date: 2026-07-11 · Edition: **v3.1 — Consolidated Complete Edition** (merges all review rounds v1 → v2 → v2.1 → v2.2 into a single record + scrutiny pass)
+Review date: 2026-07-11 · Edition: **v3.2 — Consolidated Complete Edition** (all review rounds merged into a single record + scrutiny pass + business-direction decisions ADR-065)
 Reviewer: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)
 Document under review: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audited at commit `d7b1c879`)
@@ -63,7 +63,7 @@ What makes this PRD trustworthy is not its vision but its **evidence discipline*
 | **B** | AI account #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
 | **Human/Ops** | Humans (starts day one — does not wait for S17-6) | Key custody, machine profile confirmation, factory slot booking, approver roster |
 
-Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f9740559`** (= origin/main at decision time; main has since advanced with docs-only commits — verified: the entire delta is in `docs/prd/` + `tasks.md`, no code) — never from local `main`, and never share a dirty worktree.
+Worktree rule (revised Jul 11 after scrutiny — owner chose option ก): **Tracks A/B branch clean git worktrees from the latest head of origin/main at worktree-creation time** — the original decision pinned `f9740559`; revised because the delta since then is verified docs/tasks-only; **condition: before branching, re-verify that the delta from `f9740559` still contains no code — if it does, stop and ask the owner** — never branch from local `main`, and never share a dirty worktree.
 
 ### Key custody decisions
 
@@ -79,6 +79,15 @@ Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f97
 - Profile: **`kdt_mvp_v1`** (default export route; reproducible footprint as of the Jul 11 scrutiny: identifier `kdt_mvp_v1` = 7 files / 11 references in src+server code · "KDT" in any context = 82 files / 602 references, of which 26 test files / 346 references — the previously reported "8 files / ~239 refs" could not be reproduced and is withdrawn) — **only if the real machine and controller support the KDT path; never chosen merely because it has the most tests** (pending factory confirmation)
 - Booked windows: **dry run/no-cut Jul 29–31, 2026 · controlled cut Aug 4–6 · recovery/re-run buffer Aug 7–9**
 - **Schedule note (from scrutiny)**: the 2+2-week estimate starting Jul 11 completes ~Aug 8 — this timetable fits only if Tracks A/B truly run in parallel so implementation finishes ~Jul 25, the Jul 29–31 dry run counts as part of the verification phase, and the Aug 4–6 controlled cut lands at the very end of it (margin ≈ 0) — **if implementation slips past Jul 25, move to the Aug 7–9 buffer or rebook immediately; never compress the verification phase**
+
+### Business-direction decisions (Grill Q1–Q5 — owner answered ก to all five, Jul 11, 2026 → ADR-065)
+
+- **Q1 First "real use" round** = Business/Field dogfood: open one real house running the full chain LINE→contract→money→installation→acceptance — **production uses the factory's existing process**
+- **Q2 Run in parallel**: dogfood starts immediately // S17 runs its three tracks as planned — when S17 closes, the dogfood house is promoted to the controlled factory pilot
+- **Q3 Designer = shadow mode**: produce packets normally, **labeled NOT-FOR-PRODUCTION**; the factory cuts from its existing work orders; comparing packets against reality feeds S17 evidence from every real job
+- **Q4 Hands**: Claude = dogfood ops + support + converting session evidence into CI artifacts (the pending REVERIFY work) · AI accounts A/B = S17 Tracks A/B · owner = custody + approvers + customers/factory
+- **Q5 Gate to "real cutting"**: all 5 S17 items + ADR-064 signed by all 4 + ≥1 dogfood job through the full chain + one machine profile calibrated with the factory
+- **The single red line**: no real workpiece is cut from a packet until S17 closes — a separate domain from using the system for customers, project control and payments
 
 ## 7. Evidence-Tier Policy for This Record
 
@@ -109,3 +118,4 @@ Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f97
 | v2.2 | Round 3: correct evidence tiering (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 into the repo |
 | **v3.0** | **Complete edition — all rounds merged into one record + custody / machine-profile / three-track plan / pilot schedule decisions incorporated** |
 | **v3.1** | **Scrutiny pass**: §3 quote made verbatim · irreproducible KDT figures withdrawn (replaced with measured values + method) · schedule-margin note added · manifest convention specified (LF + lowercase hex) + `.gitattributes` · note that origin/main advanced after the decision (docs-only delta) · EN "customer pilot" → "pilot" |
+| **v3.2** | **Business-direction decisions (ADR-065)**: owner answered ก to all five — dogfood parallel to S17 · Designer shadow mode NOT-FOR-PRODUCTION · three-party division of hands · four-condition gate to real cutting · A/B branch base = latest origin/main head (replacing pinned f9740559) |

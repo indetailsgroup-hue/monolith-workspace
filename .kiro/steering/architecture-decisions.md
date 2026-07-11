@@ -689,3 +689,20 @@ inclusion: always
 5. **v1 = visual-only**: ผนังอ้างอิงเป็นระนาบโปร่งให้เห็นตู้ในห้อง + ป้าย REFERENCE — ไม่ snap ไม่วัด ไม่เข้า estimate
 
 **Consequences**: FP-4a ใน useUnderlayStore (walls + tracing) + ReferenceWalls canvas (render-only) + UI ใน UnderlayPanel; FP-4b เข้าคิวหลัง ROI gate ผ่าน
+
+
+## ADR-065: ทิศทางธุรกิจ — Dogfood ขนาน S17 + shadow-mode Designer + gate ตัดจริง (2026-07-11, มติ owner ก×5)
+
+**Context**: หลัง review PRD v5.1 (v3.1) + แผน S17 สามสายลงตัว เกิดทางแยกเชิงธุรกิจ: ทำ S17 ให้เสร็จก่อน (sequential) หรือเปิดใช้งานจริงขนานกันเลย — grill Q1-Q5 แล้ว owner ตอบ ก ทั้งห้า
+
+**มติ**:
+1. **Q1 — "ทดลองใช้งานจริง" รอบแรก = Business/Field dogfood**: เปิดบ้านจริง 1 หลังวิ่งเต็มสาย LINE→สัญญา→เงิน→ติดตั้ง→ตรวจรับ; **การผลิตใช้กระบวนการเดิมของโรงงาน** (ใบสั่งเดิม)
+2. **Q2 — ขนานกัน**: dogfood เริ่มทันที // S17 วิ่งตามแผนสามสาย → S17 ปิดเมื่อไหร่ บ้าน dogfood ยกระดับเป็น controlled factory pilot ได้เลย
+3. **Q3 — Designer = shadow mode**: ออกแบบ+Freeze+ออก packet ตามปกติ **ติดป้าย NOT-FOR-PRODUCTION** โรงงานตัดจากใบสั่งเดิม แล้วเทียบ packet กับของจริง = evidence ป้อน S17 จากงานจริงทุกใบ
+4. **Q4 — มือทำ**: Claude = dogfood ops + support + แปลง session evidence เป็น CI artifact (งาน REVERIFY) · บัญชี AI A/B = S17 Track A/B บน clean worktrees · owner = custody + approvers + ลูกค้า/โรงงาน
+5. **Q5 — Gate "ตัดจริง"**: S17 ครบ 5 + ADR-064 ลงชื่อครบ 4 + บ้าน dogfood ผ่านเต็มสาย ≥1 งาน + machine profile 1 ตัว calibrate กับโรงงาน
+6. **มติเพิ่ม (จาก scrutiny v3.1)**: จุด branch Track A/B = **head ล่าสุดของ origin/main ณ เวลาเปิด worktree** แทน f9740559 ตายตัว — เงื่อนไข: ก่อนแตกต้อง verify ว่า delta จาก f9740559 เป็น docs/tasks เท่านั้น ถ้ามีโค้ดปนให้หยุดถาม owner
+
+**เส้นแดงเส้นเดียว**: ห้ามตัดชิ้นงานจริงจาก packet จนกว่า S17 ปิด — คนละโดเมนกับการใช้ระบบรับลูกค้า/คุมงาน/เก็บเงิน
+
+**Consequences**: dogfood ops เริ่มได้ทันที (P5 seeds, V1-V10, เปิดบ้าน); CI artifact pipeline = งานแรกของ Claude track; ADR-064 ยังรอ 4 ลายเซ็นตามเดิม
