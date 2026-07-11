@@ -18,19 +18,34 @@ const escapeHtml = (value) => value
   .replaceAll('"', '&quot;');
 
 function inline(value) {
-  const code = [];
-  let rendered = escapeHtml(value).replace(/`([^`]+)`/g, (_, body) => {
-    const token = `@@CODE${code.length}@@`;
-    code.push(`<code>${body}</code>`);
-    return token;
-  });
-  rendered = rendered
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
-  for (let i = 0; i < code.length; i += 1) rendered = rendered.replace(`@@CODE${i}@@`, code[i]);
-  return rendered;
+  if (value.includes('\0')) throw new Error('Markdown input contains a forbidden NUL byte');
+
+  return value.split(/(`[^`\n]+`)/g).map((segment) => {
+    if (segment.startsWith('`') && segment.endsWith('`')) {
+      return `<code>${escapeHtml(segment.slice(1, -1))}</code>`;
+    }
+
+    const links = [];
+    let rendered = escapeHtml(segment).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
+      if (/[\x00-\x20\x7f]/.test(href) || href.startsWith('//')) {
+        throw new Error(`Unsafe Markdown link target: ${href}`);
+      }
+      const scheme = href.match(/^([A-Za-z][A-Za-z0-9+.-]*):/);
+      if (scheme && !/^(https?|mailto)$/i.test(scheme[1])) {
+        throw new Error(`Unsupported Markdown link scheme: ${scheme[1]}`);
+      }
+      const token = `\0LINK${links.length}\0`;
+      const external = /^(https?):/i.test(href);
+      links.push(`<a href="${href}"${external ? ' rel="noopener noreferrer"' : ''}>${label}</a>`);
+      return token;
+    });
+    rendered = rendered
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+    for (let i = 0; i < links.length; i += 1) rendered = rendered.replace(`\0LINK${i}\0`, links[i]);
+    return rendered;
+  }).join('');
 }
 
 const isTableDivider = (line) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
@@ -46,9 +61,14 @@ while (i < lines.length) {
   if (fence) {
     const languageClass = fence[1].trim();
     const body = [];
+    let closed = false;
     i += 1;
     while (i < lines.length && !/^```/.test(lines[i])) body.push(lines[i++]);
-    if (i < lines.length) i += 1;
+    if (i < lines.length) {
+      closed = true;
+      i += 1;
+    }
+    if (!closed) throw new Error(`Unclosed fenced code block in ${inputPath}`);
     html.push(`<pre><code${languageClass ? ` class="language-${escapeHtml(languageClass)}"` : ''}>${escapeHtml(body.join('\n'))}</code></pre>`);
     continue;
   }

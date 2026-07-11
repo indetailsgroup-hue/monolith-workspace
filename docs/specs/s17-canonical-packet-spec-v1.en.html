@@ -9,7 +9,7 @@
 <body>
 <main>
 <h1>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</h1>
-<p>Document version: 0.1 Drafted: 2026-07-11 Status: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Inspected baseline: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Drafted by: Codex in an advisory/non-authoritative capacity Governing inputs: PRD v5.1, Review v3.2, CT-DEC-001, ADR-065</p>
+<p>Document version: 0.2 Drafted: 2026-07-11 Revised: 2026-07-11 after independent review and Tech Lead return Status: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Inspected baseline: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Drafted by: Codex in an advisory/non-authoritative capacity Governing inputs: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065</p>
 <blockquote><p>This document is a target-state contract submitted for approval. It does not prove current implementation, close S17-3, or unlock S17-4/S17-5 until all three approval roles have signed.</p></blockquote>
 <h2>1. Approval matrix</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -40,7 +40,7 @@
 <p>Status may change to APPROVED only when all three fields are APPROVED. If one person holds both Tech Lead and Security Owner roles, each role must be approved separately.</p>
 <h2>2. Purpose and scope</h2>
 <p>This specification defines the minimum Factory Packet v2 contract needed to close the gaps among content identity, execution identity, and manufacturing trust:</p>
-<ol><li><code>packetContentId</code> identifies canonical manufacturing content</li><li><code>jobRunId</code> identifies each export/attestation run and is server-owned</li><li>signed identity binds the released revision, machine-profile version, exporter version, packet schema, and content/run identity</li><li>the manifest identifies every payload file by path, media type, byte size, and SHA-256</li><li>the verifier performs fail-closed verification of signature, release state, machine profile, and the tamper corpus</li><li>the shadow-mode <code>NOT_FOR_PRODUCTION.txt</code> marker and <code>NFP-...</code> ZIP name remain mandatory until the real-cut gate passes</li></ol>
+<ol><li><code>packetContentId</code> identifies canonical manufacturing content</li><li><code>jobRunId</code> identifies each export/attestation run and is server-owned</li><li>signed identity binds the released revision, machine-profile version, exporter version, packet schema, and content/run identity</li><li>the manifest identifies every payload file by path, media type, byte size, and SHA-256</li><li>each JSON payload binds a versioned content schema and canonical array/quantity rules</li><li>the verifier performs fail-closed verification of signature, release state, machine profile, and the tamper corpus</li><li>the shadow-mode <code>NOT_FOR_PRODUCTION.txt</code> marker and <code>NFP-...</code> ZIP name remain mandatory until the real-cut gate passes</li></ol>
 <p>Outside S17-3 scope: generator/verifier implementation (S17-4/S17-5), key ceremony and production-key provisioning (S17-6), cloud-provider selection, and authorization to cut real workpieces.</p>
 <h2>3. Normative language</h2>
 <p>The terms <strong>MUST, MUST NOT, REQUIRED, SHOULD, and MAY</strong> are normative in the RFC 2119 sense. The Thai edition uses equivalent terms. If the TH and EN editions conflict, approval must stop and both editions must be corrected; an implementer must not choose one interpretation unilaterally.</p>
@@ -67,6 +67,23 @@
 <p>Given identical authoritative input, released revision, machine profile+version+digest, exporter build, and schema:</p>
 <ul><li>every payload file, <code>manifest.json</code>, and <code>packetContentId</code> <strong>MUST be byte-for-byte identical</strong></li><li>ZIP entry order/metadata/compression under the same exporter build <strong>MUST be deterministic</strong></li><li><code>attestation.json</code>, the filename, and the complete ZIP <strong>MAY differ</strong> only in intentionally run-specific fields: <code>jobRunId</code>, <code>issuedAt</code>, actor, and the signature covering those fields</li><li>any difference outside that allowlist is an S17-4 failure</li></ul>
 <p>The outer ZIP from different runs must not be claimed as byte-for-byte identical because that would contradict the requirement for a unique <code>jobRunId</code>.</p>
+<h3>4.2 Gate evidence belongs to the content plane</h3>
+<p><code>gate-result.json</code> is deterministic content evidence and therefore participates in <code>manifest.files</code> and <code>packetContentId</code>. It MUST use <code>monolith.factory.gate-result@2.0</code> and MUST NOT contain <code>runAt</code>, <code>issuedAt</code>, <code>jobRunId</code>, actor identity, free-form/localized human messages, or other wall-clock/run fields. A finding contains only a stable code, severity, canonically ordered entity IDs, and schema-defined canonical parameters. Finding arrays sort by severity rank, code, entity-ID byte order, then JCS parameter bytes.</p>
+<p>Execution time, operator context, and localized display text belong only in the run-specific attestation/audit record. The verifier MUST parse <code>gate-result.json</code>, require <code>PASS</code>, and prove that result, policy version, schema, file digest, and the duplicated attestation <code>gate</code> fields agree. Any disagreement returns <code>PKT_GATE_EVIDENCE_MISMATCH</code>.</p>
+<p>The packet form of <code>gate-result.json</code> has exactly this top-level shape; every field is required and additional properties are forbidden:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.gate-result@2.0&quot;,
+  &quot;policyVersion&quot;: &quot;&lt;semver&gt;&quot;,
+  &quot;result&quot;: &quot;PASS&quot;,
+  &quot;findings&quot;: [
+    {
+      &quot;code&quot;: &quot;&lt;stable-code&gt;&quot;,
+      &quot;severity&quot;: &quot;WARNING&quot;,
+      &quot;entityIds&quot;: [&quot;&lt;canonical-id&gt;&quot;],
+      &quot;parameters&quot;: {}
+    }
+  ]
+}</code></pre>
 <h2>5. Trust boundary and ownership</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>Component/actor</th>
@@ -79,9 +96,14 @@
 <td>untrusted input; must not own actor, role, release state, <code>jobRunId</code>, key ID, or machine authorization</td>
 </tr>
 <tr>
-<td>Authenticated server</td>
-<td>actor subject, authorization, revision state, run allocation</td>
-<td>derive from verified session/JWT and server data; never trust <code>x-actor-role</code> or localStorage</td>
+<td>Track A authenticated-server contract</td>
+<td>actor subject, authorization context, revision state</td>
+<td>derive from verified session/JWT and server data; never trust <code>x-actor-role</code> or localStorage; Track A does not allocate <code>jobRunId</code></td>
+</tr>
+<tr>
+<td>S17-4 export service</td>
+<td>content build, idempotency fingerprint, transactional run allocation</td>
+<td>call the Track A contract first; bind one server-owned <code>jobRunId</code> to exactly one <code>packetContentId</code></td>
 </tr>
 <tr>
 <td>Deterministic builder</td>
@@ -107,23 +129,82 @@
 <h2>6. Delivery layout</h2>
 <p>The v2 ZIP contains only these root entries:</p>
 <pre><code class="language-text">manifest.json
-attestation.json
 connector-ops.json
 connectors.minifix.json
 cutlist.json
 drillmap.json
 gate-result.json
-NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode</code></pre>
+NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode
+attestation.json</code></pre>
 <p>The payload set may be extended in a schema minor version after approval-matrix review, but every payload file must appear in <code>manifest.files</code>. <code>manifest.json</code> and <code>attestation.json</code> are control files and are excluded from <code>manifest.files</code> to avoid self-hash recursion.</p>
-<p>The ZIP MUST:</p>
-<ol><li>contain no folder prefix or directory entries</li><li>order <code>manifest.json</code> first, then payloads in canonical path order, then <code>attestation.json</code></li><li>use fixed entry timestamp <code>1980-01-01T00:00:00Z</code>, fixed permissions/platform flags, and a compression algorithm/level pinned by exporter version</li><li>reject encrypted ZIPs, unsupported data descriptors, duplicate entries, path traversal, absolute paths, symlinks, and case-fold collisions</li><li>enforce versioned verifier-policy limits for compressed/uncompressed size, entry count, and compression ratio</li></ol>
+<p>The ZIP MUST use the following v2 byte profile:</p>
+<ol><li>contain no folder prefix or directory entries</li><li>order <code>manifest.json</code> first, then payloads in canonical path order, then <code>attestation.json</code></li><li>use ZIP method 0 (<code>STORE</code>) for every entry; DEFLATE and every other compression method are forbidden in v2</li><li>set DOS date bits to <code>0x0021</code> (1980-01-01) and DOS time bits to <code>0x0000</code>; timezone conversion is forbidden</li><li>set general-purpose flags to <code>0x0800</code> (UTF-8 names only), version-needed to <code>2.0</code>, creator OS to UNIX, version-made-by to <code>3.0</code>, external attributes to regular file mode <code>0644</code> (<code>0x81a40000</code>), and internal attributes to zero</li><li>contain no encryption, data descriptors, ZIP64, extra fields, archive/file comments, directory entries, symlinks, duplicate entries, local/central-name disagreement, path traversal, absolute paths, backslashes, or case-fold collisions</li><li>use CRC-32 and size fields that agree in local and central records; central-directory order MUST equal local-entry order</li><li>enforce the controlled-pilot policy: at most 32 entries, 16 MiB per entry, 64 MiB total uncompressed bytes, 128 UTF-8 bytes per path, and no multi-disk archive</li></ol>
+<p>Method <code>STORE</code> deliberately trades compression for a small, auditable deterministic profile during the one-month pilot. Any future compression profile is a normative schema change requiring a version increment, golden ZIP fixtures, and the full approval matrix.</p>
 <p>Shadow-mode filename:</p>
-<pre><code class="language-text">NFP-factory-packet-&lt;jobRunId&gt;-&lt;packetContentId-first12&gt;.zip</code></pre>
-<p>The filename is a UX warning only. It is not an input to hashing/signing and is never used as evidence of validity.</p>
+<pre><code class="language-text">NFP-factory-packet-&lt;jobRunId&gt;-&lt;packetContentHex-first12&gt;.zip</code></pre>
+<p><code>packetContentHex-first12</code> means the first 12 lowercase hexadecimal characters <strong>after</strong> the literal <code>sha256:</code> prefix; the colon is never part of the filename. The exact shadow-mode regular expression is:</p>
+<pre><code class="language-text">^NFP-factory-packet-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-[0-9a-f]{12}\.zip$</code></pre>
+<p>The source filename is a required verifier input while shadow mode is active, but remains a UX/policy warning rather than a hashing or signature input. A verifier that did not receive the source filename MUST fail closed with <code>PKT_FILENAME_INVALID</code>.</p>
 <h2>7. Canonical byte rules</h2>
-<ol><li>Every JSON file MUST be UTF-8 without BOM and serialized using RFC 8785 JSON Canonicalization Scheme (JCS)</li><li>JSON MUST reject duplicate keys, <code>NaN</code>, <code>Infinity</code>, <code>-Infinity</code>, and unknown fields where the schema states <code>additionalProperties: false</code></li><li>Manufacturing dimensions MUST be quantized by their domain schema before JCS; v2 permits precision up to 0.001 mm, and a generic serializer must not silently round values</li><li>Text files MUST be UTF-8, LF (<code>0x0a</code>) only, without BOM or CR (<code>0x0d</code>)</li><li>Binary files are hashed over raw bytes</li><li>SHA-256 hex is 64 lowercase characters; identity fields use <code>sha256:&lt;64-lowercase-hex&gt;</code></li><li><code>sizeBytes</code> is the actual raw-byte count, not character count</li><li>Canonical paths use <code>/</code>, Unicode NFC, case sensitivity, and unsigned UTF-8 byte lexicographic order; <code>.</code>, <code>..</code>, empty segments, leading <code>/</code>, backslashes, control characters, duplicates, and case-fold collisions are forbidden</li></ol>
+<ol><li>Every JSON file MUST be UTF-8 without BOM and serialized using RFC 8785 JSON Canonicalization Scheme (JCS)</li><li>Every v2 JSON schema MUST set <code>additionalProperties: false</code>; parsers MUST reject duplicate keys before object construction and reject <code>NaN</code>, infinities, negative zero, unsafe integers, and unknown fields</li><li>Canonical manufacturing dimensions use signed integer micrometres in fields suffixed <code>Um</code>. Source decimal millimetres MUST be parsed as decimal text with at most three fractional digits and converted exactly (<code>1.234 mm</code> → <code>1234 Um</code>); extra precision, exponent notation, binary-floating rounding, and silent truncation are rejected</li><li>Text files MUST be UTF-8, LF (<code>0x0a</code>) only, without BOM or CR (<code>0x0d</code>)</li><li>Binary files are hashed over raw bytes</li><li>SHA-256 hex is 64 lowercase characters; identity fields use <code>sha256:&lt;64-lowercase-hex&gt;</code></li><li><code>sizeBytes</code> is the actual raw-byte count, not character count</li><li>Canonical paths use <code>/</code>, Unicode NFC, case sensitivity, and unsigned UTF-8 byte lexicographic order; <code>.</code>, <code>..</code>, empty segments, leading <code>/</code>, backslashes, control characters, duplicates, and case-fold collisions are forbidden</li><li>Every array has an approved schema-level <code>x-monolith-orderBy</code> rule. The builder MUST sort by that rule before JCS; a missing ordering rule is <code>PKT_SCHEMA_UNSUPPORTED</code>. Set-like arrays reject duplicate canonical keys</li><li>Canonical RFC 3339 timestamps use exactly <code>YYYY-MM-DDTHH:mm:ss.sssZ</code>; UUIDs use lowercase RFC 4122 canonical text; semantic versions use SemVer 2.0.0 without a leading <code>v</code></li></ol>
+<p>The v2 schema registry is closed and allowlisted. At minimum it contains the following IDs; replacing or silently mutating a schema under an existing ID is forbidden:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>File/object</th>
+<th>Schema ID</th>
+<th>Canonical array policy owner</th>
+</tr></thead><tbody>
+<tr>
+<td><code>manifest.json</code></td>
+<td><code>monolith.factory.packet@2.0</code></td>
+<td>Tech Lead</td>
+</tr>
+<tr>
+<td><code>attestation.json</code></td>
+<td><code>monolith.factory.packet-attestation@1.0</code></td>
+<td>Tech Lead + Security Owner</td>
+</tr>
+<tr>
+<td><code>connector-ops.json</code></td>
+<td><code>monolith.factory.connector-ops@2.0</code></td>
+<td>Tech Lead + Factory Owner</td>
+</tr>
+<tr>
+<td><code>connectors.minifix.json</code></td>
+<td><code>monolith.factory.connectors-minifix@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>cutlist.json</code></td>
+<td><code>monolith.factory.cutlist@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>drillmap.json</code></td>
+<td><code>monolith.factory.drillmap@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>gate-result.json</code></td>
+<td><code>monolith.factory.gate-result@2.0</code></td>
+<td>Tech Lead</td>
+</tr>
+<tr>
+<td>machine-profile descriptor</td>
+<td><code>monolith.machine-profile@1.0</code></td>
+<td>Factory Owner + Security Owner</td>
+</tr>
+</tbody></table></div>
+<p>The approved schema bundle and its aggregate SHA-256 are verifier-policy inputs. If any payload schema or <code>x-monolith-orderBy</code> rule is absent from that bundle, S17-3 cannot be approved and S17-4 must not guess it.</p>
+<p>The machine-profile digest input has this closed top-level shape; <code>parameters</code> is a closed, version-specific object approved by the Factory Owner:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.machine-profile@1.0&quot;,
+  &quot;id&quot;: &quot;kdt_mvp_v1&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;units&quot;: &quot;um&quot;,
+  &quot;parameters&quot;: {}
+}</code></pre>
 <h2>8. Per-file manifest format</h2>
-<p><code>manifest.json</code> uses schema identifier <code>monolith.factory.packet@2.0</code> and has at least this shape:</p>
+<p><code>manifest.json</code> uses schema identifier <code>monolith.factory.packet@2.0</code> and has exactly this top-level shape. Every shown field is required, every nested object is closed, and additional properties are forbidden:</p>
 <pre><code class="language-json">{
   &quot;schema&quot;: &quot;monolith.factory.packet@2.0&quot;,
   &quot;manifestVersion&quot;: &quot;2.0.0&quot;,
@@ -141,26 +222,86 @@ NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode</code></pre>
   &quot;exporter&quot;: {
     &quot;id&quot;: &quot;monolith.factory-exporter&quot;,
     &quot;version&quot;: &quot;&lt;semver&gt;&quot;,
-    &quot;buildCommit&quot;: &quot;&lt;40-lowercase-hex&gt;&quot;
+    &quot;buildCommit&quot;: &quot;&lt;40-lowercase-hex&gt;&quot;,
+    &quot;artifactSha256&quot;: &quot;sha256:&lt;exporter-artifact-digest&gt;&quot;
   },
   &quot;files&quot;: [
     {
       &quot;path&quot;: &quot;cutlist.json&quot;,
       &quot;mediaType&quot;: &quot;application/json&quot;,
+      &quot;contentSchema&quot;: &quot;monolith.factory.cutlist@2.0&quot;,
       &quot;sizeBytes&quot;: 123,
       &quot;sha256&quot;: &quot;&lt;64-lowercase-hex&gt;&quot;
     }
   ]
 }</code></pre>
 <p>Requirements:</p>
-<ul><li><code>releasedRevision.state</code> is the literal <code>RELEASED</code>; no other state may produce a packet</li><li><code>machineProfile.version</code> is separate from <code>id</code> even when the ID includes “v1”; <code>sha256</code> binds canonical profile bytes so a label cannot be changed silently</li><li><code>exporter.buildCommit</code> binds the artifact to exporter source revision; version alone is insufficient</li><li><code>files</code> is in canonical path order with no duplicate path and exactly covers every ZIP payload except the two control files</li><li><code>createdAt</code>, <code>jobRunId</code>, actor, signature, and wall-clock fields are forbidden in the manifest because they break content determinism</li></ul>
-<h3>8.1 Calculating <code>packetContentId</code></h3>
-<ol><li>Parse and validate a manifest draft with no <code>packetContentId</code> field</li><li>Sort and validate <code>files</code> and all identity fields against the schema</li><li>Set <code>contentDescriptor</code> to the full manifest object with <strong>only <code>packetContentId</code> omitted</strong></li><li>Set <code>descriptorBytes = UTF8(JCS(contentDescriptor))</code></li><li>Set <code>packetContentId = &quot;sha256:&quot; + lowercaseHex(SHA256(descriptorBytes))</code></li><li>Restore the field and serialize <code>manifest.json</code> with JCS</li></ol>
+<ul><li><code>releasedRevision.state</code> is the literal <code>RELEASED</code>; no other state may produce a packet</li><li><code>machineProfile.version</code> is separate from <code>id</code> even when the ID includes “v1”; its digest is <code>SHA256(UTF8(&quot;MONOLITH_MACHINE_PROFILE_V1\n&quot;) || UTF8(JCS(profileDescriptor)))</code>, where <code>profileDescriptor</code> is the full <code>monolith.machine-profile@1.0</code> object without any digest field</li><li><code>exporter.buildCommit</code> binds source revision and <code>artifactSha256</code> binds the exact deployed exporter artifact; version alone is insufficient</li><li><code>contentSchema</code> is REQUIRED for every JSON payload; <code>NOT_FOR_PRODUCTION.txt</code> uses <code>monolith.factory.nfp-marker@1.0</code></li><li><code>files</code> is in canonical path order with no duplicate path and exactly covers every ZIP payload except the two control files</li><li><code>createdAt</code>, <code>jobRunId</code>, actor, signature, and wall-clock fields are forbidden in the manifest because they break content determinism</li></ul>
+<h3>8.1 Normative ownership and validation registry</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Field/bytes</th>
+<th>Authoritative source</th>
+<th>Validation rule</th>
+</tr></thead><tbody>
+<tr>
+<td><code>releasedRevision.projectId/revisionId/state</code></td>
+<td>Track A authenticated-server contract</td>
+<td>server lookup; exact project; literal <code>RELEASED</code>; fail closed when unavailable</td>
+</tr>
+<tr>
+<td><code>machineProfile.id/version</code></td>
+<td>Factory Owner approved registry</td>
+<td>exact allowlisted pair</td>
+</tr>
+<tr>
+<td><code>machineProfile.sha256</code></td>
+<td>canonical profile descriptor</td>
+<td>domain-separated digest above; registry digest must match</td>
+</tr>
+<tr>
+<td><code>exporter.id/version/buildCommit/artifactSha256</code></td>
+<td>trusted build pipeline + S17-4 service</td>
+<td>exact allowlisted build and artifact digest</td>
+</tr>
+<tr>
+<td><code>files[].path/mediaType/contentSchema/sizeBytes/sha256</code></td>
+<td>deterministic S17-4 builder</td>
+<td>canonical path/schema, raw byte count, raw-byte SHA-256</td>
+</tr>
+<tr>
+<td><code>packetContentId</code></td>
+<td>deterministic S17-4 builder</td>
+<td>recompute from the full descriptor with only this field omitted</td>
+</tr>
+<tr>
+<td><code>actorSubjectId/authorizationContextId</code></td>
+<td>Track A authenticated-server contract</td>
+<td>opaque server-derived IDs; client values rejected</td>
+</tr>
+<tr>
+<td><code>jobRunId/idempotencyFingerprint</code></td>
+<td>S17-4 transactional run service</td>
+<td>UUID v4 and one-to-one run/content binding</td>
+</tr>
+<tr>
+<td><code>issuedAt</code></td>
+<td>S17-4 trusted server clock</td>
+<td>exact millisecond UTC format; within verifier-policy skew</td>
+</tr>
+<tr>
+<td>signature protected header/key state</td>
+<td>Security Owner trusted registry</td>
+<td>protected preimage, approved Ed25519 key, lifecycle rules in §10.2</td>
+</tr>
+</tbody></table></div>
+<h3>8.2 Calculating <code>packetContentId</code></h3>
+<ol><li>Parse and validate a manifest draft with no <code>packetContentId</code> field</li><li>Sort and validate <code>files</code> and all identity fields against the schema</li><li>Set <code>contentDescriptor</code> to the full manifest object with **only <code>packetContentId</code> omitted**</li><li>Set <code>descriptorBytes = UTF8(JCS(contentDescriptor))</code></li><li>Set <code>packetContentId = &quot;sha256:&quot; + lowercaseHex(SHA256(descriptorBytes))</code></li><li>Restore the field and serialize <code>manifest.json</code> with JCS</li></ol>
 <p>Path, size, and hash are part of the preimage. This prevents file-renaming attacks that v1's hash-of-sorted-hashes <code>contentHash</code> cannot detect.</p>
 <h2>9. Server-owned <code>jobRunId</code></h2>
-<ol><li>The server MUST allocate it only after authentication/authorization, RELEASED check, and machine-profile authorization succeed</li><li>The v1 format is a lowercase RFC 4122 UUID v4 canonical string</li><li>A client-supplied <code>jobRunId</code> MUST be ignored or rejected, never trusted</li><li>One accepted export attempt has one <code>jobRunId</code>; an explicit rebuild receives a new ID even if <code>packetContentId</code> is unchanged</li><li>A retry with the same idempotency key returns the same accepted record and <code>jobRunId</code>; reuse of the key with different payload fails with conflict</li><li>Persistent storage MUST NOT bind one <code>jobRunId</code> to more than one <code>packetContentId</code></li></ol>
+<p>Ownership is fixed by CT-DEC-003: Track A owns <code>actorSubjectId</code>, authorization context, and the RELEASED-only contract; **S17-4 owns transactional <code>jobRunId</code> allocation**.</p>
+<ol><li>S17-4 MUST first call the Track A contract and require authentication/authorization, RELEASED state, and machine-profile authorization</li><li>S17-4 builds and validates the canonical content descriptor, computes <code>packetContentId</code>, and computes <code>idempotencyFingerprint = &quot;sha256:&quot; + SHA256(UTF8(&quot;MONOLITH_EXPORT_REQUEST_V1\n&quot;) || UTF8(JCS(canonicalAuthorizedRequest)))</code></li><li>In one durable transaction, S17-4 allocates <code>jobRunId</code>, binds it to <code>packetContentId</code>, the idempotency key/fingerprint, actor, revision, profile, and run state, then proceeds to attestation</li><li>The ID format is a lowercase RFC 4122 UUID v4 canonical string</li><li>A client-supplied <code>jobRunId</code>, actor, authorization context, or fingerprint MUST be rejected, never trusted</li><li>One accepted export attempt has one <code>jobRunId</code>; an explicit rebuild receives a new ID even if <code>packetContentId</code> is unchanged</li><li>A retry with the same idempotency key and fingerprint returns the same accepted record and <code>jobRunId</code>; reuse of the key with a different fingerprint fails <code>PKT_IDEMPOTENCY_CONFLICT</code></li><li>Persistent storage MUST NOT bind one <code>jobRunId</code> to more than one <code>packetContentId</code>; transaction failure cannot release an ID for reuse</li></ol>
 <h2>10. Signed attestation and identity</h2>
-<p><code>attestation.json</code> is a run-specific control file with at least this shape:</p>
+<p><code>attestation.json</code> is a run-specific control file with exactly this top-level shape. Every shown field is required, every nested object is closed, and additional properties are forbidden:</p>
 <pre><code class="language-json">{
   &quot;schema&quot;: &quot;monolith.factory.packet-attestation@1.0&quot;,
   &quot;jobRunId&quot;: &quot;&lt;server-owned-uuid-v4&gt;&quot;,
@@ -168,6 +309,8 @@ NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode</code></pre>
   &quot;manifestSha256&quot;: &quot;sha256:&lt;sha256-of-exact-manifest-bytes&gt;&quot;,
   &quot;issuedAt&quot;: &quot;&lt;RFC3339-UTC&gt;&quot;,
   &quot;actorSubjectId&quot;: &quot;&lt;server-derived-opaque-subject&gt;&quot;,
+  &quot;authorizationContextId&quot;: &quot;&lt;server-derived-opaque-context&gt;&quot;,
+  &quot;idempotencyFingerprint&quot;: &quot;sha256:&lt;authorized-request-digest&gt;&quot;,
   &quot;releasedRevision&quot;: {
     &quot;projectId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
     &quot;revisionId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
@@ -181,7 +324,8 @@ NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode</code></pre>
   &quot;exporter&quot;: {
     &quot;id&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
     &quot;version&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
-    &quot;buildCommit&quot;: &quot;&lt;same-as-manifest&gt;&quot;
+    &quot;buildCommit&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;artifactSha256&quot;: &quot;&lt;same-as-manifest&gt;&quot;
   },
   &quot;packetSchema&quot;: &quot;monolith.factory.packet@2.0&quot;,
   &quot;gate&quot;: {
@@ -191,18 +335,25 @@ NOT_FOR_PRODUCTION.txt    # REQUIRED in shadow mode</code></pre>
     &quot;evidenceSha256&quot;: &quot;sha256:&lt;same-file-digest-as-manifest&gt;&quot;
   },
   &quot;signature&quot;: {
-    &quot;algorithm&quot;: &quot;Ed25519&quot;,
-    &quot;keyId&quot;: &quot;&lt;trusted-registry-key-id&gt;&quot;,
+    &quot;protected&quot;: {
+      &quot;algorithm&quot;: &quot;Ed25519&quot;,
+      &quot;keyId&quot;: &quot;&lt;trusted-registry-key-id&gt;&quot;,
+      &quot;registryVersion&quot;: &quot;&lt;trusted-registry-version&gt;&quot;
+    },
     &quot;valueBase64&quot;: &quot;&lt;canonical-base64-signature&gt;&quot;
   }
 }</code></pre>
-<p>Signed identity binds at minimum <code>jobRunId</code>, <code>packetContentId</code>, exact manifest digest, released revision, machine-profile ID+version+digest, exporter ID+version+build commit, packet schema, gate result/policy/evidence digest, issued time, and server-derived actor.</p>
+<p>Signed identity binds at minimum <code>jobRunId</code>, <code>packetContentId</code>, exact manifest digest, released revision, machine-profile ID+version+digest, exporter ID+version+build commit+artifact digest, packet schema, gate result/policy/evidence digest, issued time, server-derived actor/authorization context, idempotency fingerprint, and the protected signature header.</p>
 <h3>10.1 Signature preimage</h3>
-<ol><li>Create <code>unsignedAttestation</code> by omitting only the top-level <code>signature</code></li><li>Set <code>message = UTF8(&quot;MONOLITH_FACTORY_PACKET_ATTESTATION_V1\n&quot;) || UTF8(JCS(unsignedAttestation))</code></li><li>Have the KMS/HSM sign <code>message</code> with Ed25519</li><li><code>valueBase64</code> uses padded RFC 4648 standard Base64 with no whitespace</li><li><code>keyId</code> looks up a key in the trusted public-key registry; a public key embedded in the packet must never establish its own trust</li></ol>
-<p>Changing any identity field after signing MUST invalidate the signature.</p>
+<ol><li>Create <code>unsignedAttestation</code> by retaining <code>signature.protected</code> and omitting <strong>only</strong> <code>signature.valueBase64</code></li><li>Set <code>message = UTF8(&quot;MONOLITH_FACTORY_PACKET_ATTESTATION_V1\n&quot;) || UTF8(JCS(unsignedAttestation))</code></li><li>Have the KMS/HSM sign <code>message</code> with Ed25519</li><li><code>valueBase64</code> encodes exactly 64 signature bytes as padded RFC 4648 standard Base64 (88 characters ending <code>==</code>) with no whitespace or alternate encoding</li><li><code>keyId</code> and <code>registryVersion</code> select a record from the verifier's trusted registry; a packet-embedded key or registry must never establish its own trust</li></ol>
+<p>Changing the algorithm, key ID, registry version, or any identity field after signing MUST invalidate the signature.</p>
+<h3>10.2 Trusted-key lifecycle and revocation</h3>
+<p>Each trusted-registry record contains canonical <code>keyId</code>, Ed25519 public key bytes, <code>notBefore</code>, <code>notAfter</code>, state (<code>ACTIVE</code>, <code>RETIRED</code>, or <code>REVOKED</code>), optional <code>retiredAt/revokedAt</code>, reason, and monotonically increasing signed registry version. Verifier policy pins the minimum accepted registry version/digest; packet content cannot roll it back.</p>
+<ul><li><code>issuedAt</code> MUST satisfy <code>notBefore &lt;= issuedAt &lt; notAfter</code></li><li><code>ACTIVE</code> is accepted only under an approved current registry</li><li><code>RETIRED</code> is accepted only when <code>issuedAt &lt; retiredAt</code> and verifier policy explicitly permits historical verification</li><li><code>REVOKED</code> always fails <code>PKT_KEY_REVOKED</code>, including signatures predating <code>revokedAt</code></li><li>unknown, not-yet-valid, and expired keys return their dedicated stable codes</li><li>registry/revision/profile/gate authoritative lookup failure returns <code>PKT_AUTHORITY_UNAVAILABLE</code>; stale or packet-supplied trust data cannot produce PASS</li></ul>
+<p>S17-6 owns custody, provisioning, rotation ceremony, and evidence. These lifecycle semantics are already normative for S17-5 and cannot be deferred to implementation guesswork.</p>
 <h2>11. Shadow mode / NOT-FOR-PRODUCTION contract</h2>
 <p>Until all four real-cut gate conditions pass:</p>
-<ol><li><code>NOT_FOR_PRODUCTION.txt</code> MUST exist and appear in <code>manifest.files</code></li><li>its bytes MUST match the exporter-version constant from <code>src/core/config/shadowMode.ts</code> (UTF-8, LF, no trailing LF at this baseline)</li><li>the ZIP filename MUST start with <code>NFP-</code></li><li>the verifier may return integrity PASS, but operational status MUST be <code>VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>a missing marker or prefix does not promote the packet; it fails with <code>PKT_NFP_POLICY_MISMATCH</code></li><li>the marker may be disabled only by governance-controlled configuration after S17-1..5 close, ADR-064 has all four roles, at least one dogfood job completes the full chain, and one machine profile is calibrated</li></ol>
+<ol><li><code>NOT_FOR_PRODUCTION.txt</code> MUST exist and appear in <code>manifest.files</code></li><li>its bytes MUST match the exporter-version constant from <code>src/core/config/shadowMode.ts</code>: 824 UTF-8 bytes, LF only, no trailing LF, SHA-256 <code>40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a</code></li><li>the ZIP filename MUST start with <code>NFP-</code></li><li>the verifier may return integrity PASS, but operational status MUST be <code>VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>a missing marker or prefix does not promote the packet; it fails with <code>PKT_NFP_POLICY_MISMATCH</code></li><li>the marker may be disabled only by governance-controlled configuration after S17-1..5 close, ADR-064 has all four roles, at least one dogfood job completes the full chain, and one machine profile is calibrated</li></ol>
 <p>Current marker text:</p>
 <pre><code class="language-text">*** NOT FOR PRODUCTION — ห้ามใช้ตัดชิ้นงานจริง ***
 
@@ -217,8 +368,15 @@ blockers are closed and the four-condition real-cut gate passes.
 ใช้ได้เฉพาะ: เทียบกับใบสั่งผลิตเดิมของโรงงานเพื่อเก็บ evidence ป้อน S17</code></pre>
 <h2>12. Full verifier contract (input to S17-5)</h2>
 <p>The verifier MUST execute these checks in order and stop fail-closed:</p>
-<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema, duplicate-key rejection, exact supported versions</li><li><strong>Exact file set</strong>: every payload matches the manifest; no missing/extra files beyond specified control files</li><li><strong>Byte integrity</strong>: per-file <code>sizeBytes</code> and SHA-256</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> from the descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID match across attestation and manifest</li><li><strong>Signature</strong>: trusted-registry key lookup, algorithm/key state, Ed25519 verification</li><li><strong>Authoritative checks</strong>: revision remains RELEASED, project matches, profile/version/digest is authorized, exporter build is allowlisted, and gate evidence is PASS under a supported policy</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> does not collide with other content and idempotency/replay policy passes</li><li><strong>Shadow policy</strong>: marker+prefix agree with governance state; NFP always produces NO_CUT</li><li><strong>Audit result</strong>: append verifier version, policy versions, checked hashes, result code, time, and human/operator context without overwriting prior evidence</li></ol>
+<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema-bundle digest, duplicate-key rejection before object construction, exact supported versions</li><li><strong>Exact file set</strong>: every payload matches the manifest; no missing/extra files beyond specified control files</li><li><strong>Byte integrity</strong>: per-file <code>sizeBytes</code> and SHA-256</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> from the descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID, authorization context, and gate fields match across attestation, manifest, and gate evidence</li><li><strong>Signature</strong>: protected algorithm/key/registry lookup, lifecycle state, Ed25519 verification</li><li><strong>Authoritative checks</strong>: revision remains RELEASED, project matches, profile/version/digest is authorized, exporter build+artifact is allowlisted, registry is current, and gate evidence is PASS under a supported policy</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> does not collide with other content and idempotency/replay policy passes</li><li><strong>Shadow policy</strong>: marker+prefix agree with governance state; NFP always produces NO_CUT</li><li><strong>Audit result</strong>: append verifier version, policy versions, checked hashes, result code, time, and human/operator context without overwriting prior evidence</li></ol>
 <p>The verifier MUST NOT “warn and pass” when schema/key/state is unknown, a required state lookup fails, or evidence is missing.</p>
+<p>The primary result code is the first failed check in the numbered order. The audit record MAY include later diagnostic findings, but they cannot replace or downgrade the primary stable code. A successful result has three separate fields:</p>
+<pre><code class="language-json">{
+  &quot;integrityStatus&quot;: &quot;VERIFIED&quot;,
+  &quot;operationalDisposition&quot;: &quot;NO_CUT&quot;,
+  &quot;code&quot;: &quot;PKT_OK_SHADOW_ONLY&quot;
+}</code></pre>
+<p>During shadow mode this is the highest possible result. <code>PKT_OK</code> is reserved and MUST NOT be emitted until a later governance-controlled production profile passes the full four-condition real-cut gate and a normative version update.</p>
 <h2>13. Minimum stable result codes</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>Code</th>
@@ -226,14 +384,14 @@ blockers are closed and the four-condition real-cut gate passes.
 <th>Result</th>
 </tr></thead><tbody>
 <tr>
-<td><code>PKT_OK</code></td>
-<td>all checks pass and governance permits production</td>
-<td>VERIFIED (still subject to the external real-cut gate)</td>
-</tr>
-<tr>
 <td><code>PKT_OK_SHADOW_ONLY</code></td>
 <td>integrity/signature pass while NFP remains mandatory</td>
 <td>VERIFIED_SHADOW_ONLY / NO_CUT</td>
+</tr>
+<tr>
+<td><code>PKT_OK</code></td>
+<td>reserved; forbidden during shadow mode</td>
+<td>NOT EMITTABLE IN v0.2 PILOT</td>
 </tr>
 <tr>
 <td><code>PKT_LIMIT_EXCEEDED</code></td>
@@ -241,9 +399,19 @@ blockers are closed and the four-condition real-cut gate passes.
 <td>FAIL</td>
 </tr>
 <tr>
+<td><code>PKT_ZIP_PROFILE_INVALID</code></td>
+<td>ZIP header/metadata/profile differs from §6</td>
+<td>FAIL</td>
+</tr>
+<tr>
 <td><code>PKT_PATH_INVALID</code></td>
 <td>path traversal/duplicate/collision</td>
 <td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_FILENAME_INVALID</code></td>
+<td>required shadow filename is missing or malformed</td>
+<td>FAIL / NO_CUT</td>
 </tr>
 <tr>
 <td><code>PKT_SCHEMA_UNSUPPORTED</code></td>
@@ -253,6 +421,11 @@ blockers are closed and the four-condition real-cut gate passes.
 <tr>
 <td><code>PKT_JSON_NON_CANONICAL</code></td>
 <td>JSON violates canonical rules</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_ATTESTATION_INVALID</code></td>
+<td>attestation shape/time/Base64 is malformed</td>
 <td>FAIL</td>
 </tr>
 <tr>
@@ -291,6 +464,16 @@ blockers are closed and the four-condition real-cut gate passes.
 <td>FAIL</td>
 </tr>
 <tr>
+<td><code>PKT_KEY_NOT_YET_VALID</code> / <code>PKT_KEY_EXPIRED</code></td>
+<td>key lifecycle window rejects <code>issuedAt</code></td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_AUTHORITY_UNAVAILABLE</code></td>
+<td>required registry/revision/profile/gate lookup unavailable</td>
+<td>FAIL / NO_CUT</td>
+</tr>
+<tr>
 <td><code>PKT_REVISION_NOT_RELEASED</code></td>
 <td>revision is not RELEASED</td>
 <td>FAIL</td>
@@ -311,8 +494,18 @@ blockers are closed and the four-condition real-cut gate passes.
 <td>FAIL</td>
 </tr>
 <tr>
+<td><code>PKT_GATE_EVIDENCE_MISMATCH</code></td>
+<td>gate file and signed gate fields disagree</td>
+<td>FAIL</td>
+</tr>
+<tr>
 <td><code>PKT_JOB_RUN_CONFLICT</code></td>
 <td>run ID bound to other content or replay violates policy</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><code>PKT_IDEMPOTENCY_CONFLICT</code></td>
+<td>one idempotency key is reused with a different fingerprint</td>
 <td>FAIL</td>
 </tr>
 <tr>
@@ -324,7 +517,7 @@ blockers are closed and the four-condition real-cut gate passes.
 <p>UI messages may be localized, but stable codes and severity must not change by locale.</p>
 <h2>14. Minimum tamper corpus</h2>
 <p>S17-5 requires at least these negative fixtures:</p>
-<ol><li>mutate one payload byte</li><li>swap two filenames while preserving the old hash set</li><li>missing file, extra file, duplicate ZIP entry, and case-fold collision</li><li>path traversal, absolute path, backslash, symlink, and ZIP-bomb policy</li><li>incorrect size/hash/packetContentId/manifest digest, one field at a time</li><li>duplicate JSON key, non-canonical number/encoding/BOM/CRLF</li><li>mutate revision, profile ID/version/digest, exporter version/build commit, or schema after signing</li><li>missing signature, bit-flipped signature, wrong key, unknown key, revoked key, and empty placeholder key</li><li>client-provided <code>jobRunId</code>, malformed UUID, reuse with another packetContentId, and idempotency conflict</li><li>DRAFT/FROZEN revision, gate FAIL, unsupported gate policy, and unavailable authoritative lookup</li><li>remove/modify <code>NOT_FOR_PRODUCTION.txt</code>, remove <code>NFP-</code>, or attempt production use of an NFP packet</li><li>randomize order/timezone/locale for identical canonical inputs; payload+manifest+packetContentId remain identical</li><li>run the same content in two accepted runs; packetContentId remains equal, jobRunId differs, and only the run-specific allowlist differs</li></ol>
+<ol><li>mutate one payload byte</li><li>swap two filenames while preserving the old hash set</li><li>missing file, extra file, duplicate ZIP entry, and case-fold collision</li><li>path traversal, absolute path, backslash, symlink, ZIP bomb, local/central-name disagreement, data descriptor, ZIP64, extra field/comment, timestamp, flags, permissions, and compression-method mutation</li><li>incorrect size/hash/packetContentId/manifest digest, one field at a time</li><li>duplicate JSON key, non-canonical number/encoding/BOM/CRLF, excess millimetre precision, negative zero, unsafe integer, missing array-order rule, and randomized array order</li><li>mutate revision, profile ID/version/digest, exporter version/build commit/artifact digest, schema, actor, authorization context, or idempotency fingerprint after signing</li><li>missing signature, bit-flipped signature, changed protected algorithm/key ID/registry version, wrong key, unknown key, revoked/retired/expired/not-yet-valid key, registry rollback, and empty placeholder key</li><li>client-provided <code>jobRunId</code>, actor, or authorization context; malformed UUID; reuse with another packetContentId; transaction rollback/reuse; and idempotency conflict</li><li>DRAFT/FROZEN revision, gate FAIL, signed/file gate mismatch, unsupported gate policy, and unavailable authoritative lookup</li><li>remove/modify <code>NOT_FOR_PRODUCTION.txt</code>, remove <code>NFP-</code>, omit the source filename, include the literal <code>sha256:</code> colon in a filename, or attempt production use of an NFP packet</li><li>randomize order/timezone/locale for identical canonical inputs; payload+manifest+packetContentId remain identical</li><li>run the same content in two accepted runs; packetContentId remains equal, jobRunId differs, and only the run-specific allowlist differs</li></ol>
 <p>Each fixture identifies an expected stable code and proves that no failing case produces VERIFIED status.</p>
 <h2>15. As-built gap at the baseline</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -335,7 +528,7 @@ blockers are closed and the four-condition real-cut gate passes.
 <tr>
 <td>server-owned <code>jobRunId</code></td>
 <td>client builds <code>job-${Date.now()}-${random}</code></td>
-<td>GAP — S17-1/S17-4</td>
+<td>GAP — S17-4, consuming Track A contract</td>
 </tr>
 <tr>
 <td>path-aware <code>packetContentId</code></td>
@@ -377,15 +570,61 @@ blockers are closed and the four-condition real-cut gate passes.
 <td>browser JSZip uses runtime metadata and timestamped filename</td>
 <td>GAP — S17-4</td>
 </tr>
+<tr>
+<td>deterministic gate evidence</td>
+<td><code>gate-result.json</code> includes <code>runAt</code> and human <code>message</code></td>
+<td>GAP — S17-4; separate content/run planes</td>
+</tr>
+<tr>
+<td>canonical byte ordering</td>
+<td>builder/gate sorting uses <code>localeCompare()</code></td>
+<td>GAP — S17-4; replace with unsigned UTF-8 byte ordering</td>
+</tr>
+<tr>
+<td>exact quantity normalization</td>
+<td>serializer uses floating-point <code>Math.round()</code></td>
+<td>GAP — S17-4; replace with exact decimal-to-<code>Um</code> conversion</td>
+</tr>
 </tbody></table></div>
 <p>This table is a code-review finding, not P0 closure.</p>
 <h2>16. S17-3 acceptance criteria</h2>
 <p>S17-3 may close only when:</p>
-<ol><li>aligned TH/EN Markdown and HTML editions plus SHA-256 manifest are in the repository</li><li>Tech Lead, Factory Owner, and Security Owner separately record APPROVED</li><li>every normative field has an owner, source, and validation rule</li><li>packetContentId/jobRunId/signed identity have no circular hash or run/content ambiguity</li><li>per-file format, canonical bytes, ZIP rules, NFP policy, verifier order/result codes, and tamper corpus are approved</li><li>an implementation mapping exists for S17-4 and an independent-verifier assignment exists for S17-5, with no builder self-approval</li><li>any normative change after approval increments a version and repeats the approval matrix</li></ol>
+<ol><li>aligned TH/EN Markdown and HTML editions plus SHA-256 manifest are in the repository</li><li>Tech Lead, Factory Owner, and Security Owner separately record APPROVED</li><li>every normative field has an owner, source, and validation rule and the approved schema bundle/digest exists</li><li>packetContentId/jobRunId/signed identity have no circular hash or run/content ambiguity</li><li>per-file format, canonical bytes, ZIP byte profile, NFP policy, verifier order/result codes, and tamper corpus are approved</li><li>an implementation mapping exists for S17-4 and an independent-verifier assignment exists for S17-5, with no builder self-approval</li><li>any normative change after approval increments a version and repeats the approval matrix</li></ol>
 <p>Until all seven are satisfied, status remains DRAFT and Track B implementation remains locked.</p>
 <h2>17. Open approval questions</h2>
-<ol><li>Does the Factory Owner approve the required payload set and the <code>kdt_mvp_v1</code> ID/version/profile-digest contract?</li><li>Does the Tech Lead approve JCS + 0.001 mm domain quantization and UUID v4/idempotency semantics?</li><li>Does the Security Owner approve Ed25519 domain separation, the trusted key registry, and revocation behavior?</li><li>Do all three roles accept the determinism boundary: canonical payload is deterministic, while run-specific attestation may make outer ZIPs differ across runs?</li><li>What exact verifier-policy limits (max entries/bytes/ratio) will be frozen before the pilot?</li></ol>
+<ol><li>Does the Factory Owner approve the required payload set, schema registry/order keys, controlled-pilot ZIP limits, and the <code>kdt_mvp_v1</code> ID/version/profile-digest contract?</li><li>Does the Tech Lead approve JCS + exact integer-micrometre normalization, method-0 ZIP profile, UUID v4/idempotency transaction semantics, and S17-4 run ownership?</li><li>Does the Security Owner approve the protected Ed25519 header, trusted-registry minimum version/digest, fail-closed lookup, and revocation behavior?</li><li>Do all three roles accept the determinism boundary: canonical payload is deterministic, while run-specific attestation may make outer ZIPs differ across runs?</li><li>Do all three roles approve reserving <code>PKT_OK</code> and limiting the shadow pilot to <code>PKT_OK_SHADOW_ONLY / NO_CUT</code>?</li></ol>
 <p>These questions must be resolved during approval review and must not be implemented by guesswork.</p>
+<h2>18. v0.2 independent-review remediation map</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Review blocker</th>
+<th>v0.2 remediation</th>
+</tr></thead><tbody>
+<tr>
+<td>1. algorithm/key ID were outside the signature</td>
+<td>§10.1 retains <code>signature.protected</code> and omits only <code>valueBase64</code>; §14 adds protected-header tampering</td>
+</tr>
+<tr>
+<td>2. gate evidence mixed content/run planes</td>
+<td>§4.2 defines deterministic gate evidence and moves time/operator/localized text to attestation/audit</td>
+</tr>
+<tr>
+<td>3. schemas/quantization/order were under-specified</td>
+<td>§7 adds closed schema registry, exact decimal-to-integer-<code>Um</code>, array-order rules; §8.1 adds owner/source/validation registry</td>
+</tr>
+<tr>
+<td>4. filename/ZIP profile were ambiguous</td>
+<td>§6 removes the <code>sha256:</code> colon ambiguity and freezes the method-0 ZIP byte profile and pilot limits</td>
+</tr>
+<tr>
+<td>5. key lifecycle/revocation were unresolved</td>
+<td>§10.2 defines registry anti-rollback, validity, retirement, revocation, and unavailable-authority behavior</td>
+</tr>
+<tr>
+<td>6. fail-closed codes/operational status were incomplete</td>
+<td>§§12–14 add precedence, missing codes, expanded tamper fixtures, and shadow-only maximum status</td>
+</tr>
+</tbody></table></div>
+<p>This remediation map is a diff summary for re-review, not an approval or closure claim.</p>
 </main>
 </body>
 </html>
