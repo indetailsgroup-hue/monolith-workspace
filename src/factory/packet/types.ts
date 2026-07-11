@@ -333,6 +333,8 @@ export interface BuildFactoryPacketOutput {
     'cutlist.json': string;
     'gate-result.json': string;
     'connector-ops.json': string;
+    /** ADR-065 Q3: ป้าย shadow mode — มีเฉพาะช่วง dogfood (S17 ยังไม่ปิด) */
+    'NOT_FOR_PRODUCTION.txt'?: string;
   };
   /** Combined content hash */
   contentHash: string;

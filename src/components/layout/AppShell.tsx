@@ -23,6 +23,8 @@
 
 import React, { useState } from 'react';
 
+import { SHADOW_MODE_NOT_FOR_PRODUCTION, NOT_FOR_PRODUCTION_LABEL } from '../../core/config/shadowMode';
+
 // Spec State Types
 export type SpecState = 'DRAFT' | 'FROZEN' | 'RELEASED';
 
@@ -208,6 +210,14 @@ export function AppShell({
             warnings={project.gateWarnings}
           />
           <div className="h-6 w-px bg-oi-border" />
+          {SHADOW_MODE_NOT_FOR_PRODUCTION && (
+            <span
+              className="px-2 py-0.5 rounded border border-amber-500/50 bg-amber-500/10 text-amber-400 text-[10px] font-bold tracking-wide"
+              title="ADR-065 Q3: shadow mode ระหว่าง dogfood — packet ทุกใบห้ามใช้ตัดชิ้นงานจริงจนกว่า S17 ปิดครบและ gate ตัดจริงผ่านทั้งสี่เงื่อนไข"
+            >
+              {NOT_FOR_PRODUCTION_LABEL}
+            </span>
+          )}
           <ExportButton enabled={canExport} onClick={onExport} />
         </div>
       </header>

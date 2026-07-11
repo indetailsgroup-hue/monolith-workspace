@@ -38,6 +38,11 @@ import {
   computeFileEntry,
   computeContentHash,
 } from './manifestHash';
+import {
+  SHADOW_MODE_NOT_FOR_PRODUCTION,
+  NOT_FOR_PRODUCTION_FILE,
+  NOT_FOR_PRODUCTION_NOTICE,
+} from '../../core/config/shadowMode';
 
 // ============================================
 // CONSTANTS
@@ -113,6 +118,12 @@ export async function buildFactoryPacket(
     computeFileEntry('connector-ops.json', connectorOpsJson),
   ]);
 
+  // ADR-065 Q3: shadow mode — ป้าย NOT-FOR-PRODUCTION เป็นไฟล์ใน manifest
+  // (เข้า manifest อย่างถูกต้องเพื่อไม่สะดุด extra-files check ของ verifier)
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    fileEntries.push(await computeFileEntry(NOT_FOR_PRODUCTION_FILE, NOT_FOR_PRODUCTION_NOTICE));
+  }
+
   // 4. Compute content hash from all file hashes
   const fileHashes = fileEntries.map(f => f.sha256);
   const contentHash = await computeContentHash(fileHashes);
@@ -142,16 +153,21 @@ export async function buildFactoryPacket(
     connectorOps: connectorOpsData,
   };
 
+  const files: BuildFactoryPacketOutput['files'] = {
+    'manifest.json': manifestJson,
+    'drillmap.json': drillMapJson,
+    'connectors.minifix.json': connectorsJson,
+    'cutlist.json': cutListJson,
+    'gate-result.json': gateResultJson,
+    'connector-ops.json': connectorOpsJson,
+  };
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    files[NOT_FOR_PRODUCTION_FILE] = NOT_FOR_PRODUCTION_NOTICE;
+  }
+
   return {
     packet,
-    files: {
-      'manifest.json': manifestJson,
-      'drillmap.json': drillMapJson,
-      'connectors.minifix.json': connectorsJson,
-      'cutlist.json': cutListJson,
-      'gate-result.json': gateResultJson,
-      'connector-ops.json': connectorOpsJson,
-    },
+    files,
     contentHash,
   };
 }

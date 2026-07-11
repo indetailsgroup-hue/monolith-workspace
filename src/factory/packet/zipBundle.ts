@@ -9,6 +9,7 @@
 
 import JSZip from 'jszip';
 import type { BuildFactoryPacketOutput } from './types';
+import { SHADOW_MODE_NOT_FOR_PRODUCTION } from '../../core/config/shadowMode';
 
 // ============================================
 // ZIP BUNDLE TYPES
@@ -86,7 +87,9 @@ export async function createZipBundle(
   // Generate filename from job ID and timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const jobIdShort = packet.manifest.jobId.slice(0, 8);
-  const filename = `factory-packet-${jobIdShort}-${timestamp}.zip`;
+  // ADR-065 Q3: ป้าย shadow mode ในชื่อไฟล์ — เห็นก่อนเปิด zip
+  const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
+  const filename = `${nfpPrefix}factory-packet-${jobIdShort}-${timestamp}.zip`;
 
   return {
     blob,
