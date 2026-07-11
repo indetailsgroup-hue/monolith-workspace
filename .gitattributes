@@ -1,2 +1,5 @@
 # docs/prd is content-addressed (SHA-256 manifests) — bytes must be identical on every platform/checkout
+.gitattributes text eol=lf
 docs/prd/** text eol=lf
+docs/implementation/** text eol=lf
+supabase/tests/s17-0162/** text eol=lf

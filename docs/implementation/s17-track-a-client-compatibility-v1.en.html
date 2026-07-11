@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Track A — Client Compatibility and Deployment Checklist</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Track A — Client Compatibility and Deployment Checklist</h1>
+<p>Document version: 1.0</p>
+<p>Prepared: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>Status: <strong>deployment analysis — not deployment authority</strong></p>
+<blockquote><p>The candidate changes the factory trust boundary and RPC signatures. It must not be merged or deployed until independent review, database evidence, metadata preparation, and a human-approved cutover plan are complete.</p></blockquote>
+<h2>1. Executive finding</h2>
+<p>The current <code>factory-api</code> candidate and migration 0162 do <strong>not</strong> have a zero-downtime order by themselves:</p>
+<ul><li><strong>Function first:</strong> the new function calls new RPC parameter signatures that do not exist before 0162; mutating routes fail.</li><li><strong>Migration first:</strong> 0162 drops the legacy signatures immediately; the currently deployed function continues calling them and mutating routes fail.</li></ul>
+<p>Therefore “function first” versus “migration first” is not a valid binary choice under live traffic. Use either the bridge sequence in §6.1 or a controlled maintenance window in §6.2.</p>
+<h2>2. Shared authentication impact</h2>
+<p>All non-health Factory API routes now require a valid end-user Bearer JWT. The anon key remains only an API key and does not become identity. Local <code>monolith.user.role</code>, <code>x-actor-role</code>, request body actor fields, and <code>user_metadata</code> cannot grant server access.</p>
+<p>Required client conditions:</p>
+<ul><li>an unexpired Supabase session exists in the browser</li><li>the access token contains recognized <code>app_metadata.roles</code></li><li>production operators receive real <code>app_metadata.site_codes</code></li><li>after metadata changes, the user refreshes the session or signs out/in so a new JWT carries the claims</li></ul>
+<p>No token or no recognized role produces <code>401</code>/<code>403</code> instead of the previous permissive behavior.</p>
+<h2>3. Client-by-client checklist</h2>
+<h3>3.1 Designer workspace and automatic packet upload</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>As-built impact / required action</th>
+</tr></thead><tbody>
+<tr>
+<td>State/freeze/release/revoke/can-export/proof</td>
+<td>Requires active JWT and <code>designer</code>/<code>admin</code> capability; legacy local role selection is presentation-only</td>
+</tr>
+<tr>
+<td>Export state</td>
+<td>FROZEN is no longer exportable. Operator must explicitly Release before Export</td>
+</tr>
+<tr>
+<td>Header export button</td>
+<td><code>AppShell.tsx</code> now enables it only when gate is OK and state is RELEASED</td>
+</tr>
+<tr>
+<td>Automatic upload</td>
+<td><code>App.tsx</code> generates and downloads the local NFP ZIP before calling <code>uploadPacket()</code>. If server upload is rejected, the user may already possess a local file; current feedback is console-only</td>
+</tr>
+<tr>
+<td>Other packet/download controls</td>
+<td>Some local packet-generation controls can still create a browser download without server acceptance. Such a file is not server-released evidence and remains NO_CUT</td>
+</tr>
+<tr>
+<td>Missing/expired session</td>
+<td>Calls return <code>401</code>; the UI needs an explicit sign-in/session-expired message rather than relying on console output</td>
+</tr>
+</tbody></table></div>
+<p>Compatibility risk: users accustomed to “Freeze then Export” now see an extra Release step. A downloaded NFP ZIP must never be interpreted as proof that the server accepted the packet.</p>
+<h3>3.2 FactoryApp routes</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Route/client</th>
+<th>Required claim</th>
+<th>Compatibility result</th>
+</tr></thead><tbody>
+<tr>
+<td>jobs/state/activity/proof</td>
+<td>any recognized Factory capability</td>
+<td>Works with valid JWT; unknown/empty roles receive <code>403</code></td>
+</tr>
+<tr>
+<td>GET <code>/:jobId/export</code></td>
+<td><code>factory</code>, <code>factory_operator</code>, or admin-equivalent</td>
+<td>Works only for RELEASED with a recorded packet</td>
+</tr>
+<tr>
+<td>POST <code>/:jobId/verify</code></td>
+<td><code>factory</code>, <code>factory_operator</code>, or admin-equivalent</td>
+<td>Works only for RELEASED with a recorded packet</td>
+</tr>
+<tr>
+<td><code>triggerLegacyExportApi()</code> POST export</td>
+<td>—</td>
+<td><strong>Broken/unsupported:</strong> <code>factory-api</code> implements GET export, not legacy POST export</td>
+</tr>
+<tr>
+<td><code>fetchExportOptionsApi()</code></td>
+<td>—</td>
+<td><strong>Broken/unsupported:</strong> <code>/factory/export/options</code> is not implemented by <code>factory-api</code></td>
+</tr>
+<tr>
+<td>jobs list status mapping</td>
+<td>—</td>
+<td><strong>Misleading:</strong> <code>jobsApi.ts</code> maps FROZEN to <code>VERIFIED</code> and comments that it is ready for export; server now denies export until RELEASED</td>
+</tr>
+<tr>
+<td>route base composition</td>
+<td>—</td>
+<td>Re-test both hosted Edge base URL and local proxy; clients currently mix <code>/factory/...</code> and <code>/api/factory/...</code> prefixes</td>
+</tr>
+</tbody></table></div>
+<p>The server gates remain authoritative even while these UI compatibility defects are open.</p>
+<h3>3.3 MCP pipeline</h3>
+<ul><li>The current MCP registry/pipeline has no direct factory packet tool, so migration 0162 introduces no immediate MCP route failure.</li><li>MCP already forwards the end-user JWT through a user-scoped client and reads the same <code>app_metadata.roles</code> and <code>site_codes</code> claim family.</li><li>Existing MCP tools that require site scope still fail closed when the JWT lacks an active site code.</li><li>A future factory MCP tool must not call a legacy RPC signature or accept actor fields in tool input. It must use the authenticated Factory API/Track A contract and remain human-gated when classified as Write/Approval.</li></ul>
+<h2>4. Production metadata matrix</h2>
+<p>Use lower-case C12 vocabulary for new assignments; upper-case MONOLITH values are temporary compatibility aliases.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>User type</th>
+<th>Preferred <code>app_metadata.roles</code></th>
+<th>Factory capability</th>
+</tr></thead><tbody>
+<tr>
+<td>Designer</td>
+<td><code>[&quot;designer&quot;]</code></td>
+<td>read + freeze/release/revoke/unfreeze + packet upload</td>
+</tr>
+<tr>
+<td>Factory operator</td>
+<td><code>[&quot;factory_operator&quot;]</code> or <code>[&quot;factory&quot;]</code></td>
+<td>read + export + verify</td>
+</tr>
+<tr>
+<td>Administrator/operations</td>
+<td><code>[&quot;admin&quot;]</code> or approved governance role such as <code>operations</code></td>
+<td>full Factory API capability; role assignment remains a human governance action</td>
+</tr>
+<tr>
+<td>Installer</td>
+<td><code>[&quot;installer&quot;]</code></td>
+<td>read-only Factory API capability</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td><code>[&quot;finance&quot;]</code></td>
+<td>read-only Factory API capability</td>
+</tr>
+</tbody></table></div>
+<p><code>site_codes</code> must be an array of real active site codes assigned to that user, for example <code>[&quot;&lt;APPROVED-SITE-CODE&gt;&quot;]</code>. The repository still carries <code>BKK-HQ-01</code> as an explicitly unconfirmed placeholder in the C12 foundation. Do not bulk-provision that value as production truth until the responsible human confirms it.</p>
+<p>As-built limitation: <code>factory-api</code> derives and records <code>site_codes</code> but migration 0162 does not yet bind a job to a site or reject an empty site list. MCP and other C12 consumers do enforce site access. This difference must remain visible and must not be described as complete factory site isolation.</p>
+<h2>5. Pre-deployment checks</h2>
+<ul><li>[ ] Independent source review accepts the implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run is green and an existing pre-0162 staging snapshot is green</li><li>[ ] Hosted backup/restore and abort owner are named</li><li>[ ] All pilot users have reviewed roles and approved site codes</li><li>[ ] Pilot users refresh/sign in again; decoded access tokens show the new claims</li><li>[ ] FactoryApp legacy POST export, export-options, FROZEN status label, and route prefixes are repaired or explicitly disabled</li><li>[ ] Designer shows upload failure and session expiry to the user, not only the console</li><li>[ ] A bridge deployment or maintenance window is approved</li><li>[ ] Smoke tests cover state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, and FROZEN denial</li></ul>
+<h2>6. Deployment sequence</h2>
+<h3>6.1 Preferred zero-downtime sequence — requires a bridge function</h3>
+<ol><li>Provision and verify user metadata; force JWT refresh for pilot users.</li><li>Deploy a temporary bridge <code>factory-api</code> that derives identity only from the verified JWT, attempts the new RPC signatures, and falls back to legacy signatures only on a verified “function/signature not found” response. It must never restore client actor headers/body as authority.</li><li>Smoke-test the bridge against the pre-0162 schema.</li><li>Apply migration 0162. Wait for PostgREST schema-cache refresh and verify the bridge uses only the new signatures.</li><li>Deploy the final candidate without fallback; run full route/spoof/FROZEN smoke tests.</li><li>Preserve run IDs/logs and obtain the human decision before merge/closure claims.</li></ol>
+<p>The bridge does not provide full server-owned actor evidence while it is using the old RPCs, so that interval is transitional evidence only and cannot close S17-1.</p>
+<h3>6.2 Controlled maintenance sequence — no bridge</h3>
+<ol><li>Put Factory API mutating routes into maintenance/read-only mode and stop Designer/Factory operators from starting exports.</li><li>Apply 0162 to the approved target.</li><li>Deploy the new <code>factory-api</code> immediately after schema/cache readiness.</li><li>Run smoke tests with prepared Designer and Factory accounts.</li><li>Reopen traffic only after state, Release, packet upload, export and verify all pass.</li></ol>
+<p>Within the maintenance window, <strong>migration first</strong> is required because the final function cannot call its new signatures until they exist. This is not zero downtime; the maintenance gate is what prevents user-visible inconsistent operation.</p>
+<h2>7. Unchanged boundaries</h2>
+<p>This checklist does not authorize production apply, merge, P0 closure, production-ready status, or real cutting. Track B and all NO_CUT rules remain unaffected.</p>
+</main>
+</body>
+</html>
