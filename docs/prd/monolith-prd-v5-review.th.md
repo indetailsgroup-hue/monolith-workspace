@@ -1,9 +1,9 @@
-# รีวิว PRD v5.1 (Evidence-Control Revision) — AI Implementation Review
+# รีวิว PRD v5.1 — ฉบับสมบูรณ์ (Consolidated Review Record)
 
-วันที่รีวิว: 2026-07-11 (v2.2 — รอบ 3: evidence-tier ถูกชั้น + PRD/roadmap เข้า repo)
+วันที่: 2026-07-11 · ฉบับ: **v3.0 — Consolidated Complete Edition** (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว)
 ผู้รีวิว: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)
-เอกสารที่รีวิว: `monolith-complete-prd-v5.th.md` (v5.1, audit ณ commit `d7b1c879`)
+เอกสารที่รีวิว: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audit ณ commit `d7b1c879`)
 
 ---
 
@@ -15,7 +15,7 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 
 จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ **วินัยหลักฐาน**: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3: *"ห้ามใช้ requirement ใน PRD ไป claim ว่า production-ready จนกว่าจะมี evidence"* — ตรง claim guardrails ของระบบ (ADR-052/056/062)
 
-ADR-064 (รับ canonical) ให้สร้าง**หลังจาก** Product Owner, Tech Lead, **Security Owner** และ Factory Owner ลงชื่อรับ scope นี้ (S17 มี IAM, signature และ key custody — Security Owner ต้องลงนามด้วย) — ไม่สร้างเพียงเพราะ AI reviewer แนะนำ
+**ADR-064** (รับ canonical) ให้สร้าง**หลังจาก** Product Owner, Tech Lead, Security Owner และ Factory Owner ลงชื่อรับ scope นี้ครบทั้งสี่ (S17 มี IAM, signature และ key custody — Security Owner ต้องลงนามด้วย) — ไม่สร้างเพียงเพราะ AI reviewer แนะนำ
 
 ## 2. ผลตรวจสอบข้อกล่าวหา (verify กับโค้ดจริง)
 
@@ -48,25 +48,61 @@ ADR-064 (รับ canonical) ให้สร้าง**หลังจาก** 
 | --- | --- | --- |
 | 1 | **Server-owned identity** (ปิด AB-AUTH-01) | ทุกอย่างหลังจากนี้ต้องรู้ว่า "ใครทำ" อย่างปลอมไม่ได้ก่อน |
 | 2 | **RELEASED-only invariant ทุกทางออก** (ปิด AB-EXP-01) | บังคับฝั่ง server/exporter ทุก entry point ไม่ใช่แก้ปุ่ม UI |
-| 3 | **Canonical packet specification** | นิยาม identity ก่อน implement: `packetContentId` = hash ของ canonical content · `jobRunId` = ID ต่อการทำงานแต่ละครั้ง · signed identity รวม released revision + machine profile version + exporter version + schema version (แก้ข้อเสนอเดิม "project+revision" ที่ไม่พอ — ชนกันเมื่อ revision เดียวส่งหลายเครื่อง/หลาย exporter) |
+| 3 | **Canonical packet specification** | นิยาม identity ก่อน implement: `packetContentId` = hash ของ canonical content · `jobRunId` = ID ต่อการทำงานแต่ละครั้ง · signed identity รวม released revision + machine profile version + exporter version + schema version ("project+revision" ไม่พอ — ชนกันเมื่อ revision เดียวส่งหลายเครื่อง/หลาย exporter) |
 | 4 | **Deterministic packet generation** (ปิด AB-PKT-01) | ควบคุม timestamp, ZIP metadata, file order, serialization ตาม spec ข้อ 3 |
 | 5 | **Full verifier** (ปิด AB-PKT-02) | manifest per-file hash + signature + gate/revision/machine — พร้อม **tamper corpus** และพิสูจน์ fail-closed |
-| 6 | **Key ceremony** (ปิด AB-KEY-01) | custody, rotation, revocation, ceremony evidence + negative tests — ต้องมีมติ owner เรื่อง custody |
+| 6 | **Key ceremony** (ปิด AB-KEY-01) | custody, rotation, revocation, ceremony evidence + negative tests — ตามมติ custody ใน §6 |
 
-**ประมาณการที่สมจริง** (แก้จาก v1 ที่ประเมินต่ำเกิน): ~**2 สัปดาห์ implementation/integration + 2 สัปดาห์ verification, dry run และ evidence** — งานนี้ไม่ใช่แค่แก้โค้ด แต่รวม trust boundary changes, spoofing tests, tamper corpus และ ceremony
+**ประมาณการที่สมจริง**: ~**2 สัปดาห์ implementation/integration + 2 สัปดาห์ verification, dry run และ evidence** — งานนี้ไม่ใช่แค่แก้โค้ด แต่รวม trust boundary changes, spoofing tests, tamper corpus และ ceremony
 
-## 6. งานเอกสารค้าง
+## 6. แผนปฏิบัติการสามสายขนาน + มติ owner (11 ก.ค. 2569)
 
-- ✅ ฉบับ EN (`monolith-prd-v5-review.en.md` / `.en.html`) — สร้างแล้วตามกฎเอกสารโครงการ
-- ✅ นำเอกสารทั้งสี่เข้า git repo + SHA-256 manifest (v2.1 — แก้จุด "commit กล่าวถึงแต่ไม่ตรึงเนื้อหา")
+| Track | ผู้ทำ | งาน |
+| --- | --- | --- |
+| **A** | บัญชี AI #1 | S17-1 Server-owned identity → S17-2 RELEASED invariant |
+| **B** | บัญชี AI #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
+| **Human/Ops** | มนุษย์ (เริ่มวันแรก — ไม่รอถึง S17-6) | Key custody, machine profile confirmation, จอง factory slot, รายชื่อ approvers |
 
-## 7. หมายเหตุความสด (แยก baseline ชัด)
+กติกา worktree: **Track A/B แตก clean git worktree จาก commit `f9740559` (origin/main) โดยตรง** — ห้ามแตกจาก local `main` และห้ามใช้ worktree ที่ dirty ร่วมกัน
+
+### มติ Key custody
+
+- Private signing key อยู่ใน **managed KMS/HSM แบบ non-exportable**
+- **Security Owner = Key Owner** · Tech Lead ดูแล integration แต่ไม่เห็น raw private key
+- create / rotate / revoke ต้อง **Product Owner + Security Owner อนุมัติร่วม**
+- Recovery ใช้ governance **2-of-3** ถ้ามีมนุษย์เพียงพอ; ช่วง pilot ที่มีสองคน ใช้ 2-of-2 ได้ โดย key ยังอยู่ใน KMS และมี recovery procedure แยก
+- Factory Owner อนุมัติการใช้ packet ใน pilot แต่ไม่ถือกุญแจ
+- อ้างอิง separation of duties / split knowledge: NIST SP 800-57 Part 1 Rev.5, FIPS 140-3
+
+### มติ Machine profile + กำหนดการ pilot
+
+- Profile: **`kdt_mvp_v1`** (test footprint แข็งแรงสุด: 8 ไฟล์ / ~239 references, default export route) — **เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ** (รอยืนยันจากโรงงาน)
+- จองช่วง: **dry run/no-cut 29–31 ก.ค. 2569 · controlled cut 4–6 ส.ค. · recovery/re-run buffer 7–9 ส.ค.**
+
+## 7. นโยบายชั้นหลักฐานของบันทึกฉบับนี้
+
+- เอกสารรีวิวนี้ = **Git-pinned E3 synthesis** (content-addressed/tamper-evident ผ่าน git + SHA-256 manifest — commit ไม่ signed จึงไม่เรียก immutable)
+- โค้ด/เทสต์ที่รีวิวอ้าง = **E0**
+- ตัว commit = E0 สำหรับพิสูจน์ว่า *"เนื้อหารีวิวนี้ถูกบันทึก"* — ไม่ใช่พิสูจน์ว่า *"ข้อสรุปทุกข้อถูกต้อง"*
+- เอกสารที่ถูกรีวิว (PRD v5 ครบ 5 ไฟล์) และ roadmap v1 (5 ไฟล์) อยู่ใน version control เดียวกันที่ `docs/prd/` แล้ว; สำเนาใน parent folder = superseded
+
+## 8. Baselines
 
 | รายการ | Commit |
 | --- | --- |
 | Code audit baseline (PRD §34) | `d7b1c879` |
 | Review v1 reference | `2ce27cbf` |
 | S17 governance update | `8d42710a` |
-| P0 closure commits | **none** ณ v2.1 — ข้อค้นพบยังไม่ล้าสมัย |
+| Review เข้า repo (v2.1) | `8329262e` |
+| PRD/roadmap เข้า repo + มติ custody/machine (v2.2) | `c0d2b61a` |
+| P0 closure commits | **none** ณ v3.0 — ข้อค้นพบยังไม่ล้าสมัย |
 
-เอกสารรีวิวชุดนี้ (4 ไฟล์ + SHA-256 manifest) ถูกนำเข้า version control ที่ `determined-williams/docs/prd/` ตั้งแต่ v2.1 — **ชั้นหลักฐานที่ถูกต้อง: review = Git-pinned E3 synthesis (content-addressed/tamper-evident — commit ยังไม่ signed จึงไม่เรียก immutable); โค้ด/เทสต์ที่ review ชี้ = E0; ตัว commit = E0 สำหรับพิสูจน์ว่า "เนื้อหารีวิวนี้ถูกบันทึก" ไม่ใช่พิสูจน์ว่า "ข้อสรุปทุกข้อถูกต้อง"**; สำเนาเดิมใน parent folder ถือเป็น superseded; PRD v5 + roadmap v1 ที่ถูกรีวิวถูกนำเข้า repo เดียวกันแล้ว (v2.2)
+## 9. ประวัติฉบับ (Revision History)
+
+| ฉบับ | สาระ |
+| --- | --- |
+| v1 | รีวิวแรก + verify P0 ทั้งห้ากับโค้ดจริง |
+| v2 | ตาม owner meta-review รอบ 1: AI = advisory non-authoritative · estimate 2+2 สัปดาห์ · P0 เรียง dependency · packet identity สามชั้น · E0 candidate/REVERIFY · เพิ่มฉบับ EN |
+| v2.1 | รอบ 2: นำเอกสารรีวิวเข้า version control + SHA-256 manifest · verdict = "เสนอให้อนุมัติ" · Security Owner ใน approvers · แยก baselines ชัด · จำกัดข้อสรุปเฉพาะ P0 ห้ารายการ |
+| v2.2 | รอบ 3: evidence tier ถูกชั้น (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 เข้า repo |
+| **v3.0** | **ฉบับสมบูรณ์ — รวมทุกรอบเป็นบันทึกเดียว + ผนวกมติ custody / machine profile / แผนสามสายขนาน / กำหนดการ pilot** |

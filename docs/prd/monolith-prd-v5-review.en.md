@@ -1,9 +1,9 @@
-# PRD v5.1 Review (Evidence-Control Revision) — AI Implementation Review
+# PRD v5.1 Review — Consolidated Review Record
 
-Review date: 2026-07-11 (v2.2 — round 3: correct evidence tiering + PRD/roadmap into repo)
+Review date: 2026-07-11 · Edition: **v3.0 — Consolidated Complete Edition** (merges all review rounds v1 → v2 → v2.1 → v2.2 into a single record)
 Reviewer: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)
-Document under review: `monolith-complete-prd-v5.th.md` (v5.1, audited at commit `d7b1c879`)
+Document under review: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audited at commit `d7b1c879`)
 
 ---
 
@@ -15,7 +15,7 @@ Document under review: `monolith-complete-prd-v5.th.md` (v5.1, audited at commit
 
 What makes this PRD trustworthy is not its vision but its **evidence discipline**: Evidence Tiers E0-E4, a Claim Ledger, an As-Built matrix that pins blockers to file:line, a Promotion Rule, and the golden sentence in §3: *"No requirement in this PRD may be claimed production-ready until code, test, deployment and operational proof exist."* — exactly matching the system's own claim guardrails (ADR-052/056/062).
 
-ADR-064 (canonical acceptance) should be created **after** the Product Owner, Tech Lead, **Security Owner** and Factory Owner sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.
+**ADR-064** (canonical acceptance) should be created **after** the Product Owner, Tech Lead, Security Owner and Factory Owner all four sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.
 
 ## 2. Blocker Verification (checked against real code)
 
@@ -31,7 +31,7 @@ ADR-064 (canonical acceptance) should be created **after** the Product Owner, Te
 
 ## 3. Strong Agreement
 
-1. **Center of gravity = manufacturing truth + field execution** (§1) and the Non-Goals in §6 — matching the human-in-loop iron rules of ADR-062/063 word for word
+1. **Center of gravity = manufacturing truth + field execution** (§1) and the Non-Goals in §6 — matching the human-in-loop iron rules of ADR-062/063
 2. **FR-03 Spatial Evidence Compiler as "evidence proposer for human verification"** — a superset of ADR-063 (step 0 = manual tracing; SpatialLM = the next step once ROI justifies)
 3. **Promotion Rule §34.5** — the same "prove live before claiming" discipline used throughout this project
 4. **Concept Sandbox separated from the truth chain on paper from day one** (FR-02)
@@ -48,25 +48,61 @@ ADR-064 (canonical acceptance) should be created **after** the Product Owner, Te
 | --- | --- | --- |
 | 1 | **Server-owned identity** (closes AB-AUTH-01) | Everything after this must know "who acted" unspoofably first |
 | 2 | **RELEASED-only invariant at every exit** (closes AB-EXP-01) | Enforced server/exporter-side at every entry point — not a UI button fix |
-| 3 | **Canonical packet specification** | Define identity before implementing: `packetContentId` = hash of canonical content · `jobRunId` = per-run ID · signed identity includes released revision + machine profile version + exporter version + schema version (supersedes the v1 proposal "project+revision", which collides when one revision targets multiple machines/exporter versions) |
+| 3 | **Canonical packet specification** | Define identity before implementing: `packetContentId` = hash of canonical content · `jobRunId` = per-run ID · signed identity includes released revision + machine profile version + exporter version + schema version ("project+revision" is insufficient — it collides when one revision targets multiple machines/exporter versions) |
 | 4 | **Deterministic packet generation** (closes AB-PKT-01) | Control timestamps, ZIP metadata, file order, serialization per the spec in step 3 |
 | 5 | **Full verifier** (closes AB-PKT-02) | Manifest per-file hashes + signature + gate/revision/machine — with a **tamper corpus** and proven fail-closed behavior |
-| 6 | **Key ceremony** (closes AB-KEY-01) | Custody, rotation, revocation, ceremony evidence + negative tests — requires an owner decision on custody |
+| 6 | **Key ceremony** (closes AB-KEY-01) | Custody, rotation, revocation, ceremony evidence + negative tests — per the custody decisions in §6 |
 
-**Realistic estimate** (corrected from v1, which underestimated): ~**2 weeks implementation/integration + 2 weeks verification, dry runs and evidence** — this is not merely code changes; it includes trust-boundary changes, spoofing tests, tamper corpus and ceremony work.
+**Realistic estimate**: ~**2 weeks implementation/integration + 2 weeks verification, dry runs and evidence** — this is not merely code changes; it includes trust-boundary changes, spoofing tests, tamper corpus and ceremony work.
 
-## 6. Documentation Debt
+## 6. Three-Track Execution Plan + Owner Decisions (Jul 11, 2026)
 
-- ✅ EN edition (`monolith-prd-v5-review.en.md` / `.en.html`) — created per project documentation rules
-- ✅ All four documents moved into the git repo + SHA-256 manifest (v2.1 — fixing "commit mentions but does not pin content")
+| Track | Executor | Work |
+| --- | --- | --- |
+| **A** | AI account #1 | S17-1 Server-owned identity → S17-2 RELEASED invariant |
+| **B** | AI account #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
+| **Human/Ops** | Humans (starts day one — does not wait for S17-6) | Key custody, machine profile confirmation, factory slot booking, approver roster |
 
-## 7. Freshness Note (explicit baselines)
+Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f9740559` (origin/main)** — never from local `main`, and never share a dirty worktree.
+
+### Key custody decisions
+
+- The private signing key lives in a **managed KMS/HSM, non-exportable**
+- **Security Owner = Key Owner** · the Tech Lead handles integration but never sees the raw private key
+- create / rotate / revoke require **joint approval by Product Owner + Security Owner**
+- Recovery uses **2-of-3** governance when enough humans exist; a two-person pilot may use 2-of-2 with the key still in KMS and a separate recovery procedure
+- The Factory Owner approves packet use in the pilot but holds no key
+- Separation-of-duties / split-knowledge references: NIST SP 800-57 Part 1 Rev.5, FIPS 140-3
+
+### Machine profile + pilot schedule decisions
+
+- Profile: **`kdt_mvp_v1`** (strongest test footprint: 8 files / ~239 references, default export route) — **only if the real machine and controller support the KDT path; never chosen merely because it has the most tests** (pending factory confirmation)
+- Booked windows: **dry run/no-cut Jul 29–31, 2026 · controlled cut Aug 4–6 · recovery/re-run buffer Aug 7–9**
+
+## 7. Evidence-Tier Policy for This Record
+
+- This review document = **Git-pinned E3 synthesis** (content-addressed/tamper-evident via git + SHA-256 manifest — commits are unsigned, so not called "immutable")
+- The code/tests it cites = **E0**
+- The commit itself is E0 for proving *"this review content was recorded"* — not for proving *"every conclusion is correct"*
+- The reviewed documents (all 5 PRD v5 files) and roadmap v1 (5 files) are in the same version control at `docs/prd/`; parent-folder copies are superseded
+
+## 8. Baselines
 
 | Item | Commit |
 | --- | --- |
 | Code audit baseline (PRD §34) | `d7b1c879` |
 | Review v1 reference | `2ce27cbf` |
 | S17 governance update | `8d42710a` |
-| P0 closure commits | **none** as of v2.1 — findings remain current |
+| Review into repo (v2.1) | `8329262e` |
+| PRD/roadmap into repo + custody/machine decisions (v2.2) | `c0d2b61a` |
+| P0 closure commits | **none** as of v3.0 — findings remain current |
 
-This review set (4 files + SHA-256 manifest) is under version control at `determined-williams/docs/prd/` as of v2.1 — **correct evidence tiering: the review = Git-pinned E3 synthesis (content-addressed/tamper-evident — commits are unsigned, so not "immutable"); the code/tests it cites = E0; the commit itself is E0 for proving "this review content was recorded", not for proving "every conclusion is correct"**; parent-folder copies are superseded; the reviewed PRD v5 + roadmap v1 are now in the same repo (v2.2).
+## 9. Revision History
+
+| Edition | Substance |
+| --- | --- |
+| v1 | Initial review + verification of all five P0s against real code |
+| v2 | Per owner meta-review round 1: AI = advisory non-authoritative · 2+2-week estimate · dependency-ordered P0s · three-layer packet identity · E0 candidate/REVERIFY · EN edition added |
+| v2.1 | Round 2: review set into version control + SHA-256 manifest · verdict = "recommends approving" · Security Owner among approvers · explicit baselines · conclusions scoped to the five P0s |
+| v2.2 | Round 3: correct evidence tiering (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 into the repo |
+| **v3.0** | **Complete edition — all rounds merged into one record + custody / machine-profile / three-track plan / pilot schedule decisions incorporated** |

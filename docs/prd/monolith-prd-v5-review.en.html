@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PRD v5.1 Review — AI Implementation Review (v2.2)</title>
-  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1100px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.4rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}p{margin:13px 0}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.95rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}.meta{color:var(--muted)}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+  <title>PRD v5.1 Review — Consolidated Edition (v3.0)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1100px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.4rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.12rem;color:var(--accent)}p{margin:13px 0}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.95rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}.meta{color:var(--muted)}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
 </head>
 <body>
 <main>
-<h1>PRD v5.1 Review (Evidence-Control Revision) — AI Implementation Review</h1>
-<p class="meta">Review date: 2026-07-11 (v2.2 — round 3: correct evidence tiering + PRD/roadmap into repo)</p>
+<h1>PRD v5.1 Review — Consolidated Review Record</h1>
+<p class="meta">Review date: 2026-07-11 · Edition: <strong>v3.0 — Consolidated Complete Edition</strong> (merges all review rounds v1 → v2 → v2.1 → v2.2 into a single record)</p>
 <p class="meta">Reviewer: <strong>AI Implementation Reviewer (Claude) — advisory review, non-authoritative</strong></p>
 <p class="meta">Accountable approvers: <strong>Product Owner, Tech Lead, Security Owner, Factory Owner</strong> (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)</p>
-<p class="meta">Document under review: <code>monolith-complete-prd-v5.th.md</code> (v5.1, audited at commit <code>d7b1c879</code>)</p>
+<p class="meta">Document under review: <code>docs/prd/monolith-complete-prd-v5.th.md</code> (v5.1, audited at commit <code>d7b1c879</code>)</p>
 <hr>
 <h2>1. Proposed Verdict (for human approval)</h2>
 <blockquote><p><strong>The AI reviewer recommends approving PRD v5.1 as the Target-State Canonical. It is not approved as production-ready.</strong></p><p><strong>The Day-30 commitment is limited to closing all five P0 blockers plus one controlled factory pilot on one machine profile.</strong></p><p><strong>All new FRs are frozen unless directly required by the pilot.</strong></p></blockquote>
 <p>What makes this PRD trustworthy is not its vision but its <strong>evidence discipline</strong>: Evidence Tiers E0-E4, a Claim Ledger, an As-Built matrix that pins blockers to file:line, a Promotion Rule, and the golden sentence in §3: <em>"No requirement in this PRD may be claimed production-ready until code, test, deployment and operational proof exist."</em> — exactly matching the system's own claim guardrails (ADR-052/056/062).</p>
-<p>ADR-064 (canonical acceptance) should be created <strong>after</strong> the Product Owner, Tech Lead, <strong>Security Owner</strong> and Factory Owner sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.</p>
+<p><strong>ADR-064</strong> (canonical acceptance) should be created <strong>after</strong> the Product Owner, Tech Lead, Security Owner and Factory Owner all four sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.</p>
 <h2>2. Blocker Verification (checked against real code)</h2>
 <table>
 <tr><th>Blocker</th><th>Result</th><th>Implementer's note</th></tr>
@@ -30,7 +30,7 @@
 <p><strong>Conclusion: the P0 blocker entries in the As-Built matrix are corroborated against real code, all five of them.</strong> This review did not re-audit all 17 FRs; other cells stand on the original auditor.</p>
 <h2>3. Strong Agreement</h2>
 <ol>
-<li><strong>Center of gravity = manufacturing truth + field execution</strong> (§1) and the Non-Goals in §6 — matching the human-in-loop iron rules of ADR-062/063 word for word</li>
+<li><strong>Center of gravity = manufacturing truth + field execution</strong> (§1) and the Non-Goals in §6 — matching the human-in-loop iron rules of ADR-062/063</li>
 <li><strong>FR-03 Spatial Evidence Compiler as "evidence proposer for human verification"</strong> — a superset of ADR-063 (step 0 = manual tracing; SpatialLM = the next step once ROI justifies)</li>
 <li><strong>Promotion Rule §34.5</strong> — the same "prove live before claiming" discipline used throughout this project</li>
 <li><strong>Concept Sandbox separated from the truth chain on paper from day one</strong> (FR-02)</li>
@@ -46,26 +46,60 @@
 <tr><th>Order</th><th>Work</th><th>Rationale</th></tr>
 <tr><td>1</td><td><strong>Server-owned identity</strong> (closes AB-AUTH-01)</td><td>Everything after this must know "who acted" unspoofably first</td></tr>
 <tr><td>2</td><td><strong>RELEASED-only invariant at every exit</strong> (closes AB-EXP-01)</td><td>Enforced server/exporter-side at every entry point — not a UI button fix</td></tr>
-<tr><td>3</td><td><strong>Canonical packet specification</strong></td><td>Define identity before implementing: <code>packetContentId</code> = hash of canonical content · <code>jobRunId</code> = per-run ID · signed identity includes released revision + machine profile version + exporter version + schema version (supersedes the v1 proposal "project+revision", which collides when one revision targets multiple machines/exporter versions)</td></tr>
+<tr><td>3</td><td><strong>Canonical packet specification</strong></td><td>Define identity before implementing: <code>packetContentId</code> = hash of canonical content · <code>jobRunId</code> = per-run ID · signed identity includes released revision + machine profile version + exporter version + schema version ("project+revision" is insufficient — it collides when one revision targets multiple machines/exporter versions)</td></tr>
 <tr><td>4</td><td><strong>Deterministic packet generation</strong> (closes AB-PKT-01)</td><td>Control timestamps, ZIP metadata, file order, serialization per the spec in step 3</td></tr>
 <tr><td>5</td><td><strong>Full verifier</strong> (closes AB-PKT-02)</td><td>Manifest per-file hashes + signature + gate/revision/machine — with a <strong>tamper corpus</strong> and proven fail-closed behavior</td></tr>
-<tr><td>6</td><td><strong>Key ceremony</strong> (closes AB-KEY-01)</td><td>Custody, rotation, revocation, ceremony evidence + negative tests — requires an owner decision on custody</td></tr>
+<tr><td>6</td><td><strong>Key ceremony</strong> (closes AB-KEY-01)</td><td>Custody, rotation, revocation, ceremony evidence + negative tests — per the custody decisions in §6</td></tr>
 </table>
-<p><strong>Realistic estimate</strong> (corrected from v1, which underestimated): ~<strong>2 weeks implementation/integration + 2 weeks verification, dry runs and evidence</strong> — this is not merely code changes; it includes trust-boundary changes, spoofing tests, tamper corpus and ceremony work.</p>
-<h2>6. Documentation Debt</h2>
+<p><strong>Realistic estimate</strong>: ~<strong>2 weeks implementation/integration + 2 weeks verification, dry runs and evidence</strong> — this is not merely code changes; it includes trust-boundary changes, spoofing tests, tamper corpus and ceremony work.</p>
+<h2>6. Three-Track Execution Plan + Owner Decisions (Jul 11, 2026)</h2>
+<table>
+<tr><th>Track</th><th>Executor</th><th>Work</th></tr>
+<tr><td><strong>A</strong></td><td>AI account #1</td><td>S17-1 Server-owned identity → S17-2 RELEASED invariant</td></tr>
+<tr><td><strong>B</strong></td><td>AI account #2</td><td>S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier</td></tr>
+<tr><td><strong>Human/Ops</strong></td><td>Humans (starts day one — does not wait for S17-6)</td><td>Key custody, machine profile confirmation, factory slot booking, approver roster</td></tr>
+</table>
+<p>Worktree rule: <strong>Tracks A/B branch clean git worktrees directly from commit <code>f9740559</code> (origin/main)</strong> — never from local <code>main</code>, and never share a dirty worktree.</p>
+<h3>Key custody decisions</h3>
 <ul>
-<li>✅ EN edition (<code>monolith-prd-v5-review.en.md</code> / <code>.en.html</code>) — created per project documentation rules</li>
-<li>✅ All four documents moved into the git repo + SHA-256 manifest (v2.1 — fixing "commit mentions but does not pin content")</li>
+<li>The private signing key lives in a <strong>managed KMS/HSM, non-exportable</strong></li>
+<li><strong>Security Owner = Key Owner</strong> · the Tech Lead handles integration but never sees the raw private key</li>
+<li>create / rotate / revoke require <strong>joint approval by Product Owner + Security Owner</strong></li>
+<li>Recovery uses <strong>2-of-3</strong> governance when enough humans exist; a two-person pilot may use 2-of-2 with the key still in KMS and a separate recovery procedure</li>
+<li>The Factory Owner approves packet use in the pilot but holds no key</li>
+<li>Separation-of-duties / split-knowledge references: NIST SP 800-57 Part 1 Rev.5, FIPS 140-3</li>
 </ul>
-<h2>7. Freshness Note (explicit baselines)</h2>
+<h3>Machine profile + pilot schedule decisions</h3>
+<ul>
+<li>Profile: <strong><code>kdt_mvp_v1</code></strong> (strongest test footprint: 8 files / ~239 references, default export route) — <strong>only if the real machine and controller support the KDT path; never chosen merely because it has the most tests</strong> (pending factory confirmation)</li>
+<li>Booked windows: <strong>dry run/no-cut Jul 29–31, 2026 · controlled cut Aug 4–6 · recovery/re-run buffer Aug 7–9</strong></li>
+</ul>
+<h2>7. Evidence-Tier Policy for This Record</h2>
+<ul>
+<li>This review document = <strong>Git-pinned E3 synthesis</strong> (content-addressed/tamper-evident via git + SHA-256 manifest — commits are unsigned, so not called "immutable")</li>
+<li>The code/tests it cites = <strong>E0</strong></li>
+<li>The commit itself is E0 for proving <em>"this review content was recorded"</em> — not for proving <em>"every conclusion is correct"</em></li>
+<li>The reviewed documents (all 5 PRD v5 files) and roadmap v1 (5 files) are in the same version control at <code>docs/prd/</code>; parent-folder copies are superseded</li>
+</ul>
+<h2>8. Baselines</h2>
 <table>
 <tr><th>Item</th><th>Commit</th></tr>
 <tr><td>Code audit baseline (PRD §34)</td><td><code>d7b1c879</code></td></tr>
 <tr><td>Review v1 reference</td><td><code>2ce27cbf</code></td></tr>
 <tr><td>S17 governance update</td><td><code>8d42710a</code></td></tr>
-<tr><td>P0 closure commits</td><td><strong>none</strong> as of v2.1 — findings remain current</td></tr>
+<tr><td>Review into repo (v2.1)</td><td><code>8329262e</code></td></tr>
+<tr><td>PRD/roadmap into repo + custody/machine decisions (v2.2)</td><td><code>c0d2b61a</code></td></tr>
+<tr><td>P0 closure commits</td><td><strong>none</strong> as of v3.0 — findings remain current</td></tr>
 </table>
-<p>This review set (4 files + SHA-256 manifest) is under version control at <code>determined-williams/docs/prd/</code> as of v2.1 — <strong>correct evidence tiering: the review = Git-pinned E3 synthesis (content-addressed/tamper-evident — commits are unsigned, so not "immutable"); the code/tests it cites = E0; the commit itself is E0 for proving "this review content was recorded", not for proving "every conclusion is correct"</strong>; parent-folder copies are superseded; the reviewed PRD v5 + roadmap v1 are now in the same repo (v2.2).</p>
+<h2>9. Revision History</h2>
+<table>
+<tr><th>Edition</th><th>Substance</th></tr>
+<tr><td>v1</td><td>Initial review + verification of all five P0s against real code</td></tr>
+<tr><td>v2</td><td>Per owner meta-review round 1: AI = advisory non-authoritative · 2+2-week estimate · dependency-ordered P0s · three-layer packet identity · E0 candidate/REVERIFY · EN edition added</td></tr>
+<tr><td>v2.1</td><td>Round 2: review set into version control + SHA-256 manifest · verdict = "recommends approving" · Security Owner among approvers · explicit baselines · conclusions scoped to the five P0s</td></tr>
+<tr><td>v2.2</td><td>Round 3: correct evidence tiering (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 into the repo</td></tr>
+<tr><td><strong>v3.0</strong></td><td><strong>Complete edition — all rounds merged into one record + custody / machine-profile / three-track plan / pilot schedule decisions incorporated</strong></td></tr>
+</table>
 </main>
 </body>
 </html>
