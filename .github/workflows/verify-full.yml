@@ -1,0 +1,84 @@
+# Full verification = E0 evidence anchor (ADR-065 Q4: แปลง session evidence เป็น CI artifact)
+# ผูก commit + environment + วันที่ + ผลเทสต์ ลง artifact — ใช้ปิดสถานะ "E0 candidate / REVERIFY"
+name: MONOLITH Full Verify
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**"]
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - ".kiro/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck + full tests + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (root)
+        run: npm ci
+
+      # server/ อยู่นอก npm workspaces — ต้องติดตั้งแยก ไม่งั้นเทสต์ที่ใช้ yazl fail
+      - name: Install dependencies (server)
+        run: npm ci
+        working-directory: server
+
+      - name: Typecheck (full project)
+        run: npx tsc -b tsconfig.build.json
+
+      - name: Unit tests (full suite)
+        run: npm run test:run -- --reporter=default --reporter=json --outputFile=vitest-report.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Assemble evidence manifest
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          let report = null;
+          try { report = JSON.parse(fs.readFileSync('vitest-report.json', 'utf8')); } catch {}
+          const evidence = {
+            evidenceTier: 'E0',
+            workflow: 'verify-full',
+            commit: process.env.GITHUB_SHA,
+            ref: process.env.GITHUB_REF,
+            runId: process.env.GITHUB_RUN_ID,
+            runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            environment: 'ubuntu-latest / node ' + process.version,
+            timestamp: new Date().toISOString(),
+            tests: report ? {
+              total: report.numTotalTests,
+              passed: report.numPassedTests,
+              failed: report.numFailedTests,
+              suites: report.numTotalTestSuites,
+              success: report.success,
+            } : 'vitest-report.json missing',
+          };
+          fs.writeFileSync('verify-evidence.json', JSON.stringify(evidence, null, 2));
+          console.log(JSON.stringify(evidence, null, 2));
+          "
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-evidence-${{ github.sha }}
+          path: |
+            verify-evidence.json
+            vitest-report.json
+          retention-days: 90
