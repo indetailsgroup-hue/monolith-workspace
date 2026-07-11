@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Track A — Open Gates, Privacy Decision, and Track B Handoff</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Track A — Open Gates, Privacy Decision, and Track B Handoff</h1>
+<p>Record version: 1.0</p>
+<p>Recorded: 2026-07-12</p>
+<p>Decision authority: <strong>Tech Lead (human direction supplied to the implementer)</strong></p>
+<p>Recorder: AI Track A implementer — advisory/non-authoritative</p>
+<p>Status: <strong>implementation candidate; open evidence gates remain</strong></p>
+<blockquote><p>This record durably captures the five Tech Lead directions following the independent S17-1/S17-2 review. It does not merge or deploy code, close S17-1/S17-2, close any P0, claim production readiness, or authorize real cutting.</p></blockquote>
+<h2>1. Decision register</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Ref</th>
+<th>Decision</th>
+<th>Recorded disposition</th>
+</tr></thead><tbody>
+<tr>
+<td>F-1</td>
+<td>Factory site isolation</td>
+<td><strong>DECOUPLE.</strong> Track as the open hard gate <code>factory-site-isolation</code>; do not implement speculative multi-tenant enforcement while DAPH has one configured site.</td>
+</tr>
+<tr>
+<td>F-2</td>
+<td>Hosted Auth integration</td>
+<td><strong>EVIDENCE GATE.</strong> Human/Ops must deploy to approved staging and run the hash-bound hosted test package. The implementer must not deploy it.</td>
+</tr>
+<tr>
+<td>F-3</td>
+<td>Cross-role reads</td>
+<td><code>state</code> and <code>can-export</code>: all five recognized capabilities. <code>jobs</code>, <code>activity</code>, and <code>proof</code>: ADMIN + DESIGNER + FACTORY only.</td>
+</tr>
+<tr>
+<td>F-4</td>
+<td>Email PII in audit</td>
+<td>New Factory API audit context uses the verified <code>subjectId</code> for <code>actor_name</code>; verified email is not persisted by this path. Historical rows are not rewritten.</td>
+</tr>
+<tr>
+<td>F-5</td>
+<td>Track B semantics</td>
+<td><code>authorizationContextId</code> hashes the identity snapshot only. It does <strong>not</strong> bind a job, action, route, revision, packet, or attestation.</td>
+</tr>
+</tbody></table></div>
+<h2>2. Hard gate: <code>factory-site-isolation</code></h2>
+<p>Gate state: <strong>OPEN — known gap, gated to multi-branch</strong></p>
+<p>Trigger: this gate must close before DAPH enables a second active site/branch or treats Factory data as multi-tenant isolated.</p>
+<h3>2.1 As-built reason for decoupling</h3>
+<ul><li><code>current_site_codes()</code> and <code>has_site_access()</code> read <code>auth.jwt().app_metadata.site_codes</code> from the current database session (<code>supabase/migrations/00000000000000_c12_foundation.sql</code>).</li><li>Factory RPCs are called with a service-role session by <code>factory-api</code>; directly calling <code>has_site_access()</code> there would evaluate the service-role session, not the end-user identity that the Edge function verified.</li><li><code>factory_jobs</code> has no <code>site_code</code>, project foreign key, or other authoritative job-to-site relationship (<code>supabase/migrations/0155_factory_state_server.sql</code>).</li><li><code>get_active_site_codes()</code> currently returns the single configured value <code>BKK-HQ-01</code>; its own comment marks multi-branch as a pending Q3 decision.</li></ul>
+<p>Therefore a direct <code>has_site_access()</code> check would be misleading, while inventing a job/site relationship now would be speculative architecture. No factory site-enforcement code is added in this candidate.</p>
+<h3>2.2 Required future design</h3>
+<p>The gate may close only with all of the following:</p>
+<ol><li>A reviewed migration binds every Factory job to one authoritative site, directly or through a non-ambiguous project foreign key.</li><li>A service-role-safe site predicate accepts <code>p_actor_site_codes</code> from the verified server context as an explicit parameter. It must not derive the end-user site set from the service-role database session.</li><li>Every read and mutation route applies the same job/site rule and fails closed when the binding or actor site set is absent.</li><li>Real two-site fixtures prove same-site positive cases and cross-site negative cases for list, state, activity, proof, transition, packet, export, and verify.</li><li>Tech Lead and Security Owner review the migration, trust boundary, tests, and hosted evidence before multi-branch activation.</li></ol>
+<p>Prohibited shortcut: calling the existing session-based <code>has_site_access()</code> directly from a service-role Factory RPC.</p>
+<h2>3. Hosted evidence gate</h2>
+<p>The reproducible package is under <code>supabase/tests/s17-hosted-auth/</code>. Human/Ops must run it only after an approved staging maintenance/deployment action. Required cases are:</p>
+<ul><li>valid real JWT → <code>200</code></li><li>genuinely expired JWT → <code>401</code></li><li>valid user with no recognized role → <code>403</code></li><li>forged <code>x-actor-role</code> cannot grant a transition and leaves state unchanged</li><li>INSTALLER activity read → <code>403</code></li><li>FROZEN packet upload → <code>409</code></li><li>valid Designer release → <code>200</code>, with audit actor name equal to subject ID and no email persisted by this path</li></ul>
+<p>Raw output becomes E0 only when it identifies the deployed commit, migration hash, hosted target, run time, statuses, and pass/fail result without storing JWTs.</p>
+<h2>4. Least-privilege route matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Surface</th>
+<th>ADMIN</th>
+<th>DESIGNER</th>
+<th>FACTORY</th>
+<th>INSTALLER</th>
+<th>FINANCE</th>
+</tr></thead><tbody>
+<tr>
+<td><code>state</code>, <code>can-export</code></td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+</tr>
+<tr>
+<td>jobs list, <code>activity</code>, <code>proof</code></td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+<tr>
+<td>freeze/release/revoke/unfreeze, packet upload</td>
+<td>allow</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+<tr>
+<td>export, verify</td>
+<td>allow</td>
+<td>deny</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+</tbody></table></div>
+<p>Activity contains other actors' subject IDs and authorization context. INSTALLER and FINANCE have no approved need for that evidence surface.</p>
+<p>Migration 0162 also removes the legacy <code>authenticated USING (true)</code> policies and direct table privileges on <code>factory_jobs</code>/<code>factory_job_events</code>. This prevents bypassing the Edge matrix through PostgREST; application reads must use the service-role-only RPC path behind <code>factory-api</code>.</p>
+<h2>5. Audit privacy decision</h2>
+<p>For new events written through this Factory API candidate:</p>
+<ul><li>authority remains <code>actor_subject_id</code>, <code>actor_roles</code>, <code>actor_site_codes</code>, and <code>authorization_context_id</code>, all derived from verified Auth data;</li><li>compatibility field <code>actor_name</code> is set to the same verified subject ID;</li><li>migration 0162 persists <code>p_actor_subject_id</code> even if a service caller supplies another compatibility <code>p_actor_name</code> value;</li><li>email is ignored even when present in the verified Auth user payload;</li><li>historical append-only rows may contain email from the earlier path and are preserved rather than rewritten.</li></ul>
+<p>This is a data-minimization decision, not anonymization: a subject ID is still an identifier and remains governed audit data.</p>
+<h2>6. Track B semantic handoff</h2>
+<p>Track A computes:</p>
+<pre><code class="language-text">authorizationContextId = SHA-256(JSON({ actorSubjectId, roles, siteCodes }))</code></pre>
+<p>The arrays are deduplicated and byte-sorted before hashing. This ID answers only: “which verified identity/authorization snapshot did the server use?” It does not include or prove <code>jobId</code>, action, HTTP route, released revision, packet content, machine profile, exporter version, schema version, gate result, or time.</p>
+<p>Track B must bind the authorization context ID alongside the action/job/revision/packet identity inside the canonical attestation/signature contract. It must not treat the authorization context ID alone as an action authorization or packet signature.</p>
+<h2>7. Closure matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Requirement</th>
+<th>Current record state</th>
+</tr></thead><tbody>
+<tr>
+<td>Independent full review</td>
+<td>Passed per Tech Lead input</td>
+</tr>
+<tr>
+<td>F-1 hard gate recorded</td>
+<td>Prepared in this candidate; gate itself remains OPEN until multi-branch work</td>
+</tr>
+<tr>
+<td>F-3 route restriction and negative tests</td>
+<td>Implemented in this candidate; CI evidence pending</td>
+</tr>
+<tr>
+<td>F-4 privacy decision</td>
+<td>Implemented and recorded in this candidate; hosted evidence pending</td>
+</tr>
+<tr>
+<td>F-2 hosted live Auth evidence</td>
+<td><strong>OPEN — Human/Ops action required</strong></td>
+</tr>
+<tr>
+<td>Migration 0162 applied successfully on staging</td>
+<td><strong>OPEN — Human/Ops action required</strong></td>
+</tr>
+</tbody></table></div>
+<p>Until both hosted/staging requirements are evidenced and a human closes the items, S17-1/S17-2 remain <strong>implementation candidate</strong>. Track B and all NO_CUT boundaries are unchanged.</p>
+</main>
+</body>
+</html>

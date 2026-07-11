@@ -51,7 +51,9 @@ Compatibility risk: ผู้ใช้ที่เคย “Freeze แล้ว 
 
 | Route/client | Claim ที่ต้องมี | ผล compatibility |
 | --- | --- | --- |
-| jobs/state/activity/proof | Factory capability ใด ๆ ที่รู้จัก | ใช้ได้เมื่อ JWT ถูกต้อง; role ว่าง/ไม่รู้จักได้ `403` |
+| state/can-export | Factory capability ใด ๆ ที่รู้จัก | ใช้ได้เมื่อ JWT ถูกต้อง; role ว่าง/ไม่รู้จักได้ `403` |
+| jobs list/activity/proof | `designer`, `factory`/`factory_operator` หรือ admin-equivalent | INSTALLER และ FINANCE ได้ `403` เพราะ evidence surfaces เหล่านี้เปิดเผย actor คนอื่นและ lineage |
+| Direct PostgREST select บน `factory_jobs` / `factory_job_events` | ไม่มีสำหรับ end user | **เลิกรองรับโดยเจตนา:** migration 0162 ถอน permissive authenticated policies/privileges; ต้องใช้ Factory API routes |
 | GET `/:jobId/export` | `factory`, `factory_operator` หรือ admin-equivalent | ใช้ได้เฉพาะ RELEASED และมี packet ที่บันทึกแล้ว |
 | POST `/:jobId/verify` | `factory`, `factory_operator` หรือ admin-equivalent | ใช้ได้เฉพาะ RELEASED และมี packet ที่บันทึกแล้ว |
 | `triggerLegacyExportApi()` แบบ POST | — | **พัง/ไม่รองรับ:** `factory-api` มี GET export ไม่ใช่ legacy POST export |
@@ -77,12 +79,18 @@ Compatibility risk: ผู้ใช้ที่เคย “Freeze แล้ว 
 | Designer | `["designer"]` | read + freeze/release/revoke/unfreeze + packet upload |
 | Factory operator | `["factory_operator"]` หรือ `["factory"]` | read + export + verify |
 | Administrator/operations | `["admin"]` หรือ governance role ที่อนุมัติ เช่น `operations` | Factory API เต็ม; การให้ role ยังเป็นมติ governance ของมนุษย์ |
-| Installer | `["installer"]` | read-only Factory API |
-| Finance | `["finance"]` | read-only Factory API |
+| Installer | `["installer"]` | อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ |
+| Finance | `["finance"]` | อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ |
 
 `site_codes` ต้องเป็น array ของรหัสไซต์จริงที่ active และผู้ใช้นั้นได้รับ เช่น `["<APPROVED-SITE-CODE>"]` ใน repo ยังมี `BKK-HQ-01` เป็น placeholder ที่ระบุชัดว่ายังไม่ได้ยืนยัน ห้าม provision ค่านี้เป็น production truth แบบกลุ่มจนกว่าเจ้าของที่รับผิดชอบจะยืนยัน
 
 ข้อจำกัด as-built: `factory-api` derive และบันทึก `site_codes` แต่ migration 0162 ยังไม่ bind job กับ site และไม่ reject site list ว่าง ขณะที่ MCP/C12 consumers อื่นบังคับ site access ความต่างนี้ต้องคงอยู่ในรายงานและห้ามเรียกว่า factory site isolation สมบูรณ์
+
+มติ hard gate: decouple site enforcement โดยเจตนาขณะที่ DAPH เป็น single-site ห้ามเรียก `has_site_access()` แบบ session-based จาก Factory RPC ที่รันด้วย service role โดย gate เปิด `factory-site-isolation` บังคับให้มี migration ผูก job→site และ predicate ที่รับ `p_actor_site_codes` ชัดเจนก่อนเปิด multi-branch
+
+มติความเป็นส่วนตัวของ audit: event ใหม่ที่เขียนผ่าน candidate นี้ใช้ `actor_name` เท่ากับ verified subject ID และ ignore Auth email ส่วน append-only row เก่าบางแถวอาจมี email และต้องไม่ rewrite
+
+การตรวจ repo ไม่พบ application caller ปัจจุบันที่ select `factory_jobs` หรือ `factory_job_events` ตรง ๆ แต่ external/untracked consumer ใดที่อ่านตารางตรงต้องย้ายมา Factory API routes ก่อน apply 0162
 
 ## 5. Pre-deployment checks
 
@@ -93,8 +101,9 @@ Compatibility risk: ผู้ใช้ที่เคย “Freeze แล้ว 
 - [ ] Pilot users refresh/sign in ใหม่; decoded access token เห็น claims ใหม่
 - [ ] แก้หรือ disable FactoryApp legacy POST export, export-options, FROZEN status label และ route prefixes
 - [ ] Designer แสดง upload failure/session expiry ให้ผู้ใช้ ไม่ใช่แค่ console
+- [ ] ยืนยันว่าไม่มี external client พึ่ง direct PostgREST reads ของ `factory_jobs` หรือ `factory_job_events`
 - [ ] อนุมัติ bridge deployment หรือ maintenance window
-- [ ] Smoke tests ครบ state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers และ FROZEN denial
+- [ ] Smoke tests ครบ state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, INSTALLER activity denial, subject-only audit naming และ FROZEN denial
 
 ## 6. Deployment sequence
 

@@ -37,8 +37,13 @@ const CORS: Record<string, string> = {
   "access-control-allow-headers": "authorization, apikey, content-type",
 };
 
-const READ_CAPABILITIES: readonly FactoryCapability[] = [
+// State availability is operationally useful to all recognized roles. Evidence
+// surfaces are narrower because activity/proof expose other actors and lineage.
+const STATE_READ_CAPABILITIES: readonly FactoryCapability[] = [
   "ADMIN", "DESIGNER", "FACTORY", "INSTALLER", "FINANCE",
+];
+const EVIDENCE_READ_CAPABILITIES: readonly FactoryCapability[] = [
+  "ADMIN", "DESIGNER", "FACTORY",
 ];
 const DESIGN_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "DESIGNER"];
 const FACTORY_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "FACTORY"];
@@ -121,9 +126,9 @@ export async function deriveServerActor(verifiedUser: unknown): Promise<ServerAc
   const capabilities = [...new Set(roles.map((role) => CLAIM_CAPABILITY[role]).filter(
     (role): role is FactoryCapability => role !== undefined,
   ))].sort(byteCompare) as FactoryCapability[];
-  const name = typeof verifiedUser.email === "string" && verifiedUser.email.length > 0
-    ? verifiedUser.email
-    : verifiedUser.id;
+  // Privacy decision F-4: actor_name is a compatibility/display field, not an
+  // authority input. Persist the verified subject instead of email PII.
+  const name = verifiedUser.id;
   const canonicalContext = JSON.stringify({
     actorSubjectId: verifiedUser.id,
     roles,
@@ -299,13 +304,11 @@ export async function handleFactoryApi(
     return json(500, { ok: false, error: "factory-api internal error" });
   }
 
-  const readRole = effectiveRole(actor, READ_CAPABILITIES);
-  if (readRole === null) return forbidden();
-
   try {
     // GET /factory/jobs
     if (jobsIndex + 1 >= segments.length) {
       if (req.method !== "GET") return json(404, { ok: false, error: "unknown route" });
+      if (effectiveRole(actor, EVIDENCE_READ_CAPABILITIES) === null) return forbidden();
       return json(200, await deps.callRpc("rpc_factory_jobs_list", {}) as Record<string, unknown>);
     }
 
@@ -313,10 +316,12 @@ export async function handleFactoryApi(
     const action = segments[jobsIndex + 2] ?? "state";
 
     if (req.method === "GET" && action === "state") {
+      if (effectiveRole(actor, STATE_READ_CAPABILITIES) === null) return forbidden();
       return json(200, await deps.callRpc("rpc_factory_job_state", { p_job_id: jobId }) as Record<string, unknown>);
     }
 
     if (req.method === "GET" && action === "can-export") {
+      if (effectiveRole(actor, STATE_READ_CAPABILITIES) === null) return forbidden();
       const state = await deps.callRpc("rpc_factory_job_state", { p_job_id: jobId }) as StateResult;
       if (!state.ok) return json(404, state as Record<string, unknown>);
       const canExport = state.specState === "RELEASED";
@@ -330,10 +335,12 @@ export async function handleFactoryApi(
     }
 
     if (req.method === "GET" && action === "activity") {
+      if (effectiveRole(actor, EVIDENCE_READ_CAPABILITIES) === null) return forbidden();
       return json(200, await deps.callRpc("rpc_factory_job_activity", { p_job_id: jobId }) as Record<string, unknown>);
     }
 
     if (req.method === "GET" && action === "proof") {
+      if (effectiveRole(actor, EVIDENCE_READ_CAPABILITIES) === null) return forbidden();
       return json(200, await deps.callRpc("rpc_factory_job_proof", { p_job_id: jobId }) as Record<string, unknown>);
     }
 

@@ -62,9 +62,19 @@
 <th>Compatibility result</th>
 </tr></thead><tbody>
 <tr>
-<td>jobs/state/activity/proof</td>
+<td>state/can-export</td>
 <td>any recognized Factory capability</td>
 <td>Works with valid JWT; unknown/empty roles receive <code>403</code></td>
+</tr>
+<tr>
+<td>jobs list/activity/proof</td>
+<td><code>designer</code>, <code>factory</code>/<code>factory_operator</code>, or admin-equivalent</td>
+<td>INSTALLER and FINANCE receive <code>403</code>; these evidence surfaces expose other actors and lineage</td>
+</tr>
+<tr>
+<td>Direct PostgREST select on <code>factory_jobs</code> / <code>factory_job_events</code></td>
+<td>none for end users</td>
+<td><strong>Intentionally unsupported:</strong> migration 0162 removes the permissive authenticated policies/privileges; use Factory API routes</td>
 </tr>
 <tr>
 <td>GET <code>/:jobId/export</code></td>
@@ -125,18 +135,21 @@
 <tr>
 <td>Installer</td>
 <td><code>[&quot;installer&quot;]</code></td>
-<td>read-only Factory API capability</td>
+<td>state/can-export read only; jobs/activity/proof denied</td>
 </tr>
 <tr>
 <td>Finance</td>
 <td><code>[&quot;finance&quot;]</code></td>
-<td>read-only Factory API capability</td>
+<td>state/can-export read only; jobs/activity/proof denied</td>
 </tr>
 </tbody></table></div>
 <p><code>site_codes</code> must be an array of real active site codes assigned to that user, for example <code>[&quot;&lt;APPROVED-SITE-CODE&gt;&quot;]</code>. The repository still carries <code>BKK-HQ-01</code> as an explicitly unconfirmed placeholder in the C12 foundation. Do not bulk-provision that value as production truth until the responsible human confirms it.</p>
 <p>As-built limitation: <code>factory-api</code> derives and records <code>site_codes</code> but migration 0162 does not yet bind a job to a site or reject an empty site list. MCP and other C12 consumers do enforce site access. This difference must remain visible and must not be described as complete factory site isolation.</p>
+<p>Hard-gate disposition: site enforcement is deliberately decoupled while DAPH is single-site. Do not call session-based <code>has_site_access()</code> from service-role Factory RPCs. The open <code>factory-site-isolation</code> gate requires a job-to-site migration and an explicit predicate over <code>p_actor_site_codes</code> before multi-branch activation.</p>
+<p>Audit privacy decision: for new events written through this candidate, <code>actor_name</code> equals the verified subject ID and the Auth email is ignored. Historical append-only rows may still contain email and are not rewritten.</p>
+<p>Repository inspection found no current application caller that selects <code>factory_jobs</code> or <code>factory_job_events</code> directly. Any external/untracked direct-table consumer must migrate to Factory API routes before 0162 is applied.</p>
 <h2>5. Pre-deployment checks</h2>
-<ul><li>[ ] Independent source review accepts the implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run is green and an existing pre-0162 staging snapshot is green</li><li>[ ] Hosted backup/restore and abort owner are named</li><li>[ ] All pilot users have reviewed roles and approved site codes</li><li>[ ] Pilot users refresh/sign in again; decoded access tokens show the new claims</li><li>[ ] FactoryApp legacy POST export, export-options, FROZEN status label, and route prefixes are repaired or explicitly disabled</li><li>[ ] Designer shows upload failure and session expiry to the user, not only the console</li><li>[ ] A bridge deployment or maintenance window is approved</li><li>[ ] Smoke tests cover state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, and FROZEN denial</li></ul>
+<ul><li>[ ] Independent source review accepts the implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run is green and an existing pre-0162 staging snapshot is green</li><li>[ ] Hosted backup/restore and abort owner are named</li><li>[ ] All pilot users have reviewed roles and approved site codes</li><li>[ ] Pilot users refresh/sign in again; decoded access tokens show the new claims</li><li>[ ] FactoryApp legacy POST export, export-options, FROZEN status label, and route prefixes are repaired or explicitly disabled</li><li>[ ] Designer shows upload failure and session expiry to the user, not only the console</li><li>[ ] Confirm no external client depends on direct PostgREST reads of <code>factory_jobs</code> or <code>factory_job_events</code></li><li>[ ] A bridge deployment or maintenance window is approved</li><li>[ ] Smoke tests cover state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, INSTALLER activity denial, subject-only audit naming, and FROZEN denial</li></ul>
 <h2>6. Deployment sequence</h2>
 <h3>6.1 Preferred zero-downtime sequence — requires a bridge function</h3>
 <ol><li>Provision and verify user metadata; force JWT refresh for pilot users.</li><li>Deploy a temporary bridge <code>factory-api</code> that derives identity only from the verified JWT, attempts the new RPC signatures, and falls back to legacy signatures only on a verified “function/signature not found” response. It must never restore client actor headers/body as authority.</li><li>Smoke-test the bridge against the pre-0162 schema.</li><li>Apply migration 0162. Wait for PostgREST schema-cache refresh and verify the bridge uses only the new signatures.</li><li>Deploy the final candidate without fallback; run full route/spoof/FROZEN smoke tests.</li><li>Preserve run IDs/logs and obtain the human decision before merge/closure claims.</li></ol>

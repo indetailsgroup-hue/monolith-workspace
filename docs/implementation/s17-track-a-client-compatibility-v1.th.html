@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>S17 Track A — Client Compatibility และ Deployment Checklist</title>
+  <title>S17 Track A — Client Compatibility and Deployment Checklist</title>
   <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
 </head>
 <body>
@@ -62,9 +62,19 @@
 <th>ผล compatibility</th>
 </tr></thead><tbody>
 <tr>
-<td>jobs/state/activity/proof</td>
+<td>state/can-export</td>
 <td>Factory capability ใด ๆ ที่รู้จัก</td>
 <td>ใช้ได้เมื่อ JWT ถูกต้อง; role ว่าง/ไม่รู้จักได้ <code>403</code></td>
+</tr>
+<tr>
+<td>jobs list/activity/proof</td>
+<td><code>designer</code>, <code>factory</code>/<code>factory_operator</code> หรือ admin-equivalent</td>
+<td>INSTALLER และ FINANCE ได้ <code>403</code> เพราะ evidence surfaces เหล่านี้เปิดเผย actor คนอื่นและ lineage</td>
+</tr>
+<tr>
+<td>Direct PostgREST select บน <code>factory_jobs</code> / <code>factory_job_events</code></td>
+<td>ไม่มีสำหรับ end user</td>
+<td><strong>เลิกรองรับโดยเจตนา:</strong> migration 0162 ถอน permissive authenticated policies/privileges; ต้องใช้ Factory API routes</td>
 </tr>
 <tr>
 <td>GET <code>/:jobId/export</code></td>
@@ -125,18 +135,21 @@
 <tr>
 <td>Installer</td>
 <td><code>[&quot;installer&quot;]</code></td>
-<td>read-only Factory API</td>
+<td>อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ</td>
 </tr>
 <tr>
 <td>Finance</td>
 <td><code>[&quot;finance&quot;]</code></td>
-<td>read-only Factory API</td>
+<td>อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ</td>
 </tr>
 </tbody></table></div>
 <p><code>site_codes</code> ต้องเป็น array ของรหัสไซต์จริงที่ active และผู้ใช้นั้นได้รับ เช่น <code>[&quot;&lt;APPROVED-SITE-CODE&gt;&quot;]</code> ใน repo ยังมี <code>BKK-HQ-01</code> เป็น placeholder ที่ระบุชัดว่ายังไม่ได้ยืนยัน ห้าม provision ค่านี้เป็น production truth แบบกลุ่มจนกว่าเจ้าของที่รับผิดชอบจะยืนยัน</p>
 <p>ข้อจำกัด as-built: <code>factory-api</code> derive และบันทึก <code>site_codes</code> แต่ migration 0162 ยังไม่ bind job กับ site และไม่ reject site list ว่าง ขณะที่ MCP/C12 consumers อื่นบังคับ site access ความต่างนี้ต้องคงอยู่ในรายงานและห้ามเรียกว่า factory site isolation สมบูรณ์</p>
+<p>มติ hard gate: decouple site enforcement โดยเจตนาขณะที่ DAPH เป็น single-site ห้ามเรียก <code>has_site_access()</code> แบบ session-based จาก Factory RPC ที่รันด้วย service role โดย gate เปิด <code>factory-site-isolation</code> บังคับให้มี migration ผูก job→site และ predicate ที่รับ <code>p_actor_site_codes</code> ชัดเจนก่อนเปิด multi-branch</p>
+<p>มติความเป็นส่วนตัวของ audit: event ใหม่ที่เขียนผ่าน candidate นี้ใช้ <code>actor_name</code> เท่ากับ verified subject ID และ ignore Auth email ส่วน append-only row เก่าบางแถวอาจมี email และต้องไม่ rewrite</p>
+<p>การตรวจ repo ไม่พบ application caller ปัจจุบันที่ select <code>factory_jobs</code> หรือ <code>factory_job_events</code> ตรง ๆ แต่ external/untracked consumer ใดที่อ่านตารางตรงต้องย้ายมา Factory API routes ก่อน apply 0162</p>
 <h2>5. Pre-deployment checks</h2>
-<ul><li>[ ] Independent source review รับ implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run เขียว และ existing pre-0162 staging snapshot เขียว</li><li>[ ] ระบุเจ้าของ hosted backup/restore และ abort</li><li>[ ] Pilot users ทุกคนมี roles ที่ review แล้วและ site codes ที่อนุมัติแล้ว</li><li>[ ] Pilot users refresh/sign in ใหม่; decoded access token เห็น claims ใหม่</li><li>[ ] แก้หรือ disable FactoryApp legacy POST export, export-options, FROZEN status label และ route prefixes</li><li>[ ] Designer แสดง upload failure/session expiry ให้ผู้ใช้ ไม่ใช่แค่ console</li><li>[ ] อนุมัติ bridge deployment หรือ maintenance window</li><li>[ ] Smoke tests ครบ state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers และ FROZEN denial</li></ul>
+<ul><li>[ ] Independent source review รับ implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run เขียว และ existing pre-0162 staging snapshot เขียว</li><li>[ ] ระบุเจ้าของ hosted backup/restore และ abort</li><li>[ ] Pilot users ทุกคนมี roles ที่ review แล้วและ site codes ที่อนุมัติแล้ว</li><li>[ ] Pilot users refresh/sign in ใหม่; decoded access token เห็น claims ใหม่</li><li>[ ] แก้หรือ disable FactoryApp legacy POST export, export-options, FROZEN status label และ route prefixes</li><li>[ ] Designer แสดง upload failure/session expiry ให้ผู้ใช้ ไม่ใช่แค่ console</li><li>[ ] ยืนยันว่าไม่มี external client พึ่ง direct PostgREST reads ของ <code>factory_jobs</code> หรือ <code>factory_job_events</code></li><li>[ ] อนุมัติ bridge deployment หรือ maintenance window</li><li>[ ] Smoke tests ครบ state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, INSTALLER activity denial, subject-only audit naming และ FROZEN denial</li></ul>
 <h2>6. Deployment sequence</h2>
 <h3>6.1 ลำดับ zero-downtime ที่แนะนำ — ต้องมี bridge function</h3>
 <ol><li>Provision และตรวจ metadata ผู้ใช้ แล้วบังคับ refresh JWT สำหรับ pilot users</li><li>Deploy <code>factory-api</code> bridge ชั่วคราวที่ derive identity จาก verified JWT เท่านั้น ลอง signature ใหม่ก่อนและ fallback signature เก่าเฉพาะเมื่อยืนยันว่า function/signature ยังไม่มี ห้ามนำ actor headers/body กลับมาเป็น authority</li><li>Smoke-test bridge กับ schema ก่อน 0162</li><li>Apply migration 0162 รอ PostgREST schema-cache refresh และยืนยันว่า bridge ใช้เฉพาะ signature ใหม่</li><li>Deploy final candidate ที่ไม่มี fallback แล้วรัน route/spoof/FROZEN smoke tests เต็มชุด</li><li>เก็บ run IDs/logs และรับมติมนุษย์ก่อน merge/closure claim</li></ol>

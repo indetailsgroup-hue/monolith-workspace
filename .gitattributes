@@ -2,4 +2,9 @@
 .gitattributes text eol=lf
 docs/prd/** text eol=lf
 docs/implementation/** text eol=lf
+docs/governance/** text eol=lf
 supabase/tests/s17-0162/** text eol=lf
+supabase/tests/s17-hosted-auth/** text eol=lf
+supabase/functions/factory-api/** text eol=lf
+supabase/migrations/0162_factory_server_identity_released_only.sql text eol=lf
+.kiro/specs/installation-pm/tasks.md text eol=lf

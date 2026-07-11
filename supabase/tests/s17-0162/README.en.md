@@ -19,11 +19,13 @@ The assertions execute the exact migration against a real PostgreSQL engine and 
 1. legacy RPC overloads that accepted caller-selected actor fields are removed
 2. only `service_role` has direct execution privilege on the new mutating RPCs
 3. an authenticated client attempting to inject a forged actor is denied and writes no job/event
-4. malformed server actor context is rejected before state or audit mutation
-5. a wrong action role is rejected for packet recording and verification
-6. invalid transition order returns an error and writes no event
-7. a FROZEN job cannot record/upload a packet, become exportable, or record verification
-8. the positive control `DRAFT -> FROZEN -> RELEASED -> record packet -> verify` succeeds and records server actor context
+4. authenticated clients cannot bypass route policy by directly selecting Factory job/event tables
+5. malformed server actor context is rejected before state or audit mutation
+6. a wrong action role is rejected for packet recording and verification
+7. invalid transition order returns an error and writes no event
+8. a FROZEN job cannot record/upload a packet, become exportable, or record verification
+9. supplied email-like actor names are ignored; persisted `actor_name` equals the verified actor subject ID
+10. the positive control `DRAFT -> FROZEN -> RELEASED -> record packet -> verify` succeeds and records server actor context
 
 The package does **not** prove hosted Supabase Auth behavior, Storage behavior, Edge deployment, PostgREST schema-cache refresh, production metadata completeness, or P0 closure.
 

@@ -67,6 +67,8 @@ Release เป็น transition ที่มนุษย์มองเห็น
 - ความพยายาม export/upload/verify ตอน FROZEN จะถูกปฏิเสธ
 - ผู้ใช้ไม่มี session ถูกต้องได้ `401`; ไม่มี role ที่ระบบรู้จักได้ `403`
 - เปลี่ยน local UI role ไม่เปลี่ยน server permission
+- INSTALLER และ FINANCE อ่าน state/can-export ได้ แต่ถูกปฏิเสธจาก jobs/activity/proof evidence surfaces
+- Factory audit event ใหม่ตั้งใจใช้ verified subject ID ทั้ง `actorName` และ `actorSubjectId`; เส้นนี้ไม่ persist email ส่วน append-only row เก่าอาจมี email และห้าม rewrite
 - NFP file ที่ดาวน์โหลดไม่ใช่หลักฐานว่า server รับแล้ว ต้องตรวจ server packet record/activity
 - FactoryApp อาจยังแสดง FROZEN เป็น `VERIFIED`; ให้เชื่อ server state และ export response จนกว่าจะแก้ label
 
@@ -89,6 +91,7 @@ Release เป็น transition ที่มนุษย์มองเห็น
 - application commit และ migration hash ที่แน่นอน
 - dogfood job ID และ released revision ID
 - Designer/Factory actor subject IDs, role arrays, site-code arrays และ authorization-context IDs
+- assertion ว่า event ใหม่มี `actorName` เท่ากับ `actorSubjectId` และไม่ใช่ email
 - เวลา Freeze, Release, packet-record และ verify events
 - packet/manifest SHA-256 และ storage path
 - HTTP status/result ของ FROZEN negative checks สามเส้น

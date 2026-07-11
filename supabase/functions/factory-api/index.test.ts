@@ -13,7 +13,7 @@ const CONTEXT_ID = "a".repeat(64);
 
 const DESIGNER: ServerActor = {
   subjectId: "user-designer",
-  name: "designer@example.com",
+  name: "user-designer",
   roles: ["designer"],
   siteCodes: ["BKK-HQ-01"],
   capabilities: ["DESIGNER"],
@@ -22,7 +22,7 @@ const DESIGNER: ServerActor = {
 
 const FACTORY: ServerActor = {
   subjectId: "user-factory",
-  name: "factory@example.com",
+  name: "user-factory",
   roles: ["factory_operator"],
   siteCodes: ["BKK-HQ-01"],
   capabilities: ["FACTORY"],
@@ -31,11 +31,29 @@ const FACTORY: ServerActor = {
 
 const ADMIN: ServerActor = {
   subjectId: "user-admin",
-  name: "admin@example.com",
+  name: "user-admin",
   roles: ["admin", "operations"],
   siteCodes: [],
   capabilities: ["ADMIN"],
   authorizationContextId: "c".repeat(64),
+};
+
+const INSTALLER: ServerActor = {
+  subjectId: "user-installer",
+  name: "user-installer",
+  roles: ["installer"],
+  siteCodes: ["BKK-HQ-01"],
+  capabilities: ["INSTALLER"],
+  authorizationContextId: "d".repeat(64),
+};
+
+const FINANCE: ServerActor = {
+  subjectId: "user-finance",
+  name: "user-finance",
+  roles: ["finance"],
+  siteCodes: ["BKK-HQ-01"],
+  capabilities: ["FINANCE"],
+  authorizationContextId: "e".repeat(64),
 };
 
 type RpcCall = { fn: string; body: Record<string, unknown> };
@@ -116,7 +134,8 @@ describe("S17-1 verified identity derivation", () => {
     });
 
     expect(first.subjectId).toBe("user-123");
-    expect(first.name).toBe("verified@example.com");
+    expect(first.name).toBe("user-123");
+    expect(first.name).not.toBe("verified@example.com");
     expect(first.roles).toEqual(["admin", "designer"]);
     expect(first.siteCodes).toEqual(["BKK-HQ-01", "BKK-HQ-02"]);
     expect(first.capabilities).toEqual(["ADMIN", "DESIGNER"]);
@@ -129,6 +148,62 @@ describe("S17-1 verified identity derivation", () => {
   it("rejects a verified-user payload without a stable subject", async () => {
     await expect(deriveServerActor({ app_metadata: { roles: ["admin"] } }))
       .rejects.toBeInstanceOf(FactoryAuthenticationError);
+  });
+});
+
+describe("S17-1 least-privilege read boundaries", () => {
+  it.each([
+    ["jobs list", ""],
+    ["activity", "/JOB-1/activity"],
+    ["proof", "/JOB-1/proof"],
+  ])("denies INSTALLER access to %s without calling an RPC", async (_name, path) => {
+    const h = harness(INSTALLER);
+    const response = await handleFactoryApi(request(path), h.deps);
+    expect(response.status).toBe(403);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["jobs list", ""],
+    ["activity", "/JOB-1/activity"],
+    ["proof", "/JOB-1/proof"],
+  ])("denies FINANCE access to %s without calling an RPC", async (_name, path) => {
+    const h = harness(FINANCE);
+    const response = await handleFactoryApi(request(path), h.deps);
+    expect(response.status).toBe(403);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["state", "/JOB-1/state"],
+    ["can-export", "/JOB-1/can-export"],
+  ])("keeps %s available to INSTALLER", async (_name, path) => {
+    const h = harness(INSTALLER);
+    const response = await handleFactoryApi(request(path), h.deps);
+    expect(response.status).toBe(200);
+    expect(h.calls).toHaveLength(1);
+  });
+
+  it.each([
+    ["state", "/JOB-1/state"],
+    ["can-export", "/JOB-1/can-export"],
+  ])("keeps %s available to FINANCE", async (_name, path) => {
+    const h = harness(FINANCE);
+    const response = await handleFactoryApi(request(path), h.deps);
+    expect(response.status).toBe(200);
+    expect(h.calls).toHaveLength(1);
+  });
+
+  it.each([
+    ["ADMIN", ADMIN],
+    ["DESIGNER", DESIGNER],
+    ["FACTORY", FACTORY],
+  ])("allows %s to read jobs, activity, and proof", async (_name, actor) => {
+    const h = harness(actor as ServerActor);
+    for (const path of ["", "/JOB-1/activity", "/JOB-1/proof"]) {
+      expect((await handleFactoryApi(request(path), h.deps)).status).toBe(200);
+    }
+    expect(h.calls).toHaveLength(3);
   });
 });
 
@@ -335,6 +410,11 @@ describe("S17-2 RELEASED-only invariant", () => {
     expect(sql).toContain("authorization_context_id");
     expect(sql).toContain("coalesce(p_actor_role, '') not in ('DESIGNER', 'ADMIN')");
     expect(sql).toContain("coalesce(p_actor_role, '') not in ('FACTORY', 'ADMIN')");
+    expect(sql).toContain("drop policy if exists factory_jobs_sel on public.factory_jobs");
+    expect(sql).toContain("drop policy if exists factory_job_events_sel on public.factory_job_events");
+    expect(sql).toContain("revoke all on table public.factory_jobs from public, anon, authenticated");
+    expect(sql).toContain("actor_name = p_actor_subject_id");
+    expect(sql).not.toContain("actor_name = p_actor_name");
     expect(sql.match(/v\.spec_state <> 'RELEASED'/g)?.length).toBeGreaterThanOrEqual(2);
     expect(sql).toContain("'canExport', v.spec_state = 'RELEASED'");
     expect(sql).not.toContain("v.spec_state in ('FROZEN', 'RELEASED')");

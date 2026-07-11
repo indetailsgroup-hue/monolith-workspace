@@ -60,6 +60,23 @@ select pg_temp.s17_assert(
   ),
   'authenticated cannot execute packet RPC directly'
 );
+select pg_temp.s17_assert(
+  not has_table_privilege('authenticated', 'public.factory_jobs', 'SELECT'),
+  'authenticated cannot bypass route policy by selecting factory_jobs directly'
+);
+select pg_temp.s17_assert(
+  not has_table_privilege('authenticated', 'public.factory_job_events', 'SELECT'),
+  'authenticated cannot bypass route policy by selecting factory_job_events directly'
+);
+select pg_temp.s17_assert(
+  not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename in ('factory_jobs', 'factory_job_events')
+      and 'authenticated' = any(roles)
+  ),
+  'legacy authenticated USING true Factory policies are absent'
+);
 
 -- A client attempting to inject a forged actor cannot reach the RPC and leaves no row/event.
 set local role authenticated;
@@ -187,6 +204,7 @@ begin
       where job_id = v_job
         and event = 'freeze'
         and actor_subject_id = 'designer-user'
+        and actor_name = 'designer-user'
         and authorization_context_id = v_context
     ),
     'freeze event records server actor and authorization context'
@@ -323,9 +341,17 @@ begin
       where job_id = v_job
         and event = 'verify'
         and actor_subject_id = 'factory-user'
+        and actor_name = 'factory-user'
         and authorization_context_id = v_context
     ),
     'verify event records server-derived factory actor context'
+  );
+  perform pg_temp.s17_assert(
+    not exists (
+      select 1 from public.factory_job_events
+      where job_id = v_job and actor_name like '%@%'
+    ) and (select actor_name from public.factory_jobs where job_id = v_job) = 'designer-user',
+    'actor_name persists verified subject IDs and not supplied email values'
   );
 
   raise notice 'S17_0162_ASSERTIONS_PASS job_id=%', v_job;

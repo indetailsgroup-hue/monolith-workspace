@@ -67,6 +67,8 @@ Release is a separate human-visible transition. Freeze alone is not sufficient.
 - FROZEN export/upload/verify attempts return a denial instead of proceeding.
 - Users without a valid session receive `401`; users without recognized roles receive `403`.
 - Changing the local UI role does not change server permission.
+- INSTALLER and FINANCE may read state/can-export but are denied jobs/activity/proof evidence surfaces.
+- New Factory audit events intentionally use the verified subject ID for both `actorName` and `actorSubjectId`; email is not persisted by this path. Historical append-only rows may still contain email and are not rewritten.
 - A downloaded NFP file is not proof of server acceptance; confirm the server packet record/activity.
 - FactoryApp may still display FROZEN as `VERIFIED`; treat server state and export response as authoritative until that label is corrected.
 
@@ -89,6 +91,7 @@ If a RELEASED job must be withdrawn, use Revoke to return it to FROZEN. After re
 - exact application commit and migration hash
 - dogfood job ID and released revision ID
 - Designer and Factory actor subject IDs, role arrays, site-code arrays and authorization-context IDs
+- assertion that new event `actorName` equals `actorSubjectId` and does not contain an email
 - Freeze, Release, packet-record and verify event timestamps
 - packet/manifest SHA-256 and storage path
 - HTTP status/result for the three FROZEN negative checks

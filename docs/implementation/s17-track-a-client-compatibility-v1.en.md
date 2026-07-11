@@ -51,7 +51,9 @@ Compatibility risk: users accustomed to “Freeze then Export” now see an extr
 
 | Route/client | Required claim | Compatibility result |
 | --- | --- | --- |
-| jobs/state/activity/proof | any recognized Factory capability | Works with valid JWT; unknown/empty roles receive `403` |
+| state/can-export | any recognized Factory capability | Works with valid JWT; unknown/empty roles receive `403` |
+| jobs list/activity/proof | `designer`, `factory`/`factory_operator`, or admin-equivalent | INSTALLER and FINANCE receive `403`; these evidence surfaces expose other actors and lineage |
+| Direct PostgREST select on `factory_jobs` / `factory_job_events` | none for end users | **Intentionally unsupported:** migration 0162 removes the permissive authenticated policies/privileges; use Factory API routes |
 | GET `/:jobId/export` | `factory`, `factory_operator`, or admin-equivalent | Works only for RELEASED with a recorded packet |
 | POST `/:jobId/verify` | `factory`, `factory_operator`, or admin-equivalent | Works only for RELEASED with a recorded packet |
 | `triggerLegacyExportApi()` POST export | — | **Broken/unsupported:** `factory-api` implements GET export, not legacy POST export |
@@ -77,12 +79,18 @@ Use lower-case C12 vocabulary for new assignments; upper-case MONOLITH values ar
 | Designer | `["designer"]` | read + freeze/release/revoke/unfreeze + packet upload |
 | Factory operator | `["factory_operator"]` or `["factory"]` | read + export + verify |
 | Administrator/operations | `["admin"]` or approved governance role such as `operations` | full Factory API capability; role assignment remains a human governance action |
-| Installer | `["installer"]` | read-only Factory API capability |
-| Finance | `["finance"]` | read-only Factory API capability |
+| Installer | `["installer"]` | state/can-export read only; jobs/activity/proof denied |
+| Finance | `["finance"]` | state/can-export read only; jobs/activity/proof denied |
 
 `site_codes` must be an array of real active site codes assigned to that user, for example `["<APPROVED-SITE-CODE>"]`. The repository still carries `BKK-HQ-01` as an explicitly unconfirmed placeholder in the C12 foundation. Do not bulk-provision that value as production truth until the responsible human confirms it.
 
 As-built limitation: `factory-api` derives and records `site_codes` but migration 0162 does not yet bind a job to a site or reject an empty site list. MCP and other C12 consumers do enforce site access. This difference must remain visible and must not be described as complete factory site isolation.
+
+Hard-gate disposition: site enforcement is deliberately decoupled while DAPH is single-site. Do not call session-based `has_site_access()` from service-role Factory RPCs. The open `factory-site-isolation` gate requires a job-to-site migration and an explicit predicate over `p_actor_site_codes` before multi-branch activation.
+
+Audit privacy decision: for new events written through this candidate, `actor_name` equals the verified subject ID and the Auth email is ignored. Historical append-only rows may still contain email and are not rewritten.
+
+Repository inspection found no current application caller that selects `factory_jobs` or `factory_job_events` directly. Any external/untracked direct-table consumer must migrate to Factory API routes before 0162 is applied.
 
 ## 5. Pre-deployment checks
 
@@ -93,8 +101,9 @@ As-built limitation: `factory-api` derives and records `site_codes` but migratio
 - [ ] Pilot users refresh/sign in again; decoded access tokens show the new claims
 - [ ] FactoryApp legacy POST export, export-options, FROZEN status label, and route prefixes are repaired or explicitly disabled
 - [ ] Designer shows upload failure and session expiry to the user, not only the console
+- [ ] Confirm no external client depends on direct PostgREST reads of `factory_jobs` or `factory_job_events`
 - [ ] A bridge deployment or maintenance window is approved
-- [ ] Smoke tests cover state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, and FROZEN denial
+- [ ] Smoke tests cover state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, INSTALLER activity denial, subject-only audit naming, and FROZEN denial
 
 ## 6. Deployment sequence
 

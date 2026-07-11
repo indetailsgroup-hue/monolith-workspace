@@ -146,6 +146,9 @@
 - [ ] S17-5 **Full verifier** (`AB-PKT-02`): manifest per-file hash + signature + gate/revision/machine + **tamper corpus** + fail-closed proof
 - [ ] S17-6 **Key ceremony** (`AB-KEY-01`): custody/rotation/revocation + ceremony evidence + negative tests (รอมติ owner เรื่อง custody)
 - [ ] S17-7 (P1) AB-TST-01 test-runner drift · AB-GATE-01 bypass-scan regex · AB-DB-01 CI DB สำหรับ Python/RLS suite · AB-FIELD-01 field-app test script+.env hygiene
+- [ ] **factory-site-isolation — HARD GATE (known gap, gated to multi-branch)**: DAPH ยังเป็น single-site (`BKK-HQ-01`; มติขยายหลายสาขา Q3 ยัง pending) และ `factory_jobs` ยังไม่มี `site_code` หรือ FK ไป project จึง **ห้ามอ้างว่า site isolation ทำแล้ว** และห้ามเรียก `has_site_access()` ตรง ๆ จาก factory RPC ที่รันด้วย `service_role` เพราะ helper นี้อ่าน site จาก session JWT ของผู้เรียก DB ไม่ใช่ end-user JWT ที่ Edge verify มา · ต้องปิด gate นี้ **ก่อนเปิดไซต์/สาขาที่สอง** ด้วย (i) migration ผูก job↔site และ (ii) site-check variant ที่รับ `p_actor_site_codes` จาก verified server context เป็น parameter พร้อม cross-site negative tests · design/closure contract: `docs/governance/s17-track-a-open-gates-v1.th.md`
+
+> **Append-only Tech Lead direction (12 ก.ค. 2569):** F-1 site isolation = DECOUPLE เป็น hard gate ข้างต้น; F-2 hosted Auth + apply 0162 บน staging ยังเป็น evidence gates; F-3 จำกัด jobs/activity/proof ให้ ADMIN+DESIGNER+FACTORY; F-4 audit ใหม่ใช้ subjectId แทน email; F-5 ส่ง semantic ของ authorizationContextId ให้ Track B ตาม record `docs/governance/s17-track-a-open-gates-v1.th.md` · บันทึกนี้ไม่แก้ quote-block มติเดิมย้อนหลังและไม่ปิด S17-1/S17-2 จนกว่า hosted/staging evidence จะครบ
 
 - ค้าง (รอง): ops ฝั่ง owner (Typhoon OCR, P5, V1-V10, PK-5)
 

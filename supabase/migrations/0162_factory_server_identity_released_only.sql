@@ -4,6 +4,8 @@
 --   factory-api verifies the end-user JWT with Supabase Auth, derives
 --   app_metadata.roles + app_metadata.site_codes, and calls these service-role-only
 --   RPCs with the resulting server context. No actor parameter has a client default.
+--   p_actor_name remains in the RPC signatures for transition compatibility, but
+--   persistence deliberately uses p_actor_subject_id to avoid email PII.
 --
 alter table public.factory_jobs
   add column if not exists actor_subject_id text,
@@ -16,6 +18,14 @@ alter table public.factory_job_events
   add column if not exists actor_roles text[] not null default '{}'::text[],
   add column if not exists actor_site_codes text[] not null default '{}'::text[],
   add column if not exists authorization_context_id text;
+
+-- F-3 least privilege: all Factory reads must pass through service-role-only RPCs
+-- and the Edge route matrix. The legacy authenticated USING (true) policies would
+-- otherwise expose jobs/events (including other actors) directly through PostgREST.
+drop policy if exists factory_jobs_sel on public.factory_jobs;
+drop policy if exists factory_job_events_sel on public.factory_job_events;
+revoke all on table public.factory_jobs from public, anon, authenticated;
+revoke all on table public.factory_job_events from public, anon, authenticated;
 
 -- Remove the legacy overload whose actor fields had spoofable defaults.
 drop function if exists public.rpc_factory_job_transition(text, text, text, text, text, text);
@@ -68,7 +78,7 @@ begin
       spec_state = 'FROZEN', revision_id = v_rev,
       frozen_at = timezone('utc', now()), revoked_at = null,
       note = p_note, change_class = p_change_class,
-      actor_role = p_actor_role, actor_name = p_actor_name,
+      actor_role = p_actor_role, actor_name = p_actor_subject_id,
       actor_subject_id = p_actor_subject_id,
       actor_roles = p_actor_roles,
       actor_site_codes = coalesce(p_actor_site_codes, '{}'::text[]),
@@ -82,7 +92,7 @@ begin
     update public.factory_jobs set
       spec_state = 'RELEASED', released_at = timezone('utc', now()),
       note = p_note,
-      actor_role = p_actor_role, actor_name = p_actor_name,
+      actor_role = p_actor_role, actor_name = p_actor_subject_id,
       actor_subject_id = p_actor_subject_id,
       actor_roles = p_actor_roles,
       actor_site_codes = coalesce(p_actor_site_codes, '{}'::text[]),
@@ -95,7 +105,7 @@ begin
     end if;
     update public.factory_jobs set
       spec_state = 'DRAFT', note = p_note,
-      actor_role = p_actor_role, actor_name = p_actor_name,
+      actor_role = p_actor_role, actor_name = p_actor_subject_id,
       actor_subject_id = p_actor_subject_id,
       actor_roles = p_actor_roles,
       actor_site_codes = coalesce(p_actor_site_codes, '{}'::text[]),
@@ -109,7 +119,7 @@ begin
     update public.factory_jobs set
       spec_state = 'FROZEN', revoked_at = timezone('utc', now()),
       note = p_note,
-      actor_role = p_actor_role, actor_name = p_actor_name,
+      actor_role = p_actor_role, actor_name = p_actor_subject_id,
       actor_subject_id = p_actor_subject_id,
       actor_roles = p_actor_roles,
       actor_site_codes = coalesce(p_actor_site_codes, '{}'::text[]),
@@ -122,7 +132,7 @@ begin
     job_id, event, actor_role, actor_name, actor_subject_id,
     actor_roles, actor_site_codes, authorization_context_id, detail
   ) values (
-    btrim(p_job_id), p_action, p_actor_role, p_actor_name, p_actor_subject_id,
+    btrim(p_job_id), p_action, p_actor_role, p_actor_subject_id, p_actor_subject_id,
     p_actor_roles, coalesce(p_actor_site_codes, '{}'::text[]), p_authorization_context_id,
     jsonb_build_object('note', p_note, 'change_class', p_change_class)
   );
@@ -199,7 +209,7 @@ begin
     manifest_sha256 = p_manifest_sha256,
     packet_storage_path = p_storage_path,
     actor_role = p_actor_role,
-    actor_name = p_actor_name,
+    actor_name = p_actor_subject_id,
     actor_subject_id = p_actor_subject_id,
     actor_roles = p_actor_roles,
     actor_site_codes = coalesce(p_actor_site_codes, '{}'::text[]),
@@ -211,7 +221,7 @@ begin
     job_id, event, actor_role, actor_name, actor_subject_id,
     actor_roles, actor_site_codes, authorization_context_id, detail
   ) values (
-    v.job_id, 'packet_recorded', p_actor_role, p_actor_name, p_actor_subject_id,
+    v.job_id, 'packet_recorded', p_actor_role, p_actor_subject_id, p_actor_subject_id,
     p_actor_roles, coalesce(p_actor_site_codes, '{}'::text[]), p_authorization_context_id,
     jsonb_build_object('packet_sha256', p_packet_sha256, 'storage_path', p_storage_path)
   );
@@ -279,7 +289,7 @@ begin
     job_id, event, actor_role, actor_name, actor_subject_id,
     actor_roles, actor_site_codes, authorization_context_id, detail
   ) values (
-    v.job_id, 'verify', p_actor_role, p_actor_name, p_actor_subject_id,
+    v.job_id, 'verify', p_actor_role, p_actor_subject_id, p_actor_subject_id,
     p_actor_roles, coalesce(p_actor_site_codes, '{}'::text[]), p_authorization_context_id,
     jsonb_build_object('verdict', p_verdict, 'computed_sha256', p_computed_sha256)
   );
