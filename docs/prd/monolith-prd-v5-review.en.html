@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD v5.1 Review — AI Implementation Review (v2.1)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1100px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.4rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}p{margin:13px 0}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.95rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}.meta{color:var(--muted)}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>PRD v5.1 Review (Evidence-Control Revision) — AI Implementation Review</h1>
+<p class="meta">Review date: 2026-07-11 (v2.1 — revised per owner meta-review round 2: version-controlled + wording/scope)</p>
+<p class="meta">Reviewer: <strong>AI Implementation Reviewer (Claude) — advisory review, non-authoritative</strong></p>
+<p class="meta">Accountable approvers: <strong>Product Owner, Tech Lead, Security Owner, Factory Owner</strong> (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)</p>
+<p class="meta">Document under review: <code>monolith-complete-prd-v5.th.md</code> (v5.1, audited at commit <code>d7b1c879</code>)</p>
+<hr>
+<h2>1. Proposed Verdict (for human approval)</h2>
+<blockquote><p><strong>The AI reviewer recommends approving PRD v5.1 as the Target-State Canonical. It is not approved as production-ready.</strong></p><p><strong>The Day-30 commitment is limited to closing all five P0 blockers plus one controlled factory pilot on one machine profile.</strong></p><p><strong>All new FRs are frozen unless directly required by the pilot.</strong></p></blockquote>
+<p>What makes this PRD trustworthy is not its vision but its <strong>evidence discipline</strong>: Evidence Tiers E0-E4, a Claim Ledger, an As-Built matrix that pins blockers to file:line, a Promotion Rule, and the golden sentence in §3: <em>"No requirement in this PRD may be claimed production-ready until code, test, deployment and operational proof exist."</em> — exactly matching the system's own claim guardrails (ADR-052/056/062).</p>
+<p>ADR-064 (canonical acceptance) should be created <strong>after</strong> the Product Owner, Tech Lead, <strong>Security Owner</strong> and Factory Owner sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.</p>
+<h2>2. Blocker Verification (checked against real code)</h2>
+<table>
+<tr><th>Blocker</th><th>Result</th><th>Implementer's note</th></tr>
+<tr><td><code>AB-EXP-01</code> CNC export allowed at FROZEN</td><td>✅ <strong>Real</strong> — <code>AppShell.tsx: canExport = gate OK &amp;&amp; state !== 'DRAFT'</code></td><td><strong>The AI reviewer's own miss</strong> — "export at FROZEN succeeded" was even used as demo evidence; the GateToolbar CNC menu checks RELEASED correctly, but the main button does not: two doors, two rules</td></tr>
+<tr><td><code>AB-AUTH-01</code> role from localStorage + server trusts x-actor-role header</td><td>✅ Real</td><td>Previously noted as latent; escalation to P0 is correct because packet store/verify now binds actor identity from client-controlled headers</td></tr>
+<tr><td><code>AB-PKT-01</code> random jobId + non-deterministic ZIP</td><td>✅ Real — <code>job-${Date.now()}-random</code></td><td>Violates our own "Manufacturing is Deterministic"</td></tr>
+<tr><td><code>AB-PKT-02</code> shallow server verify (whole-zip hash only)</td><td>✅ Real — migration 0161 checks only the aggregate sha</td><td>No manifest per-file check, no signature, no gate/revision/machine-profile check</td></tr>
+<tr><td><code>AB-KEY-01</code> production pubkey placeholder</td><td>✅ Real — <code>publicKeyBase64: ""</code></td><td>The quietest danger on the list — signature scaffolding exists with an empty key</td></tr>
+</table>
+<p><strong>Conclusion: the P0 blocker entries in the As-Built matrix are corroborated against real code, all five of them.</strong> This review did not re-audit all 17 FRs; other cells stand on the original auditor.</p>
+<h2>3. Strong Agreement</h2>
+<ol>
+<li><strong>Center of gravity = manufacturing truth + field execution</strong> (§1) and the Non-Goals in §6 — matching the human-in-loop iron rules of ADR-062/063 word for word</li>
+<li><strong>FR-03 Spatial Evidence Compiler as "evidence proposer for human verification"</strong> — a superset of ADR-063 (step 0 = manual tracing; SpatialLM = the next step once ROI justifies)</li>
+<li><strong>Promotion Rule §34.5</strong> — the same "prove live before claiming" discipline used throughout this project</li>
+<li><strong>Concept Sandbox separated from the truth chain on paper from day one</strong> (FR-02)</li>
+</ol>
+<h2>4. Reservations / Strict Interpretations</h2>
+<ol>
+<li><strong>Scope trap</strong>: 17 FRs exceed the current business stage — FR-02/03/07/17 are major new investments while the real dogfood pilot has not started → <strong>FR freeze until the first customer pilot closes</strong> (except pieces the pilot directly requires)</li>
+<li><strong>Session/manual-test evidence counts only as <code>E0 candidate / REVERIFY</code></strong> — FR-13/14/16 do have real E2E runs (e.g. MCP Pending Invocation passed full-loop locally + prod smoke, Jul 10), but until artifacts are bound to commit + environment + test date in CI they do not pass the gate under the Promotion Rule. The correct work is converting that evidence into CI artifacts, not disputing the status.</li>
+<li><strong>AB-DB-01</strong>: psql-based testing has covered RLS/negative cases across 160+ migrations in scripted-manual form — the true gap is "no CI DB artifact", to be closed under item 2.</li>
+</ol>
+<h2>5. P0 Closure Plan — dependency-ordered (all five are hard gates before pilot; none may slip)</h2>
+<table>
+<tr><th>Order</th><th>Work</th><th>Rationale</th></tr>
+<tr><td>1</td><td><strong>Server-owned identity</strong> (closes AB-AUTH-01)</td><td>Everything after this must know "who acted" unspoofably first</td></tr>
+<tr><td>2</td><td><strong>RELEASED-only invariant at every exit</strong> (closes AB-EXP-01)</td><td>Enforced server/exporter-side at every entry point — not a UI button fix</td></tr>
+<tr><td>3</td><td><strong>Canonical packet specification</strong></td><td>Define identity before implementing: <code>packetContentId</code> = hash of canonical content · <code>jobRunId</code> = per-run ID · signed identity includes released revision + machine profile version + exporter version + schema version (supersedes the v1 proposal "project+revision", which collides when one revision targets multiple machines/exporter versions)</td></tr>
+<tr><td>4</td><td><strong>Deterministic packet generation</strong> (closes AB-PKT-01)</td><td>Control timestamps, ZIP metadata, file order, serialization per the spec in step 3</td></tr>
+<tr><td>5</td><td><strong>Full verifier</strong> (closes AB-PKT-02)</td><td>Manifest per-file hashes + signature + gate/revision/machine — with a <strong>tamper corpus</strong> and proven fail-closed behavior</td></tr>
+<tr><td>6</td><td><strong>Key ceremony</strong> (closes AB-KEY-01)</td><td>Custody, rotation, revocation, ceremony evidence + negative tests — requires an owner decision on custody</td></tr>
+</table>
+<p><strong>Realistic estimate</strong> (corrected from v1, which underestimated): ~<strong>2 weeks implementation/integration + 2 weeks verification, dry runs and evidence</strong> — this is not merely code changes; it includes trust-boundary changes, spoofing tests, tamper corpus and ceremony work.</p>
+<h2>6. Documentation Debt</h2>
+<ul>
+<li>✅ EN edition (<code>monolith-prd-v5-review.en.md</code> / <code>.en.html</code>) — created per project documentation rules</li>
+<li>✅ All four documents moved into the git repo + SHA-256 manifest (v2.1 — fixing "commit mentions but does not pin content")</li>
+</ul>
+<h2>7. Freshness Note (explicit baselines)</h2>
+<table>
+<tr><th>Item</th><th>Commit</th></tr>
+<tr><td>Code audit baseline (PRD §34)</td><td><code>d7b1c879</code></td></tr>
+<tr><td>Review v1 reference</td><td><code>2ce27cbf</code></td></tr>
+<tr><td>S17 governance update</td><td><code>8d42710a</code></td></tr>
+<tr><td>P0 closure commits</td><td><strong>none</strong> as of v2.1 — findings remain current</td></tr>
+</table>
+<p>This review set (4 files + SHA-256 manifest) is under version control at <code>determined-williams/docs/prd/</code> as of v2.1, pinning the content as immutable evidence via git; the copies in the parent folder are superseded.</p>
+</main>
+</body>
+</html>

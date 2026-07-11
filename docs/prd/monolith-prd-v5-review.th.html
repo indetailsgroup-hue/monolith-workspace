@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รีวิว PRD v5.1 — AI Implementation Review (v2.1)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1100px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.4rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}p{margin:13px 0}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.95rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}.meta{color:var(--muted)}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>รีวิว PRD v5.1 (Evidence-Control Revision) — AI Implementation Review</h1>
+<p class="meta">วันที่รีวิว: 2026-07-11 (v2.1 — แก้ตาม owner meta-review รอบ 2: นำเข้า version control + ถ้อยคำ/ขอบเขต)</p>
+<p class="meta">ผู้รีวิว: <strong>AI Implementation Reviewer (Claude) — advisory review, non-authoritative</strong></p>
+<p class="meta">Accountable approvers: <strong>Product Owner, Tech Lead, Security Owner, Factory Owner</strong> (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)</p>
+<p class="meta">เอกสารที่รีวิว: <code>monolith-complete-prd-v5.th.md</code> (v5.1, audit ณ commit <code>d7b1c879</code>)</p>
+<hr>
+<h2>1. คำตัดสินที่เสนอ (ให้มนุษย์อนุมัติ)</h2>
+<blockquote><p><strong>AI reviewer เสนอให้อนุมัติ PRD v5.1 เป็น Target-State Canonical โดยยังไม่อนุมัติว่า production-ready</strong></p><p><strong>Day-30 commitment จำกัดอยู่ที่การปิด P0 ทั้งห้าและ controlled factory pilot หนึ่งงาน หนึ่ง machine profile</strong></p><p><strong>FR ใหม่ทั้งหมดถูก freeze เว้นแต่จำเป็นโดยตรงต่อ pilot</strong></p></blockquote>
+<p>จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ <strong>วินัยหลักฐาน</strong>: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3: <em>"ห้ามใช้ requirement ใน PRD ไป claim ว่า production-ready จนกว่าจะมี evidence"</em> — ตรง claim guardrails ของระบบ (ADR-052/056/062)</p>
+<p>ADR-064 (รับ canonical) ให้สร้าง<strong>หลังจาก</strong> Product Owner, Tech Lead, <strong>Security Owner</strong> และ Factory Owner ลงชื่อรับ scope นี้ (S17 มี IAM, signature และ key custody — Security Owner ต้องลงนามด้วย) — ไม่สร้างเพียงเพราะ AI reviewer แนะนำ</p>
+<h2>2. ผลตรวจสอบข้อกล่าวหา (verify กับโค้ดจริง)</h2>
+<table>
+<tr><th>Blocker</th><th>ผลตรวจ</th><th>หมายเหตุจากผู้ implement</th></tr>
+<tr><td><code>AB-EXP-01</code> CNC export ยอม FROZEN</td><td>✅ <strong>จริง</strong> — <code>AppShell.tsx: canExport = gate OK &amp;&amp; state !== 'DRAFT'</code></td><td><strong>ความพลาดของ AI reviewer เอง</strong> — เคยใช้ "Export ที่ FROZEN สำเร็จ" เป็นหลักฐานเดโม่; เมนู CNC ใน GateToolbar เช็ค RELEASED ถูก แต่ปุ่มหลักไม่เช็ค = ประตูสองบานกติกาไม่ตรงกัน</td></tr>
+<tr><td><code>AB-AUTH-01</code> role จาก localStorage + server เชื่อ x-actor-role header</td><td>✅ จริง</td><td>เคยจดเป็น latent — ยกเป็น P0 ถูกต้อง เพราะ packet store/verify ผูก actor จาก header ที่ client กำหนดเอง</td></tr>
+<tr><td><code>AB-PKT-01</code> jobId สุ่ม + ZIP ไม่ deterministic</td><td>✅ จริง — <code>job-${Date.now()}-random</code></td><td>ขัดหลัก "Manufacturing is Deterministic"</td></tr>
+<tr><td><code>AB-PKT-02</code> server verify ตื้น (hash รวมทั้ง zip)</td><td>✅ จริง — 0161 ตรวจแค่ sha รวม</td><td>ยังไม่ตรวจ manifest per-file, signature, gate/revision/machine profile</td></tr>
+<tr><td><code>AB-KEY-01</code> production pubkey เป็น placeholder</td><td>✅ จริง — <code>publicKeyBase64: ""</code></td><td>อันตรายเงียบที่สุด — โครง signature มีแต่กุญแจว่าง</td></tr>
+</table>
+<p><strong>ข้อสรุป: P0 blocker entries ใน As-Built matrix ได้รับการ corroborate จากโค้ดจริงครบทั้งห้ารายการ</strong> — รีวิวนี้ยังไม่ได้ re-audit FR ทั้ง 17 รายการ สถานะช่องอื่นจึงอ้างอิงตาม auditor เดิม</p>
+<h2>3. สิ่งที่เห็นด้วยอย่างยิ่ง</h2>
+<ol>
+<li><strong>ศูนย์ถ่วง = manufacturing truth + field execution</strong> (§1) และ Non-Goals §6 — ตรงหลักเหล็ก human-in-loop ของ ADR-062/063</li>
+<li><strong>FR-03 Spatial Evidence Compiler = ผู้เสนอหลักฐานให้คนยืนยัน</strong> — superset ของ ADR-063 (ก้าว 0 = มือ; SpatialLM = ก้าวถัดไปเมื่อ ROI ถึง)</li>
+<li><strong>Promotion Rule §34.5</strong> — สิ่งเดียวกับวินัย "พิสูจน์สดก่อน claim" ที่ใช้มาตลอด</li>
+<li><strong>Concept Sandbox แยกจาก truth chain ตั้งแต่กระดาษ</strong> (FR-02)</li>
+</ol>
+<h2>4. ข้อแม้ / จุดที่ต้องตีความเคร่ง</h2>
+<ol>
+<li><strong>Scope trap</strong>: 17 FR กว้างเกินสถานะธุรกิจ — FR-02/03/07/17 คือการลงทุนใหม่ใหญ่ ขณะ pilot ยังไม่เริ่ม → <strong>FR freeze จนกว่า pilot รายแรกปิด</strong> (ยกเว้นชิ้นที่ pilot ต้องใช้)</li>
+<li><strong>หลักฐานจาก session/manual test มีสถานะเป็น <code>E0 candidate / REVERIFY</code> เท่านั้น</strong> — FR-13/14/16 มีการทดสอบ E2E จริง (เช่น MCP Pending Invocation ผ่าน local เต็มวงจร + prod smoke, 10 ก.ค.) แต่จนกว่าจะมี artifact ผูก commit + environment + วันทดสอบใน CI จึงยังไม่ผ่าน gate ตาม Promotion Rule — งานที่ถูกคือแปลงเป็น CI evidence ไม่ใช่เถียงสถานะ</li>
+<li><strong>AB-DB-01</strong>: psql-based testing ครอบ RLS/negative cases มาตลอด 160+ migrations แบบ manual-scripted — ช่องว่างจริงคือ "ไม่มี CI DB artifact" ซึ่งต้องปิดตามข้อ 2</li>
+</ol>
+<h2>5. แผนปิด P0 — เรียงตาม dependency (ทั้งห้า = hard gate ก่อน pilot ห้ามเลื่อนตัวใด)</h2>
+<table>
+<tr><th>ลำดับ</th><th>งาน</th><th>เหตุผลลำดับ</th></tr>
+<tr><td>1</td><td><strong>Server-owned identity</strong> (ปิด AB-AUTH-01)</td><td>ทุกอย่างหลังจากนี้ต้องรู้ว่า "ใครทำ" อย่างปลอมไม่ได้ก่อน</td></tr>
+<tr><td>2</td><td><strong>RELEASED-only invariant ทุกทางออก</strong> (ปิด AB-EXP-01)</td><td>บังคับฝั่ง server/exporter ทุก entry point ไม่ใช่แก้ปุ่ม UI</td></tr>
+<tr><td>3</td><td><strong>Canonical packet specification</strong></td><td>นิยาม identity ก่อน implement: <code>packetContentId</code> = hash ของ canonical content · <code>jobRunId</code> = ID ต่อการทำงานแต่ละครั้ง · signed identity รวม released revision + machine profile version + exporter version + schema version (แก้ข้อเสนอเดิม "project+revision" ที่ไม่พอ — ชนกันเมื่อ revision เดียวส่งหลายเครื่อง/หลาย exporter)</td></tr>
+<tr><td>4</td><td><strong>Deterministic packet generation</strong> (ปิด AB-PKT-01)</td><td>ควบคุม timestamp, ZIP metadata, file order, serialization ตาม spec ข้อ 3</td></tr>
+<tr><td>5</td><td><strong>Full verifier</strong> (ปิด AB-PKT-02)</td><td>manifest per-file hash + signature + gate/revision/machine — พร้อม <strong>tamper corpus</strong> และพิสูจน์ fail-closed</td></tr>
+<tr><td>6</td><td><strong>Key ceremony</strong> (ปิด AB-KEY-01)</td><td>custody, rotation, revocation, ceremony evidence + negative tests — ต้องมีมติ owner เรื่อง custody</td></tr>
+</table>
+<p><strong>ประมาณการที่สมจริง</strong> (แก้จาก v1 ที่ประเมินต่ำเกิน): ~<strong>2 สัปดาห์ implementation/integration + 2 สัปดาห์ verification, dry run และ evidence</strong> — งานนี้ไม่ใช่แค่แก้โค้ด แต่รวม trust boundary changes, spoofing tests, tamper corpus และ ceremony</p>
+<h2>6. งานเอกสารค้าง</h2>
+<ul>
+<li>✅ ฉบับ EN (<code>monolith-prd-v5-review.en.md</code> / <code>.en.html</code>) — สร้างแล้วตามกฎเอกสารโครงการ</li>
+<li>✅ นำเอกสารทั้งสี่เข้า git repo + SHA-256 manifest (v2.1 — แก้จุด "commit กล่าวถึงแต่ไม่ตรึงเนื้อหา")</li>
+</ul>
+<h2>7. หมายเหตุความสด (แยก baseline ชัด)</h2>
+<table>
+<tr><th>รายการ</th><th>Commit</th></tr>
+<tr><td>Code audit baseline (PRD §34)</td><td><code>d7b1c879</code></td></tr>
+<tr><td>Review v1 reference</td><td><code>2ce27cbf</code></td></tr>
+<tr><td>S17 governance update</td><td><code>8d42710a</code></td></tr>
+<tr><td>P0 closure commits</td><td><strong>none</strong> ณ v2.1 — ข้อค้นพบยังไม่ล้าสมัย</td></tr>
+</table>
+<p class="meta">เอกสารรีวิวชุดนี้ (4 ไฟล์ + SHA-256 manifest) ถูกนำเข้า version control ที่ <code>determined-williams/docs/prd/</code> ตั้งแต่ v2.1 — เนื้อหาจึงตรึงเป็น immutable evidence ผ่าน git; สำเนาเดิมใน parent folder ถือเป็น superseded</p>
+</main>
+</body>
+</html>
