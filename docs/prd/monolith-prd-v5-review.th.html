@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>รีวิว PRD v5.1 — ฉบับสมบูรณ์ (v3.0)</title>
+  <title>รีวิว PRD v5.1 — ฉบับสมบูรณ์ (v3.1)</title>
   <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1100px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.4rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.12rem;color:var(--accent)}p{margin:13px 0}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:700}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.95rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}.meta{color:var(--muted)}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
 </head>
 <body>
 <main>
 <h1>รีวิว PRD v5.1 — ฉบับสมบูรณ์ (Consolidated Review Record)</h1>
-<p class="meta">วันที่: 2026-07-11 · ฉบับ: <strong>v3.0 — Consolidated Complete Edition</strong> (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว)</p>
+<p class="meta">วันที่: 2026-07-11 · ฉบับ: <strong>v3.1 — Consolidated Complete Edition</strong> (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว + ผ่าน scrutiny pass)</p>
 <p class="meta">ผู้รีวิว: <strong>AI Implementation Reviewer (Claude) — advisory review, non-authoritative</strong></p>
 <p class="meta">Accountable approvers: <strong>Product Owner, Tech Lead, Security Owner, Factory Owner</strong> (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)</p>
 <p class="meta">เอกสารที่รีวิว: <code>docs/prd/monolith-complete-prd-v5.th.md</code> (v5.1, audit ณ commit <code>d7b1c879</code>)</p>
 <hr>
 <h2>1. คำตัดสินที่เสนอ (ให้มนุษย์อนุมัติ)</h2>
 <blockquote><p><strong>AI reviewer เสนอให้อนุมัติ PRD v5.1 เป็น Target-State Canonical โดยยังไม่อนุมัติว่า production-ready</strong></p><p><strong>Day-30 commitment จำกัดอยู่ที่การปิด P0 ทั้งห้าและ controlled factory pilot หนึ่งงาน หนึ่ง machine profile</strong></p><p><strong>FR ใหม่ทั้งหมดถูก freeze เว้นแต่จำเป็นโดยตรงต่อ pilot</strong></p></blockquote>
-<p>จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ <strong>วินัยหลักฐาน</strong>: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3: <em>"ห้ามใช้ requirement ใน PRD ไป claim ว่า production-ready จนกว่าจะมี evidence"</em> — ตรง claim guardrails ของระบบ (ADR-052/056/062)</p>
+<p>จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ <strong>วินัยหลักฐาน</strong>: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3 (verbatim): <em>"ห้ามใช้ requirement ใน PRD นี้ไป claim ว่า module ใด production-ready จนกว่าจะมี code, test, deployment evidence และ operational proof รองรับ"</em> — ตรง claim guardrails ของระบบ (ADR-056 marketing claim guardrails; แนวเดียวกับ re-quote gate ใน ADR-052 และ human-in-loop ใน ADR-062)</p>
 <p><strong>ADR-064</strong> (รับ canonical) ให้สร้าง<strong>หลังจาก</strong> Product Owner, Tech Lead, Security Owner และ Factory Owner ลงชื่อรับ scope นี้ครบทั้งสี่ (S17 มี IAM, signature และ key custody — Security Owner ต้องลงนามด้วย) — ไม่สร้างเพียงเพราะ AI reviewer แนะนำ</p>
 <h2>2. ผลตรวจสอบข้อกล่าวหา (verify กับโค้ดจริง)</h2>
 <table>
@@ -59,7 +59,7 @@
 <tr><td><strong>B</strong></td><td>บัญชี AI #2</td><td>S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier</td></tr>
 <tr><td><strong>Human/Ops</strong></td><td>มนุษย์ (เริ่มวันแรก — ไม่รอถึง S17-6)</td><td>Key custody, machine profile confirmation, จอง factory slot, รายชื่อ approvers</td></tr>
 </table>
-<p>กติกา worktree: <strong>Track A/B แตก clean git worktree จาก commit <code>f9740559</code> (origin/main) โดยตรง</strong> — ห้ามแตกจาก local <code>main</code> และห้ามใช้ worktree ที่ dirty ร่วมกัน</p>
+<p>กติกา worktree: <strong>Track A/B แตก clean git worktree จาก commit <code>f9740559</code> โดยตรง</strong> (= origin/main ณ เวลามติ; หลังจากนั้น main เลื่อนด้วย docs-only commits — ตรวจแล้ว delta ทั้งหมดอยู่ใน <code>docs/prd/</code> + <code>tasks.md</code> ไม่มีโค้ด) — ห้ามแตกจาก local <code>main</code> และห้ามใช้ worktree ที่ dirty ร่วมกัน</p>
 <h3>มติ Key custody</h3>
 <ul>
 <li>Private signing key อยู่ใน <strong>managed KMS/HSM แบบ non-exportable</strong></li>
@@ -71,8 +71,9 @@
 </ul>
 <h3>มติ Machine profile + กำหนดการ pilot</h3>
 <ul>
-<li>Profile: <strong><code>kdt_mvp_v1</code></strong> (test footprint แข็งแรงสุด: 8 ไฟล์ / ~239 references, default export route) — <strong>เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ</strong> (รอยืนยันจากโรงงาน)</li>
+<li>Profile: <strong><code>kdt_mvp_v1</code></strong> (default export route; footprint ที่วัดซ้ำได้ ณ scrutiny 11 ก.ค.: identifier <code>kdt_mvp_v1</code> = 7 ไฟล์ / 11 จุดในโค้ด src+server · คำว่า KDT ทุกบริบท = 82 ไฟล์ / 602 จุด ในจำนวนนี้เป็นไฟล์เทสต์ 26 ไฟล์ / 346 จุด — ตัวเลขที่เคยรายงาน "8 ไฟล์/~239 refs" วัดซ้ำไม่ได้ จึงถอนออก) — <strong>เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ</strong> (รอยืนยันจากโรงงาน)</li>
 <li>จองช่วง: <strong>dry run/no-cut 29–31 ก.ค. 2569 · controlled cut 4–6 ส.ค. · recovery/re-run buffer 7–9 ส.ค.</strong></li>
+<li><strong>ข้อสังเกตกำหนดการ (จาก scrutiny)</strong>: ประมาณการ 2+2 สัปดาห์นับจาก 11 ก.ค. จะจบ ~8 ส.ค. — ตารางนี้พอดีก็ต่อเมื่อ Track A/B ขนานกันจริงจน implementation จบ ~25 ก.ค., dry run 29–31 ก.ค. นับเป็นส่วนหนึ่งของช่วง verification และ controlled cut 4–6 ส.ค. อยู่ปลายช่วงพอดี (margin ≈ 0) — <strong>ถ้า implementation หลุดจาก 25 ก.ค. ให้เลื่อน slot ไป buffer 7–9 ส.ค. หรือเลื่อนจองใหม่ทันที ห้ามบีบช่วง verification</strong></li>
 </ul>
 <h2>7. นโยบายชั้นหลักฐานของบันทึกฉบับนี้</h2>
 <ul>
@@ -80,6 +81,7 @@
 <li>โค้ด/เทสต์ที่รีวิวอ้าง = <strong>E0</strong></li>
 <li>ตัว commit = E0 สำหรับพิสูจน์ว่า <em>"เนื้อหารีวิวนี้ถูกบันทึก"</em> — ไม่ใช่พิสูจน์ว่า <em>"ข้อสรุปทุกข้อถูกต้อง"</em></li>
 <li>เอกสารที่ถูกรีวิว (PRD v5 ครบ 5 ไฟล์) และ roadmap v1 (5 ไฟล์) อยู่ใน version control เดียวกันที่ <code>docs/prd/</code> แล้ว; สำเนาใน parent folder = superseded</li>
+<li><strong>ข้อกำหนด manifest (จาก scrutiny)</strong>: SHA-256 คิดจาก byte ของไฟล์แบบ <strong>LF-normalized UTF-8</strong> · hex <strong>ตัวพิมพ์เล็ก</strong> รูปแบบ GNU coreutils (<code>&lt;hash&gt;&lt;space&gt;&lt;space&gt;&lt;filename&gt;</code>) · <code>docs/prd/**</code> ถูกบังคับ <code>text eol=lf</code> ผ่าน <code>.gitattributes</code> เพื่อให้ byte เหมือนกันทุก platform/checkout — ก่อนหน้านี้ manifest ของ PRD/roadmap ใช้ hex ตัวพิมพ์ใหญ่ (Get-FileHash) และไฟล์ HTML บางไฟล์ hash จาก byte CRLF ซึ่งทำให้ตัวตรวจมาตรฐานรายงาน FAIL ปลอมได้ — แก้เป็นมาตรฐานเดียวทั้งชุดแล้ว; ไฟล์ <code>.sha256</code> เองพิสูจน์ตัวเองไม่ได้ integrity ของมันพึ่ง git history</li>
 </ul>
 <h2>8. Baselines</h2>
 <table>
@@ -99,6 +101,7 @@
 <tr><td>v2.1</td><td>รอบ 2: นำเอกสารรีวิวเข้า version control + SHA-256 manifest · verdict = "เสนอให้อนุมัติ" · Security Owner ใน approvers · แยก baselines ชัด · จำกัดข้อสรุปเฉพาะ P0 ห้ารายการ</td></tr>
 <tr><td>v2.2</td><td>รอบ 3: evidence tier ถูกชั้น (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 เข้า repo</td></tr>
 <tr><td><strong>v3.0</strong></td><td><strong>ฉบับสมบูรณ์ — รวมทุกรอบเป็นบันทึกเดียว + ผนวกมติ custody / machine profile / แผนสามสายขนาน / กำหนดการ pilot</strong></td></tr>
+<tr><td><strong>v3.1</strong></td><td><strong>Scrutiny pass</strong>: quote §3 เป็น verbatim · ถอนตัวเลข KDT ที่วัดซ้ำไม่ได้ (แทนด้วยค่าที่วัดได้ + วิธีวัด) · เพิ่มข้อสังเกต margin กำหนดการ · ระบุมาตรฐาน manifest (LF + lowercase hex) + <code>.gitattributes</code> · หมายเหตุ origin/main เลื่อนหลังมติ (delta docs-only) · EN แก้ "customer pilot" → "pilot"</td></tr>
 </table>
 </main>
 </body>

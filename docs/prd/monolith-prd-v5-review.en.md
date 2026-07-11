@@ -1,6 +1,6 @@
 # PRD v5.1 Review — Consolidated Review Record
 
-Review date: 2026-07-11 · Edition: **v3.0 — Consolidated Complete Edition** (merges all review rounds v1 → v2 → v2.1 → v2.2 into a single record)
+Review date: 2026-07-11 · Edition: **v3.1 — Consolidated Complete Edition** (merges all review rounds v1 → v2 → v2.1 → v2.2 into a single record + scrutiny pass)
 Reviewer: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (accepting the PRD as canonical and authorizing any factory pilot are human decisions only)
 Document under review: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audited at commit `d7b1c879`)
@@ -13,7 +13,7 @@ Document under review: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audited 
 > **The Day-30 commitment is limited to closing all five P0 blockers plus one controlled factory pilot on one machine profile.**
 > **All new FRs are frozen unless directly required by the pilot.**
 
-What makes this PRD trustworthy is not its vision but its **evidence discipline**: Evidence Tiers E0-E4, a Claim Ledger, an As-Built matrix that pins blockers to file:line, a Promotion Rule, and the golden sentence in §3: *"No requirement in this PRD may be claimed production-ready until code, test, deployment and operational proof exist."* — exactly matching the system's own claim guardrails (ADR-052/056/062).
+What makes this PRD trustworthy is not its vision but its **evidence discipline**: Evidence Tiers E0-E4, a Claim Ledger, an As-Built matrix that pins blockers to file:line, a Promotion Rule, and the golden sentence in §3 (translated; Thai original is verbatim in the TH edition): *"No requirement in this PRD may be used to claim any module production-ready until code, tests, deployment evidence and operational proof support it."* — matching the system's own claim guardrails (ADR-056 marketing claim guardrails; in the same spirit as the re-quote gate in ADR-052 and human-in-loop in ADR-062).
 
 **ADR-064** (canonical acceptance) should be created **after** the Product Owner, Tech Lead, Security Owner and Factory Owner all four sign off on this scope (S17 involves IAM, signatures and key custody — the Security Owner must co-sign) — not merely because an AI reviewer recommends it.
 
@@ -38,7 +38,7 @@ What makes this PRD trustworthy is not its vision but its **evidence discipline*
 
 ## 4. Reservations / Strict Interpretations
 
-1. **Scope trap**: 17 FRs exceed the current business stage — FR-02/03/07/17 are major new investments while the real dogfood pilot has not started → **FR freeze until the first customer pilot closes** (except pieces the pilot directly requires)
+1. **Scope trap**: 17 FRs exceed the current business stage — FR-02/03/07/17 are major new investments while the real dogfood pilot has not started → **FR freeze until the first pilot closes** (except pieces the pilot directly requires)
 2. **Session/manual-test evidence counts only as `E0 candidate / REVERIFY`** — FR-13/14/16 do have real E2E runs (e.g. MCP Pending Invocation passed full-loop locally + prod smoke, Jul 10), but until artifacts are bound to commit + environment + test date in CI they do not pass the gate under the Promotion Rule. The correct work is converting that evidence into CI artifacts, not disputing the status.
 3. **AB-DB-01**: psql-based testing has covered RLS/negative cases across 160+ migrations in scripted-manual form — the true gap is "no CI DB artifact", to be closed under item 2.
 
@@ -63,7 +63,7 @@ What makes this PRD trustworthy is not its vision but its **evidence discipline*
 | **B** | AI account #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
 | **Human/Ops** | Humans (starts day one — does not wait for S17-6) | Key custody, machine profile confirmation, factory slot booking, approver roster |
 
-Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f9740559` (origin/main)** — never from local `main`, and never share a dirty worktree.
+Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f9740559`** (= origin/main at decision time; main has since advanced with docs-only commits — verified: the entire delta is in `docs/prd/` + `tasks.md`, no code) — never from local `main`, and never share a dirty worktree.
 
 ### Key custody decisions
 
@@ -76,8 +76,9 @@ Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f97
 
 ### Machine profile + pilot schedule decisions
 
-- Profile: **`kdt_mvp_v1`** (strongest test footprint: 8 files / ~239 references, default export route) — **only if the real machine and controller support the KDT path; never chosen merely because it has the most tests** (pending factory confirmation)
+- Profile: **`kdt_mvp_v1`** (default export route; reproducible footprint as of the Jul 11 scrutiny: identifier `kdt_mvp_v1` = 7 files / 11 references in src+server code · "KDT" in any context = 82 files / 602 references, of which 26 test files / 346 references — the previously reported "8 files / ~239 refs" could not be reproduced and is withdrawn) — **only if the real machine and controller support the KDT path; never chosen merely because it has the most tests** (pending factory confirmation)
 - Booked windows: **dry run/no-cut Jul 29–31, 2026 · controlled cut Aug 4–6 · recovery/re-run buffer Aug 7–9**
+- **Schedule note (from scrutiny)**: the 2+2-week estimate starting Jul 11 completes ~Aug 8 — this timetable fits only if Tracks A/B truly run in parallel so implementation finishes ~Jul 25, the Jul 29–31 dry run counts as part of the verification phase, and the Aug 4–6 controlled cut lands at the very end of it (margin ≈ 0) — **if implementation slips past Jul 25, move to the Aug 7–9 buffer or rebook immediately; never compress the verification phase**
 
 ## 7. Evidence-Tier Policy for This Record
 
@@ -85,6 +86,7 @@ Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f97
 - The code/tests it cites = **E0**
 - The commit itself is E0 for proving *"this review content was recorded"* — not for proving *"every conclusion is correct"*
 - The reviewed documents (all 5 PRD v5 files) and roadmap v1 (5 files) are in the same version control at `docs/prd/`; parent-folder copies are superseded
+- **Manifest convention (from scrutiny)**: SHA-256 is computed over **LF-normalized UTF-8 bytes** · **lowercase** hex in GNU coreutils format (`<hash><space><space><filename>`) · `docs/prd/**` is forced to `text eol=lf` via `.gitattributes` so bytes are identical on every platform/checkout — previously the PRD/roadmap manifests used uppercase hex (Get-FileHash) and some HTML files were hashed from CRLF bytes, which made standard verifiers report false FAILs — now unified to one convention across the set; the `.sha256` file cannot prove itself, its integrity rests on git history
 
 ## 8. Baselines
 
@@ -106,3 +108,4 @@ Worktree rule: **Tracks A/B branch clean git worktrees directly from commit `f97
 | v2.1 | Round 2: review set into version control + SHA-256 manifest · verdict = "recommends approving" · Security Owner among approvers · explicit baselines · conclusions scoped to the five P0s |
 | v2.2 | Round 3: correct evidence tiering (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 into the repo |
 | **v3.0** | **Complete edition — all rounds merged into one record + custody / machine-profile / three-track plan / pilot schedule decisions incorporated** |
+| **v3.1** | **Scrutiny pass**: §3 quote made verbatim · irreproducible KDT figures withdrawn (replaced with measured values + method) · schedule-margin note added · manifest convention specified (LF + lowercase hex) + `.gitattributes` · note that origin/main advanced after the decision (docs-only delta) · EN "customer pilot" → "pilot" |

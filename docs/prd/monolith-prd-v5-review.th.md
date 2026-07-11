@@ -1,6 +1,6 @@
 # รีวิว PRD v5.1 — ฉบับสมบูรณ์ (Consolidated Review Record)
 
-วันที่: 2026-07-11 · ฉบับ: **v3.0 — Consolidated Complete Edition** (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว)
+วันที่: 2026-07-11 · ฉบับ: **v3.1 — Consolidated Complete Edition** (รวมผลรีวิวและมติทุกรอบ v1 → v2 → v2.1 → v2.2 เป็นบันทึกเดียว + ผ่าน scrutiny pass)
 ผู้รีวิว: **AI Implementation Reviewer (Claude) — advisory review, non-authoritative**
 Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner** (การรับ PRD เป็น canonical และการอนุญาต factory pilot เป็นการตัดสินใจของมนุษย์เท่านั้น)
 เอกสารที่รีวิว: `docs/prd/monolith-complete-prd-v5.th.md` (v5.1, audit ณ commit `d7b1c879`)
@@ -13,7 +13,7 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 > **Day-30 commitment จำกัดอยู่ที่การปิด P0 ทั้งห้าและ controlled factory pilot หนึ่งงาน หนึ่ง machine profile**
 > **FR ใหม่ทั้งหมดถูก freeze เว้นแต่จำเป็นโดยตรงต่อ pilot**
 
-จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ **วินัยหลักฐาน**: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3: *"ห้ามใช้ requirement ใน PRD ไป claim ว่า production-ready จนกว่าจะมี evidence"* — ตรง claim guardrails ของระบบ (ADR-052/056/062)
+จุดที่ทำให้ PRD เชื่อถือได้ไม่ใช่วิสัยทัศน์ — แต่คือ **วินัยหลักฐาน**: Evidence Tier E0-E4, Claim Ledger, As-Built matrix ที่ชี้ blocker เป็น file:line, Promotion Rule และประโยคทองใน §3 (verbatim): *"ห้ามใช้ requirement ใน PRD นี้ไป claim ว่า module ใด production-ready จนกว่าจะมี code, test, deployment evidence และ operational proof รองรับ"* — ตรง claim guardrails ของระบบ (ADR-056 marketing claim guardrails; แนวเดียวกับ re-quote gate ใน ADR-052 และ human-in-loop ใน ADR-062)
 
 **ADR-064** (รับ canonical) ให้สร้าง**หลังจาก** Product Owner, Tech Lead, Security Owner และ Factory Owner ลงชื่อรับ scope นี้ครบทั้งสี่ (S17 มี IAM, signature และ key custody — Security Owner ต้องลงนามด้วย) — ไม่สร้างเพียงเพราะ AI reviewer แนะนำ
 
@@ -63,7 +63,7 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 | **B** | บัญชี AI #2 | S17-3 Canonical packet spec → S17-4 Determinism → S17-5 Full verifier |
 | **Human/Ops** | มนุษย์ (เริ่มวันแรก — ไม่รอถึง S17-6) | Key custody, machine profile confirmation, จอง factory slot, รายชื่อ approvers |
 
-กติกา worktree: **Track A/B แตก clean git worktree จาก commit `f9740559` (origin/main) โดยตรง** — ห้ามแตกจาก local `main` และห้ามใช้ worktree ที่ dirty ร่วมกัน
+กติกา worktree: **Track A/B แตก clean git worktree จาก commit `f9740559` โดยตรง** (= origin/main ณ เวลามติ; หลังจากนั้น main เลื่อนด้วย docs-only commits — ตรวจแล้ว delta ทั้งหมดอยู่ใน `docs/prd/` + `tasks.md` ไม่มีโค้ด) — ห้ามแตกจาก local `main` และห้ามใช้ worktree ที่ dirty ร่วมกัน
 
 ### มติ Key custody
 
@@ -76,8 +76,9 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 
 ### มติ Machine profile + กำหนดการ pilot
 
-- Profile: **`kdt_mvp_v1`** (test footprint แข็งแรงสุด: 8 ไฟล์ / ~239 references, default export route) — **เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ** (รอยืนยันจากโรงงาน)
+- Profile: **`kdt_mvp_v1`** (default export route; footprint ที่วัดซ้ำได้ ณ scrutiny 11 ก.ค.: identifier `kdt_mvp_v1` = 7 ไฟล์ / 11 จุดในโค้ด src+server · คำว่า KDT ทุกบริบท = 82 ไฟล์ / 602 จุด ในจำนวนนี้เป็นไฟล์เทสต์ 26 ไฟล์ / 346 จุด — ตัวเลขที่เคยรายงาน "8 ไฟล์/~239 refs" วัดซ้ำไม่ได้ จึงถอนออก) — **เฉพาะเมื่อเครื่องจริงและ controller รองรับ KDT path; ห้ามเลือกเพียงเพราะ test เยอะ** (รอยืนยันจากโรงงาน)
 - จองช่วง: **dry run/no-cut 29–31 ก.ค. 2569 · controlled cut 4–6 ส.ค. · recovery/re-run buffer 7–9 ส.ค.**
+- **ข้อสังเกตกำหนดการ (จาก scrutiny)**: ประมาณการ 2+2 สัปดาห์นับจาก 11 ก.ค. จะจบ ~8 ส.ค. — ตารางนี้พอดีก็ต่อเมื่อ Track A/B ขนานกันจริงจน implementation จบ ~25 ก.ค., dry run 29–31 ก.ค. นับเป็นส่วนหนึ่งของช่วง verification และ controlled cut 4–6 ส.ค. อยู่ปลายช่วงพอดี (margin ≈ 0) — **ถ้า implementation หลุดจาก 25 ก.ค. ให้เลื่อน slot ไป buffer 7–9 ส.ค. หรือเลื่อนจองใหม่ทันที ห้ามบีบช่วง verification**
 
 ## 7. นโยบายชั้นหลักฐานของบันทึกฉบับนี้
 
@@ -85,6 +86,7 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 - โค้ด/เทสต์ที่รีวิวอ้าง = **E0**
 - ตัว commit = E0 สำหรับพิสูจน์ว่า *"เนื้อหารีวิวนี้ถูกบันทึก"* — ไม่ใช่พิสูจน์ว่า *"ข้อสรุปทุกข้อถูกต้อง"*
 - เอกสารที่ถูกรีวิว (PRD v5 ครบ 5 ไฟล์) และ roadmap v1 (5 ไฟล์) อยู่ใน version control เดียวกันที่ `docs/prd/` แล้ว; สำเนาใน parent folder = superseded
+- **ข้อกำหนด manifest (จาก scrutiny)**: SHA-256 คิดจาก byte ของไฟล์แบบ **LF-normalized UTF-8** · hex **ตัวพิมพ์เล็ก** รูปแบบ GNU coreutils (`<hash><space><space><filename>`) · `docs/prd/**` ถูกบังคับ `text eol=lf` ผ่าน `.gitattributes` เพื่อให้ byte เหมือนกันทุก platform/checkout — ก่อนหน้านี้ manifest ของ PRD/roadmap ใช้ hex ตัวพิมพ์ใหญ่ (Get-FileHash) และไฟล์ HTML บางไฟล์ hash จาก byte CRLF ซึ่งทำให้ตัวตรวจมาตรฐานรายงาน FAIL ปลอมได้ — แก้เป็นมาตรฐานเดียวทั้งชุดแล้ว; ไฟล์ `.sha256` เองพิสูจน์ตัวเองไม่ได้ integrity ของมันพึ่ง git history
 
 ## 8. Baselines
 
@@ -106,3 +108,4 @@ Accountable approvers: **Product Owner, Tech Lead, Security Owner, Factory Owner
 | v2.1 | รอบ 2: นำเอกสารรีวิวเข้า version control + SHA-256 manifest · verdict = "เสนอให้อนุมัติ" · Security Owner ใน approvers · แยก baselines ชัด · จำกัดข้อสรุปเฉพาะ P0 ห้ารายการ |
 | v2.2 | รอบ 3: evidence tier ถูกชั้น (E3 synthesis / tamper-evident) · PRD v5 + roadmap v1 เข้า repo |
 | **v3.0** | **ฉบับสมบูรณ์ — รวมทุกรอบเป็นบันทึกเดียว + ผนวกมติ custody / machine profile / แผนสามสายขนาน / กำหนดการ pilot** |
+| **v3.1** | **Scrutiny pass**: quote §3 เป็น verbatim · ถอนตัวเลข KDT ที่วัดซ้ำไม่ได้ (แทนด้วยค่าที่วัดได้ + วิธีวัด) · เพิ่มข้อสังเกต margin กำหนดการ · ระบุมาตรฐาน manifest (LF + lowercase hex) + `.gitattributes` · หมายเหตุ origin/main เลื่อนหลังมติ (delta docs-only) · EN แก้ "customer pilot" → "pilot" |
