@@ -1,0 +1,187 @@
+﻿{
+    "schema":  "monolith.s17.hosted-auth-evidence@1",
+    "recordedAt":  "2026-07-13T23:55:06.1154234+00:00",
+    "target":  {
+                   "label":  "monolith-s17-staging",
+                   "baseUrl":  "https://wlivqsdgvwcjlbqqtcwt.supabase.co/functions/v1/factory-api",
+                   "confirmedNonProduction":  true
+               },
+    "anchors":  {
+                    "expectedCommit":  "8a6b89c899ce1192a006327fb3281089f6d140f2",
+                    "expectedMigrationSha256":  "f3f5bfc6d9bbf11d74a0214e5c28aa9eef0172432c63d9cbc9d78bf4443a59e0",
+                    "scriptSha256":  "feee954c85b427c7a1e0fac7de9c812976aaf271861ed55ded221520abceb115"
+                },
+    "run":  {
+                "jobId":  "S17-HOSTED-20260713235500",
+                "startedAt":  "2026-07-13T23:55:01.0319091+00:00",
+                "completedAt":  "2026-07-13T23:55:06.1154234+00:00",
+                "status":  "PASS",
+                "failure":  null
+            },
+    "identityAnchors":  {
+                            "designerSubjectSha256":  "e2da76c0a1c6ea6e4409abaed8dafbc2ca8e8d9d33c75e36b70a9b15eddc5cc4",
+                            "factorySubjectSha256":  "71a78d484d53a421068e43ccfe93ed32c503598373e4a17bcf9b59c5e5cbe9e7",
+                            "installerSubjectSha256":  "536b5997fe0e2a94e92badbc04a06fdc13454c7713f0e71b6b5780bcf705d41b",
+                            "noRoleSubjectSha256":  "f500aef124f4e5409b3a33982834508d3fa06c7b29ca6545d5d5fdaeff7e2bcb",
+                            "expiredSubjectSha256":  "e2da76c0a1c6ea6e4409abaed8dafbc2ca8e8d9d33c75e36b70a9b15eddc5cc4",
+                            "rawTokensStored":  false
+                        },
+    "cases":  [
+                  {
+                      "id":  "AUTH-VALID-STATE",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "specState=DRAFT",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true,
+                                       "specState":  "DRAFT",
+                                       "revisionId":  null
+                                   }
+                  },
+                  {
+                      "id":  "AUTH-EXPIRED",
+                      "expectedStatus":  401,
+                      "actualStatus":  401,
+                      "check":  "status",
+                      "pass":  true,
+                      "response":  {
+
+                                   }
+                  },
+                  {
+                      "id":  "AUTH-NO-ROLE",
+                      "expectedStatus":  403,
+                      "actualStatus":  403,
+                      "check":  "status",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "insufficient role"
+                                   }
+                  },
+                  {
+                      "id":  "READ-INSTALLER-STATE",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "status",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true,
+                                       "specState":  "DRAFT",
+                                       "revisionId":  null
+                                   }
+                  },
+                  {
+                      "id":  "READ-INSTALLER-ACTIVITY",
+                      "expectedStatus":  403,
+                      "actualStatus":  403,
+                      "check":  "status",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "insufficient role"
+                                   }
+                  },
+                  {
+                      "id":  "AUTH-FORGED-ROLE",
+                      "expectedStatus":  403,
+                      "actualStatus":  403,
+                      "check":  "status",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "insufficient role"
+                                   }
+                  },
+                  {
+                      "id":  "AUTH-FORGED-NO-SIDE-EFFECT",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "specState remains DRAFT",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true,
+                                       "specState":  "DRAFT",
+                                       "revisionId":  null
+                                   }
+                  },
+                  {
+                      "id":  "STATE-FREEZE",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "specState=FROZEN",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true,
+                                       "specState":  "FROZEN",
+                                       "revisionId":  "REV-20260713-94C4F1"
+                                   }
+                  },
+                  {
+                      "id":  "FROZEN-PACKET",
+                      "expectedStatus":  409,
+                      "actualStatus":  409,
+                      "check":  "FROZEN denial",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "packet requires RELEASED spec",
+                                       "specState":  "FROZEN"
+                                   }
+                  },
+                  {
+                      "id":  "FROZEN-EXPORT",
+                      "expectedStatus":  409,
+                      "actualStatus":  409,
+                      "check":  "FROZEN denial",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "packet export requires RELEASED spec and recorded packet",
+                                       "specState":  "FROZEN"
+                                   }
+                  },
+                  {
+                      "id":  "FROZEN-VERIFY",
+                      "expectedStatus":  409,
+                      "actualStatus":  409,
+                      "check":  "FROZEN denial",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  false,
+                                       "error":  "packet verification requires RELEASED spec and recorded packet",
+                                       "specState":  "FROZEN"
+                                   }
+                  },
+                  {
+                      "id":  "STATE-RELEASE",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "specState=RELEASED",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true,
+                                       "specState":  "RELEASED",
+                                       "revisionId":  "REV-20260713-94C4F1"
+                                   }
+                  },
+                  {
+                      "id":  "AUDIT-SUBJECT-ONLY",
+                      "expectedStatus":  200,
+                      "actualStatus":  200,
+                      "check":  "release actorName=actorSubjectId=JWT sub",
+                      "pass":  true,
+                      "response":  {
+                                       "ok":  true
+                                   }
+                  }
+              ],
+    "exclusions":  [
+                       "does not prove production deployment or operational readiness",
+                       "does not close S17-1, S17-2, or any P0",
+                       "does not test multi-site isolation; factory-site-isolation remains an open hard gate",
+                       "creates a synthetic staging job that remains RELEASED for audit preservation",
+                       "does not authorize merge, production apply, or real cutting"
+                   ]
+}

@@ -8,3 +8,6 @@ supabase/tests/s17-hosted-auth/** text eol=lf
 supabase/functions/factory-api/** text eol=lf
 supabase/migrations/0162_factory_server_identity_released_only.sql text eol=lf
 .kiro/specs/installation-pm/tasks.md text eol=lf
+docs/evidence/**/*.json -text
+docs/evidence/**/*.md text eol=lf
+docs/evidence/**/*.sha256 text eol=lf
