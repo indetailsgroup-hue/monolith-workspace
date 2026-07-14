@@ -706,3 +706,17 @@ inclusion: always
 **เส้นแดงเส้นเดียว**: ห้ามตัดชิ้นงานจริงจาก packet จนกว่า S17 ปิด — คนละโดเมนกับการใช้ระบบรับลูกค้า/คุมงาน/เก็บเงิน
 
 **Consequences**: dogfood ops เริ่มได้ทันที (P5 seeds, V1-V10, เปิดบ้าน); CI artifact pipeline = งานแรกของ Claude track; ADR-064 ยังรอ 4 ลายเซ็นตามเดิม
+
+
+## ADR-066: Hosted/Prod Infra Ops = Human-Driven Only (2026-07-14, มติ owner ก หลัง prod incident)
+
+**Context**: ระหว่างทำ S17 hosted-E0 (14 ก.ค.) เกิด **prod incident จริง 1 ครั้ง** (AI agent ขับ Supabase CLI เผลอ `link` prod แล้ว deploy factory-api ตัวใหม่ทับ prod ที่ DB ยัง 0161 -> factory-api prod พัง, rollback สำเร็จ) + **near-miss 2 ครั้ง** (guardrail default ชี้ Thai Curry Kitchen, agent `link` TCCK จะ unpause) — ทุกครั้งจาก AI agent pattern-match ชื่อ project ผิด (staging branch `wlivqsdgvwcjlbqqtcwt` เป็น Supabase branch ไม่โผล่ใน `projects list`)
+
+**มติ (owner, ก)**:
+1. **Hosted/prod infra ops = human-driven เท่านั้น** — deploy edge function, apply migration, `supabase link`, `db push`, unpause/resume, สร้าง/ลบ branch: มนุษย์กดเอง ห้าม AI ตัวใด (Claude/Codex/Control Tower) รัน Supabase CLI ใส่ environment ใด
+2. **AI = verify + guarded tooling เท่านั้น** — เขียน guarded script (allowlist ref, reject prod/TCCK, ไม่ใช้ link), verify artifact ทุก byte/target แต่ execute เป็นมือมนุษย์
+3. **Verify-don't-trust** — verify ทุก claim/banner ด้วยหลักฐานจริง (hash, target ref, git blob) ไม่เชื่อ "Deployed Functions."/"PASS" ลอย ๆ
+4. **Guardrail บังคับ** — deploy staging ผ่าน `deploy-staging-guarded.mjs` (allowlist branch ref ตัวเดียว) ก่อน deploy verify linked ref + `s17-staging PREVIEW`
+5. Supabase branch != project — target ที่ถูกต้องดูจาก Branch ID ใน dashboard ไม่ใช่ `projects list`
+
+**Consequences**: hosted-E0 ที่เหลือ + S17-4/5/6 ทั้งหมดทำแบบ human-driven; guardrail+repro tooling committed ที่ `scripts/` (track-a); incident+rollback documented ใน `docs/evidence/hosted/s17-1-2/README.md`
