@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายงาน Scrutiny ทั้งระบบ MONOLITH — 2026-07-15</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>รายงาน Scrutiny ทั้งระบบ MONOLITH</h1>
+<p>วันที่: 2026-07-15 revision ที่ตรวจ: <code>077452a7cbe8714ed5ac3ed388420565bc19f252</code> รวม control pack S17 v0.4.1 ที่ยังไม่ commit มติ: <strong>NO-GO สำหรับ production, การตัดจริงแบบ controlled factory และการกล่าวว่า dogfood เริ่มแล้ว</strong> ท่าทีที่อนุญาต: <strong>พัฒนาในเครื่อง, automated verification และเตรียม shadow/NO_CUT เท่านั้น</strong></p>
+<h2>1. ข้อสรุปสำหรับผู้ตัดสินใจ</h2>
+<p>MONOLITH เป็น codebase วิศวกรรมที่มีเนื้อหาจริง ไม่ใช่ mock-up ตัว root application typecheck และ build ได้ factory server กับ field app build ได้ มี Vitest assertions ผ่าน 4,553 ข้อ และ browser smoke ผ่านห้าข้อ ส่วน manufacturing geometry, CNC dialect, gate, workflow control และ packet determinism มี automated coverage ที่มีน้ำหนัก</p>
+<p>อย่างไรก็ตาม ระบบยังไม่พร้อมใช้งานเชิงปฏิบัติการ release chain ถูกบล็อกด้วยสถานะ governance ที่ประกาศชัด, factory-server boundary ที่ยังไม่มี authentication, dependency advisories ระดับ critical, canonical CI/test command ที่เสีย, field surface ที่ยังไม่ verified, signature implementation ที่แตกหลายสาย และไม่มีหลักฐาน live deployment หรือ dogfood จริง ห้ามแปลงความพร้อมของโค้ดให้กลายเป็น production authority</p>
+<h2>2. ขอบเขตและหลักฐาน</h2>
+<p>การตรวจครอบคลุม root Designer/Factory application, <code>server/</code>, <code>packages/field-app/</code>, Supabase migrations และ Edge Functions, LINE/workflow, GitHub workflows, factory packet/S17 governance, dependency installation, unit tests, builds, browser smoke tests และหลักฐาน operational ที่มีในเครื่อง</p>
+<p>หลักฐานมาจาก repository ที่ checkout อยู่และ GitHub repository metadata แบบ read-only GitHub connector ไม่พบ PR-triggered workflow run หรือ combined status ของ commit ที่ตรวจ สิ่งนี้ไม่ใช่หลักฐานว่า push-triggered workflow ไม่เคยรัน แต่หมายความว่ายังยืนยัน external CI success ปัจจุบันไม่ได้จากหลักฐานที่เข้าถึงได้ รอบนี้ไม่ได้เข้าถึง live Supabase, LINE, Redis, AWS KMS, CNC, GitHub Pages runtime หรือข้อมูลลูกค้า</p>
+<h2>3. ผล verification</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>รายการตรวจ</th>
+<th>ผล</th>
+<th>ความหมาย</th>
+</tr></thead><tbody>
+<tr>
+<td>Root TypeScript project references</td>
+<td>PASS</td>
+<td><code>tsc -b tsconfig.build.json</code> สำเร็จ</td>
+</tr>
+<tr>
+<td>Root production build</td>
+<td>PASS พร้อมคำเตือน</td>
+<td>ยังมี chunk ใหญ่และ mixed static/dynamic import ที่แบ่ง chunk ไม่ได้</td>
+</tr>
+<tr>
+<td>Factory server build</td>
+<td>PASS</td>
+<td>compile ได้หลังติดตั้ง dependency ของ server แยก</td>
+</tr>
+<tr>
+<td>Field app build</td>
+<td>PASS พร้อมคำเตือน</td>
+<td>Tailwind แจ้งว่า content configuration หายหรือว่าง</td>
+</tr>
+<tr>
+<td>Root Vitest command</td>
+<td>FAIL</td>
+<td>test ผ่าน 4,553 ข้อใน 262 ไฟล์ แต่ Node-native test สองไฟล์ถูก Vitest เก็บผิดเป็น empty suite</td>
+</tr>
+<tr>
+<td>Governance tooling</td>
+<td>PASS 5/5</td>
+<td>canonical manifest writer/verifier และ renderer controls ผ่าน</td>
+</tr>
+<tr>
+<td>Schema bundle tooling</td>
+<td>PASS 1/1</td>
+<td>closed bundle และ canonical array-order rule ผ่าน</td>
+</tr>
+<tr>
+<td>Factory server test command</td>
+<td>FAIL 13/13</td>
+<td>CLI ทำงานและเรียก <code>process.exit(0)</code> ตอน import; test runtime ยังพยายามแก้ <code>testPath</code> ที่ read-only</td>
+</tr>
+<tr>
+<td>Browser smoke</td>
+<td>PASS/PARTIAL</td>
+<td>ผ่าน 5 ข้อ ข้าม 2 ข้อ; ยังไม่มี full E2E หรือ live integration evidence</td>
+</tr>
+<tr>
+<td>Dependency installation summary</td>
+<td>FAIL release gate</td>
+<td>Root: 21 advisories รวม critical 3; server: 13 advisories รวม critical 1</td>
+</tr>
+</tbody></table></div>
+<p>จำนวน advisory มาจากการติดตั้งตาม lockfile แบบ reproducible ไม่ได้ดึงรายละเอียด advisory เพราะการทำเช่นนั้นจะส่ง dependency metadata ของ private project ไป external npm advisory endpoint โดยยังไม่มี owner authorization เฉพาะเจาะจง</p>
+<h2>4. Findings ที่บล็อก release</h2>
+<h3>FS-B0-01 — Governance และอำนาจตัดจริงยังปิด</h3>
+<p>canonical packet specification อยู่ในสถานะ <code>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</code> โดย Tech Lead, Factory Owner และ Security Owner ยัง PENDING ทั้งหมด CT-DEC-002 ระบุ <code>Track B LOCKED</code> และ <code>NO_CUT</code> ส่วน real-cut gate ยังต้องปิด S17-1..5, ครบทุกบทบาท ADR-064, มี dogfood เต็มสายอย่างน้อยหนึ่งงาน และ calibrate machine profile แล้ว ยังไม่มีหลักฐานว่าเงื่อนไขเหล่านี้ครบ</p>
+<p>การจัดการที่ต้องทำ: คง <code>NO_CUT</code>; ห้าม deploy หรือกล่าวว่า S17-4/S17-5 เป็น implementation ที่อนุมัติแล้ว จน approval matrix ของมนุษย์ครบ</p>
+<h3>FS-B0-02 — Factory server มี trust boundary ที่บล็อก production</h3>
+<p>server entry point ทั้งสองใช้ <code>cors()</code> แบบไม่จำกัด และเปิด bundle, export, key, state, proof, activity และ download operation โดยไม่พบ authentication หรือ authorization middleware ที่ application boundary JSON body รับได้ 50 MB ส่วน signed-URL helper fallback เงียบ ๆ ไปใช้ static secret <code>dev-secret-change-in-production</code> และ error handler หนึ่งจุดส่ง <code>err.message</code> กลับ caller</p>
+<p>ถ้า server entry point ใดเข้าถึงได้จาก network ผู้เรียกที่ไม่ไว้ใจอาจสั่ง operation ที่กระทบโรงงานได้ และ default HMAC secret ทำให้ปลอม signed URL ได้ นี่เป็น production blocker แม้ downstream validator จะถูกต้อง</p>
+<p>การจัดการที่ต้องทำ: ให้ startup fail เมื่อไม่มี secret, เพิ่ม authentication และ authorization ราย operation, จำกัด origin, ใส่ rate limit และ upload bound, ปิด internal error และทดสอบ boundary ทั้งเส้นก่อน deploy</p>
+<h3>FS-B0-03 — Canonical packet signature implementation ยังไม่ converge ตาม ADR-068</h3>
+<p>contract v0.4.1 บังคับ AWS KMS <code>ECC_NIST_P256</code>, <code>ECDSA_SHA_256</code>, raw 64-byte <code>r||s</code>, reject high-S และ non-exportable key แต่ active factory packet type และ mock route ยังประกาศ <code>Ed25519</code>; manufacturing verifier รองรับ Ed25519 เท่านั้น มี ECDSA implementation อีกสายหนึ่ง แต่สร้าง browser key ที่ extractable, เก็บ private JWK ใน local storage และไม่ใช่ AWS KMS/registry/low-S verifier ตาม v0.4.1</p>
+<p>ส่วนหนึ่งเป็นสิ่งที่คาดได้เพราะ Track B ยังล็อก แต่ยืนยันว่าระบบ runtime ยังไม่ใช่ implementation v0.4.1 และห้าม certify ว่าเป็นแล้ว ต้องจำแนก legacy Ed25519 receipt/trust layer ให้ชัดว่าไม่ใช่ canonical factory-packet attestation layer</p>
+<p>การจัดการที่ต้องทำ: หลัง approval ปลด Track B แล้ว จึง implement packet-attestation path เดียวผ่าน AWS KMS และ pinned registry พร้อม test raw length, low-S/high-S rejection, public-key format, KMS non-determinism และ verifier order</p>
+<h3>FS-B0-04 — Dogfood จริงยังไม่เริ่มตามหลักฐานที่ audit ได้</h3>
+<p>repository มีมติให้เริ่ม business/field dogfood ขนานกับ S17 และมี shadow/NOT-FOR-PRODUCTION behavior แต่ไม่มี real-house project ID ที่ enroll แล้ว, start timestamp, operator ผู้รับผิดชอบ, immutable workflow event แรก, session-evidence artifact หรือสาย LINE-to-acceptance ที่จบแล้ว PRD review ระบุชัดว่า real dogfood pilot ยังไม่เริ่ม</p>
+<p>การจัดการที่ต้องทำ: สถานะต้องคง <code>AUTHORIZED/PREPARED — NOT STARTED</code> จะเริ่มได้เมื่อ enroll project จริงพร้อม evidence ID, owner, rollback path, PDPA classification, legacy-process fallback และ immutable event แรก</p>
+<h2>5. Findings ระดับ critical และ high</h2>
+<h3>FS-B1-01 — Dependency risk สูงกว่า release threshold</h3>
+<p>การติดตั้งตาม lockfile รายงาน critical advisories สามรายการใน root dependency graph และหนึ่งรายการใน factory server graph รวมทั้ง high และ moderate advisories แต่ยังไม่ได้ triage package ที่ได้รับผลและ runtime reachability</p>
+<p>Action: เมื่อ owner อนุญาต ให้ดึง advisory ใน environment ที่อนุมัติ, map vulnerable path กับ runtime reachability, upgrade หรือ mitigate และ pin clean evidence ห้ามใช้ <code>npm audit fix --force</code> โดยไม่ review ผลกระทบ</p>
+<h3>FS-B1-02 — Full-verification workflow หลักไม่สามารถเขียวได้ตามที่เขียนอยู่</h3>
+<p><code>npm run test:run</code> เก็บ <code>scripts/governance-tooling.test.mjs</code> และ <code>scripts/schema-bundle.test.mjs</code> เป็น Vitest ทั้งที่สองไฟล์ใช้ Node native test runner แม้ Vitest assertions 4,553 ข้อผ่านหมด command ก็ exit non-zero เพราะ empty-suite failure สองรายการ <code>.github/workflows/verify-full.yml</code> เรียก command เดียวกัน จึงยังสร้าง E0 evidence สีเขียวอย่างสัตย์จริงไม่ได้จนกว่าจะแยก runner</p>
+<p>Action: exclude Node-native tests ออกจาก Vitest และเรียก npm scripts เฉพาะของทั้งสองชุดใน CI โดยตรง เพิ่ม factory server และ field app เป็น job แยก</p>
+<h3>FS-B1-03 — Test suite ของ factory server ใช้งานไม่ได้</h3>
+<p>การ import <code>server/src/cli/receiptVerify.ts</code> เรียก <code>main()</code> ทันทีและเรียก <code>process.exit</code> ทำให้ verifier import ไม่ปลอดภัย dedicated server tests ล้ม 13/13 และ environment รายงานการแก้ <code>testPath</code> ที่ read-only ส่งผลให้ security-sensitive verifier ไม่มี regression coverage ที่เชื่อถือได้</p>
+<p>Action: guard CLI entry point, ทำ verification functions ให้ไม่มี side effect, ใช้ temporary injected key registry แทนการแก้ production key file, align Vitest version/configuration และบังคับผล 13/13</p>
+<h3>FS-B1-04 — Field app build ได้แต่ยังไม่ verified</h3>
+<p><code>packages/field-app</code> ไม่มี <code>test</code> script การ build เตือนว่า Tailwind content หายหรือว่าง จึงเสี่ยงให้ deployed CSS ไม่มี class ที่ต้องใช้ Offline queue, authentication callback, RLS behavior, proof binding และ close-house acceptance ไม่มี field-app-level test gate ตรงกับ PRD ที่จัดเป็น <code>PARTIAL / NOT VERIFIED</code></p>
+<p>Action: เพิ่ม app-local Tailwind config, unit/component tests, offline/retry tests, authentication และ RLS integration tests และ controlled field pilot ก่อนพึ่งพา surface นี้</p>
+<h3>FS-B1-05 — ยังยืนยัน live data-plane และ deployment claim ไม่ได้</h3>
+<p>มี migration files 174 ไฟล์และ Edge Function directories 19 ชุด แต่ provisioning runbook ยังเป็น checklist และระบุว่าต้องทำ <code>supabase db push</code>, function deployment, secrets, cron และ end-to-end verification แบบ manual ยังไม่มีหลักฐาน live migration parity, RLS probe, secret inventory, LINE webhook signature, Redis worker, Pages deployment หรือ rollback drill</p>
+<p>Action: ทำ staging ceremony กับ commit bytes ที่ pin แล้ว บันทึก migration/function parity, รัน negative RLS และ webhook tests, เก็บ rollback evidence แล้วจึงกำหนดวันเริ่ม dogfood จริง</p>
+<h3>FS-B1-06 — ต้องปรับ classification ของ governance-tool bytes แบบ append-only — REMEDIATED</h3>
+<p>CT-DEC-003 classify candidate bytes รุ่นก่อนหน้า แต่ manifest writer, verifier และ test harness ปัจจุบันมี hashes ต่างออกไป จึงห้าม rewrite record เดิมแบบเงียบ <code>CT-DEC-003-A1</code> ได้ pin hashes ปัจจุบันทั้งสี่, บันทึก independent advisory source review และผล negative tests ที่ reproduce ผ่าน 5/5 พร้อม classify exact bytes เป็น official เฉพาะ governance-document tooling</p>
+<p>Disposition: <strong>REMEDIATED สำหรับ bytes ที่ pin แล้ว</strong> ด้วย <code>docs/governance/ct-dec-003-a1-current-governance-tool-bytes.*</code> และ <code>monolith-ct-dec-003-a1-review-input.sha256</code> หาก byte ใดเปลี่ยน tool นั้นกลับเป็น candidate ทันที Remediation นี้ไม่แก้ CI runner issue แยกต่างหากใน <code>FS-B1-02</code> และไม่สร้าง S17-5, Track B, production หรือ cutting authority</p>
+<h2>6. Findings ระดับกลางและ engineering debt</h2>
+<ul><li><strong>FS-B2-01 — Version drift:</strong> <code>server/package.json</code> เป็น 0.13.2 แต่ API responses ประกาศ 0.10.0 และ 2.0.0-p22a ผ่าน entry point สองชุด ทำให้ operator ระบุ running contract ไม่ได้แน่นอน</li><li><strong>FS-B2-02 — Build size:</strong> root build มี application/vendor chunks เกิน threshold 600 kB รวม Three bundle ประมาณ 1.03 MB และ App chunk ประมาณ 888 kB กระทบ field connectivity และ cold start</li><li><strong>FS-B2-03 — E2E blind spots:</strong> smoke tests ถูกข้ามสองข้อ ได้แก่ export flow และ OperationGraph-source assertion และ suite ไม่แตะ Supabase, LINE, server authentication, KMS, Redis หรือ packet rejection จริง</li><li><strong>FS-B2-04 — ไม่มี hermetic clean-worktree gate:</strong> build output ถูก track ใน <code>dist/</code> และ local verification เปลี่ยน generated assets กับสถานะ snapshot ใน working tree CI ควร build นอก tracked release bytes หรือพิสูจน์ reproducible output โดยไม่แก้ source tree</li><li><strong>FS-B2-05 — ยังมี function ไม่ครบใน production source:</strong> STEP/PDF export และ full drawer drill-map generation มี not-implemented/TODO path ต้องจำกัด product claim ให้ตรง</li><li><strong>FS-B2-06 — Encoding/document hygiene:</strong> workflow และเอกสารไทยที่ track อยู่หลายจุดแสดง mojibake เมื่ออ่าน UTF-8 ปกติ ลดความน่าเชื่อถือของ review</li></ul>
+<h2>7. จุดแข็งที่ควรรักษา</h2>
+<ul><li>Automated-test density สูงใน geometry, CNC dialect, gate, connector rules, workflow authorization, audit, capture, tax และ factory packet determinism</li><li>Root, server และ field build compile ได้หลังติดตั้ง dependency แบบ reproducible</li><li>Governance manifest tooling เป็น fail-closed และ test ผ่าน</li><li>S17 v0.4.1 pin ECDSA encoding, low-S semantics, non-determinism, public-key format, verifier order และ NO_CUT behavior ชัด</li><li>Browser smoke ครอบคลุม app load, WebGL health, X-ray mode, hardware preset behavior และ export-panel access</li><li>Supabase migrations แสดงการออกแบบ RLS, SECURITY DEFINER, service-role และ append-only audit อย่างตั้งใจ แม้ยังต้องพิสูจน์ enforcement บน live environment</li></ul>
+<h2>8. ลำดับงานที่ต้องทำ</h2>
+<ol><li>คง <code>NO_CUT</code>, Track B lock และข้อความว่า dogfood ยังไม่เริ่ม</li><li>ปิด factory-server authentication/CORS/default-secret boundary ก่อน network deployment ใด ๆ</li><li>ขอ owner authorization เพื่อดู dependency advisory detail แล้วกำจัดหรือ mitigate critical path ที่ reachable</li><li>ซ่อมการแยก CI runner และ factory-server test harness; บังคับ root, governance, schema, server, field, build และ E2E gates ให้เขียว</li><li>ทำ S17 approval matrix สามบทบาทให้ครบ แล้วจึง implement ADR-068 packet-attestation layer</li><li>สร้าง staging deployment evidence สำหรับ migrations, RLS, Edge Functions, LINE, Redis, Pages, secrets, monitoring และ rollback</li><li>Enroll controlled real project หนึ่งงานและ emit immutable dogfood event แรก โดยใช้ legacy factory production ขนานกับ shadow/NO_CUT packet</li><li>พิจารณาตัดจริงแบบ controlled factory เมื่อมีหลักฐานครบทุกเงื่อนไขของ four-condition real-cut gate เท่านั้น</li></ol>
+<h2>9. การจัดสถานะสุดท้าย</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>มิติ</th>
+<th>สถานะ</th>
+</tr></thead><tbody>
+<tr>
+<td>Engineering core</td>
+<td><strong>SUBSTANTIAL / BUILDS / HIGH TEST DENSITY</strong></td>
+</tr>
+<tr>
+<td>Canonical automated verification</td>
+<td><strong>RED — runner wiring และ server suite</strong></td>
+</tr>
+<tr>
+<td>Security boundary</td>
+<td><strong>RED — ยังไม่ปลอดภัยสำหรับ network production</strong></td>
+</tr>
+<tr>
+<td>S17 packet authority</td>
+<td><strong>DRAFT / PENDING 3 / TRACK B LOCKED / NO_CUT</strong></td>
+</tr>
+<tr>
+<td>Field และ live data plane</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+</tr>
+<tr>
+<td>Dogfood</td>
+<td><strong>AUTHORIZED/PREPARED — NOT STARTED</strong></td>
+</tr>
+<tr>
+<td>Production release</td>
+<td><strong>NO-GO</strong></td>
+</tr>
+</tbody></table></div>
+<p>รายงานนี้เป็น evidence-based review ไม่ใช่ approval signature, security certification, production authorization หรือการอนุญาตให้ตัดชิ้นงานจริง</p>
+</main>
+</body>
+</html>

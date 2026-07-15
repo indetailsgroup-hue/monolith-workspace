@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003-A1 — Current Governance-Tool Bytes and Classification</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003-A1 — Current Governance-Tool Bytes and Classification</h1>
+<p>Effective date: 2026-07-15 Status: <strong>RECORDED — human Tech Lead follow-up instruction</strong> Prior record: <code>CT-DEC-003 — S17 Tooling, Ownership, and Append-Only Record Discipline</code> (2026-07-11) Supersession scope: <strong>CT-DEC-003 §4.2 hashes and tooling classification only</strong> Decision authority: Tech Lead (Dave), direction recorded in the 2026-07-15 review session Document preparation and independent advisory source review: Codex, non-signing and non-authoritative Technical baseline inspected: <code>077452a7cbe8714ed5ac3ed388420565bc19f252</code> plus the uncommitted S17 v0.4.1 control pack</p>
+<blockquote><p>This addendum completes the append-only classification of the exact governance-tool bytes used for the v0.4.1 review artifacts. It does not approve CT-DEC-002, sign any S17 approval role, unlock Track B, close a P0 blocker, authorize production deployment, or authorize cutting.</p></blockquote>
+<h2>1. Reason for the addendum</h2>
+<p>CT-DEC-003 recorded candidate hashes at an earlier governance revision. The renderer remains byte-identical to the recorded candidate, but the writer, verifier, and test harness changed during later remediation. The original decision record must not be silently rewritten. This addendum records the current bytes, review evidence, classification, and unchanged boundaries.</p>
+<p>The original CT-DEC-003 document manifest remains valid. Its SHA-256 is:</p>
+<pre><code class="language-text">a586d2414006581af8323d7173af3066ccf803ac4ae37ef9ee7b06de832fb81b  docs/governance/ct-dec-003-s17-tooling-and-record-discipline.sha256</code></pre>
+<h2>2. Exact reviewed tool bytes</h2>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  scripts/render-standalone-markdown.mjs
+3cd69ca33cfc1fec7657fd0a242668f24706f38ba52b27be7021579d8e58a584  scripts/write-sha256-manifest.mjs
+9fbbf53519a2d45e3298a5d7d7e7b0df6481396b40a440cd707206b359ea2cb8  scripts/verify-sha256-manifest.mjs
+cef610700abc1e17258373b99cd0243c757407cfd75f92e6ddbf1e0b07fe8093  scripts/governance-tooling.test.mjs</code></pre>
+<p>These bytes are pinned together with this addendum by <code>monolith-ct-dec-003-a1-review-input.sha256</code> at the repository root. The anchor does not list itself.</p>
+<p><code>monolith-s17-v041-review-input.sha256</code> remains the historical anchor produced at 2026-07-15 19:20 +07:00. CT-DEC-002 checklist bytes were subsequently updated and have their own valid current four-file manifest, so the historical v0.4.1 aggregate must not be represented as the aggregate of the later working tree. This addendum does not rewrite that anchor; the new A1 anchor is the consolidated current-byte anchor.</p>
+<h2>3. Independent advisory source review</h2>
+<p>The source review confirmed the following controls for the narrow governance-document scope:</p>
+<ol><li>writer inputs must be regular, non-symlink files inside the manifest directory</li><li>writer output cannot be a symlink, cannot resolve outside its directory, and cannot list itself</li><li>canonical paths are NFC, relative, slash-separated, Windows-safe, control-character-free, and reject empty, dot, and dot-dot segments</li><li>duplicate and case-fold-colliding entries are rejected</li><li>entries are sorted by unsigned UTF-8 byte order</li><li>verifier rejects BOM, CR/CRLF, blank lines, malformed entries, uppercase/non-64-hex digests, non-canonical paths, duplicates, unsorted entries, symlinks, traversal, self-reference, and digest mismatches</li><li>renderer escapes HTML, rejects unsafe or control-character link targets, permits only HTTP(S)/mailto schemes, preserves literal legacy tokens, and rejects unclosed fences</li></ol>
+<p>Residual limits are explicit: these tools do not provide signer authenticity, do not protect against a hostile process changing files during a local read race, do not parse packet schemas or ZIP containers, and do not implement KMS signature verification.</p>
+<h2>4. Reproduced evidence</h2>
+<p>On 2026-07-15, the dedicated Node test command completed:</p>
+<pre><code class="language-text">tests 5
+pass 5
+fail 0</code></pre>
+<p>The reproduced suite covered canonical nested paths and negative cases for outside-root inputs, duplicates, traversal, blank lines, CRLF, Windows-invalid paths, unsorted entries, symlink inputs/output/manifest aliases, unsafe links, control-character links, token collision, and unclosed fences.</p>
+<p>The original CT-DEC-003 four-file document manifest also verified PASS 4/4 before this addendum was created.</p>
+<p>Recursive verification found three legacy manifests whose digests were correct but whose entries predated the current unsigned-UTF-8 ordering rule: CT-DEC-001, the complete PRD, and the PRD v5 review. They were mechanically re-emitted in canonical order without changing any listed document bytes or normative text. The A1 consolidated anchor pins the canonical current manifests; the historical v0.4.1 anchor remains unchanged.</p>
+<h2>5. Narrow official classification</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Tool</th>
+<th>Classification from this addendum</th>
+<th>Authorized boundary</th>
+</tr></thead><tbody>
+<tr>
+<td><code>render-standalone-markdown.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>trusted repository Markdown to standalone HTML only</td>
+</tr>
+<tr>
+<td><code>write-sha256-manifest.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>SHA-256 manifests for repository governance/review artifacts only</td>
+</tr>
+<tr>
+<td><code>verify-sha256-manifest.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>byte-integrity checking of those manifests only</td>
+</tr>
+<tr>
+<td><code>governance-tooling.test.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE TOOLING TEST HARNESS</strong></td>
+<td>regression evidence for the three scripts only</td>
+</tr>
+</tbody></table></div>
+<p>This classification attaches only to the exact hashes in §2. Any byte change returns the changed tool to <strong>CANDIDATE — NOT OFFICIAL</strong> until a later append-only review record pins and classifies it.</p>
+<h2>6. Explicit non-equivalence</h2>
+<p><code>verify-sha256-manifest.mjs</code> is not the S17-5 factory packet verifier. In particular, it does not perform:</p>
+<ul><li>packet schema-bundle validation</li><li>NFP precedence or stable packet result-code evaluation</li><li>authoritative registry lookup or revocation checks</li><li>ECDSA P-256 raw <code>r||s</code> validation or low-S rejection</li><li>AWS KMS public-key trust evaluation</li><li>verifier-order enforcement for a factory packet</li><li>operational disposition or machine admission</li></ul>
+<p>No output from these governance tools may emit or imply bare <code>PKT_OK</code>, <code>CUT</code>, production readiness, or approval authority.</p>
+<h2>7. Unchanged authority boundaries</h2>
+<ul><li>CT-DEC-002 remains DRAFT and the three approval roles remain PENDING</li><li>Track B remains LOCKED</li><li>shadow mode remains <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>no P0 blocker is closed</li><li>ADR-064 and every real-cut gate condition remain required</li><li>S17 v0.4.1 remains a review artifact, not implementation authority</li><li>real dogfood remains <code>AUTHORIZED/PREPARED — NOT STARTED</code> until a real project emits its first immutable evidence event</li></ul>
+<h2>8. Effect on the full-system scrutiny finding</h2>
+<p>This addendum remediates <code>FS-B1-06</code> for the exact current governance-tool bytes by creating the missing append-only classification and evidence anchor. It does not remediate <code>FS-B1-02</code>: the root Vitest/Node-test runner separation and CI workflow wiring still require implementation work.</p>
+<p>This record contains no cryptographic human signature. It preserves the human follow-up direction and exact reviewed bytes; any approval signature required by CT-DEC-002 remains a separate deliberate act.</p>
+</main>
+</body>
+</html>
