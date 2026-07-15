@@ -733,3 +733,15 @@ inclusion: always
 4. **Q4 คง SoD (builder != reviewer)** — พิสูจน์แล้วว่าจับ blocker จริง (re-review เจอของจริงหลายรอบ) · tighten ตาม ADR-066 (AI ห้ามแตะ infra)
 
 **Consequences**: dogfood ops = งานคู่ขนานของ human track; re-planned timeline แทนที่ 4-6 ส.ค. (รอ owner ยืนยันวันใหม่); key custody kickoff = งานเร่งของ Security Owner + owner; Track B ยังรอ 3 ลายเซ็น CT-DEC-002 (`bf25b10f`)
+
+
+## ADR-068: Factory Packet Signature = ECDSA P-256 on AWS KMS (2026-07-14, มติ owner ก-ก-ก)
+
+**Context**: S17-6 key custody kickoff เปิดโปงว่า CT-DEC-002 v0.3 บังคับ **Ed25519** (`packet-attestation.schema.json` const + §10) แต่ **AWS KMS (custody ที่เลือกตามมติ) ไม่รองรับ Ed25519 signing** (รองรับ RSA / ECC_NIST_P256/384/521 / secp256k1) — spec sign บน custody จริงไม่ได้
+
+**มติ (owner, ก-ก-ก)**:
+1. **Q1: factory packet attestation signing = ECDSA P-256 บน AWS KMS** — non-exportable, FIPS 140-2 L3 HSM, joint-approval ผ่าน IAM · เหตุผลแกน: custody properties (non-exportable/HSM/joint-approval) สำคัญกว่าชื่อ algorithm; ECDSA P-256 แข็งเท่า Ed25519 และ KMS-native
+2. **Q2: เฉพาะ factory packet เปลี่ยน** — receipt/release signing (`src/crypto/ed25519.ts`, `src/release/keys/*`) คง Ed25519 (คนละ trust domain, ทำงานอยู่) · unify ทีหลังถ้าจำเป็น · minimize blast radius
+3. **Q3: amend CT-DEC-002 เดี๋ยวนี้ก่อนเซ็น** — ห้ามเซ็น spec ที่ implement บน custody จริงไม่ได้ · Control Tower (builder) แก้เป็น v0.4 → independent re-review รอบ 4 → แล้วค่อย 3-role sign-off
+
+**Consequences**: CT-DEC-002 v0.3 (`bf25b10f`) superseded โดย v0.4 (Ed25519→ECDSA_P256 ใน §10 + schema const + signing preimage) · sign-off checklist regenerate สำหรับ v0.4 · S17-5 verifier ใช้ ECDSA verify · S17-6 KMS = ECDSA P-256 key · timing กระทบ re-plan (ADR-067) เล็กน้อย (~1-2 วัน amend+re-review)
