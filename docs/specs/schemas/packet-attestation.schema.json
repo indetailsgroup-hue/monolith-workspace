@@ -67,12 +67,22 @@
           "additionalProperties": false,
           "required": ["algorithm", "keyId", "registryVersion"],
           "properties": {
-            "algorithm": { "const": "Ed25519" },
+            "algorithm": { "const": "ECDSA_P256_SHA256" },
             "keyId": { "$ref": "common.schema.json#/$defs/opaqueId" },
             "registryVersion": { "$ref": "common.schema.json#/$defs/semver" }
           }
         },
-        "valueBase64": { "type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$" }
+        "valueBase64": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{85}[AQgw]==$",
+          "contentEncoding": "base64",
+          "x-monolith-signatureEncoding": "IEEE_P1363_RAW_R_S_64_BYTES",
+          "x-monolith-integerEncoding": "UNSIGNED_BIG_ENDIAN_FIXED_32_BYTES_EACH",
+          "x-monolith-requireLowS": true,
+          "x-monolith-curve": "P-256",
+          "x-monolith-digest": "SHA-256",
+          "x-monolith-kmsSigningAlgorithm": "ECDSA_SHA_256"
+        }
       }
     }
   }

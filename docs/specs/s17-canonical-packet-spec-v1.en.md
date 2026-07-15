@@ -1,12 +1,13 @@
 # CT-DEC-002 / S17-3 — Canonical Factory Packet Specification
 
-Document version: 0.3
+Document version: 0.4.1
 Drafted: 2026-07-11  
-Revised: 2026-07-14 after the v0.2 independent adversarial re-review
+Revised: 2026-07-15 for the v0.4.1 low-S threshold correction after round-4 re-review
+Supersedes: v0.3 at `bf25b10f2c72707097acdb03a8161e8cec8cd36b`
 Status: **DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY**  
 Inspected baseline: `9ac7cff39d02d9430879275645e377728bc0abc5`  
 Drafted by: Codex in an advisory/non-authoritative capacity  
-Governing inputs: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065
+Governing inputs: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068
 
 > This document is a target-state contract submitted for approval. It does not prove current implementation, close S17-3, or unlock S17-4/S17-5 until all three approval roles have signed.
 
@@ -98,7 +99,7 @@ The packet form of `gate-result.json` has exactly this top-level shape; every fi
 | Track A authenticated-server contract | actor subject, authorization context, revision state | derive from verified session/JWT and server data; never trust `x-actor-role` or localStorage; Track A does not allocate `jobRunId` |
 | S17-4 export service | content build, idempotency fingerprint, transactional run allocation | call the Track A contract first; bind one server-owned `jobRunId` to exactly one `packetContentId` |
 | Deterministic builder | canonical payload/manifest construction | consume normalized authoritative input only; never hold the raw private key |
-| Managed KMS/HSM | Ed25519 signing | private key is non-exportable; key lifecycle belongs to S17-6 |
+| AWS KMS | ECDSA P-256 signing | `ECC_NIST_P256` private key is non-exportable; KMS `Sign` uses `ECDSA_SHA_256`; key lifecycle belongs to S17-6 |
 | Full verifier | byte, identity, signature, and authoritative-state checks | independent from the builder under CT-DEC-001; fail closed when data is missing or unknown |
 | Factory operator | acting on verifier status | never substitute filename/UI labels for verifier result; an NFP marker always means no real cutting |
 
@@ -173,7 +174,7 @@ The v2 schema registry is closed and allowlisted. At minimum it contains the fol
 | `NOT_FOR_PRODUCTION.txt` | `monolith.factory.nfp-marker@1.0` | Tech Lead + Factory Owner |
 | machine-profile descriptor | `monolith.machine-profile@1.0` | Factory Owner + Security Owner |
 
-The candidate normative schema bundle submitted for approval is committed under `docs/specs/schemas/`. It contains ten Draft 2020-12 schemas: shared closed definitions, both control-file schemas, five JSON payload schemas, the machine-profile descriptor, and the NFP marker byte contract. `schema-bundle.sha256` lists every schema in unsigned UTF-8 byte path order. `schema-bundle.aggregate.sha256` binds the exact bytes of that list; its current aggregate is `sha256:9d83834a115ce2d0b3f56537a1ee4baab5c689bc62bbbd99ec53717fc80868eb`.
+The candidate normative schema bundle submitted for approval is committed under `docs/specs/schemas/`. It contains ten Draft 2020-12 schemas: shared closed definitions, both control-file schemas, five JSON payload schemas, the machine-profile descriptor, and the NFP marker byte contract. `schema-bundle.sha256` lists every schema in unsigned UTF-8 byte path order. `schema-bundle.aggregate.sha256` binds the exact bytes of that list; its current v0.4 aggregate is `sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55`.
 
 After the approval matrix is signed, that exact aggregate becomes a verifier-policy input. Any schema change requires a new bundle aggregate and normative specification version; replacing or silently mutating a schema under an existing ID is forbidden. If any required payload schema or `x-monolith-orderBy` rule is absent, S17-3 cannot be approved and S17-4 must not guess it.
 
@@ -257,7 +258,7 @@ Requirements:
 | `actorSubjectId/authorizationContextId` | Track A authenticated-server contract | opaque server-derived IDs; client values rejected |
 | `jobRunId/idempotencyFingerprint` | S17-4 transactional run service | UUID v4 and one-to-one run/content binding |
 | `issuedAt` | S17-4 trusted server clock | exact millisecond UTC format; within verifier-policy skew |
-| signature protected header/key state | Security Owner trusted registry | protected preimage, approved Ed25519 key, lifecycle rules in §10.2 |
+| signature protected header/key state | Security Owner trusted registry | protected preimage, approved AWS KMS ECDSA P-256 key, canonical raw `r‖s` plus low-S rules, and lifecycle rules in §10.2 |
 
 ### 8.2 Calculating `packetContentId`
 
@@ -322,7 +323,7 @@ Ownership is fixed by CT-DEC-003: Track A owns `actorSubjectId`, authorization c
   },
   "signature": {
     "protected": {
-      "algorithm": "Ed25519",
+      "algorithm": "ECDSA_P256_SHA256",
       "keyId": "<trusted-registry-key-id>",
       "registryVersion": "<trusted-registry-version>"
     },
@@ -337,15 +338,19 @@ Signed identity binds at minimum `jobRunId`, `packetContentId`, exact manifest d
 
 1. Create `unsignedAttestation` by retaining `signature.protected` and omitting **only** `signature.valueBase64`
 2. Set `message = UTF8("MONOLITH_FACTORY_PACKET_ATTESTATION_V1\n") || UTF8(JCS(unsignedAttestation))`
-3. Have the KMS/HSM sign `message` with Ed25519
-4. `valueBase64` encodes exactly 64 signature bytes as padded RFC 4648 standard Base64 (88 characters ending `==`) with no whitespace or alternate encoding
-5. `keyId` and `registryVersion` select a record from the verifier's trusted registry; a packet-embedded key or registry must never establish its own trust
+3. Compute `messageDigest = SHA256(message)` and call AWS KMS `Sign` with `KeySpec = ECC_NIST_P256`, `SigningAlgorithm = ECDSA_SHA_256`, and `MessageType = DIGEST`. The digest passed to KMS is exactly the 32-byte `messageDigest`; it MUST NOT be hashed a second time by the caller.
+4. AWS KMS returns a variable-length ASN.1 DER ECDSA signature. The signer adapter MUST strictly parse that DER into positive integers `r` and `s`, require `1 <= r < n` and `1 <= s < n`, and normalize `s` to `min(s, n-s)` before packet serialization, where the P-256 order is `n = FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551`.
+5. `valueBase64` MUST encode the canonical IEEE P1363 raw form `r‖s`: unsigned big-endian `r` left-padded to exactly 32 bytes followed by unsigned big-endian `s` left-padded to exactly 32 bytes. The result is exactly 64 bytes and is encoded as padded RFC 4648 standard Base64: exactly 88 characters ending `==`, with no whitespace. A verifier MUST use strict decoding and require that re-encoding the 64 decoded bytes produces the exact original string, thereby rejecting non-zero padding bits. DER, variable-length integers, Base64url, and alternate encodings are forbidden in the packet.
+6. Low-S is mandatory. The serialized `s` MUST satisfy `1 <= s <= n/2`, with `floor(n/2) = 7FFFFFFF800000007FFFFFFFFFFFFFFFDE737D56D38BCF4279DCE5617E3192A8`. A verifier MUST reject a high-S twin, even when the mathematical ECDSA equation succeeds, with `PKT_SIGNATURE_INVALID`; it MUST NOT normalize attacker-controlled packet bytes before deciding validity.
+7. `keyId` and `registryVersion` select a record from the verifier's trusted registry; a packet-embedded key or registry must never establish its own trust.
+
+ECDSA signing is intentionally non-deterministic because each signing operation may use a different nonce `k`. Therefore `signature.valueBase64` is run-specific and belongs to the §4.1 run allowlist; it is not an input to `packetContentId`. Two accepted runs over identical canonical content MUST retain identical payload bytes, `manifest.json`, and `packetContentId`, while their signatures MAY differ. The verifier verifies the supplied canonical low-S signature over the preimage; it MUST NOT recompute or compare against a newly generated signature.
 
 Changing the algorithm, key ID, registry version, or any identity field after signing MUST invalidate the signature.
 
 ### 10.2 Trusted-key lifecycle and revocation
 
-Each trusted-registry record contains canonical `keyId`, Ed25519 public key bytes, `notBefore`, `notAfter`, state (`ACTIVE`, `RETIRED`, or `REVOKED`), optional `retiredAt/revokedAt`, reason, and monotonically increasing signed registry version. Verifier policy pins the minimum accepted registry version/digest; packet content cannot roll it back.
+Each trusted-registry record contains canonical `keyId`; `algorithm = ECDSA_P256_SHA256`; the AWS KMS key ARN and key spec `ECC_NIST_P256`; the public key as padded RFC 4648 Base64 of the exact DER SubjectPublicKeyInfo returned by KMS `GetPublicKey`; `notBefore`; `notAfter`; state (`ACTIVE`, `RETIRED`, or `REVOKED`); optional `retiredAt/revokedAt`; reason; and a monotonically increasing signed registry version. The SPKI MUST use `id-ecPublicKey` with `prime256v1`/`secp256r1`, and its BIT STRING MUST contain exactly the 65-byte uncompressed point `0x04‖X‖Y` with 32-byte unsigned big-endian coordinates. Compressed points, bare points as the registry storage form, PEM text, non-canonical DER, and other curves are forbidden. Verifier policy pins the minimum accepted registry version/digest; packet content cannot roll it back.
 
 - `issuedAt` MUST satisfy `notBefore <= issuedAt < notAfter`
 - `ACTIVE` is accepted only under an approved current registry
@@ -394,7 +399,7 @@ The verifier MUST execute these checks in order and stop fail-closed:
 5. **Content identity**: recompute `packetContentId` from the descriptor
 6. **Manifest binding**: recompute exact `manifestSha256`
 7. **Identity consistency**: revision/profile/exporter/schema/packet ID, authorization context, and gate fields match across attestation, manifest, and gate evidence
-8. **Signature**: protected algorithm/key/registry lookup, lifecycle state, Ed25519 verification
+8. **Signature**: protected `ECDSA_P256_SHA256` algorithm/key/registry lookup, SPKI P-256 validation, exact raw `r‖s` decoding, scalar-range and low-S rejection, lifecycle state, then ECDSA verification over the SHA-256 digest; never recompute a signature
 9. **Authoritative checks**: revision remains RELEASED, project matches, profile/version/digest is authorized, exporter build+artifact is allowlisted, registry is current, and gate evidence is PASS under a supported policy
 10. **Run/replay checks**: `jobRunId` does not collide with other content and idempotency/replay policy passes
 11. **Shadow policy**: marker+prefix agree with governance state; NFP always produces NO_CUT
@@ -419,7 +424,7 @@ During shadow mode this is the highest possible result. `PKT_OK` is reserved and
 | Code | Meaning | `integrityStatus` | `operationalDisposition` |
 | --- | --- | --- | --- |
 | `PKT_OK_SHADOW_ONLY` | integrity/signature pass while NFP remains mandatory | `VERIFIED` | `NO_CUT` |
-| `PKT_OK` | reserved; forbidden during shadow mode | NOT EMITTABLE IN v0.3 PILOT | NOT EMITTABLE IN v0.3 PILOT |
+| `PKT_OK` | reserved; forbidden during shadow mode | NOT EMITTABLE IN v0.4 PILOT | NOT EMITTABLE IN v0.4 PILOT |
 | `PKT_LIMIT_EXCEEDED` | container exceeds policy | `FAILED` | `NO_CUT` |
 | all other failure codes below | retain their stable code-specific meaning | `FAILED` | `NO_CUT` |
 
@@ -464,7 +469,7 @@ S17-5 requires at least these negative fixtures:
 5. incorrect size/hash/packetContentId/manifest digest, one field at a time
 6. duplicate JSON key, non-canonical number/encoding/BOM/CRLF, excess millimetre precision, negative zero, unsafe integer, missing array-order rule, and randomized array order
 7. mutate revision, profile ID/version/digest, exporter version/build commit/artifact digest, schema, actor, authorization context, or idempotency fingerprint after signing
-8. missing signature, bit-flipped signature, changed protected algorithm/key ID/registry version, wrong key, unknown key, revoked/retired/expired/not-yet-valid key, registry rollback, and empty placeholder key
+8. missing signature, bit-flipped signature, changed protected algorithm/key ID/registry version, DER-in-packet encoding, short/long raw encoding, zero/out-of-range `r` or `s`, high-S twin, wrong curve/SPKI/point format, wrong key, unknown key, revoked/retired/expired/not-yet-valid key, registry rollback, and empty placeholder key
 9. client-provided `jobRunId`, actor, or authorization context; malformed UUID; reuse with another packetContentId; transaction rollback/reuse; and idempotency conflict
 10. DRAFT/FROZEN revision, gate FAIL, signed/file gate mismatch, unsupported gate policy, and unavailable authoritative lookup
 11. remove/modify `NOT_FOR_PRODUCTION.txt`, remove `NFP-`, omit the source filename, include the literal `sha256:` colon in a filename, or attempt production use of an NFP packet
@@ -510,7 +515,7 @@ Until all seven are satisfied, status remains DRAFT and Track B implementation r
 
 1. Does the Factory Owner approve the required payload set, schema registry/order keys, controlled-pilot ZIP limits, and the `kdt_mvp_v1` ID/version/profile-digest contract?
 2. Does the Tech Lead approve JCS + exact integer-micrometre normalization, method-0 ZIP profile, UUID v4/idempotency transaction semantics, and S17-4 run ownership?
-3. Does the Security Owner approve the protected Ed25519 header, trusted-registry minimum version/digest, fail-closed lookup, and revocation behavior?
+3. Does the Security Owner approve the protected `ECDSA_P256_SHA256` header, AWS KMS `ECDSA_SHA_256` digest-mode call, canonical raw `r‖s` low-S contract, SPKI P-256 registry format, minimum registry version/digest, fail-closed lookup, and revocation behavior?
 4. Do all three roles accept the determinism boundary: canonical payload is deterministic, while run-specific attestation may make outer ZIPs differ across runs?
 5. Do all three roles approve reserving `PKT_OK` and limiting the shadow pilot to `PKT_OK_SHADOW_ONLY / NO_CUT`?
 
@@ -540,3 +545,17 @@ This remediation map is a diff summary for re-review, not an approval or closure
 | B2-03 — manifest verifier accepted noncanonical order | `verify-sha256-manifest.mjs` now rejects entries not sorted by unsigned UTF-8 path bytes; the focused test suite reproduces the rejection |
 
 This v0.3 map records advisory remediation only. CT-DEC-002 remains DRAFT, every approval field remains PENDING, Track B remains locked, and no real-cut authority is created.
+
+## 20. v0.4 ADR-068 signature-layer amendment
+
+v0.4 supersedes v0.3 at `bf25b10f2c72707097acdb03a8161e8cec8cd36b` solely for the signature layer. All v0.3 schema-bundle membership, NFP precedence, stable result codes, verifier order, tamper corpus, deterministic content rules, and tooling controls remain in force except where the ECDSA-specific additions above are stricter.
+
+| ADR-068 decision | v0.4 binding amendment |
+| --- | --- |
+| AWS KMS cannot sign Ed25519 | algorithm is `ECDSA_P256_SHA256`; KMS key spec is `ECC_NIST_P256`; `Sign` uses `ECDSA_SHA_256` with the exact SHA-256 digest |
+| DER output is variable length | packet encoding is fixed 64-byte IEEE P1363 raw `r‖s`, padded standard Base64 |
+| ECDSA malleability | signer emits low-S; verifier rejects high-S with `PKT_SIGNATURE_INVALID` |
+| randomized nonce `k` | signature is run-specific, excluded from `packetContentId`; verifier verifies and never recomputes |
+| KMS public-key custody | trusted registry stores canonical DER SPKI whose BIT STRING is uncompressed `0x04‖X‖Y` on P-256 |
+
+CT-DEC-002 remains **DRAFT**; Tech Lead, Factory Owner, and Security Owner remain **PENDING**; Track B remains **LOCKED**; shadow mode remains **NO_CUT**; and this amendment creates no implementation or production authority.

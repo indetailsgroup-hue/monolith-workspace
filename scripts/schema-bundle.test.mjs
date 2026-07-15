@@ -48,4 +48,16 @@ test('schema bundle is closed and every payload array declares canonical order',
     visitSchema(schema, name, findings);
   }
   assert.deepEqual(findings, []);
+
+  const attestation = schemas.find(({ name }) => name === 'packet-attestation.schema.json')?.schema;
+  assert(attestation, 'packet-attestation schema is required');
+  const protectedSignature = attestation.properties.signature.properties.protected;
+  const signatureValue = attestation.properties.signature.properties.valueBase64;
+  assert.equal(protectedSignature.properties.algorithm.const, 'ECDSA_P256_SHA256');
+  assert.equal(signatureValue.pattern, '^[A-Za-z0-9+/]{85}[AQgw]==$');
+  assert.equal(signatureValue['x-monolith-signatureEncoding'], 'IEEE_P1363_RAW_R_S_64_BYTES');
+  assert.equal(signatureValue['x-monolith-requireLowS'], true);
+  assert.equal(signatureValue['x-monolith-curve'], 'P-256');
+  assert.equal(signatureValue['x-monolith-digest'], 'SHA-256');
+  assert.equal(signatureValue['x-monolith-kmsSigningAlgorithm'], 'ECDSA_SHA_256');
 });
