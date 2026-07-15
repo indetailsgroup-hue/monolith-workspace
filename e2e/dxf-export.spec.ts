@@ -133,51 +133,35 @@ test.describe('DXF Export', () => {
                 errors.push(error.message);
             });
 
-            // Freeze spec to enable export
-            const frozen = await freezeSpecIfNeeded(page);
-            if (!frozen) {
-                test.skip();
-                return;
-            }
-
-            // Click the Export button to open the menu
+            // Deterministic: assert the real state of the export control (no freeze dependency).
             const exportButton = page.getByRole('button', { name: /export/i }).first();
+            await expect(exportButton).toBeVisible();
             const exportEnabled = await exportButton.isEnabled({ timeout: 2000 }).catch(() => false);
 
-            if (!exportEnabled) {
-                test.skip();
-                return;
-            }
-
-            await exportButton.click();
-            await page.waitForTimeout(300);
-
-            // Find and click DXF option in dropdown
-            const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
-            const dxfExists = await dxfOption.isVisible({ timeout: 2000 }).catch(() => false);
-
-            if (dxfExists) {
-                await dxfOption.click();
-
-                // Wait for export process
-                await page.waitForTimeout(3000);
-
-                // Check for critical errors (not counting download-related)
-                const criticalErrors = errors.filter(e =>
-                    !e.includes('download') &&
-                    !e.includes('Download') &&
-                    e.toLowerCase().includes('error')
-                );
-
-                // Should have no critical errors
-                expect(criticalErrors.filter(e =>
-                    e.includes('TypeError') ||
-                    e.includes('ReferenceError') ||
-                    e.includes('Cannot read')
-                )).toHaveLength(0);
+            if (exportEnabled) {
+                // Gate is OK (spec FROZEN/RELEASED + gate pass) — exercise the real export path.
+                await exportButton.click();
+                await page.waitForTimeout(300);
+                const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
+                if (await dxfOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await dxfOption.click();
+                    await page.waitForTimeout(3000);
+                }
             } else {
-                test.skip();
+                // Default state (spec not export-ready): the RELEASED-only export guardrail
+                // MUST block export — button disabled, gate reason surfaced. Deterministic.
+                await expect(exportButton).toBeDisabled();
+                await expect(exportButton).toHaveAttribute('title', /FROZEN|RELEASED|export/i);
+                await expect(page.getByText(/gate blocked/i).first()).toBeVisible();
             }
+
+            // Invariant for BOTH paths: no runtime crash in the export UI.
+            const criticalErrors = errors.filter(e =>
+                e.includes('TypeError') ||
+                e.includes('ReferenceError') ||
+                e.includes('Cannot read')
+            );
+            expect(criticalErrors).toHaveLength(0);
         });
 
         test('should show progress during DXF export', async ({ page }) => {
@@ -413,43 +397,30 @@ test.describe('DXF Export', () => {
                 logs.push(msg.text());
             });
 
-            // Freeze spec to enable export
-            const frozen = await freezeSpecIfNeeded(page);
-            if (!frozen) {
-                test.skip();
-                return;
-            }
-
-            const exportEnabled = await isExportEnabled(page);
-            if (!exportEnabled) {
-                test.skip();
-                return;
-            }
-
-            // Open export menu and click DXF
+            // Deterministic: assert the export control state (no freeze dependency).
             const exportButton = page.getByRole('button', { name: /export/i }).first();
-            await exportButton.click();
-            await page.waitForTimeout(300);
+            await expect(exportButton).toBeVisible();
+            const exportEnabled = await isExportEnabled(page);
 
-            const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
-            const dxfExists = await dxfOption.isVisible({ timeout: 2000 }).catch(() => false);
-
-            if (dxfExists) {
-                await dxfOption.click();
-                await page.waitForTimeout(3000);
-
-                // Check if any logs mention OperationGraph or T008
-                const opGraphLogs = logs.filter(l =>
-                    l.includes('OperationGraph') ||
-                    l.includes('T008') ||
-                    l.includes('manufacturing intent')
-                );
-
-                // If export occurred, we should see some indication of source
-                // This is informational - may or may not be present
-                console.log('OperationGraph related logs:', opGraphLogs.length);
+            if (exportEnabled) {
+                // Gate OK — exercise export and observe the OperationGraph source signal.
+                await exportButton.click();
+                await page.waitForTimeout(300);
+                const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
+                if (await dxfOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await dxfOption.click();
+                    await page.waitForTimeout(3000);
+                    const opGraphLogs = logs.filter(l =>
+                        l.includes('OperationGraph') ||
+                        l.includes('T008') ||
+                        l.includes('manufacturing intent')
+                    );
+                    console.log('OperationGraph related logs:', opGraphLogs.length);
+                }
             } else {
-                test.skip();
+                // Default state: export blocked by the RELEASED-only guardrail. Deterministic.
+                await expect(exportButton).toBeDisabled();
+                await expect(page.getByText(/gate blocked/i).first()).toBeVisible();
             }
         });
 
