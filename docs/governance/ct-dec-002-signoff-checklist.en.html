@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist v0.4.1</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist</h1>
+<p><strong>Spec</strong>: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code> <strong>Hash anchor to sign</strong>: <code>monolith-s17-v041-review-input.sha256</code> (sha256 <code>75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046</code>) <strong>Aggregate schema digest</strong>: <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code> <strong>Independent re-review verdict</strong>: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)</p>
+<blockquote><p>A signature is a human accountability record that the signer performed the review; it is not the act of rubber-stamping an AI verdict. AI does not sign on a person's behalf. Once all three signatures are in, CT-DEC-002 = APPROVED and Track B (S17-4/5) unlocks.</p><p>Enforced until all three sign: DRAFT · Track B LOCKED · NO_CUT · no P0 closure · no bare <code>PKT_OK</code> in shadow mode.</p></blockquote>
+<h2>0. Pre-sign (every role does this first)</h2>
+<ul><li>[ ] Confirm you are reviewing the exact bytes pinned in <code>monolith-s17-v041-review-input.sha256</code>.</li><li>[ ] Verify the aggregate schema digest from <code>schema-bundle.aggregate.sha256</code> with an independent tool (do not trust it merely because the manifest carries it).</li><li>[ ] Read the complete round-4 independent re-review and understand that a review verdict is not approval.</li></ul>
+<h2>1. Tech Lead — Contract Correctness &amp; Implementability</h2>
+<ul><li>[ ] Schema bundle complete: 10 schemas, every array carries <code>x-monolith-orderBy</code>, every object is <code>additionalProperties:false</code>, aggregate digest bound.</li><li>[ ] Identity model: <code>packetContentId</code> (hash of canonical content) / <code>jobRunId</code> (server-owned, excluded from the content hash) / signed identity binding released revision + machine-profile ver + exporter ver + schema ver — no collision.</li><li>[ ] Determinism implementable without guessing: JCS, integer micrometres, UTF-8 byte ordering, and the ZIP byte profile are fully specified (S17-4 can build without interpretation).</li><li>[ ] Verifier check order (S12) + result codes (S13) are deterministic (NFP-missing -&gt; clear <code>PKT_FILE_MISSING</code>, first-fail-wins).</li><li>[ ] Confirm S17-4/S17-5 have enough contract to begin implementation (after all signatures).</li></ul>
+<h2>2. Factory Owner — Factory Operability &amp; Safety</h2>
+<ul><li>[ ] NFP/NO_CUT enforced: shadow mode cannot cut for real · maximum result <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code> · bare <code>PKT_OK</code> is not emittable.</li><li>[ ] Machine profile binding: id + version + digest (a forged profile fails -&gt; <code>PKT_MACHINE_PROFILE_MISMATCH</code>).</li><li>[ ] Verifier fail-closed: damaged packet / lookup outage -&gt; never reaches a machine (<code>PKT_AUTHORITY_UNAVAILABLE</code> -&gt; FAIL/NO_CUT, not &quot;warn and pass&quot;).</li><li>[ ] Exporter allowlist + gate evidence binding (gate not PASS -&gt; <code>PKT_GATE_FAILED</code>).</li><li>[ ] Machine profile <code>kdt_mvp_v1</code> matches the physical machine + controller (confirmed by the factory).</li></ul>
+<h2>3. Security Owner — Signature / Trust / Key</h2>
+<blockquote><p><strong>ADR-068 resolution (15 July)</strong>: the Owner selected AWS KMS <code>ECC_NIST_P256</code> and <code>ECDSA_SHA_256</code>; v0.4 replaced the Ed25519 signature layer of v0.3. The checks below remain PENDING until the Security Owner reviews the exact bytes and hash anchor of round 4.</p></blockquote>
+<ul><li>[ ] <strong>ECDSA-vs-KMS reconciled</strong>: the protected algorithm is <code>ECDSA_P256_SHA256</code>; KMS <code>Sign</code> uses <code>ECC_NIST_P256</code> + <code>ECDSA_SHA_256</code> + <code>MessageType=DIGEST</code> against the exact SHA-256 digest.</li><li>[ ] Signature encoding: KMS DER is converted to raw <code>r‖s</code> 64-byte Base64; the signer emits low-S; the verifier rejects DER/high-S/out-of-range with <code>PKT_SIGNATURE_INVALID</code>.</li><li>[ ] Non-determinism boundary: the signature is a run-specific allowlist, excluded from <code>packetContentId</code>; the verifier verifies only, never recomputes.</li><li>[ ] Public-key registry: pin canonical DER SPKI (<code>id-ecPublicKey</code> + <code>prime256v1</code>) whose BIT STRING is uncompressed <code>0x04‖X‖Y</code>; a packet-supplied key must not establish trust by itself.</li><li>[ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, <code>notBefore/notAfter</code>, anti-rollback, registry-unavailable = fail-closed.</li><li>[ ] Trusted-key registry: a public key inside a packet must not establish trust for itself (<code>PKT_KEY_UNKNOWN/REVOKED/EXPIRED</code>).</li><li>[ ] Server-owned actor bound to S17-1 (JWT-derived, not a client header) — attestation uses an unforgeable identity.</li><li>[ ] Tamper corpus (S14) covers enough + custody model matches ADR-064 / the custody decision (KMS/HSM non-exportable).</li></ul>
+<h2>4. Signature Block</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Role</th>
+<th>Name</th>
+<th>Commit signed</th>
+<th>Date</th>
+<th>Status</th>
+</tr></thead><tbody>
+<tr>
+<td>Tech Lead</td>
+<td>(Dave)</td>
+<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td>—</td>
+<td>PENDING</td>
+</tr>
+<tr>
+<td>Factory Owner</td>
+<td>—</td>
+<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td>—</td>
+<td>PENDING</td>
+</tr>
+<tr>
+<td>Security Owner</td>
+<td>—</td>
+<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td>—</td>
+<td>PENDING</td>
+</tr>
+</tbody></table></div>
+<h2>5. Effect once all three sign</h2>
+<ul><li>CT-DEC-002 = APPROVED</li><li>Track B unlocks: S17-4 determinism + S17-5 verifier</li><li>S17-5 must be implemented/reviewed by someone independent of the S17-3/4 builder (SoD, ADR-065)</li><li>NFP/NO_CUT remains until the four real-cut gate conditions pass (S17x5 + ADR-064 complete + dogfood &gt;=1 + machine profile calibrated)</li></ul>
+<h2>6. Advisory cautions</h2>
+<ol><li>If one person holds multiple roles (e.g. a 2-of-2 pilot ceremony) they sign each role separately and deliberately — no bundled signature.</li><li>The Security Owner should sign last: signature/key behavior binds to the S17-1 server-owned actor, which is still staging-only (real prod deploy happens at pilot).</li><li>This sign-off does not close P0, does not authorize merge/prod-apply, and does not authorize real cutting — it unlocks only Track B implementation.</li></ol>
+<hr>
+<p>*Advisory checklist — human approval required. The exact v0.4 review bytes are pinned by <code>monolith-s17-v041-review-input.sha256</code>; this checklist does not change DRAFT/PENDING/Track B LOCKED/NO_CUT until all three roles sign.*</p>
+</main>
+</body>
+</html>
