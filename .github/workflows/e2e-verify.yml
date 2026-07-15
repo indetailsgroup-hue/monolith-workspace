@@ -1,0 +1,84 @@
+# AB (e2e coverage): CI e2e smoke = E0 evidence for the Designer critical path.
+# Playwright auto-starts the vite dev server (webServer in playwright.config.ts),
+# runs @smoke suite (app load, WebGL, X-Ray, preset, export gate), uploads evidence.
+# Client-side smoke — no backend/Supabase required.
+name: MONOLITH E2E Smoke
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**"]
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "playwright.config.ts"
+      - "index.html"
+      - "vite.config.*"
+      - ".github/workflows/e2e-verify.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "playwright.config.ts"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-smoke:
+    name: playwright @smoke (Designer critical path)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright chromium + OS deps
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e @smoke (playwright auto-starts vite dev server)
+        run: |
+          set -o pipefail
+          npx playwright test --grep @smoke --reporter=list 2>&1 | tee e2e.out
+
+      - name: Assemble evidence
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          const out = fs.existsSync('e2e.out') ? fs.readFileSync('e2e.out','utf8') : '';
+          const num = (re) => { const m = out.match(re); return m ? Number(m[1]) : 0; };
+          const passed = num(/(\d+) passed/);
+          const skipped = num(/(\d+) skipped/);
+          const failed = num(/(\d+) failed/);
+          const ev = {
+            evidenceTier: 'E0', workflow: 'e2e-smoke',
+            commit: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            environment: 'ubuntu-latest / playwright chromium / vite dev',
+            timestamp: new Date().toISOString(),
+            suite: 'playwright --grep @smoke',
+            results: { passed, skipped, failed, pass: failed === 0 && passed > 0 },
+          };
+          fs.writeFileSync('e2e-evidence.json', JSON.stringify(ev, null, 2));
+          console.log(JSON.stringify(ev, null, 2));
+          "
+
+      - name: Upload e2e evidence + report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence-${{ github.sha }}
+          path: |
+            e2e-evidence.json
+            e2e.out
+            playwright-report/
+          retention-days: 90
