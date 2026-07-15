@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/packet-attestation.schema.json",
+  "title": "monolith.factory.packet-attestation@1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "jobRunId", "packetContentId", "manifestSha256", "issuedAt", "actorSubjectId", "authorizationContextId", "idempotencyFingerprint", "releasedRevision", "machineProfile", "exporter", "packetSchema", "gate", "signature"],
+  "properties": {
+    "schema": { "const": "monolith.factory.packet-attestation@1.0" },
+    "jobRunId": { "$ref": "common.schema.json#/$defs/uuidV4" },
+    "packetContentId": { "$ref": "common.schema.json#/$defs/sha256Id" },
+    "manifestSha256": { "$ref": "common.schema.json#/$defs/sha256Id" },
+    "issuedAt": { "$ref": "common.schema.json#/$defs/timestampMsUtc" },
+    "actorSubjectId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+    "authorizationContextId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+    "idempotencyFingerprint": { "$ref": "common.schema.json#/$defs/sha256Id" },
+    "releasedRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "revisionId", "state"],
+      "properties": {
+        "projectId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "revisionId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "state": { "const": "RELEASED" }
+      }
+    },
+    "machineProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sha256"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "version": { "$ref": "common.schema.json#/$defs/semver" },
+        "sha256": { "$ref": "common.schema.json#/$defs/sha256Id" }
+      }
+    },
+    "exporter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "buildCommit", "artifactSha256"],
+      "properties": {
+        "id": { "const": "monolith.factory-exporter" },
+        "version": { "$ref": "common.schema.json#/$defs/semver" },
+        "buildCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "artifactSha256": { "$ref": "common.schema.json#/$defs/sha256Id" }
+      }
+    },
+    "packetSchema": { "const": "monolith.factory.packet@2.0" },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "policyVersion", "evidenceFile", "evidenceSha256"],
+      "properties": {
+        "result": { "const": "PASS" },
+        "policyVersion": { "$ref": "common.schema.json#/$defs/semver" },
+        "evidenceFile": { "const": "gate-result.json" },
+        "evidenceSha256": { "$ref": "common.schema.json#/$defs/sha256Id" }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protected", "valueBase64"],
+      "properties": {
+        "protected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "keyId", "registryVersion"],
+          "properties": {
+            "algorithm": { "const": "Ed25519" },
+            "keyId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+            "registryVersion": { "$ref": "common.schema.json#/$defs/semver" }
+          }
+        },
+        "valueBase64": { "type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$" }
+      }
+    }
+  }
+}

@@ -9,10 +9,12 @@ if (manifests.length === 0) {
 }
 
 let failed = false;
+let invalidCount = 0;
 
 function markInvalid(manifestPath, reason) {
   console.error(`INVALID  ${manifestPath}: ${reason}`);
   failed = true;
+  invalidCount += 1;
 }
 
 function isContained(root, candidate) {
@@ -40,10 +42,16 @@ function validateCanonicalPath(path) {
 }
 
 for (const manifestPath of manifests) {
+  const invalidCountAtStart = invalidCount;
   const manifestAbsolute = resolve(manifestPath);
   const manifestRoot = dirname(manifestAbsolute);
   let bytes;
   try {
+    const manifestStat = await lstat(manifestAbsolute);
+    if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) {
+      markInvalid(manifestPath, 'manifest is not a regular non-symlink file');
+      continue;
+    }
     bytes = await readFile(manifestAbsolute);
   } catch (error) {
     markInvalid(manifestPath, error.message);
@@ -98,7 +106,20 @@ for (const manifestPath of manifests) {
     seen.add(canonical);
     seenCaseFolded.add(folded);
   }
-  if (failed && parsed.length !== lines.length) continue;
+  if (invalidCount > invalidCountAtStart) continue;
+
+  for (let index = 1; index < parsed.length; index += 1) {
+    const previous = Buffer.from(parsed[index - 1].canonical, 'utf8');
+    const current = Buffer.from(parsed[index].canonical, 'utf8');
+    if (Buffer.compare(previous, current) >= 0) {
+      markInvalid(
+        manifestPath,
+        `entries are not in unsigned UTF-8 byte order: ${parsed[index - 1].canonical} before ${parsed[index].canonical}`,
+      );
+      break;
+    }
+  }
+  if (invalidCount > invalidCountAtStart) continue;
 
   let rootReal;
   let manifestReal;

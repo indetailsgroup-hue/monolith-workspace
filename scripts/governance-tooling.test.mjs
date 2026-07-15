@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -75,6 +75,7 @@ test('verifier rejects traversal, duplicates, blank lines, CRLF, and Windows-inv
     ['blank.sha256', `${insideLine}\n\n${insideLine}\n`],
     ['crlf.sha256', `${insideLine}\r\n`],
     ['windows-invalid.sha256', `${sha256('inside')}  CON.txt\n`],
+    ['unsorted.sha256', `${sha256('inside')}  z.txt\n${sha256('inside')}  a.txt\n`],
   ]);
   for (const [name, content] of fixtures) {
     const path = join(manifestRoot, name);
@@ -82,6 +83,39 @@ test('verifier rejects traversal, duplicates, blank lines, CRLF, and Windows-inv
     assert.notEqual(run(verifier, [path]).status, 0, `${name} unexpectedly passed`);
   }
 }));
+
+test('writer and verifier reject symlink inputs, output aliases, and manifest aliases', async (t) => {
+  await withTempDir(async (root) => {
+    const manifestRoot = join(root, 'manifest-root');
+    await mkdir(manifestRoot);
+    const inside = join(manifestRoot, 'inside.txt');
+    const outside = join(root, 'outside.txt');
+    await writeFile(inside, 'inside', 'utf8');
+    await writeFile(outside, 'outside', 'utf8');
+
+    const inputAlias = join(manifestRoot, 'input-alias.txt');
+    const outputAlias = join(manifestRoot, 'output-alias.sha256');
+    const manifestAlias = join(manifestRoot, 'manifest-alias.sha256');
+    const realManifest = join(root, 'real-manifest.sha256');
+    await writeFile(realManifest, `${sha256('inside')}  inside.txt\n`, 'utf8');
+
+    try {
+      await symlink(outside, inputAlias, 'file');
+      await symlink(outside, outputAlias, 'file');
+      await symlink(realManifest, manifestAlias, 'file');
+    } catch (error) {
+      if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+        t.skip(`symlink creation unavailable: ${error.code}`);
+        return;
+      }
+      throw error;
+    }
+
+    assert.notEqual(run(writer, [join(manifestRoot, 'input.sha256'), inputAlias]).status, 0);
+    assert.notEqual(run(writer, [outputAlias, inside]).status, 0);
+    assert.notEqual(run(verifier, [manifestAlias]).status, 0);
+  });
+});
 
 test('renderer preserves literal legacy tokens and rejects unsafe links and unclosed fences', () => withTempDir(async (root) => {
   const safeInput = join(root, 'safe.md');

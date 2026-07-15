@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/machine-profile.schema.json",
+  "title": "monolith.machine-profile@1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "version", "units", "parameters"],
+  "properties": {
+    "schema": { "const": "monolith.machine-profile@1.0" },
+    "id": { "const": "kdt_mvp_v1" },
+    "version": { "const": "1.0.0" },
+    "units": { "const": "um" },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bedWidthUm", "bedLengthUm", "maxPanelThicknessUm", "minBoreDiameterUm", "maxBoreDiameterUm", "supportedFaces"],
+      "properties": {
+        "bedWidthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "bedLengthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "maxPanelThicknessUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "minBoreDiameterUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "maxBoreDiameterUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "supportedFaces": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "x-monolith-orderBy": ["$value:enum-rank(A,B,TOP,BOTTOM,LEFT,RIGHT)"],
+          "items": { "enum": ["A", "B", "TOP", "BOTTOM", "LEFT", "RIGHT"] }
+        }
+      }
+    }
+  }
+}

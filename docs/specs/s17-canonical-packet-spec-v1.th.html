@@ -9,7 +9,7 @@
 <body>
 <main>
 <h1>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</h1>
-<p>ฉบับเอกสาร: 0.2 วันที่ร่าง: 2026-07-11 วันที่แก้ไข: 2026-07-11 หลัง independent review และ Tech Lead ส่งกลับแก้ไข สถานะ: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065</p>
+<p>ฉบับเอกสาร: 0.3 วันที่ร่าง: 2026-07-11 วันที่แก้ไข: 2026-07-14 หลัง independent adversarial re-review ของ v0.2 สถานะ: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065</p>
 <blockquote><p>เอกสารนี้เป็น target-state contract สำหรับขออนุมัติ ไม่ได้พิสูจน์ว่าโค้ดปัจจุบัน implement แล้ว ไม่ปิด S17-3 และไม่ปลด S17-4/S17-5 จนกว่าผู้อนุมัติสามบทบาทลงชื่อครบ</p></blockquote>
 <h2>1. Approval matrix</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -80,7 +80,13 @@
       &quot;code&quot;: &quot;&lt;stable-code&gt;&quot;,
       &quot;severity&quot;: &quot;WARNING&quot;,
       &quot;entityIds&quot;: [&quot;&lt;canonical-id&gt;&quot;],
-      &quot;parameters&quot;: {}
+      &quot;parameters&quot;: [
+        {
+          &quot;key&quot;: &quot;measuredUm&quot;,
+          &quot;type&quot;: &quot;INTEGER&quot;,
+          &quot;value&quot;: 18000
+        }
+      ]
     }
   ]
 }</code></pre>
@@ -189,19 +195,33 @@ attestation.json</code></pre>
 <td>Tech Lead</td>
 </tr>
 <tr>
+<td><code>NOT_FOR_PRODUCTION.txt</code></td>
+<td><code>monolith.factory.nfp-marker@1.0</code></td>
+<td>Tech Lead + Factory Owner</td>
+</tr>
+<tr>
 <td>machine-profile descriptor</td>
 <td><code>monolith.machine-profile@1.0</code></td>
 <td>Factory Owner + Security Owner</td>
 </tr>
 </tbody></table></div>
-<p>Approved schema bundle และ aggregate SHA-256 เป็น verifier-policy input หาก payload schema หรือ <code>x-monolith-orderBy</code> ใดไม่มีใน bundle นี้ ห้ามอนุมัติ S17-3 และ S17-4 ห้ามเดา</p>
+<p>Candidate normative schema bundle ที่ส่งขออนุมัติถูก commit ไว้ใต้ <code>docs/specs/schemas/</code> ประกอบด้วย Draft 2020-12 schemas สิบไฟล์ ได้แก่ shared closed definitions, control-file schemas สองตัว, JSON payload schemas ห้าตัว, machine-profile descriptor และ NFP marker byte contract ไฟล์ <code>schema-bundle.sha256</code> แสดง schema ทุกไฟล์ตาม unsigned UTF-8 byte path order ส่วน <code>schema-bundle.aggregate.sha256</code> ผูก exact bytes ของรายการนั้น โดย aggregate ปัจจุบันคือ <code>sha256:9d83834a115ce2d0b3f56537a1ee4baab5c689bc62bbbd99ec53717fc80868eb</code></p>
+<p>หลัง approval matrix ลงนามครบ exact aggregate นี้จึงเป็น verifier-policy input การแก้ schema ทุกครั้งต้องสร้าง bundle aggregate ใหม่และเพิ่ม normative specification version ห้ามแทนที่หรือแก้ schema เงียบภายใต้ ID เดิม หาก required payload schema หรือ <code>x-monolith-orderBy</code> ใดขาด ห้ามอนุมัติ S17-3 และ S17-4 ห้ามเดา</p>
+<p><code>x-monolith-orderBy</code> เป็นข้อบังคับ Keys เปรียบเทียบแบบ unsigned UTF-8 bytes เว้นแต่ระบุ enum rank ชัดเจน Nested keys ใช้ตามลำดับซ้ายไปขวา <code>$value</code> หมายถึง scalar item และต้อง reject duplicate canonical keys Gate parameters ใช้ sorted array ของ closed typed records รูป <code>{key,type,value}</code> แทน open object เพื่อให้ parameter ownership และ ordering อยู่ใน schema</p>
 <p>Machine-profile digest input มี closed top-level shape ต่อไปนี้ โดย <code>parameters</code> เป็น closed version-specific object ที่ Factory Owner อนุมัติ:</p>
 <pre><code class="language-json">{
   &quot;schema&quot;: &quot;monolith.machine-profile@1.0&quot;,
   &quot;id&quot;: &quot;kdt_mvp_v1&quot;,
   &quot;version&quot;: &quot;1.0.0&quot;,
   &quot;units&quot;: &quot;um&quot;,
-  &quot;parameters&quot;: {}
+  &quot;parameters&quot;: {
+    &quot;bedWidthUm&quot;: 1220000,
+    &quot;bedLengthUm&quot;: 2440000,
+    &quot;maxPanelThicknessUm&quot;: 50000,
+    &quot;minBoreDiameterUm&quot;: 3000,
+    &quot;maxBoreDiameterUm&quot;: 35000,
+    &quot;supportedFaces&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;TOP&quot;, &quot;BOTTOM&quot;, &quot;LEFT&quot;, &quot;RIGHT&quot;]
+  }
 }</code></pre>
 <h2>8. Per-file manifest format</h2>
 <p><code>manifest.json</code> ใช้ schema identifier <code>monolith.factory.packet@2.0</code> และมี exact top-level shape ต่อไปนี้ ทุก field ที่แสดงบังคับ nested object ทุกตัวเป็น closed object และห้าม additional properties:</p>
@@ -353,7 +373,7 @@ attestation.json</code></pre>
 <p>S17-6 เป็นเจ้าของ custody, provisioning, rotation ceremony และ evidence แต่ lifecycle semantics เหล่านี้เป็น normative สำหรับ S17-5 แล้ว ห้ามเลื่อนไปเดาใน implementation</p>
 <h2>11. Shadow mode / NOT-FOR-PRODUCTION contract</h2>
 <p>ขณะที่ real-cut gate ยังไม่ผ่านครบสี่เงื่อนไข:</p>
-<ol><li><code>NOT_FOR_PRODUCTION.txt</code> ต้องมีอยู่และอยู่ใน <code>manifest.files</code></li><li>bytes ต้องตรงค่าที่ exporter version กำหนดจาก <code>src/core/config/shadowMode.ts</code>: 824 UTF-8 bytes, LF เท่านั้น, ไม่มี trailing LF, SHA-256 <code>40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a</code></li><li>ZIP filename ต้องขึ้นต้น <code>NFP-</code></li><li>verifier อาจให้ผล integrity ว่า PASS แต่สถานะ operational ต้องเป็น <code>VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>การหายไปของ marker หรือ prefix ไม่ยกระดับเป็น production; ต้อง fail <code>PKT_NFP_POLICY_MISMATCH</code></li><li>การปิด marker ต้องมาจาก governance-controlled configuration หลัง S17-1..5 ปิด, ADR-064 ครบสี่บทบาท, dogfood เต็มสายอย่างน้อยหนึ่งงาน และ machine profile calibrate แล้วเท่านั้น</li></ol>
+<ol><li><code>NOT_FOR_PRODUCTION.txt</code> ต้องมีอยู่และอยู่ใน <code>manifest.files</code></li><li>bytes ต้องตรงค่าที่ exporter version กำหนดจาก <code>src/core/config/shadowMode.ts</code>: 824 UTF-8 bytes, LF เท่านั้น, ไม่มี trailing LF, SHA-256 <code>40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a</code></li><li>ZIP filename ต้องขึ้นต้น <code>NFP-</code></li><li>verifier อาจคืน <code>integrityStatus = VERIFIED</code> แต่ต้องคืน <code>operationalDisposition = NO_CUT</code> และ code <code>PKT_OK_SHADOW_ONLY</code></li><li>marker เป็น manifest-listed payload ไม่ใช่ control file: marker ที่หายต้อง fail ที่ verifier check 3 ด้วย <code>PKT_FILE_MISSING</code>; marker ที่มีอยู่แต่ bytes ผิดต้อง fail ที่ check 4 ด้วย <code>PKT_SIZE_MISMATCH</code> หรือ <code>PKT_HASH_MISMATCH</code>; source filename ที่ขาดหรือไม่มี prefix <code>NFP-</code> ที่ถูกต้องต้อง fail ก่อน parse packet ด้วย <code>PKT_FILENAME_INVALID</code>; <code>PKT_NFP_POLICY_MISMATCH</code> สงวนไว้สำหรับ check 11 เมื่อ marker+prefix ครบแต่ขัดกับ authoritative governance mode</li><li>การปิด marker ต้องมาจาก governance-controlled configuration หลัง S17-1..5 ปิด, ADR-064 ครบสี่บทบาท, dogfood เต็มสายอย่างน้อยหนึ่งงาน และ machine profile calibrate แล้วเท่านั้น</li></ol>
 <p>ข้อความ marker ปัจจุบัน:</p>
 <pre><code class="language-text">*** NOT FOR PRODUCTION — ห้ามใช้ตัดชิ้นงานจริง ***
 
@@ -368,7 +388,7 @@ blockers are closed and the four-condition real-cut gate passes.
 ใช้ได้เฉพาะ: เทียบกับใบสั่งผลิตเดิมของโรงงานเพื่อเก็บ evidence ป้อน S17</code></pre>
 <h2>12. Full verifier contract (S17-5 input)</h2>
 <p>Verifier ต้องตรวจตามลำดับและหยุดแบบ fail-closed:</p>
-<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema-bundle digest, reject duplicate key ก่อนสร้าง object และ exact supported versions</li><li><strong>Exact file set</strong>: payload ทุกไฟล์ตรง manifest; ไม่มี missing/extra นอกจาก control files ที่กำหนด</li><li><strong>Byte integrity</strong>: <code>sizeBytes</code> และ SHA-256 ต่อไฟล์</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> จาก descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID, authorization context และ gate fields ตรงกันใน attestation, manifest และ gate evidence</li><li><strong>Signature</strong>: protected algorithm/key/registry lookup, lifecycle state และ Ed25519 verify</li><li><strong>Authoritative checks</strong>: revision ยังเป็น RELEASED, project ตรง, machine profile/version/digest ได้รับอนุญาต, exporter build+artifact อยู่ allowlist, registry current และ gate evidence PASS ตาม policy ที่รองรับ</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> ไม่ชน content อื่น, idempotency/replay policy ผ่าน</li><li><strong>Shadow policy</strong>: marker+prefix สอดคล้อง governance state; NFP แสดง NO_CUT เสมอ</li><li><strong>Audit result</strong>: เก็บ verifier version, policy versions, checked hashes, result code, time และ human/operator context โดยไม่เขียนทับ evidence เดิม</li></ol>
+<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema-bundle digest, reject duplicate key ก่อนสร้าง object และ exact supported versions</li><li><strong>Exact file set</strong>: manifest-listed payload ทุกไฟล์ รวม <code>NOT_FOR_PRODUCTION.txt</code> ขณะ shadow mode ต้องมีอยู่ครั้งเดียว ห้าม missing/extra นอกเหนือจาก control files สองตัวที่กำหนดคือ <code>manifest.json</code> และ <code>attestation.json</code>; marker ที่หายจึงคืน <code>PKT_FILE_MISSING</code> ที่ขั้นนี้</li><li><strong>Byte integrity</strong>: <code>sizeBytes</code> และ SHA-256 ต่อไฟล์</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> จาก descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID, authorization context และ gate fields ตรงกันใน attestation, manifest และ gate evidence</li><li><strong>Signature</strong>: protected algorithm/key/registry lookup, lifecycle state และ Ed25519 verify</li><li><strong>Authoritative checks</strong>: revision ยังเป็น RELEASED, project ตรง, machine profile/version/digest ได้รับอนุญาต, exporter build+artifact อยู่ allowlist, registry current และ gate evidence PASS ตาม policy ที่รองรับ</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> ไม่ชน content อื่น, idempotency/replay policy ผ่าน</li><li><strong>Shadow policy</strong>: marker+prefix สอดคล้อง governance state; NFP แสดง NO_CUT เสมอ</li><li><strong>Audit result</strong>: เก็บ verifier version, policy versions, checked hashes, result code, time และ human/operator context โดยไม่เขียนทับ evidence เดิม</li></ol>
 <p>Verifier ห้าม “warn แล้วผ่าน” เมื่อ schema/key/state ไม่รู้จัก, network/state lookup ที่จำเป็นล้มเหลว หรือ evidence ขาด</p>
 <p>Primary result code คือ check แรกที่ fail ตามลำดับหมายเลข Audit record อาจบันทึก later diagnostic findings ได้ แต่ห้ามแทนหรือ downgrade primary stable code ผลสำเร็จต้องแยกสาม field:</p>
 <pre><code class="language-json">{
@@ -381,137 +401,130 @@ blockers are closed and the four-condition real-cut gate passes.
 <div class="table-wrap"><table><thead><tr>
 <th>Code</th>
 <th>ความหมาย</th>
-<th>ผล</th>
+<th><code>integrityStatus</code></th>
+<th><code>operationalDisposition</code></th>
 </tr></thead><tbody>
 <tr>
 <td><code>PKT_OK_SHADOW_ONLY</code></td>
 <td>integrity/signature ผ่านแต่ NFP ยังบังคับ</td>
-<td>VERIFIED_SHADOW_ONLY / NO_CUT</td>
+<td><code>VERIFIED</code></td>
+<td><code>NO_CUT</code></td>
 </tr>
 <tr>
 <td><code>PKT_OK</code></td>
 <td>reserved; ห้ามใช้ขณะ shadow mode</td>
-<td>NOT EMITTABLE IN v0.2 PILOT</td>
+<td>NOT EMITTABLE IN v0.3 PILOT</td>
+<td>NOT EMITTABLE IN v0.3 PILOT</td>
 </tr>
 <tr>
 <td><code>PKT_LIMIT_EXCEEDED</code></td>
 <td>container เกิน policy</td>
-<td>FAIL</td>
+<td><code>FAILED</code></td>
+<td><code>NO_CUT</code></td>
 </tr>
+<tr>
+<td>failure codes อื่นทั้งหมดด้านล่าง</td>
+<td>คง stable code-specific meaning ของแต่ละข้อ</td>
+<td><code>FAILED</code></td>
+<td><code>NO_CUT</code></td>
+</tr>
+</tbody></table></div>
+<p>ความหมายของ failure codes:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Code</th>
+<th>ความหมาย</th>
+</tr></thead><tbody>
 <tr>
 <td><code>PKT_ZIP_PROFILE_INVALID</code></td>
 <td>ZIP header/metadata/profile ไม่ตรง §6</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_PATH_INVALID</code></td>
 <td>path traversal/duplicate/collision</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_FILENAME_INVALID</code></td>
 <td>source filename ขณะ shadow ขาดหรือผิดรูป</td>
-<td>FAIL / NO_CUT</td>
 </tr>
 <tr>
 <td><code>PKT_SCHEMA_UNSUPPORTED</code></td>
-<td>schema/version ไม่รองรับ</td>
-<td>FAIL</td>
+<td>schema/version/bundle digest ไม่รองรับ</td>
 </tr>
 <tr>
 <td><code>PKT_JSON_NON_CANONICAL</code></td>
 <td>JSON ไม่ตรง canonical rules</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_ATTESTATION_INVALID</code></td>
 <td>attestation shape/time/Base64 ผิดรูป</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_FILE_MISSING</code> / <code>PKT_FILE_EXTRA</code></td>
-<td>file set ไม่ตรง</td>
-<td>FAIL</td>
+<td>manifest-listed payload set ไม่ตรง รวม NFP marker ที่หาย</td>
 </tr>
 <tr>
 <td><code>PKT_SIZE_MISMATCH</code> / <code>PKT_HASH_MISMATCH</code></td>
-<td>bytes ไม่ตรง manifest</td>
-<td>FAIL</td>
+<td>payload bytes ไม่ตรง manifest รวม NFP marker bytes ที่ถูกแก้</td>
 </tr>
 <tr>
 <td><code>PKT_CONTENT_ID_MISMATCH</code></td>
 <td>packetContentId คำนวณใหม่ไม่ตรง</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_MANIFEST_BINDING_MISMATCH</code></td>
 <td>attestation ไม่ผูก exact manifest</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_IDENTITY_MISMATCH</code></td>
-<td>identity ซ้ำสองชั้นไม่ตรงกัน</td>
-<td>FAIL</td>
+<td>identity ที่ซ้ำสองชั้นไม่ตรงกัน</td>
 </tr>
 <tr>
 <td><code>PKT_SIGNATURE_MISSING</code> / <code>PKT_SIGNATURE_INVALID</code></td>
 <td>signature ขาด/ผิด</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_KEY_UNKNOWN</code> / <code>PKT_KEY_REVOKED</code></td>
 <td>trust key ใช้ไม่ได้</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_KEY_NOT_YET_VALID</code> / <code>PKT_KEY_EXPIRED</code></td>
 <td>key lifecycle window ปฏิเสธ <code>issuedAt</code></td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_AUTHORITY_UNAVAILABLE</code></td>
 <td>registry/revision/profile/gate lookup ที่บังคับใช้ไม่ได้</td>
-<td>FAIL / NO_CUT</td>
 </tr>
 <tr>
 <td><code>PKT_REVISION_NOT_RELEASED</code></td>
 <td>revision ไม่ใช่ RELEASED</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_MACHINE_PROFILE_MISMATCH</code></td>
 <td>profile/version/digest ไม่อนุญาต</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_EXPORTER_UNTRUSTED</code></td>
 <td>exporter build ไม่อยู่ allowlist</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_GATE_FAILED</code></td>
 <td>gate evidence ไม่ PASS/ไม่รองรับ</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_GATE_EVIDENCE_MISMATCH</code></td>
 <td>gate file กับ signed gate fields ไม่ตรงกัน</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_JOB_RUN_CONFLICT</code></td>
 <td>run ID ผูก content อื่นหรือ replay ผิด policy</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_IDEMPOTENCY_CONFLICT</code></td>
 <td>idempotency key เดียวถูกใช้กับ fingerprint ต่าง</td>
-<td>FAIL</td>
 </tr>
 <tr>
 <td><code>PKT_NFP_POLICY_MISMATCH</code></td>
-<td>marker/prefix ไม่ตรง governance state</td>
-<td>FAIL / NO_CUT</td>
+<td>marker+prefix ที่ครบขัดกับ authoritative governance mode ที่ check 11</td>
 </tr>
 </tbody></table></div>
 <p>ข้อความ UI อาจแปลภาษา แต่ stable code และ severity ห้ามเปลี่ยนตาม locale</p>
@@ -625,6 +638,33 @@ blockers are closed and the four-condition real-cut gate passes.
 </tr>
 </tbody></table></div>
 <p>Remediation map นี้เป็น diff summary สำหรับ re-review ไม่ใช่ approval หรือ closure claim</p>
+<h2>19. แผนที่แก้ adversarial re-review ใน v0.3</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Re-review finding</th>
+<th>การแก้ใน v0.3</th>
+</tr></thead><tbody>
+<tr>
+<td>B1-01 — อ้าง schema bundle แต่ไม่มีไฟล์จริง</td>
+<td>§7 ผูก closed schema bundle สิบไฟล์, per-file manifest, aggregate digest, typed gate parameters และ array-order extensions ที่ระบุชัดใต้ <code>docs/specs/schemas/</code> แล้ว</td>
+</tr>
+<tr>
+<td>B1-02 — NFP marker ที่หายมี primary code ขัดกัน</td>
+<td>§§11–13 นิยาม marker เป็น manifest-listed payload: หาย = <code>PKT_FILE_MISSING</code> ที่ check 3; bytes ผิด = size/hash failure ที่ check 4; filename ผิด = <code>PKT_FILENAME_INVALID</code>; ขัด governance mode = <code>PKT_NFP_POLICY_MISMATCH</code> ที่ check 11</td>
+</tr>
+<tr>
+<td>B2-01 — display vocabulary รวมกันขัดกับ result fields</td>
+<td>§13 แยก exact field values ของ <code>integrityStatus</code> และ <code>operationalDisposition</code> ออกจาก stable code meanings</td>
+</tr>
+<tr>
+<td>B2-02 — ไม่มี negative tests ด้าน symlink/output alias/order</td>
+<td><code>governance-tooling.test.mjs</code> ครอบ input symlink, output alias, manifest alias และ unsorted manifest rejection แล้ว</td>
+</tr>
+<tr>
+<td>B2-03 — manifest verifier ยอมรับลำดับ noncanonical</td>
+<td><code>verify-sha256-manifest.mjs</code> ปฏิเสธ entries ที่ไม่เรียงตาม unsigned UTF-8 path bytes และ focused test suite reproduce การปฏิเสธแล้ว</td>
+</tr>
+</tbody></table></div>
+<p>แผนที่ v0.3 นี้บันทึก advisory remediation เท่านั้น CT-DEC-002 ยังคง DRAFT, approval ทุก field ยังคง PENDING, Track B ยังคงล็อก และไม่สร้างอำนาจตัดจริง</p>
 </main>
 </body>
 </html>

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/connector-ops.schema.json",
+  "title": "monolith.factory.connector-ops@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "operations"],
+  "properties": {
+    "schema": { "const": "monolith.factory.connector-ops@2.0" },
+    "operations": {
+      "type": "array",
+      "x-monolith-orderBy": ["operationId:utf8-bytes"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operationId", "panelId", "pairId", "featureId", "type", "face", "positionUm", "directionMicro", "diameterUm", "depthUm", "tags"],
+        "properties": {
+          "operationId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "panelId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "pairId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "featureId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "type": { "const": "DRILL" },
+          "face": { "enum": ["A", "B", "TOP", "BOTTOM", "LEFT", "RIGHT"] },
+          "positionUm": { "$ref": "common.schema.json#/$defs/vectorUm" },
+          "directionMicro": { "$ref": "common.schema.json#/$defs/directionMicro" },
+          "diameterUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "depthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "tags": {
+            "type": "array",
+            "uniqueItems": true,
+            "x-monolith-orderBy": ["$value:utf8-bytes"],
+            "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,8 @@
 # CT-DEC-002 / S17-3 — Canonical Factory Packet Specification
 
-Document version: 0.2
+Document version: 0.3
 Drafted: 2026-07-11  
-Revised: 2026-07-11 after independent review and Tech Lead return
+Revised: 2026-07-14 after the v0.2 independent adversarial re-review
 Status: **DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY**  
 Inspected baseline: `9ac7cff39d02d9430879275645e377728bc0abc5`  
 Drafted by: Codex in an advisory/non-authoritative capacity  
@@ -78,7 +78,13 @@ The packet form of `gate-result.json` has exactly this top-level shape; every fi
       "code": "<stable-code>",
       "severity": "WARNING",
       "entityIds": ["<canonical-id>"],
-      "parameters": {}
+      "parameters": [
+        {
+          "key": "measuredUm",
+          "type": "INTEGER",
+          "value": 18000
+        }
+      ]
     }
   ]
 }
@@ -164,9 +170,14 @@ The v2 schema registry is closed and allowlisted. At minimum it contains the fol
 | `cutlist.json` | `monolith.factory.cutlist@2.0` | Factory Owner |
 | `drillmap.json` | `monolith.factory.drillmap@2.0` | Factory Owner |
 | `gate-result.json` | `monolith.factory.gate-result@2.0` | Tech Lead |
+| `NOT_FOR_PRODUCTION.txt` | `monolith.factory.nfp-marker@1.0` | Tech Lead + Factory Owner |
 | machine-profile descriptor | `monolith.machine-profile@1.0` | Factory Owner + Security Owner |
 
-The approved schema bundle and its aggregate SHA-256 are verifier-policy inputs. If any payload schema or `x-monolith-orderBy` rule is absent from that bundle, S17-3 cannot be approved and S17-4 must not guess it.
+The candidate normative schema bundle submitted for approval is committed under `docs/specs/schemas/`. It contains ten Draft 2020-12 schemas: shared closed definitions, both control-file schemas, five JSON payload schemas, the machine-profile descriptor, and the NFP marker byte contract. `schema-bundle.sha256` lists every schema in unsigned UTF-8 byte path order. `schema-bundle.aggregate.sha256` binds the exact bytes of that list; its current aggregate is `sha256:9d83834a115ce2d0b3f56537a1ee4baab5c689bc62bbbd99ec53717fc80868eb`.
+
+After the approval matrix is signed, that exact aggregate becomes a verifier-policy input. Any schema change requires a new bundle aggregate and normative specification version; replacing or silently mutating a schema under an existing ID is forbidden. If any required payload schema or `x-monolith-orderBy` rule is absent, S17-3 cannot be approved and S17-4 must not guess it.
+
+`x-monolith-orderBy` is normative. Keys are compared as unsigned UTF-8 bytes unless an explicit enum rank is named. Nested keys are applied left-to-right; `$value` means the scalar item. Duplicate canonical keys are rejected. Gate parameters use a sorted array of closed typed `{key,type,value}` records rather than an open object, so parameter ownership and ordering remain schema-defined.
 
 The machine-profile digest input has this closed top-level shape; `parameters` is a closed, version-specific object approved by the Factory Owner:
 
@@ -176,7 +187,14 @@ The machine-profile digest input has this closed top-level shape; `parameters` i
   "id": "kdt_mvp_v1",
   "version": "1.0.0",
   "units": "um",
-  "parameters": {}
+  "parameters": {
+    "bedWidthUm": 1220000,
+    "bedLengthUm": 2440000,
+    "maxPanelThicknessUm": 50000,
+    "minBoreDiameterUm": 3000,
+    "maxBoreDiameterUm": 35000,
+    "supportedFaces": ["A", "B", "TOP", "BOTTOM", "LEFT", "RIGHT"]
+  }
 }
 ```
 
@@ -345,8 +363,8 @@ Until all four real-cut gate conditions pass:
 1. `NOT_FOR_PRODUCTION.txt` MUST exist and appear in `manifest.files`
 2. its bytes MUST match the exporter-version constant from `src/core/config/shadowMode.ts`: 824 UTF-8 bytes, LF only, no trailing LF, SHA-256 `40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a`
 3. the ZIP filename MUST start with `NFP-`
-4. the verifier may return integrity PASS, but operational status MUST be `VERIFIED_SHADOW_ONLY / NO_CUT`
-5. a missing marker or prefix does not promote the packet; it fails with `PKT_NFP_POLICY_MISMATCH`
+4. the verifier may return `integrityStatus = VERIFIED`, but MUST return `operationalDisposition = NO_CUT` and code `PKT_OK_SHADOW_ONLY`
+5. the marker is a manifest-listed payload, not a control file: a missing marker fails at verifier check 3 with `PKT_FILE_MISSING`; a present marker with wrong bytes fails at check 4 with `PKT_SIZE_MISMATCH` or `PKT_HASH_MISMATCH`; a missing/invalid `NFP-` source filename fails before packet parsing with `PKT_FILENAME_INVALID`; `PKT_NFP_POLICY_MISMATCH` is reserved for check 11 when a complete marker+prefix conflicts with the authoritative governance mode
 6. the marker may be disabled only by governance-controlled configuration after S17-1..5 close, ADR-064 has all four roles, at least one dogfood job completes the full chain, and one machine profile is calibrated
 
 Current marker text:
@@ -371,7 +389,7 @@ The verifier MUST execute these checks in order and stop fail-closed:
 
 1. **Container safety**: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption
 2. **Strict parse**: UTF-8/JCS/schema-bundle digest, duplicate-key rejection before object construction, exact supported versions
-3. **Exact file set**: every payload matches the manifest; no missing/extra files beyond specified control files
+3. **Exact file set**: every manifest-listed payload, including `NOT_FOR_PRODUCTION.txt` in shadow mode, exists exactly once; no missing/extra files are permitted beyond the two specified control files `manifest.json` and `attestation.json`; a missing marker therefore returns `PKT_FILE_MISSING` here
 4. **Byte integrity**: per-file `sizeBytes` and SHA-256
 5. **Content identity**: recompute `packetContentId` from the descriptor
 6. **Manifest binding**: recompute exact `manifestSha256`
@@ -398,34 +416,40 @@ During shadow mode this is the highest possible result. `PKT_OK` is reserved and
 
 ## 13. Minimum stable result codes
 
-| Code | Meaning | Result |
-| --- | --- | --- |
-| `PKT_OK_SHADOW_ONLY` | integrity/signature pass while NFP remains mandatory | VERIFIED_SHADOW_ONLY / NO_CUT |
-| `PKT_OK` | reserved; forbidden during shadow mode | NOT EMITTABLE IN v0.2 PILOT |
-| `PKT_LIMIT_EXCEEDED` | container exceeds policy | FAIL |
-| `PKT_ZIP_PROFILE_INVALID` | ZIP header/metadata/profile differs from §6 | FAIL |
-| `PKT_PATH_INVALID` | path traversal/duplicate/collision | FAIL |
-| `PKT_FILENAME_INVALID` | required shadow filename is missing or malformed | FAIL / NO_CUT |
-| `PKT_SCHEMA_UNSUPPORTED` | unsupported schema/version | FAIL |
-| `PKT_JSON_NON_CANONICAL` | JSON violates canonical rules | FAIL |
-| `PKT_ATTESTATION_INVALID` | attestation shape/time/Base64 is malformed | FAIL |
-| `PKT_FILE_MISSING` / `PKT_FILE_EXTRA` | file set mismatch | FAIL |
-| `PKT_SIZE_MISMATCH` / `PKT_HASH_MISMATCH` | bytes mismatch manifest | FAIL |
-| `PKT_CONTENT_ID_MISMATCH` | recomputed content ID differs | FAIL |
-| `PKT_MANIFEST_BINDING_MISMATCH` | attestation does not bind exact manifest | FAIL |
-| `PKT_IDENTITY_MISMATCH` | duplicated identity fields disagree | FAIL |
-| `PKT_SIGNATURE_MISSING` / `PKT_SIGNATURE_INVALID` | signature absent/invalid | FAIL |
-| `PKT_KEY_UNKNOWN` / `PKT_KEY_REVOKED` | trust key unusable | FAIL |
-| `PKT_KEY_NOT_YET_VALID` / `PKT_KEY_EXPIRED` | key lifecycle window rejects `issuedAt` | FAIL |
-| `PKT_AUTHORITY_UNAVAILABLE` | required registry/revision/profile/gate lookup unavailable | FAIL / NO_CUT |
-| `PKT_REVISION_NOT_RELEASED` | revision is not RELEASED | FAIL |
-| `PKT_MACHINE_PROFILE_MISMATCH` | profile/version/digest unauthorized | FAIL |
-| `PKT_EXPORTER_UNTRUSTED` | exporter build not allowlisted | FAIL |
-| `PKT_GATE_FAILED` | gate evidence not PASS/unsupported | FAIL |
-| `PKT_GATE_EVIDENCE_MISMATCH` | gate file and signed gate fields disagree | FAIL |
-| `PKT_JOB_RUN_CONFLICT` | run ID bound to other content or replay violates policy | FAIL |
-| `PKT_IDEMPOTENCY_CONFLICT` | one idempotency key is reused with a different fingerprint | FAIL |
-| `PKT_NFP_POLICY_MISMATCH` | marker/prefix conflicts with governance state | FAIL / NO_CUT |
+| Code | Meaning | `integrityStatus` | `operationalDisposition` |
+| --- | --- | --- | --- |
+| `PKT_OK_SHADOW_ONLY` | integrity/signature pass while NFP remains mandatory | `VERIFIED` | `NO_CUT` |
+| `PKT_OK` | reserved; forbidden during shadow mode | NOT EMITTABLE IN v0.3 PILOT | NOT EMITTABLE IN v0.3 PILOT |
+| `PKT_LIMIT_EXCEEDED` | container exceeds policy | `FAILED` | `NO_CUT` |
+| all other failure codes below | retain their stable code-specific meaning | `FAILED` | `NO_CUT` |
+
+Failure-code meanings:
+
+| Code | Meaning |
+| --- | --- |
+| `PKT_ZIP_PROFILE_INVALID` | ZIP header/metadata/profile differs from §6 |
+| `PKT_PATH_INVALID` | path traversal/duplicate/collision |
+| `PKT_FILENAME_INVALID` | required shadow source filename is missing or malformed |
+| `PKT_SCHEMA_UNSUPPORTED` | unsupported schema/version/bundle digest |
+| `PKT_JSON_NON_CANONICAL` | JSON violates canonical rules |
+| `PKT_ATTESTATION_INVALID` | attestation shape/time/Base64 is malformed |
+| `PKT_FILE_MISSING` / `PKT_FILE_EXTRA` | manifest-listed payload set mismatch, including a missing NFP marker |
+| `PKT_SIZE_MISMATCH` / `PKT_HASH_MISMATCH` | payload bytes mismatch manifest, including modified NFP marker bytes |
+| `PKT_CONTENT_ID_MISMATCH` | recomputed content ID differs |
+| `PKT_MANIFEST_BINDING_MISMATCH` | attestation does not bind exact manifest |
+| `PKT_IDENTITY_MISMATCH` | duplicated identity fields disagree |
+| `PKT_SIGNATURE_MISSING` / `PKT_SIGNATURE_INVALID` | signature absent/invalid |
+| `PKT_KEY_UNKNOWN` / `PKT_KEY_REVOKED` | trust key unusable |
+| `PKT_KEY_NOT_YET_VALID` / `PKT_KEY_EXPIRED` | key lifecycle window rejects `issuedAt` |
+| `PKT_AUTHORITY_UNAVAILABLE` | required registry/revision/profile/gate lookup unavailable |
+| `PKT_REVISION_NOT_RELEASED` | revision is not RELEASED |
+| `PKT_MACHINE_PROFILE_MISMATCH` | profile/version/digest unauthorized |
+| `PKT_EXPORTER_UNTRUSTED` | exporter build not allowlisted |
+| `PKT_GATE_FAILED` | gate evidence not PASS/unsupported |
+| `PKT_GATE_EVIDENCE_MISMATCH` | gate file and signed gate fields disagree |
+| `PKT_JOB_RUN_CONFLICT` | run ID bound to other content or replay violates policy |
+| `PKT_IDEMPOTENCY_CONFLICT` | one idempotency key is reused with a different fingerprint |
+| `PKT_NFP_POLICY_MISMATCH` | complete marker+prefix conflicts with authoritative governance mode at check 11 |
 
 UI messages may be localized, but stable codes and severity must not change by locale.
 
@@ -504,3 +528,15 @@ These questions must be resolved during approval review and must not be implemen
 | 6. fail-closed codes/operational status were incomplete | §§12–14 add precedence, missing codes, expanded tamper fixtures, and shadow-only maximum status |
 
 This remediation map is a diff summary for re-review, not an approval or closure claim.
+
+## 19. v0.3 adversarial re-review remediation map
+
+| Re-review finding | v0.3 remediation |
+| --- | --- |
+| B1-01 — referenced schema bundle was absent | §7 now binds the ten-file closed schema bundle, per-file manifest, aggregate digest, typed gate parameters, and explicit array-order extensions under `docs/specs/schemas/` |
+| B1-02 — missing NFP marker had contradictory primary codes | §§11–13 now define the marker as a manifest-listed payload: missing = `PKT_FILE_MISSING` at check 3; modified = size/hash failure at check 4; filename failure = `PKT_FILENAME_INVALID`; governance-mode conflict = `PKT_NFP_POLICY_MISMATCH` at check 11 |
+| B2-01 — combined display vocabulary conflicted with result fields | §13 now separates exact `integrityStatus` and `operationalDisposition` field values from stable code meanings |
+| B2-02 — symlink/output-alias/order negative tests were absent | `governance-tooling.test.mjs` now covers input symlink, output alias, manifest alias, and unsorted manifest rejection |
+| B2-03 — manifest verifier accepted noncanonical order | `verify-sha256-manifest.mjs` now rejects entries not sorted by unsigned UTF-8 path bytes; the focused test suite reproduces the rejection |
+
+This v0.3 map records advisory remediation only. CT-DEC-002 remains DRAFT, every approval field remains PENDING, Track B remains locked, and no real-cut authority is created.

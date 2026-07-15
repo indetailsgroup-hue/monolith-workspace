@@ -15,6 +15,24 @@ const entries = [];
 const seen = new Set();
 const seenCaseFolded = new Set();
 
+try {
+  const manifestStat = await lstat(manifestAbsolute);
+  if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) {
+    throw new Error(`Manifest output must be a regular non-symlink file: ${manifestPath}`);
+  }
+  const manifestReal = await realpath(manifestAbsolute);
+  if (!isContained(manifestRootReal, manifestReal)) {
+    throw new Error(`Manifest output resolves outside its directory: ${manifestPath}`);
+  }
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
+
+function isContained(root, candidate) {
+  const relativePath = relative(root, candidate);
+  return relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath);
+}
+
 function canonicalRelativePath(file) {
   const absolute = resolve(file);
   const relativePath = relative(manifestRoot, absolute);
@@ -54,8 +72,7 @@ for (const file of files) {
   const stat = await lstat(absolute);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Manifest input is not a regular file: ${file}`);
   const fileReal = await realpath(absolute);
-  const realRelative = relative(manifestRootReal, fileReal);
-  if (realRelative === '..' || realRelative.startsWith(`..${sep}`) || isAbsolute(realRelative)) {
+  if (!isContained(manifestRootReal, fileReal)) {
     throw new Error(`Manifest input resolves outside the manifest directory: ${file}`);
   }
   const bytes = await readFile(fileReal);
