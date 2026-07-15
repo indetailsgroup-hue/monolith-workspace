@@ -50,15 +50,16 @@ jobs:
       - name: Run pgTAP DB-invariant suite
         run: |
           set -o pipefail
-          psql "${{ steps.db.outputs.DB_URL }}" -v ON_ERROR_STOP=1 \
+          # -tA = tuples-only, unaligned -> clean TAP lines ("ok N - ...") without psql table padding
+          psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
             -f supabase/tests/workflow_db_invariants.sql | tee db-invariants.tap
           if grep -qE '^not ok' db-invariants.tap; then
             echo "::error::pgTAP invariant failure"; exit 1
           fi
-          if ! grep -qE '^ok 1' db-invariants.tap; then
+          if ! grep -qE '^ok ' db-invariants.tap; then
             echo "::error::no pgTAP assertions ran (empty suite)"; exit 1
           fi
-          echo "pgTAP invariants: all ok"
+          echo "pgTAP invariants: all ok ($(grep -cE '^ok ' db-invariants.tap) assertions)"
 
       - name: Assemble evidence
         if: always()
