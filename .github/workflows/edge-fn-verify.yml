@@ -1,0 +1,108 @@
+# Edge-function transport smoke = E0 evidence for the Supabase Edge Function
+# boundary (supabase/functions/**). These are the server-side HTTP handlers:
+# request method/payload validation, status-code semantics, idempotency, and
+# fail-closed behaviour. Tests are dependency-injected (no DB/network), so the
+# handler logic is exercised in isolation.
+#
+# Highlighted surface: the 3 MCP edge functions (mcp-approval-callback,
+# mcp-pending-cleanup, mcp-server) are the server-side complement to the
+# src/mcp governance kernel covered by mcp-smoke.yml.
+#
+# Pure vitest unit smoke — no backend/Supabase/hosted infra (ADR-066 N/A).
+name: MONOLITH Edge Function Verify
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**"]
+    paths:
+      - "supabase/functions/**"
+      - ".github/workflows/edge-fn-verify.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge-fn-verify:
+    name: edge-function transport tests (incl. MCP edge surface)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run edge-function transport suite
+        # Fails the job on any test failure (vitest exits non-zero).
+        run: npx vitest run supabase/functions --reporter=default --reporter=json --outputFile=edge-fn-report.json
+
+      - name: Assemble edge-function evidence
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          let report = null;
+          try { report = JSON.parse(fs.readFileSync('edge-fn-report.json', 'utf8')); } catch {}
+          const functions = {};
+          const mcpSurface = { functions: [], passed: 0, failed: 0 };
+          if (report && Array.isArray(report.testResults)) {
+            for (const tr of report.testResults) {
+              const parts = String(tr.name).split(/[\\\\/]/);
+              const fn = parts[parts.indexOf('functions') + 1] || '(unknown)';
+              const passed = tr.assertionResults.filter(a => a.status === 'passed').length;
+              const failed = tr.assertionResults.filter(a => a.status === 'failed').length;
+              functions[fn] = { passed, failed };
+              if (fn.startsWith('mcp-')) {
+                mcpSurface.functions.push(fn);
+                mcpSurface.passed += passed;
+                mcpSurface.failed += failed;
+              }
+            }
+          }
+          const total = report ? report.numTotalTests : 0;
+          const passed = report ? report.numPassedTests : 0;
+          const failed = report ? report.numFailedTests : 0;
+          const pass = !!report && report.success && failed === 0 && passed > 0;
+          const ev = {
+            evidenceTier: 'E0', workflow: 'edge-fn-verify',
+            commit: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            runId: process.env.GITHUB_RUN_ID,
+            runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            environment: 'ubuntu-latest / node ' + process.version,
+            timestamp: new Date().toISOString(),
+            suite: 'vitest run supabase/functions',
+            edgeBoundary: {
+              functionsCovered: Object.keys(functions).length,
+              functions,
+              mcpSurface,
+              totals: { total, passed, failed, pass },
+            },
+          };
+          fs.writeFileSync('edge-fn-evidence.json', JSON.stringify(ev, null, 2));
+          console.log(JSON.stringify(ev, null, 2));
+          // Empty-suite guard: a glob that silently matches nothing must not read as green.
+          if (passed === 0) {
+            console.error('::error::edge-fn smoke ran 0 assertions (empty suite / glob miss)');
+            process.exit(1);
+          }
+          "
+
+      - name: Upload edge-function evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-fn-evidence-${{ github.sha }}
+          path: |
+            edge-fn-evidence.json
+            edge-fn-report.json
+          retention-days: 90
