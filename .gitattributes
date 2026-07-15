@@ -6,3 +6,4 @@ docs/governance/** text eol=lf
 docs/specs/** text eol=lf
 scripts/**/*.mjs text eol=lf
 package.json text eol=lf
+*.sha256 text eol=lf
