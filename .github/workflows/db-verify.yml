@@ -1,0 +1,97 @@
+# AB-DB-01: CI DB testing = E0 evidence for RLS/constraint/invariant suite.
+# Spins up a faithful Supabase local Postgres (auth schema, extensions, roles),
+# applies the migration chain, runs the pgTAP DB-invariant suite, uploads evidence.
+# This is an ephemeral CI container — NOT hosted/prod infra (ADR-066 does not apply).
+name: MONOLITH DB Verify
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**"]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - ".github/workflows/db-verify.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-verify:
+    name: apply migrations + pgTAP invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase (applies migration chain)
+        # Full stack for first validation — migrations reference auth.users (gotrue).
+        # Optimize with -x once green.
+        run: supabase start
+
+      - name: Capture DB URL + applied migrations
+        id: db
+        run: |
+          echo "DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres" >> "$GITHUB_OUTPUT"
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tAc \
+            "select count(*) from supabase_migrations.schema_migrations" > migrations_applied.txt || true
+          echo "migrations applied: $(cat migrations_applied.txt)"
+
+      - name: Run pgTAP DB-invariant suite
+        run: |
+          set -o pipefail
+          psql "${{ steps.db.outputs.DB_URL }}" -v ON_ERROR_STOP=1 \
+            -f supabase/tests/workflow_db_invariants.sql | tee db-invariants.tap
+          if grep -qE '^not ok' db-invariants.tap; then
+            echo "::error::pgTAP invariant failure"; exit 1
+          fi
+          if ! grep -qE '^ok 1' db-invariants.tap; then
+            echo "::error::no pgTAP assertions ran (empty suite)"; exit 1
+          fi
+          echo "pgTAP invariants: all ok"
+
+      - name: Assemble evidence
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          const tap = fs.existsSync('db-invariants.tap') ? fs.readFileSync('db-invariants.tap','utf8') : '';
+          const ok = (tap.match(/^ok /gm)||[]).length;
+          const notok = (tap.match(/^not ok /gm)||[]).length;
+          const mig = fs.existsSync('migrations_applied.txt') ? fs.readFileSync('migrations_applied.txt','utf8').trim() : 'unknown';
+          const ev = {
+            evidenceTier: 'E0', workflow: 'db-verify',
+            commit: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            environment: 'ubuntu-latest / supabase local (ephemeral)',
+            timestamp: new Date().toISOString(),
+            migrationsApplied: Number(mig) || mig,
+            pgtap: { suite: 'workflow_db_invariants.sql', ok, notOk: notok, pass: notok === 0 && ok > 0 },
+          };
+          fs.writeFileSync('db-verify-evidence.json', JSON.stringify(ev, null, 2));
+          console.log(JSON.stringify(ev, null, 2));
+          "
+
+      - name: Upload DB evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-verify-evidence-${{ github.sha }}
+          path: |
+            db-verify-evidence.json
+            db-invariants.tap
+          retention-days: 90
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup || true
