@@ -20,6 +20,10 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
       'e2e/**',
+      // Node-native governance tooling tests (node:test runner). Vitest cannot
+      // collect them and would report "No test suite found"; run via `npm run
+      // test:node`. Keeps `test:run` honestly green (FS-B1-02).
+      'scripts/**/*.test.mjs',
       // Foreign project snapshots / file dumps that live inside this folder but
       // are not part of the MONOLITH workspace — their tests must not run here.
       'cp06-clean-cowork_dev-complete_20260616/**',

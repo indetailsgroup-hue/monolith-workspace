@@ -19,8 +19,9 @@
     "test:gate:watch": "vitest src/gate/",
     "test:gate:coverage": "vitest run src/gate/ --coverage",
     "test:minifix": "vitest run src/gate/rules/connectors/__tests__/ --reporter=verbose",
-    "test:governance-tooling": "node --test scripts/governance-tooling.test.mjs",
+    "test:governance-tooling": "node --test scripts/governance-tooling.test.mjs scripts/governance-tooling-controls.test.mjs",
     "test:schema-bundle": "node --test scripts/schema-bundle.test.mjs",
+    "test:node": "node --test scripts/governance-tooling.test.mjs scripts/governance-tooling-controls.test.mjs scripts/schema-bundle.test.mjs",
     "gate:bypass-scan": "npx ts-node scripts/gates/bypass-scan.ts",
     "gate:bypass-scan:strict": "npx ts-node scripts/gates/bypass-scan.ts --strict",
     "gate:bypass-scan:json": "npx ts-node scripts/gates/bypass-scan.ts --json",
@@ -36,8 +37,8 @@
     "e2e:smoke": "playwright test --grep @smoke",
     "e2e:debug": "playwright test --debug",
     "e2e:report": "playwright show-report",
-    "verify": "npm run test:run && npm run typecheck:all && npm run e2e:smoke",
-    "verify:full": "npm run test:run && npm run typecheck:all && npm run e2e"
+    "verify": "npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e:smoke",
+    "verify:full": "npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e"
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",
