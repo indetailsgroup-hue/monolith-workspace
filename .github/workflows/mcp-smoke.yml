@@ -1,0 +1,113 @@
+# MCP governance smoke = E0 evidence for the MONOLITH MCP layer (src/mcp/**).
+# The MCP layer is the AI<->system governance kernel: authz, autonomy gating,
+# PDPA/redaction boundary, untrusted-input handling, idempotency, rate limiting,
+# grant expiry, schema + catalog integrity. This layer decides what an AI is
+# allowed to do — its invariants are safety-critical, so they get a focused,
+# path-triggered E0 check separate from the full suite.
+# Pure unit smoke — no backend/Supabase/hosted infra (ADR-066 does not apply).
+name: MONOLITH MCP Smoke
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**"]
+    paths:
+      - "src/mcp/**"
+      - "supabase/functions/mcp-approval-callback/**"
+      - ".mcp.json"
+      - ".github/workflows/mcp-smoke.yml"
+  pull_request:
+    paths:
+      - "src/mcp/**"
+      - "supabase/functions/mcp-approval-callback/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mcp-smoke:
+    name: MCP governance kernel (authz / pdpa / untrusted / idempotency)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run MCP governance suite
+        # Fails the job on any test failure (vitest exits non-zero).
+        run: npx vitest run src/mcp --reporter=default --reporter=json --outputFile=mcp-report.json
+
+      - name: Assemble governance evidence
+        if: always()
+        run: |
+          node -e "
+          const fs = require('fs');
+          // Maps each MCP test module to the governance invariant it guards.
+          const CONCERNS = {
+            authz: 'role/scope authorization enforced before any tool call',
+            autonomy: 'autonomy-level gating (advisory vs. act) honoured',
+            catalog: 'tool catalog schema + registration integrity',
+            expiry: 'grant/approval expiry enforced (no stale authority)',
+            'governance-properties': 'cross-cutting governance invariants (property-based)',
+            idempotency: 'mutating tool calls are idempotent (no double-apply)',
+            pdpa: 'PDPA/PII boundary — sensitive data never leaves operational store',
+            ratelimit: 'per-actor rate limiting enforced',
+            redaction: 'sensitive fields redacted from tool output',
+            schema: 'tool input/output schema validation',
+            untrusted: 'untrusted-input handling (prompt-injection resistance)',
+          };
+          let report = null;
+          try { report = JSON.parse(fs.readFileSync('mcp-report.json', 'utf8')); } catch {}
+          const invariants = {};
+          if (report && Array.isArray(report.testResults)) {
+            for (const tr of report.testResults) {
+              const mod = String(tr.name).split(/[\\\\/]/).pop().replace('.test.ts', '');
+              const passed = tr.assertionResults.filter(a => a.status === 'passed').length;
+              const failed = tr.assertionResults.filter(a => a.status === 'failed').length;
+              invariants[mod] = { passed, failed, concern: CONCERNS[mod] || '(unmapped module)' };
+            }
+          }
+          const total = report ? report.numTotalTests : 0;
+          const passed = report ? report.numPassedTests : 0;
+          const failed = report ? report.numFailedTests : 0;
+          const pass = !!report && report.success && failed === 0 && passed > 0;
+          const ev = {
+            evidenceTier: 'E0', workflow: 'mcp-smoke',
+            commit: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF,
+            runId: process.env.GITHUB_RUN_ID,
+            runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
+            environment: 'ubuntu-latest / node ' + process.version,
+            timestamp: new Date().toISOString(),
+            suite: 'vitest run src/mcp',
+            governanceKernel: {
+              modules: Object.keys(invariants).length,
+              invariants,
+              totals: { total, passed, failed, pass },
+            },
+          };
+          fs.writeFileSync('mcp-smoke-evidence.json', JSON.stringify(ev, null, 2));
+          console.log(JSON.stringify(ev, null, 2));
+          // Empty-suite guard: a glob that silently matches nothing must not read as green.
+          if (passed === 0) {
+            console.error('::error::MCP smoke ran 0 assertions (empty suite / glob miss)');
+            process.exit(1);
+          }
+          "
+
+      - name: Upload MCP evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-smoke-evidence-${{ github.sha }}
+          path: |
+            mcp-smoke-evidence.json
+            mcp-report.json
+          retention-days: 90
