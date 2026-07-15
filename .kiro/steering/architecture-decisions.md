@@ -720,3 +720,16 @@ inclusion: always
 5. Supabase branch != project — target ที่ถูกต้องดูจาก Branch ID ใน dashboard ไม่ใช่ `projects list`
 
 **Consequences**: hosted-E0 ที่เหลือ + S17-4/5/6 ทั้งหมดทำแบบ human-driven; guardrail+repro tooling committed ที่ `scripts/` (track-a); incident+rollback documented ใน `docs/evidence/hosted/s17-1-2/README.md`
+
+
+## ADR-067: S17 Timeline Reality + Dogfood Resume + Key Custody Start (2026-07-14, มติ owner ก x4)
+
+**Context**: milestone review 14 ก.ค. — S17-1/2 hosted-E0 เสร็จ, CT-DEC-002 v0.3 READY (รอ 3 ลายเซ็น), **แต่ S17-4/5 ยังไม่เริ่ม (ติดลายเซ็น) + S17-6 key ceremony ยังไม่เริ่ม + dogfood ยังไม่ยืนยันว่าเริ่ม** · เหลือ 11 วันถึง impl-deadline เดิม (~25 ก.ค.) → cut 4-6 ส.ค. = ตึงเกินจริง
+
+**มติ (owner, ก x4)**:
+1. **Q1 Dogfood เดินขนานทันที** — เปิดบ้านจริง, P5 seeds, V1-V10 กลับมาเดินคู่ S17 (ตาม ADR-065 เดิม) · shadow-mode Designer ป้อน evidence ให้ S17 ฟรี · ห้ามดริฟต์เป็น S17-only
+2. **Q2 Re-plan pilot อย่างซื่อสัตย์** — 4-6 ส.ค. ตึงเกินจริง (S17-4/5/6 ยังไม่เริ่ม) → ตั้งวัน cut ใหม่ตาม dependency จริง **ห้ามบีบ verification/ceremony เพื่อรักษาวันเดิม** (ขัดกฎที่ตั้งเอง) · วันใหม่รอ owner + factory availability
+3. **Q3 เริ่ม AWS KMS key custody เดี๋ยวนี้** — เป็น long pole/critical path จริง (S17-5 verify signature ไม่ได้ถ้าไม่มี key ceremony) · human-only, เริ่มขนานได้เลยไม่ต้องรอ Track B · ตามมติ custody เดิม (KMS/HSM non-exportable, Security Owner=Key Owner, PO+SecOwner joint create/rotate/revoke)
+4. **Q4 คง SoD (builder != reviewer)** — พิสูจน์แล้วว่าจับ blocker จริง (re-review เจอของจริงหลายรอบ) · tighten ตาม ADR-066 (AI ห้ามแตะ infra)
+
+**Consequences**: dogfood ops = งานคู่ขนานของ human track; re-planned timeline แทนที่ 4-6 ส.ค. (รอ owner ยืนยันวันใหม่); key custody kickoff = งานเร่งของ Security Owner + owner; Track B ยังรอ 3 ลายเซ็น CT-DEC-002 (`bf25b10f`)
