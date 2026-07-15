@@ -32,6 +32,9 @@
 
 ## 3. Security Owner — Signature / Trust / Key
 
+> **BLOCKING ก่อนเซ็น (ADR-067, 14 ก.ค.)**: spec บังคับ **Ed25519** signing แต่ **AWS KMS (custody ที่เลือก) ไม่รองรับ Ed25519** (รองรับแค่ RSA / ECC_NIST_P256/384/521 / secp256k1) — **เข้ากันไม่ได้** ต้องเคาะก่อนเซ็น: (ก) เปลี่ยน spec เป็น ECDSA P-256 · (ข) ใช้ HSM/KMS อื่นที่รองรับ Ed25519 · (ค) KMS ปกป้อง key + sign Ed25519 ใน enclave · **ห้ามเซ็นจนกว่า signature algorithm sign บน custody จริงได้**
+
+- [ ] **Ed25519-vs-KMS reconciled**: signature algorithm ใน spec sign ได้จริงบน custody ที่เลือก (ดู BLOCKING ข้างบน) — ถ้าเปลี่ยนเป็น ECDSA P-256 ต้อง amend spec + regenerate manifests ก่อน
 - [ ] Ed25519 signature: protected header (algorithm+keyId+registry) ถูก sign, omit เฉพาะ `valueBase64`, เปลี่ยน field ใด -> signature invalid
 - [ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed
 - [ ] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`)
