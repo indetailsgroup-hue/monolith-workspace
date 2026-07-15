@@ -1,18 +1,18 @@
 # CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist
 
-**Spec**: Canonical Factory Packet Specification v0.3
-**Commit ที่เซ็น**: `bf25b10f2c72707097acdb03a8161e8cec8cd36b` (branch `governance/s17-control-pack`)
-**Aggregate schema digest**: `sha256:9d83834a115ce2d0b3f56537a1ee4baab5c689bc62bbbd99ec53717fc80868eb`
-**Independent re-review verdict**: READY FOR HUMAN ROLE REVIEW (advisory, non-authoritative)
+**Spec**: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed `d3fb617fcb42e72085cce46cad03b5478b71e16d`
+**Hash anchor ที่ต้องเซ็น**: `monolith-s17-v041-review-input.sha256` (sha256 `75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046`)
+**Aggregate schema digest**: `sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55`
+**Independent re-review verdict**: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)
 
 > การเซ็น = การรับผิดชอบของมนุษย์ว่าได้ review เองแล้ว ไม่ใช่การรับ AI verdict มาแปะ · AI ไม่ลงชื่อแทน · เมื่อครบสามลายเซ็น CT-DEC-002 = APPROVED และปลด Track B (S17-4/5)
 > คงบังคับจนกว่าจะครบสาม: DRAFT · Track B LOCKED · NO_CUT · ไม่มี P0 closure · ไม่มี bare PKT_OK ใน shadow mode
 
 ## 0. Pre-Sign (ทุกบทบาททำก่อน)
 
-- [ ] ยืนยันกำลัง review commit `bf25b10f` (ไม่ใช่ working tree หรือ commit อื่น)
-- [ ] verify aggregate schema digest ตรง `9d83834a...` ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)
-- [ ] อ่าน independent re-review ครบ + เข้าใจว่า READY != approval
+- [ ] ยืนยันกำลัง review exact bytes ที่ pin ใน `monolith-s17-v041-review-input.sha256`
+- [ ] verify aggregate schema digest จาก `schema-bundle.aggregate.sha256` ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)
+- [ ] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval
 
 ## 1. Tech Lead — Contract Correctness & Implementability
 
@@ -32,10 +32,12 @@
 
 ## 3. Security Owner — Signature / Trust / Key
 
-> **BLOCKING ก่อนเซ็น (ADR-067, 14 ก.ค.)**: spec บังคับ **Ed25519** signing แต่ **AWS KMS (custody ที่เลือก) ไม่รองรับ Ed25519** (รองรับแค่ RSA / ECC_NIST_P256/384/521 / secp256k1) — **เข้ากันไม่ได้** ต้องเคาะก่อนเซ็น: (ก) เปลี่ยน spec เป็น ECDSA P-256 · (ข) ใช้ HSM/KMS อื่นที่รองรับ Ed25519 · (ค) KMS ปกป้อง key + sign Ed25519 ใน enclave · **ห้ามเซ็นจนกว่า signature algorithm sign บน custody จริงได้**
+> **ADR-068 resolution (15 ก.ค.)**: Owner เลือก AWS KMS `ECC_NIST_P256` และ `ECDSA_SHA_256`; v0.4 แทนที่ signature layer แบบ Ed25519 ของ v0.3 แล้ว การตรวจด้านล่างยังเป็น PENDING จน Security Owner review exact bytes และ hash anchor รอบ 4
 
-- [ ] **Ed25519-vs-KMS reconciled**: signature algorithm ใน spec sign ได้จริงบน custody ที่เลือก (ดู BLOCKING ข้างบน) — ถ้าเปลี่ยนเป็น ECDSA P-256 ต้อง amend spec + regenerate manifests ก่อน
-- [ ] Ed25519 signature: protected header (algorithm+keyId+registry) ถูก sign, omit เฉพาะ `valueBase64`, เปลี่ยน field ใด -> signature invalid
+- [ ] **ECDSA-vs-KMS reconciled**: protected algorithm คือ `ECDSA_P256_SHA256`; KMS `Sign` ใช้ `ECC_NIST_P256` + `ECDSA_SHA_256` + `MessageType=DIGEST` กับ exact SHA-256 digest
+- [ ] Signature encoding: DER จาก KMS ถูกแปลงเป็น raw `r‖s` 64-byte Base64; signer emit low-S; verifier reject DER/high-S/out-of-range ด้วย `PKT_SIGNATURE_INVALID`
+- [ ] Non-determinism boundary: signature เป็น run-specific allowlist, ไม่อยู่ใน `packetContentId`; verifier verify เท่านั้น ไม่ recompute
+- [ ] Public-key registry: pin canonical DER SPKI (`id-ecPublicKey` + `prime256v1`) ซึ่ง BIT STRING เป็น uncompressed `0x04‖X‖Y`; packet key ห้าม establish trust เอง
 - [ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed
 - [ ] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`)
 - [ ] Server-owned actor ผูกกับ S17-1 (JWT-derived ไม่ใช่ client header) — attestation ใช้ identity ที่ปลอมไม่ได้
@@ -45,9 +47,9 @@
 
 | บทบาท | ชื่อ | Commit ที่เซ็น | วันที่ | สถานะ |
 | --- | --- | --- | --- | --- |
-| Tech Lead | (คุณเดฟ) | `bf25b10f` | — | PENDING |
-| Factory Owner | — | `bf25b10f` | — | PENDING |
-| Security Owner | — | `bf25b10f` | — | PENDING |
+| Tech Lead | (คุณเดฟ) | `monolith-s17-v041-review-input.sha256` | — | PENDING |
+| Factory Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
+| Security Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
 
 ## 5. Effect เมื่อครบสาม
 
@@ -64,4 +66,4 @@
 
 ---
 
-*Advisory checklist — human approval required. เอกสารนี้เป็น living document (signature block อัปเดตได้) จึงไม่มี frozen manifest; ตัว spec v0.3 ที่ถูกเซ็น = git-pinned ที่ `bf25b10f`.*
+*Advisory checklist — human approval required. Exact v0.4 review bytes ถูก pin ด้วย `monolith-s17-v041-review-input.sha256`; checklist นี้ไม่เปลี่ยน DRAFT/PENDING/Track B LOCKED/NO_CUT จนกว่าจะครบสามบทบาท.*
