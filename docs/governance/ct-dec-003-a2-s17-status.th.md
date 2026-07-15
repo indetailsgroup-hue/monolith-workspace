@@ -1,10 +1,11 @@
-# CT-DEC-003 Addendum A — S17 Status Update (append-only supersession)
+# CT-DEC-003-A2 — S17 Status Update (append-only supersession)
 
 วันที่มีผล: 2026-07-15
 สถานะ: **RECORDED — human Tech Lead confirmation**
 Prior record: `CT-DEC-003` (2026-07-11) — **คงเดิม ไม่แก้ไข**
 อำนาจมติ: Tech Lead
 ผู้จัดทำเอกสาร: Claude ในฐานะ advisory/non-authoritative
+Addendum ข้างเคียง: `CT-DEC-003-A1` (governance tooling bytes, §4.2) — คนละ scope, parallel กัน · เลขนี้เปลี่ยนจาก "Addendum A" เป็น A2 เพื่อไม่ชนกับ A1 (แก้ identifier เท่านั้น ไม่เปลี่ยน normative meaning ตาม §5.5)
 
 > Addendum นี้ทำตาม **CT-DEC-003 §5 (append-only rule)** — supersede เฉพาะ point-in-time status fact ที่ระบุชื่อด้านล่างเท่านั้น ไม่ rewrite ข้อความเดิมของ CT-DEC-003, ไม่อนุมัติ CT-DEC-002, ไม่ปิด P0 และไม่ปลด Track B
 

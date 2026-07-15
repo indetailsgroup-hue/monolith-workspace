@@ -1,10 +1,11 @@
-# CT-DEC-003 Addendum A — S17 Status Update (append-only supersession)
+# CT-DEC-003-A2 — S17 Status Update (append-only supersession)
 
 Effective date: 2026-07-15
 Status: **RECORDED — human Tech Lead confirmation**
 Prior record: `CT-DEC-003` (2026-07-11) — **unchanged**
 Decision authority: Tech Lead
 Document author: Claude, advisory/non-authoritative
+Sibling addendum: `CT-DEC-003-A1` (governance tooling bytes, §4.2) — a separate, parallel scope; renumbered from "Addendum A" to A2 to avoid colliding with A1 (identifier-only correction, no normative change per §5.5)
 
 > This addendum follows **CT-DEC-003 §5 (append-only rule)** — it supersedes only the named point-in-time status facts below. It does not rewrite CT-DEC-003's text, does not approve CT-DEC-002, does not close any P0, and does not unlock Track B.
 
