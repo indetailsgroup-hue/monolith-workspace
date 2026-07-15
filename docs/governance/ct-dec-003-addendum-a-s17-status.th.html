@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003 Addendum A — S17 Status Update (append-only supersession)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003 Addendum A — S17 Status Update (append-only supersession)</h1>
+<p>วันที่มีผล: 2026-07-15 สถานะ: <strong>RECORDED — human Tech Lead confirmation</strong> Prior record: <code>CT-DEC-003</code> (2026-07-11) — <strong>คงเดิม ไม่แก้ไข</strong> อำนาจมติ: Tech Lead ผู้จัดทำเอกสาร: Claude ในฐานะ advisory/non-authoritative</p>
+<blockquote><p>Addendum นี้ทำตาม <strong>CT-DEC-003 §5 (append-only rule)</strong> — supersede เฉพาะ point-in-time status fact ที่ระบุชื่อด้านล่างเท่านั้น ไม่ rewrite ข้อความเดิมของ CT-DEC-003, ไม่อนุมัติ CT-DEC-002, ไม่ปิด P0 และไม่ปลด Track B</p></blockquote>
+<h2>1. เจตนาและขอบเขต (append-only)</h2>
+<p>CT-DEC-003 เป็น measured record ณ 2026-07-11 ข้อความเดิมทั้งหมดยังมีอำนาจในขอบเขตเดิม และยังย้อนตรวจได้ใน Git history (tamper-evident provenance) Addendum นี้<strong>เพิ่ม dated fact ใหม่</strong>เท่านั้น ตามข้อ §5.2–§5.3 ของ CT-DEC-003: ระบุ prior record, exact scope ที่ supersede, authority, เหตุผล และ effective date</p>
+<p>เหตุผล: เวลาผ่านไป 4 วัน (11 → 15 ก.ค.) มี execution event ที่ทำให้ <strong>status fact สามจุด</strong>ใน CT-DEC-003 ถูกแซง การยืนยัน CT-DEC-003 เป็นภาพปัจจุบันโดยไม่มี addendum จะขัด discipline ที่เอกสารตั้งเอง</p>
+<h2>2. Status fact ที่ถูก supersede (scope-exact)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>อ้างใน CT-DEC-003</th>
+<th>บันทึกไว้ (11 ก.ค.)</th>
+<th>Measured update (15 ก.ค.) + evidence anchor</th>
+</tr></thead><tbody>
+<tr>
+<td>§1 register แถว &quot;ส่ง CT-DEC-002 กลับทำ v0.2&quot; · §2</td>
+<td>CT-DEC-002 → v0.2, blocker 6 ข้อ</td>
+<td>Blocker ทั้ง 6 ด้านถูกแก้ผ่าน v0.2 → v0.3 → v0.4 → <strong>v0.4.1</strong>; independent re-review verdict = <strong>READY FOR HUMAN ROLE REVIEW</strong> (round-4 clean; low-S = floor(n/2)) · anchor: commit <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code>, <code>monolith-s17-v041-review-input.sha256</code> (sha256 <code>75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046</code>), aggregate <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code></td>
+</tr>
+<tr>
+<td>§6</td>
+<td>S17-1 = <strong>NOT STARTED / NO REPOSITORY EVIDENCE</strong></td>
+<td>S17-1/S17-2 implemented; hosted-E0 auth proof บน <code>monolith-s17-staging</code> = <strong>13/13 cases pass</strong> · anchor: <code>s17-hosted-auth-evidence.json</code> (sha256 <code>60a84080538328c20f4b68e7024a44c772b06050a64cbf3deb2100ff859e99cc</code>)</td>
+</tr>
+<tr>
+<td>§8 controlled actions</td>
+<td>(1) ส่ง v0.2 review รอบสอง · (3) เริ่ม Track A จาก baseline</td>
+<td>(1) resubmit ต่อเนื่องถึง round 4 → v0.4.1 READY · (3) Track A มี repo + hosted evidence แล้ว · (2) hardened writer/verifier <strong>ยัง CANDIDATE — pending independent re-review</strong> (ไม่เปลี่ยน)</td>
+</tr>
+</tbody></table></div>
+<blockquote><p>⚠️ <strong>READY FOR HUMAN ROLE REVIEW ≠ APPROVED</strong> — v0.4.1 พร้อมให้ 3 บทบาทมนุษย์ review/เซ็น แต่ยังไม่มี approval signature</p></blockquote>
+<h2>3. ขอบเขตที่ยังคงมีผลเต็ม (ไม่ถูกกระทบโดย addendum นี้)</h2>
+<ul><li><strong>CT-DEC-002 ยัง DRAFT — NOT APPROVED</strong> (v0.4.1 = READY FOR REVIEW เท่านั้น); 3-role sign-off ยัง <strong>PENDING</strong></li><li><strong>Track B (S17-4/S17-5) ยังล็อก</strong> จน approval matrix S17-3 ลงชื่อครบ</li><li>ไม่มี P0 blocker ใดปิด; ADR-064 ยังต้องครบสี่บทบาทมนุษย์</li><li>CT-DEC-003 §3 (jobRunId ownership), §4 (tooling <strong>YELLOW/CANDIDATE — NOT OFFICIAL</strong>), §5 (append-only rule), §7 (scope unchanged) — <strong>ยังมีผลเต็มทั้งหมด</strong></li><li>ห้ามตัดชิ้นงานจริงจาก packet จน S17 ปิดและ real-cut gate ผ่านครบสี่เงื่อนไข</li></ul>
+<h2>4. Evidence anchors (verifiable)</h2>
+<pre><code class="language-text">d3fb617fcb42e72085cce46cad03b5478b71e16d   commit: CT-DEC-002 v0.4.1 (ECDSA P-256 + low-S fix)
+75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046   monolith-s17-v041-review-input.sha256 (anchor self-hash)
+aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55   schema-bundle.aggregate (v0.4.1)
+60a84080538328c20f4b68e7024a44c772b06050a64cbf3deb2100ff859e99cc   s17-hosted-auth-evidence.json (S17-1/2 hosted-E0, 13/13)
+077452a7                                                           commit: CT-DEC-002 sign-off bundle regen -&gt; v0.4.1</code></pre>
+<p>Hosted-E0 target = <code>monolith-s17-staging</code> (Supabase preview branch <code>wlivqsdgvwcjlbqqtcwt</code>) — staging เท่านั้น, prod deploy จริงตอน pilot (ADR-066: human-driven infra)</p>
+<h2>5. Authority และผลบังคับ</h2>
+<p>Tech Lead (คุณเดฟ) ยืนยัน record CT-DEC-003 และรับ addendum นี้เป็น dated supersession ของ status fact ที่ระบุ ณ 2026-07-15 · เอกสารนี้ advisory/non-authoritative ในส่วนที่ Claude จัดทำ, อำนาจมติเป็นของ Tech Lead · ไม่มี normative change ต่อ §3/§4/§5/§7 ของ CT-DEC-003</p>
+</main>
+</body>
+</html>
