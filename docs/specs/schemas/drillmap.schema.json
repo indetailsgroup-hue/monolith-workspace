@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/drillmap.schema.json",
+  "title": "monolith.factory.drillmap@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "panels"],
+  "properties": {
+    "schema": { "const": "monolith.factory.drillmap@2.0" },
+    "panels": {
+      "type": "array",
+      "x-monolith-orderBy": ["panelId:utf8-bytes"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["panelId", "cabinetId", "role", "dimensionsUm", "points"],
+        "properties": {
+          "panelId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "cabinetId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "role": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "dimensionsUm": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["widthUm", "heightUm", "thicknessUm"],
+            "properties": {
+              "widthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+              "heightUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+              "thicknessUm": { "$ref": "common.schema.json#/$defs/positiveUm" }
+            }
+          },
+          "points": {
+            "type": "array",
+            "x-monolith-orderBy": ["pointId:utf8-bytes"],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pointId", "positionUm", "directionMicro", "diameterUm", "depthUm", "throughHole", "purpose", "componentType", "face", "status"],
+              "properties": {
+                "pointId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+                "positionUm": { "$ref": "common.schema.json#/$defs/vectorUm" },
+                "directionMicro": { "$ref": "common.schema.json#/$defs/directionMicro" },
+                "diameterUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+                "depthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+                "throughHole": { "type": "boolean" },
+                "purpose": { "enum": ["CAM_LOCK", "BOLT", "BOLT_ENTRY", "BOLT_THREAD", "DOWEL", "SHELF_PIN", "HINGE", "MINIFIX", "DRAWER_SLIDE", "OTHER"] },
+                "componentType": { "enum": ["HOUSING", "BOLT", "DOWEL", "PIN", "HINGE", "SLIDE_HOLE", "OTHER"] },
+                "face": { "enum": ["A", "B", "TOP", "BOTTOM", "LEFT", "RIGHT"] },
+                "status": { "enum": ["VALID", "WARNING", "ERROR"] },
+                "pairId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+                "pairedPointId": { "$ref": "common.schema.json#/$defs/opaqueId" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,16 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
+import {
+  loadServerSecretsOrExit,
+  buildCorsOptions,
+  createRateLimiter,
+  authGate,
+  jsonBodyLimit,
+  sanitizeInternalErrors,
+  safeErrorHandler,
+} from '../security/boundary.js';
+import { SERVER_VERSION } from '../version.js';
 import { CAS } from '../storage/cas.js';
 import { bundlesRouter } from './routes/bundles.js';
 import { exportsRouter } from './routes/exports.js';
@@ -42,9 +52,13 @@ async function main() {
   // Create Express app
   const app = express();
 
-  // Middleware
-  app.use(cors());
-  app.use(express.json({ limit: '50mb' }));
+  // Security boundary (FS-B0-02): reject unauthenticated requests before JSON
+  // parsing; sanitize legacy route-local 500 responses before they leave.
+  app.use(cors(buildCorsOptions()));
+  app.use(createRateLimiter());
+  app.use(sanitizeInternalErrors());
+  app.use(authGate(['/health', '/download']));
+  app.use(express.json({ limit: jsonBodyLimit() }));
 
   // Request logging (simple)
   app.use((req, res, next) => {
@@ -68,7 +82,7 @@ async function main() {
 
       res.json({
         ok: true,
-        version: '0.10.0',
+        version: SERVER_VERSION,
         uptime: process.uptime(),
         storage: casStats,
         queue: queueStats,
@@ -102,25 +116,21 @@ async function main() {
     });
   });
 
-  // Error handler
-  app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('[API] Unhandled error:', err);
-    res.status(500).json({
-      ok: false,
-      error: 'INTERNAL_ERROR',
-      message: err.message,
-    });
-  });
+  // Error handler (generic body — never leaks err.message)
+  app.use(safeErrorHandler);
 
   // ============================================================================
   // Start Server
   // ============================================================================
 
+  // Fail closed: refuse to start without strong secrets.
+  loadServerSecretsOrExit();
+
   app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   MONOLITH Factory Server v0.10.0 (API Process)           ║
+║   MONOLITH Factory Server v${SERVER_VERSION} (API Process)           ║
 ║                                                           ║
 ║   Step 10: Multi-process + Signed URLs + DXF R12         ║
 ║                                                           ║

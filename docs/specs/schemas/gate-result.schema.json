@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/gate-result.schema.json",
+  "title": "monolith.factory.gate-result@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "policyVersion", "result", "findings"],
+  "properties": {
+    "schema": { "const": "monolith.factory.gate-result@2.0" },
+    "policyVersion": { "$ref": "common.schema.json#/$defs/semver" },
+    "result": { "const": "PASS" },
+    "findings": {
+      "type": "array",
+      "x-monolith-orderBy": ["severity:rank(WARNING,INFO)", "code:utf8-bytes", "entityIds:jcs", "parameters:jcs"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "entityIds", "parameters"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$" },
+          "severity": { "enum": ["WARNING", "INFO"] },
+          "entityIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "x-monolith-orderBy": ["$value:utf8-bytes"],
+            "items": { "$ref": "common.schema.json#/$defs/opaqueId" }
+          },
+          "parameters": {
+            "type": "array",
+            "uniqueItems": true,
+            "x-monolith-orderBy": ["key:utf8-bytes"],
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "type", "value"],
+              "properties": {
+                "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,63}$" },
+                "type": { "enum": ["BOOLEAN", "INTEGER", "STRING"] },
+                "value": { "type": ["boolean", "integer", "string"] }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": { "const": "BOOLEAN" },
+                    "value": { "type": "boolean" }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": { "const": "INTEGER" },
+                    "value": { "type": "integer" }
+                  }
+                },
+                {
+                  "properties": {
+                    "type": { "const": "STRING" },
+                    "value": { "type": "string" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -707,6 +707,19 @@ inclusion: always
 
 **Consequences**: dogfood ops เริ่มได้ทันที (P5 seeds, V1-V10, เปิดบ้าน); CI artifact pipeline = งานแรกของ Claude track; ADR-064 ยังรอ 4 ลายเซ็นตามเดิม
 
+### Amendment CT-DEC-001: S17 baseline + separation of duties + CI evidence (2026-07-11)
+
+**Authority**: มติมนุษย์จาก Tech Lead; ข้อ separation of duties และ S17-3 approval matrix ลงมติแยกบทบาท Tech Lead + Security Owner เอกสารเต็ม: `docs/governance/ct-dec-001-s17-baseline-governance.th.md`
+
+1. **Operational baseline ของ Track A รอบนี้** = exact SHA `9ac7cff39d02d9430879275645e377728bc0abc5` บน clean worktree — แทนกติกา “latest origin/main” ของ ADR-065 เฉพาะการเปิด Track A รอบนี้
+2. **ปลด Track A ทันที**: S17-1 → S17-2 เริ่ม implementation ได้ เพราะไม่พึ่ง packet contract; Track B implementation ของ S17-4/S17-5 ยังล็อกจน S17-3 อนุมัติครบ
+3. **คงสามสายเดิม; ไม่สร้าง Track C**: S17-5 ต้อง implement และ review โดยฝ่ายที่อิสระจากผู้เขียน S17-3/S17-4 และ builder ห้าม approve งานตรวจของตนเอง
+4. **CI classification** = `E0 CI PASS — scope-limited` ณ `9ac7cff3`: main run `29142280872`, branch `29142279488`, automated tests 4,553/4,553 + typecheck + build; exclusion ที่ต้องติดเสมอ = vault-builder invariants 2 ตัว local-only, ไม่มี DB/psql, ไม่มี E2E, ไม่พิสูจน์ deployment/operational readiness/P0 closure; archive อยู่ `docs/evidence/ci/9ac7cff3/`
+5. **S17-3 approval matrix** = Tech Lead + Factory Owner + Security Owner โดย Security Owner ตรวจอย่างน้อย signature/trust boundary/key semantics
+6. ใช้ decision IDs `CT-DEC-xxx`; คำเรียก unsigned Git baseline = **pinned/frozen + tamper-evident** ไม่ใช่ immutable
+
+**ขอบเขตเดิมไม่เปลี่ยน**: ADR-064 ยังต้องครบ 4 บทบาท, ไม่มี P0 ใดปิดจาก amendment นี้ และห้ามตัดชิ้นงานจริงจาก packet จน gate สี่เงื่อนไขผ่าน
+
 
 ## ADR-066: Hosted/Prod Infra Ops = Human-Driven Only (2026-07-14, มติ owner ก หลัง prod incident)
 

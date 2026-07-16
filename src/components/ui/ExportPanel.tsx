@@ -833,6 +833,9 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
     setExportProgress(`Generating ${format.toUpperCase()}...`);
 
     try {
+      // Tracks whether a real export actually ran; unimplemented formats set
+      // this false so we never claim a successful export (FS-B2-05).
+      let exported = true;
       switch (format) {
         case 'cutlist': {
           const csv = generateCutListCsv(cabinet);
@@ -988,13 +991,17 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
         }
         case 'cnc':
         case 'pdf':
-          // These require RELEASED state - show message
-          await new Promise(resolve => setTimeout(resolve, 500));
-          alert(`${format.toUpperCase()} export requires full pipeline integration (coming soon)`);
+          // Not implemented yet — surface an honest status and do NOT fall
+          // through to the success message below (FS-B2-05).
+          await new Promise(resolve => setTimeout(resolve, 300));
+          setExportProgress(`${format.toUpperCase()} export is not available yet (coming soon)`);
+          exported = false;
           break;
       }
 
-      setExportProgress(`${format.toUpperCase()} exported successfully!`);
+      if (exported) {
+        setExportProgress(`${format.toUpperCase()} exported successfully!`);
+      }
     } catch (error) {
       setExportProgress(`Export failed: ${error}`);
     }

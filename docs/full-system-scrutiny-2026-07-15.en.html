@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Full-System Scrutiny — 2026-07-15</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Full-System Scrutiny</h1>
+<p>Date: 2026-07-15 Audited revision: <code>077452a7cbe8714ed5ac3ed388420565bc19f252</code> plus the uncommitted S17 v0.4.1 control pack Decision: <strong>NO-GO for production, controlled factory cutting, and a claim that dogfood has started</strong> Permitted posture: <strong>local development, automated verification, and shadow/NO_CUT preparation only</strong></p>
+<h2>1. Executive conclusion</h2>
+<p>MONOLITH is a substantial engineering codebase, not a mock-up. The root application typechecks and builds, the factory server and field app build, 4,553 Vitest assertions passed, and the browser smoke suite passed five tests. Manufacturing geometry, CNC dialects, gates, workflow controls, and packet determinism have meaningful automated coverage.</p>
+<p>The system is nevertheless not operationally ready. The release chain is blocked by explicit governance state, an unauthenticated factory-server boundary, critical dependency advisories, broken canonical CI/test commands, an unverified field surface, signature-layer implementation fragmentation, and the absence of live deployment and real dogfood evidence. Code readiness must not be converted into production authority.</p>
+<h2>2. Scope and evidence</h2>
+<p>The review covered the root Designer/Factory application, <code>server/</code>, <code>packages/field-app/</code>, Supabase migrations and Edge Functions, LINE/workflow surfaces, GitHub workflows, factory packet/S17 governance, dependency installation, unit tests, builds, browser smoke tests, and local operational evidence.</p>
+<p>Evidence was collected from the checked-out repository and read-only GitHub repository metadata. The GitHub connector returned no PR-triggered workflow run or combined status for the audited commit. This is not proof that no push-triggered workflow ever ran; it means no current external CI success could be established from the available evidence. Live Supabase, LINE, Redis, AWS KMS, CNC, GitHub Pages runtime, and customer data were not accessed.</p>
+<h2>3. Verification results</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Result</th>
+<th>Interpretation</th>
+</tr></thead><tbody>
+<tr>
+<td>Root TypeScript project references</td>
+<td>PASS</td>
+<td><code>tsc -b tsconfig.build.json</code> completed</td>
+</tr>
+<tr>
+<td>Root production build</td>
+<td>PASS with warnings</td>
+<td>Large chunks and ineffective mixed static/dynamic imports remain</td>
+</tr>
+<tr>
+<td>Factory server build</td>
+<td>PASS</td>
+<td>Server compiles after its separate dependency install</td>
+</tr>
+<tr>
+<td>Field app build</td>
+<td>PASS with warning</td>
+<td>Tailwind reports missing/empty content configuration</td>
+</tr>
+<tr>
+<td>Root Vitest command</td>
+<td>FAIL</td>
+<td>4,553 tests passed in 262 files; two Node-native test files were incorrectly collected as empty Vitest suites</td>
+</tr>
+<tr>
+<td>Governance tooling</td>
+<td>PASS 5/5</td>
+<td>Canonical manifest writer/verifier and renderer controls passed</td>
+</tr>
+<tr>
+<td>Schema bundle tooling</td>
+<td>PASS 1/1</td>
+<td>Closed bundle and canonical array-order rule passed</td>
+</tr>
+<tr>
+<td>Factory server test command</td>
+<td>FAIL 13/13</td>
+<td>CLI runs and calls <code>process.exit(0)</code> during import; test runtime also attempts to mutate a read-only <code>testPath</code></td>
+</tr>
+<tr>
+<td>Browser smoke</td>
+<td>PASS/PARTIAL</td>
+<td>5 passed, 2 skipped; no full E2E or live integration evidence</td>
+</tr>
+<tr>
+<td>Dependency installation summary</td>
+<td>FAIL release gate</td>
+<td>Root: 21 advisories including 3 critical; server: 13 advisories including 1 critical</td>
+</tr>
+</tbody></table></div>
+<p>The advisory counts came from reproducible lockfile installation. Detailed advisory lookup was not performed because it would disclose private-project dependency metadata to the external npm advisory endpoint without specific owner authorization.</p>
+<h2>4. Release-blocking findings</h2>
+<h3>FS-B0-01 — Governance and real-cut authority remain closed</h3>
+<p>The canonical packet specification is <code>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</code>. Tech Lead, Factory Owner, and Security Owner are all PENDING. CT-DEC-002 states <code>Track B LOCKED</code> and <code>NO_CUT</code>. The real-cut gate also requires S17-1..5 closure, all ADR-064 roles, at least one full-chain dogfood job, and a calibrated machine profile. None of those conditions is evidenced as complete.</p>
+<p>Required disposition: preserve <code>NO_CUT</code>; do not deploy or represent S17-4/S17-5 as approved implementation until the human approval matrix is complete.</p>
+<h3>FS-B0-02 — Factory server exposes a production-blocking trust boundary</h3>
+<p>Both server entry points use unrestricted <code>cors()</code> and expose bundle, export, key, state, proof, activity, and download operations without an authentication or authorization middleware visible at the application boundary. JSON bodies allow 50 MB. The signed-URL helper silently falls back to the static secret <code>dev-secret-change-in-production</code>. One error handler returns <code>err.message</code> to callers.</p>
+<p>If either server entry point is network reachable, an untrusted caller may exercise high-impact factory operations; the default HMAC secret also makes signed URLs forgeable. This is a production blocker even if downstream validators are correct.</p>
+<p>Required disposition: fail startup when secrets are absent, add explicit authentication and per-operation authorization, restrict origins, rate-limit and bound uploads, redact internal errors, and test the complete boundary before deployment.</p>
+<h3>FS-B0-03 — Canonical packet signature implementation is not converged on ADR-068</h3>
+<p>The v0.4.1 contract requires AWS KMS <code>ECC_NIST_P256</code>, <code>ECDSA_SHA_256</code>, raw 64-byte <code>r||s</code>, low-S rejection, and a non-exportable key. Active factory packet types and mock routes still declare <code>Ed25519</code>; the manufacturing verifier is Ed25519-only. A separate ECDSA implementation exists, but it generates an extractable browser key, stores private JWK material locally, and is not the AWS KMS/registry/low-S verifier defined by v0.4.1.</p>
+<p>This is partly expected while Track B is locked, but it proves the runtime is not a v0.4.1 implementation and must not be certified as one. Legacy Ed25519 receipt/trust layers should be explicitly classified so they are not confused with the canonical factory-packet attestation layer.</p>
+<p>Required disposition: after approval unlocks Track B, implement one packet-attestation path against AWS KMS and the pinned registry; add raw-length, low-S/high-S rejection, public-key-format, KMS non-determinism, and verifier-order tests.</p>
+<h3>FS-B0-04 — Real dogfood has not started on auditable evidence</h3>
+<p>The repository contains a decision to start business/field dogfood in parallel and code for shadow/NOT-FOR-PRODUCTION behavior. It contains no enrolled real-house project ID, start timestamp, accountable operator, first immutable workflow event, session-evidence artifact, or completed LINE-to-acceptance chain. The PRD review explicitly states that the real dogfood pilot has not started.</p>
+<p>Required disposition: status must remain <code>AUTHORIZED/PREPARED — NOT STARTED</code>. Start only when a real project is enrolled with an evidence ID, owner, rollback path, PDPA classification, legacy-process fallback, and first immutable event.</p>
+<h2>5. Critical and high findings</h2>
+<h3>FS-B1-01 — Dependency risk is above the release threshold</h3>
+<p>Lockfile installation reported three critical advisories in the root dependency graph and one critical advisory in the factory server graph, plus high and moderate advisories. The affected packages and reachability remain untriaged.</p>
+<p>Action: with owner authorization, run advisory lookup in an approved environment, map each vulnerable path to runtime reachability, upgrade or mitigate, and pin the resulting clean evidence. Do not use <code>npm audit fix --force</code> without impact review.</p>
+<h3>FS-B1-02 — The canonical full-verification workflow cannot be green as written</h3>
+<p><code>npm run test:run</code> collects <code>scripts/governance-tooling.test.mjs</code> and <code>scripts/schema-bundle.test.mjs</code> as Vitest files, even though both use Node's native test runner. All 4,553 Vitest assertions pass, but the command exits non-zero due to two empty-suite failures. <code>.github/workflows/verify-full.yml</code> invokes that same command, so its E0 evidence artifact cannot truthfully represent a green full verification until runner boundaries are corrected.</p>
+<p>Action: exclude Node-native tests from Vitest and invoke both dedicated npm scripts explicitly in CI. Include the factory server and field app as separate jobs.</p>
+<h3>FS-B1-03 — The factory server's own test suite is nonfunctional</h3>
+<p>Importing <code>server/src/cli/receiptVerify.ts</code> immediately executes <code>main()</code> and calls <code>process.exit</code>, so the verifier is not import-safe. All 13 dedicated server tests fail; the test environment also reports mutation of a read-only <code>testPath</code>. This removes trustworthy regression coverage from a security-sensitive verifier.</p>
+<p>Action: guard the CLI entry point, keep verification functions side-effect free, use temporary injected key registries instead of modifying production key files, align Vitest versions/configuration, and require a clean 13/13 result.</p>
+<h3>FS-B1-04 — Field app is buildable but not verified</h3>
+<p><code>packages/field-app</code> has no <code>test</code> script. Its build warns that Tailwind content is missing or empty, creating a risk that deployed CSS omits required classes. Offline queue, authentication callback, RLS behavior, proof binding, and close-house acceptance lack a field-app-level test gate. This matches the existing PRD classification <code>PARTIAL / NOT VERIFIED</code>.</p>
+<p>Action: add an app-local Tailwind config, unit/component tests, offline/retry tests, authentication and RLS integration tests, and a controlled field pilot before relying on this surface.</p>
+<h3>FS-B1-05 — Live data-plane and deployment claims are unverified</h3>
+<p>There are 174 migration files and 19 Edge Function directories, but the provisioning runbook remains a checklist and explicitly requires manual <code>supabase db push</code>, function deployment, secrets, cron, and end-to-end verification. No live migration parity, RLS probe, secret inventory, LINE webhook signature evidence, Redis worker evidence, Pages deployment evidence, or rollback drill was available.</p>
+<p>Action: run a staging ceremony against pinned commit bytes, record migration/function parity, execute negative RLS and webhook tests, capture rollback evidence, and only then schedule a real dogfood start.</p>
+<h3>FS-B1-06 — Governance-tool byte classification required an append-only update — REMEDIATED</h3>
+<p>CT-DEC-003 classified earlier candidate bytes, while the current manifest writer, verifier, and test harness had different hashes. The original record could not be silently rewritten. <code>CT-DEC-003-A1</code> now pins the four current tool hashes, records the independent advisory source review and reproduced 5/5 negative-test evidence, and classifies the exact bytes as official for governance-document tooling only.</p>
+<p>Disposition: <strong>REMEDIATED FOR THE PINNED BYTES</strong> by <code>docs/governance/ct-dec-003-a1-current-governance-tool-bytes.*</code> and <code>monolith-ct-dec-003-a1-review-input.sha256</code>. Any byte change returns the changed tool to candidate status. This remediation does not fix the separate CI runner issue in <code>FS-B1-02</code> and does not create S17-5, Track B, production, or cutting authority.</p>
+<h2>6. Medium findings and engineering debt</h2>
+<ul><li><strong>FS-B2-01 — Version drift:</strong> <code>server/package.json</code> is 0.13.2 while API responses advertise 0.10.0 and 2.0.0-p22a through two entry points. Operators cannot reliably identify the running contract.</li><li><strong>FS-B2-02 — Build size:</strong> root build emits application/vendor chunks above the 600 kB warning threshold, including an approximately 1.03 MB Three bundle and an approximately 888 kB App chunk. This is material for field connectivity and cold starts.</li><li><strong>FS-B2-03 — E2E blind spots:</strong> two smoke tests were skipped, including the export flow and OperationGraph-source assertion. The smoke suite does not exercise Supabase, LINE, server authentication, KMS, Redis, or actual packet rejection.</li><li><strong>FS-B2-04 — No hermetic clean-worktree gate:</strong> build output is tracked under <code>dist/</code>, and local verification changed generated assets and a snapshot's working-tree state. CI should build outside tracked release bytes or verify reproducible output without mutating source.</li><li><strong>FS-B2-05 — Incomplete functions remain in production source:</strong> STEP/PDF export and full drawer drill-map generation contain explicit not-implemented/TODO paths. Product claims must reflect those limits.</li><li><strong>FS-B2-06 — Encoding/document hygiene:</strong> several tracked workflow and Thai document outputs display mojibake under normal UTF-8 reading, reducing review reliability.</li></ul>
+<h2>7. Strengths that should be preserved</h2>
+<ul><li>High automated-test density in geometry, CNC dialects, gates, connector rules, workflow authorization, audit, capture, tax, and factory packet determinism.</li><li>Root, server, and field builds compile successfully after reproducible dependency installation.</li><li>Governance manifest tooling is fail-closed and its tests pass.</li><li>S17 v0.4.1 clearly pins ECDSA encoding, low-S semantics, non-determinism, public-key format, verifier order, and NO_CUT behavior.</li><li>Browser smoke covers application load, WebGL health, X-ray mode, hardware preset behavior, and export-panel access.</li><li>Supabase migrations show deliberate RLS, SECURITY DEFINER, service-role, and append-only audit patterns; these are good design signals, although live enforcement still needs proof.</li></ul>
+<h2>8. Required order of work</h2>
+<ol><li>Keep <code>NO_CUT</code>, Track B lock, and the statement that dogfood has not started.</li><li>Close the factory-server authentication/CORS/default-secret boundary before any network deployment.</li><li>Obtain owner-approved dependency advisory details and remove or mitigate critical reachable paths.</li><li>Repair CI runner separation and the factory-server test harness; require green root, governance, schema, server, field, build, and E2E gates.</li><li>Complete the three-role S17 approval matrix; only then implement the ADR-068 packet-attestation layer.</li><li>Create staging deployment evidence for migrations, RLS, Edge Functions, LINE, Redis, Pages, secrets, monitoring, and rollback.</li><li>Enroll one controlled real project and emit the first immutable dogfood event; continue with legacy factory production and shadow/NO_CUT packets.</li><li>Consider controlled factory cutting only after every four-condition real-cut gate is evidenced.</li></ol>
+<h2>9. Final classification</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Dimension</th>
+<th>Status</th>
+</tr></thead><tbody>
+<tr>
+<td>Engineering core</td>
+<td><strong>SUBSTANTIAL / BUILDS / HIGH TEST DENSITY</strong></td>
+</tr>
+<tr>
+<td>Canonical automated verification</td>
+<td><strong>RED — runner wiring and server suite</strong></td>
+</tr>
+<tr>
+<td>Security boundary</td>
+<td><strong>RED — not safe for network production</strong></td>
+</tr>
+<tr>
+<td>S17 packet authority</td>
+<td><strong>DRAFT / PENDING 3 / TRACK B LOCKED / NO_CUT</strong></td>
+</tr>
+<tr>
+<td>Field and live data plane</td>
+<td><strong>PARTIAL / NOT VERIFIED</strong></td>
+</tr>
+<tr>
+<td>Dogfood</td>
+<td><strong>AUTHORIZED/PREPARED — NOT STARTED</strong></td>
+</tr>
+<tr>
+<td>Production release</td>
+<td><strong>NO-GO</strong></td>
+</tr>
+</tbody></table></div>
+<p>This scrutiny is an evidence-based review, not an approval signature, security certification, production authorization, or permission to cut a real workpiece.</p>
+</main>
+</body>
+</html>

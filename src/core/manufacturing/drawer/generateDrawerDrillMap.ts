@@ -90,18 +90,18 @@ export const SLIDE_MOUNTING_Z_POSITIONS = {
 };
 
 // ============================================
-// MAIN FUNCTION (PLACEHOLDER)
+// DRAWER SLIDE HOLE GENERATION
 // ============================================
 
 /**
- * Generate drawer slide mounting holes.
+ * Generate drawer slide mounting hole specifications.
  *
- * TODO: Implement full drill map point generation.
- * This function should:
- * 1. Calculate Y positions for each drawer row
- * 2. Generate holes on LEFT_SIDE and RIGHT_SIDE panels
- * 3. Follow System 32 spacing for Z (depth) positions
- * 4. Return DrillMapPoint[] compatible with useDrillMapStore
+ * Produces `DrawerSlideHole[]` (Y positions per drawer row on the LEFT_SIDE /
+ * RIGHT_SIDE panels, System 32 Z spacing). This is a self-contained helper and
+ * is NOT currently wired into the live drill-map pipeline — the active drawer
+ * drilling path is `core/designerIntent/mappers/drillingMapper.ts`. Adopting
+ * this path would additionally require mapping the specs to `DrillMapPoint[]`
+ * for `useDrillMapStore`; that integration is intentionally out of scope here.
  *
  * @param cabinet - Cabinet with drawer configuration
  * @returns Array of slide mounting hole specifications

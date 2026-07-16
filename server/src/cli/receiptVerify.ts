@@ -14,6 +14,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { pathToFileURL } from 'url';
 import { createHash } from 'crypto';
 import { extractReceiptFromZip, computeContentHash, extractZipEntries } from './zipExtract.js';
 import { verifyReceiptSignature } from '../crypto/verifyReceiptSig.js';
@@ -344,5 +345,12 @@ Examples:
   }
 }
 
-// Run if executed directly
-main().catch(console.error);
+// Run only when executed directly as a CLI — never on import (tests, other modules).
+const invokedDirectly =
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

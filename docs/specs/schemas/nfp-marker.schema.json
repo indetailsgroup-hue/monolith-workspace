@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/nfp-marker.schema.json",
+  "title": "monolith.factory.nfp-marker@1.0",
+  "type": "string",
+  "contentMediaType": "text/plain; charset=utf-8",
+  "x-monolith-byteEncoding": "UTF-8",
+  "x-monolith-lineEnding": "LF",
+  "x-monolith-trailingLf": false,
+  "x-monolith-exactSizeBytes": 824,
+  "x-monolith-sha256": "40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a"
+}

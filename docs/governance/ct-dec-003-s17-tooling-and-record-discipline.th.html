@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003 — S17 Tooling, Ownership และ Append-Only Record Discipline</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003 — S17 Tooling, Ownership และ Append-Only Record Discipline</h1>
+<p>วันที่มีผล: 2026-07-11 สถานะ: <strong>RECORDED — human Tech Lead decision</strong> ขอบเขต: MONOLITH S17 governance, การส่ง CT-DEC-002 กลับแก้ และ governance tooling Technical baseline: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Governance input ที่ตรวจ: <code>7aa63fd085e71c0bcd62f8d9fbee9d1b363ec416</code> อำนาจมติ: Tech Lead ผู้จัดทำเอกสาร: Codex ในฐานะ advisory/non-authoritative</p>
+<blockquote><p>Record นี้เก็บมติมนุษย์โดยไม่เปลี่ยน advisory review ให้เป็น approval authority ไม่ปิด P0 ไม่อนุมัติ CT-DEC-002 และไม่ปลด Track B implementation</p></blockquote>
+<h2>1. Decision register</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>มติ</th>
+<th>อำนาจ</th>
+<th>ผลที่มีผล</th>
+</tr></thead><tbody>
+<tr>
+<td>ส่ง CT-DEC-002 กลับทำ v0.2</td>
+<td>Tech Lead</td>
+<td>ต้องแก้ blocker ทั้งหกจาก independent review; ไม่มี approval signature ในรอบนี้</td>
+</tr>
+<tr>
+<td>ผลสูงสุดระหว่าง shadow</td>
+<td>Tech Lead</td>
+<td><code>PKT_OK_SHADOW_ONLY / NO_CUT</code> คือผลสูงสุดขณะ shadow mode; ห้าม bare <code>PKT_OK</code></td>
+</tr>
+<tr>
+<td>เพิ่ม as-built gap สามช่อง</td>
+<td>Tech Lead</td>
+<td>gate evidence run fields, locale sorting และ floating quantization เป็น input ของ S17-4</td>
+</tr>
+<tr>
+<td>ตรึง owner ของ <code>jobRunId</code></td>
+<td>Tech Lead</td>
+<td>Track A ให้ actor/auth/release contract; S17-4 เป็นเจ้าของ transactional allocation</td>
+</tr>
+<tr>
+<td>จัดชั้นและ harden governance tooling</td>
+<td>Tech Lead</td>
+<td>อนุญาตการใช้ย้อนหลังแบบจำกัด; official status ต้องผ่าน independent re-review</td>
+</tr>
+<tr>
+<td>ทำ historical decision quotes เป็น append-only</td>
+<td>Tech Lead</td>
+<td>การแก้ใช้ addendum/supersession note ห้าม rewrite เงียบ</td>
+</tr>
+</tbody></table></div>
+<h2>2. มติส่ง CT-DEC-002 กลับ</h2>
+<p>CT-DEC-002 คง <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> โดย v0.2 ต้องแก้:</p>
+<ol><li>protected signature algorithm/key/registry fields</li><li>แยก gate evidence ระหว่าง content plane กับ run plane</li><li>schema, quantity normalization, canonical array ordering และ field ownership</li><li>การ slice content ID สำหรับชื่อไฟล์ที่ใช้ได้บน Windows และ exact ZIP byte profile</li><li>trusted-key lifecycle, revocation และ unavailable-authority semantics</li><li>stable fail-closed result codes และ operational disposition ที่แยกชัด</li></ol>
+<p>Approval roles ทั้งสามยังเป็น PENDING Track B implementation สำหรับ S17-4/S17-5 ยังคงล็อกจน approval matrix ของ S17-3 ลงชื่อครบ</p>
+<p>ขณะ shadow mode ผลสำเร็จสูงสุดของ verifier คือ:</p>
+<pre><code class="language-text">PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code></pre>
+<p><code>PKT_OK</code> เป็น reserved code และห้าม emit ระหว่าง controlled pilot</p>
+<h2>3. Append-only ownership supersession — <code>jobRunId</code></h2>
+<p>ถ้อยคำใน v0.1 เดิมเชื่อม server-owned <code>jobRunId</code> กับ “S17-1/S17-4” ข้อความเดิมยังต้องย้อนตรวจได้ใน Git history และห้าม rewrite เหมือนไม่เคยมี มติส่วนนี้ supersede เฉพาะการตีความ owner:</p>
+<ul><li><strong>Track A / S17-1–2 เป็นเจ้าของ</strong> <code>actorSubjectId</code>, authenticated authorization context และ server-enforced RELEASED-only invariant</li><li>**Track A ไม่ allocate <code>jobRunId</code>**</li><li><strong>S17-4 เป็นเจ้าของ</strong> canonical export-request fingerprinting และ durable transactional <code>jobRunId</code> allocation หลังเรียก Track A contract</li><li><code>jobRunId</code> หนึ่งค่าผูก <code>packetContentId</code> หนึ่งค่า; idempotency conflict ต้อง fail closed</li></ul>
+<p>การแก้ขอบเขตนี้ไม่ทำให้ Track A ช้า และไม่ปลด S17-4 implementation ก่อน CT-DEC-002 อนุมัติ</p>
+<h2>4. Durable governance-tooling classification</h2>
+<h3>4.1 Historical versions ที่อนุญาตย้อนหลัง</h3>
+<p>Version ต่อไปนี้ ณ <code>7aa63fd0</code> ได้รับอนุญาตย้อนหลังเฉพาะฐานะ <strong>governance tooling</strong>:</p>
+<pre><code class="language-text">7976e417cbffc5779aa7b53608ae179324981b6d63b65c59a013013f2f852b6c  render-standalone-markdown.mjs
+b42a168489ecf776adf25c8d866444b2badb81da474224d9985e91673d99c62e  write-sha256-manifest.mjs
+cc34ad45d4e185065771306e275e3198332bedcae1557106d4f0fa6bd677c05a  verify-sha256-manifest.mjs</code></pre>
+<p>การอนุญาตนี้ไม่ทำให้สคริปต์เป็น Track implementation, production control, release gate หรือ S17-5 evidence</p>
+<h3>4.2 Hardened candidate versions ใน governance revision นี้</h3>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  render-standalone-markdown.mjs
+d27a6120483569e044f2eb77ee4158d3dfc1bbc4a9b1e157dd750a9e8743ec3c  write-sha256-manifest.mjs
+1c67197766ade318f1287b0b88a3001c79a2a1dfd30398d63d679d28a8215672  verify-sha256-manifest.mjs
+00c33bd04d722fab8d96424af0c80b0e5db13d7f19612083f08d1ea39c299fa4  governance-tooling.test.mjs</code></pre>
+<p>Candidate writer/verifier ต้อง reject path escape, symlink ที่ออกนอก manifest root, duplicate/case-fold-colliding entry, manifest ที่เป็น CRLF/BOM/มี blank line, non-canonical path และ manifest self-reference Writer บันทึก canonical relative path แทน basename-only entry Focused built-in Node test suite ครอบคลุม valid nested path รวม negative ของ traversal, duplicate, blank line, CRLF, unsafe link, token collision และ unclosed fence</p>
+<p>สถานะยังคง:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Tool</th>
+<th>สถานะปัจจุบัน</th>
+<th>ขอบเขต</th>
+</tr></thead><tbody>
+<tr>
+<td><code>render-standalone-markdown.mjs</code></td>
+<td><strong>YELLOW</strong></td>
+<td>trusted repository governance input เท่านั้น</td>
+</tr>
+<tr>
+<td><code>write-sha256-manifest.mjs</code></td>
+<td><strong>CANDIDATE — NOT OFFICIAL</strong></td>
+<td>governance manifests เท่านั้น; ต้อง independent re-review</td>
+</tr>
+<tr>
+<td><code>verify-sha256-manifest.mjs</code></td>
+<td><strong>CANDIDATE — NOT OFFICIAL</strong></td>
+<td>manifest-integrity utility เท่านั้น; ต้อง independent re-review</td>
+</tr>
+</tbody></table></div>
+<p><code>verify-sha256-manifest.mjs</code> ไม่ใช่และห้ามอ้างว่าเป็น S17-5 full packet verifier การให้ official status ทำได้ด้วยมติมนุษย์รอบถัดไปหลัง independent source review และ reproduce negative tests แล้วเท่านั้น</p>
+<h2>5. Append-only historical decision-record rule</h2>
+<ol><li>Verbatim human-decision quote blocks และ signed/approved fields เป็น append-only หลังบันทึก</li><li>การแก้ข้อเท็จจริง, owner หรือ policy ต้องเพิ่ม dated addendum หรือ <code>CT-DEC-xxx</code> supersession note ใหม่</li><li>Note ใหม่ต้องระบุ prior record, exact scope ที่ supersede, authority/role, เหตุผล และ effective date</li><li>ข้อความเดิมส่วนที่ไม่ถูกกระทบยังมีอำนาจในขอบเขตเดิม</li><li>Rendering, translation, typo หรือ formatting correction ห้ามเปลี่ยน normative meaning เงียบ; normative change ต้องใช้ supersession discipline เดียวกัน</li><li>Git history เป็น tamper-evident provenance แต่ห้ามเรียก unsigned commit ว่า immutable</li></ol>
+<h2>6. สถานะ Track A ที่วัดได้ ณ เวลาบันทึก</h2>
+<p>การตรวจ Git แบบ read-only เมื่อ 2026-07-11 พบ:</p>
+<ul><li>main implementation worktree ณ <code>9ac7cff3</code> บน <code>fix/drillmap-bolt-and-brun-dowels</code></li><li>governance worktree ณ <code>7aa63fd0</code> บน <code>governance/s17-control-pack</code></li><li>ไม่มี local หรือ remote Track A/S17-1 branch</li><li>ไม่มี dedicated clean Track A worktree</li></ul>
+<p>ดังนั้น <strong>สถานะ S17-1 implementation = NOT STARTED / NO REPOSITORY EVIDENCE</strong> ณ เวลาบันทึก นี่เป็น measured fact ไม่ใช่ claim ต่องานนอก Git เนื่องจาก deadline implementation ยังประมาณ 2026-07-25 การสร้าง exact-baseline clean Track A worktree และเริ่ม server-owned actor identity คือ execution action ที่เร่งที่สุด</p>
+<h2>7. ขอบเขตที่ไม่เปลี่ยน</h2>
+<ul><li>CT-DEC-002 ยัง DRAFT และไม่มี approval signature</li><li>Track B implementation ยังล็อก</li><li>ไม่มี P0 blocker ใดปิด</li><li>ไม่มี production-ready หรือ deployment-ready claim</li><li>ADR-064 ยังต้องครบสี่บทบาทมนุษย์</li><li>ห้ามตัดชิ้นงานจริงจาก packet จน S17 ปิดและ real-cut gate ผ่านครบสี่เงื่อนไข</li></ul>
+<h2>8. Controlled actions ถัดไป</h2>
+<ol><li>ส่ง CT-DEC-002 v0.2 พร้อม hash-anchored diff summary เข้า independent review รอบสอง</li><li>independent re-review hardened writer/verifier ก่อนมติ official tooling ใด ๆ</li><li>เริ่ม Track A จาก exact baseline <code>9ac7cff3</code> บน clean worktree แยก โดยไม่รอ CT-DEC-002 approval</li></ol>
+</main>
+</body>
+</html>

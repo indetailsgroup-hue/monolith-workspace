@@ -1,14 +1,16 @@
 # Full verification = E0 evidence anchor (ADR-065 Q4: แปลง session evidence เป็น CI artifact)
 # ผูก commit + environment + วันที่ + ผลเทสต์ ลง artifact — ใช้ปิดสถานะ "E0 candidate / REVERIFY"
+#
+# FS-R2-B1-01: this now runs on governance candidates too, and enforces every
+# local gate as a separate job (root, node-native controls, server, field,
+# clean worktree, E2E smoke, manifest integrity) so the workflow's coverage
+# matches its name and the reviewed HEAD gets a real external attestation.
 name: MONOLITH Full Verify
 
 on:
   push:
-    branches: [main, "fix/**", "s17/**"]
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - ".kiro/**"
+    branches: [main, "fix/**", "s17/**", "governance/**"]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -16,35 +18,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: typecheck + full tests + build
+  root:
+    name: root — typecheck + vitest + build (+ evidence)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install dependencies (root)
         run: npm ci
-
       # server/ อยู่นอก npm workspaces — ต้องติดตั้งแยก ไม่งั้นเทสต์ที่ใช้ yazl fail
       - name: Install dependencies (server)
         run: npm ci
         working-directory: server
-
       - name: Typecheck (full project)
         run: npx tsc -b tsconfig.build.json
-
-      - name: Unit tests (full suite)
+      - name: Unit tests (root Vitest suite)
         run: npm run test:run -- --reporter=default --reporter=json --outputFile=vitest-report.json
-
       - name: Build
         run: npm run build
-
       - name: Assemble evidence manifest
         if: always()
         run: |
@@ -54,7 +49,7 @@ jobs:
           try { report = JSON.parse(fs.readFileSync('vitest-report.json', 'utf8')); } catch {}
           const evidence = {
             evidenceTier: 'E0',
-            workflow: 'verify-full',
+            workflow: 'verify-full/root',
             commit: process.env.GITHUB_SHA,
             ref: process.env.GITHUB_REF,
             runId: process.env.GITHUB_RUN_ID,
@@ -72,13 +67,173 @@ jobs:
           fs.writeFileSync('verify-evidence.json', JSON.stringify(evidence, null, 2));
           console.log(JSON.stringify(evidence, null, 2));
           "
-
       - name: Upload evidence artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: verify-evidence-${{ github.sha }}
           path: |
             verify-evidence.json
             vitest-report.json
           retention-days: 90
+
+  node-controls:
+    name: node-native controls (governance tooling + schema)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Node-native control tests (node:test)
+        run: npm run test:node
+
+  server:
+    name: factory server — build + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies (server)
+        run: npm ci
+        working-directory: server
+      - name: Server build (tsc)
+        run: npm run build
+        working-directory: server
+      - name: Server tests
+        run: npm run test:run
+        working-directory: server
+
+  field:
+    name: field app — build + test gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Field app tests
+        run: npm run test:run -w @daph/field-app
+      - name: Field app build
+        run: npm run build -w @daph/field-app
+
+  clean-worktree:
+    name: hermetic build — clean worktree (FS-B2-04)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Assert working tree is clean after build
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::build dirtied the working tree — tracked release bytes regenerated"
+            git status --porcelain
+            exit 1
+          fi
+          echo "working tree clean after build"
+
+  e2e-smoke:
+    name: e2e @smoke (UI-only critical path — must never skip)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright chromium + OS deps
+        run: npx playwright install --with-deps chromium
+      - name: Run e2e @smoke (Playwright auto-starts the vite dev server)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: smoke-report.json
+        run: npx playwright test --grep @smoke --reporter=list,json
+      # FS-R2-B1-02: the @smoke tier is UI-only and deterministic, so a SKIP means a
+      # critical path silently did not run. Playwright exits 0 on all-skipped, which
+      # would report a green gate over a vacuous run — fail the build instead.
+      - name: Enforce @smoke never skips (no vacuous green)
+        run: |
+          node -e "
+          const r = JSON.parse(require('fs').readFileSync('smoke-report.json','utf8'));
+          let pass=0, skip=0, fail=0, flaky=0; const skipped=[];
+          const walk = s => { for (const sp of s.specs||[]) for (const t of sp.tests||[]) { const st=t.status; if (st==='skipped'){skip++;skipped.push(sp.title);} else if (st==='expected') pass++; else if (st==='flaky') flaky++; else fail++; } for (const c of s.suites||[]) walk(c); };
+          for (const s of r.suites||[]) walk(s);
+          console.log('@smoke: pass='+pass+' skip='+skip+' fail='+fail+' flaky='+flaky);
+          if (fail>0) { console.error('::error::@smoke has '+fail+' failing test(s)'); process.exit(1); }
+          if (skip>0) { console.error('::error::@smoke must never skip — a skipped critical path must not report green (FS-R2-B1-02). Skipped: '+skipped.join(' | ')); process.exit(1); }
+          if (pass===0) { console.error('::error::no @smoke tests ran'); process.exit(1); }
+          console.log('OK: all '+pass+' @smoke tests ran and passed');
+          "
+
+  e2e-integration:
+    name: e2e @integration (factory-dependent — tracked; gated on factory service)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright chromium + OS deps
+        run: npx playwright install --with-deps chromium
+      # FS-R2-B1-02: the @integration tier exercises the real freeze → RELEASE →
+      # factory export flow. The factory service (server/) is NOT yet wired into CI —
+      # its FS-B0-02 fail-closed bearer boundary + the frontend auth needed to call it
+      # land under B0-02/B1-05. Until then these tests skip with an EXPLICIT reason
+      # (never silent). This job keeps the deferred coverage VISIBLE, stays green while
+      # every test skips-with-reason, and fails on any real @integration failure. When
+      # the factory service is added, the same tests run for real and force-assert the
+      # downloaded artifact + manifest.
+      - name: Run e2e @integration (skips-with-reason until factory is wired)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: integration-report.json
+        run: npx playwright test --grep @integration --reporter=list,json
+      - name: Report @integration coverage state
+        if: always()
+        run: |
+          node -e "
+          const fs=require('fs'); let r; try { r=JSON.parse(fs.readFileSync('integration-report.json','utf8')); } catch { console.log('no @integration report produced'); process.exit(0); }
+          let pass=0, skip=0, fail=0, flaky=0;
+          const walk = s => { for (const sp of s.specs||[]) for (const t of sp.tests||[]) { const st=t.status; if (st==='skipped') skip++; else if (st==='expected') pass++; else if (st==='flaky') flaky++; else fail++; } for (const c of s.suites||[]) walk(c); };
+          for (const s of r.suites||[]) walk(s);
+          console.log('@integration: pass='+pass+' skip='+skip+' fail='+fail+' flaky='+flaky);
+          if (skip>0 && pass===0) console.log('::notice::@integration coverage is DEFERRED — factory service not yet wired into CI (B0-02/B1-05); '+skip+' test(s) skipped with an explicit reason.');
+          "
+
+  manifests:
+    name: governance manifest integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Verify CT-DEC governance manifests (byte-exact, sorted, no traversal)
+        run: |
+          set -e
+          shopt -s nullglob
+          for m in docs/governance/*.sha256; do
+            echo "verifying $m"
+            node scripts/verify-sha256-manifest.mjs "$m"
+          done

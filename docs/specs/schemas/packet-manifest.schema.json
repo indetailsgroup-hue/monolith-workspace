@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/packet-manifest.schema.json",
+  "title": "monolith.factory.packet@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifestVersion", "packetContentId", "releasedRevision", "machineProfile", "exporter", "files"],
+  "properties": {
+    "schema": { "const": "monolith.factory.packet@2.0" },
+    "manifestVersion": { "const": "2.0.0" },
+    "packetContentId": { "$ref": "common.schema.json#/$defs/sha256Id" },
+    "releasedRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "revisionId", "state"],
+      "properties": {
+        "projectId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "revisionId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "state": { "const": "RELEASED" }
+      }
+    },
+    "machineProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "sha256"],
+      "properties": {
+        "id": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "version": { "$ref": "common.schema.json#/$defs/semver" },
+        "sha256": { "$ref": "common.schema.json#/$defs/sha256Id" }
+      }
+    },
+    "exporter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "buildCommit", "artifactSha256"],
+      "properties": {
+        "id": { "const": "monolith.factory-exporter" },
+        "version": { "$ref": "common.schema.json#/$defs/semver" },
+        "buildCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "artifactSha256": { "$ref": "common.schema.json#/$defs/sha256Id" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 30,
+      "uniqueItems": true,
+      "x-monolith-orderBy": ["path:utf8-bytes"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "mediaType", "contentSchema", "sizeBytes", "sha256"],
+        "properties": {
+          "path": { "$ref": "common.schema.json#/$defs/canonicalPath" },
+          "mediaType": { "enum": ["application/json", "text/plain; charset=utf-8"] },
+          "contentSchema": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "sizeBytes": { "type": "integer", "minimum": 0, "maximum": 16777216 },
+          "sha256": { "$ref": "common.schema.json#/$defs/sha256Hex" }
+        }
+      }
+    }
+  }
+}

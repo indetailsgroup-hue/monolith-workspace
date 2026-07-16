@@ -267,3 +267,21 @@ export function resetKeyStore(): void {
   pinnedKeys.clear();
   initialized = false;
 }
+
+/**
+ * Inject pinned public keys directly (testing only).
+ *
+ * Populates the in-memory pinned-key map and marks the store initialized so
+ * getPinnedPublicKey() never falls back to reading the on-disk production key
+ * file. This keeps tests hermetic — they must never mutate
+ * production.receipt.pubkeys.v1.json (which may be read-only and is a
+ * production artifact). Pass [] to isolate a test with no trusted keys.
+ */
+export function __setPinnedKeysForTest(keys: PinnedPublicKey[]): void {
+  signingKey = null;
+  pinnedKeys.clear();
+  for (const key of keys) {
+    pinnedKeys.set(key.keyId, key);
+  }
+  initialized = true;
+}

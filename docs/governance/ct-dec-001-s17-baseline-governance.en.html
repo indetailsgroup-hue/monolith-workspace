@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-001 — S17 Baseline Reconciliation</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-001 — S17 Baseline Reconciliation and Execution Governance</h1>
+<p>Effective date: 2026-07-11 Status: <strong>RECORDED — human decision</strong> Scope: MONOLITH S17 P0 closure Pinned baseline: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Former Control Tower chat labels: <code>SESSION 01A — D-1 Baseline Reconciliation</code> and <code>AMENDMENT-01</code> Document authority: human decision; the AI Control Tower and Codex are advisory/non-authoritative</p>
+<h2>1. Authority register</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision</th>
+<th>Approving role</th>
+<th>Authority scope</th>
+</tr></thead><tbody>
+<tr>
+<td>1. Unlock Track A</td>
+<td><strong>Tech Lead</strong></td>
+<td>dependency order and authorization to begin implementation from the baseline</td>
+</tr>
+<tr>
+<td>2. Classify CI E0</td>
+<td><strong>Tech Lead</strong></td>
+<td>scope-limited technical evidence classification</td>
+</tr>
+<tr>
+<td>3. Preserve three tracks + separation of duties</td>
+<td><strong>Tech Lead</strong> and <strong>Security Owner</strong>, recorded separately</td>
+<td>execution architecture and independent verification</td>
+</tr>
+<tr>
+<td>4. Durable evidence archive</td>
+<td><strong>Tech Lead</strong></td>
+<td>CI evidence retention and provenance</td>
+</tr>
+<tr>
+<td>5. S17-3 approval matrix</td>
+<td><strong>Tech Lead</strong> and <strong>Security Owner</strong>, recorded separately</td>
+<td>specification authority, trust boundary, and key semantics</td>
+</tr>
+</tbody></table></div>
+<p>One human may hold both roles, but the record must preserve them separately. Approval in one role is not automatically counted for the other.</p>
+<h2>2. Reconciled facts</h2>
+<h3>2.1 Reproducible commit deltas</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Commit range</th>
+<th>Measured result</th>
+<th>Measurement method</th>
+</tr></thead><tbody>
+<tr>
+<td><code>f9740559..9ac7cff3</code></td>
+<td><strong>26 files</strong>; code/CI <strong>8 files</strong> (<code>.github/workflows</code> 1 + <code>src</code> 6 + <code>tools</code> 1)</td>
+<td>run <code>git diff --name-only f9740559 9ac7cff3</code>, count the list; count code/CI only under the three stated paths</td>
+</tr>
+<tr>
+<td><code>d7b1c879..9ac7cff3</code></td>
+<td><strong>31 files</strong></td>
+<td>run <code>git diff --name-only d7b1c879 9ac7cff3</code>, count the list</td>
+</tr>
+</tbody></table></div>
+<p>The floating statement “26/31 files” is prohibited without its commit range and measurement method.</p>
+<h3>2.2 CI bound to the baseline</h3>
+<ul><li>Main run <code>29142280872</code>: successful <code>verify-full</code>, full commit SHA matches the baseline, full typecheck + <strong>4,553/4,553</strong> automated tests + build + evidence artifact</li><li>Branch run <code>29142279488</code>: successful at the same full commit SHA; corroborating run</li><li>Main artifact <code>8245562223</code>, SHA-256 <code>6fb49466fee477b54f05c8e1d2470cacc6c83cba91e889700cc1cdde7f6886fd</code>, 90-day retention</li><li>Durable record: <code>docs/evidence/ci/9ac7cff3/</code></li></ul>
+<h2>3. Decision 1 — Unlock Track A immediately (Tech Lead)</h2>
+<p><code>S17-1 Server-owned identity</code> → <code>S17-2 RELEASED-only invariant</code> <strong>may begin implementation now</strong>, subject to all of the following:</p>
+<ol><li>Create a clean worktree at exact baseline <code>9ac7cff39d02d9430879275645e377728bc0abc5</code></li><li>Do not use a dirty worktree or share a working directory with Track B/Human-Ops</li><li>Identity precedes the RELEASED invariant, following the dependency order in Review §5</li><li>This authorization does not extend to S17-3/4/5 and is not P0 closure</li></ol>
+<p>Rationale: identity does not depend on the Canonical Packet Spec. Holding Track A for the packet contract contradicts the approved dependency order and burns schedule margin that is approximately zero.</p>
+<p><strong>Track B implementation for S17-4/S17-5 remains locked</strong> until S17-3 completes its approval matrix. Drafting S17-3 may begin immediately in DRAFT status.</p>
+<h2>4. Decision 2 — Withdraw “missing CI E0” (Tech Lead)</h2>
+<p>The correct status is:</p>
+<blockquote><p><strong>E0 CI PASS — scope-limited</strong>: full typecheck + 4,553/4,553 automated tests + build on <code>ubuntu-latest / node v22.23.1</code> at <code>9ac7cff3</code>; main run <code>29142280872</code>, branch run <code>29142279488</code>, main artifact <code>8245562223</code>, 90-day retention</p></blockquote>
+<p>The following exclusion list is part of the claim and must never be detached from it:</p>
+<ol><li>Two invariants in <code>tools/vault-builder/src/pipeline.test.ts</code> return before assertion on CI when <code>_daph_extract</code> is unavailable; their evidence remains local-only</li><li>DB/psql tests (<code>AB-DB-01</code>) are not in the workflow</li><li>E2E is not in the workflow</li><li>This E0 does not prove deployment, operational readiness, production readiness, or any P0 closure</li></ol>
+<h2>5. Decision 3 — Do not create a fourth Track C (Tech Lead + Security Owner)</h2>
+<p>Preserve the <strong>three-track</strong> execution model in ADR-065:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Track</th>
+<th>Scope</th>
+</tr></thead><tbody>
+<tr>
+<td>Track A</td>
+<td>S17-1 → S17-2</td>
+</tr>
+<tr>
+<td>Track B</td>
+<td>S17-3 → S17-4 → S17-5</td>
+</tr>
+<tr>
+<td>Human/Ops</td>
+<td>custody, machine confirmation/calibration, factory slot, approver ceremony</td>
+</tr>
+</tbody></table></div>
+<p>Add this constraint as an amendment to ADR-065:</p>
+<blockquote><p><strong>S17-5 Full Verifier must be implemented and reviewed by a party independent from the S17-3/S17-4 builder; the builder may not approve its own verification work.</strong></p></blockquote>
+<p>Independence may be achieved through a separate reviewer/account/time-box within the existing three tracks. It does not create Track C or silently add an execution stream.</p>
+<h2>6. Decision 4 — Durable evidence archive (Tech Lead)</h2>
+<p>CI evidence with finite retention must be archived under <code>docs/evidence/</code> before expiry and contain at least:</p>
+<ul><li>the workflow-produced <code>verify-evidence.json</code></li><li>run URL, run ID, commit, environment, and date</li><li>artifact ID, expiry date, and SHA-256 digest of the artifact ZIP</li><li>exclusion list and evidence classification</li><li>an LF UTF-8, lowercase-hex manifest</li></ul>
+<p>The artifact ZIP itself need not be committed when digest and provenance are preserved. However, a GitHub artifact-metadata digest must not be represented as an independently computed digest; its source must remain explicit.</p>
+<h2>7. Decision 5 — S17-3 approval matrix (Tech Lead + Security Owner)</h2>
+<p>The Canonical Packet Spec (<code>CT-DEC-002 / S17-3</code>) requires human approval in all three roles before S17-4/S17-5 are unlocked:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Approver</th>
+<th>Minimum scope</th>
+</tr></thead><tbody>
+<tr>
+<td>Tech Lead</td>
+<td>schema, canonicalization, determinism contract, implementation feasibility</td>
+</tr>
+<tr>
+<td>Factory Owner</td>
+<td>file contract, machine-profile binding, verifier usability, factory operating fit</td>
+</tr>
+<tr>
+<td>Security Owner</td>
+<td>signature, trust boundary, key semantics, fail-closed behavior</td>
+</tr>
+</tbody></table></div>
+<p>The Security Owner must review at least signature/trust-boundary/key-semantics sections. The three approval roles remain separate record fields.</p>
+<h2>8. Governance cleanup effective immediately</h2>
+<ol><li>Control Tower decision IDs use <code>CT-DEC-xxx</code>; <code>D-x</code> is prohibited because it collides with repository task IDs</li><li><code>SESSION 01A</code> is registered as <strong>CT-DEC-001</strong></li><li>Use <strong>pinned/frozen + tamper-evident</strong>; never call an unsigned Git commit immutable</li><li>The operational branch rule for Track A in this round is exact SHA <code>9ac7cff3</code>; this specifically replaces ADR-065's dynamic “latest origin/main” rule for this Track A run</li><li>Chat transcripts remain advisory provenance; durable authority resides in this repository record + manifest + commit</li></ol>
+<h2>9. Unchanged boundaries</h2>
+<ul><li>PRD v5.1 is Target-State Canonical, not production-ready</li><li>This decision closes no P0 blocker</li><li>ADR-064 still requires Product Owner + Tech Lead + Security Owner + Factory Owner across all four roles</li><li>Track B implementation remains locked until CT-DEC-002/S17-3 is fully approved</li><li><strong>No real workpiece may be cut from a packet</strong> until S17 closes and all four real-cut gate conditions pass</li></ul>
+<h2>10. Single next governance action</h2>
+<p>Draft the <strong>CT-DEC-002 / S17-3 Canonical Packet Specification</strong> defining at minimum <code>packetContentId</code>, <code>jobRunId</code>, signed identity binding released revision + machine-profile version + exporter version + schema version, per-file manifest format, signature/trust boundary, full-verifier contract, and the existing <code>NOT_FOR_PRODUCTION.txt</code> + <code>NFP-</code> prefix at the baseline.</p>
+<p>CT-DEC-002 remains DRAFT until all three approval roles sign.</p>
+</main>
+</body>
+</html>

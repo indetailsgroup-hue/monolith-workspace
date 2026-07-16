@@ -63,6 +63,47 @@ export function ensureDir(dirPath: string): void {
   mkdirSync(dirPath, { recursive: true });
 }
 
+/** Synchronous sleep for the retry backoff (this module is sync by design). */
+function sleepSync(ms: number): void {
+  if (ms <= 0) return;
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Windows can transiently fail a rename-over-existing (MoveFileEx) with these
+ * codes when an antivirus scanner or the search indexer briefly holds the
+ * destination or the just-written temp file. On POSIX these do not occur here.
+ */
+const TRANSIENT_RENAME_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
+
+/**
+ * `renameSync` with a few short retries on transient Windows errors. A handful
+ * of backoffs clears the antivirus/indexer hold while keeping the write atomic
+ * (single rename, no unlink-then-rename window). `rename`/`sleep` are injectable
+ * so the retry behaviour can be tested deterministically; production uses the
+ * real sync fs calls. (Fixes the intermittent EPERM flake in writeUtf8.)
+ */
+export function renameWithRetry(
+  from: string,
+  to: string,
+  rename: (f: string, t: string) => void = renameSync,
+  sleep: (ms: number) => void = sleepSync,
+  maxAttempts = 10,
+): void {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      rename(from, to);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (!code || !TRANSIENT_RENAME_CODES.has(code) || attempt >= maxAttempts) {
+        throw err;
+      }
+      sleep(Math.min(100, 10 * attempt));
+    }
+  }
+}
+
 /**
  * เขียนไฟล์เป็น UTF-8 แบบ atomic + idempotent (Req 9.5)
  *
@@ -88,7 +129,7 @@ export function writeUtf8(filePath: string, content: string): void {
 
   try {
     writeFileSync(tempPath, content, { encoding: 'utf-8' });
-    renameSync(tempPath, filePath);
+    renameWithRetry(tempPath, filePath);
   } catch (err) {
     // ล้างไฟล์ชั่วคราวที่ค้างเมื่อเขียน/rename ล้มเหลว แล้วโยน error ต่อ (fail-fast บนดิสก์)
     try {

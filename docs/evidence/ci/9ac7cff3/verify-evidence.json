@@ -1,0 +1,17 @@
+{
+  "evidenceTier": "E0",
+  "workflow": "verify-full",
+  "commit": "9ac7cff39d02d9430879275645e377728bc0abc5",
+  "ref": "refs/heads/main",
+  "runId": "29142280872",
+  "runUrl": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/29142280872",
+  "environment": "ubuntu-latest / node v22.23.1",
+  "timestamp": "2026-07-11T06:08:31.044Z",
+  "tests": {
+    "total": 4553,
+    "passed": 4553,
+    "failed": 0,
+    "suites": 1762,
+    "success": true
+  }
+}
