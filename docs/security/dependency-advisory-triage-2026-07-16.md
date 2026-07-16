@@ -83,3 +83,26 @@ grep -r "xlsx" src/ --include=*.ts --include=*.tsx   # 0 app imports
 grep -rl xlsx dist/assets/*.js   # absent from the built client bundle
 npm audit fix --dry-run          # non-force fixes none of the crit/high; all need --force (breaking)
 ```
+
+## 8. Update (2026-07-16) — controlled upgrade executed
+
+Recommendation #2 was carried out as a validated, minimal upgrade rather than a
+blind `--force`:
+
+- `vite ^5.0.0 → ^6.4.3` (clears the `<=6.4.2` path-traversal advisory; the
+  smallest major that fixes it — not the `vite@8` the auto-fixer proposed)
+- `vitest / @vitest/ui / @vitest/coverage-v8 ^3.0.0 → ^3.2.7` (patches the RCE
+  advisory within the 3.x line)
+- `@vitejs/plugin-react` left at `4.7.0` (its peer range already allows vite 6)
+
+**Result: root critical 3 → 0.** All gates re-validated green before commit:
+typecheck (`tsc -b`), production build (vite 6, chunk sizes unchanged), full
+Vitest suite (4573 pass; one transient isolation flake that passes 100/100 in
+isolation and cleared on re-run — not upgrade-related), `test:node` 13/13, and a
+`vite preview` smoke (HTTP 200, no new console errors, 3D scene renders).
+
+Remaining 8 high are **all dev/build tooling** — `vite` (needs a further major to
+`vite@8`), its transitives (`rollup`, `ws`, `minimatch`, `picomatch`, `flatted`,
+`tmp`), and `xlsx` (no fix; vault-builder tool only). None are production-runtime
+reachable (Section 3). Advancing to `vite@8` is deferred as a separate,
+higher-risk effort with no runtime-exposure benefit.
