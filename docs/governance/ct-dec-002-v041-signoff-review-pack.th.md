@@ -3,19 +3,28 @@
 **จัดทำ:** 16 ก.ค. 2026 · โดย Claude (reviewer track) ตามมติ ADR-069 ข้อ 1
 **ใช้คู่กับ:** `docs/governance/ct-dec-002-signoff-checklist.th.md` (surface ที่เซ็นจริง)
 **Spec:** Canonical Factory Packet Specification **v0.4.1** (`docs/specs/s17-canonical-packet-spec-v1.th.md`, สถานะ DRAFT)
-**Hash anchor:** `monolith-s17-v041-review-input.sha256` — self-sha256 `75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046`
+**Hash anchor:** `monolith-s17-v041-review-input.sha256` — self-sha256 `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` (re-pin 16 ก.ค. — ดู §A0)
 **Aggregate schema digest:** `sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55`
 
 > **สถานะของ pack นี้ = advisory เท่านั้น** — ผลตรวจของ AI ด้านล่างช่วยชี้ว่าหลักฐานอยู่ไหนและข้อไหนตรวจเชิงกลผ่านแล้ว แต่**ไม่ใช่คำอนุมัติ** การติ๊ก checklist และการเซ็นเป็นความรับผิดชอบของมนุษย์ผู้เซ็นว่าได้ review เองแล้วเท่านั้น (กติกาในตัว checklist เอง) · pack นี้ไม่แตะไฟล์ checklist และไม่เปลี่ยนสถานะ DRAFT/Track B LOCKED/NO_CUT ใด ๆ
 
 ---
 
+## A0. บันทึกแก้ไข (16 ก.ค. — ก่อน sign-off จริง)
+
+**Pre-sign gate จับปัญหาได้ 2 ชั้นก่อนเซ็น — และแก้แล้วตามมติ owner (ก):**
+
+1. **Pack ฉบับแรกของผมรายงานผิด**: ผมเขียนว่า "A2 = PASS ทุกไฟล์" ทั้งที่ `package.json` FAIL อยู่ — ผม `tail` ตัด output จนไม่เห็น (ความผิดพลาดของผู้ตรวจเอง จับได้ตอนรัน pre-sign สดต่อหน้า owner) · สาเหตุ FAIL = FS-B1-01/B1-02 (test:node + vite 6/vitest 3.2.7 security bump) ที่ owner สั่งหลัง round-4 — **เนื้อหา spec/schemas ไม่เลื่อนแม้แต่ไบต์เดียว**
+2. **Circularity แต่กำเนิด**: ไฟล์ checklist (signing surface ที่ต้องแก้ตอนเซ็น) อยู่ในชุด frozen เอง — FAIL ตั้งแต่ `7cd09e81` (พิสูจน์: hash ใน manifest เดิม `073509cb...` ≠ ไฟล์จริง `f44ecd21...`) และถ้าไม่แก้ ทุกลายเซ็นจะทำ anchor แตก → **ชุดใหม่ 44 ไฟล์ตัด checklist ออก** (checklist pin แยกด้วย manifest ของตัวเอง)
+
+Anchor เดิม `75cbc3e1...2046` → **anchor ใหม่ `de2a1ccf...a2c7`** · บทเรียนเข้า pack: อย่า truncate output ของ verifier
+
 ## A. Pre-Sign — ยืนยัน bytes ด้วยตัวเอง (ทุกบทบาท ทำก่อนอ่านต่อ)
 
-ผมรันทั้งสามข้อเมื่อ 16 ก.ค. 2026 บน worktree `governance/s17-control-pack` — **ผ่านครบ** แต่กติกา verify-don't-trust ใช้กับมนุษย์ด้วย: รันซ้ำเองด้วยคำสั่งข้างล่าง อย่าเชื่อผลของผม
+ผมรันทั้งสามข้อเมื่อ 16 ก.ค. 2026 บน worktree `governance/s17-control-pack` — **ผ่านครบ (หลัง re-pin §A0)** แต่กติกา verify-don't-trust ใช้กับมนุษย์ด้วย: รันซ้ำเองด้วยคำสั่งข้างล่าง อย่าเชื่อผลของผม
 
 ```bash
-# A1) manifest ตรงกับ anchor ที่ checklist pin ไหม (ต้องได้ 75cbc3e1...2046)
+# A1) manifest ตรงกับ anchor ที่ checklist pin ไหม (ต้องได้ de2a1ccf...a2c7)
 node -e "const c=require('crypto'),f=require('fs');console.log(c.createHash('sha256').update(f.readFileSync('monolith-s17-v041-review-input.sha256')).digest('hex'))"
 
 # A2) ทุกไฟล์ใน review set ยังตรง byte เดิม ณ วันนี้ไหม (ต้อง PASS ทุกบรรทัด)
@@ -30,7 +39,7 @@ const lines=files.map(f=>c.createHash('sha256').update(fs.readFileSync(p.join(d,
 console.log(c.createHash('sha256').update(lines.join('\n')+'\n').digest('hex'));"
 ```
 
-ผลของผม (advisory): A1 = `75cbc3e1...2046` ตรง anchor เป๊ะ · A2 = PASS ทุกไฟล์ (bytes ไม่ drift จากรอบ review) · A3 = `aed32029...f55` **reproduce ได้อิสระ** (วิธีคำนวณ: sha256 ของบรรทัด `"<sha256>  <ชื่อไฟล์>"` เรียงตามชื่อไฟล์ + LF ปิดท้าย)
+ผลของผม (advisory, หลัง re-pin): A1 = `de2a1ccf...a2c7` ตรง anchor · A2 = **PASS 44/44, 0 FAIL** (ห้าม truncate output — ดูบทเรียน §A0) · A3 = `aed32029...f55` **reproduce ได้อิสระ** (วิธีคำนวณ: sha256 ของบรรทัด `"<sha256>  <ชื่อไฟล์>"` เรียงตามชื่อไฟล์ + LF ปิดท้าย — ค่านี้ไม่เปลี่ยนจาก round-4 เพราะ schemas ไม่เลื่อน)
 
 ---
 
@@ -82,4 +91,4 @@ console.log(c.createHash('sha256').update(lines.join('\n')+'\n').digest('hex'));
 
 - เชิงกล: **ทุกข้อที่เครื่องตรวจได้ = ผ่าน** (bytes ตรง anchor, aggregate reproduce ได้, schema กติกาครบ 11/11+31/31, result codes ครบ, low-S ถูกต้องเชิงคณิตศาสตร์)
 - จุดที่**ต้องมนุษย์เท่านั้น** 3 จุด: (1) `kdt_mvp_v1` ตรงเครื่องจริง — หลักฐานอยู่หน้างาน ไม่อยู่ใน repo (2) "S17-4/5 contract พอ" — judgment ของคน build (3) ยอมรับ fail-closed = หยุดผลิตเมื่อ registry ล่ม — trade-off ธุรกิจ
-- ไม่พบ drift ของ bytes ระหว่างรอบ review กับวันนี้ · ไม่พบข้อใดใน checklist ที่หลักฐานหาย
+- Drift ที่พบก่อนเซ็น (package.json + checklist circularity) ถูกแก้และบันทึกครบใน §A0 — หลัง re-pin: **44/44 PASS, เนื้อหา spec/schemas byte-identical กับ round-4 ทุกไฟล์** · ไม่พบข้อใดใน checklist ที่หลักฐานหาย
