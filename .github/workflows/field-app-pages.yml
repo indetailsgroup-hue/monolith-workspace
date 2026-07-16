@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci
+      # Gate the deploy on the field-app test suite (FS-B1-04).
+      - run: npm run test:run -w @daph/field-app
       - run: npm run build -w @daph/field-app
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}

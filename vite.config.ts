@@ -20,6 +20,9 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
       'e2e/**',
+      // @daph/field-app owns its own Vitest config (jsdom + React plugin) and
+      // runner; the root run must not collect its tests under the wrong config.
+      'packages/field-app/**',
       // Node-native governance tooling tests (node:test runner). Vitest cannot
       // collect them and would report "No test suite found"; run via `npm run
       // test:node`. Keeps `test:run` honestly green (FS-B1-02).
