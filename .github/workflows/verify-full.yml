@@ -150,7 +150,7 @@ jobs:
           echo "working tree clean after build"
 
   e2e-smoke:
-    name: e2e @smoke (Designer critical path)
+    name: e2e @smoke (UI-only critical path — must never skip)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -163,7 +163,62 @@ jobs:
       - name: Install Playwright chromium + OS deps
         run: npx playwright install --with-deps chromium
       - name: Run e2e @smoke (Playwright auto-starts the vite dev server)
-        run: npx playwright test --grep @smoke --reporter=list
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: smoke-report.json
+        run: npx playwright test --grep @smoke --reporter=list,json
+      # FS-R2-B1-02: the @smoke tier is UI-only and deterministic, so a SKIP means a
+      # critical path silently did not run. Playwright exits 0 on all-skipped, which
+      # would report a green gate over a vacuous run — fail the build instead.
+      - name: Enforce @smoke never skips (no vacuous green)
+        run: |
+          node -e "
+          const r = JSON.parse(require('fs').readFileSync('smoke-report.json','utf8'));
+          let pass=0, skip=0, fail=0, flaky=0; const skipped=[];
+          const walk = s => { for (const sp of s.specs||[]) for (const t of sp.tests||[]) { const st=t.status; if (st==='skipped'){skip++;skipped.push(sp.title);} else if (st==='expected') pass++; else if (st==='flaky') flaky++; else fail++; } for (const c of s.suites||[]) walk(c); };
+          for (const s of r.suites||[]) walk(s);
+          console.log('@smoke: pass='+pass+' skip='+skip+' fail='+fail+' flaky='+flaky);
+          if (fail>0) { console.error('::error::@smoke has '+fail+' failing test(s)'); process.exit(1); }
+          if (skip>0) { console.error('::error::@smoke must never skip — a skipped critical path must not report green (FS-R2-B1-02). Skipped: '+skipped.join(' | ')); process.exit(1); }
+          if (pass===0) { console.error('::error::no @smoke tests ran'); process.exit(1); }
+          console.log('OK: all '+pass+' @smoke tests ran and passed');
+          "
+
+  e2e-integration:
+    name: e2e @integration (factory-dependent — tracked; gated on factory service)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright chromium + OS deps
+        run: npx playwright install --with-deps chromium
+      # FS-R2-B1-02: the @integration tier exercises the real freeze → RELEASE →
+      # factory export flow. The factory service (server/) is NOT yet wired into CI —
+      # its FS-B0-02 fail-closed bearer boundary + the frontend auth needed to call it
+      # land under B0-02/B1-05. Until then these tests skip with an EXPLICIT reason
+      # (never silent). This job keeps the deferred coverage VISIBLE, stays green while
+      # every test skips-with-reason, and fails on any real @integration failure. When
+      # the factory service is added, the same tests run for real and force-assert the
+      # downloaded artifact + manifest.
+      - name: Run e2e @integration (skips-with-reason until factory is wired)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: integration-report.json
+        run: npx playwright test --grep @integration --reporter=list,json
+      - name: Report @integration coverage state
+        if: always()
+        run: |
+          node -e "
+          const fs=require('fs'); let r; try { r=JSON.parse(fs.readFileSync('integration-report.json','utf8')); } catch { console.log('no @integration report produced'); process.exit(0); }
+          let pass=0, skip=0, fail=0, flaky=0;
+          const walk = s => { for (const sp of s.specs||[]) for (const t of sp.tests||[]) { const st=t.status; if (st==='skipped') skip++; else if (st==='expected') pass++; else if (st==='flaky') flaky++; else fail++; } for (const c of s.suites||[]) walk(c); };
+          for (const s of r.suites||[]) walk(s);
+          console.log('@integration: pass='+pass+' skip='+skip+' fail='+fail+' flaky='+flaky);
+          if (skip>0 && pass===0) console.log('::notice::@integration coverage is DEFERRED — factory service not yet wired into CI (B0-02/B1-05); '+skip+' test(s) skipped with an explicit reason.');
+          "
 
   manifests:
     name: governance manifest integrity

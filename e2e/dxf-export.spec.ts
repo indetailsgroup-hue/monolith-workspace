@@ -7,7 +7,21 @@ import * as fs from 'fs';
  * Tests the full DXF export flow from UI to download.
  * AGENT-T008: Validates that DXF export uses OperationGraph (manufacturing intent)
  *
- * @smoke - Critical path tests that must pass before deployment
+ * Two explicit tiers (FS-R2-B1-02 — no vacuous/silent success):
+ *
+ * - @smoke      UI-only critical path. Runs against the frontend alone (no factory
+ *               service). Deterministic — MUST pass and MUST NEVER skip. The
+ *               verify-full `e2e-smoke` job fails the build if any @smoke test
+ *               skips, so a skipped critical path can no longer report green.
+ *
+ * - @integration Exercises the real freeze → RELEASE → factory export flow. Requires
+ *               the factory service (`server/`) reachable behind the /api/factory
+ *               proxy. When the service is absent these tests skip with an EXPLICIT,
+ *               reasoned annotation (never a silent mid-test test.skip()). Bringing
+ *               the factory service up in CI — with the FS-B0-02 fail-closed bearer
+ *               boundary + frontend auth — is tracked under B0-02/B1-05; these tests
+ *               run for real and force-assert the downloaded artifact + manifest once
+ *               that lands.
  */
 
 /**
@@ -94,8 +108,13 @@ test.describe('DXF Export', () => {
                     await expect(exportPanel.first()).toBeVisible({ timeout: 5000 });
                 }
             } else {
-                // Export panel might be always visible in sidebar
-                test.skip();
+                // The Designer must always expose an export entry point. A missing
+                // trigger is a real UI regression on the critical path — assert it,
+                // never skip (a silent skip here would green a broken smoke gate).
+                expect(
+                    exportTriggerExists,
+                    'Export trigger must be present in the Designer UI',
+                ).toBe(true);
             }
         });
 
@@ -119,7 +138,7 @@ test.describe('DXF Export', () => {
     });
 
     test.describe('DXF Export Flow', () => {
-        test('@smoke should trigger DXF export without console errors', async ({ page }) => {
+        test('@integration should trigger DXF export without console errors', async ({ page }) => {
             // Collect console errors
             const errors: string[] = [];
             page.on('console', (msg) => {
@@ -133,51 +152,55 @@ test.describe('DXF Export', () => {
                 errors.push(error.message);
             });
 
-            // Freeze spec to enable export
+            // Freeze spec to enable export. Freeze calls /api/factory/.../freeze, so a
+            // failure here means the factory service is not reachable in this job —
+            // skip EXPLICITLY with the reason (the @integration tier is gated on the
+            // factory service; see the file header + FS-R2-B1-02).
             const frozen = await freezeSpecIfNeeded(page);
-            if (!frozen) {
-                test.skip();
-                return;
-            }
+            test.skip(
+                !frozen,
+                '@integration: factory service unreachable (spec could not be frozen). ' +
+                'Runs in the factory-up E2E job — wiring tracked under B0-02/B1-05.',
+            );
 
             // Click the Export button to open the menu
             const exportButton = page.getByRole('button', { name: /export/i }).first();
             const exportEnabled = await exportButton.isEnabled({ timeout: 2000 }).catch(() => false);
 
-            if (!exportEnabled) {
-                test.skip();
-                return;
-            }
+            // TODO(B0-02/B1-05): once the factory service runs in CI this must become a
+            // hard assertion (export MUST enable after a successful freeze).
+            test.skip(
+                !exportEnabled,
+                '@integration: export not enabled after freeze — verify in the factory-up job.',
+            );
 
             await exportButton.click();
             await page.waitForTimeout(300);
 
-            // Find and click DXF option in dropdown
+            // Find and click DXF option in dropdown. Reaching here means export was
+            // enabled, so the DXF option MUST exist — assert it, never skip silently.
             const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
             const dxfExists = await dxfOption.isVisible({ timeout: 2000 }).catch(() => false);
+            expect(dxfExists, 'DXF export option must be available once export is enabled').toBe(true);
 
-            if (dxfExists) {
-                await dxfOption.click();
+            await dxfOption.click();
 
-                // Wait for export process
-                await page.waitForTimeout(3000);
+            // Wait for export process
+            await page.waitForTimeout(3000);
 
-                // Check for critical errors (not counting download-related)
-                const criticalErrors = errors.filter(e =>
-                    !e.includes('download') &&
-                    !e.includes('Download') &&
-                    e.toLowerCase().includes('error')
-                );
+            // Check for critical errors (not counting download-related)
+            const criticalErrors = errors.filter(e =>
+                !e.includes('download') &&
+                !e.includes('Download') &&
+                e.toLowerCase().includes('error')
+            );
 
-                // Should have no critical errors
-                expect(criticalErrors.filter(e =>
-                    e.includes('TypeError') ||
-                    e.includes('ReferenceError') ||
-                    e.includes('Cannot read')
-                )).toHaveLength(0);
-            } else {
-                test.skip();
-            }
+            // Should have no critical errors
+            expect(criticalErrors.filter(e =>
+                e.includes('TypeError') ||
+                e.includes('ReferenceError') ||
+                e.includes('Cannot read')
+            )).toHaveLength(0);
         });
 
         test('should show progress during DXF export', async ({ page }) => {
@@ -406,25 +429,27 @@ test.describe('DXF Export', () => {
     });
 
     test.describe('OperationGraph Source (T008)', () => {
-        test('@smoke should log OperationGraph usage during export', async ({ page }) => {
+        test('@integration should log OperationGraph usage during export', async ({ page }) => {
             // Collect console logs
             const logs: string[] = [];
             page.on('console', (msg) => {
                 logs.push(msg.text());
             });
 
-            // Freeze spec to enable export
+            // @integration: gated on the factory service (freeze → RELEASE → export).
+            // Skip EXPLICITLY with a reason when it is unreachable — never silently.
             const frozen = await freezeSpecIfNeeded(page);
-            if (!frozen) {
-                test.skip();
-                return;
-            }
+            test.skip(
+                !frozen,
+                '@integration: factory service unreachable (spec could not be frozen). ' +
+                'Runs in the factory-up E2E job — wiring tracked under B0-02/B1-05.',
+            );
 
             const exportEnabled = await isExportEnabled(page);
-            if (!exportEnabled) {
-                test.skip();
-                return;
-            }
+            test.skip(
+                !exportEnabled,
+                '@integration: export not enabled after freeze — verify in the factory-up job.',
+            );
 
             // Open export menu and click DXF
             const exportButton = page.getByRole('button', { name: /export/i }).first();
@@ -434,23 +459,27 @@ test.describe('DXF Export', () => {
             const dxfOption = page.getByRole('button', { name: /dxf/i }).last();
             const dxfExists = await dxfOption.isVisible({ timeout: 2000 }).catch(() => false);
 
-            if (dxfExists) {
-                await dxfOption.click();
-                await page.waitForTimeout(3000);
+            // Reaching here means the factory service enabled export, so the DXF
+            // option MUST be present — its absence is a real regression, not a skip.
+            expect(dxfExists, 'DXF export option must be available once export is enabled').toBe(true);
 
-                // Check if any logs mention OperationGraph or T008
-                const opGraphLogs = logs.filter(l =>
-                    l.includes('OperationGraph') ||
-                    l.includes('T008') ||
-                    l.includes('manufacturing intent')
-                );
+            await dxfOption.click();
+            await page.waitForTimeout(3000);
 
-                // If export occurred, we should see some indication of source
-                // This is informational - may or may not be present
-                console.log('OperationGraph related logs:', opGraphLogs.length);
-            } else {
-                test.skip();
-            }
+            // Check if any logs mention OperationGraph or T008
+            const opGraphLogs = logs.filter(l =>
+                l.includes('OperationGraph') ||
+                l.includes('T008') ||
+                l.includes('manufacturing intent')
+            );
+
+            // TODO(B0-02/B1-05): T008 asserts DXF is built from the OperationGraph
+            // (manufacturing intent). Once the factory service runs in CI, turn this
+            // into a hard assertion — expect(opGraphLogs.length).toBeGreaterThan(0) —
+            // plus assert the downloaded artifact + manifest (see the sibling
+            // 'DXF manifest should indicate OperationGraph source' test). Logging only
+            // is retained deliberately until that path is executable/verifiable.
+            console.log('OperationGraph related logs:', opGraphLogs.length);
         });
 
         test('DXF manifest should indicate OperationGraph source', async ({ page }) => {
