@@ -43,3 +43,5 @@
 ## Deferred
 
 - Multi-currency plans, annual billing, usage-based pricing ต่อ feature อื่น, partner/reseller tiers
+
+> **มติ grill-me (owner ก ทุกข้อ, 16 ก.ค. 2026 — ADR-069):** (1) **ratify v0.3.1 (L10/L11) + v0.3.2 (F5/F6) + merge PR #2** (2) **metering = calendar-month ถาวร** — ปิด design note ของ 2.2 (จะทบทวนเป็น billing-anchor เมื่อมี data ลูกค้าจริง) (3) **พักที่ Phase 2** — trigger Phase 3 = มติเปิดขาย/tenant นำร่องจริง (4) **v0.4 delta hold** — v0.3 คง SSOT; review พร้อม task 0.3 (ราคา) เมื่อใกล้เปิดขาย
