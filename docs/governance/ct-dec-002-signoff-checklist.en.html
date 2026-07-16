@@ -12,9 +12,9 @@
 <p><strong>Spec</strong>: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code> <strong>Hash anchor to sign</strong>: <code>monolith-s17-v041-review-input.sha256</code> (sha256 <code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code>) <strong>Re-pin 16 Jul 2026 (owner decision ก):</strong> the previous anchor <code>75cbc3e1...2046</code> was re-pinned for two reasons — (1) <code>package.json</code> drifted via owner-directed FS-B1-01/B1-02 work after round-4 (delta = test:node scripts + vite 6/vitest 3.2.7 security bumps; every spec/schema file byte-identical), and (2) a from-birth circularity fix: this checklist (the signing surface, which must be edited to sign) sat inside the frozen set itself, failing verification since <code>7cd09e81</code> and guaranteeing anchor breakage on signature — the new 44-file set excludes the checklist (which is pinned separately by <code>ct-dec-002-signoff-checklist.sha256</code> per signing event). <strong>Aggregate schema digest</strong>: <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code> <strong>Independent re-review verdict</strong>: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)</p>
 <blockquote><p>A signature is a human accountability record that the signer performed the review; it is not the act of rubber-stamping an AI verdict. AI does not sign on a person's behalf. Once all three signatures are in, CT-DEC-002 = APPROVED and Track B (S17-4/5) unlocks.</p><p>Enforced until all three sign: DRAFT · Track B LOCKED · NO_CUT · no P0 closure · no bare <code>PKT_OK</code> in shadow mode.</p></blockquote>
 <h2>0. Pre-sign (every role does this first)</h2>
-<ul><li>[ ] Confirm you are reviewing the exact bytes pinned in <code>monolith-s17-v041-review-input.sha256</code>.</li><li>[ ] Verify the aggregate schema digest from <code>schema-bundle.aggregate.sha256</code> with an independent tool (do not trust it merely because the manifest carries it).</li><li>[ ] Read the complete round-4 independent re-review and understand that a review verdict is not approval.</li></ul>
+<ul><li>[x] Confirm you are reviewing the exact bytes pinned in <code>monolith-s17-v041-review-input.sha256</code>.</li><li>[x] Verify the aggregate schema digest from <code>schema-bundle.aggregate.sha256</code> with an independent tool (do not trust it merely because the manifest carries it).</li><li>[x] Read the complete round-4 independent re-review and understand that a review verdict is not approval.</li></ul>
 <h2>1. Tech Lead — Contract Correctness &amp; Implementability</h2>
-<ul><li>[ ] Schema bundle complete: 10 schemas, every array carries <code>x-monolith-orderBy</code>, every object is <code>additionalProperties:false</code>, aggregate digest bound.</li><li>[ ] Identity model: <code>packetContentId</code> (hash of canonical content) / <code>jobRunId</code> (server-owned, excluded from the content hash) / signed identity binding released revision + machine-profile ver + exporter ver + schema ver — no collision.</li><li>[ ] Determinism implementable without guessing: JCS, integer micrometres, UTF-8 byte ordering, and the ZIP byte profile are fully specified (S17-4 can build without interpretation).</li><li>[ ] Verifier check order (S12) + result codes (S13) are deterministic (NFP-missing -&gt; clear <code>PKT_FILE_MISSING</code>, first-fail-wins).</li><li>[ ] Confirm S17-4/S17-5 have enough contract to begin implementation (after all signatures).</li></ul>
+<ul><li>[x] Schema bundle complete: 10 schemas, every array carries <code>x-monolith-orderBy</code>, every object is <code>additionalProperties:false</code>, aggregate digest bound.</li><li>[x] Identity model: <code>packetContentId</code> (hash of canonical content) / <code>jobRunId</code> (server-owned, excluded from the content hash) / signed identity binding released revision + machine-profile ver + exporter ver + schema ver — no collision.</li><li>[x] Determinism implementable without guessing: JCS, integer micrometres, UTF-8 byte ordering, and the ZIP byte profile are fully specified (S17-4 can build without interpretation).</li><li>[x] Verifier check order (S12) + result codes (S13) are deterministic (NFP-missing -&gt; clear <code>PKT_FILE_MISSING</code>, first-fail-wins).</li><li>[x] Confirm S17-4/S17-5 have enough contract to begin implementation (after all signatures).</li></ul>
 <h2>2. Factory Owner — Factory Operability &amp; Safety</h2>
 <ul><li>[ ] NFP/NO_CUT enforced: shadow mode cannot cut for real · maximum result <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code> · bare <code>PKT_OK</code> is not emittable.</li><li>[ ] Machine profile binding: id + version + digest (a forged profile fails -&gt; <code>PKT_MACHINE_PROFILE_MISMATCH</code>).</li><li>[ ] Verifier fail-closed: damaged packet / lookup outage -&gt; never reaches a machine (<code>PKT_AUTHORITY_UNAVAILABLE</code> -&gt; FAIL/NO_CUT, not &quot;warn and pass&quot;).</li><li>[ ] Exporter allowlist + gate evidence binding (gate not PASS -&gt; <code>PKT_GATE_FAILED</code>).</li><li>[ ] Machine profile <code>kdt_mvp_v1</code> matches the physical machine + controller (confirmed by the factory).</li></ul>
 <h2>3. Security Owner — Signature / Trust / Key</h2>
@@ -24,32 +24,37 @@
 <div class="table-wrap"><table><thead><tr>
 <th>Role</th>
 <th>Name</th>
-<th>Commit signed</th>
+<th>Reviewed artifact commit</th>
+<th>Review anchor SHA-256</th>
 <th>Date</th>
 <th>Status</th>
 </tr></thead><tbody>
 <tr>
 <td>Tech Lead</td>
-<td>(Dave)</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
-<td>—</td>
-<td>PENDING</td>
+<td>Dave</td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
+<td>2026-07-17</td>
+<td>SIGNED</td>
 </tr>
 <tr>
 <td>Factory Owner</td>
 <td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
 <td>—</td>
 <td>PENDING</td>
 </tr>
 <tr>
 <td>Security Owner</td>
 <td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
 <td>—</td>
 <td>PENDING</td>
 </tr>
 </tbody></table></div>
+<blockquote><p>The Tech Lead attestation was recorded from Dave's direct confirmation in the guided review session on 2026-07-17: the reviewer personally observed the matching anchor, 44/44 manifest PASS with 0 FAIL, independently reproduced the aggregate schema digest, observed the passing schema structural test, and answered TL-1 through TL-5. Codex mechanically recorded this direct instruction; it did not sign or approve on the human's behalf.</p></blockquote>
 <h2>5. Effect once all three sign</h2>
 <ul><li>CT-DEC-002 = APPROVED</li><li>Track B unlocks: S17-4 determinism + S17-5 verifier</li><li>S17-5 must be implemented/reviewed by someone independent of the S17-3/4 builder (SoD, ADR-065)</li><li>NFP/NO_CUT remains until the four real-cut gate conditions pass (S17x5 + ADR-064 complete + dogfood &gt;=1 + machine profile calibrated)</li></ul>
 <h2>6. Advisory cautions</h2>

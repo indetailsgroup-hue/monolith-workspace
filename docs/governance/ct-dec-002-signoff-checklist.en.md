@@ -11,17 +11,17 @@
 
 ## 0. Pre-sign (every role does this first)
 
-- [ ] Confirm you are reviewing the exact bytes pinned in `monolith-s17-v041-review-input.sha256`.
-- [ ] Verify the aggregate schema digest from `schema-bundle.aggregate.sha256` with an independent tool (do not trust it merely because the manifest carries it).
-- [ ] Read the complete round-4 independent re-review and understand that a review verdict is not approval.
+- [x] Confirm you are reviewing the exact bytes pinned in `monolith-s17-v041-review-input.sha256`.
+- [x] Verify the aggregate schema digest from `schema-bundle.aggregate.sha256` with an independent tool (do not trust it merely because the manifest carries it).
+- [x] Read the complete round-4 independent re-review and understand that a review verdict is not approval.
 
 ## 1. Tech Lead — Contract Correctness & Implementability
 
-- [ ] Schema bundle complete: 10 schemas, every array carries `x-monolith-orderBy`, every object is `additionalProperties:false`, aggregate digest bound.
-- [ ] Identity model: `packetContentId` (hash of canonical content) / `jobRunId` (server-owned, excluded from the content hash) / signed identity binding released revision + machine-profile ver + exporter ver + schema ver — no collision.
-- [ ] Determinism implementable without guessing: JCS, integer micrometres, UTF-8 byte ordering, and the ZIP byte profile are fully specified (S17-4 can build without interpretation).
-- [ ] Verifier check order (S12) + result codes (S13) are deterministic (NFP-missing -> clear `PKT_FILE_MISSING`, first-fail-wins).
-- [ ] Confirm S17-4/S17-5 have enough contract to begin implementation (after all signatures).
+- [x] Schema bundle complete: 10 schemas, every array carries `x-monolith-orderBy`, every object is `additionalProperties:false`, aggregate digest bound.
+- [x] Identity model: `packetContentId` (hash of canonical content) / `jobRunId` (server-owned, excluded from the content hash) / signed identity binding released revision + machine-profile ver + exporter ver + schema ver — no collision.
+- [x] Determinism implementable without guessing: JCS, integer micrometres, UTF-8 byte ordering, and the ZIP byte profile are fully specified (S17-4 can build without interpretation).
+- [x] Verifier check order (S12) + result codes (S13) are deterministic (NFP-missing -> clear `PKT_FILE_MISSING`, first-fail-wins).
+- [x] Confirm S17-4/S17-5 have enough contract to begin implementation (after all signatures).
 
 ## 2. Factory Owner — Factory Operability & Safety
 
@@ -46,11 +46,13 @@
 
 ## 4. Signature Block
 
-| Role | Name | Commit signed | Date | Status |
-| --- | --- | --- | --- | --- |
-| Tech Lead | (Dave) | `monolith-s17-v041-review-input.sha256` | — | PENDING |
-| Factory Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
-| Security Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
+| Role | Name | Reviewed artifact commit | Review anchor SHA-256 | Date | Status |
+| --- | --- | --- | --- | --- | --- |
+| Tech Lead | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
+| Factory Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+
+> The Tech Lead attestation was recorded from Dave's direct confirmation in the guided review session on 2026-07-17: the reviewer personally observed the matching anchor, 44/44 manifest PASS with 0 FAIL, independently reproduced the aggregate schema digest, observed the passing schema structural test, and answered TL-1 through TL-5. Codex mechanically recorded this direct instruction; it did not sign or approve on the human's behalf.
 
 ## 5. Effect once all three sign
 

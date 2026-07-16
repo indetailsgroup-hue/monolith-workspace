@@ -12,9 +12,9 @@
 <p><strong>Spec</strong>: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code> <strong>Hash anchor ที่ต้องเซ็น</strong>: <code>monolith-s17-v041-review-input.sha256</code> (sha256 <code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code>) <strong>Re-pin 16 ก.ค. 2026 (มติ owner ก):</strong> anchor เดิม <code>75cbc3e1...2046</code> ถูก re-pin สองเหตุ — (1) <code>package.json</code> เลื่อนจากงาน FS-B1-01/B1-02 ที่ owner สั่งหลัง round-4 (delta = test:node scripts + vite 6/vitest 3.2.7 security bump; เนื้อหา spec/schemas byte-identical ทุกไฟล์) (2) แก้ circularity แต่กำเนิด: ไฟล์ checklist นี้ (signing surface ที่ต้องถูกแก้ตอนเซ็น) เคยอยู่ในชุด frozen เอง ทำให้ verify ไม่ผ่านตั้งแต่ <code>7cd09e81</code> และการเซ็นจะทำ anchor แตก — ชุดใหม่ 44 ไฟล์ไม่รวม checklist (checklist ถูก pin แยกด้วย <code>ct-dec-002-signoff-checklist.sha256</code> ต่อเหตุการณ์เซ็น) <strong>Aggregate schema digest</strong>: <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code> <strong>Independent re-review verdict</strong>: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)</p>
 <blockquote><p>การเซ็น = การรับผิดชอบของมนุษย์ว่าได้ review เองแล้ว ไม่ใช่การรับ AI verdict มาแปะ · AI ไม่ลงชื่อแทน · เมื่อครบสามลายเซ็น CT-DEC-002 = APPROVED และปลด Track B (S17-4/5)</p><p>คงบังคับจนกว่าจะครบสาม: DRAFT · Track B LOCKED · NO_CUT · ไม่มี P0 closure · ไม่มี bare PKT_OK ใน shadow mode</p></blockquote>
 <h2>0. Pre-Sign (ทุกบทบาททำก่อน)</h2>
-<ul><li>[ ] ยืนยันกำลัง review exact bytes ที่ pin ใน <code>monolith-s17-v041-review-input.sha256</code></li><li>[ ] verify aggregate schema digest จาก <code>schema-bundle.aggregate.sha256</code> ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)</li><li>[ ] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval</li></ul>
+<ul><li>[x] ยืนยันกำลัง review exact bytes ที่ pin ใน <code>monolith-s17-v041-review-input.sha256</code></li><li>[x] verify aggregate schema digest จาก <code>schema-bundle.aggregate.sha256</code> ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)</li><li>[x] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval</li></ul>
 <h2>1. Tech Lead — Contract Correctness &amp; Implementability</h2>
-<ul><li>[ ] Schema bundle ครบ: 10 schemas, ทุก array มี <code>x-monolith-orderBy</code>, ทุก object <code>additionalProperties:false</code>, aggregate digest bound</li><li>[ ] Identity model: <code>packetContentId</code> (hash canonical content) / <code>jobRunId</code> (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide</li><li>[ ] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)</li><li>[ ] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -&gt; <code>PKT_FILE_MISSING</code> ชัด, first-fail-wins)</li><li>[ ] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)</li></ul>
+<ul><li>[x] Schema bundle ครบ: 10 schemas, ทุก array มี <code>x-monolith-orderBy</code>, ทุก object <code>additionalProperties:false</code>, aggregate digest bound</li><li>[x] Identity model: <code>packetContentId</code> (hash canonical content) / <code>jobRunId</code> (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide</li><li>[x] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)</li><li>[x] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -&gt; <code>PKT_FILE_MISSING</code> ชัด, first-fail-wins)</li><li>[x] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)</li></ul>
 <h2>2. Factory Owner — Factory Operability &amp; Safety</h2>
 <ul><li>[ ] NFP/NO_CUT บังคับ: shadow mode ตัดจริงไม่ได้ · ผลสูงสุด <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code> · <code>PKT_OK</code> เปล่า emit ไม่ได้</li><li>[ ] Machine profile binding: id + version + digest (profile ปลอมไม่ผ่าน -&gt; <code>PKT_MACHINE_PROFILE_MISMATCH</code>)</li><li>[ ] Verifier fail-closed: packet เสีย/lookup ล่ม -&gt; ไม่ถึงเครื่อง (<code>PKT_AUTHORITY_UNAVAILABLE</code> -&gt; FAIL/NO_CUT, ไม่ &quot;warn and pass&quot;)</li><li>[ ] Exporter allowlist + gate evidence binding (gate ไม่ PASS -&gt; <code>PKT_GATE_FAILED</code>)</li><li>[ ] machine profile <code>kdt_mvp_v1</code> ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)</li></ul>
 <h2>3. Security Owner — Signature / Trust / Key</h2>
@@ -24,32 +24,37 @@
 <div class="table-wrap"><table><thead><tr>
 <th>บทบาท</th>
 <th>ชื่อ</th>
-<th>Commit ที่เซ็น</th>
+<th>Reviewed artifact commit</th>
+<th>Review anchor SHA-256</th>
 <th>วันที่</th>
 <th>สถานะ</th>
 </tr></thead><tbody>
 <tr>
 <td>Tech Lead</td>
-<td>(คุณเดฟ)</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
-<td>—</td>
-<td>PENDING</td>
+<td>คุณเดฟ</td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
+<td>2026-07-17</td>
+<td>SIGNED</td>
 </tr>
 <tr>
 <td>Factory Owner</td>
 <td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
 <td>—</td>
 <td>PENDING</td>
 </tr>
 <tr>
 <td>Security Owner</td>
 <td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
 <td>—</td>
 <td>PENDING</td>
 </tr>
 </tbody></table></div>
+<blockquote><p>บันทึกการรับรอง Tech Lead จากคำยืนยันโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: ผู้ตรวจเห็น anchor ตรง, manifest 44/44 PASS และ 0 FAIL, reproduce aggregate schema digest ได้, schema structural test ผ่าน และตอบ TL-1 ถึง TL-5 ด้วยตนเอง Codex ทำหน้าที่บันทึกคำยืนยันนี้ตามคำสั่งโดยตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์</p></blockquote>
 <h2>5. Effect เมื่อครบสาม</h2>
 <ul><li>CT-DEC-002 = APPROVED</li><li>ปลด Track B: S17-4 determinism + S17-5 verifier</li><li>S17-5 ต้อง implement/review โดยผู้อิสระจาก S17-3/4 builder (SoD, ADR-065)</li><li>คง NFP/NO_CUT จนกว่า real-cut gate สี่เงื่อนไขผ่าน (S17x5 + ADR-064 ครบ + dogfood &gt;=1 + machine profile calibrated)</li></ul>
 <h2>6. ข้อควรระวัง (advisory)</h2>

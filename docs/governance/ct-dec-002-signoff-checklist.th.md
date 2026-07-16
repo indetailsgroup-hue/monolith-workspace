@@ -11,17 +11,17 @@
 
 ## 0. Pre-Sign (ทุกบทบาททำก่อน)
 
-- [ ] ยืนยันกำลัง review exact bytes ที่ pin ใน `monolith-s17-v041-review-input.sha256`
-- [ ] verify aggregate schema digest จาก `schema-bundle.aggregate.sha256` ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)
-- [ ] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval
+- [x] ยืนยันกำลัง review exact bytes ที่ pin ใน `monolith-s17-v041-review-input.sha256`
+- [x] verify aggregate schema digest จาก `schema-bundle.aggregate.sha256` ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)
+- [x] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval
 
 ## 1. Tech Lead — Contract Correctness & Implementability
 
-- [ ] Schema bundle ครบ: 10 schemas, ทุก array มี `x-monolith-orderBy`, ทุก object `additionalProperties:false`, aggregate digest bound
-- [ ] Identity model: `packetContentId` (hash canonical content) / `jobRunId` (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide
-- [ ] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)
-- [ ] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -> `PKT_FILE_MISSING` ชัด, first-fail-wins)
-- [ ] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)
+- [x] Schema bundle ครบ: 10 schemas, ทุก array มี `x-monolith-orderBy`, ทุก object `additionalProperties:false`, aggregate digest bound
+- [x] Identity model: `packetContentId` (hash canonical content) / `jobRunId` (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide
+- [x] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)
+- [x] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -> `PKT_FILE_MISSING` ชัด, first-fail-wins)
+- [x] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)
 
 ## 2. Factory Owner — Factory Operability & Safety
 
@@ -46,11 +46,13 @@
 
 ## 4. Signature Block
 
-| บทบาท | ชื่อ | Commit ที่เซ็น | วันที่ | สถานะ |
-| --- | --- | --- | --- | --- |
-| Tech Lead | (คุณเดฟ) | `monolith-s17-v041-review-input.sha256` | — | PENDING |
-| Factory Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
-| Security Owner | — | `monolith-s17-v041-review-input.sha256` | — | PENDING |
+| บทบาท | ชื่อ | Reviewed artifact commit | Review anchor SHA-256 | วันที่ | สถานะ |
+| --- | --- | --- | --- | --- | --- |
+| Tech Lead | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
+| Factory Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+
+> บันทึกการรับรอง Tech Lead จากคำยืนยันโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: ผู้ตรวจเห็น anchor ตรง, manifest 44/44 PASS และ 0 FAIL, reproduce aggregate schema digest ได้, schema structural test ผ่าน และตอบ TL-1 ถึง TL-5 ด้วยตนเอง Codex ทำหน้าที่บันทึกคำยืนยันนี้ตามคำสั่งโดยตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์
 
 ## 5. Effect เมื่อครบสาม
 
