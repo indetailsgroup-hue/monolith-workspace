@@ -232,3 +232,5 @@ flowchart TD
 - **Reuse evidence:** task 4 ใช้ `tools/bible-code` (WO-3 DONE, PBT P1–P4) — ห้ามเขียน parser ใหม่
 - **A-5 (IP/SPOF):** Kernel Truth Service (kernel-pyocc) untracked/unbuilt — ไม่ block Phase 2 แต่บันทึกความเสี่ยงไว้; Phase 2 พึ่ง Released_Spec จาก CAM Engine (TS) เท่านั้น
 - Property อ้างถึง Correctness Properties ใน design.md (Property 1–14 = G1–G9 + INV-1..8)
+
+> **มติ grill-me (owner ก, 16 ก.ค. 2026 — ADR-069):** **เลื่อนทั้งโปรเจกต์อย่างชัดแจ้ง** — WO-0 และทุก phase แขวนจนกว่า (1) S17 ปิด (2) มี 2-sided signal จริง (waitlist/LOI) (3) legal review เสร็จ — สอดคล้อง exec research (P2, 12–24 เดือน) · ห้ามนับเป็นงานค้างใน backlog scan จนกว่า trigger ครบ

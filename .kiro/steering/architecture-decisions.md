@@ -758,3 +758,24 @@ inclusion: always
 3. **Q3: amend CT-DEC-002 เดี๋ยวนี้ก่อนเซ็น** — ห้ามเซ็น spec ที่ implement บน custody จริงไม่ได้ · Control Tower (builder) แก้เป็น v0.4 → independent re-review รอบ 4 → แล้วค่อย 3-role sign-off
 
 **Consequences**: CT-DEC-002 v0.3 (`bf25b10f`) superseded โดย v0.4 (Ed25519→ECDSA_P256 ใน §10 + schema const + signing preimage) · sign-off checklist regenerate สำหรับ v0.4 · S17-5 verifier ใช้ ECDSA verify · S17-6 KMS = ECDSA P-256 key · timing กระทบ re-plan (ADR-067) เล็กน้อย (~1-2 วัน amend+re-review)
+
+
+## ADR-069 — Grill-me รอบแรก: ปลด critical path + ปิด owner-null ค้างสะสม (16 ก.ค. 2026, มติ owner ก ทุกข้อ)
+
+- **Status:** Accepted (grill-me 16 ก.ค. 2026)
+- **Context (verified):** session แรกของ `/grill-me` — harvest จาก specs/governance/PRs แล้ว verify ก่อนถาม: ตัดคำถามผี 3 ตัว (ledger_target = BUILT แล้ว 0066–0068 adapter #2 e2e-verified; hosting = ตัดสินแล้ว ADR-036; pricing 0.3 มี disposition "ก่อนเปิดขาย" อยู่แล้ว) · CT-DEC-002 v0.4 checklist ยัง `[ ]` ทุกข้อ = Track B LOCKED · PR #1 (integration, CI 8/8) + PR #2 (entitlement P1+2, CI เขียว) รอ owner · capture-spine owner nulls ค้างจริง 4 กลุ่ม · design-hub 0/10 ค้าง WO-0
+- **Decision (owner, ก ทุกข้อ — 13 มติ):**
+  1. **CT-DEC-002 v0.4 sign-off: เปิด session เลย** — AI เตรียม review pack ต่อบทบาท (Tech Lead / Factory Owner / Security Owner); owner ไล่ checklist เซ็นทีละบทบาทแยกกัน (AI ห้ามเซ็นแทน)
+  2. **PR #1: owner review `.kiro` union 2 ไฟล์เอง + merge เอง** — ส่ง delta note ให้ Codex หลัง merge (owner = ratify authority)
+  3. **PR #2: ratify SSOT v0.3.1 (L10 seat-floor, L11 grants) + v0.3.2 (F5 org_id hook, F6 billing RPCs) + merge**
+  4. **Pilot window: dependency-first** — ล็อกวันเมื่อ (1) CT-DEC-002 ครบ 3 ลายเซ็น (2) S17-4/5 มี estimate จริง (3) owner ยืนยัน factory slot — ห้ามบีบ verification เพื่อรักษาวัน (คงหลัก ADR-067)
+  5. **design-hub Phase 2: เลื่อนชัดแจ้ง** — trigger กลับมา = S17 ปิด + 2-sided signal จริง (waitlist/LOI) + legal review (ตรง exec research P2)
+  6. **has_po: defer จนมี procurement module จริง** — `po_ref` = free-text provenance (เก็บครบ ตรวจย้อนหลังได้) ไม่สร้าง PO table เชิงทฤษฎี
+  7. **Released_Spec target: defer-until-demand** — trigger = spec_draft ตัวจริงตัวแรกใน dogfood → ค่อย spike แนว reuse factory release seam (RELEASED/S17-2) ห้าม fork
+  8. **MCP external exposure: ไม่เปิด** — capture เป็น internal loop จนกว่ามี use case จริง + design reconcile double-gate (MCP pending × capture verify)
+  9. **auto-approve: ไม่เปิด** — คง verify-before-emit = 100% (System Guarantee) จนกว่า dogfood ให้ baseline volume/error จริง
+  10. **OCR infra: dogfood เริ่มแบบคีย์มือ (ไม่มี OCR)** — trigger ยืน Typhoon = photo-capture volume เจ็บจริง → self-host บน VM ใต้เงื่อนไข bridge ADR-036 (weights ใน infra เรา ไม่มี third-party API; ตั้งโดยมนุษย์ตาม ADR-066)
+  11. **Metering = calendar-month ถาวร** (ปิด design note v0.3.2) — เปลี่ยนเป็น billing-anchor ทีหลังได้ถ้ามี data ลูกค้า complain จริง
+  12. **Entitlement พักที่ Phase 2** — schema+billing พร้อมขายระดับ DB แล้ว; trigger Phase 3 (app layer) = มติเปิดขาย/tenant นำร่องจริง; AI capacity ย้ายไป S17/dogfood
+  13. **v0.4 delta: hold — v0.3 คง SSOT** — sitepm.* คือ availability ของเวอร์ชันขาย (roadmap ทั้ง 8) review พร้อม pricing 0.3 เมื่อใกล้เปิดขาย
+- **Consequences:** งานถัดไปของ AI = CT-DEC-002 review pack (มติ 1) + delta note ให้ Codex (มติ 2) · merges เป็น human act ของ owner (มติ 2–3) · spec ledgers ที่กระทบ append มติแล้ว: capture-spine (มติ 6–10), design-hub (มติ 5), entitlement (มติ 11–13 — บน PR #2) · ไม่มีมติใด supersede ADR เดิม
