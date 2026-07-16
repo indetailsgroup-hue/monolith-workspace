@@ -1,0 +1,40 @@
+# Supabase config — MONOLITH Entitlement DB (SEPARATE project per ADR-034)
+# This is NOT the internal DAPH ops DB (supabase/ at repo root). ADR-034:
+# commercial SaaS = a separate Supabase project per the v0.3 draft (organizations
+# tenancy), so internal data never mixes with external customers
+# (blast radius / PDPA / backup fully isolated).
+# CI harness only until a real SaaS project is created (human-driven, ADR-066).
+
+project_id = "monolith-entitlement"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+health_timeout = "2m"
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+
+[studio]
+enabled = false
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
+
+[edge_runtime]
+enabled = false
