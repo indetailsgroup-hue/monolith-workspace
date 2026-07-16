@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Migration 0162 — PostgreSQL Dry-Run Package</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Migration 0162 — PostgreSQL Dry-Run Package</h1>
+<p>Document version: 1.0</p>
+<p>Prepared: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>Target migration: <code>supabase/migrations/0162_factory_server_identity_released_only.sql</code></p>
+<p>Status: <strong>verification package — non-production only</strong></p>
+<blockquote><p>This package does not apply migration 0162 to production, approve a merge, or close S17-1/S17-2. Both drivers open one transaction and end with <code>ROLLBACK</code>.</p></blockquote>
+<h2>1. What the package proves</h2>
+<p>The assertions execute the exact migration against a real PostgreSQL engine and test:</p>
+<ol><li>legacy RPC overloads that accepted caller-selected actor fields are removed</li><li>only <code>service_role</code> has direct execution privilege on the new mutating RPCs</li><li>an authenticated client attempting to inject a forged actor is denied and writes no job/event</li><li>authenticated clients cannot bypass route policy by directly selecting Factory job/event tables</li><li>malformed server actor context is rejected before state or audit mutation</li><li>a wrong action role is rejected for packet recording and verification</li><li>invalid transition order returns an error and writes no event</li><li>a FROZEN job cannot record/upload a packet, become exportable, or record verification</li><li>supplied email-like actor names are ignored; persisted <code>actor_name</code> equals the verified actor subject ID</li><li>the positive control <code>DRAFT -&gt; FROZEN -&gt; RELEASED -&gt; record packet -&gt; verify</code> succeeds and records server actor context</li></ol>
+<p>The package does <strong>not</strong> prove hosted Supabase Auth behavior, Storage behavior, Edge deployment, PostgREST schema-cache refresh, production metadata completeness, or P0 closure.</p>
+<h2>2. Package files</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>Purpose</th>
+</tr></thead><tbody>
+<tr>
+<td><code>dry-run-bootstrap.sql</code></td>
+<td>Build migrations 0155/0156/0157/0161 in a disposable DB, apply 0162, run assertions, roll back</td>
+</tr>
+<tr>
+<td><code>dry-run-existing.sql</code></td>
+<td>Check an existing non-production database is at 0161, apply 0162, run assertions, roll back</td>
+</tr>
+<tr>
+<td><code>bootstrap-pre0162.sql</code></td>
+<td>Minimal Supabase roles and <code>fn_is_service_role()</code> helper for an empty disposable PostgreSQL database</td>
+</tr>
+<tr>
+<td><code>preflight-existing.sql</code></td>
+<td>Fail-closed check for expected pre-0162 tables and legacy signatures</td>
+</tr>
+<tr>
+<td><code>assertions.sql</code></td>
+<td>Negative cases and positive controls</td>
+</tr>
+<tr>
+<td><code>run-0162-dry-run.ps1</code></td>
+<td>Guarded psql runner for a supplied non-production connection</td>
+</tr>
+<tr>
+<td><code>run-0162-ephemeral.ps1</code></td>
+<td>Creates a temporary PostgreSQL cluster, runs bootstrap mode, stops it, and removes it</td>
+</tr>
+<tr>
+<td><code>local-postgres-dry-run-evidence.json</code></td>
+<td>Hash-bound record of the reproduced PostgreSQL 18.1 bootstrap run and its exclusions</td>
+</tr>
+</tbody></table></div>
+<h2>3. Recommended command: disposable PostgreSQL</h2>
+<p>Prerequisites: PostgreSQL client/server binaries (<code>psql</code>, <code>initdb</code>, <code>pg_ctl</code>, <code>createdb</code>, <code>pg_isready</code>) on <code>PATH</code>.</p>
+<p>From repository root:</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-0162/run-0162-ephemeral.ps1 `
+  -Port 55439</code></pre>
+<p>Choose another unused port when necessary. A successful run ends with all four markers:</p>
+<pre><code class="language-text">S17_0162_ASSERTIONS_PASS
+S17_0162_DRY_RUN_PASS mode=bootstrap transaction=rolled_back
+S17_0162_PSQL_PACKAGE_PASS
+S17_0162_EPHEMERAL_POSTGRES_PASS</code></pre>
+<h2>4. Existing pre-0162 non-production database</h2>
+<p>The target must be a disposable snapshot with migrations through 0161 and without 0162. Never point this command at production.</p>
+<pre><code class="language-powershell">$env:S17_TEST_DATABASE_URL = 'postgresql://USER:PASSWORD@HOST:PORT/s17_0162_staging'
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-0162/run-0162-dry-run.ps1 `
+  -Mode existing-pre0162 `
+  -ExpectedDatabase s17_0162_staging `
+  -ConfirmNonProduction</code></pre>
+<p>The runner uses <code>psql -X -w</code>, <code>ON_ERROR_STOP=1</code>, checks the connected database name, rejects protected/production-like names, and never prompts for a password. Prefer <code>.pgpass</code>, <code>PGPASSFILE</code>, or a short-lived secret environment variable in controlled operator environments.</p>
+<h2>5. Failure behavior</h2>
+<ul><li>Any SQL assertion raises <code>S17_ASSERT_FAIL</code> and psql exits non-zero.</li><li>A target that is not at 0161 raises <code>S17_PREFLIGHT_FAIL</code> before migration execution.</li><li>On error, disconnecting rolls back the open transaction; successful drivers also execute an explicit <code>ROLLBACK</code>.</li><li>The ephemeral runner stops PostgreSQL and deletes only its generated <code>monolith-s17-0162-&lt;guid&gt;</code> directory under the system temporary directory.</li></ul>
+<h2>6. Reproduced local evidence</h2>
+<p>On 2026-07-11 the bootstrap driver passed on PostgreSQL 18.1 using a temporary database named <code>s17_0162_dryrun</code>. All negative cases and positive controls passed, the transaction rolled back, the server stopped, and the temporary cluster was removed. The exact input hashes and exclusions are recorded in <code>local-postgres-dry-run-evidence.json</code>. This is local real-PostgreSQL evidence only; hosted/staging evidence remains required before human closure.</p>
+<h2>7. Human gate</h2>
+<p>Applying 0162 to a hosted or production database requires a separate human decision, an approved deployment sequence, metadata readiness, backup/abort preparation, and independent review. This package grants none of those authorities.</p>
+</main>
+</body>
+</html>

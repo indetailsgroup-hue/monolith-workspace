@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Hosted Auth and Staging Evidence Package</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Hosted Auth and Staging Evidence Package</h1>
+<p>Package version: 1.0</p>
+<p>Prepared: 2026-07-12</p>
+<p>Status: <strong>Human/Ops execution package — not deployment authority</strong></p>
+<blockquote><p>The script does not deploy an Edge function or apply a migration. When Human/Ops runs it, it creates and transitions one synthetic staging job, so execution is a state-changing staging action and requires explicit human approval. Never run it against production.</p></blockquote>
+<h2>1. Purpose</h2>
+<p>This package collects the remaining hosted evidence gate for the S17-1/S17-2 implementation candidate:</p>
+<ul><li>real, valid Designer JWT returns <code>200</code></li><li>genuinely expired JWT returns <code>401</code></li><li>valid user with no recognized <code>app_metadata.roles</code> returns <code>403</code></li><li>forged <code>x-actor-role: DESIGNER</code> cannot give a Factory principal transition permission and leaves the job DRAFT</li><li>INSTALLER can read state but receives <code>403</code> for activity</li><li>FROZEN packet upload, export, and verify each return <code>409</code></li><li>valid Designer can release to RELEASED</li><li>release activity stores <code>actorName = actorSubjectId = verified JWT sub</code>, not email</li></ul>
+<p>The script stores no JWT, API key, raw activity body, email, or plaintext subject ID in its evidence JSON. It stores SHA-256 subject anchors and limited response fields.</p>
+<h2>2. Preconditions owned by Human/Ops</h2>
+<ul><li>independent review has accepted the exact source candidate</li><li>the target is an isolated hosted <strong>staging/test</strong> Supabase project, never production</li><li>backup, abort owner, maintenance window, and approval are recorded</li><li>migration 0162 has been applied successfully to staging</li><li>the reviewed <code>factory-api</code> commit has been deployed to staging</li><li>PostgREST schema cache and Auth are healthy</li><li>five staging tokens are available through a secret manager/environment variables:</li><li>active Designer (<code>app_metadata.roles</code> includes <code>designer</code>)</li><li>active Factory (<code>factory_operator</code> or <code>factory</code>)</li><li>active Installer (<code>installer</code>)</li><li>active no-role user (no recognized Factory role)</li><li>a **real token whose <code>exp</code> is already in the past**; a corrupted token is not an equivalent test</li></ul>
+<p>The operator must verify the deployed commit independently. Passing the script while another commit is deployed is invalid evidence.</p>
+<h2>3. Human deployment sequence</h2>
+<p>The as-built migration and final Edge function do not support a zero-downtime binary order: the final function needs the new RPC signatures, while migration 0162 removes the old signatures. Use the approved maintenance sequence from the client compatibility checklist:</p>
+<ol><li>stop Factory mutations and confirm the staging target, backup, and abort owner</li><li>inspect <code>supabase migration list</code> and ensure 0162 is the only intended pending Factory migration</li><li>run and review <code>supabase db push --dry-run</code> against the linked staging project</li><li>with explicit approval, run <code>supabase db push</code> to apply 0162 to staging</li><li>deploy the reviewed function with <code>supabase functions deploy factory-api</code></li><li>verify the deployed target/commit, then run this evidence script</li><li>keep staging traffic closed if any case fails; archive the redacted evidence and platform run/deploy logs</li></ol>
+<p>These are operator commands, not authorization. Project linking, push, and deploy must be performed by Human/Ops, not the AI implementer.</p>
+<h2>4. Secret-safe setup</h2>
+<p>Set values in the operator process from the approved secret store. Do not paste JWTs into chat, commit them, place them in command history, or include them in evidence:</p>
+<pre><code class="language-powershell">$env:S17_FACTORY_API_BASE_URL = 'https://&lt;STAGING-REF&gt;.supabase.co/functions/v1/factory-api'
+$env:S17_SUPABASE_ANON_KEY = '&lt;STAGING-ANON-KEY&gt;'
+$env:S17_DESIGNER_JWT = '&lt;ACTIVE-DESIGNER-JWT&gt;'
+$env:S17_FACTORY_JWT = '&lt;ACTIVE-FACTORY-JWT&gt;'
+$env:S17_INSTALLER_JWT = '&lt;ACTIVE-INSTALLER-JWT&gt;'
+$env:S17_NO_ROLE_JWT = '&lt;ACTIVE-NO-ROLE-JWT&gt;'
+$env:S17_EXPIRED_JWT = '&lt;GENUINELY-EXPIRED-STAGING-JWT&gt;'
+$env:S17_TARGET_LABEL = 'monolith-staging'
+$env:S17_EXPECTED_COMMIT = '&lt;FULL-40-HEX-DEPLOYED-COMMIT&gt;'
+$env:S17_EXPECTED_MIGRATION_SHA256 = '&lt;LOWERCASE-SHA256-OF-0162&gt;'</code></pre>
+<p>The package intentionally does not accept or need the service-role key.</p>
+<h2>5. Reproducible execution</h2>
+<p>Safe local plan inspection (no network or state change):</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-hosted-auth/run-hosted-auth-evidence.ps1 `
+  -PlanOnly</code></pre>
+<p>Approved hosted staging run:</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-hosted-auth/run-hosted-auth-evidence.ps1 `
+  -ConfirmNonProduction `
+  -EvidencePath artifacts/s17-hosted-auth-evidence-&lt;RUN-ID&gt;.json</code></pre>
+<p>Guards:</p>
+<ul><li>target label must contain staging/stage/preview/test/sandbox</li><li>hosted URL must use HTTPS</li><li>job ID must start with <code>S17-HOSTED-</code></li><li>expected commit and migration hashes must be full lowercase hashes</li><li>active tokens must be unexpired and carry the expected metadata roles</li><li>expired token must have a past <code>exp</code></li><li>existing evidence is not overwritten unless the operator explicitly passes <code>-ForceEvidenceOverwrite</code></li><li>execution stops on the first unexpected status/state and still writes a redacted FAIL record</li></ul>
+<h2>6. Evidence archive checklist</h2>
+<ul><li>preserve the generated JSON bytes and compute SHA-256</li><li>attach the staging deployment/function log IDs and migration apply log</li><li>identify the hosted project using its approved non-secret label/project ref</li><li>record the actual deployed commit and migration digest</li><li>verify all case entries are PASS</li><li>review that <code>rawTokensStored</code> is false and no secrets/email/plain subject IDs appear</li><li>archive under the approved durable evidence path before any human closure decision</li></ul>
+<h2>7. Boundaries</h2>
+<p>A green hosted run plus successful staging migration satisfies evidence inputs for human S17-1/S17-2 closure review only. It does not merge code, close a P0 by itself, prove production readiness, close <code>factory-site-isolation</code>, unlock real cutting, or authorize production deployment.</p>
+</main>
+</body>
+</html>

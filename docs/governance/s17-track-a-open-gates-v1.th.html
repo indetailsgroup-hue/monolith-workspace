@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Track A — Open Gates, มติความเป็นส่วนตัว และ Handoff ให้ Track B</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Track A — Open Gates, มติความเป็นส่วนตัว และ Handoff ให้ Track B</h1>
+<p>รุ่นบันทึก: 1.0</p>
+<p>วันที่บันทึก: 2026-07-12</p>
+<p>ผู้มีอำนาจตัดสินใจ: <strong>Tech Lead (คำสั่งมนุษย์ที่ส่งให้ implementer)</strong></p>
+<p>ผู้บันทึก: AI Track A implementer — advisory/non-authoritative</p>
+<p>สถานะ: <strong>implementation candidate; ยังมี evidence gate เปิดอยู่</strong></p>
+<blockquote><p>บันทึกนี้ตรึงมติ Tech Lead ห้าข้อหลัง independent review S17-1/S17-2 แบบ durable แต่ไม่ merge หรือ deploy code, ไม่ปิด S17-1/S17-2 หรือ P0 ใด, ไม่ claim production-ready และไม่อนุญาตตัดชิ้นงานจริง</p></blockquote>
+<h2>1. ทะเบียนมติ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Ref</th>
+<th>เรื่อง</th>
+<th>มติที่บันทึก</th>
+</tr></thead><tbody>
+<tr>
+<td>F-1</td>
+<td>Factory site isolation</td>
+<td><strong>DECOUPLE</strong> ติดตามเป็น hard gate เปิดชื่อ <code>factory-site-isolation</code>; ห้ามสร้าง multi-tenant enforcement แบบเก็งกำไรขณะที่ DAPH มีไซต์ที่ตั้งค่าไว้หนึ่งไซต์</td>
+</tr>
+<tr>
+<td>F-2</td>
+<td>Hosted Auth integration</td>
+<td><strong>EVIDENCE GATE</strong> Human/Ops ต้อง deploy ลง staging ที่อนุมัติและรัน hosted test package ที่ผูก hash; implementer ห้าม deploy เอง</td>
+</tr>
+<tr>
+<td>F-3</td>
+<td>Cross-role reads</td>
+<td><code>state</code> และ <code>can-export</code>: capability ที่รู้จักครบห้ากลุ่ม ส่วน <code>jobs</code>, <code>activity</code>, <code>proof</code>: เฉพาะ ADMIN + DESIGNER + FACTORY</td>
+</tr>
+<tr>
+<td>F-4</td>
+<td>Email PII ใน audit</td>
+<td>Audit context ใหม่จาก Factory API ใช้ verified <code>subjectId</code> เป็น <code>actor_name</code>; เส้นนี้ไม่ persist verified email และไม่ rewrite แถวประวัติศาสตร์</td>
+</tr>
+<tr>
+<td>F-5</td>
+<td>Semantic สำหรับ Track B</td>
+<td><code>authorizationContextId</code> hash เฉพาะ identity snapshot ไม่ผูก job, action, route, revision, packet หรือ attestation</td>
+</tr>
+</tbody></table></div>
+<h2>2. Hard gate: <code>factory-site-isolation</code></h2>
+<p>สถานะ gate: <strong>OPEN — known gap, gated to multi-branch</strong></p>
+<p>Trigger: ต้องปิด gate นี้ก่อน DAPH เปิด active site/branch แห่งที่สอง หรืออ้างว่า Factory data แยก tenant ได้แล้ว</p>
+<h3>2.1 เหตุผล as-built ที่ต้อง decouple</h3>
+<ul><li><code>current_site_codes()</code> และ <code>has_site_access()</code> อ่าน <code>auth.jwt().app_metadata.site_codes</code> จาก database session ปัจจุบัน (<code>supabase/migrations/00000000000000_c12_foundation.sql</code>)</li><li>Factory RPC ถูก <code>factory-api</code> เรียกด้วย service-role session; ถ้าเรียก <code>has_site_access()</code> ตรง ๆ จะประเมิน session ของ service role ไม่ใช่ end-user identity ที่ Edge verify แล้ว</li><li><code>factory_jobs</code> ไม่มี <code>site_code</code>, project foreign key หรือความสัมพันธ์ job→site ที่ authoritative (<code>supabase/migrations/0155_factory_state_server.sql</code>)</li><li><code>get_active_site_codes()</code> คืนค่าที่ตั้งไว้เพียง <code>BKK-HQ-01</code> และ comment ของ helper ระบุว่าการขยายหลายสาขายังเป็นมติ Q3 ที่ pending</li></ul>
+<p>ดังนั้นการเรียก <code>has_site_access()</code> ตรง ๆ จะทำให้เข้าใจผิด ส่วนการประดิษฐ์ความสัมพันธ์ job/site ตอนนี้เป็น speculative architecture Candidate นี้จึงไม่เพิ่ม factory site-enforcement code</p>
+<h3>2.2 แบบที่ต้องมีก่อนปิด gate</h3>
+<p>ปิด gate ได้เมื่อครบทั้งหมด:</p>
+<ol><li>Migration ที่ผ่าน review ผูก Factory job ทุกงานเข้ากับไซต์ authoritative โดยตรง หรือผ่าน project foreign key ที่ไม่กำกวม</li><li>Site predicate ที่ปลอดภัยเมื่อรันด้วย service role รับ <code>p_actor_site_codes</code> จาก verified server context เป็น parameter ชัดเจน และห้าม derive site set ของ end user จาก service-role database session</li><li>Read/mutation routes ทุกเส้นใช้กติกา job/site เดียวกันและ fail closed เมื่อไม่มี binding หรือ actor site set</li><li>Fixture สองไซต์จริงพิสูจน์ positive same-site และ negative cross-site สำหรับ list, state, activity, proof, transition, packet, export และ verify</li><li>Tech Lead และ Security Owner review migration, trust boundary, tests และ hosted evidence ก่อนเปิด multi-branch</li></ol>
+<p>ทางลัดที่ห้ามใช้: เรียก <code>has_site_access()</code> แบบ session-based ที่มีอยู่ตรง ๆ จาก Factory RPC ซึ่งรันด้วย service role</p>
+<h2>3. Hosted evidence gate</h2>
+<p>Reproducible package อยู่ที่ <code>supabase/tests/s17-hosted-auth/</code> Human/Ops รันได้หลังมีมติ maintenance/deployment บน staging เท่านั้น เคสบังคับคือ:</p>
+<ul><li>JWT จริงที่ถูกต้อง → <code>200</code></li><li>JWT ที่หมดอายุจริง → <code>401</code></li><li>user ถูกต้องแต่ไม่มี role ที่ระบบรู้จัก → <code>403</code></li><li><code>x-actor-role</code> ปลอมให้สิทธิ์ transition ไม่ได้และ state ต้องไม่เปลี่ยน</li><li>INSTALLER อ่าน activity → <code>403</code></li><li>อัปโหลด packet ตอน FROZEN → <code>409</code></li><li>Designer ที่ถูกต้อง release → <code>200</code> โดย audit actor name เท่ากับ subject ID และเส้นนี้ไม่ persist email</li></ul>
+<p>Raw output จะเป็น E0 ได้เมื่อระบุ deployed commit, migration hash, hosted target, เวลารัน, HTTP status และผล pass/fail โดยไม่เก็บ JWT</p>
+<h2>4. Least-privilege route matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Surface</th>
+<th>ADMIN</th>
+<th>DESIGNER</th>
+<th>FACTORY</th>
+<th>INSTALLER</th>
+<th>FINANCE</th>
+</tr></thead><tbody>
+<tr>
+<td><code>state</code>, <code>can-export</code></td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+</tr>
+<tr>
+<td>jobs list, <code>activity</code>, <code>proof</code></td>
+<td>allow</td>
+<td>allow</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+<tr>
+<td>freeze/release/revoke/unfreeze, packet upload</td>
+<td>allow</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+<tr>
+<td>export, verify</td>
+<td>allow</td>
+<td>deny</td>
+<td>allow</td>
+<td>deny</td>
+<td>deny</td>
+</tr>
+</tbody></table></div>
+<p>Activity เปิดเผย subject ID และ authorization context ของ actor คนอื่น INSTALLER และ FINANCE ไม่มี approved need สำหรับ evidence surface นี้</p>
+<p>Migration 0162 ถอนทั้ง policy เดิม <code>authenticated USING (true)</code> และ direct table privileges บน <code>factory_jobs</code>/<code>factory_job_events</code> เพื่อป้องกัน bypass Edge matrix ผ่าน PostgREST โดย application reads ต้องผ่าน service-role-only RPC หลัง <code>factory-api</code></p>
+<h2>5. มติความเป็นส่วนตัวของ audit</h2>
+<p>สำหรับ event ใหม่ที่เขียนผ่าน Factory API candidate นี้:</p>
+<ul><li>authority ยังคงเป็น <code>actor_subject_id</code>, <code>actor_roles</code>, <code>actor_site_codes</code> และ <code>authorization_context_id</code> ซึ่ง derive จาก Auth data ที่ verify แล้ว</li><li>compatibility field <code>actor_name</code> ใช้ verified subject ID ค่าเดียวกัน</li><li>migration 0162 persist <code>p_actor_subject_id</code> แม้ service caller จะส่ง compatibility <code>p_actor_name</code> เป็นค่าอื่น</li><li>email ถูก ignore แม้มีอยู่ใน verified Auth user payload</li><li>append-only row เก่าบางแถวอาจมี email จากเส้นทางก่อนหน้า และต้องเก็บไว้โดยไม่ rewrite</li></ul>
+<p>นี่เป็น data-minimization ไม่ใช่ anonymization เพราะ subject ID ยังเป็น identifier และยังเป็น governed audit data</p>
+<h2>6. Semantic handoff ให้ Track B</h2>
+<p>Track A คำนวณ:</p>
+<pre><code class="language-text">authorizationContextId = SHA-256(JSON({ actorSubjectId, roles, siteCodes }))</code></pre>
+<p>Array ถูก deduplicate และเรียงแบบ byte ก่อน hash ID นี้ตอบได้เพียงว่า “server ใช้ verified identity/authorization snapshot ชุดใด” โดยไม่รวมและไม่พิสูจน์ <code>jobId</code>, action, HTTP route, released revision, packet content, machine profile, exporter version, schema version, gate result หรือเวลา</p>
+<p>Track B ต้อง bind authorization context ID ร่วมกับ action/job/revision/packet identity ภายใน canonical attestation/signature contract ห้ามใช้ authorization context ID เดี่ยว ๆ แทน action authorization หรือ packet signature</p>
+<h2>7. Closure matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>เกณฑ์</th>
+<th>สถานะในบันทึกนี้</th>
+</tr></thead><tbody>
+<tr>
+<td>Independent full review</td>
+<td>ผ่านตาม input ของ Tech Lead</td>
+</tr>
+<tr>
+<td>บันทึก F-1 hard gate</td>
+<td>จัดทำใน candidate นี้; ตัว gate ยังคง OPEN จนถึงงาน multi-branch</td>
+</tr>
+<tr>
+<td>F-3 route restriction + negative tests</td>
+<td>Implement ใน candidate นี้; รอ CI evidence</td>
+</tr>
+<tr>
+<td>มติ F-4 privacy</td>
+<td>Implement และบันทึกใน candidate นี้; รอ hosted evidence</td>
+</tr>
+<tr>
+<td>F-2 hosted live Auth evidence</td>
+<td><strong>OPEN — ต้องให้ Human/Ops ดำเนินการ</strong></td>
+</tr>
+<tr>
+<td>Apply migration 0162 บน staging สำเร็จ</td>
+<td><strong>OPEN — ต้องให้ Human/Ops ดำเนินการ</strong></td>
+</tr>
+</tbody></table></div>
+<p>ก่อน hosted/staging evidence ครบและมนุษย์ปิดรายการ สถานะ S17-1/S17-2 ยังคง <strong>implementation candidate</strong> ขอบเขต Track B และ NO_CUT ทั้งหมดยังคงเดิม</p>
+</main>
+</body>
+</html>
