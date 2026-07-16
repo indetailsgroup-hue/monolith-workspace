@@ -8,11 +8,12 @@
 - [x] ~~0.2 ถ้ารวม DB: mapping org↔site + C12~~ — ตกไปตามมติ 0.1 (แยก DB ใช้ draft ตรง ๆ)
 - [ ] 0.3 ยืนยันราคา/ชื่อ tier กับ competitive research (OCC/PolyBoard/Mozaik) — ตอนนี้เป็น placeholder (ทำก่อนเปิดขาย ไม่ block Phase 1)
 
-## Phase 1: Schema Landing
+## Phase 1: Schema Landing — ✅ ปิดแล้ว (16 ก.ค. 2026, CI run `29511060231`)
 
-- [ ] 1.1 แปลง `schema-draft-v0.3.sql` เป็น migration จริงตามปลายทางจาก Phase 0 (แตกไฟล์ตาม convention: init → RLS → functions → triggers → seed)
-- [ ] 1.2* รัน `tests-negative.sql` บน scratch DB — เขียวครบ Correctness Properties 1–5
-- [ ] 1.3* pgTAP negative tests ใน `supabase/tests/` (แปลงจาก tests-negative)
+- [x] 1.1 แปลง `schema-draft-v0.3.sql` เป็น migration จริง → `entitlement-db/supabase/migrations/` (5 ไฟล์, แตกแบบ byte-faithful จาก SSOT; ลำดับ dependency-correct: init → **functions → RLS** → triggers → seed เพราะ policies เรียก `is_member()`) — DB แยกตาม ADR-034 จึงอยู่นอก `supabase/` ของ DB ภายใน
+- [x] 1.2 รัน `tests-negative.sql` บน scratch DB (ephemeral Supabase ใน CI — ADR-066 ไม่ apply) — **เขียวครบ P1–P5 + P1b** · การรันจริงครั้งแรกจับบั๊ก 2 ตัวใน draft ที่ไม่เคยถูกรัน: **[L10]** `platform.seats` เป็น roadmap → limit 0 → membership แรกสร้างไม่ได้เลย (org bootstrap ตาย) แก้โดย floor limit ที่ 1 ใน `enforce_seat_quota`; **[L11]** ไม่มี explicit grants → authenticated/anon โดน permission denied ระดับตาราง แก้ตาม convention (grant กว้าง + RLS คุมแถว) — ทั้งคู่แก้ที่ SSOT (v0.3.1) แล้ว re-split
+- [x] 1.3 pgTAP negative tests → `entitlement-db/tests/entitlement_invariants.sql` (36 assertions: structural 19 + behavior 17 รวมเทสต์ L10) — อยู่ในโฟลเดอร์ DB แยก ไม่ใช่ `supabase/tests/` ของ DB ภายใน ตาม ADR-034 · CI: `.github/workflows/entitlement-db-verify.yml` (กัน vacuous green: บังคับ 5 migrations + PASS ครบ 6 blocks + pgTAP = 36 เป๊ะ)
+- [ ] 1.4 (follow-up จาก known gap) concurrency harness ของ Property 2 — สอง connection แข่ง consume/insert พร้อมกัน (ทำไม่ได้ใน transaction เดียวของ pgTAP)
 
 ## Phase 2: Billing Integration
 
