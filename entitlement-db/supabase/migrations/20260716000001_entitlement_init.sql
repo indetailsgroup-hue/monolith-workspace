@@ -22,9 +22,11 @@ create table if not exists public.organizations (
 );
 
 create table if not exists public.profiles (
-  id          uuid primary key references auth.users(id) on delete cascade,
-  full_name   text,
-  created_at  timestamptz not null default now()
+  id            uuid primary key references auth.users(id) on delete cascade,
+  full_name     text,
+  -- [F5 v0.3.2] org ปัจจุบันที่ผู้ใช้เลือก (ผู้ใช้หลาย org) — เขียนผ่าน set_active_org() เท่านั้น
+  active_org_id uuid references public.organizations(id) on delete set null,
+  created_at    timestamptz not null default now()
 );
 
 do $$ begin

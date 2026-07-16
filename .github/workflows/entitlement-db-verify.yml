@@ -29,6 +29,17 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      # ---- Phase 2.1: billing-webhook transport tests (vitest, DI, no DB/network —
+      #      same pattern as edge-fn-verify.yml) — fast, so they run before the DB spins up
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies (root — vitest runner)
+        run: npm ci
+      - name: Run billing-webhook transport tests
+        run: npx vitest run entitlement-db/supabase/functions --reporter=default
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
@@ -78,6 +89,20 @@ jobs:
           fi
           echo "pgTAP: 36/36 ok"
 
+      - name: Run billing pgTAP invariants (Phase 2 — 18 assertions)
+        run: |
+          set -o pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
+            -f entitlement-db/tests/billing_invariants.sql | tee billing-invariants.tap
+          if grep -qE '^not ok' billing-invariants.tap; then
+            echo "::error::billing pgTAP invariant failure"; exit 1
+          fi
+          okCount=$(grep -cE '^ok ' billing-invariants.tap || true)
+          if [ "$okCount" -ne 18 ]; then
+            echo "::error::expected 18 billing pgTAP assertions, got $okCount"; exit 1
+          fi
+          echo "billing pgTAP: 18/18 ok"
+
       - name: Assemble evidence
         if: always()
         run: |
@@ -100,4 +125,5 @@ jobs:
             migrations-applied.txt
             negative-tests.log
             entitlement-invariants.tap
+            billing-invariants.tap
           retention-days: 90

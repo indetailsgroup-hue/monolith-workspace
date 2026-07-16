@@ -18,9 +18,14 @@ entitlement-db/
 │       ├── 20260716000003_entitlement_rls.sql        # RLS 11 ตาราง (ต้องมาหลัง functions — policies เรียก is_member())
 │       ├── 20260716000004_entitlement_triggers.sql   # stock-quota triggers (projects/machines/seats)
 │       └── 20260716000005_entitlement_seed.sql       # 4 plans · 53 features · 212 mapping rows
+├── supabase/functions/
+│   └── billing-webhook/                 # Phase 2.1 — Stripe หรือ manual → billing RPCs (thin transport,
+│       ├── index.ts                     #   DI ตาม pattern edge-fn-verify; verify signature/token ก่อนเสมอ)
+│       └── index.test.ts                #   vitest 18 เคส (signature/tolerance/mapping/guards)
 ├── tests/
 │   ├── tests-negative.sql               # Phase 1.2 — behavior properties P1–P5 + P1b (psql, rollback)
-│   └── entitlement_invariants.sql       # Phase 1.3 — pgTAP 36 assertions (structural + behavior)
+│   ├── entitlement_invariants.sql       # Phase 1.3 — pgTAP 36 assertions (structural + behavior)
+│   └── billing_invariants.sql           # Phase 2 — pgTAP 18 assertions (apply/grace/fallback/reset/hook)
 └── README.th.md
 ```
 

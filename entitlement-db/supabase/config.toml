@@ -27,6 +27,13 @@ enabled = false
 enabled = true
 site_url = "http://127.0.0.1:3000"
 
+# [F5 v0.3.2] Phase 2.3 — GoTrue injects claims.org_id per user (multi-org):
+# active_org_id (via set_active_org) > first membership > no claim.
+# current_org() in the DB already prefers this claim (v0.3).
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
 [studio]
 enabled = false
 

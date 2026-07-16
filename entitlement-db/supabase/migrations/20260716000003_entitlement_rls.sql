@@ -20,6 +20,11 @@ grant select, insert, update, delete on all tables in schema public to authentic
 grant usage, select on all sequences in schema public to authenticated, service_role;
 grant execute on all functions in schema public to anon, authenticated, service_role;
 
+-- [F5 v0.3.2] hook ต้องเรียกได้เฉพาะ GoTrue (supabase_auth_admin) — ปิดจาก client ทุก role
+-- (ต้องอยู่หลัง blanket grant ข้างบน ไม่งั้นโดน re-grant)
+revoke execute on function public.custom_access_token_hook(jsonb) from public, anon, authenticated;
+grant execute on function public.custom_access_token_hook(jsonb) to supabase_auth_admin;
+
 alter table public.organizations         enable row level security;
 alter table public.profiles              enable row level security;
 alter table public.memberships           enable row level security;

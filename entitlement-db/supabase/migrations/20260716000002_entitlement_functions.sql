@@ -164,3 +164,96 @@ begin
   end if;
 end;
 $$;
+
+-- ---------- v0.3.2 [F6]: billing RPCs (Phase 2.1/2.2) — service role เท่านั้น ----------
+create or replace function public.assert_service_role()
+returns void language plpgsql stable security definer set search_path = public as $$
+begin
+  if coalesce(auth.role(),'') <> 'service_role' then
+    raise exception 'service_role_only' using errcode = 'insufficient_privilege';
+  end if;
+end;
+$$;
+
+-- 2.1: contract เดียวที่ webhook (Stripe หรือ manual) ใช้เขียน subscriptions
+-- idempotent upsert ต่อ org — retry ของ provider ซ้ำกี่ครั้งก็ได้ค่าเดิม
+create or replace function public.billing_apply_subscription(
+  p_org uuid, p_plan_code text, p_status public.sub_status,
+  p_period_start timestamptz, p_period_end timestamptz,
+  p_provider text default null, p_provider_customer_id text default null,
+  p_provider_sub_id text default null
+) returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.assert_service_role();
+  if not exists (select 1 from public.plans where code = p_plan_code) then
+    raise exception 'unknown_plan: %', p_plan_code using errcode = 'foreign_key_violation';
+  end if;
+  insert into public.subscriptions(
+    org_id, plan_code, status, current_period_start, current_period_end,
+    provider, provider_customer_id, provider_sub_id, updated_at)
+  values (p_org, p_plan_code, p_status, p_period_start, p_period_end,
+          p_provider, p_provider_customer_id, p_provider_sub_id, now())
+  on conflict (org_id) do update
+    set plan_code            = excluded.plan_code,
+        status               = excluded.status,
+        current_period_start = excluded.current_period_start,
+        current_period_end   = excluded.current_period_end,
+        provider             = coalesce(excluded.provider, subscriptions.provider),
+        provider_customer_id = coalesce(excluded.provider_customer_id, subscriptions.provider_customer_id),
+        provider_sub_id      = coalesce(excluded.provider_sub_id, subscriptions.provider_sub_id),
+        updated_at           = now();
+end;
+$$;
+
+-- 2.2: reset usage ต้นรอบบิล — เคลียร์ counter ของ period ปัจจุบัน แล้วคืนจำนวนแถวที่ลบ
+-- (metering เป็น calendar-month ตาม v0.3: consume ใช้ to_char(now(),'YYYY-MM') —
+--  ถ้า owner ต้องการ anchor ตามรอบบิลจริงต้องแก้ semantic ของ consume ด้วย = design note)
+create or replace function public.billing_reset_usage(p_org uuid)
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_period text := to_char(now(),'YYYY-MM'); v_n integer;
+begin
+  perform public.assert_service_role();
+  delete from public.usage_counters where org_id = p_org and period = v_period;
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+-- ---------- v0.3.2 [F5]: JWT org_id (Phase 2.3) ----------
+-- ผู้ใช้เลือก org ปัจจุบัน — ต้องเป็นสมาชิก org นั้น (fail-closed)
+create or replace function public.set_active_org(p_org uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.assert_org_access(p_org);
+  update public.profiles set active_org_id = p_org where id = auth.uid();
+  if not found then
+    raise exception 'profile_not_found' using errcode = 'no_data_found';
+  end if;
+end;
+$$;
+
+-- GoTrue Custom Access Token hook — inject claims.org_id:
+--   active_org_id (ถ้ายังเป็นสมาชิก) > membership แรก (deterministic เดียวกับ
+--   current_org() fallback: order by created_at, org_id) > ไม่ใส่ claim
+-- current_org() ฝั่ง DB อ่าน request.jwt.claims->>'org_id' อยู่แล้ว (v0.3)
+create or replace function public.custom_access_token_hook(event jsonb)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v_user uuid; v_org uuid; v_claims jsonb;
+begin
+  v_user := nullif(event->>'user_id','')::uuid;
+  if v_user is null then return event; end if;
+  select coalesce(
+    (select p.active_org_id from public.profiles p
+      where p.id = v_user and p.active_org_id is not null
+        and exists (select 1 from public.memberships m
+                     where m.org_id = p.active_org_id and m.user_id = v_user)),
+    (select m.org_id from public.memberships m
+      where m.user_id = v_user
+      order by m.created_at asc, m.org_id asc
+      limit 1)
+  ) into v_org;
+  if v_org is null then return event; end if;
+  v_claims := coalesce(event->'claims', '{}'::jsonb) || jsonb_build_object('org_id', v_org::text);
+  return jsonb_set(event, '{claims}', v_claims);
+end;
+$$;
