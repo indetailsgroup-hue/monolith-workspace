@@ -26,6 +26,7 @@ import {
   sanitizeInternalErrors,
   safeErrorHandler,
 } from './security/boundary.js';
+import { SERVER_VERSION } from './version.js';
 
 import type {
   ArtifactBundle,
@@ -101,7 +102,7 @@ app.get('/api/health', (req, res) => {
 
   res.json({
     status: 'ok',
-    version: '2.0.0-p22a',
+    version: SERVER_VERSION,
     uptime: process.uptime(),
     storage: casStatsData,
     queue: queueStatsData,
@@ -810,7 +811,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   MONOLITH Factory Server v2.0.0-p22a                       ║
+║   MONOLITH Factory Server v${SERVER_VERSION}                          ║
 ║                                                           ║
 ║   P2.2a: Gated Export with Deterministic ZIP             ║
 ║                                                           ║

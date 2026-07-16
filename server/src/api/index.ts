@@ -25,6 +25,7 @@ import {
   sanitizeInternalErrors,
   safeErrorHandler,
 } from '../security/boundary.js';
+import { SERVER_VERSION } from '../version.js';
 import { CAS } from '../storage/cas.js';
 import { bundlesRouter } from './routes/bundles.js';
 import { exportsRouter } from './routes/exports.js';
@@ -81,7 +82,7 @@ async function main() {
 
       res.json({
         ok: true,
-        version: '0.10.0',
+        version: SERVER_VERSION,
         uptime: process.uptime(),
         storage: casStats,
         queue: queueStats,
@@ -129,7 +130,7 @@ async function main() {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║   MONOLITH Factory Server v0.10.0 (API Process)           ║
+║   MONOLITH Factory Server v${SERVER_VERSION} (API Process)           ║
 ║                                                           ║
 ║   Step 10: Multi-process + Signed URLs + DXF R12         ║
 ║                                                           ║
