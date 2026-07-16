@@ -17,6 +17,15 @@ import express from 'express';
 import cors from 'cors';
 import { existsSync, mkdirSync } from 'fs';
 
+import {
+  loadServerSecretsOrExit,
+  buildCorsOptions,
+  createRateLimiter,
+  authGate,
+  jsonBodyLimit,
+  safeErrorHandler,
+} from './security/boundary.js';
+
 import type {
   ArtifactBundle,
   SignatureEnvelope,
@@ -61,8 +70,12 @@ import { proofRoute } from './proof/index.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+// Security boundary (FS-B0-02): restricted CORS, rate limit, body cap, then
+// bearer auth on every route except /api/health. Registered before all routers.
+app.use(cors(buildCorsOptions()));
+app.use(createRateLimiter());
+app.use(express.json({ limit: jsonBodyLimit() }));
+app.use(authGate(['/api/health']));
 
 // P8: Activity Timeline Route
 app.use(activityRoute);
@@ -774,6 +787,9 @@ app.get('/api/admin/stats', (req, res) => {
   });
 });
 
+// Terminal error handler (generic body — never leaks err.message)
+app.use(safeErrorHandler);
+
 // ============================================================================
 // Start Server
 // ============================================================================
@@ -784,6 +800,9 @@ if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
   console.log(`[INIT] Created data directory: ${dataDir}`);
 }
+
+// Fail closed: refuse to start without strong secrets.
+loadServerSecretsOrExit();
 
 app.listen(PORT, () => {
   console.log(`

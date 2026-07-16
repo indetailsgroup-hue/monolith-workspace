@@ -16,6 +16,14 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 
+import {
+  loadServerSecretsOrExit,
+  buildCorsOptions,
+  createRateLimiter,
+  authGate,
+  jsonBodyLimit,
+  safeErrorHandler,
+} from '../security/boundary.js';
 import { CAS } from '../storage/cas.js';
 import { bundlesRouter } from './routes/bundles.js';
 import { exportsRouter } from './routes/exports.js';
@@ -42,9 +50,12 @@ async function main() {
   // Create Express app
   const app = express();
 
-  // Middleware
-  app.use(cors());
-  app.use(express.json({ limit: '50mb' }));
+  // Security boundary (FS-B0-02): restricted CORS, rate limit, body cap, then
+  // bearer auth on every route except /health and the signed-URL /download.
+  app.use(cors(buildCorsOptions()));
+  app.use(createRateLimiter());
+  app.use(express.json({ limit: jsonBodyLimit() }));
+  app.use(authGate(['/health', '/download']));
 
   // Request logging (simple)
   app.use((req, res, next) => {
@@ -102,19 +113,15 @@ async function main() {
     });
   });
 
-  // Error handler
-  app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('[API] Unhandled error:', err);
-    res.status(500).json({
-      ok: false,
-      error: 'INTERNAL_ERROR',
-      message: err.message,
-    });
-  });
+  // Error handler (generic body — never leaks err.message)
+  app.use(safeErrorHandler);
 
   // ============================================================================
   // Start Server
   // ============================================================================
+
+  // Fail closed: refuse to start without strong secrets.
+  loadServerSecretsOrExit();
 
   app.listen(PORT, () => {
     console.log(`

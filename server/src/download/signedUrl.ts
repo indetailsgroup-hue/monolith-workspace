@@ -17,7 +17,15 @@ import crypto from 'node:crypto';
 // ============================================================================
 
 function getSecret(): string {
-  return process.env.SIGNED_URL_SECRET || 'dev-secret-change-in-production';
+  const secret = process.env.SIGNED_URL_SECRET ?? '';
+  // Fail closed: never fall back to a shared/public default secret, which would
+  // let anyone forge signed download URLs (FS-B0-02). The server startup guard
+  // (loadServerSecretsOrExit) enforces this before serving; this throw is the
+  // last line of defence for any code path that reaches here unconfigured.
+  if (!secret || secret === 'dev-secret-change-in-production' || secret.length < 16) {
+    throw new Error('SIGNED_URL_SECRET is not configured with a strong value (>= 16 chars)');
+  }
+  return secret;
 }
 
 function getDefaultTTL(): number {
