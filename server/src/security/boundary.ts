@@ -7,6 +7,7 @@
  * - buildCorsOptions:        origin allowlist (no wildcard CORS)
  * - createRateLimiter:       minimal in-memory fixed-window limiter (no new dep)
  * - jsonBodyLimit:           configurable body cap (default 2mb, not 50mb)
+ * - sanitizeInternalErrors:  prevent route-local 500 bodies leaking details
  * - safeErrorHandler:        logs full error, returns a generic body (no leak)
  *
  * Auth model: a single shared bearer token (FACTORY_API_TOKEN). Every route is
@@ -26,6 +27,8 @@ import type { CorsOptions } from 'cors';
 const INSECURE_SECRET_VALUES = new Set([
   '',
   'dev-secret-change-in-production',
+  'change_me_to_a_long_random_string',
+  'change_me_to_a_long_random_token',
   'changeme',
   'secret',
   'password',
@@ -36,7 +39,8 @@ const MIN_SECRET_LENGTH = 16;
 /** A secret is weak if it is empty, a known placeholder, or too short. */
 export function isWeakSecret(value: string | undefined): boolean {
   if (!value) return true;
-  if (INSECURE_SECRET_VALUES.has(value)) return true;
+  if (value !== value.trim()) return true;
+  if (INSECURE_SECRET_VALUES.has(value.toLowerCase())) return true;
   return value.length < MIN_SECRET_LENGTH;
 }
 
@@ -110,14 +114,16 @@ export function requireBearerToken(): RequestHandler {
 }
 
 /**
- * Gate every request through bearer auth except the given public paths.
- * `publicPaths` is matched by exact path or path prefix (for e.g. /download).
+ * Gate every request through bearer auth except GET/HEAD on the given exact
+ * public paths. Exact path and method matching prevents a future nested route
+ * or unsupported method from becoming public accidentally.
  */
 export function authGate(publicPaths: string[]): RequestHandler {
   const bearer = requireBearerToken();
   return (req: Request, res: Response, next: NextFunction): void => {
     const path = req.path;
-    const isPublic = publicPaths.some((p) => path === p || path.startsWith(`${p}/`) || path.startsWith(`${p}?`));
+    const isRead = req.method === 'GET' || req.method === 'HEAD';
+    const isPublic = isRead && publicPaths.includes(path);
     if (isPublic) {
       next();
       return;
@@ -168,14 +174,29 @@ export interface RateLimitOptions {
   max?: number;
 }
 
+function positiveInteger(value: number | string | undefined, fallback: number, name: string): number {
+  if (value === undefined || value === '') return fallback;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return parsed;
+}
+
 /**
  * Fixed-window per-IP rate limiter. Intentionally dependency-free (avoids
  * adding to the dependency-advisory surface flagged by FS-B1-01). Suitable for
  * an internal service; swap for a shared store if horizontally scaled.
  */
 export function createRateLimiter(options: RateLimitOptions = {}): RequestHandler {
-  const windowMs = options.windowMs ?? Number(process.env.FACTORY_RATE_WINDOW_MS) ?? 60_000;
-  const max = options.max ?? Number(process.env.FACTORY_RATE_MAX) ?? 120;
+  // Number(undefined) is NaN, and NaN is not nullish. Validate explicitly so
+  // an absent or malformed env value cannot silently disable rate limiting.
+  const windowMs = positiveInteger(
+    options.windowMs ?? process.env.FACTORY_RATE_WINDOW_MS,
+    60_000,
+    'FACTORY_RATE_WINDOW_MS',
+  );
+  const max = positiveInteger(options.max ?? process.env.FACTORY_RATE_MAX, 120, 'FACTORY_RATE_MAX');
   const buckets = new Map<string, Bucket>();
 
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -215,11 +236,47 @@ export function jsonBodyLimit(): string {
 }
 
 /**
+ * Route handlers in the legacy apps often catch their own errors and send a
+ * JSON 500 response. Such responses never reach Express's terminal error
+ * handler, so sanitize them at the shared boundary as a defence-in-depth rule.
+ */
+export function sanitizeInternalErrors(): RequestHandler {
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    const originalJson = res.json.bind(res);
+    res.json = ((body: unknown) => {
+      if (res.statusCode === 500) {
+        return originalJson({ ok: false, error: 'INTERNAL_ERROR' });
+      }
+      return originalJson(body);
+    }) as Response['json'];
+    next();
+  };
+}
+
+/**
  * Terminal error handler: log the full error server-side, return a generic
  * body to the caller (never err.message — that leaked internals, FS-B0-02).
  */
-export function safeErrorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
+export function safeErrorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
+  const parserType = (err as Error & { type?: string }).type;
+  if (parserType === 'entity.parse.failed') {
+    // Do not log the full body-parser error: it carries the rejected request
+    // body and could copy caller secrets into server logs.
+    console.error(`[ERROR] ${req.method} ${req.path}: invalid JSON body`);
+    res.status(400).json({ ok: false, error: 'INVALID_JSON' });
+    return;
+  }
+  if (parserType === 'entity.too.large') {
+    console.error(`[ERROR] ${req.method} ${req.path}: request body exceeds configured limit`);
+    res.status(413).json({ ok: false, error: 'PAYLOAD_TOO_LARGE' });
+    return;
+  }
+
   console.error(`[ERROR] ${req.method} ${req.path}:`, err);
-  if (res.headersSent) return;
   res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
 }

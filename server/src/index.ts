@@ -23,6 +23,7 @@ import {
   createRateLimiter,
   authGate,
   jsonBodyLimit,
+  sanitizeInternalErrors,
   safeErrorHandler,
 } from './security/boundary.js';
 
@@ -70,12 +71,13 @@ import { proofRoute } from './proof/index.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Security boundary (FS-B0-02): restricted CORS, rate limit, body cap, then
-// bearer auth on every route except /api/health. Registered before all routers.
+// Security boundary (FS-B0-02): reject unauthenticated requests before JSON
+// parsing; sanitize legacy route-local 500 responses before they leave.
 app.use(cors(buildCorsOptions()));
 app.use(createRateLimiter());
-app.use(express.json({ limit: jsonBodyLimit() }));
+app.use(sanitizeInternalErrors());
 app.use(authGate(['/api/health']));
+app.use(express.json({ limit: jsonBodyLimit() }));
 
 // P8: Activity Timeline Route
 app.use(activityRoute);

@@ -22,6 +22,7 @@ import {
   createRateLimiter,
   authGate,
   jsonBodyLimit,
+  sanitizeInternalErrors,
   safeErrorHandler,
 } from '../security/boundary.js';
 import { CAS } from '../storage/cas.js';
@@ -50,12 +51,13 @@ async function main() {
   // Create Express app
   const app = express();
 
-  // Security boundary (FS-B0-02): restricted CORS, rate limit, body cap, then
-  // bearer auth on every route except /health and the signed-URL /download.
+  // Security boundary (FS-B0-02): reject unauthenticated requests before JSON
+  // parsing; sanitize legacy route-local 500 responses before they leave.
   app.use(cors(buildCorsOptions()));
   app.use(createRateLimiter());
-  app.use(express.json({ limit: jsonBodyLimit() }));
+  app.use(sanitizeInternalErrors());
   app.use(authGate(['/health', '/download']));
+  app.use(express.json({ limit: jsonBodyLimit() }));
 
   // Request logging (simple)
   app.use((req, res, next) => {

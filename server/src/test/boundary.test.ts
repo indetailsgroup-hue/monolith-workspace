@@ -14,6 +14,7 @@ import {
   buildCorsOptions,
   createRateLimiter,
   jsonBodyLimit,
+  sanitizeInternalErrors,
   safeErrorHandler,
 } from '../security/boundary.js';
 import { makeSignedDownloadUrl, verifySignedDownloadQuery } from '../download/signedUrl.js';
@@ -54,7 +55,7 @@ function mockRes(): MockRes {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mockReq(over: Record<string, any> = {}): any {
-  return { headers: {}, path: '/protected', ip: '10.0.0.1', socket: {}, ...over };
+  return { method: 'GET', headers: {}, path: '/protected', ip: '10.0.0.1', socket: {}, ...over };
 }
 
 describe('FS-B0-02 security boundary', () => {
@@ -77,6 +78,9 @@ describe('FS-B0-02 security boundary', () => {
       expect(isWeakSecret('')).toBe(true);
       expect(isWeakSecret(undefined)).toBe(true);
       expect(isWeakSecret('dev-secret-change-in-production')).toBe(true);
+      expect(isWeakSecret('change_me_to_a_long_random_string')).toBe(true);
+      expect(isWeakSecret('change_me_to_a_long_random_token')).toBe(true);
+      expect(isWeakSecret(' CHANGE_ME_TO_A_LONG_RANDOM_TOKEN ')).toBe(true);
       expect(isWeakSecret('changeme')).toBe(true);
       expect(isWeakSecret('short')).toBe(true);
       expect(isWeakSecret(STRONG)).toBe(false);
@@ -121,6 +125,24 @@ describe('FS-B0-02 security boundary', () => {
       let nexted = false;
       authGate(['/health'])(mockReq({ path: '/health' }), res as never, () => { nexted = true; });
       expect(nexted).toBe(true);
+    });
+
+    it('does not make nested paths public implicitly', () => {
+      process.env.FACTORY_API_TOKEN = STRONG;
+      const res = mockRes();
+      let nexted = false;
+      authGate(['/download'])(mockReq({ path: '/download/admin' }), res as never, () => { nexted = true; });
+      expect(res.statusCode).toBe(401);
+      expect(nexted).toBe(false);
+    });
+
+    it('does not make non-read methods public', () => {
+      process.env.FACTORY_API_TOKEN = STRONG;
+      const res = mockRes();
+      let nexted = false;
+      authGate(['/download'])(mockReq({ method: 'POST', path: '/download' }), res as never, () => { nexted = true; });
+      expect(res.statusCode).toBe(401);
+      expect(nexted).toBe(false);
     });
 
     it('gates protected paths (401 without token, passes with)', () => {
@@ -170,6 +192,24 @@ describe('FS-B0-02 security boundary', () => {
       expect(third.nexted).toBe(false);
       expect(third.res.statusCode).toBe(429);
     });
+
+    it('uses active defaults when env values are absent and rejects invalid config', () => {
+      const savedWindow = process.env.FACTORY_RATE_WINDOW_MS;
+      const savedMax = process.env.FACTORY_RATE_MAX;
+      delete process.env.FACTORY_RATE_WINDOW_MS;
+      delete process.env.FACTORY_RATE_MAX;
+      expect(() => createRateLimiter()).not.toThrow();
+
+      process.env.FACTORY_RATE_MAX = 'not-a-number';
+      expect(() => createRateLimiter()).toThrow('FACTORY_RATE_MAX must be a positive integer');
+      process.env.FACTORY_RATE_MAX = '0';
+      expect(() => createRateLimiter()).toThrow('FACTORY_RATE_MAX must be a positive integer');
+
+      if (savedWindow === undefined) delete process.env.FACTORY_RATE_WINDOW_MS;
+      else process.env.FACTORY_RATE_WINDOW_MS = savedWindow;
+      if (savedMax === undefined) delete process.env.FACTORY_RATE_MAX;
+      else process.env.FACTORY_RATE_MAX = savedMax;
+    });
   });
 
   describe('jsonBodyLimit', () => {
@@ -190,6 +230,29 @@ describe('FS-B0-02 security boundary', () => {
       expect(res.body).toEqual({ ok: false, error: 'INTERNAL_ERROR' });
       expect(JSON.stringify(res.body)).not.toContain('secret internal detail');
     });
+
+    it('maps body-parser failures to generic 400/413 responses', () => {
+      const invalidJson = Object.assign(new SyntaxError('secret body detail'), { type: 'entity.parse.failed' });
+      const invalidRes = mockRes();
+      safeErrorHandler(invalidJson, mockReq() as never, invalidRes as never, () => {});
+      expect(invalidRes.statusCode).toBe(400);
+      expect(invalidRes.body).toEqual({ ok: false, error: 'INVALID_JSON' });
+
+      const oversized = Object.assign(new Error('secret size detail'), { type: 'entity.too.large' });
+      const oversizedRes = mockRes();
+      safeErrorHandler(oversized, mockReq() as never, oversizedRes as never, () => {});
+      expect(oversizedRes.statusCode).toBe(413);
+      expect(oversizedRes.body).toEqual({ ok: false, error: 'PAYLOAD_TOO_LARGE' });
+    });
+
+    it('sanitizes route-local JSON 500 responses that bypass the terminal handler', () => {
+      const res = mockRes();
+      let nexted = false;
+      sanitizeInternalErrors()(mockReq() as never, res as never, () => { nexted = true; });
+      expect(nexted).toBe(true);
+      res.status(500).json({ ok: false, error: 'SERVER_ERROR', message: 'secret internal detail' });
+      expect(res.body).toEqual({ ok: false, error: 'INTERNAL_ERROR' });
+    });
   });
 
   describe('signed-URL secret is fail-closed', () => {
@@ -197,6 +260,8 @@ describe('FS-B0-02 security boundary', () => {
       delete process.env.SIGNED_URL_SECRET;
       expect(() => makeSignedDownloadUrl({ sha256: 'a'.repeat(64), mime: 'application/zip' })).toThrow();
       process.env.SIGNED_URL_SECRET = 'dev-secret-change-in-production';
+      expect(() => makeSignedDownloadUrl({ sha256: 'a'.repeat(64), mime: 'application/zip' })).toThrow();
+      process.env.SIGNED_URL_SECRET = 'change_me_to_a_long_random_string';
       expect(() => makeSignedDownloadUrl({ sha256: 'a'.repeat(64), mime: 'application/zip' })).toThrow();
     });
 
