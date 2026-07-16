@@ -140,7 +140,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
           icon={<Link2 size={16} />}
           isActive={activeTool === 'glue'}
           onClick={() => setTool('glue')}
-          hotkey="â‡§G"
+          hotkey="⇧G"
         />
       </div>
 
@@ -157,7 +157,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
               ? 'text-gray-400 hover:text-white hover:bg-surface-3'
               : 'text-gray-600 cursor-not-allowed'
             }`}
-          title="Rotate 90Â° CCW"
+          title="Rotate 90° CCW"
         >
           <RotateCcw size={16} />
         </button>
@@ -169,7 +169,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
               ? 'text-gray-400 hover:text-white hover:bg-surface-3'
               : 'text-gray-600 cursor-not-allowed'
             }`}
-          title="Rotate 90Â° CW"
+          title="Rotate 90° CW"
         >
           <RotateCw size={16} />
         </button>
@@ -193,7 +193,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
 
       {/* Grid Size Display (when snap enabled) */}
       {snapEnabled && (
-        <span className="text-[10px] text-blue-400/80 font-mono" title="Grid size ([/] to adjust, Shift for Â±50)">
+        <span className="text-[10px] text-blue-400/80 font-mono" title="Grid size ([/] to adjust, Shift for ±50)">
           {gridSize}mm
         </span>
       )}
@@ -371,7 +371,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
             value={boxDrawDistance}
             onChange={(e) => setBoxDrawDistance(Number(e.target.value))}
             className="w-16 h-1 bg-surface-3 rounded-full appearance-none cursor-pointer accent-purple-500"
-            title={`Range: ${boxDrawDistance === 0 ? 'âˆž' : `${boxDrawDistance}mm`}`}
+            title={`Range: ${boxDrawDistance === 0 ? '∞' : `${boxDrawDistance}mm`}`}
           />
 
           {/* Number Input */}
@@ -389,7 +389,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
           {/* Presets */}
           <div className="flex items-center gap-0.5">
             {[
-              { value: 0, label: 'âˆž', hotkey: '0' },
+              { value: 0, label: '∞', hotkey: '0' },
               { value: 1000, label: '1m', hotkey: '1' },
               { value: 2000, label: '2m', hotkey: '2' },
               { value: 3000, label: '3m', hotkey: '3' },
@@ -457,7 +457,7 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
       {/* Clear All Data (Debug) */}
       <button
         onClick={() => {
-          if (window.confirm('à¸¥à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹à¸¥à¸°à¹€à¸£à¸´à¹ˆà¸¡à¹ƒà¸«à¸¡à¹ˆ?\n\nClear all data and restart?')) {
+          if (window.confirm('ลบข้อมูลทั้งหมดและเริ่มใหม่?\n\nClear all data and restart?')) {
             localStorage.removeItem('monolith-current-project');
             localStorage.removeItem('monolith-projects-list');
             window.location.reload();

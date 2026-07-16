@@ -234,7 +234,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
 
   // Find all BOLT, CAM_LOCK, and DOWEL points from drill map
   // v4.1: Drill map generation (selectConnectorPositions) now limits positions
-  // per HÃ¤fele CAD spec, so no hardcoded position filter needed here.
+  // per Häfele CAD spec, so no hardcoded position filter needed here.
   //
   // ConnectorList visibility: filter out hardware whose base pairKeyV2 is hidden.
   // Dowel pairKeyV2 has suffix (e.g. "-dowel-side"), strip to match base key.
@@ -393,15 +393,15 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
           mountType = jointMode;
         }
 
-        // âœ… FIX: Use getDrillingAxis with jointMode to get correct drilling direction
+        // ✅ FIX: Use getDrillingAxis with jointMode to get correct drilling direction
         // INSET: horizontal X-axis drilling into face
         // OVERLAY: vertical Y-axis drilling into edge
         const boltDirWorld = getDrillingAxis(cornerType as Corner, mountType);
 
-        // Get panel normal from utility (uses consistent Â±X convention)
+        // Get panel normal from utility (uses consistent ±X convention)
         const boltPanelNormalWorld = selectBoltPanelNormalWorld(cornerType as Corner);
 
-        // âœ… SINGLE COMPUTATION: base alignment + twist in one call
+        // ✅ SINGLE COMPUTATION: base alignment + twist in one call
         // This eliminates the old split between resolveSeamDrivenTwist + calculateBoltRotationWithTwist
         const orientationResult = computeBoltQuatWithTwist({
           boltDirWorld,
@@ -412,7 +412,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         // Validate orientation (throws on error - disable in production)
         // assertOrientation(orientationResult, boltDirWorld);
 
-        // âœ… VERTICAL FLIP FIX: TOP corners INSET need 180Â° rotation around drilling axis
+        // ✅ VERTICAL FLIP FIX: TOP corners INSET need 180° rotation around drilling axis
         let finalQuat = orientationResult.boltQuat.clone();
         if ((cornerType === 'TOP_LEFT' || cornerType === 'TOP_RIGHT') && mountType === 'INSET') {
           const flipQuat = new THREE.Quaternion().setFromAxisAngle(boltDirWorld, Math.PI);
@@ -457,14 +457,14 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         // CAM drill indicator position from the drill map.
         //
         // APPROACH: Instead of manually computing world-space quaternion
-        // offsets (error-prone due to Eulerâ†”Quaternion mismatches), use
+        // offsets (error-prone due to Euler↔Quaternion mismatches), use
         // the scene graph:
         //   outerGroup (position=camTarget, rotation=rot)
-        //     â””â”€ offsetGroup (position=[0, -camLocalDist, 0])  â† LOCAL shift
-        //          â””â”€ scaleGroup (scale=100)
-        //               â””â”€ Preview3D (cam at local Y = camLocalDist)
+        //     └─ offsetGroup (position=[0, -camLocalDist, 0])  ← LOCAL shift
+        //          └─ scaleGroup (scale=100)
+        //               └─ Preview3D (cam at local Y = camLocalDist)
         //
-        // The cam ends up at outerGroup origin = camTarget. âœ“
+        // The cam ends up at outerGroup origin = camTarget. ✓
         // No manual quaternion math needed - R3F handles rotation.
         // ============================================================
 
@@ -578,7 +578,7 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
             {/* Preview3D cam is at local Y = camLocalDist from sleeve center (origin) */}
             {/* Shifting by -camLocalDist makes cam land at Y=0 (group origin = camTarget) */}
             <group position={[0, -camLocalDist, 0]}>
-              {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (Ã—100) */}
+              {/* Scale: Preview3D uses 0.01 scale, Cabinet uses mm (×100) */}
               <group scale={[100, 100, 100]}>
                 <Preview3D
                   config={config}
@@ -596,14 +596,14 @@ function Hardware3DOverlayInner({ drillMap, visible, minifixConfig, cabinetWidth
         );
       })}
 
-      {/* DOWEL 3D Hardware - v4.1 per HÃ¤fele CAD spec */}
+      {/* DOWEL 3D Hardware - v4.1 per Häfele CAD spec */}
       {config.includeDowel && dowelPoints
         // Render only SIDE panel drill points to avoid double-rendering.
         // Each physical dowel has 2 drill points: side (FACE_BORE) + horiz (EDGE_BORE).
         // We render from the SIDE point and position to span the joint.
         .filter((dp) => dp.pairId?.endsWith('-dowel-side'))
         .map((dp) => {
-        // Calculate rotation from drill normal â†' Dowel3D Y-axis
+        // Calculate rotation from drill normal → Dowel3D Y-axis
         const rotation = quatFromYTo(dp.normal);
 
         // Dowel spans joint between SIDE panel and HORIZ panel.
@@ -1302,7 +1302,7 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
     if (!drillMapPurpose || drillMapPurpose === 'ALL') return undefined;
     if (drillMapPurpose === 'CAM') return ['CAM_LOCK', 'MINIFIX'];
     if (drillMapPurpose === 'BOLT') return ['BOLT_ENTRY'];
-    if (drillMapPurpose === '\u00D85' || drillMapPurpose === 'Ã˜5') return ['BOLT_THREAD'];
+    if (drillMapPurpose === '\u00D85' || drillMapPurpose === 'Ø5') return ['BOLT_THREAD'];
     return [drillMapPurpose as DrillPurpose];
   }, [drillMapPurpose]);
 
@@ -1347,8 +1347,8 @@ export function Cabinet3D({ showDimensions = false, hideTooltip = false, onDoubl
       ? normalizeMinifixConfig(storedConfig)
       : null; // null → generateMinifixDrillMap will use DEFAULT_MINIFIX_CONFIG (which has includeDowel: true)
     // Pass config as second arg, drillingParams as third arg
-    // Let selectConnectorPositions() determine count per HÃ¤fele CAD spec:
-    // Depth < 400mm â†' 2 corners, Depth >= 400mm â†' 2 corners + 1 middle
+    // Let selectConnectorPositions() determine count per Häfele CAD spec:
+    // Depth < 400mm → 2 corners, Depth >= 400mm → 2 corners + 1 middle
     const drillMap = generateMinifixDrillMap(
       activeCabinetFromArray,
       minifixConfig || {},
@@ -2097,7 +2097,7 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
   // Determine effective render mode (X-Ray takes precedence)
   const effectiveMode = xRayMode ? 'XRAY' : renderMode;
 
-  // Visibility gate â€” placed after all hooks to comply with React rules of hooks
+  // Visibility gate — placed after all hooks to comply with React rules of hooks
   if (!panel.visible) return null;
 
   return (
@@ -2248,11 +2248,11 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
           <div className="bg-black/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap border border-white/20">
             <div className="font-medium">{panel.name}</div>
             <div className="text-gray-400 text-[10px]">
-              {panel.finishWidth} Ã— {panel.finishHeight} mm
+              {panel.finishWidth} × {panel.finishHeight} mm
             </div>
             {isSelected && (
               <div className="text-emerald-400 text-[10px] border-t border-white/10 mt-1 pt-1">
-                Cut: {panel.computed.cutWidth.toFixed(1)} Ã— {panel.computed.cutHeight.toFixed(1)}
+                Cut: {panel.computed.cutWidth.toFixed(1)} × {panel.computed.cutHeight.toFixed(1)}
               </div>
             )}
           </div>
@@ -2411,7 +2411,7 @@ function DimensionLine({ points, color }: { points: [number, number, number][]; 
 }
 
 // Compartment dimension labels - Per-column compartment heights
-// Shows the gap between: Bottomâ†'Shelf1, Shelf1â†'Shelf2, Shelf2â†'Top
+// Shows the gap between: Bottom→Shelf1, Shelf1→Shelf2, Shelf2→Top
 // Each column shows its own shelves (columns may have different shelf counts)
 function CompartmentDimensionLabels() {
   // Subscribe directly to cabinet from store for reactive updates
