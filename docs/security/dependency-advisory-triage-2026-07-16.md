@@ -106,3 +106,18 @@ Remaining 8 high are **all dev/build tooling** — `vite` (needs a further major
 `tmp`), and `xlsx` (no fix; vault-builder tool only). None are production-runtime
 reachable (Section 3). Advancing to `vite@8` is deferred as a separate,
 higher-risk effort with no runtime-exposure benefit.
+
+## 9. Standing posture (FS-R2-B1-04)
+
+The round-2 scrutiny (`docs/full-system-scrutiny-2026-07-16`) confirmed the
+upgrade cleared the named advisories: root `vite@6.4.3` addresses
+GHSA-fx2h-pf6j-xcff, `vite@5.4.21` (field/server) addresses GHSA-93m4-6634-74q7,
+and `path-to-regexp@0.1.12` addresses GHSA-rhx6-c78j-4q9w. This triage plus §8
+is the pinned reachability evidence for this candidate; regenerate a fresh
+machine-readable snapshot with the §7 commands under owner authorization.
+
+Two items are **not code changes** and remain for the maintainer:
+- **Enable repository dependency alerts / Dependabot** (GitHub repo settings) so
+  the graph is continuously watched rather than audited point-in-time.
+- Re-run the owner-authorized audit against the eventual integrated candidate
+  commit (per FS-R2-B0-02) and pin its output there.
