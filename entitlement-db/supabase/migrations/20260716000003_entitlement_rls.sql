@@ -2,11 +2,10 @@
 -- MONOLITH Entitlement DB (separate Supabase project — ADR-034)
 -- RLS enable + policies (11 tables) — depends on is_member() from 0002, hence functions-before-RLS
 -- SPLIT VERBATIM from .kiro/specs/entitlement-tier/schema-draft-v0.3.sql
---   (v0.3 = SSOT; passed security reviews v0.1->v0.2 S1-S4/L5-L9, v0.2->v0.3 F1-F4)
---   lines 307-368 — DO NOT edit here without updating the spec SSOT first.
--- Ordering note: tasks.md says "init -> RLS -> functions -> ..." loosely, but the
---   RLS policies call is_member() so the dependency-correct chain is
---   init -> functions -> RLS -> triggers -> seed (matches the draft own run order).
+--   (v0.3.1 = SSOT; security reviews v0.1->v0.2 S1-S4/L5-L9, v0.2->v0.3 F1-F4,
+--    landing fix v0.3.1 [L10]) — DO NOT edit here; edit the spec SSOT then re-split.
+-- Ordering note: RLS policies call is_member(), so the dependency-correct chain is
+--   init -> functions -> RLS -> triggers -> seed (matches the draft's own run order).
 -- =====================================================================
 
 -- =====================================================================

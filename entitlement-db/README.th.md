@@ -20,7 +20,7 @@ entitlement-db/
 │       └── 20260716000005_entitlement_seed.sql       # 4 plans · 53 features · 212 mapping rows
 ├── tests/
 │   ├── tests-negative.sql               # Phase 1.2 — behavior properties P1–P5 + P1b (psql, rollback)
-│   └── entitlement_invariants.sql       # Phase 1.3 — pgTAP 35 assertions (structural + behavior)
+│   └── entitlement_invariants.sql       # Phase 1.3 — pgTAP 36 assertions (structural + behavior)
 └── README.th.md
 ```
 
@@ -42,7 +42,7 @@ CI workflow `.github/workflows/entitlement-db-verify.yml` จะ:
 1. `supabase start` ใน `entitlement-db/` (ephemeral container — **ไม่ใช่** hosted/prod,
    ADR-066 จึงไม่ apply — precedent เดียวกับ `db-verify.yml`)
 2. รัน `tests/tests-negative.sql` (ต้องเห็น `PASS P1/P2/P3/P4/P5/P1b` ครบ ไม่มี exception)
-3. รัน `tests/entitlement_invariants.sql` (pgTAP 35 assertions — TAP ต้องไม่มี `not ok`)
+3. รัน `tests/entitlement_invariants.sql` (pgTAP 36 assertions — TAP ต้องไม่มี `not ok`)
 
 รันเองในเครื่อง (ต้องมี Docker + Supabase CLI):
 

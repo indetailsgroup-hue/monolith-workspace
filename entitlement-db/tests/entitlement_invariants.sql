@@ -11,9 +11,14 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(35);
+select plan(36);
 
 -- ---------- fixtures (as postgres; rolled back) ----------
+-- [v0.3.1] membership bootstrap runs as service role in the real flow (org-creation
+-- RPC/Edge Function): a bare insert trips trg_seat_quota -> feature_limit ->
+-- assert_org_access, which is fail-closed for non-members.
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
 insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at)
 values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000a1', 'authenticated', 'authenticated', 'u1@test.local', now(), now()),
@@ -178,6 +183,18 @@ select is(
   (select count(*) from public.plan_entitlements pe
     where pe.plan_code not in (select code from public.plans)),
   0::bigint, 'P1b: anon entitlement rows only for public plans');
+
+-- ---- seat quota with the [L10 v0.3.1] floor (as service role) ----
+reset role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+-- 36: Org A (free: seats=1, floored bootstrap already used by owner) — a second
+--     membership must be blocked by trg_seat_quota (proves the floor did not
+--     disable enforcement, it only allowed the owner seat)
+select throws_ok(
+  $$insert into public.memberships(org_id, user_id, role)
+    values ('00000000-0000-0000-0000-00000000000a','00000000-0000-0000-0000-0000000000a2','member')$$,
+  '23514', null, 'L10: second seat on free (limit 1) blocked by seat-quota trigger');
 
 reset role;
 select * from finish();

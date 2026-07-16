@@ -64,7 +64,7 @@ jobs:
           done
           echo "all 6 property blocks passed"
 
-      - name: Run pgTAP invariants (Phase 1.3 — 35 assertions)
+      - name: Run pgTAP invariants (Phase 1.3 — 36 assertions)
         run: |
           set -o pipefail
           psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
@@ -73,10 +73,10 @@ jobs:
             echo "::error::pgTAP invariant failure"; exit 1
           fi
           okCount=$(grep -cE '^ok ' entitlement-invariants.tap || true)
-          if [ "$okCount" -ne 35 ]; then
-            echo "::error::expected 35 pgTAP assertions, got $okCount"; exit 1
+          if [ "$okCount" -ne 36 ]; then
+            echo "::error::expected 36 pgTAP assertions, got $okCount"; exit 1
           fi
-          echo "pgTAP: 35/35 ok"
+          echo "pgTAP: 36/36 ok"
 
       - name: Assemble evidence
         if: always()

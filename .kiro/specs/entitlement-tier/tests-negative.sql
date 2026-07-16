@@ -15,6 +15,11 @@ begin;
 \set u1 '''00000000-0000-0000-0000-0000000000a1'''
 \set u2 '''00000000-0000-0000-0000-0000000000a2'''
 
+-- [v0.3.1] fixtures จำลอง bootstrap path จริง: membership แรกสร้างผ่าน service role
+-- (org-creation RPC/Edge Function) — insert เปล่า ๆ จะโดน trg_seat_quota →
+-- feature_limit → assert_org_access ซึ่ง fail-closed สำหรับ non-member
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
 insert into public.profiles(id, full_name) values (:u1,'User A'),(:u2,'User B') on conflict do nothing;
 insert into public.organizations(id, name, slug) values
   ('00000000-0000-0000-0000-00000000000a','Org A','org-a'),

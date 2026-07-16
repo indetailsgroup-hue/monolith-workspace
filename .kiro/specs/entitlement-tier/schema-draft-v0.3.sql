@@ -11,6 +11,11 @@
 --        implemented 34 · roadmap 19 (label ทั้งกลุ่ม, cloud storage, nest true-shape,
 --        dogbone, kerf bending, six-side, seats, AI, ERP/API/SSO/self-host ฯลฯ)
 -- กติกา: ห้ามขายของ roadmap — UI ต้องแสดง "coming soon" จาก features.status
+-- v0.3.1 (2026-07-16, Phase-1 landing fix จากการรันจริงครั้งแรกบน CI):
+--   [L10] enforce_seat_quota: floor limit ที่ 1 — เดิม platform.seats เป็น roadmap
+--         → feature_limit คืน 0 → count>=0 จริงเสมอ = สร้าง membership แรก (owner)
+--         ไม่ได้เลยทุกกรณี (org bootstrap ตาย) · org ต้องมี owner เสมอ; seats quota
+--         คือเพดานที่นั่ง "เพิ่ม" — ค่า plan (free=1/plus=3/advance=10) ความหมายคงเดิม
 -- NOTE: design proposal — คำถาม C12 (org↔site) ยังเป็น owner decision ก่อน deploy
 -- Run order: extensions → tenancy → billing/entitlement → domain →
 --            functions → RLS → triggers → seed
@@ -415,6 +420,9 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(new.org_id::text || '|platform.seats', 0));
   v_limit := public.feature_limit(new.org_id, 'platform.seats');
   if v_limit = -1 then return new; end if;
+  -- [L10 v0.3.1] org ต้องมี owner เสมอ: roadmap/zero-limit ห้าม block membership แรก
+  -- (ไม่งั้น org bootstrap ไม่ได้เลย) — floor ที่ 1; ค่า plan 1/3/10 ความหมายคงเดิม
+  v_limit := greatest(v_limit, 1);
   select count(*) into v_count from public.memberships where org_id = new.org_id;
   if v_count >= v_limit then
     raise exception 'quota_exceeded: platform.seats (limit %)', v_limit

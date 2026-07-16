@@ -1,12 +1,11 @@
 -- =====================================================================
 -- MONOLITH Entitlement DB (separate Supabase project — ADR-034)
--- stock-quota triggers (projects / machine_profiles / memberships-seats)
+-- stock-quota triggers (projects / machine_profiles / memberships-seats) — includes [L10 v0.3.1] seat-floor landing fix
 -- SPLIT VERBATIM from .kiro/specs/entitlement-tier/schema-draft-v0.3.sql
---   (v0.3 = SSOT; passed security reviews v0.1->v0.2 S1-S4/L5-L9, v0.2->v0.3 F1-F4)
---   lines 370-428 — DO NOT edit here without updating the spec SSOT first.
--- Ordering note: tasks.md says "init -> RLS -> functions -> ..." loosely, but the
---   RLS policies call is_member() so the dependency-correct chain is
---   init -> functions -> RLS -> triggers -> seed (matches the draft own run order).
+--   (v0.3.1 = SSOT; security reviews v0.1->v0.2 S1-S4/L5-L9, v0.2->v0.3 F1-F4,
+--    landing fix v0.3.1 [L10]) — DO NOT edit here; edit the spec SSOT then re-split.
+-- Ordering note: RLS policies call is_member(), so the dependency-correct chain is
+--   init -> functions -> RLS -> triggers -> seed (matches the draft's own run order).
 -- =====================================================================
 
 -- =====================================================================
@@ -57,6 +56,9 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(new.org_id::text || '|platform.seats', 0));
   v_limit := public.feature_limit(new.org_id, 'platform.seats');
   if v_limit = -1 then return new; end if;
+  -- [L10 v0.3.1] org ต้องมี owner เสมอ: roadmap/zero-limit ห้าม block membership แรก
+  -- (ไม่งั้น org bootstrap ไม่ได้เลย) — floor ที่ 1; ค่า plan 1/3/10 ความหมายคงเดิม
+  v_limit := greatest(v_limit, 1);
   select count(*) into v_count from public.memberships where org_id = new.org_id;
   if v_count >= v_limit then
     raise exception 'quota_exceeded: platform.seats (limit %)', v_limit

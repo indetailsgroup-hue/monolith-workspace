@@ -17,6 +17,11 @@ begin;
 \set u1 '''00000000-0000-0000-0000-0000000000a1'''
 \set u2 '''00000000-0000-0000-0000-0000000000a2'''
 
+-- [v0.3.1] fixtures จำลอง bootstrap path จริง: membership แรกสร้างผ่าน service role
+-- (org-creation RPC/Edge Function) — insert เปล่า ๆ จะโดน trg_seat_quota →
+-- feature_limit → assert_org_access ซึ่ง fail-closed สำหรับ non-member
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
 -- [entitlement-db adaptation] profiles.id FK -> auth.users(id): create minimal gotrue rows first
 -- (supabase local scratch only — rolled back with the transaction)
 insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at)
