@@ -92,3 +92,10 @@ console.log(c.createHash('sha256').update(lines.join('\n')+'\n').digest('hex'));
 - เชิงกล: **ทุกข้อที่เครื่องตรวจได้ = ผ่าน** (bytes ตรง anchor, aggregate reproduce ได้, schema กติกาครบ 11/11+31/31, result codes ครบ, low-S ถูกต้องเชิงคณิตศาสตร์)
 - จุดที่**ต้องมนุษย์เท่านั้น** 3 จุด: (1) `kdt_mvp_v1` ตรงเครื่องจริง — หลักฐานอยู่หน้างาน ไม่อยู่ใน repo (2) "S17-4/5 contract พอ" — judgment ของคน build (3) ยอมรับ fail-closed = หยุดผลิตเมื่อ registry ล่ม — trade-off ธุรกิจ
 - Drift ที่พบก่อนเซ็น (package.json + checklist circularity) ถูกแก้และบันทึกครบใน §A0 — หลัง re-pin: **44/44 PASS, เนื้อหา spec/schemas byte-identical กับ round-4 ทุกไฟล์** · ไม่พบข้อใดใน checklist ที่หลักฐานหาย
+
+## G. Session log — 16 ก.ค. 2026 (sign-off session ครั้งที่ 1)
+
+- **สิ่งที่ owner ratify แล้วใน session**: การ re-pin anchor (มติ ก) + ชั้น bytes/hashes/manifests — ยืนยันจากผลรันสด (A1 = `de2a1ccf...a2c7`, A2 = 44/44 PASS, A3 aggregate reproduce, checklist manifest 4/4)
+- **TL-5 (เบื้องต้น)**: "contract is implementation-ready subject to final exact-byte and manifest verification; no remaining semantic blocker identified" — เงื่อนไข: ยืนยันสุดท้ายหลัง personal read
+- **ลายเซ็น**: **ยังไม่มีบทบาทใดเซ็น — Signature Block คง PENDING ทั้งสาม** · owner ต้องการอ่านเองก่อน attest: schema/digest reproduction, identity model, canonical rules (§7), signature (§10), verifier order/NFP precedence (§12), result codes (§13), tamper corpus (§14)
+- **หลักการที่ owner ยืนยันซ้ำ**: *"Independent review ไม่ใช้แทน personal attestation"* — ตรงกติกาในตัว checklist ("ไม่ใช่การรับ AI verdict มาแปะ") · Track B ยัง LOCKED ตามเดิม
