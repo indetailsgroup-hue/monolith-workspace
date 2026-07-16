@@ -228,3 +228,23 @@ describeProperty(
     });
   },
 );
+
+// Regression for the intermittent CI flake: a vertical_context named after an
+// inherited Object member ("valueOf", "toString", …) used to resolve to that
+// prototype function via ADAPTER_REGISTRY[key], be treated as a registered
+// adapter, and throw — which surfaced as an unhandled async rejection that
+// randomly reddened unrelated tests. normalizeOrder must reject them cleanly.
+it("rejects Object-builtin vertical_context names without throwing (flake regression)", () => {
+  for (const vertical of [
+    "valueOf",
+    "toString",
+    "constructor",
+    "hasOwnProperty",
+    "__proto__",
+    "isPrototypeOf",
+  ]) {
+    const result = normalizeOrder(vertical, {});
+    expect(result.ok).toBe(false);
+    expect("order" in result).toBe(false);
+  }
+});
