@@ -52,8 +52,16 @@ export default defineConfig({
           if (normalId.includes('node_modules/react-dom/') || normalId.includes('node_modules/react/')) {
             return 'vendor-react';
           }
-          // Three.js and R3F - largest vendor bundle
-          if (normalId.includes('node_modules/three/') || normalId.includes('node_modules/@react-three/')) {
+          // R3F ecosystem (fiber + drei + three-stdlib) — split from Three core
+          // so neither chunk exceeds the 600 kB warning threshold (FS-B2-02).
+          if (
+            normalId.includes('node_modules/@react-three/') ||
+            normalId.includes('node_modules/three-stdlib/')
+          ) {
+            return 'vendor-r3f';
+          }
+          // Three.js core
+          if (normalId.includes('node_modules/three/')) {
             return 'vendor-three';
           }
           // State management
@@ -67,6 +75,12 @@ export default defineConfig({
           // Icons
           if (normalId.includes('node_modules/lucide-react/')) {
             return 'vendor-icons';
+          }
+          // App 3D subsystem — the ~58 canvas components are the bulk of the
+          // oversized App chunk; move them into their own cacheable chunk that
+          // downloads in parallel with the app shell (FS-B2-02).
+          if (normalId.includes('/src/components/canvas/')) {
+            return 'canvas';
           }
         },
       },
