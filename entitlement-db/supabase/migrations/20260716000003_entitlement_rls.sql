@@ -11,6 +11,15 @@
 -- =====================================================================
 -- 5. RLS (เหมือน v0.2 — 11 ตาราง รวม profiles)
 -- =====================================================================
+-- [L11 v0.3.1] explicit grants — อย่าพึ่ง default privileges ของ image
+-- (migration-runner role อาจไม่ใช่เจ้าของ default acl): สิทธิ์กว้างระดับตาราง
+-- แล้วให้ RLS fail-closed ด้านล่างเป็นตัวคุมแถวจริง (convention Supabase)
+grant usage on schema public to anon, authenticated, service_role;
+grant select on all tables in schema public to anon;
+grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
+
 alter table public.organizations         enable row level security;
 alter table public.profiles              enable row level security;
 alter table public.memberships           enable row level security;

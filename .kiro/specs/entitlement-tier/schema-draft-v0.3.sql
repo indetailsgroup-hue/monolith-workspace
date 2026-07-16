@@ -16,6 +16,10 @@
 --         → feature_limit คืน 0 → count>=0 จริงเสมอ = สร้าง membership แรก (owner)
 --         ไม่ได้เลยทุกกรณี (org bootstrap ตาย) · org ต้องมี owner เสมอ; seats quota
 --         คือเพดานที่นั่ง "เพิ่ม" — ค่า plan (free=1/plus=3/advance=10) ความหมายคงเดิม
+--   [L11] explicit grants ต้นหมวด RLS — draft เดิมพึ่ง default privileges ของ
+--         Supabase image ซึ่ง role ที่ apply migration ไม่ได้รับ → authenticated/anon
+--         โดน permission denied ระดับตาราง · แก้ตาม convention: grant กว้างระดับ
+--         ตารางแล้วให้ RLS (fail-closed ทั้ง 11 ตาราง) เป็นตัวคุมแถว
 -- NOTE: design proposal — คำถาม C12 (org↔site) ยังเป็น owner decision ก่อน deploy
 -- Run order: extensions → tenancy → billing/entitlement → domain →
 --            functions → RLS → triggers → seed
@@ -312,6 +316,15 @@ $$;
 -- =====================================================================
 -- 5. RLS (เหมือน v0.2 — 11 ตาราง รวม profiles)
 -- =====================================================================
+-- [L11 v0.3.1] explicit grants — อย่าพึ่ง default privileges ของ image
+-- (migration-runner role อาจไม่ใช่เจ้าของ default acl): สิทธิ์กว้างระดับตาราง
+-- แล้วให้ RLS fail-closed ด้านล่างเป็นตัวคุมแถวจริง (convention Supabase)
+grant usage on schema public to anon, authenticated, service_role;
+grant select on all tables in schema public to anon;
+grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
+
 alter table public.organizations         enable row level security;
 alter table public.profiles              enable row level security;
 alter table public.memberships           enable row level security;
