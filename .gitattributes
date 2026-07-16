@@ -7,3 +7,6 @@ docs/specs/** text eol=lf
 scripts/**/*.mjs text eol=lf
 package.json text eol=lf
 *.sha256 text eol=lf
+# Vitest snapshots are generated with LF; pin so autocrlf can't flip them and
+# make every local build dirty the working tree (FS-B2-04).
+*.snap text eol=lf
