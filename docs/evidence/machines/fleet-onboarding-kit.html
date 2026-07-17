@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Machine Onboarding Kit — Provisional Profiles + Engineer Verification</title>
+<style>
+  :root{--green:#2D5A27;--green2:#3a7233;--ink:#1a2028;--mut:#5c6874;--line:#e2e6ea;--bg:#f6f7f4;--card:#fff;
+    --ok:#1f7a34;--okBg:#eaf6ec;--med:#b26a00;--medBg:#fff5e6;--amber:#c98a00;--amberBg:#fff8e8;--hi:#b71c1c;--hiBg:#fdecec;
+    --p0:#0b6b9a;--p0Bg:#e7f3fa;--p1:#b26a00;--p1Bg:#fff5e6;--p2:#1f7a34;--p2Bg:#eaf6ec}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;color:var(--ink);background:var(--bg);line-height:1.62;font-size:15px}
+  .wrap{max-width:1000px;margin:0 auto;padding:26px 20px 80px}
+  header.hero{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:20px;padding:26px 28px;margin-bottom:18px;box-shadow:0 8px 22px rgba(45,90,39,.18)}
+  header.hero h1{margin:0 0 6px;font-size:23px}
+  header.hero .sub{opacity:.93;font-size:13.5px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .toc a{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);color:#fff;text-decoration:none;padding:5px 11px;border-radius:999px;font-size:12px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  h2{color:var(--green);font-size:18.5px;margin:2px 0 12px;padding-bottom:8px;border-bottom:2px solid #eef1ec}
+  h3{font-size:15px;margin:16px 0 7px}
+  p{margin:8px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f2f5f1;color:var(--green);font-weight:700;font-size:12px}
+  td.k{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--mut);white-space:nowrap}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-ok{background:var(--okBg);color:var(--ok)}.b-doc{background:var(--medBg);color:var(--med)}
+  .b-verify{background:var(--amberBg);color:var(--amber);border:1px dashed var(--amber)}.b-pend{background:var(--hiBg);color:var(--hi)}
+  .b-p0{background:var(--p0Bg);color:var(--p0)}.b-p1{background:var(--p1Bg);color:var(--p1)}.b-p2{background:var(--p2Bg);color:var(--p2)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px;margin:14px 0}
+  .step{flex:1;min-width:180px;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;background:#fbfcfa}
+  .step .t{font-weight:700;color:var(--green);font-size:14px;margin-bottom:4px}
+  .step .s{font-size:12px;color:var(--mut)}
+  .arrow{display:flex;align-items:center;color:var(--green2);font-size:22px;font-weight:700}
+  .card2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:680px){.card2{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+  .policy{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+  .policy.p0{border-color:#bfe0ef;background:#f4fafd}
+  .policy.p1{border-color:#f0d9a8;background:#fffaf0}
+  .policy h3{margin-top:0}
+  .allow{color:var(--ok);font-weight:600}.deny{color:var(--hi);font-weight:600}
+  ul.tight{margin:6px 0;padding-left:20px}ul.tight li{margin:3px 0;font-size:13px}
+  ol.checklist{counter-reset:ci;list-style:none;padding-left:0;margin:6px 0}
+  ol.checklist>li{counter-increment:ci;position:relative;padding:11px 12px 11px 44px;margin-bottom:9px;background:#fbfcfa;border:1px solid var(--line);border-radius:12px;font-size:13.5px}
+  ol.checklist>li::before{content:counter(ci);position:absolute;left:11px;top:11px;width:23px;height:23px;background:var(--green);color:#fff;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700}
+  ol.checklist b{color:var(--green)}
+  .yaml{background:#0f1720;color:#d6e2ea;border-radius:14px;padding:15px 17px;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.8px;line-height:1.55}
+  .yaml .c{color:#6f8ba0}.yaml .k{color:#8ec6ff}.yaml .v{color:#c8e6a0}.yaml .u{color:#ff9d6b}
+  .note{background:#f7faf6;border-left:4px solid var(--green2);padding:9px 13px;border-radius:8px;margin:10px 0;font-size:13px}
+  .warn{background:var(--amberBg);border-left:4px solid var(--amber);padding:9px 13px;border-radius:8px;margin:10px 0;font-size:13px}
+  .signoff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .sig{border:1px dashed var(--mut);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--mut)}
+  .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:22px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;margin:6px 0 2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Fleet Machine Onboarding Kit</h1>
+  <div class="sub">โปรไฟล์ชั่วคราวจากเอกสาร/วิจัย → เดินงานได้ก่อน → วิศวกรเซ็ต+ยืนยันหน้าเครื่อง → ปล่อยผลิตจริง · ขยายได้หลายเครื่อง</div>
+  <div class="toc">
+    <a href="#flow">1. กระบวนการ 2 เฟส</a>
+    <a href="#policy">2. นโยบายชั่วคราว P0/P1</a>
+    <a href="#template">3. Template โปรไฟล์</a>
+    <a href="#register">4. Fleet Register</a>
+    <a href="#eng">5. เช็กลิสต์วิศวกร</a>
+    <a href="#intake">6. เพิ่มเครื่องใหม่</a>
+  </div>
+</header>
+
+<div class="warn"><b>หลักการความปลอดภัยที่ยึดตลอด:</b> โปรไฟล์ที่สร้างจากเอกสาร/วิจัยยัง <b>ไม่ยืนยันหน้าเครื่อง</b> —
+ค่าต่าง ๆ (envelope, tool table, origin, เวอร์ชัน, path) ถือว่า "ยังไม่จริง" จนกว่าวิศวกรจะเซ็ตและเซ็นรับรองหน้าเครื่อง
+<b>ห้ามปล่อยงานผลิตจริงแบบไม่มีคนคุม</b>จนกว่าจะผ่านเฟส 2</div>
+
+<!-- 1. FLOW -->
+<section id="flow">
+  <h2>1. กระบวนการ 2 เฟส (Provisional → Verified)</h2>
+  <div class="flow">
+    <div class="step"><div class="t">A · Deep-Research</div><div class="s">ค้นเอกสาร/สเปก/manual สร้างโปรไฟล์ชั่วคราว ติดป้ายที่มา + ความมั่นใจทุกช่อง</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="t">B · Provisional (เฟส 1)</div><div class="s">สถานะ <span class="mono">DOC_PROVISIONAL</span> · เดินงานตามนโยบาย P0 หรือ P1 (เลือกรายเครื่อง)</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="t">C · Engineer Setup (เฟส 2)</div><div class="s">วิศวกรหน้าเครื่อง อ่านค่าจริง เซ็ตพารามิเตอร์ รันเช็กลิสต์ + gate</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="t">D · Verified / Released</div><div class="s">สถานะ <span class="mono">ENGINEER_VERIFIED</span> · เซ็นรับรอง → ผลิตจริงได้</div></div>
+  </div>
+  <div class="note">แต่ละเครื่องเดินตามเส้นนี้อิสระ — เพิ่มเครื่องใหม่ได้เรื่อย ๆ โดยไม่ต้องรอเครื่องอื่นยืนยันเสร็จ
+  งานเอกสาร/เตรียมโปรแกรม (CAD/CAM/nesting/simulation) เริ่มได้ทันทีตั้งแต่เฟส 1</div>
+</section>
+
+<!-- 2. POLICY -->
+<section id="policy">
+  <h2>2. นโยบายชั่วคราว — เลือกได้รายเครื่อง (P0 / P1)</h2>
+  <p>ระหว่างที่เครื่องยังเป็น <span class="mono">DOC_PROVISIONAL</span> ให้กำหนดระดับที่อนุญาตต่อเครื่องในคอลัมน์ <b>Interim</b> ของ register</p>
+  <div class="card2">
+    <div class="policy p0">
+      <h3><span class="badge b-p0">P0</span> ออฟฟิศ / เตรียมงานเท่านั้น</h3>
+      <p class="allow">อนุญาต:</p>
+      <ul class="tight">
+        <li>ออกแบบ CAD / CAM</li>
+        <li>จัด nesting layout, เขียนโปรแกรม offline</li>
+        <li>Simulation / ตรวจ envelope บนจอ</li>
+        <li>เตรียม tool list, ประเมินเวลา</li>
+      </ul>
+      <p class="deny">ห้าม: ตัด/เจาะจริงบนเครื่องทุกกรณี · production = <span class="badge b-pend">PROHIBITED</span></p>
+    </div>
+    <div class="policy p1">
+      <h3><span class="badge b-p1">P1</span> ตัดแบบมีคนคุม + gate ครบ</h3>
+      <p class="allow">อนุญาต (เฉพาะมีคนคุมตลอด):</p>
+      <ul class="tight">
+        <li>ตัดจริงได้ <b>ทีละงาน</b> ถ้าผ่านครบ: simulation → dry-run/air-cut → first-article → มีคนรับงาน</li>
+        <li>ถือ envelope/tool/origin ว่า "ยังไม่ยืนยัน" ต้องเฝ้าจอ + feed hold พร้อมกด</li>
+      </ul>
+      <p class="deny">ห้าม: เดินงานแบบไม่มีคนคุม · batch/night-run · ข้าม dry-run หรือ first-article</p>
+      <p class="deny"><b>ห้ามเด็ดขาด (ทุก interim level): ตัดงานที่ generate จาก MONOLITH packet</b> — NFP/NO_CUT บังคับด้วยกลไก verifier จนกว่า S17 ปิด + real-cut gate ผ่าน (CT-DEC-002 §11.6) · P1 ครอบเฉพาะ<b>งานกระบวนการเดิมของโรงงาน</b> (ใบสั่งเดิม ไม่ผ่าน MONOLITH) เท่านั้น — ตาม ADR-065/ADR-070</p>
+    </div>
+  </div>
+  <div class="warn"><b>ทั้ง P0 และ P1 ยังไม่ใช่การปล่อยผลิตจริง</b> — <span class="mono">manufacturing_release</span> ยังเป็น
+  <span class="badge b-pend">PROHIBITED/CONDITIONAL</span> จนกว่าวิศวกรจะยืนยัน (เฟส 2). P1 คือ "ตัดได้แบบระวังสูงใต้การควบคุมมนุษย์" ไม่ใช่ปล่อยเดินเอง</div>
+</section>
+
+<!-- 3. TEMPLATE -->
+<section id="template">
+  <h2>3. Template โปรไฟล์เครื่อง (โคลนต่อเครื่อง)</h2>
+  <div class="legend">
+    <span><span class="badge b-ok">ยืนยันแล้ว</span></span>
+    <span><span class="badge b-doc">ตามเอกสาร</span></span>
+    <span><span class="badge b-verify">ต้องเช็กเครื่อง</span></span>
+    <span><span class="badge b-pend">ยังไม่รู้</span></span>
+  </div>
+  <p>คัดลอกบล็อกนี้ต่อ 1 เครื่อง แล้วให้ผมเติมด้วย deep-research ช่อง <span class="mono">*_confirmed</span> เว้นไว้ให้วิศวกรกรอกในเฟส 2</p>
+  <div class="yaml">
+<span class="k">profile_id</span>: <span class="v">&lt;BRAND&gt;-&lt;MODEL&gt;-CTRL@0.1-draft</span>
+<span class="k">verification_state</span>: <span class="u">DOC_PROVISIONAL</span>          <span class="c"># DOC_PROVISIONAL → ENGINEER_VERIFIED</span>
+<span class="k">interim_policy</span>: <span class="u">P0 | P1</span>                       <span class="c"># เลือกต่อเครื่อง (ดูข้อ 2)</span>
+<span class="k">manufacturing_release</span>: <span class="u">PROHIBITED</span>
+
+<span class="c"># --- identity ---</span>
+<span class="k">brand</span>: <span class="u">?</span>          <span class="k">model</span>: <span class="u">?</span>          <span class="k">serial_no</span>: <span class="u">? (engineer)</span>
+<span class="k">machine_family</span>: <span class="u">?</span>
+<span class="k">working_area_x_mm</span>: <span class="u">?</span>   <span class="k">working_area_y_mm</span>: <span class="u">?</span>   <span class="k">working_area_z_mm</span>: <span class="u">?</span>
+
+<span class="c"># --- controller ---</span>
+<span class="k">cnc_family</span>: <span class="u">?</span>              <span class="k">controller_vendor</span>: <span class="u">?</span>
+<span class="k">controller_hardware_model</span>: <span class="u">?</span>   <span class="k">controller_firmware_version</span>: <span class="u">?</span>
+<span class="k">hmi_shell</span>: <span class="u">?</span>       <span class="k">hmi_version</span>: <span class="u">?</span>       <span class="k">operating_system</span>: <span class="u">?</span>
+
+<span class="c"># --- file / delivery ---</span>
+<span class="k">authoritative_native_format</span>: <span class="u">?</span>   <span class="k">accepted_import_formats</span>: <span class="u">[]</span>
+<span class="k">postprocessor_name</span>: <span class="u">?</span>   <span class="k">postprocessor_version</span>: <span class="u">?</span>
+<span class="k">program_path_on_machine</span>: <span class="u">? (engineer)</span>   <span class="k">delivery_channel</span>: <span class="u">? (engineer)</span>
+<span class="k">filename_encoding</span>: <span class="u">?</span>   <span class="k">units</span>: <span class="v">mm</span>
+
+<span class="c"># --- coord / tooling ---</span>
+<span class="k">coordinate_contract</span>: <span class="u">? (typical → verify)</span>
+<span class="k">tool_number_contract</span>: <span class="u">? (engineer — tool table)</span>
+
+<span class="c"># --- evidence (ADR-070 pattern) ---</span>
+<span class="k">evidence_dir</span>: <span class="u">docs/evidence/machines/&lt;machine-id&gt;/</span>   <span class="c"># + sha256 manifest ทุกไฟล์</span>
+
+<span class="c"># --- engineer sign-off (phase 2) ---</span>
+<span class="k">verified_by</span>: <span class="u">?</span>   <span class="k">verified_date</span>: <span class="u">?</span>   <span class="k">known_good_job_hash</span>: <span class="u">?</span>
+  </div>
+</section>
+
+<!-- 4. REGISTER -->
+<section id="register">
+  <h2>4. Fleet Register</h2>
+  <p>ตารางกลางไล่สถานะทุกเครื่อง — เพิ่มแถวต่อเครื่อง</p>
+  <table>
+    <tr><th>#</th><th>เครื่อง</th><th>Controller</th><th>สถานะโปรไฟล์</th><th>Interim</th><th>Research</th><th>วิศวกรเซ็น</th><th>หมายเหตุ</th></tr>
+    <tr>
+      <td>1</td>
+      <td><b>KDT KN-2409LP</b><br><span class="mono">2850×1220</span></td>
+      <td>NCstudio / Weihong<br><span class="mono">Lambda 4S/5S</span></td>
+      <td><span class="badge b-doc">DOC_PROVISIONAL</span></td>
+      <td><span class="badge b-p0">P0</span>/<span class="badge b-p1">P1</span> ?</td>
+      <td><span class="badge b-ok">เสร็จ</span> @0.3</td>
+      <td>—</td>
+      <td>รุ่นยืนยันโดยเจ้าของ; รอวิศวกรเซ็ต</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><b>KDT KD-610R</b><br><span class="mono">เจาะหกด้าน</span></td>
+      <td class="k">ดู library</td>
+      <td><span class="badge b-doc">DOC_PROVISIONAL</span></td>
+      <td><span class="badge b-p0">P0</span></td>
+      <td><span class="badge b-ok">เสร็จ</span> (kdt-library)</td>
+      <td>—</td>
+      <td>เครื่องนำร่อง Daph ตัวที่สอง (executive report §6)</td>
+    </tr>
+    <tr><td>3</td><td class="k">&lt;เพิ่มเครื่อง&gt;</td><td class="k">—</td><td><span class="badge b-pend">รอ research</span></td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>3</td><td class="k">&lt;เพิ่มเครื่อง&gt;</td><td class="k">—</td><td><span class="badge b-pend">รอ research</span></td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+  </table>
+  <div class="note">คอลัมน์สถานะ: <span class="mono">รอ research → DOC_PROVISIONAL → ENGINEER_VERIFIED</span> ·
+  เมื่อวิศวกรเซ็นครบ ให้เปลี่ยนสถานะ + ใส่ชื่อ/วันที่ในคอลัมน์ "วิศวกรเซ็น" แล้ว release <b>ระดับเครื่อง</b>ได้
+  — <b>งานที่มาจาก MONOLITH packet ยังติด real-cut gate 4 เงื่อนไขแยกอีกชั้น</b> (S17×5 + ADR-064 ครบ 4 บทบาท + dogfood ≥1 งาน + machine profile calibrated — CT-DEC-002 §11.6) · ENGINEER_VERIFIED ปลดเฉพาะ gate ระดับเครื่อง ไม่ใช่ระดับระบบ</div>
+</section>
+
+<!-- 5. ENGINEER -->
+<section id="eng">
+  <h2>5. เช็กลิสต์วิศวกรหน้าเครื่อง (เฟส 2 — ใช้ซ้ำทุกเครื่อง)</h2>
+  <p>วิศวกรทำครบทุกข้อ แล้วเซ็นรับรอง จึงเลื่อนเป็น <span class="mono">ENGINEER_VERIFIED</span> และปลด release</p>
+  <ol class="checklist">
+    <li><b>Nameplate</b> — ถ่ายรูปป้ายรุ่น + serial จดรหัสรุ่นเต็ม เทียบกับโปรไฟล์</li>
+    <li><b>เวอร์ชัน About</b> — NCstudio / HMI shell / รุ่นการ์ดคอนโทรล + Windows จดให้ตรงจริง</li>
+    <li><b>Working envelope</b> — ยืนยัน X/Y/Z จริง (jog สุดระยะ) เทียบกับค่าเอกสาร</li>
+    <li><b>Import screen</b> — ถ่ายหน้าเปิดไฟล์ ดูนามสกุลที่รับจริง freeze accepted_import_formats</li>
+    <li><b>Tool table + Origin</b> — จด T→ตำแหน่งแม็กกาซีน, tool length, วิธีเปลี่ยนทูล (M6/T), WCS G54 + มุม origin จริง + ทิศแกน</li>
+    <li><b>File transfer + program path</b> — จดช่องทางส่งไฟล์จริง + โฟลเดอร์ที่เครื่องรัน (redact ความลับ/รหัส)</li>
+    <li><b>Known-good job</b> — สร้าง+ล็อกงานอ้างอิง (immutable, เก็บ hash) รันผ่านจริง</li>
+    <li><b>Gate: Simulation → Dry-run/Air-cut → First-article</b> — ผ่านครบ วัดชิ้นแรกเข้า tolerance</li>
+  </ol>
+  <div class="signoff">
+    <div class="sig">วิศวกรผู้ยืนยัน: __________________ &nbsp; วันที่: __________</div>
+    <div class="sig">ผู้อนุมัติปล่อยผลิต: __________________ &nbsp; วันที่: __________</div>
+  </div>
+</section>
+
+<!-- 6. INTAKE -->
+<section id="intake">
+  <h2>6. เพิ่มเครื่องใหม่เข้าคิว deep-research</h2>
+  <p>ส่งข้อมูลเท่าที่มีต่อ 1 เครื่อง เดี๋ยวผมยิง deep-research สร้างโปรไฟล์ชั่วคราวให้ (เหมือน KDT):</p>
+  <ul class="tight">
+    <li><b>ยี่ห้อ + รุ่นเต็ม</b> (รวม suffix ถ้ามี เช่น KN-2409LP)</li>
+    <li><b>ชนิดเครื่อง</b> (nesting / router / beam saw / edge bander / boring ฯลฯ)</li>
+    <li><b>Controller</b> ถ้ารู้ (NCstudio / Syntec / Osai / Fanuc / Beckhoff …) — ไม่รู้ก็ได้</li>
+    <li><b>เอกสาร/รูป</b> ถ้ามี (สเปกชีต, รูปหน้าจอ, รูป nameplate) แนบมาได้</li>
+    <li><b>จำนวน + interim level</b> ที่อยากได้ (P0 หรือ P1) ต่อเครื่อง</li>
+  </ul>
+  <div class="note">ส่งเป็นลิสต์ก็ได้ เช่น: <span class="mono">"KDT KN-2412 ×2 (P0), Nanxing NB-9 ×1 (P1), Homag ... "</span>
+  ผมจะทำทีละเครื่องแล้วอัปเดตลง Fleet Register นี้ให้</div>
+</section>
+
+<div class="foot">Fleet Machine Onboarding Kit · v1.1 (landed 2026-07-17) · โครงสร้าง 2 เฟส + P0/P1 · เดินงานได้ก่อน ยืนยันหน้าเครื่องก่อนผลิตจริง<br>
+v1.1: เพิ่ม scope เส้นแดง MONOLITH packet ใน P1 + cross-ref real-cut gate (CT-DEC-002 §11.6) + ช่อง evidence_dir + แถว KD-610R — แก้ตามมติ owner 17 ก.ค. (ADR-070 tooling)</div>
+
+</div>
+</body>
+</html>

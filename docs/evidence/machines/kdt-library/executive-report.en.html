@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Report — KDT Machine Intelligence Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/kdt.css"></head>
+<body><div class="wrap">
+<header class="mast"><a class="brand" href="index.html"><span class="bt">MONOLITH</span> <span class="bs">KDT Machine Intelligence Library</span></a>
+<span class="spacer"></span><span class="langswap"><a href="index.html">← Catalog</a></span></header>
+<header class="hero"><h1>Executive Report — KDT Machine Intelligence Library</h1><div class="sub">MONOLITH · as of 2026-07-17</div></header>
+<section><h1 style='color:var(--kdt-green-dk)'>KDT Machine Intelligence Library — Executive Report</h1><div class="callout note">As of 2026-07-17 · MONOLITH manufacturing platform · research draft</div><h2>1. Purpose and scope</h2><p>This library consolidates source-grounded technical intelligence for <b>83 KDT woodworking machines and line/cell items</b> into a bilingual (TH/EN) catalog for the MONOLITH manufacturing platform. Each item carries a machine profile and a compatibility assessment. Every technical value is <b>Verified in documents</b> only — drawn from public catalog, exhibition, or authorized-distributor pages — and never <b>Observed in operation</b>.</p><h2>2. Safety posture (non-negotiable)</h2><ul><li>Every model defaults to <code>assessment_state = NOT_ASSESSED</code> and <code>manufacturing_release = PROHIBITED</code>.</li><li>No document in this library constitutes manufacturing approval or operational verification.</li><li>Machine-instance facts — controller hardware/firmware, HMI/OS version, physical delivery path, tool table, coordinate origin, and known-good job — remain <b>Unknown</b> until onsite evidence exists. They are never inferred from a sibling model or family manual.</li><li>OCCT / PythonOCC are <b>Interoperability &amp; Validation only</b>, never Manufacturing Authority. Original files are immutable; conversions/healing produce Versioned Derived Artifacts requiring human acceptance.</li><li>No secrets (IP, hostname, credentials, license keys) or real physical paths appear anywhere.</li></ul><h2>3. Coverage summary</h2><p>Per-model source coverage = populated, source-cited technical field-groups / 7 (high = 6–7, medium = 3–5, low = 0–2). Coverage measures evidence availability, not consistency, operational validation, or manufacturing approval.</p><table><thead><tr><th>Tier</th><th>Count</th></tr></thead><tbody><tr><td>Total items</td><td>83</td></tr><tr><td>High source coverage (6–7/7 field groups)</td><td>9</td></tr><tr><td>Medium source coverage (3–5/7 field groups)</td><td>61</td></tr><tr><td>Low source coverage (0–2/7 field groups)</td><td>13</td></tr><tr><td>Source-access blocked flag (overlaps the three tiers above)</td><td>9</td></tr></tbody></table><h2>4. Coverage by family</h2><table><thead><tr><th>Family</th><th>Total</th><th>High</th><th>Medium</th><th>Low</th></tr></thead><tbody><tr><td>Six-sided drilling</td><td>10</td><td>1</td><td>9</td><td>0</td></tr><tr><td>Drilling Tech</td><td>8</td><td>1</td><td>7</td><td>0</td></tr><tr><td>Nesting Tech</td><td>12</td><td>5</td><td>7</td><td>0</td></tr><tr><td>Saw Tech</td><td>9</td><td>2</td><td>6</td><td>1</td></tr><tr><td>Banding Machine (Edge Bander)</td><td>25</td><td>0</td><td>24</td><td>1</td></tr><tr><td>Automation</td><td>10</td><td>0</td><td>6</td><td>4</td></tr><tr><td>Project Planning (Lines/Cells)</td><td>9</td><td>0</td><td>2</td><td>7</td></tr></tbody></table><h2>5. High-source-coverage models</h2><p><a href="models/kd-610r/machine-profile.en.html" target="_blank" rel="noopener">KD-610R</a>, <a href="models/kd-612g/machine-profile.en.html" target="_blank" rel="noopener">KD-612G</a>, <a href="models/kn-2409nl/machine-profile.en.html" target="_blank" rel="noopener">KN-2409NL</a>, <a href="models/kn-2409lp/machine-profile.en.html" target="_blank" rel="noopener">KN-2409LP</a>, <a href="models/kn-2710l/machine-profile.en.html" target="_blank" rel="noopener">KN-2710L</a>, <a href="models/kn-3710d/machine-profile.en.html" target="_blank" rel="noopener">KN-3710D</a>, <a href="models/kn-5516p/machine-profile.en.html" target="_blank" rel="noopener">KN-5516P</a>, <a href="models/ks-4522hls/machine-profile.en.html" target="_blank" rel="noopener">KS-4522HLS</a>, <a href="models/ks-832h/machine-profile.en.html" target="_blank" rel="noopener">KS-832H</a>.</p><h2>6. Daph pilot instances</h2><p>Two models are Daph pilot-instance relevant: <b>KD-610R</b> (six-sided drilling) and <b>KN-2409LP</b> (nesting). Both are marked pilot-instance relevant but remain <b>NOT_ASSESSED</b> with manufacturing release <b>PROHIBITED</b>. No operational verification is claimed from public evidence. See <a href="models/kd-610r/machine-profile.en.html" target="_blank" rel="noopener">KD-610R profile</a>, <a href="models/kd-610r/compatibility-assessment.en.html" target="_blank" rel="noopener">KD-610R assessment</a>, <a href="models/kn-2409lp/machine-profile.en.html" target="_blank" rel="noopener">KN-2409LP profile</a>, <a href="models/kn-2409lp/compatibility-assessment.en.html" target="_blank" rel="noopener">KN-2409LP assessment</a>.</p><h2>7. Source-access-blocked items (overlapping flag)</h2><p>This is an overlapping evidence flag, not a fourth coverage tier. The following items have image-only or blocked sources; some may still have high or medium coverage from other sources: <code>Batched Drill Center with servo feeding</code>, <code>KD-612KSZA</code>, <code>KE-208</code>, <code>KE-526GHTC4</code>, <code>KS-4522HLS</code>, <code>KS-543HLS</code>, <code>KS-832H</code>, <code>KS-833DP</code>, <code>The Column-mounted Four-axis Robot</code>.</p><h2>8. How to use this library</h2><ul><li>Start at the <a href="index.html" target="_blank" rel="noopener">catalog dashboard</a>: search by model/alias, filter by family, catalog status, evidence tier, and Daph-critical.</li><li>Open a model&#x27;s <b>machine profile</b> for identity, the 7 technical field groups with source links, documented conflicts, controller profile, delivery contract, coverage score, and the required machine-side evidence checklist.</li><li>Open a model&#x27;s <b>compatibility assessment</b> for the NOT_ASSESSED / PROHIBITED status, document-only scope, geometry/envelope rules, blockers, and the required onsite validation sequence.</li><li>See the <a href="evidence-gap-register.en.html" target="_blank" rel="noopener">evidence-gap register</a> for the per-model gap ledger.</li></ul><hr><p>MONOLITH · KDT Machine Intelligence Library · as of 2026-07-17. Values are Verified in documents only. This report confers no manufacturing authority.</p></section>
+<div class="foot">MONOLITH · KDT Machine Intelligence Library · as of 2026-07-17</div>
+</div><script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+</script></body></html>

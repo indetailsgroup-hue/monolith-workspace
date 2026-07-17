@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KDT Machine Intelligence Library — MONOLITH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/kdt.css">
+</head>
+<body>
+<div class="wrap">
+<header class="mast"><a class="brand" href="index.html"><span style="color:var(--kdt-green)"><svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="MONOLITH KDT library mark" role="img"><rect x="2" y="2" width="36" height="36" rx="6" stroke="currentColor" stroke-width="2.4"/><path d="M9 30V10h5.2l5.8 8.1 5.8-8.1H31v20h-5.7V18.8L20 26l-5.3-7.2V30H9Z" fill="currentColor"/><path d="M6.5 34h27" stroke="currentColor" stroke-width="1.8" opacity="0.45"/></svg></span><span><span class="bt">MONOLITH</span><br><span class="bs">KDT Machine Intelligence Library</span></span></a><span class="spacer"></span><button id="langbtn" class="langbtn" aria-label="Toggle Thai / English" style="padding:8px 16px;border:1px solid var(--kdt-green);background:var(--kdt-green-lt);color:var(--kdt-green-dk);border-radius:8px;font-weight:700;cursor:pointer;font-family:var(--sans)">ไทย</button></header>
+
+<div id="hero" class="hero">
+  <h1 data-en="KDT Machine Intelligence Library" data-th="คลังข้อมูลอัจฉริยะเครื่องจักร KDT">KDT Machine Intelligence Library</h1>
+  <div class="sub" data-en="A source-grounded catalog of 83 KDT woodworking machines and line/cell items for the MONOLITH manufacturing platform. Every technical value is Verified in documents only — never observed in operation. All models default to NOT_ASSESSED / manufacturing release PROHIBITED."
+       data-th="แค็ตตาล็อกอ้างอิงหลักฐาน 83 รุ่นเครื่องจักรงานไม้ KDT และไลน์/เซลล์ สำหรับแพลตฟอร์มการผลิต MONOLITH ทุกค่าทางเทคนิคเป็น Verified in documents เท่านั้น ไม่ใช่การสังเกตจากการทำงานจริง ทุกรุ่นตั้งต้นเป็น NOT_ASSESSED / การปล่อยงานผลิต PROHIBITED">A source-grounded catalog of 83 KDT machines for the MONOLITH platform.</div>
+</div>
+
+<div class="banner"><span class="dot"></span><div class="txt">
+  <b data-en="MANUFACTURING RELEASE: PROHIBITED" data-th="การปล่อยงานผลิต: PROHIBITED">MANUFACTURING RELEASE: PROHIBITED</b>
+  <span data-en=" — every model is NOT_ASSESSED. Public catalog values are evidence only; no job may be released without onsite verification."
+        data-th=" — ทุกรุ่นเป็น NOT_ASSESSED ค่าจากแค็ตตาล็อกสาธารณะเป็นหลักฐานเท่านั้น ห้ามปล่อยงานโดยไม่ยืนยันหน้าเครื่อง"> — every model is NOT_ASSESSED.</span>
+</div></div>
+
+<section>
+  <div class="counts" id="counts">
+    <div class="stat"><b>83</b><span data-en="total items" data-th="รายการทั้งหมด">total items</span></div>
+    <div class="stat ok"><b>9</b><span data-en="high coverage · 6–7/7" data-th="ครอบคลุมสูง · 6–7/7">high coverage · 6–7/7</span></div>
+    <div class="stat doc"><b>61</b><span data-en="medium coverage · 3–5/7" data-th="ครอบคลุมปานกลาง · 3–5/7">medium coverage · 3–5/7</span></div>
+    <div class="stat unk"><b>13</b><span data-en="low coverage · 0–2/7" data-th="ครอบคลุมต่ำ · 0–2/7">low coverage · 0–2/7</span></div>
+  </div>
+  <p class="overlap-note" data-en="Separate overlapping flag: 9 of the 83 items have at least one image-only or source-access-blocked reference. They remain counted once in the coverage tiers above."
+     data-th="ธงซ้อนทับแยกต่างหาก: 9 จาก 83 รายการมีแหล่งอ้างอิงอย่างน้อยหนึ่งรายการที่เป็นภาพอย่างเดียวหรือเข้าถึงไม่ได้ โดยยังถูกนับเพียงครั้งเดียวในระดับความครอบคลุมข้างต้น">Separate overlapping flag: 9 of the 83 items have at least one source-access-blocked reference.</p>
+</section>
+
+<section>
+  <div class="controls">
+    <input id="q" type="search" aria-label="Search by model or alias"
+      data-en-ph="Search by model code or alias…" data-th-ph="ค้นหาด้วยรหัสรุ่นหรือชื่อเรียกอื่น…" placeholder="Search by model code or alias…">
+    <select id="f-family" aria-label="Filter by family"><option value="" data-en="All families" data-th="ทุกตระกูล">All families</option><option value="Automation">Automation</option><option value="Banding Machine (Edge Bander)">Banding Machine (Edge Bander)</option><option value="Drilling Tech">Drilling Tech</option><option value="Nesting Tech">Nesting Tech</option><option value="Project Planning (Lines/Cells)">Project Planning (Lines/Cells)</option><option value="Saw Tech">Saw Tech</option><option value="Six-sided drilling">Six-sided drilling</option></select>
+    <select id="f-status" aria-label="Filter by evidence tier">
+      <option value="" data-en="All evidence tiers" data-th="ทุกระดับหลักฐาน">All evidence tiers</option>
+      <option value="fully_documented" data-en="High source coverage (6–7/7)" data-th="หลักฐานครอบคลุมสูง (6–7/7)">High source coverage (6–7/7)</option>
+      <option value="partially_documented" data-en="Medium source coverage (3–5/7)" data-th="หลักฐานครอบคลุมปานกลาง (3–5/7)">Medium source coverage (3–5/7)</option>
+      <option value="minimally_documented" data-en="Low source coverage (0–2/7)" data-th="หลักฐานครอบคลุมต่ำ (0–2/7)">Low source coverage (0–2/7)</option>
+    </select>
+    <select id="f-catalog" aria-label="Filter by catalog status">
+      <option value="" data-en="All catalog status" data-th="ทุกสถานะแค็ตตาล็อก">All catalog status</option>
+      <option value="current-global">current-global</option>
+      <option value="current-regional">current-regional</option>
+    </select>
+    <label class="chk"><input id="f-daph" type="checkbox"><span data-en="Daph-critical only" data-th="เฉพาะ Daph-critical">Daph-critical only</span></label>
+    <label class="chk"><input id="f-blocked" type="checkbox"><span data-en="Source-access blocked flag" data-th="ธงเข้าถึงแหล่งข้อมูลไม่ได้">Source-access blocked flag</span></label>
+  </div>
+  <p id="resultcount" class="field-src" aria-live="polite"></p>
+  <div id="grid" class="cardgrid"></div>
+  <p id="empty" class="field-src" style="display:none" data-en="No models match your filters." data-th="ไม่มีรุ่นที่ตรงกับตัวกรอง">No models match your filters.</p>
+</section>
+
+<div class="foot">
+  MONOLITH · KDT Machine Intelligence Library · as of 2026-07-17 ·
+  <a href="executive-report.en.html">Executive report (EN)</a> ·
+  <a href="executive-report.th.html">รายงานผู้บริหาร (TH)</a> ·
+  <a href="evidence-gap-register.en.html">Evidence-gap register (EN)</a> ·
+  <a href="evidence-gap-register.th.html">ทะเบียนช่องว่างหลักฐาน (TH)</a> ·
+  <a href="README.md">README</a>
+</div>
+
+<style>
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{background:var(--kdt-green-lt);border:1px solid var(--ok-bd);border-radius:10px;padding:12px 14px;text-align:center}
+.stat b{display:block;font-size:26px;font-weight:800;color:var(--kdt-green-dk);font-family:var(--mono)}
+.stat span{font-size:12px;color:var(--ink-2)}
+.stat.ok{background:var(--ok-bg);border-color:var(--ok-bd)}
+.stat.doc{background:var(--doc-bg);border-color:var(--doc-bd)}
+.stat.unk{background:var(--unknown-bg);border-color:var(--unknown-bd)}
+.stat.warn{background:var(--verify-bg);border-color:var(--verify-bd)}
+.overlap-note{margin:10px 2px 0;font-size:12.5px;color:var(--ink-2)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.controls input[type=search],.controls select{padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+  font-family:var(--sans);font-size:14px;background:#fff;color:var(--ink)}
+.controls input[type=search]{flex:1 1 240px;min-width:180px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px 15px;background:#fff;display:flex;flex-direction:column;gap:8px}
+.card:focus-within{border-color:var(--kdt-green)}
+.card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .mc{font-weight:800;font-size:16px;color:var(--ink);font-family:var(--mono)}
+.card .fam{font-size:11.5px;color:var(--mut)}
+.card .pp{font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.card .meta{display:flex;flex-wrap:wrap;gap:5px}
+.card .cov{font-size:11.5px;color:var(--mut);font-family:var(--mono)}
+.card .links{display:flex;gap:8px;margin-top:auto;padding-top:4px}
+.card .links a{flex:1;text-align:center;font-size:12.5px;padding:7px 6px;border-radius:7px;text-decoration:none;font-weight:600}
+.card .links a.p{background:var(--kdt-green-lt);color:var(--kdt-green-dk);border:1px solid var(--ok-bd)}
+.card .links a.a{background:var(--prohibit-bg);color:var(--prohibit);border:1px solid var(--conflict-bd)}
+.card .links a:hover{filter:brightness(.97)}
+</style>
+
+<script>
+const MODELS = [{"model": "KD-610R", "slug": "kd-610r", "aliases": ["KD 610 R", "KD-610 R", "KDT 610R"], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": true, "blocked": false, "coverage": 6, "purpose": "CNC six-sided drilling center; through/blind holes on ends and planes of furniture panels; milling of straight grooves/profiles", "conflict": true}, {"model": "KD-610RH", "slug": "kd-610rh", "aliases": ["KD-610 RH"], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Compact & cost-effective six-sided CNC drilling center", "conflict": true}, {"model": "KD-610NH", "slug": "kd-610nh", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; 3 drilling spindles in X-direction", "conflict": false}, {"model": "KD-610NHZ", "slug": "kd-610nhz", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; 3 drilling spindles in X-direction (Z variant)", "conflict": true}, {"model": "KD-612ES", "slug": "kd-612es", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Six-sided CNC drilling center", "conflict": false}, {"model": "KD-612NS", "slug": "kd-612ns", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Six-sided CNC drilling center", "conflict": false}, {"model": "KD-612NSZ", "slug": "kd-612nsz", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; smart switch tool", "conflict": false}, {"model": "KD-612NCSD", "slug": "kd-612ncsd", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; side routering", "conflict": false}, {"model": "KD-612T", "slug": "kd-612t", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; dual drill package (26V+18H)", "conflict": true}, {"model": "KD-612N", "slug": "kd-612n", "aliases": [], "family": "Six-sided drilling", "family_norm": "six_sided_drill", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Six-sided drilling; air flotation", "conflict": false}, {"model": "KD-812ZA", "slug": "kd-812za", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Through-feed drilling; 6 drill sets, 4 router motors", "conflict": false}, {"model": "KD-812A", "slug": "kd-812a", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Through-feed drilling; capacity 480 pcs/h", "conflict": true}, {"model": "KD-868A", "slug": "kd-868a", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Through-feed drilling technology", "conflict": false}, {"model": "KD-866A", "slug": "kd-866a", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Through-feed drilling; reduced footprint", "conflict": true}, {"model": "KD-868E", "slug": "kd-868e", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Through-feed drilling with positioning devices", "conflict": false}, {"model": "KD-612G", "slug": "kd-612g", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": false, "coverage": 6, "purpose": "Drilling machine", "conflict": true}, {"model": "KD-612KSZ", "slug": "kd-612ksz", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Drilling machine", "conflict": false}, {"model": "KD-612KSZA", "slug": "kd-612ksza", "aliases": [], "family": "Drilling Tech", "family_norm": "drilling", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": true, "coverage": 3, "purpose": "Drilling machine", "conflict": true}, {"model": "KN-2409NL", "slug": "kn-2409nl", "aliases": ["KN2409NL", "KN-2409 NL", "K2409NL"], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": false, "coverage": 6, "purpose": "Flat-bed CNC nesting/machining center; drilling, molding, slotting of panel furniture", "conflict": true}, {"model": "KN-2409LP", "slug": "kn-2409lp", "aliases": ["KN2409LP", "KN-2409 LP"], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-regional", "evidence_status": "fully_documented", "daph": true, "blocked": false, "coverage": 6, "purpose": "Flat-bed CNC nesting center with standard CAM software, quick panel replenishment, real-time labeling", "conflict": true}, {"model": "KN-2409DL", "slug": "kn-2409dl", "aliases": ["KN2409DL", "KN2-2409DL"], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Flat-bed CNC nesting center with enlarged worktable and 10V drilling head", "conflict": false}, {"model": "KN-2609DL", "slug": "kn-2609dl", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Nesting; enlarged worktable", "conflict": false}, {"model": "KN-2710L", "slug": "kn-2710l", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": false, "coverage": 6, "purpose": "Nesting; large working table", "conflict": true}, {"model": "KN-3409R", "slug": "kn-3409r", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Nesting; 3-axis ball screw transmission", "conflict": false}, {"model": "KN-3710D", "slug": "kn-3710d", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": false, "coverage": 6, "purpose": "Nesting; high-power spindle for routing", "conflict": true}, {"model": "KN-3710DE", "slug": "kn-3710de", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Nesting; high-power spindle for routing (E variant)", "conflict": false}, {"model": "KN-3710DPC", "slug": "kn-3710dpc", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Nesting cell; 250mm Z-clearance", "conflict": false}, {"model": "KN-3713D", "slug": "kn-3713d", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Nesting; 13.2kW high-power spindle", "conflict": false}, {"model": "KN-5516P", "slug": "kn-5516p", "aliases": [], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": false, "coverage": 6, "purpose": "Nesting machining center", "conflict": false}, {"model": "KN-6410NC", "slug": "kn-6410nc", "aliases": ["KN-6410C"], "family": "Nesting Tech", "family_norm": "nesting", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Large-format nesting machining center", "conflict": true}, {"model": "KS-533A", "slug": "ks-533a", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Robotic beam saw / saw cell; multi-step re-cutting and full-process automation", "conflict": false}, {"model": "KS-4522HLS", "slug": "ks-4522hls", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": true, "coverage": 7, "purpose": "Angular saw center", "conflict": true}, {"model": "KS-543HLS", "slug": "ks-543hls", "aliases": ["KS-543HL", "KS-543H"], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": true, "coverage": 5, "purpose": "Panel saw; double push handle (twin pusher)", "conflict": true}, {"model": "KS-843HL", "slug": "ks-843hl", "aliases": ["KS-843L", "KS-843D"], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Panel saw; twin pusher / automatic rear-loading", "conflict": false}, {"model": "KS-833L", "slug": "ks-833l", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Panel saw with optimization software", "conflict": false}, {"model": "KS-833HG", "slug": "ks-833hg", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Beam saw; front+rear lift table feeding", "conflict": false}, {"model": "KS-833DP", "slug": "ks-833dp", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": true, "coverage": 2, "purpose": "Beam saw; compatible with various order-splitting software", "conflict": true}, {"model": "KS-828DL", "slug": "ks-828dl", "aliases": ["KS-828D"], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Rear loading panel saw", "conflict": true}, {"model": "KS-832H", "slug": "ks-832h", "aliases": [], "family": "Saw Tech", "family_norm": "saw", "catalog_status": "current-global", "evidence_status": "fully_documented", "daph": false, "blocked": true, "coverage": 7, "purpose": "Panel saw; twin-pusher structure", "conflict": true}, {"model": "KE-2826", "slug": "ke-2826", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Maglev-driven horizontal end-cutter edge bander (high feed)", "conflict": false}, {"model": "KE-2825", "slug": "ke-2825", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Maglev-driven horizontal end-cutter edge bander", "conflict": false}, {"model": "KE-2368JHSKADC4", "slug": "ke-2368jhskadc4", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Double-line (back and forth) edge bander", "conflict": false}, {"model": "KE-526GHTC4", "slug": "ke-526ghtc4", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": true, "coverage": 4, "purpose": "Heavy-duty edge bander", "conflict": true}, {"model": "KE-520GHTC4", "slug": "ke-520ghtc4", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KE-668JSGZU(40)", "slug": "ke-668jsgzu-40", "aliases": ["KE-668JSGZU"], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Edge bander; pressure beam with V-belts", "conflict": false}, {"model": "KE-369JZSK(40)", "slug": "ke-369jzsk-40", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Edge bander", "conflict": false}, {"model": "KE-369ZSK(40)", "slug": "ke-369zsk-40", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Edge bander", "conflict": false}, {"model": "KE-398UV", "slug": "ke-398uv", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander (UV/tilt-straight)", "conflict": false}, {"model": "KE-396JC", "slug": "ke-396jc", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KE-368JSUM", "slug": "ke-368jsum", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KE-658JSGZU", "slug": "ke-658jsgzu", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KE-305", "slug": "ke-305", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Manual edge bander", "conflict": false}, {"model": "KE-305M", "slug": "ke-305m", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Manual edge bander (M variant)", "conflict": false}, {"model": "KE-208", "slug": "ke-208", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": true, "coverage": 0, "purpose": "Door frame grooving machine", "conflict": true}, {"model": "KB-526UBT", "slug": "kb-526ubt", "aliases": ["KB-526UBT laser 3.0S"], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Laser 3.0S edge bander", "conflict": false}, {"model": "KB-526KUBT", "slug": "kb-526kubt", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Laser edge bander", "conflict": false}, {"model": "KB-526KUB", "slug": "kb-526kub", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KB-526KU", "slug": "kb-526ku", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander", "conflict": false}, {"model": "KB-518B", "slug": "kb-518b", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Laser 3.0S edge bander", "conflict": true}, {"model": "KB-516KUB", "slug": "kb-516kub", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "35-degree end-cutting unit / edge bander", "conflict": false}, {"model": "KB-399R", "slug": "kb-399r", "aliases": ["KE-399R"], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Edge bander (tilt/straight)", "conflict": true}, {"model": "KE-2368JS", "slug": "ke-2368js", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Edge bander; gluing and pressing unit", "conflict": false}, {"model": "KE-710GBSUT", "slug": "ke-710gbsut", "aliases": [], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Laser 3.0S edge bander", "conflict": false}, {"model": "KE-668JGZBU(50)", "slug": "ke-668jgzbu-50", "aliases": ["KE-668JGZBU"], "family": "Banding Machine (Edge Bander)", "family_norm": "edge_bander", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Laser 3.0S edge bander", "conflict": true}, {"model": "KHM-680", "slug": "khm-680", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Key-hole & hinge / lock machining center with saw", "conflict": false}, {"model": "KHM-660B", "slug": "khm-660b", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Key-hole & hinge machining", "conflict": false}, {"model": "KHM-630", "slug": "khm-630", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Key-hole & hinge / door-lock machining", "conflict": false}, {"model": "KHM-626", "slug": "khm-626", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 4, "purpose": "Key-hole & hinge machining", "conflict": false}, {"model": "KHM-550B", "slug": "khm-550b", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Four-side cutter / key-hole hinge machining", "conflict": false}, {"model": "KHA-1713TS", "slug": "kha-1713ts", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 5, "purpose": "Loading + labeling platform (four-column screw lift, auto aligner, 90-deg rotation labeling)", "conflict": false}, {"model": "Flexible Automation Solution 1", "slug": "flexible-automation-solution-1", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Flexible automation line: Planning + Information + Machines, Industry 4.0", "conflict": true}, {"model": "Flexible Automation Solution 2", "slug": "flexible-automation-solution-2", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 2, "purpose": "Flexible automation line: Planning + Information + Machines, Industry 4.0", "conflict": true}, {"model": "Whole Plant Planning 1", "slug": "whole-plant-planning-1", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Whole-plant intelligent production planning solution", "conflict": true}, {"model": "Whole Plant Planning 2", "slug": "whole-plant-planning-2", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Whole-plant intelligent production planning solution", "conflict": true}, {"model": "Kaifeng drilling production line", "slug": "kaifeng-drilling-production-line", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Drilling production line", "conflict": true}, {"model": "Edging Cell for Door Piece", "slug": "edging-cell-for-door-piece", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Automated edging cell for door pieces", "conflict": true}, {"model": "Key-Hole Machining Cell", "slug": "key-hole-machining-cell", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Automated key-hole machining cell", "conflict": true}, {"model": "Door-Tech Automation 2", "slug": "door-tech-automation-2", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "partially_documented", "daph": false, "blocked": false, "coverage": 3, "purpose": "Door manufacturing automation line", "conflict": true}, {"model": "Nesting automation line", "slug": "nesting-automation-line", "aliases": [], "family": "Project Planning (Lines/Cells)", "family_norm": "project_planning", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Nesting automation line with column-mounted four-axis robot", "conflict": true}, {"model": "Flexible Automation Solution 2 (cell)", "slug": "flexible-automation-solution-2-cell", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 2, "purpose": "Automation cell / robot integration module", "conflict": true}, {"model": "Batched Drill Center with servo feeding", "slug": "batched-drill-center-with-servo-feeding", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": true, "coverage": 0, "purpose": "Automation cell / robot integration module", "conflict": true}, {"model": "Automation Cell with multi-machines integration 2", "slug": "automation-cell-with-multi-machines-integration-2", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": false, "coverage": 1, "purpose": "Automation cell / robot integration module", "conflict": true}, {"model": "The Column-mounted Four-axis Robot", "slug": "the-column-mounted-four-axis-robot", "aliases": [], "family": "Automation", "family_norm": "automation", "catalog_status": "current-global", "evidence_status": "minimally_documented", "daph": false, "blocked": true, "coverage": 0, "purpose": "Automation cell / robot integration module", "conflict": true}];
+let LANG = 'en';
+const STL = {"en": {"fully_documented": "High source coverage (6–7/7)", "partially_documented": "Medium source coverage (3–5/7)", "minimally_documented": "Low source coverage (0–2/7)"}, "th": {"fully_documented": "หลักฐานครอบคลุมสูง (6–7/7)", "partially_documented": "หลักฐานครอบคลุมปานกลาง (3–5/7)", "minimally_documented": "หลักฐานครอบคลุมต่ำ (0–2/7)"}};
+function applyLang(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-en]').forEach(el=>{
+    const v = el.getAttribute('data-'+LANG); if(v!==null) el.textContent = v;
+  });
+  document.querySelectorAll('[data-en-ph]').forEach(el=>{
+    const v = el.getAttribute('data-'+LANG+'-ph'); if(v!==null) el.placeholder = v;
+  });
+  document.getElementById('langbtn').textContent = LANG==='en' ? 'ไทย' : 'EN';
+  render();
+}
+function badge(cls,txt){return `<span class="badge ${cls}">${txt}</span>`;}
+function card(m){
+  const stMap = {fully_documented:'b-ok',partially_documented:'b-doc',minimally_documented:'b-unknown'};
+  const stLabel = STL[LANG][m.evidence_status];
+  const dir = 'models/'+m.slug+'/';
+  const suf = '.'+LANG+'.html';
+  const pLabel = LANG==='en'?'Machine profile':'โปรไฟล์เครื่อง';
+  const aLabel = LANG==='en'?'Assessment':'ประเมิน';
+  let tags = badge(stMap[m.evidence_status], stLabel);
+  if(m.daph) tags += ' '+badge('b-crit', LANG==='en'?'Daph':'Daph');
+  if(m.blocked) tags += ' '+badge('b-verify', LANG==='en'?'source-access blocked':'เข้าถึงแหล่งข้อมูลไม่ได้');
+  if(m.conflict) tags += ' '+badge('b-conflict', LANG==='en'?'conflict':'ขัดแย้ง');
+  const covTxt = (LANG==='en'?'coverage ':'ครอบคลุม ')+m.coverage+'/7';
+  return `<div class="card"><div class="top"><div><div class="mc">${m.model}</div>
+    <div class="fam">${m.family} · ${m.catalog_status}</div></div></div>
+    <div class="meta">${tags}</div>
+    <div class="pp">${m.purpose}</div>
+    <div class="cov">${covTxt}</div>
+    <div class="links"><a class="p" href="${dir}machine-profile${suf}">${pLabel}</a>
+    <a class="a" href="${dir}compatibility-assessment${suf}">${aLabel}</a></div></div>`;
+}
+function norm(s){return (s||'').toLowerCase();}
+function render(){
+  const q = norm(document.getElementById('q').value);
+  const ff = document.getElementById('f-family').value;
+  const fs = document.getElementById('f-status').value;
+  const fc = document.getElementById('f-catalog').value;
+  const fd = document.getElementById('f-daph').checked;
+  const fb = document.getElementById('f-blocked').checked;
+  const list = MODELS.filter(m=>{
+    if(ff && m.family!==ff) return false;
+    if(fs && m.evidence_status!==fs) return false;
+    if(fc && m.catalog_status.indexOf(fc)!==0) return false;
+    if(fd && !m.daph) return false;
+    if(fb && !m.blocked) return false;
+    if(q){
+      const hay = norm(m.model)+' '+norm(m.aliases.join(' '))+' '+norm(m.family)+' '+norm(m.purpose);
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+  document.getElementById('grid').innerHTML = list.map(card).join('');
+  document.getElementById('empty').style.display = list.length? 'none':'block';
+  const rc = document.getElementById('resultcount');
+  rc.textContent = (LANG==='en'? list.length+' of '+MODELS.length+' items'
+                                : list.length+' จาก '+MODELS.length+' รายการ');
+}
+['q','f-family','f-status','f-catalog','f-daph','f-blocked'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('input',render); el.addEventListener('change',render);
+});
+document.getElementById('langbtn').addEventListener('click',()=>{
+  LANG = LANG==='en'?'th':'en'; applyLang();
+});
+applyLang();
+</script>
+
+</div>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+</script></body>
+</html>
