@@ -3,21 +3,24 @@
 ฉบับเอกสาร: 0.4.1
 วันที่ร่าง: 2026-07-11  
 วันที่แก้ไข: 2026-07-15 สำหรับการแก้ low-S threshold ใน v0.4.1 หลัง round-4 re-review
+วันที่อนุมัติ: 2026-07-17
 แทนที่: v0.3 ที่ `bf25b10f2c72707097acdb03a8161e8cec8cd36b`
-สถานะ: **DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY**  
+สถานะ: **APPROVED — 3-ROLE SIGN-OFF COMPLETE — S17-4/S17-5 IMPLEMENTATION AUTHORITY**
 Baseline ที่ตรวจ: `9ac7cff39d02d9430879275645e377728bc0abc5`  
 ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative  
 เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068
 
-> เอกสารนี้เป็น target-state contract สำหรับขออนุมัติ ไม่ได้พิสูจน์ว่าโค้ดปัจจุบัน implement แล้ว ไม่ปิด S17-3 และไม่ปลด S17-4/S17-5 จนกว่าผู้อนุมัติสามบทบาทลงชื่อครบ
+> เอกสารนี้เป็น approved target-state contract และให้อำนาจเริ่ม implementation เฉพาะ S17-4/S17-5 หลังลายเซ็นครบสามบทบาท ไม่ได้พิสูจน์ว่า implementation เสร็จ ไม่อนุญาต prod-apply และไม่อนุญาตตัดจริง โดย NFP/NO_CUT และ real-cut gate ยังคงบังคับ
+>
+> Approval record: `docs/governance/ct-dec-002-signoff-checklist.{th,en}.md` ที่ commit `fd65eaf611a87d54bbda1131142df2fa12c9787c`; anchor v3 snapshot ก่อน status flip คือ `monolith-s17-v041-review-input.sha256` SHA-256 `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16` (43/43 PASS ณ เวลาเซ็น)
 
 ## 1. Approval matrix
 
 | บทบาท | ขอบเขตที่ต้องตรวจ | สถานะ | ผู้ลงนาม/วันที่ |
 | --- | --- | --- | --- |
-| Tech Lead | schema, canonicalization, determinism, feasibility | **PENDING** | — |
-| Factory Owner | file contract, machine binding, verifier flow, factory fit | **PENDING** | — |
-| Security Owner | signature, trust boundary, key semantics, fail-closed | **PENDING** | — |
+| Tech Lead | schema, canonicalization, determinism, feasibility | **APPROVED** | คุณเดฟ / 2026-07-17 / anchor v2 `de2a1ccf…a2c7` |
+| Factory Owner | file contract, machine binding, verifier flow, factory fit | **APPROVED — SHADOW CONTRACT; ACTIVATION PENDING** | คุณเดฟ / 2026-07-17 / anchor v2 `de2a1ccf…a2c7` |
+| Security Owner | signature, trust boundary, key semantics, fail-closed | **APPROVED** | คุณเดฟ / 2026-07-17 / anchor v3 `f7b35734…a16` |
 
 สถานะเปลี่ยนเป็น APPROVED ได้เมื่อทั้งสามช่องเป็น APPROVED เท่านั้น หากคนเดียวถือ Tech Lead และ Security Owner ต้องลงมติแยกสองบทบาท
 
@@ -558,4 +561,4 @@ v0.4 แทนที่ v0.3 ที่ `bf25b10f2c72707097acdb03a8161e8cec8cd36b
 | nonce `k` เป็น randomized | signature เป็น run-specific, ไม่อยู่ใน `packetContentId`; verifier verify เท่านั้นและห้าม recompute |
 | KMS public-key custody | trusted registry เก็บ canonical DER SPKI ซึ่ง BIT STRING เป็น uncompressed `0x04‖X‖Y` บน P-256 |
 
-CT-DEC-002 ยังคง **DRAFT**; Tech Lead, Factory Owner และ Security Owner ยังคง **PENDING**; Track B ยังคง **LOCKED**; shadow mode ยังคง **NO_CUT**; amendment นี้ไม่สร้าง implementation authority หรือ production authority
+ณ 17 ก.ค. 2026 CT-DEC-002 เป็น **APPROVED** หลังลายเซ็นครบสามบทบาท และ Track B เป็น **UNLOCKED FOR S17-4/S17-5 IMPLEMENTATION ONLY**; shadow mode ยังคง **NO_CUT** และ approval นี้ไม่สร้าง production authority หรือ real-cut authority

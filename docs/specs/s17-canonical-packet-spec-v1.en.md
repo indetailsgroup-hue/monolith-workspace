@@ -3,21 +3,24 @@
 Document version: 0.4.1
 Drafted: 2026-07-11  
 Revised: 2026-07-15 for the v0.4.1 low-S threshold correction after round-4 re-review
+Approved: 2026-07-17
 Supersedes: v0.3 at `bf25b10f2c72707097acdb03a8161e8cec8cd36b`
-Status: **DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY**  
+Status: **APPROVED — 3-ROLE SIGN-OFF COMPLETE — S17-4/S17-5 IMPLEMENTATION AUTHORITY**
 Inspected baseline: `9ac7cff39d02d9430879275645e377728bc0abc5`  
 Drafted by: Codex in an advisory/non-authoritative capacity  
 Governing inputs: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068
 
-> This document is a target-state contract submitted for approval. It does not prove current implementation, close S17-3, or unlock S17-4/S17-5 until all three approval roles have signed.
+> This document is the approved target-state contract and grants implementation authority only for S17-4/S17-5 after all three role signatures. It does not prove implementation complete, authorize production application, or authorize real cutting. NFP/NO_CUT and the real-cut gate remain mandatory.
+>
+> Approval record: `docs/governance/ct-dec-002-signoff-checklist.{th,en}.md` at commit `fd65eaf611a87d54bbda1131142df2fa12c9787c`; the pre-status-flip v3 snapshot is `monolith-s17-v041-review-input.sha256` with SHA-256 `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16` (43/43 PASS at signing time).
 
 ## 1. Approval matrix
 
 | Role | Required review scope | Status | Signer/date |
 | --- | --- | --- | --- |
-| Tech Lead | schema, canonicalization, determinism, feasibility | **PENDING** | — |
-| Factory Owner | file contract, machine binding, verifier flow, factory fit | **PENDING** | — |
-| Security Owner | signature, trust boundary, key semantics, fail-closed | **PENDING** | — |
+| Tech Lead | schema, canonicalization, determinism, feasibility | **APPROVED** | Dave / 2026-07-17 / v2 anchor `de2a1ccf…a2c7` |
+| Factory Owner | file contract, machine binding, verifier flow, factory fit | **APPROVED — SHADOW CONTRACT; ACTIVATION PENDING** | Dave / 2026-07-17 / v2 anchor `de2a1ccf…a2c7` |
+| Security Owner | signature, trust boundary, key semantics, fail-closed | **APPROVED** | Dave / 2026-07-17 / v3 anchor `f7b35734…a16` |
 
 Status may change to APPROVED only when all three fields are APPROVED. If one person holds both Tech Lead and Security Owner roles, each role must be approved separately.
 
@@ -558,4 +561,4 @@ v0.4 supersedes v0.3 at `bf25b10f2c72707097acdb03a8161e8cec8cd36b` solely for th
 | randomized nonce `k` | signature is run-specific, excluded from `packetContentId`; verifier verifies and never recomputes |
 | KMS public-key custody | trusted registry stores canonical DER SPKI whose BIT STRING is uncompressed `0x04‖X‖Y` on P-256 |
 
-CT-DEC-002 remains **DRAFT**; Tech Lead, Factory Owner, and Security Owner remain **PENDING**; Track B remains **LOCKED**; shadow mode remains **NO_CUT**; and this amendment creates no implementation or production authority.
+As of 17 July 2026, CT-DEC-002 is **APPROVED** after all three role signatures and Track B is **UNLOCKED FOR S17-4/S17-5 IMPLEMENTATION ONLY**. Shadow mode remains **NO_CUT**, and this approval creates neither production authority nor real-cut authority.
