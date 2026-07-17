@@ -38,14 +38,14 @@
 
 > **ADR-068 resolution (15 ก.ค.)**: Owner เลือก AWS KMS `ECC_NIST_P256` และ `ECDSA_SHA_256`; v0.4 แทนที่ signature layer แบบ Ed25519 ของ v0.3 แล้ว การตรวจด้านล่างยังเป็น PENDING จน Security Owner review exact bytes และ hash anchor รอบ 4
 
-- [ ] **ECDSA-vs-KMS reconciled**: protected algorithm คือ `ECDSA_P256_SHA256`; KMS `Sign` ใช้ `ECC_NIST_P256` + `ECDSA_SHA_256` + `MessageType=DIGEST` กับ exact SHA-256 digest
-- [ ] Signature encoding: DER จาก KMS ถูกแปลงเป็น raw `r‖s` 64-byte Base64; signer emit low-S; verifier reject DER/high-S/out-of-range ด้วย `PKT_SIGNATURE_INVALID`
-- [ ] Non-determinism boundary: signature เป็น run-specific allowlist, ไม่อยู่ใน `packetContentId`; verifier verify เท่านั้น ไม่ recompute
-- [ ] Public-key registry: pin canonical DER SPKI (`id-ecPublicKey` + `prime256v1`) ซึ่ง BIT STRING เป็น uncompressed `0x04‖X‖Y`; packet key ห้าม establish trust เอง
-- [ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed
-- [ ] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`)
-- [ ] Server-owned actor ผูกกับ S17-1 (JWT-derived ไม่ใช่ client header) — attestation ใช้ identity ที่ปลอมไม่ได้
-- [ ] Tamper corpus (S14) ครอบพอ + custody model ตรง ADR-064/มติ custody (KMS/HSM non-exportable)
+- [x] **ECDSA-vs-KMS reconciled**: protected algorithm คือ `ECDSA_P256_SHA256`; KMS `Sign` ใช้ `ECC_NIST_P256` + `ECDSA_SHA_256` + `MessageType=DIGEST` กับ exact SHA-256 digest
+- [x] Signature encoding: DER จาก KMS ถูกแปลงเป็น raw `r‖s` 64-byte Base64; signer emit low-S; verifier reject DER/high-S/out-of-range ด้วย `PKT_SIGNATURE_INVALID`
+- [x] Non-determinism boundary: signature เป็น run-specific allowlist, ไม่อยู่ใน `packetContentId`; verifier verify เท่านั้น ไม่ recompute
+- [x] Public-key registry: pin canonical DER SPKI (`id-ecPublicKey` + `prime256v1`) ซึ่ง BIT STRING เป็น uncompressed `0x04‖X‖Y`; packet key ห้าม establish trust เอง
+- [x] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed
+- [x] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`)
+- [x] Server-owned actor ผูกกับ S17-1 (JWT-derived ไม่ใช่ client header) — attestation ใช้ identity ที่ปลอมไม่ได้
+- [x] Tamper corpus (S14) ครอบพอ + custody model ตรง ADR-064/มติ custody (KMS/HSM non-exportable)
 
 ## 4. Signature Block
 
@@ -53,11 +53,15 @@
 | --- | --- | --- | --- | --- | --- |
 | Tech Lead | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
 | Factory Owner | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED — SHADOW CONTRACT; ACTIVATION PENDING |
-| Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Security Owner | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16` | 2026-07-17 | SIGNED |
 
 > บันทึกการรับรอง Tech Lead จากคำยืนยันโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: ผู้ตรวจเห็น anchor ตรง, manifest 44/44 PASS และ 0 FAIL, reproduce aggregate schema digest ได้, schema structural test ผ่าน และตอบ TL-1 ถึง TL-5 ด้วยตนเอง Codex ทำหน้าที่บันทึกคำยืนยันนี้ตามคำสั่งโดยตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์
 
 > บันทึกการรับรอง Factory Owner จากคำตอบโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: คุณเดฟเลือก A ยืนยัน FO-1 ถึง FO-4 ทีละข้อ และออกมติ ADR-070 สำหรับ FO-5 ให้รับ documented profile เพื่อ shadow implementation แต่คง physical activation เป็น CONDITIONAL จนวิศวกรผ่าน gate หน้าเครื่อง Codex บันทึกคำยืนยันและขอบเขตนี้ตามคำสั่งโดยตรง ไม่ได้ตรวจหรือเซ็นแทนมนุษย์
+
+> บันทึกการรับรอง Security Owner จากคำสั่งตรงของคุณเดฟ ("เซ็นเลยครับ") ใน guided review session วันที่ 2026-07-17 หลังหลักฐานถูกแสดงสดครบทุกข้อ: §10 ข้อ 3–7 (ECDSA/KMS params, DER→P1363 r‖s 64B strict, low-S บังคับ, no-self-trust), §4.1 run allowlist, §10.2 SPKI/lifecycle/anti-rollback, §14 tamper corpus, custody kickoff (non-exportable HSM, Security Owner = Key Owner) และ **ค่า low-S ถูกคำนวณซ้ำด้วย BigInt สดต่อหน้าผู้เซ็น — ตรงทุกหลัก** · ผู้เซ็น **acknowledge ชัดแจ้ง (SO-7)** ว่า S17-1 server-owned actor ยัง staging-only และ prod-apply ตามมาที่ pilot window · pre-sign ณ วินาทีเซ็น: anchor v3 ตรง + 43/43 PASS 0 FAIL · Claude บันทึกคำยืนยันนี้ตามคำสั่งตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์
+
+> ✅ **ครบสามบทบาท 17 ก.ค. 2026 → CT-DEC-002 = APPROVED · Track B (S17-4 determinism + S17-5 verifier) ปลดล็อก** — ตามผล §5 · สิ่งที่ยังคงเดิม: NO_CUT/NFP จน real-cut gate สี่เงื่อนไขผ่าน, S17-1/2 prod-apply รอ pilot window, เครื่อง KDT ยัง PROHIBITED จน bench ผ่าน · การอัปเดตบรรทัดสถานะ "DRAFT" ในตัว spec file = งานของ Control Tower (ผู้ร่าง)
 
 ## 5. Effect เมื่อครบสาม
 

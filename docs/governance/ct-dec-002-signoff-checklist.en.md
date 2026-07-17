@@ -38,14 +38,14 @@
 
 > **ADR-068 resolution (15 July)**: the Owner selected AWS KMS `ECC_NIST_P256` and `ECDSA_SHA_256`; v0.4 replaced the Ed25519 signature layer of v0.3. The checks below remain PENDING until the Security Owner reviews the exact bytes and hash anchor of round 4.
 
-- [ ] **ECDSA-vs-KMS reconciled**: the protected algorithm is `ECDSA_P256_SHA256`; KMS `Sign` uses `ECC_NIST_P256` + `ECDSA_SHA_256` + `MessageType=DIGEST` against the exact SHA-256 digest.
-- [ ] Signature encoding: KMS DER is converted to raw `r‖s` 64-byte Base64; the signer emits low-S; the verifier rejects DER/high-S/out-of-range with `PKT_SIGNATURE_INVALID`.
-- [ ] Non-determinism boundary: the signature is a run-specific allowlist, excluded from `packetContentId`; the verifier verifies only, never recomputes.
-- [ ] Public-key registry: pin canonical DER SPKI (`id-ecPublicKey` + `prime256v1`) whose BIT STRING is uncompressed `0x04‖X‖Y`; a packet-supplied key must not establish trust by itself.
-- [ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed.
-- [ ] Trusted-key registry: a public key inside a packet must not establish trust for itself (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`).
-- [ ] Server-owned actor bound to S17-1 (JWT-derived, not a client header) — attestation uses an unforgeable identity.
-- [ ] Tamper corpus (S14) covers enough + custody model matches ADR-064 / the custody decision (KMS/HSM non-exportable).
+- [x] **ECDSA-vs-KMS reconciled**: the protected algorithm is `ECDSA_P256_SHA256`; KMS `Sign` uses `ECC_NIST_P256` + `ECDSA_SHA_256` + `MessageType=DIGEST` against the exact SHA-256 digest.
+- [x] Signature encoding: KMS DER is converted to raw `r‖s` 64-byte Base64; the signer emits low-S; the verifier rejects DER/high-S/out-of-range with `PKT_SIGNATURE_INVALID`.
+- [x] Non-determinism boundary: the signature is a run-specific allowlist, excluded from `packetContentId`; the verifier verifies only, never recomputes.
+- [x] Public-key registry: pin canonical DER SPKI (`id-ecPublicKey` + `prime256v1`) whose BIT STRING is uncompressed `0x04‖X‖Y`; a packet-supplied key must not establish trust by itself.
+- [x] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, `notBefore/notAfter`, anti-rollback, registry-unavailable = fail-closed.
+- [x] Trusted-key registry: a public key inside a packet must not establish trust for itself (`PKT_KEY_UNKNOWN/REVOKED/EXPIRED`).
+- [x] Server-owned actor bound to S17-1 (JWT-derived, not a client header) — attestation uses an unforgeable identity.
+- [x] Tamper corpus (S14) covers enough + custody model matches ADR-064 / the custody decision (KMS/HSM non-exportable).
 
 ## 4. Signature Block
 
@@ -53,11 +53,15 @@
 | --- | --- | --- | --- | --- | --- |
 | Tech Lead | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
 | Factory Owner | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED — SHADOW CONTRACT; ACTIVATION PENDING |
-| Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Security Owner | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16` | 2026-07-17 | SIGNED |
 
 > The Tech Lead attestation was recorded from Dave's direct confirmation in the guided review session on 2026-07-17: the reviewer personally observed the matching anchor, 44/44 manifest PASS with 0 FAIL, independently reproduced the aggregate schema digest, observed the passing schema structural test, and answered TL-1 through TL-5. Codex mechanically recorded this direct instruction; it did not sign or approve on the human's behalf.
 
 > The Factory Owner attestation was recorded from Dave's direct answers in the guided review session on 2026-07-17: Dave selected A for FO-1 through FO-4 individually and issued ADR-070 for FO-5, accepting a documented profile for shadow implementation while holding physical activation CONDITIONAL until an engineer completes the at-machine gates. Codex recorded that direct decision and scope; it did not inspect the machine or sign on the human's behalf.
+
+> The Security Owner attestation was recorded from Dave's direct instruction ("sign now") in the guided review session on 2026-07-17, after every item's evidence was displayed live: §10 items 3–7 (ECDSA/KMS parameters, DER→P1363 r‖s 64-byte strict encoding, mandatory low-S, no self-trust), §4.1 run allowlist, §10.2 SPKI/lifecycle/anti-rollback, §14 tamper corpus, and the custody kickoff (non-exportable HSM, Security Owner = Key Owner) — with the **low-S constant recomputed live via BigInt in front of the signer, matching digit-for-digit**. The signer **explicitly acknowledged (SO-7)** that the S17-1 server-owned actor is staging-only with prod-apply following at the pilot window. Pre-sign at signing moment: anchor v3 matched + 43/43 PASS, 0 FAIL. Claude recorded this direct instruction; it did not sign or approve on the human's behalf.
+
+> ✅ **All three roles signed on 17 Jul 2026 → CT-DEC-002 = APPROVED · Track B (S17-4 determinism + S17-5 verifier) UNLOCKED** — per §5 · Unchanged: NO_CUT/NFP until the four real-cut gate conditions pass, S17-1/2 prod-apply waits for the pilot window, KDT machines remain PROHIBITED until bench verification · Updating the spec file's own "DRAFT" status line is the Control Tower's (author's) task.
 
 ## 5. Effect once all three sign
 
