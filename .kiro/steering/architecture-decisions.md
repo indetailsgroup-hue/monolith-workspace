@@ -779,3 +779,13 @@ inclusion: always
   12. **Entitlement พักที่ Phase 2** — schema+billing พร้อมขายระดับ DB แล้ว; trigger Phase 3 (app layer) = มติเปิดขาย/tenant นำร่องจริง; AI capacity ย้ายไป S17/dogfood
   13. **v0.4 delta: hold — v0.3 คง SSOT** — sitepm.* คือ availability ของเวอร์ชันขาย (roadmap ทั้ง 8) review พร้อม pricing 0.3 เมื่อใกล้เปิดขาย
 - **Consequences:** งานถัดไปของ AI = CT-DEC-002 review pack (มติ 1) + delta note ให้ Codex (มติ 2) · merges เป็น human act ของ owner (มติ 2–3) · spec ledgers ที่กระทบ append มติแล้ว: capture-spine (มติ 6–10), design-hub (มติ 5), entitlement (มติ 11–13 — บน PR #2) · ไม่มีมติใด supersede ADR เดิม
+
+## ADR-070 — Machine Onboarding: documented-profile first, bench verification ก่อนทำงานจริง (17 ก.ค. 2026, มติ owner)
+
+- **Status:** Accepted (sign-off session CT-DEC-002, 17 ก.ค. 2026)
+- **Context (verified):** CT-DEC-002 FO-5 เรียก "machine profile `kdt_mvp_v1` ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)" แต่ DAPH กำลัง onboard เครื่องหลายตัว การถ่าย nameplate/เปิด About/จด tool table ทุกเครื่องทันทีเป็นไปไม่ได้และไม่จำเป็นต่อ Track B (implementation ไม่แตะเครื่องจริง) · owner ส่งมอบหลักฐานระดับเอกสารของเครื่องแรก (KDT KN-2409LP): capability assessment + owner-answered profile ที่ติดป้ายที่มาต่อค่าและประกาศ `PROHIBITED · NOT_ASSESSED` เองอย่างซื่อตรง — landed ที่ `docs/evidence/machines/kdt-kn-2409lp/` (manifest 3/3)
+- **Decision (owner):** *"เอาตามนี้เลยครับ เราต้องใส่อีกหลายเครื่อง เป็นไปไม่ได้ที่จะถ่ายหน้าเครื่องทุกเครื่องในตอนนี้ ต้องทำงานเราไปก่อน ไว้วิศวกรอยู่หน้าเครื่อง แล้วให้เซ็ตให้อีกรอบก่อนทำงานจริง"* — แปลเป็นกติกา:
+  1. **Onboard เครื่องด้วย documented profile ก่อน** — ต่อเครื่อง: assessment + profile (ป้ายที่มาต่อค่า: ยืนยันแล้ว/ตามเอกสาร/ต้องเช็กเครื่อง/ยังไม่รู้) ใต้ `docs/evidence/machines/<id>/` พร้อม sha256 manifest — ไม่ block งาน implementation
+  2. **Bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง** — ตาม Gate ในตัว assessment (nameplate/versions/tool table/origin/import/transfer/known-good job/simulation/dry-run/first-article/human acceptance)
+  3. **FO-5 ใน sign-off = CONDITIONAL** ไม่ติ๊กเป็น "ยืนยันจากโรงงานแล้ว" — และไม่มีช่องหลุดสู่การตัดจริง เพราะ CT-DEC-002 §5 บังคับ "machine profile calibrated" เป็นเงื่อนไข real-cut อยู่แล้วอีกชั้น (ซ้อนกับ NFP/NO_CUT)
+- **Consequences:** เครื่องถัดไปใช้ pattern เดียวกัน (โฟลเดอร์ต่อเครื่อง) · `kdt_mvp_v1` ได้หลักฐานทิศทาง KDT path ระดับเอกสาร (KDT/NCstudio/Weihong/`.nc` = HIGH — ไม่ใช่เลือกเพราะ test เยอะ ตามมติเดิม) · งานวิศวกร bench session = รายการค้างระดับ human ก่อน pilot · FO signature ลงได้เมื่อ owner attest FO-1..FO-4 (spec semantics) โดย FO-5 ติดเงื่อนไขบันทึกชัด
