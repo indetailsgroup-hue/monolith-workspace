@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Shadow Dogfood SOP — Freeze → Release → Export</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Shadow Dogfood SOP — Freeze → Release → Export</h1>
+<p>Document version: 1.0</p>
+<p>Prepared: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>Operating status: <strong>shadow-only / NO_CUT</strong></p>
+<blockquote><p>The written operating flow is now <strong>Freeze → Release → Export</strong>. FROZEN means locked for review; it no longer authorizes packet upload, factory export, or verification. This SOP is a dogfood note, not production authority or P0 closure.</p></blockquote>
+<h2>1. Roles and prerequisites</h2>
+<ul><li>Designer account: valid Supabase session, approved <code>app_metadata.roles</code> containing <code>designer</code> (or approved admin equivalent), and approved site code</li><li>Factory account: valid session, role containing <code>factory_operator</code>/<code>factory</code> (or approved admin equivalent), and approved site code</li><li>one controlled dogfood job and one confirmed machine profile</li><li>gate result reviewed; no unresolved blocker</li><li><code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code></li><li>no operator may use the packet to cut a real workpiece</li></ul>
+<h2>2. Operating sequence</h2>
+<h3>Step 1 — Prepare DRAFT</h3>
+<ol><li>Open the controlled dogfood project.</li><li>Confirm the correct project/job ID and site.</li><li>Complete design edits and run the applicable gate checks.</li><li>Record any warning/blocker; do not continue when blockers remain.</li></ol>
+<h3>Step 2 — Freeze</h3>
+<ol><li>Designer selects Freeze.</li><li>Confirm server state becomes <code>FROZEN</code> and a revision ID exists.</li><li>Review the frozen geometry, materials, hardware, drill map and gate evidence.</li></ol>
+<p><strong>FROZEN boundary:</strong> packet upload, Factory export, and verification must all be denied. A local preview may be used for review only and is not release evidence.</p>
+<h3>Step 3 — Release</h3>
+<ol><li>After review/gate acceptance, Designer explicitly selects Release.</li><li>Confirm server state becomes <code>RELEASED</code>.</li><li>Confirm the release event records the server-derived actor and authorization context.</li></ol>
+<p>Release is a separate human-visible transition. Freeze alone is not sufficient.</p>
+<h3>Step 4 — Export and upload from Designer</h3>
+<ol><li>Select Export only after the UI and server both report RELEASED.</li><li>The generated ZIP remains prefixed <code>NFP-</code> and contains <code>NOT_FOR_PRODUCTION.txt</code>.</li><li>Confirm server packet upload succeeds and a packet SHA-256/storage path is recorded.</li><li>Do not rely only on the browser download: the current Designer path downloads the local ZIP before server upload. An upload failure can therefore leave a local file that the server never accepted.</li></ol>
+<h3>Step 5 — Factory receive, export and verify</h3>
+<ol><li>Factory operator opens the same job with the Factory account.</li><li>Confirm state is RELEASED and the recorded packet anchor exists.</li><li>Request Factory export; obtain the short-lived signed URL.</li><li>Run verification and record expected/computed SHA-256, verdict, actor and time.</li><li>Use the output only to compare against the existing factory order/process and collect S17 evidence.</li></ol>
+<p><strong>Highest operational disposition:</strong> shadow evidence only / NO_CUT. A PASS does not authorize manufacturing.</p>
+<h2>3. User-visible changes</h2>
+<ul><li>“Freeze then Export” no longer works; users must perform an explicit Release.</li><li>FROZEN export/upload/verify attempts return a denial instead of proceeding.</li><li>Users without a valid session receive <code>401</code>; users without recognized roles receive <code>403</code>.</li><li>Changing the local UI role does not change server permission.</li><li>INSTALLER and FINANCE may read state/can-export but are denied jobs/activity/proof evidence surfaces.</li><li>New Factory audit events intentionally use the verified subject ID for both <code>actorName</code> and <code>actorSubjectId</code>; email is not persisted by this path. Historical append-only rows may still contain email and are not rewritten.</li><li>A downloaded NFP file is not proof of server acceptance; confirm the server packet record/activity.</li><li>FactoryApp may still display FROZEN as <code>VERIFIED</code>; treat server state and export response as authoritative until that label is corrected.</li></ul>
+<h2>4. Abort and rollback behavior</h2>
+<p>Stop the dogfood run when any condition occurs:</p>
+<ul><li>state is not the expected DRAFT/FROZEN/RELEASED value</li><li>Release fails or the revision ID is missing</li><li>packet upload fails or packet/storage anchors are absent</li><li>Factory export or verification succeeds while state is FROZEN</li><li>JWT actor/roles/site evidence is missing or disagrees with the operator</li><li>NFP prefix/marker is absent</li><li>computed packet hash disagrees with the server anchor</li></ul>
+<p>If a RELEASED job must be withdrawn, use Revoke to return it to FROZEN. After revoke, upload/export/verify must be denied again. Preserve existing events; never rewrite audit history.</p>
+<h2>5. Evidence to capture</h2>
+<ul><li>exact application commit and migration hash</li><li>dogfood job ID and released revision ID</li><li>Designer and Factory actor subject IDs, role arrays, site-code arrays and authorization-context IDs</li><li>assertion that new event <code>actorName</code> equals <code>actorSubjectId</code> and does not contain an email</li><li>Freeze, Release, packet-record and verify event timestamps</li><li>packet/manifest SHA-256 and storage path</li><li>HTTP status/result for the three FROZEN negative checks</li><li>verification expected/computed hash and verdict</li><li>screenshot or record showing NFP marker and NO_CUT acknowledgement</li><li>CI and database dry-run IDs/output</li></ul>
+<h2>6. Closure boundary</h2>
+<p>Completing this SOP yields controlled dogfood evidence only. It does not close S17-1/S17-2, approve migration 0162, unlock Track B, authorize production, or permit real cutting. Human approvers retain all closure authority.</p>
+</main>
+</body>
+</html>

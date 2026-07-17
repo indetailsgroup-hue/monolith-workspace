@@ -20,6 +20,13 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
       'e2e/**',
+      // @daph/field-app owns its own Vitest config (jsdom + React plugin) and
+      // runner; the root run must not collect its tests under the wrong config.
+      'packages/field-app/**',
+      // Node-native governance tooling tests (node:test runner). Vitest cannot
+      // collect them and would report "No test suite found"; run via `npm run
+      // test:node`. Keeps `test:run` honestly green (FS-B1-02).
+      'scripts/**/*.test.mjs',
       // Foreign project snapshots / file dumps that live inside this folder but
       // are not part of the MONOLITH workspace — their tests must not run here.
       'cp06-clean-cowork_dev-complete_20260616/**',
@@ -48,8 +55,16 @@ export default defineConfig({
           if (normalId.includes('node_modules/react-dom/') || normalId.includes('node_modules/react/')) {
             return 'vendor-react';
           }
-          // Three.js and R3F - largest vendor bundle
-          if (normalId.includes('node_modules/three/') || normalId.includes('node_modules/@react-three/')) {
+          // R3F ecosystem (fiber + drei + three-stdlib) — split from Three core
+          // so neither chunk exceeds the 600 kB warning threshold (FS-B2-02).
+          if (
+            normalId.includes('node_modules/@react-three/') ||
+            normalId.includes('node_modules/three-stdlib/')
+          ) {
+            return 'vendor-r3f';
+          }
+          // Three.js core
+          if (normalId.includes('node_modules/three/')) {
             return 'vendor-three';
           }
           // State management
@@ -63,6 +78,12 @@ export default defineConfig({
           // Icons
           if (normalId.includes('node_modules/lucide-react/')) {
             return 'vendor-icons';
+          }
+          // App 3D subsystem — the ~58 canvas components are the bulk of the
+          // oversized App chunk; move them into their own cacheable chunk that
+          // downloads in parallel with the app shell (FS-B2-02).
+          if (normalId.includes('/src/components/canvas/')) {
+            return 'canvas';
           }
         },
       },

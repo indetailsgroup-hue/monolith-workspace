@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003-A1 — การให้สัตยาบันโดย Tech Lead</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003-A1 — การ Ratify โดย Tech Lead</h1>
+<p>วันที่มีผล: 2026-07-16 สถานะ: <strong>RATIFIED — exact pinned governance-tool bytes</strong> อำนาจมติ: Tech Lead (Dave) คำสั่ง ratification: <code>RATIFY CT-DEC-003-A1 exact pinned bytes</code> ผู้จัดทำ record: Codex ในฐานะ documentary/non-signing Sibling record: <code>CT-DEC-003-A2</code> ครอบคลุมสถานะ S17 และอยู่นอก ratification นี้</p>
+<blockquote><p>Record นี้เก็บ deliberate ratification ของ Tech Lead หลัง independent source review โดยไม่เปลี่ยน pinned tool byte ใด และไม่ rewrite CT-DEC-003, CT-DEC-003-A1, independent review หรือ A1 consolidated anchor</p></blockquote>
+<h2>1. สิ่งที่ ratify</h2>
+<p>Tech Lead ratify classification แบบจำกัด <strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong> ใน <code>CT-DEC-003-A1</code> สำหรับ exact bytes ต่อไปนี้เท่านั้น:</p>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  scripts/render-standalone-markdown.mjs
+3cd69ca33cfc1fec7657fd0a242668f24706f38ba52b27be7021579d8e58a584  scripts/write-sha256-manifest.mjs
+9fbbf53519a2d45e3298a5d7d7e7b0df6481396b40a440cd707206b359ea2cb8  scripts/verify-sha256-manifest.mjs
+cef610700abc1e17258373b99cd0243c757407cfd75f92e6ddbf1e0b07fe8093  scripts/governance-tooling.test.mjs</code></pre>
+<p>Consolidated A1 review-input anchor ยังคง byte-identical และไม่ regenerate:</p>
+<pre><code class="language-text">649f4b0c7858c0176f9528224ce3d14f387599b57d9d47b1e174dd103daf812d  monolith-ct-dec-003-a1-review-input.sha256
+entries: 58
+self-listed: no</code></pre>
+<h2>2. Evidence ที่ Tech Lead รับ</h2>
+<p>Ratification นี้รับ evidence ต่อไปนี้:</p>
+<ol><li>A1 mechanical integrity: tool hashes ใน §2 ตรง, anchor 58 entry ไม่ self-list, historical v0.4.1 anchor ไม่ถูกแก้ และ legacy manifests สามชุดเปลี่ยนเฉพาะ canonical ordering</li><li>Codex advisory source review และ dedicated governance-tooling tests: 5/5</li><li>independent source review โดย Claude ที่ commit <code>e82ac7600dde69ecf75a26a3df73ff38200e86aa</code></li><li>adversarial control probes แยกเจ็ดข้อ: 7/7</li><li>independent conclusion: ไม่พบ defect ระดับ high หรือ medium และ classification แบบ OFFICIAL-for-governance-documents defensible สำหรับ pinned bytes</li><li>separation of duties: independent reviewer ไม่ใช่ Codex ซึ่งเป็นผู้จัดทำ A1</li></ol>
+<h2>3. ผลของ ratification</h2>
+<p>ตั้งแต่วันที่มีผล tool bytes ทั้งสี่ใน §1 เป็น official ภายใน boundary แบบจำกัดที่ CT-DEC-003-A1 ระบุ:</p>
+<ul><li>render trusted repository Markdown เป็น standalone HTML</li><li>เขียน canonical SHA-256 manifests สำหรับ governance/review artifacts</li><li>verify byte integrity ของ governance manifests เหล่านั้น</li><li>regression test สาม governance scripts ข้างต้น</li></ul>
+<p>หาก byte ใดเปลี่ยน tool ที่เปลี่ยนจะกลับเป็น <strong>CANDIDATE — NOT OFFICIAL</strong> ทันที จน append-only review และ Tech Lead ratification รอบถัดไป pin replacement hash</p>
+<h2>4. สิ่งที่ไม่รวม</h2>
+<p>Ratification นี้ไม่ classify script อื่น รวมถึง supplementary <code>scripts/governance-tooling-controls.test.mjs</code> ที่ independent reviewer เพิ่ม ไฟล์นั้นเป็น evidence แยกและตั้งใจไม่รวมอยู่ใน A1 pinned bytes ทั้งสี่</p>
+<p>Governance manifest verifier ยังคงไม่เทียบเท่า S17-5 Ratification นี้ไม่ให้ packet-schema validation, ECDSA P-256/low-S verification, AWS KMS trust, registry/revocation check, verifier-order enforcement, machine admission หรือ operational disposition</p>
+<p>รับ leading-space path observation เป็น low severity และ defer ไป future test-first tool revision โดยไม่บล็อก exact-byte ratification นี้ การ implement จะเปลี่ยน pinned byte จึงต้องมี hash ใหม่, independent review และ ratification รอบถัดไป</p>
+<h2>5. Governance boundaries ที่ไม่เปลี่ยน</h2>
+<ul><li>CT-DEC-002 ยัง DRAFT; approval roles ของ S17 ทั้งสามยัง PENDING</li><li>Track B ยัง LOCKED</li><li>shadow mode ยังคง <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>ไม่มี P0 blocker ใดถูกปิด</li><li>ไม่อนุญาต production deployment หรือตัดจริง</li><li>dogfood ยัง <code>AUTHORIZED/PREPARED — NOT STARTED</code> จน project จริง emit immutable evidence event แรก</li><li>A2 status numbering และ commit <code>7523c05a</code> ไม่ได้รับผลกระทบ</li></ul>
+<p>นี่เป็น documentary record ของ explicit human instruction ใน review session นี้ ไม่มี cryptographic human signature และไม่แทนที่ signature แยกใดที่ CT-DEC-002 ต้องการ</p>
+</main>
+</body>
+</html>

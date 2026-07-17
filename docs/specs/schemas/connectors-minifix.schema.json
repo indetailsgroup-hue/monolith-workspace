@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/connectors-minifix.schema.json",
+  "title": "monolith.factory.connectors-minifix@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "pairs"],
+  "properties": {
+    "schema": { "const": "monolith.factory.connectors-minifix@2.0" },
+    "pairs": {
+      "type": "array",
+      "x-monolith-orderBy": ["pairId:utf8-bytes"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pairId", "connectorId", "cam", "bolt"],
+        "properties": {
+          "pairId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "connectorId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "cam": { "$ref": "#/$defs/member" },
+          "bolt": { "$ref": "#/$defs/member" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pointId", "panelId", "positionUm", "directionMicro", "diameterUm", "depthUm"],
+      "properties": {
+        "pointId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "panelId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+        "positionUm": { "$ref": "common.schema.json#/$defs/vectorUm" },
+        "directionMicro": { "$ref": "common.schema.json#/$defs/directionMicro" },
+        "diameterUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+        "depthUm": { "$ref": "common.schema.json#/$defs/positiveUm" }
+      }
+    }
+  }
+}

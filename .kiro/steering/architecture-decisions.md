@@ -707,6 +707,19 @@ inclusion: always
 
 **Consequences**: dogfood ops เริ่มได้ทันที (P5 seeds, V1-V10, เปิดบ้าน); CI artifact pipeline = งานแรกของ Claude track; ADR-064 ยังรอ 4 ลายเซ็นตามเดิม
 
+### Amendment CT-DEC-001: S17 baseline + separation of duties + CI evidence (2026-07-11)
+
+**Authority**: มติมนุษย์จาก Tech Lead; ข้อ separation of duties และ S17-3 approval matrix ลงมติแยกบทบาท Tech Lead + Security Owner เอกสารเต็ม: `docs/governance/ct-dec-001-s17-baseline-governance.th.md`
+
+1. **Operational baseline ของ Track A รอบนี้** = exact SHA `9ac7cff39d02d9430879275645e377728bc0abc5` บน clean worktree — แทนกติกา “latest origin/main” ของ ADR-065 เฉพาะการเปิด Track A รอบนี้
+2. **ปลด Track A ทันที**: S17-1 → S17-2 เริ่ม implementation ได้ เพราะไม่พึ่ง packet contract; Track B implementation ของ S17-4/S17-5 ยังล็อกจน S17-3 อนุมัติครบ
+3. **คงสามสายเดิม; ไม่สร้าง Track C**: S17-5 ต้อง implement และ review โดยฝ่ายที่อิสระจากผู้เขียน S17-3/S17-4 และ builder ห้าม approve งานตรวจของตนเอง
+4. **CI classification** = `E0 CI PASS — scope-limited` ณ `9ac7cff3`: main run `29142280872`, branch `29142279488`, automated tests 4,553/4,553 + typecheck + build; exclusion ที่ต้องติดเสมอ = vault-builder invariants 2 ตัว local-only, ไม่มี DB/psql, ไม่มี E2E, ไม่พิสูจน์ deployment/operational readiness/P0 closure; archive อยู่ `docs/evidence/ci/9ac7cff3/`
+5. **S17-3 approval matrix** = Tech Lead + Factory Owner + Security Owner โดย Security Owner ตรวจอย่างน้อย signature/trust boundary/key semantics
+6. ใช้ decision IDs `CT-DEC-xxx`; คำเรียก unsigned Git baseline = **pinned/frozen + tamper-evident** ไม่ใช่ immutable
+
+**ขอบเขตเดิมไม่เปลี่ยน**: ADR-064 ยังต้องครบ 4 บทบาท, ไม่มี P0 ใดปิดจาก amendment นี้ และห้ามตัดชิ้นงานจริงจาก packet จน gate สี่เงื่อนไขผ่าน
+
 
 ## ADR-066: Hosted/Prod Infra Ops = Human-Driven Only (2026-07-14, มติ owner ก หลัง prod incident)
 
@@ -745,3 +758,36 @@ inclusion: always
 3. **Q3: amend CT-DEC-002 เดี๋ยวนี้ก่อนเซ็น** — ห้ามเซ็น spec ที่ implement บน custody จริงไม่ได้ · Control Tower (builder) แก้เป็น v0.4 → independent re-review รอบ 4 → แล้วค่อย 3-role sign-off
 
 **Consequences**: CT-DEC-002 v0.3 (`bf25b10f`) superseded โดย v0.4 (Ed25519→ECDSA_P256 ใน §10 + schema const + signing preimage) · sign-off checklist regenerate สำหรับ v0.4 · S17-5 verifier ใช้ ECDSA verify · S17-6 KMS = ECDSA P-256 key · timing กระทบ re-plan (ADR-067) เล็กน้อย (~1-2 วัน amend+re-review)
+
+
+## ADR-069 — Grill-me รอบแรก: ปลด critical path + ปิด owner-null ค้างสะสม (16 ก.ค. 2026, มติ owner ก ทุกข้อ)
+
+- **Status:** Accepted (grill-me 16 ก.ค. 2026)
+- **Context (verified):** session แรกของ `/grill-me` — harvest จาก specs/governance/PRs แล้ว verify ก่อนถาม: ตัดคำถามผี 3 ตัว (ledger_target = BUILT แล้ว 0066–0068 adapter #2 e2e-verified; hosting = ตัดสินแล้ว ADR-036; pricing 0.3 มี disposition "ก่อนเปิดขาย" อยู่แล้ว) · CT-DEC-002 v0.4 checklist ยัง `[ ]` ทุกข้อ = Track B LOCKED · PR #1 (integration, CI 8/8) + PR #2 (entitlement P1+2, CI เขียว) รอ owner · capture-spine owner nulls ค้างจริง 4 กลุ่ม · design-hub 0/10 ค้าง WO-0
+- **Decision (owner, ก ทุกข้อ — 13 มติ):**
+  1. **CT-DEC-002 v0.4 sign-off: เปิด session เลย** — AI เตรียม review pack ต่อบทบาท (Tech Lead / Factory Owner / Security Owner); owner ไล่ checklist เซ็นทีละบทบาทแยกกัน (AI ห้ามเซ็นแทน)
+  2. **PR #1: owner review `.kiro` union 2 ไฟล์เอง + merge เอง** — ส่ง delta note ให้ Codex หลัง merge (owner = ratify authority)
+  3. **PR #2: ratify SSOT v0.3.1 (L10 seat-floor, L11 grants) + v0.3.2 (F5 org_id hook, F6 billing RPCs) + merge**
+  4. **Pilot window: dependency-first** — ล็อกวันเมื่อ (1) CT-DEC-002 ครบ 3 ลายเซ็น (2) S17-4/5 มี estimate จริง (3) owner ยืนยัน factory slot — ห้ามบีบ verification เพื่อรักษาวัน (คงหลัก ADR-067)
+  5. **design-hub Phase 2: เลื่อนชัดแจ้ง** — trigger กลับมา = S17 ปิด + 2-sided signal จริง (waitlist/LOI) + legal review (ตรง exec research P2)
+  6. **has_po: defer จนมี procurement module จริง** — `po_ref` = free-text provenance (เก็บครบ ตรวจย้อนหลังได้) ไม่สร้าง PO table เชิงทฤษฎี
+  7. **Released_Spec target: defer-until-demand** — trigger = spec_draft ตัวจริงตัวแรกใน dogfood → ค่อย spike แนว reuse factory release seam (RELEASED/S17-2) ห้าม fork
+  8. **MCP external exposure: ไม่เปิด** — capture เป็น internal loop จนกว่ามี use case จริง + design reconcile double-gate (MCP pending × capture verify)
+  9. **auto-approve: ไม่เปิด** — คง verify-before-emit = 100% (System Guarantee) จนกว่า dogfood ให้ baseline volume/error จริง
+  10. **OCR infra: dogfood เริ่มแบบคีย์มือ (ไม่มี OCR)** — trigger ยืน Typhoon = photo-capture volume เจ็บจริง → self-host บน VM ใต้เงื่อนไข bridge ADR-036 (weights ใน infra เรา ไม่มี third-party API; ตั้งโดยมนุษย์ตาม ADR-066)
+  11. **Metering = calendar-month ถาวร** (ปิด design note v0.3.2) — เปลี่ยนเป็น billing-anchor ทีหลังได้ถ้ามี data ลูกค้า complain จริง
+  12. **Entitlement พักที่ Phase 2** — schema+billing พร้อมขายระดับ DB แล้ว; trigger Phase 3 (app layer) = มติเปิดขาย/tenant นำร่องจริง; AI capacity ย้ายไป S17/dogfood
+  13. **v0.4 delta: hold — v0.3 คง SSOT** — sitepm.* คือ availability ของเวอร์ชันขาย (roadmap ทั้ง 8) review พร้อม pricing 0.3 เมื่อใกล้เปิดขาย
+- **Consequences:** งานถัดไปของ AI = CT-DEC-002 review pack (มติ 1) + delta note ให้ Codex (มติ 2) · merges เป็น human act ของ owner (มติ 2–3) · spec ledgers ที่กระทบ append มติแล้ว: capture-spine (มติ 6–10), design-hub (มติ 5), entitlement (มติ 11–13 — บน PR #2) · ไม่มีมติใด supersede ADR เดิม
+
+## ADR-070 — Machine Onboarding: documented-profile first, bench verification ก่อนทำงานจริง (17 ก.ค. 2026, มติ owner)
+
+- **Status:** Accepted (sign-off session CT-DEC-002, 17 ก.ค. 2026)
+- **Context (verified):** CT-DEC-002 FO-5 เรียก "machine profile `kdt_mvp_v1` ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)" แต่ DAPH กำลัง onboard เครื่องหลายตัว การถ่าย nameplate/เปิด About/จด tool table ทุกเครื่องทันทีเป็นไปไม่ได้และไม่จำเป็นต่อ Track B (implementation ไม่แตะเครื่องจริง) · owner ส่งมอบหลักฐานระดับเอกสารของเครื่องแรก (KDT KN-2409LP): capability assessment + owner-answered profile ที่ติดป้ายที่มาต่อค่าและประกาศ `PROHIBITED · NOT_ASSESSED` เองอย่างซื่อตรง — landed ที่ governance commit `765c326c2ea289d10688a4704a46335e60d6a152` ใต้ `docs/evidence/machines/kdt-kn-2409lp/` (manifest 6/6)
+- **Decision (owner):** *"เอาตามนี้เลยครับ เราต้องใส่อีกหลายเครื่อง เป็นไปไม่ได้ที่จะถ่ายหน้าเครื่องทุกเครื่องในตอนนี้ ต้องทำงานเราไปก่อน ไว้วิศวกรอยู่หน้าเครื่อง แล้วให้เซ็ตให้อีกรอบก่อนทำงานจริง"* — แปลเป็นกติกา:
+  1. **Onboard เครื่องด้วย documented profile ก่อน** — ต่อเครื่อง: assessment + profile (ป้ายที่มาต่อค่า: ยืนยันแล้ว/ตามเอกสาร/ต้องเช็กเครื่อง/ยังไม่รู้) ใต้ `docs/evidence/machines/<id>/` พร้อม sha256 manifest — ไม่ block งาน implementation
+  2. **Bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง** — ตาม Gate ในตัว assessment (nameplate/versions/tool table/origin/import/transfer/known-good job/simulation/dry-run/first-article/human acceptance)
+  3. **FO-5 ใน sign-off = CONDITIONAL** ไม่ติ๊กเป็น "ยืนยันจากโรงงานแล้ว" — และไม่มีช่องหลุดสู่การตัดจริง เพราะ CT-DEC-002 §11.6 บังคับ "machine profile calibrated" เป็นเงื่อนไข real-cut อยู่แล้วอีกชั้น (ซ้อนกับ NFP/NO_CUT)
+- **Consequences:** เครื่องถัดไปใช้ pattern เดียวกัน (โฟลเดอร์ต่อเครื่อง) · `kdt_mvp_v1` ได้หลักฐานทิศทาง KDT path ระดับเอกสาร (KDT/NCstudio/Weihong/`.nc`; ยังไม่ใช่ physical-machine verification) · งานวิศวกร bench session = รายการค้างระดับ human ก่อน pilot · FO signature ลงได้เมื่อ owner attest FO-1..FO-4 (spec semantics) โดย FO-5 ติดเงื่อนไขบันทึกชัด · เอกสาร ADR สองภาษา: `docs/governance/adr-070-machine-onboarding.{th,en}.{md,html}`
+
+> **ADR-070 อัปเดต (17 ก.ค. เย็น, มติ owner ก×3):** เครื่องมือมาตรฐานของ pattern นี้ landed แล้ว — (1) **KDT Machine Intelligence Library 83 รุ่น** ที่ `docs/evidence/machines/kdt-library/` (ทุกรุ่น NOT_ASSESSED/PROHIBITED, manifest 691/691) + generator ที่ `tools/kdt-library-build/` (2) **fleet-onboarding-kit v1.1** — DOC_PROVISIONAL→ENGINEER_VERIFIED + interim P0/P1 โดย **P1 ห้ามตัดงานจาก MONOLITH packet ทุกกรณี** (ครอบเฉพาะงานกระบวนการเดิม) และ ENGINEER_VERIFIED = ปลด machine-level เท่านั้น (3) PDFs ต้นทาง third-party pin hash ไม่ commit (`kdt-primary-sources.th.md`) (4) เครื่องนำร่อง Daph ขยายเป็น 2: KN-2409LP + **KD-610R** · หลักฐาน FO-5 เดิม (`kdt-kn-2409lp/`) แช่แข็งไม่แตะ

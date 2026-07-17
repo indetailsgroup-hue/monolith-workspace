@@ -15,7 +15,8 @@
     "start:api": "node dist/api/index.js",
     "start:worker": "node dist/worker/index.js",
     "verify": "tsx src/cli/receiptVerify.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "bullmq": "^5.10.0",

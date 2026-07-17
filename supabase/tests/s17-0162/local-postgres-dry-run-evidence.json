@@ -1,0 +1,64 @@
+{
+  "schema": "monolith.s17.migration-dry-run-evidence@1",
+  "recordedAt": "2026-07-12T00:37:35.5819996+07:00",
+  "implementationCandidate": "42e4cb7b26aa9aba4dbe36ad939076aa3cac428c",
+  "migration": {
+    "path": "supabase/migrations/0162_factory_server_identity_released_only.sql",
+    "sha256": "f3f5bfc6d9bbf11d74a0214e5c28aa9eef0172432c63d9cbc9d78bf4443a59e0"
+  },
+  "testInputs": {
+    "bootstrap-pre0162.sql": "3cf299da3fd909ed35e2fb6a907d69be62b205c82f3cd306fe927422618a1a1a",
+    "preflight-existing.sql": "d6cf5b44f27d937e7338fb5ad825db75a3246b15117b1fbfd0fa606089015329",
+    "assertions.sql": "971f52211485a32eca3f5d6b7365d27f4d5dde0b6162e23b4d90cf262328122b",
+    "dry-run-bootstrap.sql": "4043f21b2f9c7a33639348091fa481474b9cc54a6a422571f1ffbd3eae9bb205",
+    "dry-run-existing.sql": "fb4aadaea48f1616d31eeabe6f13ebc2113f8489fef3fc702e2d12ee950ec069",
+    "run-0162-dry-run.ps1": "127d5f60eb8aade8359e57ef694780f83bfd9f8bc5a06e6d674d0237fa350681",
+    "run-0162-ephemeral.ps1": "90ea2eb3573ba551f3129b8484e9a9d9fc9311d547c12fe2ef8260d7fe69670b"
+  },
+  "environment": {
+    "engine": "PostgreSQL 18.1",
+    "mode": "ephemeral bootstrap",
+    "database": "s17_0162_dryrun",
+    "host": "127.0.0.1",
+    "port": 55441,
+    "production": false
+  },
+  "result": {
+    "status": "PASS",
+    "transactionRolledBack": true,
+    "ephemeralServerStopped": true,
+    "ephemeralClusterRemoved": true,
+    "markers": [
+      "S17_0162_ASSERTIONS_PASS",
+      "S17_0162_DRY_RUN_PASS mode=bootstrap transaction=rolled_back",
+      "S17_0162_PSQL_PACKAGE_PASS",
+      "S17_0162_EPHEMERAL_POSTGRES_PASS"
+    ],
+    "negativeCases": [
+      "wrong action role rejected without audit side effect",
+      "authenticated forged actor denied without state or audit side effect",
+      "authenticated direct SELECT on factory_jobs and factory_job_events denied",
+      "legacy authenticated USING true Factory policies removed",
+      "malformed server actor context rejected without state or audit side effect",
+      "DRAFT-to-RELEASED and invalid FROZEN transitions rejected without audit side effect",
+      "FROZEN packet record/upload rejected",
+      "FROZEN packet exportability false",
+      "FROZEN verification rejected",
+      "email-like actor_name inputs ignored in favor of verified subject IDs"
+    ],
+    "positiveControls": [
+      "DRAFT-to-FROZEN transition",
+      "FROZEN-to-RELEASED transition",
+      "RELEASED packet record",
+      "RELEASED exportability",
+      "RELEASED verification with server actor audit context"
+    ]
+  },
+  "exclusions": [
+    "not a hosted Supabase run",
+    "not an existing pre-0162 staging snapshot run",
+    "does not exercise Supabase Auth token issuance",
+    "does not exercise Storage or PostgREST schema-cache refresh",
+    "does not authorize production apply, merge, or S17 closure"
+  ]
+}

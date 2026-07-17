@@ -173,7 +173,8 @@ export function AppShell({
   onExport,
   onSpecStateChange
 }: AppShellProps) {
-  const canExport = project.gateStatus === 'OK' && project.specState !== 'DRAFT';
+  // Presentation guard only; factory-api + SQL independently enforce RELEASED-only.
+  const canExport = project.gateStatus === 'OK' && project.specState === 'RELEASED';
   
   return (
     <div className="h-screen w-screen flex flex-col bg-surface-0 text-textc-primary overflow-hidden">

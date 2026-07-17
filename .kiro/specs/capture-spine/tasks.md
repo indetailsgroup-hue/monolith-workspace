@@ -134,3 +134,5 @@
 - **Critical path:** 1 → 2 → 3 → 5 (Edge) → 8
 - **ขนานได้:** task 2.* (pure logic) ขนานหลัง data layer; task 7.* (PBT) ขนานทั้งหมดหลัง logic+RPC
 - **prereq cross-spec:** workflow-copilot Phase 1 (human verify/approval) + mcp-layer (R15-19) ต้องพร้อมก่อน task 3/5
+
+> **มติ grill-me (owner ก ทุกข้อ, 16 ก.ค. 2026 — ADR-069):** ปิด owner nulls ที่ค้าง: **ledger_target = ตอบแล้วโดยการ build** (adapter #2 `0066–0068` posted single-gate — บันทึกที่ L3 #2; รายการ null ที่บรรทัด L2 เก่ากว่า) · **has_po = defer** จนมี procurement module จริง (po_ref เก็บเป็น free-text provenance) · **Released_Spec = defer-until-demand** (trigger: spec_draft จริงตัวแรกใน dogfood → spike reuse factory release seam ห้าม fork) · **MCP external exposure = ไม่เปิด** จนมี use case + reconcile double-gate · **auto-approve = ไม่เปิด** (คง verify-before-emit 100% จน dogfood ให้ baseline) · **OCR infra = dogfood เริ่มคีย์มือ** trigger ยืน Typhoon บน VM ใต้เงื่อนไข ADR-036 เมื่อ photo volume เจ็บจริง

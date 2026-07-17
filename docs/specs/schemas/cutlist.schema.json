@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/cutlist.schema.json",
+  "title": "monolith.factory.cutlist@2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "parts"],
+  "properties": {
+    "schema": { "const": "monolith.factory.cutlist@2.0" },
+    "parts": {
+      "type": "array",
+      "x-monolith-orderBy": ["partId:utf8-bytes"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["partId", "cabinetId", "materialId", "quantity", "finishWidthUm", "finishHeightUm", "cutWidthUm", "cutHeightUm", "thicknessUm", "grain", "edgeBandUm", "premillUm"],
+        "properties": {
+          "partId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "cabinetId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "materialId": { "$ref": "common.schema.json#/$defs/opaqueId" },
+          "quantity": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+          "finishWidthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "finishHeightUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "cutWidthUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "cutHeightUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "thicknessUm": { "$ref": "common.schema.json#/$defs/positiveUm" },
+          "grain": { "enum": ["HORIZONTAL", "VERTICAL", "NONE"] },
+          "edgeBandUm": { "$ref": "#/$defs/edges" },
+          "premillUm": { "$ref": "#/$defs/edges" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "edges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leftUm", "rightUm", "topUm", "bottomUm"],
+      "properties": {
+        "leftUm": { "$ref": "common.schema.json#/$defs/nonNegativeUm" },
+        "rightUm": { "$ref": "common.schema.json#/$defs/nonNegativeUm" },
+        "topUm": { "$ref": "common.schema.json#/$defs/nonNegativeUm" },
+        "bottomUm": { "$ref": "common.schema.json#/$defs/nonNegativeUm" }
+      }
+    }
+  }
+}

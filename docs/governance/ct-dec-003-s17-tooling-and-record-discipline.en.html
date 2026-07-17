@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003 — S17 Tooling, Ownership, and Append-Only Record Discipline</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003 — S17 Tooling, Ownership, and Append-Only Record Discipline</h1>
+<p>Effective date: 2026-07-11 Status: <strong>RECORDED — human Tech Lead decision</strong> Scope: MONOLITH S17 governance, CT-DEC-002 return, and governance tooling Technical baseline: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> Reviewed governance input: <code>7aa63fd085e71c0bcd62f8d9fbee9d1b363ec416</code> Decision authority: Tech Lead Document preparation: Codex, advisory/non-authoritative</p>
+<blockquote><p>This record preserves the human decision without converting advisory review into approval authority. It closes no P0 blocker, does not approve CT-DEC-002, and does not unlock Track B implementation.</p></blockquote>
+<h2>1. Decision register</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision</th>
+<th>Authority</th>
+<th>Effect</th>
+</tr></thead><tbody>
+<tr>
+<td>Return CT-DEC-002 for v0.2</td>
+<td>Tech Lead</td>
+<td>all six independent-review blockers must be remediated; no approval signature is recorded</td>
+</tr>
+<tr>
+<td>Shadow-only maximum result</td>
+<td>Tech Lead</td>
+<td><code>PKT_OK_SHADOW_ONLY / NO_CUT</code> is the highest verifier result while shadow mode is active; bare <code>PKT_OK</code> is forbidden</td>
+</tr>
+<tr>
+<td>Add three as-built gaps</td>
+<td>Tech Lead</td>
+<td>gate evidence run fields, locale sorting, and floating quantization become S17-4 inputs</td>
+</tr>
+<tr>
+<td>Fix <code>jobRunId</code> ownership</td>
+<td>Tech Lead</td>
+<td>Track A supplies actor/auth/release contract; S17-4 owns transactional allocation</td>
+</tr>
+<tr>
+<td>Classify and harden governance tooling</td>
+<td>Tech Lead</td>
+<td>historical use is authorized narrowly; official status requires independent re-review</td>
+</tr>
+<tr>
+<td>Make historical decision quotes append-only</td>
+<td>Tech Lead</td>
+<td>corrections use addenda/supersession notes, never silent rewrites</td>
+</tr>
+</tbody></table></div>
+<h2>2. CT-DEC-002 return disposition</h2>
+<p>CT-DEC-002 remains <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong>. Version 0.2 must remediate:</p>
+<ol><li>protected signature algorithm/key/registry fields</li><li>gate evidence separation between content and run planes</li><li>schemas, quantity normalization, canonical array ordering, and field ownership</li><li>Windows-safe content-ID filename slicing and an exact ZIP byte profile</li><li>trusted-key lifecycle, revocation, and unavailable-authority semantics</li><li>stable fail-closed result codes and separate operational disposition</li></ol>
+<p>All three approval roles remain PENDING. Track B implementation for S17-4/S17-5 stays locked until the complete S17-3 approval matrix is signed.</p>
+<p>During shadow mode, the verifier's successful result ceiling is:</p>
+<pre><code class="language-text">PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code></pre>
+<p><code>PKT_OK</code> is reserved and must not be emitted during the controlled pilot.</p>
+<h2>3. Append-only ownership supersession — <code>jobRunId</code></h2>
+<p>Historical v0.1 wording associated server-owned <code>jobRunId</code> with “S17-1/S17-4.” That text remains recoverable in Git history and must not be rewritten as though it never existed. This section supersedes only its ownership interpretation:</p>
+<ul><li><strong>Track A / S17-1–2 owns</strong> <code>actorSubjectId</code>, authenticated authorization context, and the server-enforced RELEASED-only invariant</li><li>**Track A does not allocate <code>jobRunId</code>**</li><li><strong>S17-4 owns</strong> canonical export-request fingerprinting and durable transactional <code>jobRunId</code> allocation after calling the Track A contract</li><li>one <code>jobRunId</code> binds to one <code>packetContentId</code>; idempotency conflicts fail closed</li></ul>
+<p>This scope correction does not delay Track A and does not unlock S17-4 implementation before CT-DEC-002 approval.</p>
+<h2>4. Durable governance-tooling classification</h2>
+<h3>4.1 Retroactively authorized historical versions</h3>
+<p>The following versions at <code>7aa63fd0</code> are retroactively authorized as <strong>governance tooling only</strong>:</p>
+<pre><code class="language-text">7976e417cbffc5779aa7b53608ae179324981b6d63b65c59a013013f2f852b6c  render-standalone-markdown.mjs
+b42a168489ecf776adf25c8d866444b2badb81da474224d9985e91673d99c62e  write-sha256-manifest.mjs
+cc34ad45d4e185065771306e275e3198332bedcae1557106d4f0fa6bd677c05a  verify-sha256-manifest.mjs</code></pre>
+<p>This authorization does not make them Track implementation, production controls, release gates, or S17-5 evidence.</p>
+<h3>4.2 Hardened candidate versions in this governance revision</h3>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  render-standalone-markdown.mjs
+d27a6120483569e044f2eb77ee4158d3dfc1bbc4a9b1e157dd750a9e8743ec3c  write-sha256-manifest.mjs
+1c67197766ade318f1287b0b88a3001c79a2a1dfd30398d63d679d28a8215672  verify-sha256-manifest.mjs
+00c33bd04d722fab8d96424af0c80b0e5db13d7f19612083f08d1ea39c299fa4  governance-tooling.test.mjs</code></pre>
+<p>The candidate writer/verifier reject path escape, symlinks outside the manifest root, duplicate/case-fold-colliding entries, CRLF/BOM/blank-line manifests, non-canonical paths, and manifest self-reference. The writer records canonical relative paths rather than basename-only entries. The focused built-in Node test suite covers valid nested paths plus traversal, duplicate, blank-line, CRLF, unsafe-link, token-collision, and unclosed-fence negatives.</p>
+<p>Classification remains:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Tool</th>
+<th>Current status</th>
+<th>Boundary</th>
+</tr></thead><tbody>
+<tr>
+<td><code>render-standalone-markdown.mjs</code></td>
+<td><strong>YELLOW</strong></td>
+<td>trusted repository governance input only</td>
+</tr>
+<tr>
+<td><code>write-sha256-manifest.mjs</code></td>
+<td><strong>CANDIDATE — NOT OFFICIAL</strong></td>
+<td>governance manifests only; independent re-review required</td>
+</tr>
+<tr>
+<td><code>verify-sha256-manifest.mjs</code></td>
+<td><strong>CANDIDATE — NOT OFFICIAL</strong></td>
+<td>manifest-integrity utility only; independent re-review required</td>
+</tr>
+</tbody></table></div>
+<p><code>verify-sha256-manifest.mjs</code> is not, and must never be represented as, the S17-5 full packet verifier. Official status may be granted only by a later human decision after independent source review and negative-test reproduction.</p>
+<h2>5. Append-only historical decision-record rule</h2>
+<ol><li>Verbatim human-decision quote blocks and signed/approved fields are append-only after recording</li><li>A factual correction, changed owner, or changed policy is added as a dated addendum or a new <code>CT-DEC-xxx</code> supersession note</li><li>The new note identifies the prior record, the exact scope superseded, authority/role, reason, and effective date</li><li>Unaffected prior text remains authoritative in its original scope</li><li>Rendering, translation, typo, or formatting corrections must not silently change normative meaning; a normative change requires the same supersession discipline</li><li>Git history is tamper-evident provenance, but an unsigned commit must not be called immutable</li></ol>
+<h2>6. Track A measured status at recording time</h2>
+<p>Read-only Git inspection on 2026-07-11 found:</p>
+<ul><li>main implementation worktree at <code>9ac7cff3</code> on <code>fix/drillmap-bolt-and-brun-dowels</code></li><li>governance worktree at <code>7aa63fd0</code> on <code>governance/s17-control-pack</code></li><li>no local or remote Track A/S17-1 branch</li><li>no dedicated clean Track A worktree</li></ul>
+<p>Therefore <strong>S17-1 implementation status = NOT STARTED / NO REPOSITORY EVIDENCE</strong> at this record time. This is a measured fact, not a claim about work outside Git. Because the implementation deadline remains approximately 2026-07-25, creating the exact-baseline clean Track A worktree and beginning server-owned actor identity is the highest-priority execution action.</p>
+<h2>7. Unchanged boundaries</h2>
+<ul><li>CT-DEC-002 remains DRAFT and has no approval signatures</li><li>Track B implementation remains locked</li><li>no P0 blocker is closed</li><li>no production-ready or deployment-ready claim is made</li><li>ADR-064 still needs all four human roles</li><li>no real workpiece may be cut from any packet until S17 closes and the four-condition real-cut gate passes</li></ul>
+<h2>8. Next controlled actions</h2>
+<ol><li>submit CT-DEC-002 v0.2 plus its hash-anchored diff summary for second independent review</li><li>independently re-review the hardened writer/verifier before any official-tooling decision</li><li>start Track A from exact baseline <code>9ac7cff3</code> in its own clean worktree without waiting for CT-DEC-002 approval</li></ol>
+</main>
+</body>
+</html>

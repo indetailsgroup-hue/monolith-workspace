@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Migration 0162 — ชุด Dry-Run บน PostgreSQL</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Migration 0162 — ชุด Dry-Run บน PostgreSQL</h1>
+<p>รุ่นเอกสาร: 1.0</p>
+<p>จัดทำ: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>Migration เป้าหมาย: <code>supabase/migrations/0162_factory_server_identity_released_only.sql</code></p>
+<p>สถานะ: <strong>ชุดตรวจสอบสำหรับ non-production เท่านั้น</strong></p>
+<blockquote><p>ชุดนี้ไม่ apply migration 0162 กับ production, ไม่อนุมัติ merge และไม่ปิด S17-1/S17-2 โดย driver ทั้งสองเปิด transaction เดียวและจบด้วย <code>ROLLBACK</code></p></blockquote>
+<h2>1. สิ่งที่ชุดนี้พิสูจน์</h2>
+<p>Assertions รัน migration ตัวจริงบน PostgreSQL จริงและตรวจว่า:</p>
+<ol><li>RPC overload เก่าที่รับ actor จากผู้เรียกถูกถอดออก</li><li>เฉพาะ <code>service_role</code> มีสิทธิ์ execute mutating RPC ใหม่โดยตรง</li><li>client แบบ authenticated ที่พยายามส่ง actor ปลอมถูกปฏิเสธและไม่สร้าง job/event</li><li>authenticated client bypass route policy ด้วยการ select ตาราง Factory job/event ตรง ๆ ไม่ได้</li><li>server actor context ที่ผิดรูปถูกปฏิเสธก่อนแก้ state หรือ audit</li><li>role ผิดประเภทถูกปฏิเสธสำหรับการบันทึก packet และ verification</li><li>transition ผิดลำดับคืน error และไม่เขียน event</li><li>งานสถานะ FROZEN บันทึก/อัปโหลด packet ไม่ได้, exportable ไม่ได้ และบันทึก verification ไม่ได้</li><li>actor name ที่หน้าตาเหมือน email ถูก ignore โดย <code>actor_name</code> ที่ persist ต้องเท่ากับ verified actor subject ID</li><li>positive control <code>DRAFT -&gt; FROZEN -&gt; RELEASED -&gt; record packet -&gt; verify</code> ผ่านและบันทึก server actor context</li></ol>
+<p>ชุดนี้ <strong>ไม่พิสูจน์</strong> hosted Supabase Auth, Storage, Edge deployment, PostgREST schema-cache refresh, ความครบของ metadata ผู้ใช้ production หรือ P0 closure</p>
+<h2>2. ไฟล์ในชุด</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>หน้าที่</th>
+</tr></thead><tbody>
+<tr>
+<td><code>dry-run-bootstrap.sql</code></td>
+<td>สร้าง migrations 0155/0156/0157/0161 ใน DB ชั่วคราว, apply 0162, รัน assertions แล้ว rollback</td>
+</tr>
+<tr>
+<td><code>dry-run-existing.sql</code></td>
+<td>ตรวจว่า non-production DB อยู่ที่ 0161, apply 0162, รัน assertions แล้ว rollback</td>
+</tr>
+<tr>
+<td><code>bootstrap-pre0162.sql</code></td>
+<td>สร้าง Supabase roles และ <code>fn_is_service_role()</code> เท่าที่ DB ว่างต้องใช้</td>
+</tr>
+<tr>
+<td><code>preflight-existing.sql</code></td>
+<td>ตรวจ tables และ legacy signatures ก่อน 0162 แบบ fail-closed</td>
+</tr>
+<tr>
+<td><code>assertions.sql</code></td>
+<td>negative cases และ positive controls</td>
+</tr>
+<tr>
+<td><code>run-0162-dry-run.ps1</code></td>
+<td>psql runner ที่มี safety gate สำหรับ connection ที่ระบุ</td>
+</tr>
+<tr>
+<td><code>run-0162-ephemeral.ps1</code></td>
+<td>สร้าง PostgreSQL cluster ชั่วคราว, รัน bootstrap mode, หยุดและลบทิ้ง</td>
+</tr>
+<tr>
+<td><code>local-postgres-dry-run-evidence.json</code></td>
+<td>บันทึกผล PostgreSQL 18.1 bootstrap ที่ผูก hash inputs และ exclusion list</td>
+</tr>
+</tbody></table></div>
+<h2>3. คำสั่งแนะนำ: PostgreSQL ชั่วคราว</h2>
+<p>เครื่องต้องมี <code>psql</code>, <code>initdb</code>, <code>pg_ctl</code>, <code>createdb</code> และ <code>pg_isready</code> ใน <code>PATH</code></p>
+<p>รันจาก repository root:</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-0162/run-0162-ephemeral.ps1 `
+  -Port 55439</code></pre>
+<p>หาก port ถูกใช้ให้เปลี่ยนเป็นหมายเลขอื่น ผลสำเร็จต้องจบด้วย marker ครบสี่ตัว:</p>
+<pre><code class="language-text">S17_0162_ASSERTIONS_PASS
+S17_0162_DRY_RUN_PASS mode=bootstrap transaction=rolled_back
+S17_0162_PSQL_PACKAGE_PASS
+S17_0162_EPHEMERAL_POSTGRES_PASS</code></pre>
+<h2>4. รันกับ non-production DB ที่อยู่ก่อน 0162</h2>
+<p>เป้าหมายต้องเป็น disposable snapshot ที่มี migrations ถึง 0161 และยังไม่มี 0162 ห้ามชี้ไป production</p>
+<pre><code class="language-powershell">$env:S17_TEST_DATABASE_URL = 'postgresql://USER:PASSWORD@HOST:PORT/s17_0162_staging'
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-0162/run-0162-dry-run.ps1 `
+  -Mode existing-pre0162 `
+  -ExpectedDatabase s17_0162_staging `
+  -ConfirmNonProduction</code></pre>
+<p>Runner ใช้ <code>psql -X -w</code>, <code>ON_ERROR_STOP=1</code>, ตรวจชื่อ database จริง, ปฏิเสธชื่อ protected/production-like และไม่เปิด password prompt แนะนำ <code>.pgpass</code>, <code>PGPASSFILE</code> หรือ secret environment variable อายุสั้นในสภาพแวดล้อม operator ที่ควบคุมแล้ว</p>
+<h2>5. พฤติกรรมเมื่อไม่ผ่าน</h2>
+<ul><li>Assertion ที่ไม่ผ่าน raise <code>S17_ASSERT_FAIL</code> และ psql ออกด้วย code ที่ไม่ใช่ศูนย์</li><li>DB ที่ไม่ได้อยู่สถานะ 0161 raise <code>S17_PREFLIGHT_FAIL</code> ก่อน migration ทำงาน</li><li>หาก error การตัด connection จะ rollback transaction ที่ยังเปิดอยู่; หากผ่าน driver จะ <code>ROLLBACK</code> อย่างชัดเจน</li><li>Ephemeral runner ลบเฉพาะโฟลเดอร์ที่ตัวเองสร้างชื่อ <code>monolith-s17-0162-&lt;guid&gt;</code> ใต้ system temp หลังหยุด PostgreSQL แล้ว</li></ul>
+<h2>6. หลักฐานที่รันซ้ำแล้วบนเครื่องนี้</h2>
+<p>วันที่ 2026-07-11 bootstrap driver ผ่านบน PostgreSQL 18.1 ด้วย database ชั่วคราวชื่อ <code>s17_0162_dryrun</code> negative cases และ positive controls ผ่านทั้งหมด, transaction ถูก rollback, server ถูกหยุด และ cluster ชั่วคราวถูกลบแล้ว Exact input hashes และ exclusions อยู่ใน <code>local-postgres-dry-run-evidence.json</code> หลักฐานนี้เป็น local real-PostgreSQL เท่านั้น; ยังต้องมี hosted/staging evidence ก่อนมนุษย์พิจารณาปิดงาน</p>
+<h2>7. Human gate</h2>
+<p>การ apply 0162 กับ hosted หรือ production database ต้องมีมติมนุษย์แยกต่างหาก, deployment sequence ที่อนุมัติ, metadata readiness, แผน backup/abort และ independent review ชุดนี้ไม่ให้อำนาจดังกล่าว</p>
+</main>
+</body>
+</html>

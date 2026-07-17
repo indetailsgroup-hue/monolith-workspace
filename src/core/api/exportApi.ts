@@ -131,7 +131,9 @@ export interface AuditStats {
 
 const MOCK_EXPORT_OPTIONS: ExportOptionsResponse = {
   ok: true,
-  formats: ['CUTLIST_CSV', 'DXF_R12', 'GCODE', 'BOM_JSON', 'STEP', 'PDF'],
+  // STEP and PDF are not implemented yet, so they are not advertised as
+  // available formats (FS-B2-05 — keep claims aligned with what ships).
+  formats: ['CUTLIST_CSV', 'DXF_R12', 'GCODE', 'BOM_JSON'],
   dialects: {
     csv: ['EXCEL', 'RFC4180', 'HOMAG', 'BIESSE', 'SCM'],
     dxf: ['R12', 'R14', '2000', '2007'],

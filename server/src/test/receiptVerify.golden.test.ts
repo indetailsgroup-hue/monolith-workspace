@@ -22,7 +22,7 @@ import {
   TEST_KEY_ID,
 } from './fixtures/createTestFixture.js';
 import { verifyReceiptZip, CLI_VERSION } from '../cli/receiptVerify.js';
-import { resetKeyStore } from '../crypto/receiptKeyStore.js';
+import { __setPinnedKeysForTest } from '../crypto/receiptKeyStore.js';
 import type { PinnedPublicKey } from '../crypto/receiptKeyStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,9 +33,6 @@ const __dirname = dirname(__filename);
 // ============================================================================
 
 const TEST_DIR = join(__dirname, '.test-temp');
-const PINNED_KEYS_PATH = join(__dirname, '..', 'crypto', 'production.receipt.pubkeys.v1.json');
-
-let originalPinnedKeys: string | null = null;
 
 function writeTestZip(name: string, buffer: Buffer): string {
   const path = join(TEST_DIR, name);
@@ -43,16 +40,9 @@ function writeTestZip(name: string, buffer: Buffer): string {
   return path;
 }
 
+// Inject trusted keys in memory — never mutates the on-disk production key file.
 function setPinnedKeys(keys: PinnedPublicKey[]): void {
-  writeFileSync(PINNED_KEYS_PATH, JSON.stringify(keys, null, 2));
-  resetKeyStore(); // Force reload
-}
-
-function restorePinnedKeys(): void {
-  if (originalPinnedKeys !== null) {
-    writeFileSync(PINNED_KEYS_PATH, originalPinnedKeys);
-  }
-  resetKeyStore();
+  __setPinnedKeysForTest(keys);
 }
 
 // ============================================================================
@@ -65,12 +55,6 @@ describe('P13.4 Golden Test Matrix - Receipt Verification', () => {
     if (!existsSync(TEST_DIR)) {
       mkdirSync(TEST_DIR, { recursive: true });
     }
-
-    // Backup original pinned keys
-    if (existsSync(PINNED_KEYS_PATH)) {
-      const { readFileSync } = require('fs');
-      originalPinnedKeys = readFileSync(PINNED_KEYS_PATH, 'utf-8');
-    }
   });
 
   afterAll(() => {
@@ -78,13 +62,11 @@ describe('P13.4 Golden Test Matrix - Receipt Verification', () => {
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });
     }
-
-    // Restore original pinned keys
-    restorePinnedKeys();
   });
 
   beforeEach(() => {
-    resetKeyStore();
+    // Isolate each test with no trusted keys until it injects its own.
+    __setPinnedKeysForTest([]);
   });
 
   // ==========================================================================

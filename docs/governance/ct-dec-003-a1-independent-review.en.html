@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003-A1 Independent Source Review — Governance Tooling Bytes</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003-A1 Independent Source Review — Governance Tooling Bytes</h1>
+<p>Effective date: 2026-07-16 Status: <strong>RECORDED — independent review evidence (advisory, non-authoritative)</strong> Reviewed record: <code>CT-DEC-003-A1</code> (2026-07-15) — <strong>unchanged</strong> Reviewer: <strong>Claude</strong> — independent of Codex, the tooling author/modifier (builder ≠ reviewer, ADR-065/066) Purpose: close the <strong>independent-source-review leg</strong> that CT-DEC-003 §4 requires before OFFICIAL classification</p>
+<blockquote><p>This record is review evidence only. It does not itself grant OFFICIAL status (that is the Tech Lead's human decision), does not approve CT-DEC-002, does not unlock Track B, and does not close any P0 blocker.</p></blockquote>
+<h2>1. Scope and independence</h2>
+<ul><li>Reviewed the four files at their exact pinned bytes (matching CT-DEC-003-A1 §2):</li></ul>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  scripts/render-standalone-markdown.mjs
+3cd69ca33cfc1fec7657fd0a242668f24706f38ba52b27be7021579d8e58a584  scripts/write-sha256-manifest.mjs
+9fbbf53519a2d45e3298a5d7d7e7b0df6481396b40a440cd707206b359ea2cb8  scripts/verify-sha256-manifest.mjs
+cef610700abc1e17258373b99cd0243c757407cfd75f92e6ddbf1e0b07fe8093  scripts/governance-tooling.test.mjs</code></pre>
+<ul><li><strong>Independence</strong>: the tooling author/modifier is Codex; the reviewer is Claude (a different agent) — this closes the SoD leg CT-DEC-003 §4 requires; it is not a self-review.</li><li><strong>Method</strong>: full line-by-line source read + reproduced the test suite + <strong>adversarial empirical probes</strong> of controls the existing tests did not cover.</li></ul>
+<h2>2. Per-file verdict</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>Verdict</th>
+<th>Principal controls confirmed in source</th>
+</tr></thead><tbody>
+<tr>
+<td><code>write-sha256-manifest.mjs</code></td>
+<td><strong>SOUND</strong></td>
+<td>two-layer containment (logical <code>relative</code> + physical <code>realpath</code>), canonical path (NFC / reject <code>..</code> / backslash / win32-absolute / control char / Windows reserved name / trailing dot-space), dedup + case-fold, reject self-listing, reject symlink input/output, sort via <code>Buffer.compare</code> unsigned UTF-8</td>
+</tr>
+<tr>
+<td><code>verify-sha256-manifest.mjs</code></td>
+<td><strong>SOUND</strong></td>
+<td>reject: BOM, CR/CRLF, non-UTF-8 (fatal decode), blank line, trailing-LF ≠ 1, malformed entry, non-lowercase-64hex digest, non-canonical path, dup/case-fold, unsorted, symlink, traversal, self-reference (<code>fileReal === manifestReal</code>), digest mismatch</td>
+</tr>
+<tr>
+<td><code>render-standalone-markdown.mjs</code></td>
+<td><strong>SOUND</strong></td>
+<td>no raw-HTML passthrough, escape-first-then-construct, link scheme allowlist <code>https?</code>/<code>mailto</code> (blocks <code>javascript:</code>/<code>data:</code>/<code>vbscript:</code>/<code>//</code>/control-char), NUL reject, unclosed-fence throw, <code>rel=noopener noreferrer</code></td>
+</tr>
+<tr>
+<td><code>governance-tooling.test.mjs</code></td>
+<td><strong>MEANINGFUL</strong></td>
+<td>asserts exact output bytes + exit status on real negatives — not a hollow test</td>
+</tr>
+</tbody></table></div>
+<h2>3. Adversarial empirical probes (controls not covered by the existing tests — exercised live)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Probe</th>
+<th>Input</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr>
+<td>BOM manifest</td>
+<td><code>﻿</code> + entry</td>
+<td>✅ INVALID</td>
+</tr>
+<tr>
+<td>Self-reference</td>
+<td>manifest listing itself</td>
+<td>✅ INVALID</td>
+</tr>
+<tr>
+<td>Non-lowercase hex</td>
+<td>uppercased digest</td>
+<td>✅ INVALID</td>
+</tr>
+<tr>
+<td><code>data:</code> link</td>
+<td><code>[x](data:text/html,&lt;script&gt;…)</code></td>
+<td>✅ rejected</td>
+</tr>
+<tr>
+<td>Protocol-relative</td>
+<td><code>[x](//evil.example/x)</code></td>
+<td>✅ rejected</td>
+</tr>
+<tr>
+<td>Case-fold</td>
+<td><code>File.txt</code> vs <code>file.txt</code> (verify + write)</td>
+<td>✅ rejected</td>
+</tr>
+<tr>
+<td>Sanity</td>
+<td>valid manifest + safe document</td>
+<td>✅ <strong>PASS</strong> (not a reject-everything tool)</td>
+</tr>
+</tbody></table></div>
+<h2>4. Reproduced + newly-locked tests</h2>
+<ul><li><code>governance-tooling.test.mjs</code> (cef61070): <strong>5/5 pass</strong> (reproduced)</li><li><strong>NEW</strong> <code>governance-tooling-controls.test.mjs</code> (<code>08f472431cb7ccffc38623478efa9fd82d1e3ac17586e7de8add6be1195f5ca8</code>): <strong>7/7 pass</strong> — locks controls that had no dedicated regression test: BOM / non-lowercase-hex / malformed-hex / trailing-LF / self-reference / case-fold / renderer schemes (<code>data:</code>/<code>vbscript:</code>/<code>//</code>) / inline NUL / writer self-list</li></ul>
+<blockquote><p>The new test file is deliberately a <strong>separate file</strong> so the four files pinned by A1 §2 stay <strong>byte-identical</strong> (their OFFICIAL classification is not affected) — confirmed that all four hashes still match A1 §2 after adding the tests.</p></blockquote>
+<h2>5. Observations (low severity — not blockers, consistent with the residuals A1 §3 discloses)</h2>
+<ol><li>A leading-space path segment is not rejected (a trailing dot/space is) — no containment impact, cosmetic.</li><li>NUL is rejected only in inline text, not inside fenced-code bodies — browsers ignore NUL, trusted input, negligible.</li><li>TOCTOU read race (lstat → realpath → read) — already disclosed in A1 §3.</li><li>A manifest verifies the integrity of listed files, not set completeness — inherent, not over-claimed.</li><li>Windows <code>CONIN$</code>/<code>CONOUT$</code> are not in the reserved-name regex — extremely marginal.</li></ol>
+<p>No <strong>high or medium</strong> severity defect found.</p>
+<h2>6. SoD status for OFFICIAL (per CT-DEC-003 §4)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Condition</th>
+<th>Status</th>
+</tr></thead><tbody>
+<tr>
+<td>independent source review</td>
+<td>✅ <strong>DONE</strong> — this record (Claude ≠ Codex)</td>
+</tr>
+<tr>
+<td>reproduce negative tests</td>
+<td>✅ DONE — 5/5 + 7/7 + 7 probes</td>
+</tr>
+<tr>
+<td>human decision (Tech Lead ratifies OFFICIAL)</td>
+<td>⬜ PENDING — the Tech Lead's prerogative</td>
+</tr>
+</tbody></table></div>
+<h2>7. Verdict + endorsement</h2>
+<p>At the exact pinned bytes, the tooling <strong>implements the A1 §3 controls in full</strong> for the disclosed scope (governance-document manifests + standalone HTML); the residual limits are honestly disclosed; <strong>no high/medium defect</strong> was found. The OFFICIAL-for-governance-docs classification is therefore <strong>defensible</strong> and I endorse it, conditioned on:</p>
+<ul><li>(a) binding to the <strong>exact bytes</strong> — any byte change reverts that tool to CANDIDATE (already enforced by A1 §5);</li><li>(b) the supplementary regression suite now added (§4) to prevent silent regression of these controls.</li></ul>
+<p>The remaining step is the <strong>Tech Lead's deliberate ratification</strong> — not a builder self-elevation.</p>
+<h2>8. Boundaries unchanged</h2>
+<ul><li>CT-DEC-002 remains DRAFT — the three role approvals remain PENDING.</li><li>Track B (S17-4/5) remains LOCKED · no P0 closed · ADR-064 still needs all four roles.</li><li>Real dogfood remains <code>AUTHORIZED/PREPARED — NOT STARTED</code>.</li><li><code>verify-sha256-manifest.mjs</code> is <strong>not</strong> the S17-5 factory packet verifier (no schema-bundle validation / NFP precedence / registry lookup / ECDSA raw r‖s / KMS trust / machine admission).</li><li>Output from these governance tools must not emit or imply bare <code>PKT_OK</code> / <code>CUT</code> / production readiness / approval authority.</li></ul>
+</main>
+</body>
+</html>

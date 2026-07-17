@@ -293,7 +293,13 @@ const ADAPTER_REGISTRY: Readonly<Record<string, OrderAdapter>> = {
  *   const result = adapter?.({ menu_items: [{ item_id: "GAENG", quantity: 1 }] });
  */
 export function orderAdapter(verticalContext: string): OrderAdapter | undefined {
-  return ADAPTER_REGISTRY[verticalContext];
+  // Only OWN registry keys are adapters. Without this guard a vertical named
+  // after an inherited Object member ("valueOf", "toString", "constructor", …)
+  // resolves to that prototype function instead of undefined and is wrongly
+  // treated as a registered adapter (then throws when invoked).
+  return Object.prototype.hasOwnProperty.call(ADAPTER_REGISTRY, verticalContext)
+    ? ADAPTER_REGISTRY[verticalContext]
+    : undefined;
 }
 
 /**
@@ -313,5 +319,16 @@ export function normalizeOrder(
   if (adapter === undefined) {
     return reject(`no order adapter registered for vertical '${verticalContext}'`);
   }
-  return adapter(rawOrder);
+  try {
+    return adapter(rawOrder);
+  } catch (err) {
+    // Uphold the documented guarantee: normalizeOrder never throws. A malformed
+    // rawOrder — e.g. one whose keys shadow Object built-ins like `valueOf` /
+    // `toString`, breaking coercion inside the adapter — is surfaced as a clean
+    // rejection rather than a thrown/rejected error (which otherwise leaked as
+    // an unhandled async rejection and randomly reddened unrelated tests).
+    return reject(
+      `order adapter for '${verticalContext}' threw: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }

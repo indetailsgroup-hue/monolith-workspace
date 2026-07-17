@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Track A — Client Compatibility and Deployment Checklist</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Track A — Client Compatibility และ Deployment Checklist</h1>
+<p>รุ่นเอกสาร: 1.0</p>
+<p>จัดทำ: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>สถานะ: <strong>วิเคราะห์ deployment — ไม่ใช่อำนาจ deploy</strong></p>
+<blockquote><p>Candidate นี้เปลี่ยน trust boundary ของ factory และ RPC signatures ห้าม merge หรือ deploy จนกว่า independent review, database evidence, metadata preparation และ cutover plan ที่มนุษย์อนุมัติจะครบ</p></blockquote>
+<h2>1. ข้อค้นพบระดับสรุป</h2>
+<p><code>factory-api</code> candidate และ migration 0162 ปัจจุบัน <strong>ไม่มีลำดับ zero-downtime ได้ด้วยตัวเอง</strong>:</p>
+<ul><li><strong>ลง function ก่อน:</strong> function ใหม่เรียก RPC parameter signatures ใหม่ที่ยังไม่มีจนกว่า 0162 จะถูก apply ทำให้ mutating routes ล้มเหลว</li><li><strong>ลง migration ก่อน:</strong> 0162 drop signatures เก่าทันที แต่ function ที่ deploy อยู่ยังเรียก signatures เก่า ทำให้ mutating routes ล้มเหลว</li></ul>
+<p>ดังนั้น “function ก่อนหรือ migration ก่อน” ไม่ใช่คำตอบแบบสองตัวเลือกภายใต้ live traffic ต้องใช้ bridge sequence ใน §6.1 หรือ controlled maintenance window ใน §6.2</p>
+<h2>2. ผลกระทบด้าน authentication ร่วม</h2>
+<p>Factory API ทุก route ยกเว้น health ต้องมี end-user Bearer JWT ที่ถูกต้อง Anon key เป็นเพียง API key และไม่กลายเป็นตัวตน <code>monolith.user.role</code>, <code>x-actor-role</code>, actor ใน body และ <code>user_metadata</code> ไม่มีสิทธิ์เพิ่ม server access</p>
+<p>เงื่อนไขที่ client ต้องมี:</p>
+<ul><li>มี Supabase session ที่ยังไม่หมดอายุใน browser</li><li>access token มี <code>app_metadata.roles</code> ที่ระบบรู้จัก</li><li>production operators มี <code>app_metadata.site_codes</code> ที่เป็นรหัสจริง</li><li>หลังแก้ metadata ผู้ใช้ต้อง refresh session หรือ sign out/in เพื่อให้ JWT ใหม่บรรจุ claims</li></ul>
+<p>หากไม่มี token หรือไม่มี role ที่รู้จัก ระบบจะคืน <code>401</code>/<code>403</code> แทนพฤติกรรม permissive เดิม</p>
+<h2>3. Checklist แยกตาม client</h2>
+<h3>3.1 Designer workspace และ automatic packet upload</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>จุดตรวจ</th>
+<th>ผลกระทบ as-built / สิ่งที่ต้องทำ</th>
+</tr></thead><tbody>
+<tr>
+<td>State/freeze/release/revoke/can-export/proof</td>
+<td>ต้องมี JWT และ capability <code>designer</code>/<code>admin</code>; local role selector เป็น presentation เท่านั้น</td>
+</tr>
+<tr>
+<td>สถานะ export</td>
+<td>FROZEN export ไม่ได้อีกต่อไป Operator ต้อง Release ก่อน Export อย่างชัดเจน</td>
+</tr>
+<tr>
+<td>ปุ่ม export ที่ header</td>
+<td><code>AppShell.tsx</code> เปิดเมื่อ gate OK และ state RELEASED เท่านั้น</td>
+</tr>
+<tr>
+<td>Automatic upload</td>
+<td><code>App.tsx</code> สร้างและดาวน์โหลด NFP ZIP ในเครื่องก่อนเรียก <code>uploadPacket()</code> หาก server ปฏิเสธ ผู้ใช้อาจมีไฟล์ local แล้ว และ feedback ปัจจุบันอยู่แค่ console</td>
+</tr>
+<tr>
+<td>ปุ่มสร้าง/download packet อื่น</td>
+<td>บางเส้นยังสร้าง local browser download ได้โดยไม่มี server acceptance ไฟล์ดังกล่าวไม่ใช่ server-released evidence และยัง NO_CUT</td>
+</tr>
+<tr>
+<td>Session หาย/หมดอายุ</td>
+<td>Calls คืน <code>401</code>; UI ควรแสดง sign-in/session-expired ให้ชัดแทนการพึ่ง console</td>
+</tr>
+</tbody></table></div>
+<p>Compatibility risk: ผู้ใช้ที่เคย “Freeze แล้ว Export” ต้องเพิ่มขั้น Release และ NFP ZIP ที่ดาวน์โหลดสำเร็จห้ามตีความว่า server รับ packet แล้ว</p>
+<h3>3.2 FactoryApp routes</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Route/client</th>
+<th>Claim ที่ต้องมี</th>
+<th>ผล compatibility</th>
+</tr></thead><tbody>
+<tr>
+<td>state/can-export</td>
+<td>Factory capability ใด ๆ ที่รู้จัก</td>
+<td>ใช้ได้เมื่อ JWT ถูกต้อง; role ว่าง/ไม่รู้จักได้ <code>403</code></td>
+</tr>
+<tr>
+<td>jobs list/activity/proof</td>
+<td><code>designer</code>, <code>factory</code>/<code>factory_operator</code> หรือ admin-equivalent</td>
+<td>INSTALLER และ FINANCE ได้ <code>403</code> เพราะ evidence surfaces เหล่านี้เปิดเผย actor คนอื่นและ lineage</td>
+</tr>
+<tr>
+<td>Direct PostgREST select บน <code>factory_jobs</code> / <code>factory_job_events</code></td>
+<td>ไม่มีสำหรับ end user</td>
+<td><strong>เลิกรองรับโดยเจตนา:</strong> migration 0162 ถอน permissive authenticated policies/privileges; ต้องใช้ Factory API routes</td>
+</tr>
+<tr>
+<td>GET <code>/:jobId/export</code></td>
+<td><code>factory</code>, <code>factory_operator</code> หรือ admin-equivalent</td>
+<td>ใช้ได้เฉพาะ RELEASED และมี packet ที่บันทึกแล้ว</td>
+</tr>
+<tr>
+<td>POST <code>/:jobId/verify</code></td>
+<td><code>factory</code>, <code>factory_operator</code> หรือ admin-equivalent</td>
+<td>ใช้ได้เฉพาะ RELEASED และมี packet ที่บันทึกแล้ว</td>
+</tr>
+<tr>
+<td><code>triggerLegacyExportApi()</code> แบบ POST</td>
+<td>—</td>
+<td><strong>พัง/ไม่รองรับ:</strong> <code>factory-api</code> มี GET export ไม่ใช่ legacy POST export</td>
+</tr>
+<tr>
+<td><code>fetchExportOptionsApi()</code></td>
+<td>—</td>
+<td><strong>พัง/ไม่รองรับ:</strong> <code>factory-api</code> ไม่มี <code>/factory/export/options</code></td>
+</tr>
+<tr>
+<td>การ map status ใน jobs list</td>
+<td>—</td>
+<td><strong>ทำให้เข้าใจผิด:</strong> <code>jobsApi.ts</code> map FROZEN เป็น <code>VERIFIED</code> และ comment ว่าพร้อม export แต่ server ใหม่ปฏิเสธจนกว่าจะ RELEASED</td>
+</tr>
+<tr>
+<td>การประกอบ route base</td>
+<td>—</td>
+<td>ต้องทดสอบทั้ง hosted Edge base URL และ local proxy เพราะ clients ใช้ทั้ง <code>/factory/...</code> และ <code>/api/factory/...</code></td>
+</tr>
+</tbody></table></div>
+<p>แม้ UI compatibility เหล่านี้ยังเปิดอยู่ server gates ยังคงเป็น authority</p>
+<h3>3.3 MCP pipeline</h3>
+<ul><li>MCP registry/pipeline ปัจจุบันไม่มี factory packet tool โดยตรง migration 0162 จึงไม่ทำให้ MCP route ใดพังทันที</li><li>MCP ส่ง end-user JWT ผ่าน user-scoped client อยู่แล้วและอ่าน claim family <code>app_metadata.roles</code>/<code>site_codes</code> เดียวกัน</li><li>MCP tools ที่ต้องใช้ site scope ยังคง fail-closed เมื่อ JWT ไม่มี active site code</li><li>หากเพิ่ม factory MCP tool ในอนาคต ห้ามเรียก legacy RPC signature หรือรับ actor จาก tool input ต้องใช้ authenticated Factory API/Track A contract และผ่าน human gate เมื่อเป็น Write/Approval</li></ul>
+<h2>4. Production metadata matrix</h2>
+<p>ผู้ใช้ใหม่ควรใช้ role vocabulary ตัวพิมพ์เล็กของ C12; ค่า MONOLITH ตัวพิมพ์ใหญ่เป็น compatibility alias ชั่วคราว</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ประเภทผู้ใช้</th>
+<th><code>app_metadata.roles</code> ที่แนะนำ</th>
+<th>Factory capability</th>
+</tr></thead><tbody>
+<tr>
+<td>Designer</td>
+<td><code>[&quot;designer&quot;]</code></td>
+<td>read + freeze/release/revoke/unfreeze + packet upload</td>
+</tr>
+<tr>
+<td>Factory operator</td>
+<td><code>[&quot;factory_operator&quot;]</code> หรือ <code>[&quot;factory&quot;]</code></td>
+<td>read + export + verify</td>
+</tr>
+<tr>
+<td>Administrator/operations</td>
+<td><code>[&quot;admin&quot;]</code> หรือ governance role ที่อนุมัติ เช่น <code>operations</code></td>
+<td>Factory API เต็ม; การให้ role ยังเป็นมติ governance ของมนุษย์</td>
+</tr>
+<tr>
+<td>Installer</td>
+<td><code>[&quot;installer&quot;]</code></td>
+<td>อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td><code>[&quot;finance&quot;]</code></td>
+<td>อ่านได้เฉพาะ state/can-export; jobs/activity/proof ถูกปฏิเสธ</td>
+</tr>
+</tbody></table></div>
+<p><code>site_codes</code> ต้องเป็น array ของรหัสไซต์จริงที่ active และผู้ใช้นั้นได้รับ เช่น <code>[&quot;&lt;APPROVED-SITE-CODE&gt;&quot;]</code> ใน repo ยังมี <code>BKK-HQ-01</code> เป็น placeholder ที่ระบุชัดว่ายังไม่ได้ยืนยัน ห้าม provision ค่านี้เป็น production truth แบบกลุ่มจนกว่าเจ้าของที่รับผิดชอบจะยืนยัน</p>
+<p>ข้อจำกัด as-built: <code>factory-api</code> derive และบันทึก <code>site_codes</code> แต่ migration 0162 ยังไม่ bind job กับ site และไม่ reject site list ว่าง ขณะที่ MCP/C12 consumers อื่นบังคับ site access ความต่างนี้ต้องคงอยู่ในรายงานและห้ามเรียกว่า factory site isolation สมบูรณ์</p>
+<p>มติ hard gate: decouple site enforcement โดยเจตนาขณะที่ DAPH เป็น single-site ห้ามเรียก <code>has_site_access()</code> แบบ session-based จาก Factory RPC ที่รันด้วย service role โดย gate เปิด <code>factory-site-isolation</code> บังคับให้มี migration ผูก job→site และ predicate ที่รับ <code>p_actor_site_codes</code> ชัดเจนก่อนเปิด multi-branch</p>
+<p>มติความเป็นส่วนตัวของ audit: event ใหม่ที่เขียนผ่าน candidate นี้ใช้ <code>actor_name</code> เท่ากับ verified subject ID และ ignore Auth email ส่วน append-only row เก่าบางแถวอาจมี email และต้องไม่ rewrite</p>
+<p>การตรวจ repo ไม่พบ application caller ปัจจุบันที่ select <code>factory_jobs</code> หรือ <code>factory_job_events</code> ตรง ๆ แต่ external/untracked consumer ใดที่อ่านตารางตรงต้องย้ายมา Factory API routes ก่อน apply 0162</p>
+<h2>5. Pre-deployment checks</h2>
+<ul><li>[ ] Independent source review รับ implementation candidate</li><li>[ ] Ephemeral PostgreSQL dry-run เขียว และ existing pre-0162 staging snapshot เขียว</li><li>[ ] ระบุเจ้าของ hosted backup/restore และ abort</li><li>[ ] Pilot users ทุกคนมี roles ที่ review แล้วและ site codes ที่อนุมัติแล้ว</li><li>[ ] Pilot users refresh/sign in ใหม่; decoded access token เห็น claims ใหม่</li><li>[ ] แก้หรือ disable FactoryApp legacy POST export, export-options, FROZEN status label และ route prefixes</li><li>[ ] Designer แสดง upload failure/session expiry ให้ผู้ใช้ ไม่ใช่แค่ console</li><li>[ ] ยืนยันว่าไม่มี external client พึ่ง direct PostgREST reads ของ <code>factory_jobs</code> หรือ <code>factory_job_events</code></li><li>[ ] อนุมัติ bridge deployment หรือ maintenance window</li><li>[ ] Smoke tests ครบ state, freeze, release, packet, export, verify, proof, activity, list, missing JWT, forged headers, INSTALLER activity denial, subject-only audit naming และ FROZEN denial</li></ul>
+<h2>6. Deployment sequence</h2>
+<h3>6.1 ลำดับ zero-downtime ที่แนะนำ — ต้องมี bridge function</h3>
+<ol><li>Provision และตรวจ metadata ผู้ใช้ แล้วบังคับ refresh JWT สำหรับ pilot users</li><li>Deploy <code>factory-api</code> bridge ชั่วคราวที่ derive identity จาก verified JWT เท่านั้น ลอง signature ใหม่ก่อนและ fallback signature เก่าเฉพาะเมื่อยืนยันว่า function/signature ยังไม่มี ห้ามนำ actor headers/body กลับมาเป็น authority</li><li>Smoke-test bridge กับ schema ก่อน 0162</li><li>Apply migration 0162 รอ PostgREST schema-cache refresh และยืนยันว่า bridge ใช้เฉพาะ signature ใหม่</li><li>Deploy final candidate ที่ไม่มี fallback แล้วรัน route/spoof/FROZEN smoke tests เต็มชุด</li><li>เก็บ run IDs/logs และรับมติมนุษย์ก่อน merge/closure claim</li></ol>
+<p>ช่วงที่ bridge ใช้ RPC เก่ายังไม่มี server-owned actor evidence ครบ จึงเป็น transitional evidence เท่านั้นและใช้ปิด S17-1 ไม่ได้</p>
+<h3>6.2 Controlled maintenance sequence — ไม่มี bridge</h3>
+<ol><li>ตั้ง Factory API mutating routes เป็น maintenance/read-only และหยุด Designer/Factory operators ไม่ให้เริ่ม export</li><li>Apply 0162 กับ target ที่อนุมัติ</li><li>Deploy <code>factory-api</code> ใหม่ทันทีหลัง schema/cache พร้อม</li><li>รัน smoke tests ด้วย Designer และ Factory accounts ที่เตรียมไว้</li><li>เปิด traffic หลัง state, Release, packet upload, export และ verify ผ่านทั้งหมดเท่านั้น</li></ol>
+<p>ภายใน maintenance window ต้อง <strong>migration ก่อน</strong> เพราะ final function เรียก signature ใหม่ไม่ได้จนกว่าจะมี schema นี่ไม่ใช่ zero downtime; maintenance gate เป็นตัวป้องกันผู้ใช้จากช่วงระบบไม่สอดคล้อง</p>
+<h2>7. ขอบเขตที่ไม่เปลี่ยน</h2>
+<p>Checklist นี้ไม่อนุญาต production apply, merge, P0 closure, production-ready status หรือการตัดจริง Track B และกฎ NO_CUT ทั้งหมดยังคงเดิม</p>
+</main>
+</body>
+</html>

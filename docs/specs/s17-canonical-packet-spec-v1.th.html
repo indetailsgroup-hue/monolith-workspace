@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</h1>
+<p>ฉบับเอกสาร: 0.4.1 วันที่ร่าง: 2026-07-11 วันที่แก้ไข: 2026-07-15 สำหรับการแก้ low-S threshold ใน v0.4.1 หลัง round-4 re-review วันที่อนุมัติ: 2026-07-17 แทนที่: v0.3 ที่ <code>bf25b10f2c72707097acdb03a8161e8cec8cd36b</code> สถานะ: <strong>APPROVED — 3-ROLE SIGN-OFF COMPLETE — S17-4/S17-5 IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068</p>
+<blockquote><p>เอกสารนี้เป็น approved target-state contract และให้อำนาจเริ่ม implementation เฉพาะ S17-4/S17-5 หลังลายเซ็นครบสามบทบาท ไม่ได้พิสูจน์ว่า implementation เสร็จ ไม่อนุญาต prod-apply และไม่อนุญาตตัดจริง โดย NFP/NO_CUT และ real-cut gate ยังคงบังคับ</p><p></p><p>Approval record: <code>docs/governance/ct-dec-002-signoff-checklist.{th,en}.md</code> ที่ commit <code>fd65eaf611a87d54bbda1131142df2fa12c9787c</code>; anchor v3 snapshot ก่อน status flip คือ <code>monolith-s17-v041-review-input.sha256</code> SHA-256 <code>f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16</code> (43/43 PASS ณ เวลาเซ็น)</p></blockquote>
+<h2>1. Approval matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>บทบาท</th>
+<th>ขอบเขตที่ต้องตรวจ</th>
+<th>สถานะ</th>
+<th>ผู้ลงนาม/วันที่</th>
+</tr></thead><tbody>
+<tr>
+<td>Tech Lead</td>
+<td>schema, canonicalization, determinism, feasibility</td>
+<td><strong>APPROVED</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v2 <code>de2a1ccf…a2c7</code></td>
+</tr>
+<tr>
+<td>Factory Owner</td>
+<td>file contract, machine binding, verifier flow, factory fit</td>
+<td><strong>APPROVED — SHADOW CONTRACT; ACTIVATION PENDING</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v2 <code>de2a1ccf…a2c7</code></td>
+</tr>
+<tr>
+<td>Security Owner</td>
+<td>signature, trust boundary, key semantics, fail-closed</td>
+<td><strong>APPROVED</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v3 <code>f7b35734…a16</code></td>
+</tr>
+</tbody></table></div>
+<p>สถานะเปลี่ยนเป็น APPROVED ได้เมื่อทั้งสามช่องเป็น APPROVED เท่านั้น หากคนเดียวถือ Tech Lead และ Security Owner ต้องลงมติแยกสองบทบาท</p>
+<h2>2. วัตถุประสงค์และขอบเขต</h2>
+<p>Spec นี้นิยาม contract ขั้นต่ำของ Factory Packet v2 เพื่อปิดช่องว่างระหว่าง content identity, execution identity และ manufacturing trust:</p>
+<ol><li><code>packetContentId</code> ระบุ canonical manufacturing content</li><li><code>jobRunId</code> ระบุการ export/attestation แต่ละครั้งและต้อง server-owned</li><li>signed identity ผูก released revision, machine-profile version, exporter version, packet schema และ content/run identity</li><li>manifest ระบุทุก payload file ด้วย path, media type, byte size และ SHA-256</li><li>JSON payload ทุกไฟล์ผูก versioned content schema และ canonical array/quantity rules</li><li>verifier ตรวจครบแบบ fail-closed รวม signature, release state, machine profile และ tamper corpus</li><li>shadow-mode marker <code>NOT_FOR_PRODUCTION.txt</code> และชื่อ ZIP <code>NFP-...</code> ยังคงบังคับจน real-cut gate ผ่าน</li></ol>
+<p>นอกขอบเขตของ S17-3: การ implement generator/verifier (S17-4/S17-5), key ceremony และ production key provisioning (S17-6), การเลือก cloud provider และการอนุมัติตัดจริง</p>
+<h2>3. Normative language</h2>
+<p>คำว่า <strong>MUST / MUST NOT / REQUIRED / SHOULD / MAY</strong> เป็นข้อบังคับตามความหมาย RFC 2119-style ในฉบับอังกฤษ ส่วนภาษาไทยใช้ <strong>ต้อง / ห้าม / ควร / อาจ</strong> ให้ความหมายเดียวกัน หากฉบับ TH/EN ขัดกันให้หยุดอนุมัติและแก้ทั้งคู่ ห้ามเลือกตีความข้างใดข้างหนึ่งเอง</p>
+<h2>4. หลักการแยกสอง identity</h2>
+<p>Factory Packet v2 แยกสองชั้นอย่างชัดเจน:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ชั้น</th>
+<th>ตัวระบุ</th>
+<th>คุณสมบัติ</th>
+</tr></thead><tbody>
+<tr>
+<td>Canonical content plane</td>
+<td><code>packetContentId</code></td>
+<td>deterministic; payload+manifest เดิมภายใต้ revision/profile/exporter/schema เดิมต้องได้ค่าเดิม</td>
+</tr>
+<tr>
+<td>Execution/attestation plane</td>
+<td><code>jobRunId</code></td>
+<td>server-owned; unique ต่อ accepted export run; อาจต่างกันแม้ content เดิม</td>
+</tr>
+</tbody></table></div>
+<p>เหตุผล: revision เดียวอาจ export หลายครั้งและไปหลาย profile/exporter ได้ การใช้ ID เดียวแทนทั้ง content และ run ทำให้ชนกันหรือทำ audit replay แยกไม่ได้</p>
+<h3>4.1 Determinism claim ที่อนุญาต</h3>
+<p>เมื่อ authoritative input, released revision, machine profile+version+digest, exporter build และ schema เดิมเหมือนกัน:</p>
+<ul><li>payload files ทุกไฟล์, <code>manifest.json</code> และ <code>packetContentId</code> <strong>ต้องเหมือน byte-for-byte</strong></li><li>ZIP entry order/metadata/compression ภายใต้ exporter build เดิม <strong>ต้อง deterministic</strong></li><li><code>attestation.json</code>, filename และ ZIP ทั้งก้อน <strong>อาจต่าง</strong> เฉพาะ field ที่ตั้งใจเป็น run-specific ได้แก่ <code>jobRunId</code>, <code>issuedAt</code>, actor และ signature ที่ครอบ field เหล่านั้น</li><li>ความต่างนอก allowlist นี้ถือเป็น S17-4 failure</li></ul>
+<p>ห้าม claim ว่า outer ZIP จากคนละ run ต้องเหมือน byte-for-byte เพราะจะขัดกับ requirement ที่ <code>jobRunId</code> ต้อง unique</p>
+<h3>4.2 Gate evidence อยู่ใน content plane</h3>
+<p><code>gate-result.json</code> เป็น deterministic content evidence จึงอยู่ใน <code>manifest.files</code> และ <code>packetContentId</code> ต้องใช้ schema <code>monolith.factory.gate-result@2.0</code> และห้ามมี <code>runAt</code>, <code>issuedAt</code>, <code>jobRunId</code>, actor identity, free-form/localized human message หรือ wall-clock/run field อื่น Finding มีได้เฉพาะ stable code, severity, entity IDs ที่เรียง canonical และ canonical parameters ที่ schema กำหนด โดยเรียง findings ตาม severity rank, code, entity-ID byte order แล้วตาม JCS parameter bytes</p>
+<p>Execution time, operator context และ localized display text อยู่ได้เฉพาะ run-specific attestation/audit record Verifier ต้อง parse <code>gate-result.json</code>, บังคับผล <code>PASS</code> และพิสูจน์ว่า result, policy version, schema, file digest และ field <code>gate</code> ที่ซ้ำใน attestation ตรงกัน หากไม่ตรงต้องคืน <code>PKT_GATE_EVIDENCE_MISMATCH</code></p>
+<p>รูปแบบ <code>gate-result.json</code> ใน packet มี exact top-level shape ต่อไปนี้ ทุก field บังคับและห้าม additional properties:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.gate-result@2.0&quot;,
+  &quot;policyVersion&quot;: &quot;&lt;semver&gt;&quot;,
+  &quot;result&quot;: &quot;PASS&quot;,
+  &quot;findings&quot;: [
+    {
+      &quot;code&quot;: &quot;&lt;stable-code&gt;&quot;,
+      &quot;severity&quot;: &quot;WARNING&quot;,
+      &quot;entityIds&quot;: [&quot;&lt;canonical-id&gt;&quot;],
+      &quot;parameters&quot;: [
+        {
+          &quot;key&quot;: &quot;measuredUm&quot;,
+          &quot;type&quot;: &quot;INTEGER&quot;,
+          &quot;value&quot;: 18000
+        }
+      ]
+    }
+  ]
+}</code></pre>
+<h2>5. Trust boundary และ ownership</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component/actor</th>
+<th>เชื่อถือได้เรื่องใด</th>
+<th>ห้ามเชื่อ/ข้อบังคับ</th>
+</tr></thead><tbody>
+<tr>
+<td>Browser/client</td>
+<td>ส่ง intent และแสดงผล</td>
+<td>เป็น untrusted input; ห้ามเป็นเจ้าของ actor, role, release state, <code>jobRunId</code>, key ID หรือ machine authorization</td>
+</tr>
+<tr>
+<td>Track A authenticated-server contract</td>
+<td>actor subject, authorization context, revision state</td>
+<td>ต้อง derive จาก verified session/JWT และ server data; ห้ามเชื่อ <code>x-actor-role</code> หรือ localStorage; Track A ไม่ allocate <code>jobRunId</code></td>
+</tr>
+<tr>
+<td>S17-4 export service</td>
+<td>content build, idempotency fingerprint, transactional run allocation</td>
+<td>ต้องเรียก Track A contract ก่อน และผูก server-owned <code>jobRunId</code> หนึ่งค่ากับ <code>packetContentId</code> หนึ่งค่าเท่านั้น</td>
+</tr>
+<tr>
+<td>Deterministic builder</td>
+<td>สร้าง canonical payload/manifest</td>
+<td>รับเฉพาะ normalized authoritative input; ห้ามถือ raw private key</td>
+</tr>
+<tr>
+<td>AWS KMS</td>
+<td>ลงลายเซ็น ECDSA P-256</td>
+<td>private key ชนิด <code>ECC_NIST_P256</code> เป็น non-exportable; KMS <code>Sign</code> ใช้ <code>ECDSA_SHA_256</code>; key lifecycle อยู่ S17-6</td>
+</tr>
+<tr>
+<td>Full verifier</td>
+<td>ตรวจ bytes, identity, signature และ authoritative state</td>
+<td>ต้องอิสระจาก builder ตาม CT-DEC-001; fail closed เมื่อข้อมูลขาด/ไม่รู้จัก</td>
+</tr>
+<tr>
+<td>Factory operator</td>
+<td>ตัดสินใจตามสถานะที่ verifier แสดง</td>
+<td>ห้ามใช้ชื่อไฟล์/ป้าย UI แทนผล verifier; marker NFP หมายถึงห้ามตัดจริงเสมอ</td>
+</tr>
+</tbody></table></div>
+<h2>6. Delivery layout</h2>
+<p>ZIP v2 มีเฉพาะ root entries ต่อไปนี้:</p>
+<pre><code class="language-text">manifest.json
+connector-ops.json
+connectors.minifix.json
+cutlist.json
+drillmap.json
+gate-result.json
+NOT_FOR_PRODUCTION.txt    # REQUIRED ขณะ shadow mode
+attestation.json</code></pre>
+<p>Payload set อาจเพิ่มใน schema minor version เมื่อ approval matrix อนุมัติ แต่ทุก payload file ต้องอยู่ใน <code>manifest.files</code> ส่วน <code>manifest.json</code> และ <code>attestation.json</code> เป็น control files จึงไม่อยู่ใน <code>manifest.files</code> เพื่อเลี่ยง self-hash recursion</p>
+<p>ZIP ต้องใช้ v2 byte profile ต่อไปนี้:</p>
+<ol><li>ไม่มี folder prefix และไม่มี directory entries</li><li>เรียง <code>manifest.json</code> ก่อน จากนั้น payload ตาม canonical path order แล้ว <code>attestation.json</code> ท้ายสุด</li><li>ใช้ ZIP method 0 (<code>STORE</code>) ทุก entry; v2 ห้าม DEFLATE และ compression method อื่นทั้งหมด</li><li>ตั้ง DOS date bits เป็น <code>0x0021</code> (1980-01-01) และ DOS time bits เป็น <code>0x0000</code>; ห้ามแปลง timezone</li><li>ตั้ง general-purpose flags เป็น <code>0x0800</code> (ชื่อ UTF-8 เท่านั้น), version-needed เป็น <code>2.0</code>, creator OS เป็น UNIX, version-made-by เป็น <code>3.0</code>, external attributes เป็น regular file mode <code>0644</code> (<code>0x81a40000</code>) และ internal attributes เป็นศูนย์</li><li>ห้าม encryption, data descriptor, ZIP64, extra field, archive/file comment, directory entry, symlink, duplicate entry, ชื่อ local/central ไม่ตรงกัน, path traversal, absolute path, backslash และ case-fold collision</li><li>CRC-32 และ size fields ใน local/central records ต้องตรงกัน; central-directory order ต้องตรง local-entry order</li><li>บังคับ controlled-pilot policy: ไม่เกิน 32 entries, 16 MiB ต่อ entry, uncompressed รวมไม่เกิน 64 MiB, path ไม่เกิน 128 UTF-8 bytes และห้าม multi-disk archive</li></ol>
+<p>การใช้ method <code>STORE</code> ตั้งใจแลก compression กับ byte profile ที่เล็กและ audit ได้ใน pilot หนึ่งเดือน Compression profile ในอนาคตเป็น normative schema change ซึ่งต้องเพิ่ม version, มี golden ZIP fixtures และผ่าน approval matrix ใหม่ครบ</p>
+<p>ชื่อไฟล์ขณะ shadow mode:</p>
+<pre><code class="language-text">NFP-factory-packet-&lt;jobRunId&gt;-&lt;packetContentHex-first12&gt;.zip</code></pre>
+<p><code>packetContentHex-first12</code> หมายถึง 12 lowercase hexadecimal characters แรก <strong>หลัง</strong> literal <code>sha256:</code> เท่านั้น ห้ามนำ colon เข้า filename โดย regex ขณะ shadow mode คือ:</p>
+<pre><code class="language-text">^NFP-factory-packet-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}-[0-9a-f]{12}\.zip$</code></pre>
+<p>Source filename เป็น verifier input ที่บังคับขณะ shadow mode แต่ยังเป็น UX/policy warning ไม่ใช่ hash/signature input หาก verifier ไม่ได้รับ source filename ต้อง fail closed ด้วย <code>PKT_FILENAME_INVALID</code></p>
+<h2>7. Canonical byte rules</h2>
+<ol><li>JSON ทุกไฟล์ต้องเป็น UTF-8 ไม่มี BOM และ serialize ตาม RFC 8785 JSON Canonicalization Scheme (JCS)</li><li>v2 JSON schema ทุกตัวต้องตั้ง <code>additionalProperties: false</code>; parser ต้อง reject duplicate keys ก่อนสร้าง object รวมทั้ง <code>NaN</code>, infinity, negative zero, unsafe integer และ unknown fields</li><li>Canonical manufacturing dimensions ใช้ signed integer micrometres ใน field ที่ลงท้าย <code>Um</code> Source decimal millimetres ต้อง parse จาก decimal text ที่มีทศนิยมไม่เกินสามหลักแล้วแปลงแบบ exact (<code>1.234 mm</code> → <code>1234 Um</code>); ต้อง reject precision เกิน, exponent notation, binary-floating rounding และ silent truncation</li><li>Text files ต้อง UTF-8, LF (<code>0x0a</code>) เท่านั้น, ไม่มี BOM และไม่มี CR (<code>0x0d</code>)</li><li>Binary files hash จาก raw bytes</li><li>SHA-256 hex ต้องเป็น lowercase 64 ตัว; field identity ใช้รูป <code>sha256:&lt;64-lowercase-hex&gt;</code></li><li><code>sizeBytes</code> คือจำนวน raw bytes จริง ไม่ใช่จำนวนอักขระ</li><li>Canonical path ใช้ <code>/</code>, Unicode NFC, case-sensitive และ sort แบบ unsigned UTF-8 byte lexicographic; ห้าม <code>.</code>/<code>..</code>, empty segment, leading <code>/</code>, backslash, control character, duplicate หรือ case-fold collision</li><li>Array ทุก field ต้องมี schema-level <code>x-monolith-orderBy</code> ที่อนุมัติแล้ว Builder ต้อง sort ตามกฎก่อน JCS; หากไม่มีกฎให้คืน <code>PKT_SCHEMA_UNSUPPORTED</code> และ set-like array ต้อง reject duplicate canonical keys</li><li>Canonical RFC 3339 timestamp ใช้รูป <code>YYYY-MM-DDTHH:mm:ss.sssZ</code> เท่านั้น; UUID ใช้ lowercase RFC 4122 canonical text; semantic version ใช้ SemVer 2.0.0 โดยไม่มี <code>v</code> นำหน้า</li></ol>
+<p>v2 schema registry เป็น closed allowlist อย่างน้อยต้องมี ID ต่อไปนี้ และห้ามแทนที่หรือแก้ schema เงียบภายใต้ ID เดิม:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>File/object</th>
+<th>Schema ID</th>
+<th>เจ้าของ canonical array policy</th>
+</tr></thead><tbody>
+<tr>
+<td><code>manifest.json</code></td>
+<td><code>monolith.factory.packet@2.0</code></td>
+<td>Tech Lead</td>
+</tr>
+<tr>
+<td><code>attestation.json</code></td>
+<td><code>monolith.factory.packet-attestation@1.0</code></td>
+<td>Tech Lead + Security Owner</td>
+</tr>
+<tr>
+<td><code>connector-ops.json</code></td>
+<td><code>monolith.factory.connector-ops@2.0</code></td>
+<td>Tech Lead + Factory Owner</td>
+</tr>
+<tr>
+<td><code>connectors.minifix.json</code></td>
+<td><code>monolith.factory.connectors-minifix@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>cutlist.json</code></td>
+<td><code>monolith.factory.cutlist@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>drillmap.json</code></td>
+<td><code>monolith.factory.drillmap@2.0</code></td>
+<td>Factory Owner</td>
+</tr>
+<tr>
+<td><code>gate-result.json</code></td>
+<td><code>monolith.factory.gate-result@2.0</code></td>
+<td>Tech Lead</td>
+</tr>
+<tr>
+<td><code>NOT_FOR_PRODUCTION.txt</code></td>
+<td><code>monolith.factory.nfp-marker@1.0</code></td>
+<td>Tech Lead + Factory Owner</td>
+</tr>
+<tr>
+<td>machine-profile descriptor</td>
+<td><code>monolith.machine-profile@1.0</code></td>
+<td>Factory Owner + Security Owner</td>
+</tr>
+</tbody></table></div>
+<p>Candidate normative schema bundle ที่ส่งขออนุมัติถูก commit ไว้ใต้ <code>docs/specs/schemas/</code> ประกอบด้วย Draft 2020-12 schemas สิบไฟล์ ได้แก่ shared closed definitions, control-file schemas สองตัว, JSON payload schemas ห้าตัว, machine-profile descriptor และ NFP marker byte contract ไฟล์ <code>schema-bundle.sha256</code> แสดง schema ทุกไฟล์ตาม unsigned UTF-8 byte path order ส่วน <code>schema-bundle.aggregate.sha256</code> ผูก exact bytes ของรายการนั้น โดย aggregate v0.4 ปัจจุบันคือ <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code></p>
+<p>หลัง approval matrix ลงนามครบ exact aggregate นี้จึงเป็น verifier-policy input การแก้ schema ทุกครั้งต้องสร้าง bundle aggregate ใหม่และเพิ่ม normative specification version ห้ามแทนที่หรือแก้ schema เงียบภายใต้ ID เดิม หาก required payload schema หรือ <code>x-monolith-orderBy</code> ใดขาด ห้ามอนุมัติ S17-3 และ S17-4 ห้ามเดา</p>
+<p><code>x-monolith-orderBy</code> เป็นข้อบังคับ Keys เปรียบเทียบแบบ unsigned UTF-8 bytes เว้นแต่ระบุ enum rank ชัดเจน Nested keys ใช้ตามลำดับซ้ายไปขวา <code>$value</code> หมายถึง scalar item และต้อง reject duplicate canonical keys Gate parameters ใช้ sorted array ของ closed typed records รูป <code>{key,type,value}</code> แทน open object เพื่อให้ parameter ownership และ ordering อยู่ใน schema</p>
+<p>Machine-profile digest input มี closed top-level shape ต่อไปนี้ โดย <code>parameters</code> เป็น closed version-specific object ที่ Factory Owner อนุมัติ:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.machine-profile@1.0&quot;,
+  &quot;id&quot;: &quot;kdt_mvp_v1&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;units&quot;: &quot;um&quot;,
+  &quot;parameters&quot;: {
+    &quot;bedWidthUm&quot;: 1220000,
+    &quot;bedLengthUm&quot;: 2440000,
+    &quot;maxPanelThicknessUm&quot;: 50000,
+    &quot;minBoreDiameterUm&quot;: 3000,
+    &quot;maxBoreDiameterUm&quot;: 35000,
+    &quot;supportedFaces&quot;: [&quot;A&quot;, &quot;B&quot;, &quot;TOP&quot;, &quot;BOTTOM&quot;, &quot;LEFT&quot;, &quot;RIGHT&quot;]
+  }
+}</code></pre>
+<h2>8. Per-file manifest format</h2>
+<p><code>manifest.json</code> ใช้ schema identifier <code>monolith.factory.packet@2.0</code> และมี exact top-level shape ต่อไปนี้ ทุก field ที่แสดงบังคับ nested object ทุกตัวเป็น closed object และห้าม additional properties:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.packet@2.0&quot;,
+  &quot;manifestVersion&quot;: &quot;2.0.0&quot;,
+  &quot;packetContentId&quot;: &quot;sha256:&lt;64-lowercase-hex&gt;&quot;,
+  &quot;releasedRevision&quot;: {
+    &quot;projectId&quot;: &quot;&lt;server-owned-project-id&gt;&quot;,
+    &quot;revisionId&quot;: &quot;&lt;server-owned-released-revision-id&gt;&quot;,
+    &quot;state&quot;: &quot;RELEASED&quot;
+  },
+  &quot;machineProfile&quot;: {
+    &quot;id&quot;: &quot;kdt_mvp_v1&quot;,
+    &quot;version&quot;: &quot;1.0.0&quot;,
+    &quot;sha256&quot;: &quot;sha256:&lt;canonical-profile-digest&gt;&quot;
+  },
+  &quot;exporter&quot;: {
+    &quot;id&quot;: &quot;monolith.factory-exporter&quot;,
+    &quot;version&quot;: &quot;&lt;semver&gt;&quot;,
+    &quot;buildCommit&quot;: &quot;&lt;40-lowercase-hex&gt;&quot;,
+    &quot;artifactSha256&quot;: &quot;sha256:&lt;exporter-artifact-digest&gt;&quot;
+  },
+  &quot;files&quot;: [
+    {
+      &quot;path&quot;: &quot;cutlist.json&quot;,
+      &quot;mediaType&quot;: &quot;application/json&quot;,
+      &quot;contentSchema&quot;: &quot;monolith.factory.cutlist@2.0&quot;,
+      &quot;sizeBytes&quot;: 123,
+      &quot;sha256&quot;: &quot;&lt;64-lowercase-hex&gt;&quot;
+    }
+  ]
+}</code></pre>
+<p>ข้อบังคับ:</p>
+<ul><li><code>releasedRevision.state</code> ต้องเป็น literal <code>RELEASED</code>; ค่าอื่นสร้าง packet ไม่ได้</li><li><code>machineProfile.version</code> ต้องแยกจาก <code>id</code> แม้ ID มีคำว่า v1 โดย digest คือ <code>SHA256(UTF8(&quot;MONOLITH_MACHINE_PROFILE_V1\n&quot;) || UTF8(JCS(profileDescriptor)))</code> และ <code>profileDescriptor</code> คือ object <code>monolith.machine-profile@1.0</code> ทั้งหมดที่ไม่มี digest field</li><li><code>exporter.buildCommit</code> ผูก source revision และ <code>artifactSha256</code> ผูก exact deployed exporter artifact; version อย่างเดียวไม่พอ</li><li><code>contentSchema</code> บังคับสำหรับ JSON payload ทุกไฟล์; <code>NOT_FOR_PRODUCTION.txt</code> ใช้ <code>monolith.factory.nfp-marker@1.0</code></li><li><code>files</code> เรียง canonical path, path ไม่ซ้ำ และต้องครบทุกรายการจริงใน ZIP ยกเว้น control files สองตัว</li><li><code>createdAt</code>, <code>jobRunId</code>, actor, signature และ wall-clock fields ห้ามอยู่ใน manifest เพราะทำลาย content determinism</li></ul>
+<h3>8.1 Normative ownership และ validation registry</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Field/bytes</th>
+<th>Authoritative source</th>
+<th>Validation rule</th>
+</tr></thead><tbody>
+<tr>
+<td><code>releasedRevision.projectId/revisionId/state</code></td>
+<td>Track A authenticated-server contract</td>
+<td>server lookup, project ตรง, literal <code>RELEASED</code>; lookup ไม่ได้ต้อง fail closed</td>
+</tr>
+<tr>
+<td><code>machineProfile.id/version</code></td>
+<td>Factory Owner approved registry</td>
+<td>exact allowlisted pair</td>
+</tr>
+<tr>
+<td><code>machineProfile.sha256</code></td>
+<td>canonical profile descriptor</td>
+<td>domain-separated digest ตามข้างต้นและต้องตรง registry</td>
+</tr>
+<tr>
+<td><code>exporter.id/version/buildCommit/artifactSha256</code></td>
+<td>trusted build pipeline + S17-4 service</td>
+<td>exact allowlisted build และ artifact digest</td>
+</tr>
+<tr>
+<td><code>files[].path/mediaType/contentSchema/sizeBytes/sha256</code></td>
+<td>deterministic S17-4 builder</td>
+<td>canonical path/schema, raw byte count และ raw-byte SHA-256</td>
+</tr>
+<tr>
+<td><code>packetContentId</code></td>
+<td>deterministic S17-4 builder</td>
+<td>recompute จาก descriptor ทั้งหมดโดย omit เฉพาะ field นี้</td>
+</tr>
+<tr>
+<td><code>actorSubjectId/authorizationContextId</code></td>
+<td>Track A authenticated-server contract</td>
+<td>opaque server-derived IDs; reject ค่าจาก client</td>
+</tr>
+<tr>
+<td><code>jobRunId/idempotencyFingerprint</code></td>
+<td>S17-4 transactional run service</td>
+<td>UUID v4 และ one-to-one run/content binding</td>
+</tr>
+<tr>
+<td><code>issuedAt</code></td>
+<td>S17-4 trusted server clock</td>
+<td>exact millisecond UTC format และอยู่ใน verifier-policy skew</td>
+</tr>
+<tr>
+<td>signature protected header/key state</td>
+<td>Security Owner trusted registry</td>
+<td>protected preimage, approved AWS KMS ECDSA P-256 key, canonical raw <code>r‖s</code> พร้อม low-S rules และ lifecycle rules ใน §10.2</td>
+</tr>
+</tbody></table></div>
+<h3>8.2 การคำนวณ <code>packetContentId</code></h3>
+<ol><li>Parse และ validate manifest draft โดยยังไม่มี field <code>packetContentId</code></li><li>เรียง/validate <code>files</code> และทุก identity field ตาม schema</li><li>สร้าง <code>contentDescriptor</code> = manifest object ทั้งหมดโดย **omit เฉพาะ <code>packetContentId</code>**</li><li><code>descriptorBytes = UTF8(JCS(contentDescriptor))</code></li><li><code>packetContentId = &quot;sha256:&quot; + lowercaseHex(SHA256(descriptorBytes))</code></li><li>ใส่ field กลับแล้ว serialize <code>manifest.json</code> ด้วย JCS</li></ol>
+<p>Path, size และ hash อยู่ใน preimage จึงป้องกันการสลับชื่อไฟล์ที่มี hash ชุดเดิม ซึ่ง <code>contentHash</code> v1 ที่ hash เฉพาะ sorted hashes ป้องกันไม่ได้</p>
+<h2>9. Server-owned <code>jobRunId</code></h2>
+<p>CT-DEC-003 ตรึง ownership ว่า Track A เป็นเจ้าของ <code>actorSubjectId</code>, authorization context และ RELEASED-only contract ส่วน **S17-4 เป็นเจ้าของ transactional <code>jobRunId</code> allocation**</p>
+<ol><li>S17-4 ต้องเรียก Track A contract ก่อน และบังคับ authentication/authorization, RELEASED state และ machine-profile authorization</li><li>S17-4 สร้าง/validate canonical content descriptor, คำนวณ <code>packetContentId</code> และคำนวณ <code>idempotencyFingerprint = &quot;sha256:&quot; + SHA256(UTF8(&quot;MONOLITH_EXPORT_REQUEST_V1\n&quot;) || UTF8(JCS(canonicalAuthorizedRequest)))</code></li><li>S17-4 allocate <code>jobRunId</code> ใน durable transaction เดียว แล้วผูกกับ <code>packetContentId</code>, idempotency key/fingerprint, actor, revision, profile และ run state ก่อนทำ attestation</li><li>รูปแบบ ID คือ lowercase RFC 4122 UUID v4 canonical string</li><li>ต้อง reject <code>jobRunId</code>, actor, authorization context หรือ fingerprint ที่ client ส่งมา ห้าม trust</li><li>หนึ่ง accepted export attempt มีหนึ่ง <code>jobRunId</code>; explicit rebuild ต้องได้ ID ใหม่แม้ <code>packetContentId</code> เดิม</li><li>Retry ด้วย idempotency key และ fingerprint เดิมต้องคืน accepted record และ <code>jobRunId</code> เดิม; key เดิมกับ fingerprint ต่างต้อง fail <code>PKT_IDEMPOTENCY_CONFLICT</code></li><li>Persistent storage ห้ามผูก <code>jobRunId</code> เดียวกับหลาย <code>packetContentId</code>; transaction ที่ fail ห้ามปล่อย ID ให้ reuse</li></ol>
+<h2>10. Signed attestation และ identity</h2>
+<p><code>attestation.json</code> เป็น run-specific control file และมี exact top-level shape ต่อไปนี้ ทุก field ที่แสดงบังคับ nested object ทุกตัวเป็น closed object และห้าม additional properties:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;monolith.factory.packet-attestation@1.0&quot;,
+  &quot;jobRunId&quot;: &quot;&lt;server-owned-uuid-v4&gt;&quot;,
+  &quot;packetContentId&quot;: &quot;sha256:&lt;64-lowercase-hex&gt;&quot;,
+  &quot;manifestSha256&quot;: &quot;sha256:&lt;sha256-of-exact-manifest-bytes&gt;&quot;,
+  &quot;issuedAt&quot;: &quot;&lt;RFC3339-UTC&gt;&quot;,
+  &quot;actorSubjectId&quot;: &quot;&lt;server-derived-opaque-subject&gt;&quot;,
+  &quot;authorizationContextId&quot;: &quot;&lt;server-derived-opaque-context&gt;&quot;,
+  &quot;idempotencyFingerprint&quot;: &quot;sha256:&lt;authorized-request-digest&gt;&quot;,
+  &quot;releasedRevision&quot;: {
+    &quot;projectId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;revisionId&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;state&quot;: &quot;RELEASED&quot;
+  },
+  &quot;machineProfile&quot;: {
+    &quot;id&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;version&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;sha256&quot;: &quot;&lt;same-as-manifest&gt;&quot;
+  },
+  &quot;exporter&quot;: {
+    &quot;id&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;version&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;buildCommit&quot;: &quot;&lt;same-as-manifest&gt;&quot;,
+    &quot;artifactSha256&quot;: &quot;&lt;same-as-manifest&gt;&quot;
+  },
+  &quot;packetSchema&quot;: &quot;monolith.factory.packet@2.0&quot;,
+  &quot;gate&quot;: {
+    &quot;result&quot;: &quot;PASS&quot;,
+    &quot;policyVersion&quot;: &quot;&lt;version&gt;&quot;,
+    &quot;evidenceFile&quot;: &quot;gate-result.json&quot;,
+    &quot;evidenceSha256&quot;: &quot;sha256:&lt;same-file-digest-as-manifest&gt;&quot;
+  },
+  &quot;signature&quot;: {
+    &quot;protected&quot;: {
+      &quot;algorithm&quot;: &quot;ECDSA_P256_SHA256&quot;,
+      &quot;keyId&quot;: &quot;&lt;trusted-registry-key-id&gt;&quot;,
+      &quot;registryVersion&quot;: &quot;&lt;trusted-registry-version&gt;&quot;
+    },
+    &quot;valueBase64&quot;: &quot;&lt;canonical-base64-signature&gt;&quot;
+  }
+}</code></pre>
+<p>Signed identity ต้องผูกอย่างน้อย <code>jobRunId</code>, <code>packetContentId</code>, exact manifest digest, released revision, machine profile ID+version+digest, exporter ID+version+build commit+artifact digest, packet schema, gate result/policy/evidence digest, issued time, server-derived actor/authorization context, idempotency fingerprint และ protected signature header</p>
+<h3>10.1 Signature preimage</h3>
+<ol><li>สร้าง <code>unsignedAttestation</code> โดยคง <code>signature.protected</code> และ omit <strong>เฉพาะ</strong> <code>signature.valueBase64</code></li><li><code>message = UTF8(&quot;MONOLITH_FACTORY_PACKET_ATTESTATION_V1\n&quot;) || UTF8(JCS(unsignedAttestation))</code></li><li>คำนวณ <code>messageDigest = SHA256(message)</code> แล้วเรียก AWS KMS <code>Sign</code> ด้วย <code>KeySpec = ECC_NIST_P256</code>, <code>SigningAlgorithm = ECDSA_SHA_256</code> และ <code>MessageType = DIGEST</code> ค่า digest ที่ส่งเข้า KMS ต้องเป็น <code>messageDigest</code> ขนาด 32 bytes ตรงตัว และ caller ห้าม hash ซ้ำอีกครั้ง</li><li>AWS KMS คืน ECDSA signature แบบ ASN.1 DER ซึ่งมีความยาวแปรผัน signer adapter ต้อง parse DER แบบ strict เป็น positive integers <code>r</code> และ <code>s</code>, บังคับ <code>1 &lt;= r &lt; n</code> และ <code>1 &lt;= s &lt; n</code> แล้ว normalize <code>s</code> เป็น <code>min(s, n-s)</code> ก่อน serialize เข้า packet โดย order ของ P-256 คือ <code>n = FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551</code></li><li><code>valueBase64</code> ต้อง encode canonical IEEE P1363 raw form <code>r‖s</code>: <code>r</code> แบบ unsigned big-endian ที่ left-pad เป็น 32 bytes พอดี ต่อด้วย <code>s</code> แบบ unsigned big-endian ที่ left-pad เป็น 32 bytes พอดี ผลรวมต้องเป็น 64 bytes พอดี แล้ว encode เป็น RFC 4648 standard Base64 แบบ padded จำนวน 88 characters ลงท้าย <code>==</code> โดยไม่มี whitespace Verifier ต้อง decode แบบ strict และบังคับว่าเมื่อ re-encode 64 decoded bytes แล้วต้องได้ string เดิมทุกตัว เพื่อ reject non-zero padding bits ห้าม DER, integer ความยาวแปรผัน, Base64url และ alternate encoding ใน packet</li><li>Low-S เป็นข้อบังคับ ค่า <code>s</code> ที่ serialize ต้องผ่าน <code>1 &lt;= s &lt;= n/2</code> โดย <code>floor(n/2) = 7FFFFFFF800000007FFFFFFFFFFFFFFFDE737D56D38BCF4279DCE5617E3192A8</code> Verifier ต้อง reject high-S twin ด้วย <code>PKT_SIGNATURE_INVALID</code> แม้สมการ ECDSA ทางคณิตศาสตร์จะ verify ผ่าน และห้าม normalize packet bytes ที่ attacker ควบคุมก่อนตัดสิน validity</li><li><code>keyId</code> และ <code>registryVersion</code> เลือก record จาก trusted registry ของ verifier; packet-embedded key/registry ห้ามสร้าง trust ให้ตัวเอง</li></ol>
+<p>ECDSA signing เป็น non-deterministic โดยตั้งใจ เพราะ signing operation แต่ละครั้งอาจใช้ nonce <code>k</code> ต่างกัน ดังนั้น <code>signature.valueBase64</code> เป็น run-specific และอยู่ใน run allowlist ของ §4.1 ไม่ใช่ input ของ <code>packetContentId</code> สอง accepted runs ที่ใช้ canonical content เดียวกันต้องคง payload bytes, <code>manifest.json</code> และ <code>packetContentId</code> เหมือนกัน แต่ signature อาจต่างกัน Verifier มีหน้าที่ verify canonical low-S signature ที่ได้รับกับ preimage เท่านั้น ห้ามสร้าง signature ใหม่เพื่อ recompute หรือเปรียบเทียบ</p>
+<p>การเปลี่ยน algorithm, key ID, registry version หรือ identity field ใด ๆ หลัง sign ต้องทำให้ signature fail</p>
+<h3>10.2 Trusted-key lifecycle และ revocation</h3>
+<p>Trusted-registry record ทุกตัวประกอบด้วย canonical <code>keyId</code>; <code>algorithm = ECDSA_P256_SHA256</code>; AWS KMS key ARN และ key spec <code>ECC_NIST_P256</code>; public key เป็น padded RFC 4648 Base64 ของ exact DER SubjectPublicKeyInfo ที่ KMS <code>GetPublicKey</code> คืน; <code>notBefore</code>; <code>notAfter</code>; state (<code>ACTIVE</code>, <code>RETIRED</code> หรือ <code>REVOKED</code>); optional <code>retiredAt/revokedAt</code>; reason; และ signed registry version ที่เพิ่มขึ้นเสมอ SPKI ต้องใช้ <code>id-ecPublicKey</code> กับ <code>prime256v1</code>/<code>secp256r1</code> และ BIT STRING ต้องบรรจุ uncompressed point ขนาด 65 bytes พอดีในรูป <code>0x04‖X‖Y</code> โดย X/Y เป็น unsigned big-endian 32 bytes ห้าม compressed point, bare point เป็น registry storage form, PEM text, non-canonical DER และ curve อื่น Verifier policy ต้อง pin minimum accepted registry version/digest และ packet ห้าม rollback ค่าเหล่านี้</p>
+<ul><li><code>issuedAt</code> ต้องผ่าน <code>notBefore &lt;= issuedAt &lt; notAfter</code></li><li><code>ACTIVE</code> รับได้เฉพาะภายใต้ approved current registry</li><li><code>RETIRED</code> รับได้เฉพาะเมื่อ <code>issuedAt &lt; retiredAt</code> และ verifier policy อนุญาต historical verification ชัดเจน</li><li><code>REVOKED</code> ต้อง fail <code>PKT_KEY_REVOKED</code> เสมอ รวม signature ที่ออกก่อน <code>revokedAt</code></li><li>unknown, not-yet-valid และ expired key ต้องคืน stable code เฉพาะ</li><li>registry/revision/profile/gate authoritative lookup ล้มเหลวต้องคืน <code>PKT_AUTHORITY_UNAVAILABLE</code>; stale หรือ packet-supplied trust data ห้ามสร้าง PASS</li></ul>
+<p>S17-6 เป็นเจ้าของ custody, provisioning, rotation ceremony และ evidence แต่ lifecycle semantics เหล่านี้เป็น normative สำหรับ S17-5 แล้ว ห้ามเลื่อนไปเดาใน implementation</p>
+<h2>11. Shadow mode / NOT-FOR-PRODUCTION contract</h2>
+<p>ขณะที่ real-cut gate ยังไม่ผ่านครบสี่เงื่อนไข:</p>
+<ol><li><code>NOT_FOR_PRODUCTION.txt</code> ต้องมีอยู่และอยู่ใน <code>manifest.files</code></li><li>bytes ต้องตรงค่าที่ exporter version กำหนดจาก <code>src/core/config/shadowMode.ts</code>: 824 UTF-8 bytes, LF เท่านั้น, ไม่มี trailing LF, SHA-256 <code>40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a</code></li><li>ZIP filename ต้องขึ้นต้น <code>NFP-</code></li><li>verifier อาจคืน <code>integrityStatus = VERIFIED</code> แต่ต้องคืน <code>operationalDisposition = NO_CUT</code> และ code <code>PKT_OK_SHADOW_ONLY</code></li><li>marker เป็น manifest-listed payload ไม่ใช่ control file: marker ที่หายต้อง fail ที่ verifier check 3 ด้วย <code>PKT_FILE_MISSING</code>; marker ที่มีอยู่แต่ bytes ผิดต้อง fail ที่ check 4 ด้วย <code>PKT_SIZE_MISMATCH</code> หรือ <code>PKT_HASH_MISMATCH</code>; source filename ที่ขาดหรือไม่มี prefix <code>NFP-</code> ที่ถูกต้องต้อง fail ก่อน parse packet ด้วย <code>PKT_FILENAME_INVALID</code>; <code>PKT_NFP_POLICY_MISMATCH</code> สงวนไว้สำหรับ check 11 เมื่อ marker+prefix ครบแต่ขัดกับ authoritative governance mode</li><li>การปิด marker ต้องมาจาก governance-controlled configuration หลัง S17-1..5 ปิด, ADR-064 ครบสี่บทบาท, dogfood เต็มสายอย่างน้อยหนึ่งงาน และ machine profile calibrate แล้วเท่านั้น</li></ol>
+<p>ข้อความ marker ปัจจุบัน:</p>
+<pre><code class="language-text">*** NOT FOR PRODUCTION — ห้ามใช้ตัดชิ้นงานจริง ***
+
+packet นี้ออกในโหมด shadow ระหว่างช่วง dogfood (ADR-065 Q3)
+ห้ามนำไปตัดชิ้นงานจริงจนกว่า S17 production blockers จะปิดครบ
+และ gate &quot;ตัดจริง&quot; ผ่านทั้งสี่เงื่อนไข (ดู ADR-065)
+
+This packet was produced in shadow mode during the dogfood phase.
+Do NOT cut real workpieces from it until all S17 production
+blockers are closed and the four-condition real-cut gate passes.
+
+ใช้ได้เฉพาะ: เทียบกับใบสั่งผลิตเดิมของโรงงานเพื่อเก็บ evidence ป้อน S17</code></pre>
+<h2>12. Full verifier contract (S17-5 input)</h2>
+<p>Verifier ต้องตรวจตามลำดับและหยุดแบบ fail-closed:</p>
+<ol><li><strong>Container safety</strong>: size/count/ratio limits, safe paths, no duplicates/case collisions/symlinks/encryption</li><li><strong>Strict parse</strong>: UTF-8/JCS/schema-bundle digest, reject duplicate key ก่อนสร้าง object และ exact supported versions</li><li><strong>Exact file set</strong>: manifest-listed payload ทุกไฟล์ รวม <code>NOT_FOR_PRODUCTION.txt</code> ขณะ shadow mode ต้องมีอยู่ครั้งเดียว ห้าม missing/extra นอกเหนือจาก control files สองตัวที่กำหนดคือ <code>manifest.json</code> และ <code>attestation.json</code>; marker ที่หายจึงคืน <code>PKT_FILE_MISSING</code> ที่ขั้นนี้</li><li><strong>Byte integrity</strong>: <code>sizeBytes</code> และ SHA-256 ต่อไฟล์</li><li><strong>Content identity</strong>: recompute <code>packetContentId</code> จาก descriptor</li><li><strong>Manifest binding</strong>: recompute exact <code>manifestSha256</code></li><li><strong>Identity consistency</strong>: revision/profile/exporter/schema/packet ID, authorization context และ gate fields ตรงกันใน attestation, manifest และ gate evidence</li><li><strong>Signature</strong>: protected <code>ECDSA_P256_SHA256</code> algorithm/key/registry lookup, ตรวจ SPKI P-256, decode raw <code>r‖s</code> ให้ตรงรูป, reject scalar นอก range และ high-S, ตรวจ lifecycle state แล้วจึง ECDSA verify บน SHA-256 digest; ห้าม recompute signature</li><li><strong>Authoritative checks</strong>: revision ยังเป็น RELEASED, project ตรง, machine profile/version/digest ได้รับอนุญาต, exporter build+artifact อยู่ allowlist, registry current และ gate evidence PASS ตาม policy ที่รองรับ</li><li><strong>Run/replay checks</strong>: <code>jobRunId</code> ไม่ชน content อื่น, idempotency/replay policy ผ่าน</li><li><strong>Shadow policy</strong>: marker+prefix สอดคล้อง governance state; NFP แสดง NO_CUT เสมอ</li><li><strong>Audit result</strong>: เก็บ verifier version, policy versions, checked hashes, result code, time และ human/operator context โดยไม่เขียนทับ evidence เดิม</li></ol>
+<p>Verifier ห้าม “warn แล้วผ่าน” เมื่อ schema/key/state ไม่รู้จัก, network/state lookup ที่จำเป็นล้มเหลว หรือ evidence ขาด</p>
+<p>Primary result code คือ check แรกที่ fail ตามลำดับหมายเลข Audit record อาจบันทึก later diagnostic findings ได้ แต่ห้ามแทนหรือ downgrade primary stable code ผลสำเร็จต้องแยกสาม field:</p>
+<pre><code class="language-json">{
+  &quot;integrityStatus&quot;: &quot;VERIFIED&quot;,
+  &quot;operationalDisposition&quot;: &quot;NO_CUT&quot;,
+  &quot;code&quot;: &quot;PKT_OK_SHADOW_ONLY&quot;
+}</code></pre>
+<p>ขณะ shadow mode นี่คือผลสูงสุดที่ออกได้ <code>PKT_OK</code> เป็น reserved code และห้าม emit จนกว่า governance-controlled production profile รุ่นถัดไปจะผ่าน real-cut gate ครบสี่เงื่อนไขและเพิ่ม normative version</p>
+<h2>13. Stable result codes ขั้นต่ำ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Code</th>
+<th>ความหมาย</th>
+<th><code>integrityStatus</code></th>
+<th><code>operationalDisposition</code></th>
+</tr></thead><tbody>
+<tr>
+<td><code>PKT_OK_SHADOW_ONLY</code></td>
+<td>integrity/signature ผ่านแต่ NFP ยังบังคับ</td>
+<td><code>VERIFIED</code></td>
+<td><code>NO_CUT</code></td>
+</tr>
+<tr>
+<td><code>PKT_OK</code></td>
+<td>reserved; ห้ามใช้ขณะ shadow mode</td>
+<td>NOT EMITTABLE IN v0.4 PILOT</td>
+<td>NOT EMITTABLE IN v0.4 PILOT</td>
+</tr>
+<tr>
+<td><code>PKT_LIMIT_EXCEEDED</code></td>
+<td>container เกิน policy</td>
+<td><code>FAILED</code></td>
+<td><code>NO_CUT</code></td>
+</tr>
+<tr>
+<td>failure codes อื่นทั้งหมดด้านล่าง</td>
+<td>คง stable code-specific meaning ของแต่ละข้อ</td>
+<td><code>FAILED</code></td>
+<td><code>NO_CUT</code></td>
+</tr>
+</tbody></table></div>
+<p>ความหมายของ failure codes:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Code</th>
+<th>ความหมาย</th>
+</tr></thead><tbody>
+<tr>
+<td><code>PKT_ZIP_PROFILE_INVALID</code></td>
+<td>ZIP header/metadata/profile ไม่ตรง §6</td>
+</tr>
+<tr>
+<td><code>PKT_PATH_INVALID</code></td>
+<td>path traversal/duplicate/collision</td>
+</tr>
+<tr>
+<td><code>PKT_FILENAME_INVALID</code></td>
+<td>source filename ขณะ shadow ขาดหรือผิดรูป</td>
+</tr>
+<tr>
+<td><code>PKT_SCHEMA_UNSUPPORTED</code></td>
+<td>schema/version/bundle digest ไม่รองรับ</td>
+</tr>
+<tr>
+<td><code>PKT_JSON_NON_CANONICAL</code></td>
+<td>JSON ไม่ตรง canonical rules</td>
+</tr>
+<tr>
+<td><code>PKT_ATTESTATION_INVALID</code></td>
+<td>attestation shape/time/Base64 ผิดรูป</td>
+</tr>
+<tr>
+<td><code>PKT_FILE_MISSING</code> / <code>PKT_FILE_EXTRA</code></td>
+<td>manifest-listed payload set ไม่ตรง รวม NFP marker ที่หาย</td>
+</tr>
+<tr>
+<td><code>PKT_SIZE_MISMATCH</code> / <code>PKT_HASH_MISMATCH</code></td>
+<td>payload bytes ไม่ตรง manifest รวม NFP marker bytes ที่ถูกแก้</td>
+</tr>
+<tr>
+<td><code>PKT_CONTENT_ID_MISMATCH</code></td>
+<td>packetContentId คำนวณใหม่ไม่ตรง</td>
+</tr>
+<tr>
+<td><code>PKT_MANIFEST_BINDING_MISMATCH</code></td>
+<td>attestation ไม่ผูก exact manifest</td>
+</tr>
+<tr>
+<td><code>PKT_IDENTITY_MISMATCH</code></td>
+<td>identity ที่ซ้ำสองชั้นไม่ตรงกัน</td>
+</tr>
+<tr>
+<td><code>PKT_SIGNATURE_MISSING</code> / <code>PKT_SIGNATURE_INVALID</code></td>
+<td>signature ขาด/ผิด</td>
+</tr>
+<tr>
+<td><code>PKT_KEY_UNKNOWN</code> / <code>PKT_KEY_REVOKED</code></td>
+<td>trust key ใช้ไม่ได้</td>
+</tr>
+<tr>
+<td><code>PKT_KEY_NOT_YET_VALID</code> / <code>PKT_KEY_EXPIRED</code></td>
+<td>key lifecycle window ปฏิเสธ <code>issuedAt</code></td>
+</tr>
+<tr>
+<td><code>PKT_AUTHORITY_UNAVAILABLE</code></td>
+<td>registry/revision/profile/gate lookup ที่บังคับใช้ไม่ได้</td>
+</tr>
+<tr>
+<td><code>PKT_REVISION_NOT_RELEASED</code></td>
+<td>revision ไม่ใช่ RELEASED</td>
+</tr>
+<tr>
+<td><code>PKT_MACHINE_PROFILE_MISMATCH</code></td>
+<td>profile/version/digest ไม่อนุญาต</td>
+</tr>
+<tr>
+<td><code>PKT_EXPORTER_UNTRUSTED</code></td>
+<td>exporter build ไม่อยู่ allowlist</td>
+</tr>
+<tr>
+<td><code>PKT_GATE_FAILED</code></td>
+<td>gate evidence ไม่ PASS/ไม่รองรับ</td>
+</tr>
+<tr>
+<td><code>PKT_GATE_EVIDENCE_MISMATCH</code></td>
+<td>gate file กับ signed gate fields ไม่ตรงกัน</td>
+</tr>
+<tr>
+<td><code>PKT_JOB_RUN_CONFLICT</code></td>
+<td>run ID ผูก content อื่นหรือ replay ผิด policy</td>
+</tr>
+<tr>
+<td><code>PKT_IDEMPOTENCY_CONFLICT</code></td>
+<td>idempotency key เดียวถูกใช้กับ fingerprint ต่าง</td>
+</tr>
+<tr>
+<td><code>PKT_NFP_POLICY_MISMATCH</code></td>
+<td>marker+prefix ที่ครบขัดกับ authoritative governance mode ที่ check 11</td>
+</tr>
+</tbody></table></div>
+<p>ข้อความ UI อาจแปลภาษา แต่ stable code และ severity ห้ามเปลี่ยนตาม locale</p>
+<h2>14. Tamper corpus ขั้นต่ำ</h2>
+<p>S17-5 ต้องมี negative fixtures อย่างน้อย:</p>
+<ol><li>เปลี่ยน payload 1 byte</li><li>สลับชื่อสองไฟล์แต่ใช้ hash set เดิม</li><li>missing file, extra file, duplicate ZIP entry และ case-fold collision</li><li>path traversal, absolute path, backslash, symlink, ZIP bomb, local/central name ไม่ตรง, data descriptor, ZIP64, extra field/comment, timestamp, flags, permissions และ compression-method mutation</li><li>size/hash/packetContentId/manifest digest ผิดทีละ field</li><li>duplicate JSON key, non-canonical number/encoding/BOM/CRLF, millimetre precision เกิน, negative zero, unsafe integer, array-order rule ขาด และ randomized array order</li><li>แก้ revision, profile ID/version/digest, exporter version/build commit/artifact digest, schema, actor, authorization context หรือ idempotency fingerprint หลัง sign</li><li>signature ขาด, bit-flip, protected algorithm/key ID/registry version ถูกเปลี่ยน, DER-in-packet encoding, raw encoding สั้น/ยาว, <code>r</code> หรือ <code>s</code> เป็นศูนย์/นอก range, high-S twin, curve/SPKI/point format ผิด, wrong key, unknown key, revoked/retired/expired/not-yet-valid key, registry rollback และ placeholder key ว่าง</li><li><code>jobRunId</code>, actor หรือ authorization context จาก client; malformed UUID; reuse กับ packetContentId อื่น; transaction rollback/reuse และ idempotency conflict</li><li>revision DRAFT/FROZEN, gate FAIL, signed/file gate mismatch, unsupported gate policy และ authoritative lookup unavailable</li><li>ลบ/แก้ <code>NOT_FOR_PRODUCTION.txt</code>, ลบ <code>NFP-</code>, ไม่มี source filename, ใส่ colon จาก literal <code>sha256:</code> ใน filename หรือพยายามใช้ NFP packet เป็น production</li><li>same canonical inputs randomized order/timezone/locale แล้ว payload+manifest+packetContentId ต้องเหมือนเดิม</li><li>same content สอง accepted runs ต้อง packetContentId เดิมแต่ jobRunId ต่าง และต่างเฉพาะ run-specific allowlist</li></ol>
+<p>ทุก fixture ต้องระบุ expected stable code และพิสูจน์ว่า verifier ไม่สร้างสถานะ VERIFIED เมื่อ FAIL</p>
+<h2>15. As-built gap ณ baseline</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Target contract</th>
+<th>As-built <code>9ac7cff3</code></th>
+<th>สถานะ</th>
+</tr></thead><tbody>
+<tr>
+<td>server-owned <code>jobRunId</code></td>
+<td>client สร้าง <code>job-${Date.now()}-${random}</code></td>
+<td>GAP — S17-4 โดยใช้ Track A contract</td>
+</tr>
+<tr>
+<td>path-aware <code>packetContentId</code></td>
+<td><code>contentHash</code> hash เฉพาะ sorted file hashes ไม่รวม path</td>
+<td>GAP — rename ambiguity</td>
+</tr>
+<tr>
+<td>deterministic manifest</td>
+<td>มี <code>createdAt: new Date().toISOString()</code></td>
+<td>GAP — S17-4</td>
+</tr>
+<tr>
+<td>explicit machine profile/version/digest + released revision</td>
+<td>manifest v1 ไม่มี</td>
+<td>GAP</td>
+</tr>
+<tr>
+<td>exporter ID/version/build commit</td>
+<td>มีเพียง <code>toolVersion</code></td>
+<td>GAP</td>
+</tr>
+<tr>
+<td>mandatory signed attestation</td>
+<td>signature optional และ full trust path ยังไม่บังคับ</td>
+<td>GAP — S17-5/S17-6</td>
+</tr>
+<tr>
+<td>full verifier</td>
+<td>client verifier ตรวจ file/hash/contentHash/gate บางส่วน; server evidence เดิมตื้น</td>
+<td>GAP — S17-5</td>
+</tr>
+<tr>
+<td>NFP marker/file prefix</td>
+<td><code>NOT_FOR_PRODUCTION.txt</code> + <code>NFP-</code> มีจริง</td>
+<td>PRESENT — ต้อง preserve</td>
+</tr>
+<tr>
+<td>deterministic ZIP</td>
+<td>browser JSZip ใช้ runtime metadata/filename timestamp</td>
+<td>GAP — S17-4</td>
+</tr>
+<tr>
+<td>deterministic gate evidence</td>
+<td><code>gate-result.json</code> มี <code>runAt</code> และ human <code>message</code></td>
+<td>GAP — S17-4; แยก content/run plane</td>
+</tr>
+<tr>
+<td>canonical byte ordering</td>
+<td>builder/gate sorting ใช้ <code>localeCompare()</code></td>
+<td>GAP — S17-4; เปลี่ยนเป็น unsigned UTF-8 byte ordering</td>
+</tr>
+<tr>
+<td>exact quantity normalization</td>
+<td>serializer ใช้ floating-point <code>Math.round()</code></td>
+<td>GAP — S17-4; เปลี่ยนเป็น exact decimal-to-<code>Um</code> conversion</td>
+</tr>
+</tbody></table></div>
+<p>ตารางนี้เป็น code-review finding ไม่ใช่ P0 closure</p>
+<h2>16. S17-3 acceptance criteria</h2>
+<p>S17-3 ปิดได้เมื่อ:</p>
+<ol><li>ฉบับ TH/EN และ HTML ตรงกัน พร้อม SHA-256 manifest ใน repo</li><li>Tech Lead, Factory Owner และ Security Owner ลง APPROVED แยกบทบาทครบ</li><li>ทุก normative field มี owner, source และ validation rule พร้อม approved schema bundle/digest</li><li>packetContentId/jobRunId/signed identity ไม่มี circular hash หรือ run/content ambiguity</li><li>per-file format, canonical bytes, ZIP byte profile, NFP policy, verifier order/result codes และ tamper corpus ถูกอนุมัติ</li><li>มี implementation mapping สำหรับ S17-4 และ independent verifier assignment สำหรับ S17-5 โดย builder ไม่ approve งานตัวเอง</li><li>การเปลี่ยน normative contract หลังอนุมัติต้องเพิ่ม version และผ่าน approval matrix ใหม่</li></ol>
+<p>ก่อนครบเจ็ดข้อ สถานะคือ DRAFT และ Track B implementation ยังคงล็อก</p>
+<h2>17. Open approval questions</h2>
+<ol><li>Factory Owner ยืนยัน required payload set, schema registry/order keys, controlled-pilot ZIP limits และ <code>kdt_mvp_v1</code> ID/version/profile digest contract หรือไม่</li><li>Tech Lead ยืนยัน JCS + exact integer-micrometre normalization, method-0 ZIP profile, UUID v4/idempotency transaction semantics และ S17-4 run ownership หรือไม่</li><li>Security Owner ยืนยัน protected <code>ECDSA_P256_SHA256</code> header, AWS KMS <code>ECDSA_SHA_256</code> digest-mode call, canonical raw <code>r‖s</code> low-S contract, SPKI P-256 registry format, minimum registry version/digest, fail-closed lookup และ revocation behavior หรือไม่</li><li>ทั้งสามบทบาทยอมรับ determinism boundary ว่า canonical payload deterministic แต่ run-specific attestation ทำให้ outer ZIP ต่างข้าม run ได้หรือไม่</li><li>ทั้งสามบทบาทยืนยันการ reserve <code>PKT_OK</code> และจำกัด shadow pilot ไว้ที่ <code>PKT_OK_SHADOW_ONLY / NO_CUT</code> หรือไม่</li></ol>
+<p>คำถามเหล่านี้ต้องปิดใน approval review ห้าม implement ด้วยการเดา</p>
+<h2>18. แผนที่แก้ independent review ใน v0.2</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Review blocker</th>
+<th>การแก้ใน v0.2</th>
+</tr></thead><tbody>
+<tr>
+<td>1. algorithm/key ID อยู่นอก signature</td>
+<td>§10.1 คง <code>signature.protected</code> และ omit เฉพาะ <code>valueBase64</code>; §14 เพิ่ม protected-header tampering</td>
+</tr>
+<tr>
+<td>2. gate evidence ปน content/run planes</td>
+<td>§4.2 นิยาม deterministic gate evidence และย้ายเวลา/operator/localized text ไป attestation/audit</td>
+</tr>
+<tr>
+<td>3. schema/quantization/order ยังไม่ precise</td>
+<td>§7 เพิ่ม closed schema registry, exact decimal-to-integer-<code>Um</code>, array-order rules; §8.1 เพิ่ม owner/source/validation registry</td>
+</tr>
+<tr>
+<td>4. filename/ZIP profile กำกวม</td>
+<td>§6 ตัดปัญหา colon จาก <code>sha256:</code> และ freeze method-0 ZIP byte profile กับ pilot limits</td>
+</tr>
+<tr>
+<td>5. key lifecycle/revocation ยังไม่ปิด</td>
+<td>§10.2 นิยาม registry anti-rollback, validity, retirement, revocation และ unavailable-authority behavior</td>
+</tr>
+<tr>
+<td>6. fail-closed codes/operational status ไม่ครบ</td>
+<td>§§12–14 เพิ่ม precedence, missing codes, tamper fixtures และ shadow-only maximum status</td>
+</tr>
+</tbody></table></div>
+<p>Remediation map นี้เป็น diff summary สำหรับ re-review ไม่ใช่ approval หรือ closure claim</p>
+<h2>19. แผนที่แก้ adversarial re-review ใน v0.3</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Re-review finding</th>
+<th>การแก้ใน v0.3</th>
+</tr></thead><tbody>
+<tr>
+<td>B1-01 — อ้าง schema bundle แต่ไม่มีไฟล์จริง</td>
+<td>§7 ผูก closed schema bundle สิบไฟล์, per-file manifest, aggregate digest, typed gate parameters และ array-order extensions ที่ระบุชัดใต้ <code>docs/specs/schemas/</code> แล้ว</td>
+</tr>
+<tr>
+<td>B1-02 — NFP marker ที่หายมี primary code ขัดกัน</td>
+<td>§§11–13 นิยาม marker เป็น manifest-listed payload: หาย = <code>PKT_FILE_MISSING</code> ที่ check 3; bytes ผิด = size/hash failure ที่ check 4; filename ผิด = <code>PKT_FILENAME_INVALID</code>; ขัด governance mode = <code>PKT_NFP_POLICY_MISMATCH</code> ที่ check 11</td>
+</tr>
+<tr>
+<td>B2-01 — display vocabulary รวมกันขัดกับ result fields</td>
+<td>§13 แยก exact field values ของ <code>integrityStatus</code> และ <code>operationalDisposition</code> ออกจาก stable code meanings</td>
+</tr>
+<tr>
+<td>B2-02 — ไม่มี negative tests ด้าน symlink/output alias/order</td>
+<td><code>governance-tooling.test.mjs</code> ครอบ input symlink, output alias, manifest alias และ unsorted manifest rejection แล้ว</td>
+</tr>
+<tr>
+<td>B2-03 — manifest verifier ยอมรับลำดับ noncanonical</td>
+<td><code>verify-sha256-manifest.mjs</code> ปฏิเสธ entries ที่ไม่เรียงตาม unsigned UTF-8 path bytes และ focused test suite reproduce การปฏิเสธแล้ว</td>
+</tr>
+</tbody></table></div>
+<p>แผนที่ v0.3 นี้บันทึก advisory remediation เท่านั้น CT-DEC-002 ยังคง DRAFT, approval ทุก field ยังคง PENDING, Track B ยังคงล็อก และไม่สร้างอำนาจตัดจริง</p>
+<h2>20. Signature-layer amendment v0.4 ตาม ADR-068</h2>
+<p>v0.4 แทนที่ v0.3 ที่ <code>bf25b10f2c72707097acdb03a8161e8cec8cd36b</code> เฉพาะ signature layer เท่านั้น สมาชิก schema bundle, NFP precedence, stable result codes, verifier order, tamper corpus, deterministic content rules และ tooling controls ทั้งหมดของ v0.3 ยังคงมีผล เว้นแต่ข้อกำหนด ECDSA ที่เพิ่มข้างต้นจะเข้มกว่า</p>
+<div class="table-wrap"><table><thead><tr>
+<th>มติ ADR-068</th>
+<th>ข้อแก้ไขบังคับใน v0.4</th>
+</tr></thead><tbody>
+<tr>
+<td>AWS KMS sign Ed25519 ไม่ได้</td>
+<td>algorithm คือ <code>ECDSA_P256_SHA256</code>; KMS key spec คือ <code>ECC_NIST_P256</code>; <code>Sign</code> ใช้ <code>ECDSA_SHA_256</code> กับ exact SHA-256 digest</td>
+</tr>
+<tr>
+<td>DER output มีความยาวแปรผัน</td>
+<td>packet ใช้ fixed 64-byte IEEE P1363 raw <code>r‖s</code> และ padded standard Base64</td>
+</tr>
+<tr>
+<td>ECDSA malleability</td>
+<td>signer emit low-S; verifier reject high-S ด้วย <code>PKT_SIGNATURE_INVALID</code></td>
+</tr>
+<tr>
+<td>nonce <code>k</code> เป็น randomized</td>
+<td>signature เป็น run-specific, ไม่อยู่ใน <code>packetContentId</code>; verifier verify เท่านั้นและห้าม recompute</td>
+</tr>
+<tr>
+<td>KMS public-key custody</td>
+<td>trusted registry เก็บ canonical DER SPKI ซึ่ง BIT STRING เป็น uncompressed <code>0x04‖X‖Y</code> บน P-256</td>
+</tr>
+</tbody></table></div>
+<p>ณ 17 ก.ค. 2026 CT-DEC-002 เป็น <strong>APPROVED</strong> หลังลายเซ็นครบสามบทบาท และ Track B เป็น <strong>UNLOCKED FOR S17-4/S17-5 IMPLEMENTATION ONLY</strong>; shadow mode ยังคง <strong>NO_CUT</strong> และ approval นี้ไม่สร้าง production authority หรือ real-cut authority</p>
+</main>
+</body>
+</html>

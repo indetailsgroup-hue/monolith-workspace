@@ -15,7 +15,49 @@ import { join } from 'node:path';
 import fc from 'fast-check';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { readUtf8, writeUtf8 } from './fs-utils.js';
+import { readUtf8, renameWithRetry, writeUtf8 } from './fs-utils.js';
+
+function errWithCode(code: string): NodeJS.ErrnoException {
+  const e = new Error(code) as NodeJS.ErrnoException;
+  e.code = code;
+  return e;
+}
+
+describe('renameWithRetry — transient Windows rename resilience', () => {
+  it('retries EPERM/EACCES/EBUSY then succeeds (fixes the intermittent flake)', () => {
+    for (const code of ['EPERM', 'EACCES', 'EBUSY']) {
+      let calls = 0;
+      const sleeps: number[] = [];
+      const rename = () => {
+        calls += 1;
+        if (calls <= 2) throw errWithCode(code);
+      };
+      renameWithRetry('from', 'to', rename, (ms) => sleeps.push(ms));
+      expect(calls).toBe(3); // failed twice, succeeded on the third
+      expect(sleeps.length).toBe(2); // one backoff before each retry
+    }
+  });
+
+  it('rethrows a non-transient error immediately without retrying', () => {
+    let calls = 0;
+    const rename = () => {
+      calls += 1;
+      throw errWithCode('ENOSPC');
+    };
+    expect(() => renameWithRetry('from', 'to', rename, () => {})).toThrow('ENOSPC');
+    expect(calls).toBe(1);
+  });
+
+  it('gives up after maxAttempts and rethrows the transient error', () => {
+    let calls = 0;
+    const rename = () => {
+      calls += 1;
+      throw errWithCode('EPERM');
+    };
+    expect(() => renameWithRetry('from', 'to', rename, () => {}, 4)).toThrow('EPERM');
+    expect(calls).toBe(4);
+  });
+});
 
 describe('fs-utils — Thai round-trip (Property 7 / Req 5.5)', () => {
   let workDir: string;

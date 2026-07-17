@@ -13,7 +13,7 @@ export interface ApiError extends Error {
 const BASE_URL = (import.meta as any).env?.VITE_FACTORY_API_BASE ?? "/api";
 const ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "";
 
-/** ADR-061: แนบ session Field App + anon key แบบเดียวกับ stateApi (จำเป็นเมื่อยิง edge fn ตรง) */
+/** Attach the end-user JWT; the anon key is never used as a fallback identity. */
 function authHeaders(): Record<string, string> {
   const h: Record<string, string> = {};
   if (!ANON_KEY) return h;
@@ -29,7 +29,6 @@ function authHeaders(): Record<string, string> {
       }
     }
   } catch { /* no session */ }
-  if (!h["Authorization"]) h["Authorization"] = "Bearer " + ANON_KEY;
   return h;
 }
 

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CT-DEC-003-A1 — Tooling Bytes ปัจจุบันและการจัดชั้น Governance Tool</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CT-DEC-003-A1 — Tooling Bytes ปัจจุบันและการจัดชั้น Governance Tool</h1>
+<p>วันที่มีผล: 2026-07-15 สถานะ: <strong>RECORDED — คำสั่งติดตามจาก Tech Lead ที่เป็นมนุษย์</strong> Record ก่อนหน้า: <code>CT-DEC-003 — S17 Tooling, Ownership และ Append-Only Record Discipline</code> (2026-07-11) ขอบเขตที่ supersede: <strong>เฉพาะ hashes และ tooling classification ใน CT-DEC-003 §4.2</strong> อำนาจมติ: Tech Lead (Dave) ตามคำสั่งใน review session วันที่ 2026-07-15 ผู้จัดทำเอกสารและ independent advisory source review: Codex โดยไม่ลงชื่อและไม่มีอำนาจอนุมัติ Technical baseline ที่ตรวจ: <code>077452a7cbe8714ed5ac3ed388420565bc19f252</code> รวม control pack S17 v0.4.1 ที่ยังไม่ commit</p>
+<blockquote><p>Addendum นี้ทำ append-only classification ของ governance-tool bytes ชุดที่ใช้กับ review artifacts v0.4.1 ให้ครบ โดยไม่อนุมัติ CT-DEC-002, ไม่เซ็นบทบาท S17 ใด, ไม่ปลด Track B, ไม่ปิด P0 blocker, ไม่อนุญาต production deployment และไม่อนุญาตตัดจริง</p></blockquote>
+<h2>1. เหตุผลที่ต้องมี addendum</h2>
+<p>CT-DEC-003 บันทึก candidate hashes จาก governance revision ก่อนหน้า Renderer ยังตรง byte กับ candidate ที่บันทึกไว้ แต่ writer, verifier และ test harness เปลี่ยนระหว่าง remediation รอบต่อมา ห้าม rewrite decision record เดิมแบบเงียบ Addendum นี้จึงบันทึก bytes ปัจจุบัน, review evidence, classification และ boundary ที่ไม่เปลี่ยน</p>
+<p>Document manifest เดิมของ CT-DEC-003 ยัง valid โดยมี SHA-256:</p>
+<pre><code class="language-text">a586d2414006581af8323d7173af3066ccf803ac4ae37ef9ee7b06de832fb81b  docs/governance/ct-dec-003-s17-tooling-and-record-discipline.sha256</code></pre>
+<h2>2. Tool bytes ที่ตรวจแล้วแบบ exact</h2>
+<pre><code class="language-text">d7e05ddc8ef3b7e5e56c7b68a07adf5555f0366bb9e2c7a6f00796b7487c198a  scripts/render-standalone-markdown.mjs
+3cd69ca33cfc1fec7657fd0a242668f24706f38ba52b27be7021579d8e58a584  scripts/write-sha256-manifest.mjs
+9fbbf53519a2d45e3298a5d7d7e7b0df6481396b40a440cd707206b359ea2cb8  scripts/verify-sha256-manifest.mjs
+cef610700abc1e17258373b99cd0243c757407cfd75f92e6ddbf1e0b07fe8093  scripts/governance-tooling.test.mjs</code></pre>
+<p>ไฟล์ <code>monolith-ct-dec-003-a1-review-input.sha256</code> ที่ repository root pin bytes เหล่านี้ร่วมกับ addendum โดย anchor ไม่ list ตัวเอง</p>
+<p><code>monolith-s17-v041-review-input.sha256</code> ยังคงเป็น historical anchor ที่สร้างเมื่อ 2026-07-15 19:20 +07:00 หลังจากนั้น CT-DEC-002 checklist bytes ถูก update และมี current four-file manifest ของตัวเองที่ valid จึงห้ามอ้าง historical v0.4.1 aggregate ว่าเป็น aggregate ของ working tree รุ่นหลัง Addendum นี้ไม่ rewrite anchor เดิม โดย A1 anchor ใหม่ทำหน้าที่เป็น consolidated current-byte anchor</p>
+<h2>3. Independent advisory source review</h2>
+<p>Source review ยืนยัน controls ต่อไปนี้สำหรับขอบเขต governance document แบบจำกัด:</p>
+<ol><li>writer รับเฉพาะ regular non-symlink file ที่อยู่ใน manifest directory</li><li>writer output ห้ามเป็น symlink, ห้าม resolve ออกนอก directory และห้าม list ตัวเอง</li><li>canonical path ต้องเป็น NFC, relative, slash-separated, Windows-safe, ไม่มี control character และ reject empty/dot/dot-dot segment</li><li>reject duplicate และ case-fold-colliding entry</li><li>sort entry ตาม unsigned UTF-8 byte order</li><li>verifier reject BOM, CR/CRLF, blank line, malformed entry, digest ที่ไม่ใช่ lowercase 64-hex, non-canonical path, duplicate, unsorted entry, symlink, traversal, self-reference และ digest mismatch</li><li>renderer escape HTML, reject unsafe link หรือ link ที่มี control character, อนุญาตเฉพาะ HTTP(S)/mailto, รักษา literal legacy token และ reject unclosed fence</li></ol>
+<p>Residual limits ระบุชัด: tools เหล่านี้ไม่ให้ signer authenticity, ไม่ป้องกัน hostile process ที่เปลี่ยนไฟล์ระหว่าง local read race, ไม่ parse packet schema หรือ ZIP container และไม่ทำ KMS signature verification</p>
+<h2>4. Evidence ที่ reproduce แล้ว</h2>
+<p>วันที่ 2026-07-15 dedicated Node test command ให้ผล:</p>
+<pre><code class="language-text">tests 5
+pass 5
+fail 0</code></pre>
+<p>Suite ที่ reproduce ครอบคลุม canonical nested path และ negative cases ของ outside-root input, duplicate, traversal, blank line, CRLF, Windows-invalid path, unsorted entry, symlink input/output/manifest alias, unsafe link, control-character link, token collision และ unclosed fence</p>
+<p>ก่อนสร้าง addendum นี้ document manifest เดิมสี่ไฟล์ของ CT-DEC-003 verify ผ่าน 4/4 ด้วย</p>
+<p>Recursive verification พบ legacy manifests สามชุดที่ digest ถูกต้องแต่ entry order เกิดก่อนกฎ unsigned-UTF-8 ordering ปัจจุบัน ได้แก่ CT-DEC-001, complete PRD และ PRD v5 review จึง re-emit เฉพาะ manifest ordering แบบ mechanical โดยไม่เปลี่ยน listed document bytes หรือ normative text ใด A1 consolidated anchor pin canonical current manifests ส่วน historical v0.4.1 anchor ยังคงไม่ถูกแก้</p>
+<h2>5. Official classification แบบจำกัด</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Tool</th>
+<th>Classification จาก addendum นี้</th>
+<th>Boundary ที่อนุญาต</th>
+</tr></thead><tbody>
+<tr>
+<td><code>render-standalone-markdown.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>trusted repository Markdown ไป standalone HTML เท่านั้น</td>
+</tr>
+<tr>
+<td><code>write-sha256-manifest.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>SHA-256 manifest สำหรับ repository governance/review artifacts เท่านั้น</td>
+</tr>
+<tr>
+<td><code>verify-sha256-manifest.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE DOCUMENT TOOLING</strong></td>
+<td>ตรวจ byte integrity ของ manifest ข้างต้นเท่านั้น</td>
+</tr>
+<tr>
+<td><code>governance-tooling.test.mjs</code></td>
+<td><strong>OFFICIAL — GOVERNANCE TOOLING TEST HARNESS</strong></td>
+<td>regression evidence ของสาม scripts เท่านั้น</td>
+</tr>
+</tbody></table></div>
+<p>Classification นี้ผูกกับ exact hashes ใน §2 เท่านั้น ถ้า byte ใดเปลี่ยน tool ที่เปลี่ยนจะกลับเป็น <strong>CANDIDATE — NOT OFFICIAL</strong> จนมี append-only review record รอบถัดไป pin และ classify ใหม่</p>
+<h2>6. สิ่งที่ห้ามถือว่าเทียบเท่า</h2>
+<p><code>verify-sha256-manifest.mjs</code> ไม่ใช่ S17-5 factory packet verifier โดยเฉพาะอย่างยิ่ง มันไม่ทำ:</p>
+<ul><li>packet schema-bundle validation</li><li>NFP precedence หรือ stable packet result-code evaluation</li><li>authoritative registry lookup หรือ revocation check</li><li>ECDSA P-256 raw <code>r||s</code> validation หรือ low-S rejection</li><li>AWS KMS public-key trust evaluation</li><li>verifier-order enforcement ของ factory packet</li><li>operational disposition หรือ machine admission</li></ul>
+<p>ผลจาก governance tools เหล่านี้ห้าม emit หรือสื่อความหมายเป็น bare <code>PKT_OK</code>, <code>CUT</code>, production readiness หรือ approval authority</p>
+<h2>7. Authority boundaries ที่ไม่เปลี่ยน</h2>
+<ul><li>CT-DEC-002 ยัง DRAFT และ approval roles ทั้งสามยัง PENDING</li><li>Track B ยัง LOCKED</li><li>shadow mode ยังคง <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code></li><li>ไม่มี P0 blocker ใดถูกปิด</li><li>ADR-064 และทุกเงื่อนไขของ real-cut gate ยังต้องครบ</li><li>S17 v0.4.1 ยังเป็น review artifact ไม่ใช่ implementation authority</li><li>dogfood จริงยัง <code>AUTHORIZED/PREPARED — NOT STARTED</code> จน project จริง emit immutable evidence event แรก</li></ul>
+<h2>8. ผลต่อ finding ใน full-system scrutiny</h2>
+<p>Addendum นี้ remediate <code>FS-B1-06</code> สำหรับ exact current governance-tool bytes ด้วย append-only classification และ evidence anchor ที่ขาดอยู่ แต่ไม่ remediate <code>FS-B1-02</code>: ยังต้องแก้การแยก root Vitest/Node-test runner และ CI workflow wiring</p>
+<p>Record นี้ไม่มี cryptographic human signature โดยเก็บ human follow-up direction และ exact reviewed bytes ส่วน approval signature ใดที่ CT-DEC-002 ต้องการยังเป็น deliberate act แยกต่างหาก</p>
+</main>
+</body>
+</html>

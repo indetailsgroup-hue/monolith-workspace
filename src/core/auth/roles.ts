@@ -64,14 +64,14 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
 };
 
 // ============================================================================
-// Role Storage (localStorage for MVP)
+// Presentation Role Storage (localStorage for MVP; never server authority)
 // ============================================================================
 
 const ROLE_STORAGE_KEY = 'monolith.user.role';
 
 /**
- * Get current user role from storage.
- * Defaults to DESIGNER for development.
+ * Get the local presentation role used to hide/show UI affordances.
+ * Defaults to DESIGNER for development. Server authorization never consumes it.
  */
 export function getCurrentRole(): Role {
   if (typeof window === 'undefined') return 'DESIGNER';
@@ -84,8 +84,7 @@ export function getCurrentRole(): Role {
 }
 
 /**
- * Set current user role.
- * In production, this would come from auth system.
+ * Set the local presentation role. This cannot grant server permissions.
  */
 export function setCurrentRole(role: Role): void {
   if (typeof window === 'undefined') return;

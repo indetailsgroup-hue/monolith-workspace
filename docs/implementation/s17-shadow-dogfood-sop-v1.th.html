@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Shadow Dogfood SOP — Freeze → Release → Export</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Shadow Dogfood SOP — Freeze → Release → Export</h1>
+<p>รุ่นเอกสาร: 1.0</p>
+<p>จัดทำ: 2026-07-11</p>
+<p>Implementation candidate: <code>739aee160f324543006028e74f8ce479ecc538a3</code></p>
+<p>สถานะปฏิบัติการ: <strong>shadow-only / NO_CUT</strong></p>
+<blockquote><p>Flow ที่เป็นลายลักษณ์อักษรเปลี่ยนเป็น <strong>Freeze → Release → Export</strong> โดย FROZEN หมายถึงล็อกเพื่อ review และไม่ให้อำนาจอัปโหลด packet, factory export หรือ verification SOP นี้เป็น dogfood note ไม่ใช่อำนาจ production หรือ P0 closure</p></blockquote>
+<h2>1. บทบาทและเงื่อนไขก่อนเริ่ม</h2>
+<ul><li>บัญชี Designer: Supabase session ถูกต้อง, <code>app_metadata.roles</code> ที่อนุมัติมี <code>designer</code> (หรือ admin equivalent ที่อนุมัติ) และ site code ที่อนุมัติ</li><li>บัญชี Factory: session ถูกต้อง, role มี <code>factory_operator</code>/<code>factory</code> (หรือ admin equivalent ที่อนุมัติ) และ site code ที่อนุมัติ</li><li>controlled dogfood job หนึ่งงานและ machine profile ที่ยืนยันแล้วหนึ่งตัว</li><li>review gate result แล้วและไม่มี blocker ค้าง</li><li><code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code></li><li>ห้าม operator ใช้ packet ตัดชิ้นงานจริง</li></ul>
+<h2>2. ลำดับปฏิบัติ</h2>
+<h3>ขั้น 1 — เตรียม DRAFT</h3>
+<ol><li>เปิดโครงการ dogfood ที่ควบคุมไว้</li><li>ยืนยัน project/job ID และ site ให้ถูกต้อง</li><li>แก้ design ให้เสร็จและรัน gate checks ที่เกี่ยวข้อง</li><li>บันทึก warning/blocker และห้ามเดินหน้าหากยังมี blocker</li></ol>
+<h3>ขั้น 2 — Freeze</h3>
+<ol><li>Designer เลือก Freeze</li><li>ยืนยัน server state เป็น <code>FROZEN</code> และมี revision ID</li><li>Review geometry, materials, hardware, drill map และ gate evidence ที่ถูก freeze</li></ol>
+<p><strong>ขอบเขต FROZEN:</strong> packet upload, Factory export และ verification ต้องถูกปฏิเสธทั้งหมด Local preview ใช้ review ได้เท่านั้นและไม่ใช่ release evidence</p>
+<h3>ขั้น 3 — Release</h3>
+<ol><li>หลัง review/gate acceptance แล้ว Designer เลือก Release อย่างชัดเจน</li><li>ยืนยัน server state เป็น <code>RELEASED</code></li><li>ยืนยัน release event บันทึก server-derived actor และ authorization context</li></ol>
+<p>Release เป็น transition ที่มนุษย์มองเห็นแยกต่างหาก Freeze อย่างเดียวไม่เพียงพอ</p>
+<h3>ขั้น 4 — Export และ upload จาก Designer</h3>
+<ol><li>เลือก Export หลัง UI และ server รายงาน RELEASED ตรงกันเท่านั้น</li><li>ZIP ที่สร้างยังขึ้นต้น <code>NFP-</code> และมี <code>NOT_FOR_PRODUCTION.txt</code></li><li>ยืนยัน server packet upload สำเร็จและมี packet SHA-256/storage path</li><li>ห้ามเชื่อเฉพาะ browser download เพราะเส้นปัจจุบันของ Designer ดาวน์โหลด ZIP local ก่อน server upload ดังนั้น upload ที่ล้มเหลวอาจทิ้งไฟล์ local ที่ server ไม่เคยรับ</li></ol>
+<h3>ขั้น 5 — Factory รับ, export และ verify</h3>
+<ol><li>Factory operator เปิด job เดียวกันด้วยบัญชี Factory</li><li>ยืนยัน state เป็น RELEASED และมี packet anchor ที่บันทึกแล้ว</li><li>ขอ Factory export และรับ signed URL อายุสั้น</li><li>รัน verification และบันทึก expected/computed SHA-256, verdict, actor และเวลา</li><li>ใช้ผลลัพธ์เพื่อเทียบกับใบสั่ง/กระบวนการเดิมของโรงงานและเก็บ S17 evidence เท่านั้น</li></ol>
+<p><strong>Operational disposition สูงสุด:</strong> shadow evidence only / NO_CUT แม้ PASS ก็ไม่ให้อำนาจผลิต</p>
+<h2>3. ผลกระทบที่ผู้ใช้เห็น</h2>
+<ul><li>“Freeze แล้ว Export” ใช้ไม่ได้อีก ต้องทำ Release อย่างชัดเจน</li><li>ความพยายาม export/upload/verify ตอน FROZEN จะถูกปฏิเสธ</li><li>ผู้ใช้ไม่มี session ถูกต้องได้ <code>401</code>; ไม่มี role ที่ระบบรู้จักได้ <code>403</code></li><li>เปลี่ยน local UI role ไม่เปลี่ยน server permission</li><li>INSTALLER และ FINANCE อ่าน state/can-export ได้ แต่ถูกปฏิเสธจาก jobs/activity/proof evidence surfaces</li><li>Factory audit event ใหม่ตั้งใจใช้ verified subject ID ทั้ง <code>actorName</code> และ <code>actorSubjectId</code>; เส้นนี้ไม่ persist email ส่วน append-only row เก่าอาจมี email และห้าม rewrite</li><li>NFP file ที่ดาวน์โหลดไม่ใช่หลักฐานว่า server รับแล้ว ต้องตรวจ server packet record/activity</li><li>FactoryApp อาจยังแสดง FROZEN เป็น <code>VERIFIED</code>; ให้เชื่อ server state และ export response จนกว่าจะแก้ label</li></ul>
+<h2>4. การหยุดและ rollback</h2>
+<p>หยุด dogfood run เมื่อเกิดข้อใดข้อหนึ่ง:</p>
+<ul><li>state ไม่ตรง DRAFT/FROZEN/RELEASED ที่คาด</li><li>Release ล้มเหลวหรือไม่มี revision ID</li><li>packet upload ล้มเหลวหรือไม่มี packet/storage anchors</li><li>Factory export หรือ verification สำเร็จทั้งที่ state ยัง FROZEN</li><li>หลักฐาน JWT actor/roles/site หายหรือไม่ตรง operator</li><li>ไม่มี NFP prefix/marker</li><li>computed packet hash ไม่ตรง server anchor</li></ul>
+<p>หากต้องถอนงาน RELEASED ให้ใช้ Revoke เพื่อกลับเป็น FROZEN หลัง revoke แล้ว upload/export/verify ต้องถูกปฏิเสธอีกครั้ง เก็บ events เดิมไว้และห้าม rewrite audit history</p>
+<h2>5. Evidence ที่ต้องเก็บ</h2>
+<ul><li>application commit และ migration hash ที่แน่นอน</li><li>dogfood job ID และ released revision ID</li><li>Designer/Factory actor subject IDs, role arrays, site-code arrays และ authorization-context IDs</li><li>assertion ว่า event ใหม่มี <code>actorName</code> เท่ากับ <code>actorSubjectId</code> และไม่ใช่ email</li><li>เวลา Freeze, Release, packet-record และ verify events</li><li>packet/manifest SHA-256 และ storage path</li><li>HTTP status/result ของ FROZEN negative checks สามเส้น</li><li>verification expected/computed hash และ verdict</li><li>screenshot/record ที่เห็น NFP marker และการรับทราบ NO_CUT</li><li>CI และ database dry-run IDs/output</li></ul>
+<h2>6. ขอบเขตการปิดงาน</h2>
+<p>การทำ SOP นี้ครบให้ controlled dogfood evidence เท่านั้น ไม่ปิด S17-1/S17-2, ไม่อนุมัติ migration 0162, ไม่ unlock Track B, ไม่อนุญาต production และไม่อนุญาตตัดจริง อำนาจ closure ทั้งหมดยังคงเป็นของมนุษย์</p>
+</main>
+</body>
+</html>

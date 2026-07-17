@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17 Hosted Auth และ Staging Evidence Package</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17 Hosted Auth และ Staging Evidence Package</h1>
+<p>รุ่น package: 1.0</p>
+<p>จัดทำ: 2026-07-12</p>
+<p>สถานะ: <strong>Package สำหรับ Human/Ops รัน — ไม่ใช่อำนาจ deploy</strong></p>
+<blockquote><p>Script ไม่ deploy Edge function และไม่ apply migration แต่เมื่อ Human/Ops รัน มันจะสร้างและเปลี่ยนสถานะ synthetic job หนึ่งงานบน staging ดังนั้นการรันเป็น state-changing staging action ที่ต้องมีมติมนุษย์ชัดเจน ห้ามรันกับ production</p></blockquote>
+<h2>1. วัตถุประสงค์</h2>
+<p>Package นี้เก็บ hosted evidence gate ที่ยังขาดของ S17-1/S17-2 implementation candidate:</p>
+<ul><li>Designer JWT จริงที่ถูกต้องได้ <code>200</code></li><li>JWT ที่หมดอายุจริงได้ <code>401</code></li><li>user ถูกต้องแต่ไม่มี <code>app_metadata.roles</code> ที่ระบบรู้จักได้ <code>403</code></li><li><code>x-actor-role: DESIGNER</code> ปลอมให้ Factory principal มีสิทธิ์ transition ไม่ได้ และ job ยังคง DRAFT</li><li>INSTALLER อ่าน state ได้ แต่ activity ได้ <code>403</code></li><li>packet upload, export และ verify ตอน FROZEN ได้ <code>409</code> ทุกเส้น</li><li>Designer ที่ถูกต้อง release ไป RELEASED ได้</li><li>release activity เก็บ <code>actorName = actorSubjectId = verified JWT sub</code> ไม่ใช่ email</li></ul>
+<p>Script ไม่เก็บ JWT, API key, raw activity body, email หรือ plaintext subject ID ใน evidence JSON โดยเก็บ SHA-256 subject anchor และ response field ที่จำกัดไว้เท่านั้น</p>
+<h2>2. เงื่อนไขก่อนรันที่ Human/Ops เป็นเจ้าของ</h2>
+<ul><li>independent review รับ source candidate SHA ที่แน่นอนแล้ว</li><li>เป้าหมายเป็น hosted Supabase <strong>staging/test</strong> ที่แยกจาก production เท่านั้น</li><li>บันทึก backup, abort owner, maintenance window และ approval แล้ว</li><li>apply migration 0162 บน staging สำเร็จ</li><li>deploy <code>factory-api</code> commit ที่ review แล้วบน staging</li><li>PostgREST schema cache และ Auth healthy</li><li>มี staging token ห้าตัวจาก secret manager/environment variables:</li><li>active Designer (<code>app_metadata.roles</code> มี <code>designer</code>)</li><li>active Factory (<code>factory_operator</code> หรือ <code>factory</code>)</li><li>active Installer (<code>installer</code>)</li><li>active no-role user (ไม่มี Factory role ที่ระบบรู้จัก)</li><li>**token จริงที่ค่า <code>exp</code> ผ่านไปแล้ว** การทำ token เสียไม่เทียบเท่าการทดสอบหมดอายุ</li></ul>
+<p>Operator ต้อง verify deployed commit แยกต่างหาก การรันผ่านทั้งที่ deploy คนละ commit เป็น evidence ที่ใช้ไม่ได้</p>
+<h2>3. ลำดับ deploy ของมนุษย์</h2>
+<p>Migration และ final Edge function แบบ as-built ไม่มี binary order ที่ zero-downtime: final function ต้องใช้ RPC signature ใหม่ ส่วน migration 0162 ถอน signature เก่า ให้ใช้ approved maintenance sequence จาก client compatibility checklist:</p>
+<ol><li>หยุด Factory mutations และยืนยัน staging target, backup และ abort owner</li><li>ตรวจ <code>supabase migration list</code> ให้แน่ใจว่า 0162 เป็น Factory migration ที่ตั้งใจให้ pending เพียงตัวเดียว</li><li>รันและ review <code>supabase db push --dry-run</code> กับ staging project ที่ link ไว้</li><li>เมื่อมีมติชัดเจน จึงรัน <code>supabase db push</code> เพื่อ apply 0162 บน staging</li><li>Deploy function ที่ review แล้วด้วย <code>supabase functions deploy factory-api</code></li><li>Verify deployed target/commit แล้วจึงรัน evidence script นี้</li><li>ถ้าเคสใด fail ให้คง staging traffic ปิดไว้และ archive redacted evidence กับ platform run/deploy logs</li></ol>
+<p>ทั้งหมดเป็นคำสั่งของ operator ไม่ใช่ authorization การ link project, push และ deploy ต้องทำโดย Human/Ops ไม่ใช่ AI implementer</p>
+<h2>4. การตั้งค่าแบบไม่รั่ว secret</h2>
+<p>ตั้งค่าใน operator process จาก secret store ที่อนุมัติ ห้าม paste JWT ลง chat, commit, command history หรือ evidence:</p>
+<pre><code class="language-powershell">$env:S17_FACTORY_API_BASE_URL = 'https://&lt;STAGING-REF&gt;.supabase.co/functions/v1/factory-api'
+$env:S17_SUPABASE_ANON_KEY = '&lt;STAGING-ANON-KEY&gt;'
+$env:S17_DESIGNER_JWT = '&lt;ACTIVE-DESIGNER-JWT&gt;'
+$env:S17_FACTORY_JWT = '&lt;ACTIVE-FACTORY-JWT&gt;'
+$env:S17_INSTALLER_JWT = '&lt;ACTIVE-INSTALLER-JWT&gt;'
+$env:S17_NO_ROLE_JWT = '&lt;ACTIVE-NO-ROLE-JWT&gt;'
+$env:S17_EXPIRED_JWT = '&lt;GENUINELY-EXPIRED-STAGING-JWT&gt;'
+$env:S17_TARGET_LABEL = 'monolith-staging'
+$env:S17_EXPECTED_COMMIT = '&lt;FULL-40-HEX-DEPLOYED-COMMIT&gt;'
+$env:S17_EXPECTED_MIGRATION_SHA256 = '&lt;LOWERCASE-SHA256-OF-0162&gt;'</code></pre>
+<p>Package ตั้งใจไม่รับและไม่ต้องใช้ service-role key</p>
+<h2>5. คำสั่งรันซ้ำได้</h2>
+<p>ดูแผนแบบปลอดภัยในเครื่อง (ไม่มี network หรือ state change):</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-hosted-auth/run-hosted-auth-evidence.ps1 `
+  -PlanOnly</code></pre>
+<p>รันบน hosted staging หลังอนุมัติ:</p>
+<pre><code class="language-powershell">powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File supabase/tests/s17-hosted-auth/run-hosted-auth-evidence.ps1 `
+  -ConfirmNonProduction `
+  -EvidencePath artifacts/s17-hosted-auth-evidence-&lt;RUN-ID&gt;.json</code></pre>
+<p>Guard ที่บังคับ:</p>
+<ul><li>target label ต้องมี staging/stage/preview/test/sandbox</li><li>hosted URL ต้องเป็น HTTPS</li><li>job ID ต้องขึ้นต้น <code>S17-HOSTED-</code></li><li>expected commit และ migration hash ต้องเป็น lowercase hash เต็ม</li><li>active token ต้องยังไม่หมดอายุและมี metadata role ตามที่คาด</li><li>expired token ต้องมี <code>exp</code> ในอดีต</li><li>ไม่ overwrite evidence เดิม นอกจาก operator ส่ง <code>-ForceEvidenceOverwrite</code> ชัดเจน</li><li>หยุดเมื่อพบ status/state แรกที่ผิดคาด และยังเขียน redacted FAIL record</li></ul>
+<h2>6. Checklist archive evidence</h2>
+<ul><li>เก็บ byte ของ JSON ที่สร้างและคำนวณ SHA-256</li><li>แนบ staging deployment/function log IDs และ migration apply log</li><li>ระบุ hosted project ด้วย approved non-secret label/project ref</li><li>บันทึก deployed commit และ migration digest จริง</li><li>ตรวจทุก case เป็น PASS</li><li>ตรวจ <code>rawTokensStored</code> เป็น false และไม่มี secret/email/plain subject ID</li><li>archive เข้า durable evidence path ที่อนุมัติก่อนมติ closure ของมนุษย์</li></ul>
+<h2>7. ขอบเขต</h2>
+<p>Hosted run เขียวและ staging migration สำเร็จเป็นเพียง evidence input สำหรับ human closure review ของ S17-1/S17-2 ไม่ merge code, ไม่ปิด P0 เอง, ไม่พิสูจน์ production readiness, ไม่ปิด <code>factory-site-isolation</code>, ไม่ปลดล็อกการตัดจริง และไม่ให้อำนาจ deploy production</p>
+</main>
+</body>
+</html>
