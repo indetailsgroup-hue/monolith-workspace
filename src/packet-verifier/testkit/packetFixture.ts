@@ -46,7 +46,12 @@ const PAYLOAD_ORDER = [
   'gate-result.json',
 ] as const;
 
-export async function makePacketFixture(): Promise<PacketFixture> {
+export interface FixtureOptions {
+  /** when provided, the attestation is genuinely signed over the §10.1 preimage */
+  sign?: (unsignedAttestationValue: JsonValue) => Promise<string>;
+}
+
+export async function makePacketFixture(options: FixtureOptions = {}): Promise<PacketFixture> {
   const payloads = payloadBytes();
 
   const files = [] as { path: string; mediaType: string; contentSchema: string; sizeBytes: number; sha256: string }[];
@@ -106,9 +111,15 @@ export async function makePacketFixture(): Promise<PacketFixture> {
     },
     signature: {
       protected: { algorithm: 'ECDSA_P256_SHA256', keyId: 'key-001', registryVersion: '1.0.0' },
-      valueBase64: 'A'.repeat(85) + 'Q==',
+      valueBase64: 'A'.repeat(85) + 'Q==', // placeholder; replaced when options.sign is provided
     },
   };
+  if (options.sign !== undefined) {
+    // §10.1: preimage keeps signature.protected and omits only valueBase64 —
+    // pass the full value; the preimage builder strips valueBase64 itself.
+    const valueBase64 = await options.sign(attestationValue);
+    (attestationValue as { signature: { valueBase64: string } }).signature.valueBase64 = valueBase64;
+  }
   const attestationBytes = te.encode(jcsSerialize(attestationValue));
 
   const mShape = validateManifestShape(manifestValue);
