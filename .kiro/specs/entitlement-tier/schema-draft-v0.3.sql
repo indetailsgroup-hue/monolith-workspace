@@ -11,6 +11,24 @@
 --        implemented 34 · roadmap 19 (label ทั้งกลุ่ม, cloud storage, nest true-shape,
 --        dogbone, kerf bending, six-side, seats, AI, ERP/API/SSO/self-host ฯลฯ)
 -- กติกา: ห้ามขายของ roadmap — UI ต้องแสดง "coming soon" จาก features.status
+-- v0.3.1 (2026-07-16, Phase-1 landing fix จากการรันจริงครั้งแรกบน CI):
+--   [L10] enforce_seat_quota: floor limit ที่ 1 — เดิม platform.seats เป็น roadmap
+--         → feature_limit คืน 0 → count>=0 จริงเสมอ = สร้าง membership แรก (owner)
+--         ไม่ได้เลยทุกกรณี (org bootstrap ตาย) · org ต้องมี owner เสมอ; seats quota
+--         คือเพดานที่นั่ง "เพิ่ม" — ค่า plan (free=1/plus=3/advance=10) ความหมายคงเดิม
+--   [L11] explicit grants ต้นหมวด RLS — draft เดิมพึ่ง default privileges ของ
+--         Supabase image ซึ่ง role ที่ apply migration ไม่ได้รับ → authenticated/anon
+--         โดน permission denied ระดับตาราง · แก้ตาม convention: grant กว้างระดับ
+--         ตารางแล้วให้ RLS (fail-closed ทั้ง 11 ตาราง) เป็นตัวคุมแถว
+-- v0.3.2 (2026-07-16, Phase 2 Billing Integration — tasks 2.1/2.2/2.3):
+--   [F5] profiles.active_org_id + set_active_org() + custom_access_token_hook()
+--        — JWT org_id claim สำหรับผู้ใช้หลาย org (GoTrue custom access token hook;
+--        hook เรียกได้เฉพาะ supabase_auth_admin) · current_org() อ่าน claim นี้อยู่แล้ว
+--   [F6] billing_apply_subscription() + billing_reset_usage() — service-role-only
+--        RPCs เป็น contract เดียวที่ webhook (Stripe หรือ manual) ใช้เขียน subscriptions
+--        และเคลียร์ usage ต้นรอบบิล · assert_service_role() helper
+--        NOTE: metering ยังเป็น calendar-month ตาม v0.3 (consume ใช้ YYYY-MM) —
+--        ความต่าง billing-anchor vs calendar month = design note รอ owner (Phase 2.2)
 -- NOTE: design proposal — คำถาม C12 (org↔site) ยังเป็น owner decision ก่อน deploy
 -- Run order: extensions → tenancy → billing/entitlement → domain →
 --            functions → RLS → triggers → seed
@@ -30,9 +48,11 @@ create table if not exists public.organizations (
 );
 
 create table if not exists public.profiles (
-  id          uuid primary key references auth.users(id) on delete cascade,
-  full_name   text,
-  created_at  timestamptz not null default now()
+  id            uuid primary key references auth.users(id) on delete cascade,
+  full_name     text,
+  -- [F5 v0.3.2] org ปัจจุบันที่ผู้ใช้เลือก (ผู้ใช้หลาย org) — เขียนผ่าน set_active_org() เท่านั้น
+  active_org_id uuid references public.organizations(id) on delete set null,
+  created_at    timestamptz not null default now()
 );
 
 do $$ begin
@@ -304,9 +324,116 @@ begin
 end;
 $$;
 
+-- ---------- v0.3.2 [F6]: billing RPCs (Phase 2.1/2.2) — service role เท่านั้น ----------
+create or replace function public.assert_service_role()
+returns void language plpgsql stable security definer set search_path = public as $$
+begin
+  if coalesce(auth.role(),'') <> 'service_role' then
+    raise exception 'service_role_only' using errcode = 'insufficient_privilege';
+  end if;
+end;
+$$;
+
+-- 2.1: contract เดียวที่ webhook (Stripe หรือ manual) ใช้เขียน subscriptions
+-- idempotent upsert ต่อ org — retry ของ provider ซ้ำกี่ครั้งก็ได้ค่าเดิม
+create or replace function public.billing_apply_subscription(
+  p_org uuid, p_plan_code text, p_status public.sub_status,
+  p_period_start timestamptz, p_period_end timestamptz,
+  p_provider text default null, p_provider_customer_id text default null,
+  p_provider_sub_id text default null
+) returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.assert_service_role();
+  if not exists (select 1 from public.plans where code = p_plan_code) then
+    raise exception 'unknown_plan: %', p_plan_code using errcode = 'foreign_key_violation';
+  end if;
+  insert into public.subscriptions(
+    org_id, plan_code, status, current_period_start, current_period_end,
+    provider, provider_customer_id, provider_sub_id, updated_at)
+  values (p_org, p_plan_code, p_status, p_period_start, p_period_end,
+          p_provider, p_provider_customer_id, p_provider_sub_id, now())
+  on conflict (org_id) do update
+    set plan_code            = excluded.plan_code,
+        status               = excluded.status,
+        current_period_start = excluded.current_period_start,
+        current_period_end   = excluded.current_period_end,
+        provider             = coalesce(excluded.provider, subscriptions.provider),
+        provider_customer_id = coalesce(excluded.provider_customer_id, subscriptions.provider_customer_id),
+        provider_sub_id      = coalesce(excluded.provider_sub_id, subscriptions.provider_sub_id),
+        updated_at           = now();
+end;
+$$;
+
+-- 2.2: reset usage ต้นรอบบิล — เคลียร์ counter ของ period ปัจจุบัน แล้วคืนจำนวนแถวที่ลบ
+-- (metering เป็น calendar-month ตาม v0.3: consume ใช้ to_char(now(),'YYYY-MM') —
+--  ถ้า owner ต้องการ anchor ตามรอบบิลจริงต้องแก้ semantic ของ consume ด้วย = design note)
+create or replace function public.billing_reset_usage(p_org uuid)
+returns integer language plpgsql security definer set search_path = public as $$
+declare v_period text := to_char(now(),'YYYY-MM'); v_n integer;
+begin
+  perform public.assert_service_role();
+  delete from public.usage_counters where org_id = p_org and period = v_period;
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+-- ---------- v0.3.2 [F5]: JWT org_id (Phase 2.3) ----------
+-- ผู้ใช้เลือก org ปัจจุบัน — ต้องเป็นสมาชิก org นั้น (fail-closed)
+create or replace function public.set_active_org(p_org uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  perform public.assert_org_access(p_org);
+  update public.profiles set active_org_id = p_org where id = auth.uid();
+  if not found then
+    raise exception 'profile_not_found' using errcode = 'no_data_found';
+  end if;
+end;
+$$;
+
+-- GoTrue Custom Access Token hook — inject claims.org_id:
+--   active_org_id (ถ้ายังเป็นสมาชิก) > membership แรก (deterministic เดียวกับ
+--   current_org() fallback: order by created_at, org_id) > ไม่ใส่ claim
+-- current_org() ฝั่ง DB อ่าน request.jwt.claims->>'org_id' อยู่แล้ว (v0.3)
+create or replace function public.custom_access_token_hook(event jsonb)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v_user uuid; v_org uuid; v_claims jsonb;
+begin
+  v_user := nullif(event->>'user_id','')::uuid;
+  if v_user is null then return event; end if;
+  select coalesce(
+    (select p.active_org_id from public.profiles p
+      where p.id = v_user and p.active_org_id is not null
+        and exists (select 1 from public.memberships m
+                     where m.org_id = p.active_org_id and m.user_id = v_user)),
+    (select m.org_id from public.memberships m
+      where m.user_id = v_user
+      order by m.created_at asc, m.org_id asc
+      limit 1)
+  ) into v_org;
+  if v_org is null then return event; end if;
+  v_claims := coalesce(event->'claims', '{}'::jsonb) || jsonb_build_object('org_id', v_org::text);
+  return jsonb_set(event, '{claims}', v_claims);
+end;
+$$;
+
 -- =====================================================================
 -- 5. RLS (เหมือน v0.2 — 11 ตาราง รวม profiles)
 -- =====================================================================
+-- [L11 v0.3.1] explicit grants — อย่าพึ่ง default privileges ของ image
+-- (migration-runner role อาจไม่ใช่เจ้าของ default acl): สิทธิ์กว้างระดับตาราง
+-- แล้วให้ RLS fail-closed ด้านล่างเป็นตัวคุมแถวจริง (convention Supabase)
+grant usage on schema public to anon, authenticated, service_role;
+grant select on all tables in schema public to anon;
+grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
+
+-- [F5 v0.3.2] hook ต้องเรียกได้เฉพาะ GoTrue (supabase_auth_admin) — ปิดจาก client ทุก role
+-- (ต้องอยู่หลัง blanket grant ข้างบน ไม่งั้นโดน re-grant)
+revoke execute on function public.custom_access_token_hook(jsonb) from public, anon, authenticated;
+grant execute on function public.custom_access_token_hook(jsonb) to supabase_auth_admin;
+
 alter table public.organizations         enable row level security;
 alter table public.profiles              enable row level security;
 alter table public.memberships           enable row level security;
@@ -415,6 +542,9 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(new.org_id::text || '|platform.seats', 0));
   v_limit := public.feature_limit(new.org_id, 'platform.seats');
   if v_limit = -1 then return new; end if;
+  -- [L10 v0.3.1] org ต้องมี owner เสมอ: roadmap/zero-limit ห้าม block membership แรก
+  -- (ไม่งั้น org bootstrap ไม่ได้เลย) — floor ที่ 1; ค่า plan 1/3/10 ความหมายคงเดิม
+  v_limit := greatest(v_limit, 1);
   select count(*) into v_count from public.memberships where org_id = new.org_id;
   if v_count >= v_limit then
     raise exception 'quota_exceeded: platform.seats (limit %)', v_limit

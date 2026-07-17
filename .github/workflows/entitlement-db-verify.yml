@@ -1,0 +1,129 @@
+# Entitlement DB verify — E0 evidence for the SEPARATE SaaS schema (ADR-034).
+# Spins an ephemeral Supabase local Postgres scoped to entitlement-db/ (its own
+# config.toml + migration chain — never touches the internal DAPH DB chain),
+# runs the Phase-1 negative-test suite + pgTAP invariants, uploads evidence.
+# This is an ephemeral CI container — NOT hosted/prod infra (ADR-066 does not apply).
+name: MONOLITH Entitlement DB Verify
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**", "s17/**", "governance/**"]
+    paths:
+      - "entitlement-db/**"
+      - ".github/workflows/entitlement-db-verify.yml"
+  pull_request:
+    paths:
+      - "entitlement-db/**"
+      - ".github/workflows/entitlement-db-verify.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  entitlement-db-verify:
+    name: apply entitlement migrations + negative tests + pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # ---- Phase 2.1: billing-webhook transport tests (vitest, DI, no DB/network —
+      #      same pattern as edge-fn-verify.yml) — fast, so they run before the DB spins up
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies (root — vitest runner)
+        run: npm ci
+      - name: Run billing-webhook transport tests
+        run: npx vitest run entitlement-db/supabase/functions --reporter=default
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: latest
+
+      - name: Start local Supabase (applies entitlement migration chain)
+        working-directory: entitlement-db
+        run: supabase start
+
+      - name: Capture applied migrations
+        working-directory: entitlement-db
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tAc \
+            "select version, name from supabase_migrations.schema_migrations order by version" \
+            | tee ../migrations-applied.txt
+          applied=$(wc -l < ../migrations-applied.txt)
+          if [ "$applied" -ne 5 ]; then
+            echo "::error::expected 5 entitlement migrations applied, got $applied"; exit 1
+          fi
+
+      - name: Run negative-test suite (Phase 1.2 — properties P1–P5 + P1b)
+        run: |
+          set -o pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -f entitlement-db/tests/tests-negative.sql 2>&1 | tee negative-tests.log
+          # psql exits non-zero on any raised FAIL exception (ON_ERROR_STOP), but also
+          # positively require every PASS notice so a silently-skipped block can't go green.
+          for p in "PASS P1:" "PASS P2:" "PASS P3:" "PASS P4:" "PASS P5:" "PASS P1b:"; do
+            if ! grep -q "$p" negative-tests.log; then
+              echo "::error::negative suite did not emit \"$p\" — vacuous/skipped block"; exit 1
+            fi
+          done
+          echo "all 6 property blocks passed"
+
+      - name: Run pgTAP invariants (Phase 1.3 — 36 assertions)
+        run: |
+          set -o pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
+            -f entitlement-db/tests/entitlement_invariants.sql | tee entitlement-invariants.tap
+          if grep -qE '^not ok' entitlement-invariants.tap; then
+            echo "::error::pgTAP invariant failure"; exit 1
+          fi
+          okCount=$(grep -cE '^ok ' entitlement-invariants.tap || true)
+          if [ "$okCount" -ne 36 ]; then
+            echo "::error::expected 36 pgTAP assertions, got $okCount"; exit 1
+          fi
+          echo "pgTAP: 36/36 ok"
+
+      - name: Run billing pgTAP invariants (Phase 2 — 18 assertions)
+        run: |
+          set -o pipefail
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
+            -f entitlement-db/tests/billing_invariants.sql | tee billing-invariants.tap
+          if grep -qE '^not ok' billing-invariants.tap; then
+            echo "::error::billing pgTAP invariant failure"; exit 1
+          fi
+          okCount=$(grep -cE '^ok ' billing-invariants.tap || true)
+          if [ "$okCount" -ne 18 ]; then
+            echo "::error::expected 18 billing pgTAP assertions, got $okCount"; exit 1
+          fi
+          echo "billing pgTAP: 18/18 ok"
+
+      - name: Assemble evidence
+        if: always()
+        run: |
+          {
+            echo "workflow: entitlement-db-verify"
+            echo "commit: $GITHUB_SHA"
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "migrations:"; cat migrations-applied.txt 2>/dev/null || echo " (missing)"
+          } > entitlement-evidence.txt
+          cat entitlement-evidence.txt
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: entitlement-db-evidence-${{ github.sha }}
+          path: |
+            entitlement-evidence.txt
+            migrations-applied.txt
+            negative-tests.log
+            entitlement-invariants.tap
+            billing-invariants.tap
+          retention-days: 90

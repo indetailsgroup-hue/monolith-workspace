@@ -1,5 +1,7 @@
 -- =====================================================================
 -- Entitlement & Multi-Tier — Negative Tests (v0.3) · scratch DB เท่านั้น
+-- [entitlement-db] adapted copy of .kiro/specs/entitlement-tier/tests-negative.sql
+--   (verbatim + auth.users fixture) — behavior properties P1-P5 + P1b (Req 9)
 -- ใช้กับ: schema-draft-v0.3.sql (รันก่อน) บน Supabase local / branch DB
 -- วิธีรัน: supabase db reset แล้ว psql -f tests-negative.sql
 -- แนวทาง: จำลอง JWT ด้วย set_config('request.jwt.claims', ...) ต่อ role
@@ -19,6 +21,14 @@ begin;
 -- (org-creation RPC/Edge Function) — insert เปล่า ๆ จะโดน trg_seat_quota →
 -- feature_limit → assert_org_access ซึ่ง fail-closed สำหรับ non-member
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+
+-- [entitlement-db adaptation] profiles.id FK -> auth.users(id): create minimal gotrue rows first
+-- (supabase local scratch only — rolled back with the transaction)
+insert into auth.users (instance_id, id, aud, role, email, created_at, updated_at)
+values
+  ('00000000-0000-0000-0000-000000000000', :u1, 'authenticated', 'authenticated', 'u1@test.local', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', :u2, 'authenticated', 'authenticated', 'u2@test.local', now(), now())
+on conflict (id) do nothing;
 
 insert into public.profiles(id, full_name) values (:u1,'User A'),(:u2,'User B') on conflict do nothing;
 insert into public.organizations(id, name, slug) values
