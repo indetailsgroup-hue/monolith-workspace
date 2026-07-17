@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification v0.4.1</title>
+  <title>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</title>
   <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
 </head>
 <body>
 <main>
 <h1>CT-DEC-002 / S17-3 — Canonical Factory Packet Specification</h1>
-<p>ฉบับเอกสาร: 0.4.1 วันที่ร่าง: 2026-07-11 วันที่แก้ไข: 2026-07-15 สำหรับการแก้ low-S threshold ใน v0.4.1 หลัง round-4 re-review แทนที่: v0.3 ที่ <code>bf25b10f2c72707097acdb03a8161e8cec8cd36b</code> สถานะ: <strong>DRAFT — NOT APPROVED — NOT FOR IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068</p>
-<blockquote><p>เอกสารนี้เป็น target-state contract สำหรับขออนุมัติ ไม่ได้พิสูจน์ว่าโค้ดปัจจุบัน implement แล้ว ไม่ปิด S17-3 และไม่ปลด S17-4/S17-5 จนกว่าผู้อนุมัติสามบทบาทลงชื่อครบ</p></blockquote>
+<p>ฉบับเอกสาร: 0.4.1 วันที่ร่าง: 2026-07-11 วันที่แก้ไข: 2026-07-15 สำหรับการแก้ low-S threshold ใน v0.4.1 หลัง round-4 re-review วันที่อนุมัติ: 2026-07-17 แทนที่: v0.3 ที่ <code>bf25b10f2c72707097acdb03a8161e8cec8cd36b</code> สถานะ: <strong>APPROVED — 3-ROLE SIGN-OFF COMPLETE — S17-4/S17-5 IMPLEMENTATION AUTHORITY</strong> Baseline ที่ตรวจ: <code>9ac7cff39d02d9430879275645e377728bc0abc5</code> ผู้ร่าง: Codex ในฐานะ advisory/non-authoritative เอกสารแม่: PRD v5.1, Review v3.2, CT-DEC-001, CT-DEC-003, ADR-065, ADR-068</p>
+<blockquote><p>เอกสารนี้เป็น approved target-state contract และให้อำนาจเริ่ม implementation เฉพาะ S17-4/S17-5 หลังลายเซ็นครบสามบทบาท ไม่ได้พิสูจน์ว่า implementation เสร็จ ไม่อนุญาต prod-apply และไม่อนุญาตตัดจริง โดย NFP/NO_CUT และ real-cut gate ยังคงบังคับ</p><p></p><p>Approval record: <code>docs/governance/ct-dec-002-signoff-checklist.{th,en}.md</code> ที่ commit <code>fd65eaf611a87d54bbda1131142df2fa12c9787c</code>; anchor v3 snapshot ก่อน status flip คือ <code>monolith-s17-v041-review-input.sha256</code> SHA-256 <code>f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16</code> (43/43 PASS ณ เวลาเซ็น)</p></blockquote>
 <h2>1. Approval matrix</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>บทบาท</th>
@@ -21,20 +21,20 @@
 <tr>
 <td>Tech Lead</td>
 <td>schema, canonicalization, determinism, feasibility</td>
-<td><strong>PENDING</strong></td>
-<td>—</td>
+<td><strong>APPROVED</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v2 <code>de2a1ccf…a2c7</code></td>
 </tr>
 <tr>
 <td>Factory Owner</td>
 <td>file contract, machine binding, verifier flow, factory fit</td>
-<td><strong>PENDING</strong></td>
-<td>—</td>
+<td><strong>APPROVED — SHADOW CONTRACT; ACTIVATION PENDING</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v2 <code>de2a1ccf…a2c7</code></td>
 </tr>
 <tr>
 <td>Security Owner</td>
 <td>signature, trust boundary, key semantics, fail-closed</td>
-<td><strong>PENDING</strong></td>
-<td>—</td>
+<td><strong>APPROVED</strong></td>
+<td>คุณเดฟ / 2026-07-17 / anchor v3 <code>f7b35734…a16</code></td>
 </tr>
 </tbody></table></div>
 <p>สถานะเปลี่ยนเป็น APPROVED ได้เมื่อทั้งสามช่องเป็น APPROVED เท่านั้น หากคนเดียวถือ Tech Lead และ Security Owner ต้องลงมติแยกสองบทบาท</p>
@@ -693,7 +693,7 @@ blockers are closed and the four-condition real-cut gate passes.
 <td>trusted registry เก็บ canonical DER SPKI ซึ่ง BIT STRING เป็น uncompressed <code>0x04‖X‖Y</code> บน P-256</td>
 </tr>
 </tbody></table></div>
-<p>CT-DEC-002 ยังคง <strong>DRAFT</strong>; Tech Lead, Factory Owner และ Security Owner ยังคง <strong>PENDING</strong>; Track B ยังคง <strong>LOCKED</strong>; shadow mode ยังคง <strong>NO_CUT</strong>; amendment นี้ไม่สร้าง implementation authority หรือ production authority</p>
+<p>ณ 17 ก.ค. 2026 CT-DEC-002 เป็น <strong>APPROVED</strong> หลังลายเซ็นครบสามบทบาท และ Track B เป็น <strong>UNLOCKED FOR S17-4/S17-5 IMPLEMENTATION ONLY</strong>; shadow mode ยังคง <strong>NO_CUT</strong> และ approval นี้ไม่สร้าง production authority หรือ real-cut authority</p>
 </main>
 </body>
 </html>
