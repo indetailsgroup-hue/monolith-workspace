@@ -7,6 +7,9 @@ import { sha256Hex } from '../crypto/sha256';
 import type { JsonValue } from '../canonical/strictJson';
 import type { ZipEntry } from '../container/zipStrictReader';
 import { validateManifestShape, validateAttestationShape, type PacketManifest, type PacketAttestation } from '../shapes/shapes';
+// canonical NFP marker bytes — the pinned nfp-marker@1.0 contract (824 bytes,
+// sha256 40a4d63f…) matches this constant byte-for-byte (verified)
+import { NOT_FOR_PRODUCTION_NOTICE } from '../../core/config/shadowMode';
 
 const te = new TextEncoder();
 
@@ -17,13 +20,15 @@ export interface PacketFixture {
   manifest: PacketManifest;
   attestationBytes: Uint8Array;
   attestation: PacketAttestation;
+  /** valid shadow-mode source filename for this packet (§6) */
+  sourceFilename: string;
 }
 
 /** canonical payload contents (JCS-canonical JSON + LF text marker) */
 function payloadBytes(): Map<string, { bytes: Uint8Array; mediaType: 'application/json' | 'text/plain; charset=utf-8'; contentSchema: string }> {
   const m = new Map<string, { bytes: Uint8Array; mediaType: 'application/json' | 'text/plain; charset=utf-8'; contentSchema: string }>();
   m.set('NOT_FOR_PRODUCTION.txt', {
-    bytes: te.encode('NOT FOR PRODUCTION\nshadow mode packet\n'),
+    bytes: te.encode(NOT_FOR_PRODUCTION_NOTICE),
     mediaType: 'text/plain; charset=utf-8',
     contentSchema: 'monolith.nfp-marker@1.0',
   });
@@ -136,6 +141,7 @@ export async function makePacketFixture(options: FixtureOptions = {}): Promise<P
     { name: 'attestation.json', bytes: attestationBytes },
   ];
 
+  const contentHex12 = packetContentId.slice('sha256:'.length, 'sha256:'.length + 12);
   return {
     entries,
     manifestBytes,
@@ -143,5 +149,6 @@ export async function makePacketFixture(options: FixtureOptions = {}): Promise<P
     manifest: mShape.value,
     attestationBytes,
     attestation: aShape.value,
+    sourceFilename: `NFP-factory-packet-${aShape.value.jobRunId}-${contentHex12}.zip`,
   };
 }
