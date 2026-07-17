@@ -30,6 +30,7 @@
 - [ ] Verifier fail-closed: damaged packet / lookup outage -> never reaches a machine (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, not "warn and pass").
 - [ ] Exporter allowlist + gate evidence binding (gate not PASS -> `PKT_GATE_FAILED`).
 - [ ] Machine profile `kdt_mvp_v1` matches the physical machine + controller (confirmed by the factory).
+  - **Owner decision 17 Jul 2026 (ADR-070): this item is held CONDITIONAL** — documented-level evidence accepted (`docs/evidence/machines/kdt-kn-2409lp/`: KDT/NCstudio/Weihong/G-code `.nc` = HIGH; the assessment itself honestly declares `PROHIBITED · NOT_ASSESSED`) · **engineer bench verification at the machine = hard gate before real work** (assessment Gate E + CT-DEC-002 §5 "machine profile calibrated") · rationale: multi-machine onboarding — documented-profile first; no real cutting until the bench gates pass.
 
 ## 3. Security Owner — Signature / Trust / Key
 

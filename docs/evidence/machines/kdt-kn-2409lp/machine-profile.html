@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Machine Profile — KDT KN-2409LP (owner-answered)</title>
+<style>
+  :root{--green:#2D5A27;--green2:#3a7233;--ink:#1a2028;--mut:#5c6874;--line:#e2e6ea;--bg:#f6f7f4;--card:#fff;
+    --ok:#1f7a34;--okBg:#eaf6ec;--med:#b26a00;--medBg:#fff5e6;--amber:#c98a00;--amberBg:#fff8e8;--hi:#b71c1c;--hiBg:#fdecec}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;color:var(--ink);background:var(--bg);line-height:1.62;font-size:15px}
+  .wrap{max-width:880px;margin:0 auto;padding:26px 20px 70px}
+  header.hero{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;border-radius:20px;padding:24px 26px;margin-bottom:18px;box-shadow:0 8px 22px rgba(45,90,39,.18)}
+  header.hero h1{margin:0 0 6px;font-size:22px}
+  header.hero .sub{opacity:.92;font-size:13.5px}
+  .ids{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .idpill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);padding:4px 10px;border-radius:999px;font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:18px;font-size:12.5px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-ok{background:var(--okBg);color:var(--ok)}
+  .b-doc{background:var(--medBg);color:var(--med)}
+  .b-verify{background:var(--amberBg);color:var(--amber);border:1px dashed var(--amber)}
+  .b-pend{background:var(--hiBg);color:var(--hi)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  h2{color:var(--green);font-size:17.5px;margin:2px 0 6px;padding-bottom:7px;border-bottom:2px solid #eef1ec}
+  .qa{padding:13px 0;border-bottom:1px solid var(--line)}
+  .qa:last-child{border-bottom:none}
+  .q{font-weight:700;color:var(--green);font-size:14px;margin-bottom:3px}
+  .q .field{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--mut);font-weight:400}
+  .a{margin:4px 0 2px}
+  .a .tag{margin-left:6px}
+  .prov{font-size:12px;color:var(--mut);margin-top:3px}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .yaml{background:#0f1720;color:#d6e2ea;border-radius:14px;padding:15px 17px;overflow-x:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.55}
+  .yaml .c{color:#6f8ba0}.yaml .k{color:#8ec6ff}.yaml .v{color:#c8e6a0}.yaml .u{color:#ff9d6b}
+  .note{background:#f7faf6;border-left:4px solid var(--green2);padding:9px 13px;border-radius:8px;margin:10px 0;font-size:13px}
+  .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Machine Profile — KDT KN-2409LP</h1>
+  <div class="sub">ตอบโดยเจ้าของเครื่อง (owner-answered) · แยกออกจากรายงานประเมิน · ทุกช่องมีป้ายบอกที่มาของคำตอบ</div>
+  <div class="ids">
+    <span class="idpill">profile_id: KDT-KN-2409LP-CTRL@0.3-draft</span>
+    <span class="idpill">as-of: 2026-07-17</span>
+    <span class="idpill">status: machine-verification pending</span>
+  </div>
+</header>
+
+<div class="legend">
+  <span><span class="badge b-ok">ยืนยันแล้ว</span> ตอบได้แน่ (เอกสาร/วิจัยตรงกันหลายแหล่ง)</span>
+  <span><span class="badge b-doc">ตามเอกสาร</span> ตอบจากเอกสาร ยังไม่เปิดเครื่องยืนยัน</span>
+  <span><span class="badge b-verify">ต้องเช็กเครื่อง</span> ผูกกับตัวเครื่อง ยังไม่รู้ค่าจริง</span>
+  <span><span class="badge b-pend">ยังไม่รู้</span> ต้องอ่านจากหน้าจอ/ป้าย</span>
+</div>
+
+<!-- 1. IDENTITY -->
+<section>
+  <h2>1. ชื่อ / รุ่นเครื่อง (Machine identity)</h2>
+
+  <div class="qa">
+    <div class="q">ยี่ห้อเครื่อง <span class="field">brand</span></div>
+    <div class="a"><b>KDT</b> (Guangdong Nanxing / kdtmac.com) <span class="tag badge b-ok">ยืนยันแล้ว</span></div>
+    <div class="prov">ผมยืนยันว่าเป็น KDT — เป็นแบรนด์เครื่องจักรงานไม้จีนที่มีจริงและขายรุ่นนี้อยู่</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">รุ่นเครื่อง <span class="field">model</span></div>
+    <div class="a">ผมระบุว่าเป็น <b>KDT KN-2409LP</b> <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+    <div class="prov">ตรง ๆ เลยนะ: เอกสาร/เว็บ KDT ที่ผมหาเจอมีแต่รุ่น <b>KN-2409NL / KN-2409DL / KN-2409L</b> — <b>ไม่พบ "LP"</b>
+    ฉะนั้นคำตอบที่ซื่อสัตย์ของผมคือ "ตัวเครื่องบอกว่า LP แต่ผมยังไม่ได้เทียบกับ nameplate จริง" — LP อาจหมายถึง Low-Pressure vacuum / Loading-Panel / SKU เฉพาะภูมิภาค ต้องอ่านป้ายรุ่นก่อน</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ตระกูล / ชนิดเครื่อง <span class="field">machine_family</span></div>
+    <div class="a">KDT <b>"2 Series"</b> — เครื่อง CNC nesting router แบบ <b>flat-bed</b> (ตัดแผ่น + เจาะ) <span class="tag badge b-doc">ตามเอกสาร</span></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">พื้นที่ทำงาน / ระยะวิ่ง <span class="field">working_envelope_XYZ</span></div>
+    <div class="a"><b>X = 2850 mm, Y = 1220 mm</b>, Z = <span class="badge b-pend">ยังไม่รู้</span> <span class="tag badge b-ok">ยืนยันแล้ว (X/Y)</span></div>
+    <div class="prov">ผมยืนยัน Y = <b>1220 mm</b> เป็นระยะวิ่งจริง — เลข 1250–1260 ที่เห็นในโบรชัวร์คือขนาด <b>โต๊ะ/เบด</b> ไม่ใช่ระยะวิ่ง (ข้อขัดแย้งนี้เคลียร์แล้วจาก 4 แหล่ง KDT ตรงกัน). Z-clearance ผมยังไม่ได้จดจากสเปกชีต ต้องเปิดดู</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Serial number <span class="field">serial_no</span></div>
+    <div class="a"><span class="badge b-pend">ยังไม่รู้</span> — ต้องอ่านจาก nameplate</div>
+  </div>
+</section>
+
+<!-- 2. CONTROLLER -->
+<section>
+  <h2>2. คอนโทรลเลอร์ และเวอร์ชัน (Controller & versions)</h2>
+
+  <div class="qa">
+    <div class="q">ระบบควบคุม (family) <span class="field">cnc_family</span></div>
+    <div class="a"><b>NCstudio</b> (PC-based numeric controller) <span class="tag badge b-ok">ยืนยันแล้ว</span></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ผู้ผลิตคอนโทรลเลอร์ <span class="field">controller_vendor</span></div>
+    <div class="a"><b>Weihong</b> — Shanghai Weihong Electronic Technology Co., Ltd. (上海维宏电子科技股份有限公司) <span class="tag badge b-ok">ยืนยันแล้ว</span></div>
+    <div class="prov">NCstudio เป็นของ Weihong แน่นอน — ตรงกันจาก manual ปฐมภูมิหลายฉบับและโดเมนทางการ</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ฮาร์ดแวร์คอนโทรล / การ์ด <span class="field">controller_hardware_model</span></div>
+    <div class="a">การ์ด Weihong <b>Lambda 4S/5S</b> (motion) + <b>PM85A (PCI) / PM95A (PCI-E)</b> (การ์ดสื่อสาร) — หรือ host แบบรวม <b>NK300CX / NC65A-65B</b> <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+    <div class="prov">ตระกูลนี้ผมมั่นใจ (เครื่อง nesting วิ่ง 4+ แกน = ชั้น Lambda 4S/5S) แต่ <b>รุ่นการ์ดเป๊ะบนเครื่องผม</b> ต้องเปิดฝาดู/ดูหน้า About ก่อน</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">เวอร์ชันซอฟต์แวร์/เฟิร์มแวร์ NCstudio <span class="field">controller_firmware_version</span></div>
+    <div class="a">สาย <b>NCstudio V8 / V9 / V10</b> (เครื่องใหม่อาจเป็น V12/V15) <span class="tag badge b-doc">ตามเอกสาร</span> → <span class="badge b-pend">เวอร์ชันจริงยังไม่รู้</span></div>
+    <div class="prov">คำตอบซื่อ ๆ: ผมยังไม่ได้เปิด Help &gt; About เพื่ออ่านเลขเวอร์ชันจริง — ที่ตอบเป็นช่วงที่พบบ่อยกับชุดการ์ดนี้</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">HMI shell (หน้าจอเฉพาะงานไม้) <span class="field">hmi_shell</span></div>
+    <div class="a"><b>WoodSystem</b> — HMI/แอป nesting งานไม้ที่รันทับ NCstudio (สอดคล้อง Weihong "Wood" solution) <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+    <div class="prov">ผมเรียกมันว่า WoodSystem ตามที่เห็นบนเครื่อง แต่หาชื่อนี้ในเอกสาร Weihong ตรง ๆ ไม่เจอ — จึงยังยืนยันไม่ได้ว่าเป็นชื่อทางการหรือชื่อที่ KDT ตั้งเอง</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">เวอร์ชัน HMI / WoodSystem <span class="field">hmi_version</span></div>
+    <div class="a"><span class="badge b-pend">ยังไม่รู้</span> — ต้องอ่านจากหน้า About ของ WoodSystem</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ระบบปฏิบัติการ <span class="field">operating_system</span></div>
+    <div class="a"><b>Windows</b> บน industrial PC (การ์ดคอนโทรลเสียบสล็อต PCI/PCI-E) — น่าจะ Windows 7 / Windows Embedded <span class="tag badge b-ok">ยืนยันแล้ว (สถาปัตยกรรม)</span> / <span class="badge b-pend">เวอร์ชันเป๊ะยังไม่รู้</span></div>
+    <div class="prov">ผมยืนยันว่าเป็น PC-based Windows ไม่ใช่ embedded controller แต่ยังไม่ได้เช็กว่า Windows รุ่นไหนเป๊ะ</div>
+  </div>
+</section>
+
+<!-- 3. FILE FORMAT / KDT PATH -->
+<section>
+  <h2>3. รูปแบบไฟล์ / เส้นทางไฟล์ KDT (File format &amp; KDT path)</h2>
+
+  <div class="qa">
+    <div class="q">ฟอร์แมตไฟล์หลักที่เครื่องรัน <span class="field">authoritative_native_format</span></div>
+    <div class="a"><b>G-code ไฟล์ .nc</b> (ISO/RS-274) — คอนโทรลรับ <span class="mono">.nc / .cnc / .txt</span>; ฟอร์แมตรันตัวที่สองคือ <b>HP-PLT (.plt)</b> <span class="tag badge b-ok">ยืนยันแล้ว</span></div>
+    <div class="prov">ไฟล์ที่ผมส่งเข้าเครื่องจริง ๆ คือ <b>.nc G-code</b> — นี่คือ native format ที่ NCstudio เอาไปรันโดยตรง</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ฟอร์แมตที่นำเข้าได้ <span class="field">accepted_import_formats</span></div>
+    <div class="a"><span class="mono">.nc, .cnc, .txt (G-code)</span>, <span class="mono">.plt (HP-PLT)</span>, และ <b>DXF</b> (import แล้วแปลง) <span class="tag badge b-doc">ตามเอกสาร</span></div>
+    <div class="prov">DXF เข้าได้แบบนำเข้า-แปลง ไม่ใช่รันตรง ส่วน nesting shell รุ่นใหม่อาจรับ layout เพิ่ม — ต้องดูจากหน้า import จริง</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">เส้นทาง/โฟลเดอร์ไฟล์บนเครื่อง (KDT path) <span class="field">program_path</span></div>
+    <div class="a"><span class="badge b-pend">ยังไม่รู้ค่าจริง</span> — ตามแบบ NCstudio ไฟล์โปรแกรมมักอยู่ในโฟลเดอร์งานเฉพาะแล้วเปิดผ่านเมนู Open/Load; เส้นทางเป๊ะ (เช่น <span class="mono">D:\...\</span> หรือโฟลเดอร์ nesting ของ WoodSystem) <b>ต้องเปิดเครื่องจด</b> <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+    <div class="prov">"KDT path" นี้ผมตีความว่าเป็นเส้นทางที่เครื่องดึงไฟล์ .nc ไปรัน — ผมยังไม่ได้ยืนยันโฟลเดอร์จริง ถ้าคุณหมายถึง "เส้นทางส่งงานจาก CAM → เครื่อง" (pipeline) บอกได้ เดี๋ยวแยกให้</div>
+  </div>
+
+  <div class="qa">
+    <div class="q">วิธีส่งไฟล์เข้าเครื่อง <span class="field">delivery_channel</span></div>
+    <div class="a">USB flash หรือ network share → เปิดใน NCstudio <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">ชื่อไฟล์ / encoding / line-ending <span class="field">filename_encoding</span></div>
+    <div class="a">นามสกุล <span class="mono">.nc</span>; แนะนำ ASCII, ชื่อสั้น, เลี่ยงอักขระไทย/เว้นวรรค; ข้อความ ASCII + <b>CRLF</b> (Windows) <span class="tag badge b-verify">ต้องเช็กเครื่อง</span></div>
+    <div class="prov">งานวิจัยไม่ยืนยันข้อจำกัดความยาว/อักขระเป๊ะ — ต้องทดสอบไฟล์จริงกับเครื่อง</div>
+  </div>
+</section>
+
+<!-- 4. COORD / TOOLING (snapshot) -->
+<section>
+  <h2>4. พิกัด &amp; ทูล (ย่อ — รายละเอียดเต็มอยู่ในรายงานประเมิน)</h2>
+  <div class="qa">
+    <div class="q">Origin / ทิศแกน <span class="field">coordinate_contract</span></div>
+    <div class="a">Right-hand: X = ด้านยาว (2850), Y = ด้านกว้าง (1220), Z = ขึ้น; WCS = <span class="mono">G54</span>; origin XY = มุมล่างซ้ายแผ่น, Z0 = ผิวบนวัสดุ <span class="tag badge b-doc">ตามเอกสาร (typical)</span></div>
+  </div>
+  <div class="qa">
+    <div class="q">การเรียกทูล / tool table <span class="field">tool_number_contract</span></div>
+    <div class="a"><span class="mono">T&lt;n&gt;</span> เลือกทูล; การแมป T → ตำแหน่งแม็กกาซีน <b>ผู้สร้างเครื่องกำหนด</b>; อาจเปิด <span class="mono">M6 T&lt;n&gt;</span> <span class="tag badge b-verify">ต้องเช็ก tool table จริง</span></div>
+  </div>
+</section>
+
+<!-- 5. MACHINE-READABLE -->
+<section>
+  <h2>5. เวอร์ชันเครื่องอ่านได้ (machine-readable)</h2>
+  <div class="yaml">
+<span class="k">profile_id</span>: <span class="v">KDT-KN-2409LP-CTRL@0.3-draft</span>
+<span class="k">verification_state</span>: <span class="u">machine_verification_pending</span>   <span class="c"># no bench-confirmed values yet</span>
+
+<span class="c"># --- identity ---</span>
+<span class="k">brand</span>: <span class="v">KDT (Guangdong Nanxing)</span>            <span class="c"># CONFIRMED</span>
+<span class="k">model</span>: <span class="v">KN-2409LP</span>                        <span class="u"># VERIFY nameplate — docs show NL/DL/L, not LP</span>
+<span class="k">machine_family</span>: <span class="v">KDT 2-Series flat-bed nesting router</span>
+<span class="k">working_area_x_mm</span>: <span class="v">2850</span>                 <span class="c"># CONFIRMED</span>
+<span class="k">working_area_y_mm</span>: <span class="v">1220</span>                 <span class="c"># CONFIRMED (1260 = bed nominal, not travel)</span>
+<span class="k">working_area_z_mm</span>: <span class="u">UNKNOWN</span>
+<span class="k">serial_no</span>: <span class="u">UNKNOWN</span>
+
+<span class="c"># --- controller ---</span>
+<span class="k">cnc_family</span>: <span class="v">NCstudio</span>                       <span class="c"># CONFIRMED</span>
+<span class="k">controller_vendor</span>: <span class="v">Weihong (Shanghai Weihong Electronic Technology)</span>  <span class="c"># CONFIRMED</span>
+<span class="k">controller_hardware_model</span>: <span class="v">Weihong Lambda 4S/5S + PM85A/PM95A (or NK300CX)</span>  <span class="u"># VERIFY SKU</span>
+<span class="k">controller_firmware_version</span>: <span class="v">NCstudio V8/V9/V10 (poss. V12/V15)</span>  <span class="u"># VERIFY via About</span>
+<span class="k">hmi_shell</span>: <span class="v">WoodSystem (wood-nesting HMI on NCstudio)</span>  <span class="u"># name unverified</span>
+<span class="k">hmi_version</span>: <span class="u">UNKNOWN — read About</span>
+<span class="k">operating_system</span>: <span class="v">Windows / industrial PC (PCI-E)</span>  <span class="u"># version UNKNOWN (~Win7/Embedded)</span>
+
+<span class="c"># --- file / path ---</span>
+<span class="k">authoritative_native_format</span>: <span class="v">G-code .nc (ISO/RS-274)</span>   <span class="c"># CONFIRMED</span>
+<span class="k">accepted_import_formats</span>: <span class="v">[.nc, .cnc, .txt, .plt, .dxf]</span>  <span class="c"># verify import screen</span>
+<span class="k">program_path_on_machine</span>: <span class="u">UNKNOWN — verify KDT/WoodSystem folder</span>
+<span class="k">delivery_channel</span>: <span class="u">UNKNOWN — USB / network (verify)</span>
+<span class="k">filename_encoding</span>: <span class="v">.nc, ASCII, CRLF</span>          <span class="u"># limits VERIFY</span>
+
+<span class="c"># --- coord / tooling ---</span>
+<span class="k">coordinate_contract</span>: <span class="v">right-hand; X=2850 Y=1220 Z=up; G54; origin bottom-left; Z0=part top</span>  <span class="c"># typical/verify</span>
+<span class="k">tool_number_contract</span>: <span class="v">T&lt;n&gt;; T→magazine builder-defined; M6 maybe</span>  <span class="u"># VERIFY tool table</span>
+  </div>
+</section>
+
+<div class="note"><b>สรุปเชิงสถานะ:</b> โปรไฟล์นี้ตอบครบทุกช่องแล้ว แต่ค่าที่ยืนยันจากเอกสารได้จริงมีแค่:
+ยี่ห้อ KDT, ตระกูล NCstudio, ผู้ผลิต Weihong, working area 2850×1220, native format G-code .nc, สถาปัตยกรรม Windows PC.
+ที่เหลือ (รุ่น LP, รุ่นการ์ด, เวอร์ชัน NCstudio/WoodSystem, Windows เป๊ะ, program path, tool table, origin จริง) <b>ต้องยืนยันหน้าเครื่อง</b> ก่อนถือว่าจริง —
+จนกว่าจะยืนยันครบ machine ยังอยู่สถานะ verification pending และห้ามใช้ปล่อยงานผลิต</div>
+
+<div class="foot">Machine Profile (owner-answered) · KDT KN-2409LP · 2026-07-17 · อ้างอิงงานวิจัย deep-research 2 รอบ (208 sub-agents, adversarial-verified)</div>
+
+</div>
+</body>
+</html>

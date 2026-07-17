@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KDT KN-2409LP — Machine Capability Assessment & Delivery Contract</title>
+<style>
+  :root{
+    --green:#2D5A27; --green2:#3a7233; --ink:#1a2028; --mut:#5c6874;
+    --line:#e2e6ea; --bg:#f6f7f4; --card:#ffffff;
+    --hi:#b71c1c; --hiBg:#fdecec; --med:#b26a00; --medBg:#fff5e6;
+    --lo:#8a6d00; --amber:#c98a00; --amberBg:#fff8e8;
+    --ok:#1f7a34; --okBg:#eaf6ec; --prohibit:#8b1111;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.6;font-size:15px}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 22px 80px}
+  header.hero{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;
+    border-radius:22px;padding:26px 28px;margin-bottom:22px;box-shadow:0 8px 24px rgba(45,90,39,.18)}
+  header.hero h1{margin:0 0 6px;font-size:24px;letter-spacing:.2px}
+  header.hero .sub{opacity:.92;font-size:14px}
+  .ids{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .idpill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);
+    padding:5px 11px;border-radius:999px;font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .banner{margin:16px 0 22px;border-radius:16px;padding:14px 18px;font-weight:600;
+    background:var(--hiBg);color:var(--prohibit);border:1.5px solid #f0b3b3;display:flex;gap:10px;align-items:flex-start}
+  .banner .dot{width:12px;height:12px;border-radius:50%;background:var(--prohibit);margin-top:6px;flex:0 0 auto}
+  section{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  h2{color:var(--green);font-size:19px;margin:2px 0 14px;padding-bottom:8px;border-bottom:2px solid #eef1ec}
+  h3{font-size:15.5px;margin:18px 0 8px;color:var(--ink)}
+  p{margin:8px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f2f5f1;color:var(--green);font-weight:700;font-size:12.5px}
+  td.k{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;white-space:nowrap;color:var(--mut)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .b-high{background:var(--okBg);color:var(--ok)}
+  .b-med{background:var(--medBg);color:var(--med)}
+  .b-low{background:var(--hiBg);color:var(--hi)}
+  .b-verify{background:var(--amberBg);color:var(--amber);border:1px dashed var(--amber)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .yaml{background:#0f1720;color:#d6e2ea;border-radius:14px;padding:16px 18px;overflow-x:auto;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.55}
+  .yaml .c{color:#6f8ba0}.yaml .k{color:#8ec6ff}.yaml .v{color:#c8e6a0}.yaml .u{color:#ffb877}
+  .note{background:#f7faf6;border-left:4px solid var(--green2);padding:10px 14px;border-radius:8px;margin:12px 0;font-size:13.5px}
+  .warn{background:var(--amberBg);border-left:4px solid var(--amber);padding:10px 14px;border-radius:8px;margin:12px 0;font-size:13.5px}
+  ol.checklist{counter-reset:ci;list-style:none;padding-left:0;margin:6px 0}
+  ol.checklist>li{counter-increment:ci;position:relative;padding:12px 12px 12px 46px;margin-bottom:10px;
+    background:#fbfcfa;border:1px solid var(--line);border-radius:12px}
+  ol.checklist>li::before{content:counter(ci);position:absolute;left:12px;top:12px;width:24px;height:24px;
+    background:var(--green);color:#fff;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700}
+  ol.checklist b{color:var(--green)}
+  .gate{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .gate:last-child{border-bottom:none}
+  .gx{width:18px;height:18px;border:2px solid var(--amber);border-radius:5px;flex:0 0 auto}
+  a{color:var(--green2);word-break:break-all}
+  .foot{color:var(--mut);font-size:12px;text-align:center;margin-top:26px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>KDT KN-2409LP — รายงานประเมินความสามารถเครื่อง & สัญญาส่งไฟล์</h1>
+  <div class="sub">Machine Capability Assessment · Controller Profile · CAM-to-Machine Delivery Contract — ฉบับวิจัย (Deep Research, 208 agents / adversarial-verified)</div>
+  <div class="ids">
+    <span class="idpill">profile: KDT-KN-2409LP-CTRL@0.2-draft</span>
+    <span class="idpill">contract: KDT-KN-2409LP-DELIVERY@0.1-draft</span>
+    <span class="idpill">assessment: MCA-DAPH-KN2409LP-INITIAL@0.1</span>
+    <span class="idpill">date: 2026-07-16</span>
+  </div>
+</header>
+
+<div class="banner">
+  <span class="dot"></span>
+  <div><b>MANUFACTURING RELEASE: PROHIBITED</b> — assessment status ยังเป็น <span class="mono">NOT_ASSESSED</span>.
+  ข้อมูลทั้งหมดในรายงานนี้เป็น <b>ค่าจากเอกสาร/ค่าทั่วไป (published / typical)</b> ยังไม่มีข้อมูลที่ยืนยันจากตัวเครื่องจริงแม้แต่ค่าเดียว
+  ห้ามปล่อยงานผลิตจนกว่าจะผ่าน gate ยืนยันหน้าเครื่องครบ (ดูส่วน G)</div>
+</div>
+
+<section>
+  <h2>สรุปผู้บริหาร (Executive Summary)</h2>
+  <p>เครื่อง <b>KDT KN-2409</b> เป็นเครื่อง CNC nesting router แบบ flat-bed จริง ผลิตโดย <b>KDT (Guangdong Nanxing, kdtmac.com)</b>
+  รุ่นในตระกูล "2 Series" ที่เผยแพร่คือ <span class="mono">KN-2409NL / KN-2409DL / KN-2409L</span>
+  ระบบควบคุมคือ <b>Weihong NCstudio</b> (ซอฟต์แวร์คอนโทรลบน PC) โดยมี <b>WoodSystem</b> เป็น HMI shell เฉพาะงานไม้วางทับ NCstudio อีกชั้น</p>
+  <p>ประเด็นสำคัญที่รายงานนี้เคลียร์ได้: (1) <b>ข้อขัดแย้ง Y envelope 1220 vs 1260 mm สรุปแล้วว่า 1220 mm คือค่าจริง</b> (1250–1260 คือขนาด table/bed ในโบรชัวร์ ไม่ใช่ระยะวิ่ง);
+  (2) <b>รุ่นยืนยันเป็น KDT KN-2409LP</b> (เจ้าของยืนยัน; แคตตาล็อกสาธารณะมีแต่ NL/DL/L → LP เป็นรหัสรุ่นย่อย/ออปชัน);
+  (3) วางกรอบ Delivery Contract จาก native format จริงของ NCstudio (G-code .nc) ได้แล้ว
+  แต่ค่าที่ผูกกับตัวเครื่อง (tool table, work origin, เวอร์ชันจริง, วิธีส่งไฟล์) <b>ต้องยืนยันหน้าเครื่อง</b> ก่อนใช้จริง</p>
+</section>
+
+<!-- ================= A: MACHINE PROFILE ================= -->
+<section>
+  <h2>A. Machine / Controller Profile — เติมช่อง Unknown</h2>
+  <table>
+    <tr><th style="width:22%">Field</th><th style="width:40%">ค่าที่วิจัยได้</th><th>ความมั่นใจ / หมายเหตุ</th></tr>
+    <tr>
+      <td class="k">controller_vendor</td>
+      <td><b>Weihong</b> — Shanghai Weihong Electronic Technology Co., Ltd. (上海维宏电子科技股份有限公司)</td>
+      <td><span class="badge b-high">HIGH</span> ยืนยันจาก manual ปฐมภูมิของ Weihong หลายฉบับ + โดเมนทางการ (เอกฉันท์ 3-0)</td>
+    </tr>
+    <tr>
+      <td class="k">controller_hardware_model</td>
+      <td>ชุดการ์ด Weihong: <b>Lambda 4S/5S</b> (motion card) + <b>PM85A (PCI) / PM95A (PCI-E)</b> (การ์ดสื่อสาร) — หรือ host แบบรวม <b>NK300CX / NC65A/65B</b></td>
+      <td><span class="badge b-med">MED–HIGH</span> ตระกูลฮาร์ดแวร์มั่นใจสูง; เครื่อง nesting วิ่ง 4+ แกน จึงเป็นชั้น Lambda 4S/5S. <b>SKU เป๊ะบนเครื่อง KDT ยังไม่ยืนยัน</b> → เช็กหน้าเครื่อง</td>
+    </tr>
+    <tr>
+      <td class="k">controller_firmware_version</td>
+      <td>NCstudio สาย <b>V8 / V9 / V10</b> (อาจเป็น V12/V15 ในเครื่องใหม่)</td>
+      <td><span class="badge b-med">MEDIUM</span> V8 พบบ่อยกับชุด PM95A+Lambda; V10 คู่กับ NK300CX. <b>เวอร์ชันจริงต้องอ่านจากหน้า About</b></td>
+    </tr>
+    <tr>
+      <td class="k">hmi_shell</td>
+      <td><b>WoodSystem</b> = HMI/แอปเฉพาะงานไม้ (nesting) รันบน NCstudio — ตรงกับ Weihong "Wood" solution (ตัด plate furniture, เจาะรู, 1–10 แกน)</td>
+      <td><span class="badge b-low">LOW</span> ไม่พบชื่อ "WoodSystem" ในแหล่งใด ๆ — เป็นการอนุมานว่าเป็น wood-nesting shell/overlay. <b>ต้องยืนยันชื่อ+เวอร์ชันหน้าจอ</b></td>
+    </tr>
+    <tr>
+      <td class="k">hmi_version</td>
+      <td>Unknown — (อ่านจากหน้า About ของ WoodSystem)</td>
+      <td><span class="badge b-verify">VERIFY ON MACHINE</span></td>
+    </tr>
+    <tr>
+      <td class="k">operating_system</td>
+      <td><b>Windows</b> บน industrial PC (การ์ดคอนโทรลเสียบสล็อต PCI/PCI-E) — ไม่ใช่ embedded controller; น่าจะ Windows 7 / Windows Embedded</td>
+      <td><span class="badge b-high">HIGH</span> (สถาปัตยกรรม PC-based) / <span class="badge b-verify">VERIFY</span> เวอร์ชัน Windows เป๊ะ</td>
+    </tr>
+  </table>
+  <div class="note"><b>ตระกูล NCstudio (บริบท):</b> เป็น PC-based numeric controller ควบคุม 1–10 แกน สื่อสารระหว่างซอฟต์แวร์กับการ์ด Lambda ผ่าน RS485/serial (10 Mbps)
+  ใช้กับงาน nesting เฟอร์นิเจอร์แผ่น (ตัด + เจาะ) โดยตรง — ตรงกับสเปกเครื่อง KDT KN-2409</div>
+</section>
+
+<!-- ================= B: DELIVERY CONTRACT ================= -->
+<section>
+  <h2>B. Delivery Contract — baseline (CAM → เครื่อง)</h2>
+  <p>ค่าด้านล่างคือ <b>ค่าตั้งต้นที่แนะนำ</b> อ้างอิงพฤติกรรมมาตรฐานของ NCstudio ช่องที่เป็น <span class="badge b-verify">VERIFY</span> คือค่าที่ผู้สร้างเครื่อง/ร้านต้องกำหนดเองและยืนยันหน้าเครื่องก่อนล็อกสัญญา</p>
+  <table>
+    <tr><th style="width:26%">Contract field</th><th style="width:42%">ค่า baseline ที่แนะนำ</th><th>สถานะ</th></tr>
+    <tr><td class="k">authoritative_native_format</td>
+      <td><b>G-code (.nc)</b> — ISO/RS-274 dialect. (คอนโทรลรับ .nc/.cnc/.txt; PLT เป็นฟอร์แมตรันตัวที่สอง)</td>
+      <td><span class="badge b-high">HIGH</span></td></tr>
+    <tr><td class="k">accepted_import_formats</td>
+      <td><span class="mono">[.nc, .cnc, .txt (G-code), .plt (HP-PLT)]</span> + <b>DXF</b> (import-convert). Nesting shell รุ่นใหม่อาจรับ layout อื่นเพิ่ม</td>
+      <td><span class="badge b-med">MEDIUM</span> / VERIFY จากหน้า import จริง</td></tr>
+    <tr><td class="k">postprocessor_name</td>
+      <td>โพสต์ของ CAM ที่ output เป็น "Weihong / NCstudio ISO" (เช่น post ในโปรแกรม nesting ของร้าน)</td>
+      <td><span class="badge b-verify">VERIFY</span> ต้องระบุชื่อ+เวอร์ชันโพสต์ที่ใช้จริง</td></tr>
+    <tr><td class="k">postprocessor_version</td><td>—</td><td><span class="badge b-verify">VERIFY</span></td></tr>
+    <tr><td class="k">units</td><td><b>mm</b> (G21)</td><td><span class="badge b-high">CONFIRMED</span></td></tr>
+    <tr><td class="k">coordinate_contract</td>
+      <td>Right-hand: <b>X = ด้านยาว (2850)</b>, <b>Y = ด้านกว้าง (1220)</b>, <b>Z = ขึ้น</b>. WCS = <span class="mono">G54</span>. Origin XY = มุมล่างซ้ายของแผ่น, Z0 = ผิวบนวัสดุ</td>
+      <td><span class="badge b-med">TYPICAL</span> / VERIFY มุม origin จริง</td></tr>
+    <tr><td class="k">tool_number_contract</td>
+      <td><span class="mono">T&lt;n&gt;</span> เลือกทูล; ความสัมพันธ์ T→ตำแหน่งแม็กกาซีน <b>กำหนดโดยผู้สร้างเครื่อง</b>. บางเครื่องเปิด <span class="mono">M6 T&lt;n&gt;</span>, บางเครื่องใช้ bare T</td>
+      <td><span class="badge b-verify">VERIFY</span> ต้องล็อกจาก tool table จริง (สำคัญมาก)</td></tr>
+    <tr><td class="k">filename_contract</td>
+      <td>นามสกุล <span class="mono">.nc</span>; แนะนำ ASCII, ชื่อสั้น, เลี่ยงอักขระไทย/เว้นวรรค/อักขระพิเศษ</td>
+      <td><span class="badge b-verify">VERIFY</span> ข้อจำกัดความยาว/อักขระจริง</td></tr>
+    <tr><td class="k">encoding_and_line_endings</td>
+      <td>Plain ASCII text, <b>CRLF</b> (Windows)</td>
+      <td><span class="badge b-verify">VERIFY</span> (งานวิจัยไม่ยืนยัน — ต้องทดสอบไฟล์จริง)</td></tr>
+    <tr><td class="k">delivery_channel</td>
+      <td>USB flash / network share → เปิดใน NCstudio</td>
+      <td><span class="badge b-verify">VERIFY</span> ช่องทางจริงบนเครื่อง</td></tr>
+    <tr><td class="k">automatic_machine_release</td><td><span class="mono">false</span></td><td>คงไว้ (มนุษย์ต้องรับงาน)</td></tr>
+    <tr><td class="k">human_acceptance_required</td><td><span class="mono">true</span></td><td>คงไว้</td></tr>
+    <tr><td class="k">known_good_job_required</td><td><span class="mono">true</span></td><td>คงไว้ (ดูส่วน G)</td></tr>
+  </table>
+  <div class="note"><b>G-code dialect ของ NCstudio (ยืนยัน HIGH):</b>
+  <span class="mono">G00</span> rapid · <span class="mono">G01</span> linear · <span class="mono">G02/G03</span> arc CW/CCW · <span class="mono">G04</span> dwell ·
+  <span class="mono">G17–G19</span> plane · <span class="mono">G20/G21</span> inch/mm · <span class="mono">G28</span> ref return · <span class="mono">G73–G83</span> canned cycles ·
+  <span class="mono">G90/G91</span> abs/inc · <span class="mono">G54–G59</span> WCS (G54 default), <span class="mono">G53</span> machine coords, <span class="mono">G92</span> preset ·
+  <span class="mono">M03/M04/M05</span> spindle · <span class="mono">M08/M09</span> coolant · <span class="mono">M00/M01</span> stop · <span class="mono">M02/M30</span> end · <span class="mono">M98/M99</span> subprogram ·
+  <b>T</b> tool select (M06 ไม่มีใน manual ฐาน แต่ผู้สร้างเครื่องมักเปิดเพิ่มได้)</div>
+</section>
+
+<!-- ================= C: ASSESSMENT + CONFLICTS ================= -->
+<section>
+  <h2>C. Capability Assessment & การเคลียร์ข้อขัดแย้ง</h2>
+
+  <h3>ข้อขัดแย้ง #1 — Y envelope 1220 vs 1260 mm <span class="badge b-high">RESOLVED</span></h3>
+  <p><b>ค่าจริง = 2850 (X) × 1220 (Y) mm</b> คือ working area / travel envelope ที่ใช้งานได้จริง
+  ส่วน <b>~1250–1260 mm คือขนาด table/bed (nominal)</b> ที่ปรากฏใน marketing copy ไม่ใช่ระยะวิ่ง —
+  ยืนยันตรงกันจาก 4 แหล่ง KDT/ดีลเลอร์อิสระ (byte-identical "2850 × 1220 mm") และ 1220 mm พอดีกับความกว้างแผ่น 4 ฟุต (คลาส 8×4 ตามรหัส "2409")
+  <br><b>→ ให้บันทึกใน machine profile เป็น working_area_x=2850, working_area_y=1220 และทิ้งค่า 1260 (เป็น bed size เท่านั้น)</b></p>
+
+  <h3>ข้อขัดแย้ง #2 — suffix "LP" <span class="badge b-med">CONFIRMED BY OWNER</span></h3>
+  <p>เจ้าของเครื่องยืนยันรุ่นคือ <span class="mono">KDT KN-2409LP</span> (owner attestation).
+  หมายเหตุ: แคตตาล็อก KDT สาธารณะระบุเป็น <span class="mono">NL / DL / L</span> ไม่มี LP — ดังนั้น "LP" น่าจะเป็นรหัสรุ่นย่อย/ออปชัน/สเปกเฉพาะภูมิภาค (อาจ = Low-Pressure vacuum)
+  <b>ยังแนะนำให้จดรหัสเต็ม + serial จาก nameplate</b> (checklist ข้อ 1) ไว้อ้างอิงเวลาสั่งอะไหล่/ซัพพอร์ต</p>
+
+  <div class="warn"><b>เหตุผลที่คง status = NOT_ASSESSED / release = PROHIBITED:</b>
+  ไม่มีค่าที่ยืนยันจากเครื่องจริงเลยแม้แต่ค่าเดียว — เวอร์ชันคอนโทรลเลอร์/HMI, tool table, work origin, ช่องส่งไฟล์
+  ล้วนเป็นค่าอนุมานจากเอกสาร การปล่อยงานผลิตต้องผ่าน gate ยืนยันครบก่อน</div>
+</section>
+
+<!-- ================= D: VERIFICATION CHECKLIST ================= -->
+<section>
+  <h2>D. เช็กลิสต์ยืนยันหน้าเครื่อง (6 ข้อ)</h2>
+  <p>ทั้ง 6 ข้อนี้ <b>ทำได้เฉพาะที่ตัวเครื่องจริงเท่านั้น</b> — Deep research ทางเว็บทำแทนไม่ได้ ผลของแต่ละข้อคือหลักฐานที่จะยกสถานะ assessment</p>
+  <ol class="checklist">
+    <li><b>ยืนยัน suffix "LP" ที่ nameplate</b> — ถ่ายรูปป้ายรุ่น/serial plate อ่านรหัสรุ่นเต็ม (KN-2409__) + serial no.
+      เทียบกับรุ่นที่ KDT เผยแพร่ (NL/DL/L) ว่า LP คือรุ่นจริง/ตัวเลือกใด — บันทึกลง profile</li>
+    <li><b>NCstudio & WoodSystem — About / Version</b> — เปิดหน้า Help &gt; About บันทึก
+      เวอร์ชัน NCstudio (V?), เวอร์ชัน WoodSystem shell + build, และรุ่นการ์ดคอนโทรล (Lambda 4S/5S / NK300CX) ถ้ามีแสดง</li>
+    <li><b>Known-good job (immutable)</b> — สร้างงานอ้างอิงมาตรฐาน 1 ชิ้น (ชิ้นง่าย มี feature เจาะ+ตัด+ทิศทาง)
+      แล้ว <b>ล็อกเป็น golden reference</b> (archive, checksum/แฮช, ห้ามแก้) ใช้เป็นตัวเทียบทุกครั้งที่เปลี่ยนโพสต์/เวอร์ชัน</li>
+    <li><b>หน้าจอ Import — เก็บ file extensions จริง</b> — ถ่ายหน้าจอ dialog เปิด/นำเข้าไฟล์ ให้เห็น
+      ตัวกรองนามสกุลจริงที่เครื่องรับ (.nc/.cnc/.txt/.plt/.dxf/...) เพื่อ freeze accepted_import_formats</li>
+    <li><b>Tool table & Work origin</b> — ส่งออก/ถ่ายภาพ tool table: การแมป <span class="mono">T1..Tn → ตำแหน่งแม็กกาซีนจริง</span>,
+      ค่า tool length/offset, และวิธีเรียกเปลี่ยนทูล (M6 หรือ bare T). บันทึก WCS <span class="mono">G54</span> offset + มุม origin จริงของแผ่น (ล่างซ้าย?) และทิศแกน</li>
+    <li><b>วิธีส่งไฟล์ + physical mapping (ปกปิด secret)</b> — บันทึกช่องทางส่งไฟล์จริง (USB/เน็ตเวิร์ก/แชร์)
+      และทดสอบ <b>physical mapping</b>: ยืนยันว่าพิกัดในไฟล์แมปกับตำแหน่งจริงบนโต๊ะถูกต้อง (origin/ทิศแกน) ผ่าน dry-run/air-cut
+      — โดยเวลา<b>บันทึกเอกสารให้ปิดบัง/redact ความลับ</b> (รหัสผ่าน, license key, พารามิเตอร์ลับของผู้สร้างเครื่อง) ไม่ให้หลุดออกนอกเอกสารควบคุม</li>
+  </ol>
+  <div class="note">หมายเหตุข้อ 6: ตีความ "physical mapping ที่ปิดบัง secret" ว่า = การยืนยันการแมปพิกัด→ตำแหน่งจริง โดยปกปิดข้อมูลลับในเอกสาร
+  ถ้าคุณหมายถึงอย่างอื่น (เช่น ฟีเจอร์/คีย์เฉพาะของ WoodSystem) บอกได้ เดี๋ยวปรับให้ตรง</div>
+</section>
+
+<!-- ================= E: RELEASE GATE ================= -->
+<section>
+  <h2>E. Release Gate — เงื่อนไขก่อนปลด PROHIBITED</h2>
+  <p>ต้องผ่าน<b>ทุก</b>ข้อ จึงจะเปลี่ยน <span class="mono">manufacturing_release: PROHIBITED → CONDITIONAL/RELEASED</span> ได้:</p>
+  <div class="gate"><span class="gx"></span><div>Checklist D ข้อ 1–6 ยืนยันครบ (nameplate, เวอร์ชัน, tool table, origin, import, transfer)</div></div>
+  <div class="gate"><span class="gx"></span><div><b>Immutable known-good job</b> ถูกสร้าง ล็อก และรันผ่านบนเครื่องจริง</div></div>
+  <div class="gate"><span class="gx"></span><div><b>Simulation</b> ของงานผ่าน (ตรวจ envelope 2850×1220, ไม่ชน, ไม่เกินระยะ)</div></div>
+  <div class="gate"><span class="gx"></span><div><b>Dry-run / air-cut</b> ผ่าน (ยืนยัน origin + ทิศแกน + ลำดับทูลจริง)</div></div>
+  <div class="gate"><span class="gx"></span><div><b>First-article inspection</b> ผ่าน (วัดชิ้นแรกตรงแบบ ภายใน tolerance)</div></div>
+  <div class="gate"><span class="gx"></span><div><b>Human acceptance</b> ลงนามรับงาน (automatic_machine_release คง = false)</div></div>
+</section>
+
+<!-- ================= F: FILLED PROFILE ================= -->
+<section>
+  <h2>F. โปรไฟล์ที่เติมค่าแล้ว (draft → 0.3)</h2>
+  <div class="yaml">
+<span class="c"># === MACHINE / CONTROLLER PROFILE ===</span>
+<span class="k">profile_id</span>: <span class="v">KDT-KN-2409LP-CTRL@0.3-draft</span>
+<span class="k">cnc_family</span>: <span class="v">NCstudio</span>
+<span class="k">cnc_family_status</span>: <span class="v">supplied-document + web-research; machine verification pending</span>
+<span class="k">hmi_shell</span>: <span class="v">WoodSystem  </span><span class="c"># wood-nesting HMI on NCstudio (name unverified)</span>
+<span class="k">controller_vendor</span>: <span class="v">Weihong (Shanghai Weihong Electronic Technology Co., Ltd.)</span>  <span class="c">[HIGH]</span>
+<span class="k">controller_hardware_model</span>: <span class="v">Weihong Lambda 4S/5S + PM85A/PM95A  (or NK300CX host)</span>  <span class="c">[MED — verify SKU]</span>
+<span class="k">controller_firmware_version</span>: <span class="v">NCstudio V8/V9/V10 (poss. V12/V15)</span>  <span class="c">[MED — read About]</span>
+<span class="k">hmi_version</span>: <span class="u">UNKNOWN — verify on machine (About)</span>
+<span class="k">operating_system</span>: <span class="v">Windows (industrial PC, PCI/PCI-E)  ~Win7/Embedded</span>  <span class="c">[HIGH arch / verify ver]</span>
+<span class="k">working_area_x_mm</span>: <span class="v">2850</span>   <span class="k">working_area_y_mm</span>: <span class="v">1220</span>  <span class="c"># 1260 = bed nominal, NOT travel</span>
+<span class="k">working_area_z_mm</span>: <span class="u">UNKNOWN — verify (Z clearance)</span>
+<span class="k">model_identity</span>: <span class="v">KDT KN-2409LP (owner-confirmed)</span>  <span class="c"># catalog lists NL/DL/L; LP = variant/option</span>
+
+<span class="c"># === DELIVERY CONTRACT ===</span>
+<span class="k">contract_id</span>: <span class="v">KDT-KN-2409LP-DELIVERY@0.2-draft</span>
+<span class="k">status</span>: <span class="v">DRAFT — baseline set, awaiting machine verification</span>
+<span class="k">authoritative_native_format</span>: <span class="v">G-code (.nc), ISO/RS-274</span>  <span class="c">[HIGH]</span>
+<span class="k">accepted_import_formats</span>: <span class="v">[.nc, .cnc, .txt, .plt, .dxf]</span>  <span class="c">[verify on import screen]</span>
+<span class="k">postprocessor_name</span>: <span class="u">UNKNOWN — CAM "Weihong/NCstudio ISO" post (verify)</span>
+<span class="k">postprocessor_version</span>: <span class="u">UNKNOWN</span>
+<span class="k">units</span>: <span class="v">mm (G21)</span>
+<span class="k">coordinate_contract</span>: <span class="v">right-hand; X=len(2850) Y=width(1220) Z=up; WCS G54; origin bottom-left, Z0=part top</span>  <span class="c">[typical — verify]</span>
+<span class="k">tool_number_contract</span>: <span class="v">T&lt;n&gt; select; T→magazine builder-defined; M6 maybe</span>  <span class="u">[VERIFY from tool table]</span>
+<span class="k">filename_contract</span>: <span class="v">.nc, ASCII, short, no Thai/space</span>  <span class="c">[verify limits]</span>
+<span class="k">encoding_and_line_endings</span>: <span class="v">ASCII + CRLF</span>  <span class="u">[VERIFY]</span>
+<span class="k">delivery_channel</span>: <span class="u">UNKNOWN — USB/network (verify)</span>
+<span class="k">automatic_machine_release</span>: <span class="v">false</span>
+<span class="k">human_acceptance_required</span>: <span class="v">true</span>
+<span class="k">known_good_job_required</span>: <span class="v">true</span>
+
+<span class="c"># === CAPABILITY ASSESSMENT ===</span>
+<span class="k">assessment_id</span>: <span class="v">MCA-DAPH-KN2409LP-INITIAL@0.1</span>
+<span class="k">machine_profile_version</span>: <span class="v">KDT-KN-2409LP@0.3-draft</span>
+<span class="k">status</span>: <span class="u">NOT_ASSESSED</span>
+<span class="k">manufacturing_release</span>: <span class="u">PROHIBITED</span>
+<span class="k">y_envelope_conflict</span>: <span class="v">RESOLVED → 1220 mm (1260 = bed nominal)</span>
+<span class="k">blocking_gates</span>: <span class="v">[nameplate, versions, tool_table, origin, known_good_job, simulation, dry_run, first_article, human_accept]</span>
+  </div>
+</section>
+
+<!-- ================= G: SOURCES ================= -->
+<section>
+  <h2>G. แหล่งอ้างอิงหลัก</h2>
+  <table>
+    <tr><th>หัวข้อ</th><th>แหล่ง</th></tr>
+    <tr><td>KDT KN-2409 รุ่น/สเปก</td><td><a href="https://en.kdtmac.com/">en.kdtmac.com</a> · <a href="https://kdt.com.au/product/kdt-kn-2409l-flat-bed-cnc-router">kdt.com.au</a> · <a href="https://ledamachinery.com.au/product/kdt-kn-2409l-flat-bed-cnc-router/">ledamachinery</a> · <a href="https://sawmachinery.com.au/product/kdt-kn-2409dl-2409nl-flat-bed-cnc-router/">sawmachinery</a></td></tr>
+    <tr><td>Y envelope 2850×1220 (spec PDF)</td><td><a href="https://kdt.com.au/wp-content/uploads/2024/05/KDT-KN2-2409DL-Feature-Benefit.pdf">KDT-KN2-2409DL Feature-Benefit PDF</a></td></tr>
+    <tr><td>NCstudio = Weihong (vendor)</td><td><a href="https://www.manualslib.com/manual/1619506/Weihong-Electronic-Ncstudio.html">Weihong NCstudio manual (ManualsLib)</a></td></tr>
+    <tr><td>G-code / M-code dialect (ปฐมภูมิ)</td><td><a href="https://weihong-gw.oss-cn-hangzhou.aliyuncs.com/product/Software%20support/Developer%20tool/NcStudio%20Programming/NcStudio%20Programming%20Manual-R6.1.pdf">NcStudio Programming Manual R6.1 (Weihong OSS)</a></td></tr>
+    <tr><td>2 run formats (G-code + PLT)</td><td><a href="https://www.stylecnc.com/user-manual/Weihong-Ncstudio-engraver-user-s-operation-manual.html">StyleCNC (อ้าง Weihong manual)</a></td></tr>
+    <tr><td>native ext .nc/.cnc/.txt · origin · M6 T</td><td><a href="http://support.technocnc.com/pdf/HD-NCStudio_QuickGuide.pdf">Techno HD-NCStudio Quick Guide</a></td></tr>
+    <tr><td>WCS / right-hand coord (ATC)</td><td><a href="https://forsuncnc.com/wp-content/uploads/2022/02/NC-studio-controller-ATC-Manual.pdf">Forsun NCstudio ATC Manual</a></td></tr>
+    <tr><td>Lambda card family (ปฐมภูมิ)</td><td><a href="https://frezeru.ru/files/weihong_Lambdaseries_CNC_system_manufacture_manual-R3.pdf">Weihong Lambda Series Manufacturers' Manual</a></td></tr>
+  </table>
+</section>
+
+<div class="foot">
+  Deep Research · 2 รอบ · 208 sub-agents · adversarial-verified (2/3-vote) · 2026-07-16<br>
+  ทุกค่าที่ทำเครื่องหมาย VERIFY / UNKNOWN ต้องยืนยันจากเครื่องจริงก่อนปล่อยงานผลิต
+</div>
+
+</div>
+</body>
+</html>

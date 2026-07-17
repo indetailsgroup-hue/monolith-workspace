@@ -30,6 +30,7 @@
 - [ ] Verifier fail-closed: packet เสีย/lookup ล่ม -> ไม่ถึงเครื่อง (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, ไม่ "warn and pass")
 - [ ] Exporter allowlist + gate evidence binding (gate ไม่ PASS -> `PKT_GATE_FAILED`)
 - [ ] machine profile `kdt_mvp_v1` ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)
+  - **มติ owner 17 ก.ค. 2026 (ADR-070): ข้อนี้ถือระดับ CONDITIONAL** — รับหลักฐานระดับเอกสาร (`docs/evidence/machines/kdt-kn-2409lp/`: KDT/NCstudio/Weihong/G-code `.nc` = HIGH; ตัวเอกสารเองประกาศ `PROHIBITED · NOT_ASSESSED` อย่างซื่อตรง) · **bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง** (assessment Gate E + CT-DEC-002 §5 "machine profile calibrated") · เหตุผล: multi-machine onboarding — documented-profile first, ห้ามใช้ตัดจริงจนผ่าน bench ครบ
 
 ## 3. Security Owner — Signature / Trust / Key
 
