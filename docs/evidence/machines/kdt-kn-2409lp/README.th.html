@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Machine Evidence — KDT KN-2409LP (documented level)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>Machine Evidence — KDT KN-2409LP (documented level)</h1>
+<p><strong>วันที่รับเข้า:</strong> 17 ก.ค. 2026 · <strong>ผู้ส่งมอบ:</strong> owner (คุณเดฟ) <strong>ที่มา:</strong> เอกสาร deep-research 2 ฉบับที่ owner ส่งมอบ — รับเข้าเป็น <strong>owner-supplied documented evidence</strong> ตามคำสั่งตรงของ owner (&quot;เอาตามนี้เลยครับ&quot;) โดยการรับเข้าไม่ยกระดับค่าที่ยังไม่ได้ตรวจหน้าเครื่องให้เป็น verified fact</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>เนื้อหา</th>
+<th>สถานะในตัวเอกสารเอง</th>
+</tr></thead><tbody>
+<tr>
+<td><code>assessment.html</code></td>
+<td>Machine Capability Assessment + Delivery Contract baseline (<code>MCA-DAPH-KN2409LP-INITIAL@0.1</code>)</td>
+<td>**<code>MANUFACTURING RELEASE: PROHIBITED</code> · <code>NOT_ASSESSED</code>** — ค่าเป็น published/typical ยังไม่มีค่าจากเครื่องจริง</td>
+</tr>
+<tr>
+<td><code>machine-profile.html</code></td>
+<td>Machine Profile owner-answered (<code>KDT-KN-2409LP-CTRL@0.3-draft</code>)</td>
+<td><code>machine_verification_pending</code> — ทุกช่องติดป้ายที่มา (ยืนยันแล้ว/ตามเอกสาร/ต้องเช็กเครื่อง/ยังไม่รู้)</td>
+</tr>
+</tbody></table></div>
+<h2>มติ owner (17 ก.ค. 2026) — บริบท CT-DEC-002 FO-5</h2>
+<blockquote><p>&quot;เอาตามนี้เลยครับ เราต้องใส่อีกหลายเครื่อง เป็นไปไม่ได้ที่จะถ่ายหน้าเครื่องทุกเครื่องในตอนนี้</p><p>ต้องทำงานเราไปก่อน ไว้วิศวกรอยู่หน้าเครื่อง แล้วให้เซ็ตให้อีกรอบก่อนทำงานจริง&quot;</p></blockquote>
+<p>แปลเป็นกติกา (บันทึกเป็น ADR-070):</p>
+<ol><li><strong>Machine onboarding = documented-profile first</strong> — เครื่องเข้าระบบด้วย profile ระดับเอกสาร</li></ol>
+<p>ที่ติดป้ายที่มาต่อค่า (pattern เอกสารชุดนี้) โดยไม่ block งาน implementation/สาย S17</p>
+<ol><li><strong>Bench verification โดยวิศวกรหน้าเครื่อง = บังคับก่อนทำงานจริง</strong> — ตาม gate ในตัว assessment เอง</li></ol>
+<p>(checklist D ข้อ 1–6 + Release Gate E: nameplate, versions, tool table, origin, import, transfer, known-good job, simulation, dry-run, first-article, human acceptance)</p>
+<ol><li><strong>ไม่มีทางลัดสู่การตัดจริง</strong>: <code>manufacturing_release: PROHIBITED</code> คงอยู่จนผ่าน gate E ครบ และ</li></ol>
+<p>CT-DEC-002 §11.6 บังคับ &quot;machine profile calibrated&quot; เป็นเงื่อนไข real-cut อยู่แล้วอีกชั้น — การรับ evidence ระดับเอกสารจึง<strong>ไม่เปิดช่อง</strong>ให้ shadow mode หลุดเป็นการตัดจริง</p>
+<h2>ความสัมพันธ์กับ <code>kdt_mvp_v1</code> (CT-DEC-002 FO-5)</h2>
+<ul><li>สิ่งที่เอกสารระบุในระดับ documented: **KDT / NCstudio (Weihong) / native = G-code <code>.nc</code>**</li></ul>
+<p>→ **ทิศทาง KDT path ของ <code>kdt_mvp_v1</code> มีหลักฐานเอกสารรองรับ** แต่ยังไม่ใช่การยืนยันเครื่องจริง</p>
+<ul><li>สิ่งที่ยังยืนยันไม่ได้: suffix &quot;LP&quot; บน nameplate, รุ่นการ์ด, เวอร์ชัน NCstudio/WoodSystem,</li></ul>
+<p>tool table, origin จริง, delivery channel → ค่าเหล่านี้ผูกกับ bench session ของวิศวกร</p>
+<ul><li>FO-5 ใน sign-off checklist จึงบันทึกเป็น <strong>conditional</strong> (documented-level ณ วันเซ็น +</li></ul>
+<p>bench verification เป็น hard gate ก่อน real cut) — ไม่ติ๊กเป็น &quot;ยืนยันจากโรงงานแล้ว&quot;</p>
+<h2>Multi-machine</h2>
+<p>Owner ระบุว่าจะมีเครื่องเพิ่มอีกหลายเครื่อง — โฟลเดอร์ <code>docs/evidence/machines/&lt;machine-id&gt;/</code> คือ pattern ต่อเครื่อง: assessment + profile + README มติ + manifest — เครื่องถัดไปใช้โครงเดียวกัน</p>
+</main>
+</body>
+</html>

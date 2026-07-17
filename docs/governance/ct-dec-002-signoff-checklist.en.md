@@ -25,12 +25,13 @@
 
 ## 2. Factory Owner — Factory Operability & Safety
 
-- [ ] NFP/NO_CUT enforced: shadow mode cannot cut for real · maximum result `PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT` · bare `PKT_OK` is not emittable.
-- [ ] Machine profile binding: id + version + digest (a forged profile fails -> `PKT_MACHINE_PROFILE_MISMATCH`).
-- [ ] Verifier fail-closed: damaged packet / lookup outage -> never reaches a machine (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, not "warn and pass").
-- [ ] Exporter allowlist + gate evidence binding (gate not PASS -> `PKT_GATE_FAILED`).
-- [ ] Machine profile `kdt_mvp_v1` matches the physical machine + controller (confirmed by the factory).
-  - **Owner decision 17 Jul 2026 (ADR-070): this item is held CONDITIONAL** — documented-level evidence accepted (`docs/evidence/machines/kdt-kn-2409lp/`: KDT/NCstudio/Weihong/G-code `.nc` = HIGH; the assessment itself honestly declares `PROHIBITED · NOT_ASSESSED`) · **engineer bench verification at the machine = hard gate before real work** (assessment Gate E + CT-DEC-002 §5 "machine profile calibrated") · rationale: multi-machine onboarding — documented-profile first; no real cutting until the bench gates pass.
+- [x] NFP/NO_CUT enforced: shadow mode cannot cut for real · maximum result `PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT` · bare `PKT_OK` is not emittable.
+- [x] Machine profile binding: id + version + digest (a forged profile fails -> `PKT_MACHINE_PROFILE_MISMATCH`).
+- [x] Verifier fail-closed: damaged packet / lookup outage -> never reaches a machine (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, not "warn and pass").
+- [x] Exporter allowlist + gate evidence binding (gate not PASS -> `PKT_GATE_FAILED`).
+- [x] Approve the `kdt_mvp_v1` contract for shadow implementation under the §17.1 approval question, using ADR-070 documented-profile-first onboarding.
+- [ ] **Real-machine activation remains CONDITIONAL:** `kdt_mvp_v1` matches the physical machine + controller (confirmed by the factory).
+  - **Owner decision 17 Jul 2026 (ADR-070):** accept documented-level evidence (`docs/evidence/machines/kdt-kn-2409lp/`; the source assessment declares `PROHIBITED · NOT_ASSESSED`) for shadow implementation only · **engineer bench verification at the machine = hard gate before real work** (assessment Gate E + CT-DEC-002 §11.6 "machine profile calibrated") · rationale: multi-machine onboarding — documented-profile first; no real cutting until the bench gates pass.
 
 ## 3. Security Owner — Signature / Trust / Key
 
@@ -50,10 +51,12 @@
 | Role | Name | Reviewed artifact commit | Review anchor SHA-256 | Date | Status |
 | --- | --- | --- | --- | --- | --- |
 | Tech Lead | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
-| Factory Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Factory Owner | Dave | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED — SHADOW CONTRACT; ACTIVATION PENDING |
 | Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
 
 > The Tech Lead attestation was recorded from Dave's direct confirmation in the guided review session on 2026-07-17: the reviewer personally observed the matching anchor, 44/44 manifest PASS with 0 FAIL, independently reproduced the aggregate schema digest, observed the passing schema structural test, and answered TL-1 through TL-5. Codex mechanically recorded this direct instruction; it did not sign or approve on the human's behalf.
+
+> The Factory Owner attestation was recorded from Dave's direct answers in the guided review session on 2026-07-17: Dave selected A for FO-1 through FO-4 individually and issued ADR-070 for FO-5, accepting a documented profile for shadow implementation while holding physical activation CONDITIONAL until an engineer completes the at-machine gates. Codex recorded that direct decision and scope; it did not inspect the machine or sign on the human's behalf.
 
 ## 5. Effect once all three sign
 

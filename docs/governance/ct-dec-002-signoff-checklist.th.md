@@ -25,12 +25,13 @@
 
 ## 2. Factory Owner — Factory Operability & Safety
 
-- [ ] NFP/NO_CUT บังคับ: shadow mode ตัดจริงไม่ได้ · ผลสูงสุด `PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT` · `PKT_OK` เปล่า emit ไม่ได้
-- [ ] Machine profile binding: id + version + digest (profile ปลอมไม่ผ่าน -> `PKT_MACHINE_PROFILE_MISMATCH`)
-- [ ] Verifier fail-closed: packet เสีย/lookup ล่ม -> ไม่ถึงเครื่อง (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, ไม่ "warn and pass")
-- [ ] Exporter allowlist + gate evidence binding (gate ไม่ PASS -> `PKT_GATE_FAILED`)
-- [ ] machine profile `kdt_mvp_v1` ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)
-  - **มติ owner 17 ก.ค. 2026 (ADR-070): ข้อนี้ถือระดับ CONDITIONAL** — รับหลักฐานระดับเอกสาร (`docs/evidence/machines/kdt-kn-2409lp/`: KDT/NCstudio/Weihong/G-code `.nc` = HIGH; ตัวเอกสารเองประกาศ `PROHIBITED · NOT_ASSESSED` อย่างซื่อตรง) · **bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง** (assessment Gate E + CT-DEC-002 §5 "machine profile calibrated") · เหตุผล: multi-machine onboarding — documented-profile first, ห้ามใช้ตัดจริงจนผ่าน bench ครบ
+- [x] NFP/NO_CUT บังคับ: shadow mode ตัดจริงไม่ได้ · ผลสูงสุด `PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT` · `PKT_OK` เปล่า emit ไม่ได้
+- [x] Machine profile binding: id + version + digest (profile ปลอมไม่ผ่าน -> `PKT_MACHINE_PROFILE_MISMATCH`)
+- [x] Verifier fail-closed: packet เสีย/lookup ล่ม -> ไม่ถึงเครื่อง (`PKT_AUTHORITY_UNAVAILABLE` -> FAIL/NO_CUT, ไม่ "warn and pass")
+- [x] Exporter allowlist + gate evidence binding (gate ไม่ PASS -> `PKT_GATE_FAILED`)
+- [x] อนุมัติ contract `kdt_mvp_v1` สำหรับ shadow implementation ตามคำถาม §17.1 โดยรับ documented-profile-first ตาม ADR-070
+- [ ] **Real-machine activation ยังคง CONDITIONAL:** `kdt_mvp_v1` ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)
+  - **มติ owner 17 ก.ค. 2026 (ADR-070):** รับหลักฐานระดับเอกสาร (`docs/evidence/machines/kdt-kn-2409lp/`; สถานะในตัวเอกสารคือ `PROHIBITED · NOT_ASSESSED`) เพื่อเดินงาน shadow implementation เท่านั้น · **bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง** (assessment Gate E + CT-DEC-002 §11.6 "machine profile calibrated") · เหตุผล: multi-machine onboarding — documented-profile first, ห้ามใช้ตัดจริงจนผ่าน bench ครบ
 
 ## 3. Security Owner — Signature / Trust / Key
 
@@ -50,10 +51,12 @@
 | บทบาท | ชื่อ | Reviewed artifact commit | Review anchor SHA-256 | วันที่ | สถานะ |
 | --- | --- | --- | --- | --- | --- |
 | Tech Lead | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED |
-| Factory Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
+| Factory Owner | คุณเดฟ | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | 2026-07-17 | SIGNED — SHADOW CONTRACT; ACTIVATION PENDING |
 | Security Owner | — | `d3fb617fcb42e72085cce46cad03b5478b71e16d` | `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7` | — | PENDING |
 
 > บันทึกการรับรอง Tech Lead จากคำยืนยันโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: ผู้ตรวจเห็น anchor ตรง, manifest 44/44 PASS และ 0 FAIL, reproduce aggregate schema digest ได้, schema structural test ผ่าน และตอบ TL-1 ถึง TL-5 ด้วยตนเอง Codex ทำหน้าที่บันทึกคำยืนยันนี้ตามคำสั่งโดยตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์
+
+> บันทึกการรับรอง Factory Owner จากคำตอบโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: คุณเดฟเลือก A ยืนยัน FO-1 ถึง FO-4 ทีละข้อ และออกมติ ADR-070 สำหรับ FO-5 ให้รับ documented profile เพื่อ shadow implementation แต่คง physical activation เป็น CONDITIONAL จนวิศวกรผ่าน gate หน้าเครื่อง Codex บันทึกคำยืนยันและขอบเขตนี้ตามคำสั่งโดยตรง ไม่ได้ตรวจหรือเซ็นแทนมนุษย์
 
 ## 5. Effect เมื่อครบสาม
 

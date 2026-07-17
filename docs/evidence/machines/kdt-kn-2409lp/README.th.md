@@ -1,8 +1,8 @@
 # Machine Evidence — KDT KN-2409LP (documented level)
 
 **วันที่รับเข้า:** 17 ก.ค. 2026 · **ผู้ส่งมอบ:** owner (คุณเดฟ)
-**ที่มา:** เอกสาร deep-research 2 ฉบับที่ owner จัดทำ/สั่งทำ (research 2 รอบ, adversarial-verified) —
-รับเข้าเป็น **observed evidence** ตามคำสั่งตรงของ owner ("เอาตามนี้เลยครับ")
+**ที่มา:** เอกสาร deep-research 2 ฉบับที่ owner ส่งมอบ — รับเข้าเป็น **owner-supplied documented evidence**
+ตามคำสั่งตรงของ owner ("เอาตามนี้เลยครับ") โดยการรับเข้าไม่ยกระดับค่าที่ยังไม่ได้ตรวจหน้าเครื่องให้เป็น verified fact
 
 | ไฟล์ | เนื้อหา | สถานะในตัวเอกสารเอง |
 |---|---|---|
@@ -21,13 +21,13 @@
    (checklist D ข้อ 1–6 + Release Gate E: nameplate, versions, tool table, origin, import, transfer,
    known-good job, simulation, dry-run, first-article, human acceptance)
 3. **ไม่มีทางลัดสู่การตัดจริง**: `manufacturing_release: PROHIBITED` คงอยู่จนผ่าน gate E ครบ และ
-   CT-DEC-002 §5 บังคับ "machine profile calibrated" เป็นเงื่อนไข real-cut อยู่แล้วอีกชั้น —
+   CT-DEC-002 §11.6 บังคับ "machine profile calibrated" เป็นเงื่อนไข real-cut อยู่แล้วอีกชั้น —
    การรับ evidence ระดับเอกสารจึง**ไม่เปิดช่อง**ให้ shadow mode หลุดเป็นการตัดจริง
 
 ## ความสัมพันธ์กับ `kdt_mvp_v1` (CT-DEC-002 FO-5)
 
-- สิ่งที่เอกสารยืนยันได้ระดับ HIGH: เครื่องเป็น **KDT / NCstudio (Weihong) / native = G-code `.nc`**
-  → **ทิศทาง KDT path ของ `kdt_mvp_v1` มีหลักฐานเอกสารรองรับ** (ไม่ใช่เลือกเพราะ test เยอะ — ตามมติเดิม)
+- สิ่งที่เอกสารระบุในระดับ documented: **KDT / NCstudio (Weihong) / native = G-code `.nc`**
+  → **ทิศทาง KDT path ของ `kdt_mvp_v1` มีหลักฐานเอกสารรองรับ** แต่ยังไม่ใช่การยืนยันเครื่องจริง
 - สิ่งที่ยังยืนยันไม่ได้: suffix "LP" บน nameplate, รุ่นการ์ด, เวอร์ชัน NCstudio/WoodSystem,
   tool table, origin จริง, delivery channel → ค่าเหล่านี้ผูกกับ bench session ของวิศวกร
 - FO-5 ใน sign-off checklist จึงบันทึกเป็น **conditional** (documented-level ณ วันเซ็น +
