@@ -1,7 +1,8 @@
 # CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist
 
 **Spec**: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed `d3fb617fcb42e72085cce46cad03b5478b71e16d`
-**Hash anchor to sign**: `monolith-s17-v041-review-input.sha256` (sha256 `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7`)
+**Hash anchor to sign**: `monolith-s17-v041-review-input.sha256` (sha256 **v3** `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16`)
+**Anchor v3 (17 Jul evening, owner decision ก):** `.gitattributes` removed from the frozen set (now 43 pure spec-content files) — it is repo config that must stay mutable as new evidence types land (this time: binary exceptions protecting PNGs during the KDT library landing); same structural reasoning as removing the checklist earlier · **TL/FO signatures (anchor v2 `de2a1ccf...`) remain binding** — per-file proof shows all 43 spec-content files byte-identical at v3 creation (no re-sign needed) · SO signs against v3.
 **Re-pin 16 Jul 2026 (owner decision ก):** the previous anchor `75cbc3e1...2046` was re-pinned for two reasons — (1) `package.json` drifted via owner-directed FS-B1-01/B1-02 work after round-4 (delta = test:node scripts + vite 6/vitest 3.2.7 security bumps; every spec/schema file byte-identical), and (2) a from-birth circularity fix: this checklist (the signing surface, which must be edited to sign) sat inside the frozen set itself, failing verification since `7cd09e81` and guaranteeing anchor breakage on signature — the new 44-file set excludes the checklist (which is pinned separately by `ct-dec-002-signoff-checklist.sha256` per signing event).
 **Aggregate schema digest**: `sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55`
 **Independent re-review verdict**: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)

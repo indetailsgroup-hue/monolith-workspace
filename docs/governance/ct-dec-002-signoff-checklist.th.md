@@ -1,7 +1,8 @@
 # CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist
 
 **Spec**: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed `d3fb617fcb42e72085cce46cad03b5478b71e16d`
-**Hash anchor ที่ต้องเซ็น**: `monolith-s17-v041-review-input.sha256` (sha256 `de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7`)
+**Hash anchor ที่ต้องเซ็น**: `monolith-s17-v041-review-input.sha256` (sha256 **v3** `f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16`)
+**Anchor v3 (17 ก.ค. เย็น, มติ owner ก):** ตัด `.gitattributes` ออกจาก frozen set (43 ไฟล์ spec-content ล้วน) — `.gitattributes` เป็น repo config ที่ต้อง mutable เมื่อ evidence ชนิดใหม่เข้า (ครั้งนี้: binary exception กัน PNG corruption ตอน land KDT library) เหตุผลโครงสร้างเดียวกับที่ตัด checklist ออกก่อนหน้า · **ลายเซ็น TL/FO (anchor v2 `de2a1ccf...`) ยังยึดได้** — พิสูจน์ per-file แล้วว่า spec-content 43/43 byte-identical ณ เวลาสร้าง v3 (ไม่ต้อง re-sign) · SO เซ็นบน v3
 **Re-pin 16 ก.ค. 2026 (มติ owner ก):** anchor เดิม `75cbc3e1...2046` ถูก re-pin สองเหตุ — (1) `package.json` เลื่อนจากงาน FS-B1-01/B1-02 ที่ owner สั่งหลัง round-4 (delta = test:node scripts + vite 6/vitest 3.2.7 security bump; เนื้อหา spec/schemas byte-identical ทุกไฟล์) (2) แก้ circularity แต่กำเนิด: ไฟล์ checklist นี้ (signing surface ที่ต้องถูกแก้ตอนเซ็น) เคยอยู่ในชุด frozen เอง ทำให้ verify ไม่ผ่านตั้งแต่ `7cd09e81` และการเซ็นจะทำ anchor แตก — ชุดใหม่ 44 ไฟล์ไม่รวม checklist (checklist ถูก pin แยกด้วย `ct-dec-002-signoff-checklist.sha256` ต่อเหตุการณ์เซ็น)
 **Aggregate schema digest**: `sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55`
 **Independent re-review verdict**: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)
