@@ -134,11 +134,14 @@ export function buildOperationGraph(
   // Combine operations
   const allOperations = [...drillResult.operations, ...minifixResult.operations];
 
-  // ADR-065: Dedupe operations sharing the same coordinate (DUPLICATE_POSITION)
+  // ADR-065: Dedupe operations sharing the same panel + coordinate (DUPLICATE_POSITION)
   // Minifix cam/bolt points live in BOTH drillmap.json and connectors.minifix.json,
   // so the combined list can describe the same physical hole twice.
+  // Same-spec re-descriptions are dropped (warning); conflicting specs at the
+  // same coordinate are a blocking error — never silently pick a winner.
   const dedupeResult = dedupeOperationsByPosition(allOperations);
   warnings.push(...dedupeResult.warnings);
+  errors.push(...dedupeResult.errors);
 
   // Sort operations for efficient toolpath
   const sortedOperations = sortOperationsForEfficiency(dedupeResult.operations, machine);
@@ -189,48 +192,111 @@ export function buildOperationGraph(
 interface DedupeResult {
   operations: Operation[];
   warnings: string[];
+  /** Blocking conflicts: same panel+position, different spec (ADR-065) */
+  errors: string[];
   removedCount: number;
 }
 
 /** Decimal places for position keys — matches packet precision (3 decimals) */
 const POSITION_KEY_PRECISION = 3;
 
+/**
+ * Panel-scoped position key. Panel-local coordinates legitimately repeat
+ * across panels (system-32 mirror panels share e.g. [37,100,0] on LEFT and
+ * RIGHT side), so the key MUST carry the panel identity — a position-only
+ * key silently drops real holes (red-line reversed).
+ */
 function positionKey(op: Operation): string {
   const { x, y, z } = op.position;
-  return `${x.toFixed(POSITION_KEY_PRECISION)},${y.toFixed(POSITION_KEY_PRECISION)},${z.toFixed(POSITION_KEY_PRECISION)}`;
+  const panelId = op.workpieceContext?.panelId ?? '';
+  return `${panelId}|${x.toFixed(POSITION_KEY_PRECISION)},${y.toFixed(POSITION_KEY_PRECISION)},${z.toFixed(POSITION_KEY_PRECISION)}`;
+}
+
+/** Drill direction of an operation (V/H), undefined when unknown/not applicable */
+function operationDirection(op: Operation): 'V' | 'H' | undefined {
+  return op.type === 'DRILL' || op.type === 'BORE' ? op.direction : undefined;
 }
 
 /**
- * ADR-065 red-line guard: no two operations may target the same coordinate.
+ * Two operations at the same panel+coordinate collide unless BOTH declare an
+ * explicit, different drill direction (a V face hole and an H edge hole may
+ * share a coordinate). Unknown direction is treated conservatively as
+ * colliding — connector-sourced ops carry no face data.
+ */
+function directionsCollide(
+  a: 'V' | 'H' | undefined,
+  b: 'V' | 'H' | undefined
+): boolean {
+  return a === undefined || b === undefined || a === b;
+}
+
+/**
+ * Machining spec of an operation for duplicate comparison.
+ * type + tool + diameter + depth define WHAT gets cut at the position;
+ * two ops are re-descriptions of the same hole only when these all match.
+ */
+function operationSpecKey(op: Operation): string {
+  const diameter =
+    (op.type === 'DRILL' || op.type === 'BORE') && op.diameter !== undefined
+      ? op.diameter.toFixed(POSITION_KEY_PRECISION)
+      : '';
+  const depth = 'depth' in op ? op.depth.toFixed(POSITION_KEY_PRECISION) : '';
+  return `${op.type}|${op.toolId}|d=${diameter}|z=${depth}`;
+}
+
+/**
+ * ADR-065 red-line guard: no two operations may target the same coordinate
+ * on the same panel.
  *
  * DrillMap points and connector pairs can describe the same physical hole
  * (minifix cam/bolt appear in both drillmap.json and connectors.minifix.json).
  * Without this guard the machine would drill the same position twice.
  *
- * First occurrence wins (drill map order). Dropped duplicates are reported
- * as DUPLICATE_POSITION warnings — fail-visible, never silent.
+ * Policy:
+ * - Same panel + position + compatible direction + SAME spec → duplicate.
+ *   First occurrence wins (drill map order); dropped duplicates are reported
+ *   as DUPLICATE_POSITION warnings — fail-visible, never silent.
+ * - Same panel + position + compatible direction + DIFFERENT spec → blocking
+ *   error (DUPLICATE_POSITION_CONFLICT). The kept op could carry the wrong
+ *   diameter/depth, so no winner is picked; both ops stay in the graph and
+ *   validateOperationGraph flags them again (defense in depth).
  */
 function dedupeOperationsByPosition(operations: Operation[]): DedupeResult {
-  const seen = new Map<string, Operation>();
+  const buckets = new Map<string, Operation[]>();
   const deduped: Operation[] = [];
   const warnings: string[] = [];
+  const errors: string[] = [];
   let removedCount = 0;
 
   for (const op of operations) {
     const key = positionKey(op);
-    const existing = seen.get(key);
+    const bucket = buckets.get(key) ?? [];
+    const existing = bucket.find((candidate) =>
+      directionsCollide(operationDirection(candidate), operationDirection(op))
+    );
+
     if (existing) {
-      removedCount++;
-      warnings.push(
-        `[DUPLICATE_POSITION] Op ${op.id} at (${key}) duplicates op ${existing.id} — dropped duplicate, kept ${existing.id}`
+      if (operationSpecKey(existing) === operationSpecKey(op)) {
+        removedCount++;
+        warnings.push(
+          `[DUPLICATE_POSITION] Op ${op.id} at (${key}) duplicates op ${existing.id} — dropped duplicate, kept ${existing.id}`
+        );
+        continue;
+      }
+      errors.push(
+        `[DUPLICATE_POSITION_CONFLICT] Op ${op.id} and op ${existing.id} target the same position (${key}) ` +
+          `with different specs (${operationSpecKey(op)} vs ${operationSpecKey(existing)}) — ` +
+          `refusing to pick a winner (ADR-065)`
       );
-      continue;
+      // fall through: keep the conflicting op visible for the validator
     }
-    seen.set(key, op);
+
+    bucket.push(op);
+    buckets.set(key, bucket);
     deduped.push(op);
   }
 
-  return { operations: deduped, warnings, removedCount };
+  return { operations: deduped, warnings, errors, removedCount };
 }
 
 // ============================================

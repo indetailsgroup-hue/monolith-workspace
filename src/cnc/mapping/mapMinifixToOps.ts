@@ -42,6 +42,7 @@ import type { PacketConnectors, PacketMinifixPair } from '../../factory/packet/t
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getToolByDiameter } from '../machine/machineProfile';
 import type { DrillOperation, BoreOperation, Operation } from '../operation/operationTypes';
+import type { OperationWorkpieceContext } from '../transform/workpieceTypes';
 
 // ============================================
 // TYPES
@@ -78,6 +79,15 @@ const MINIFIX_CAM_DIAMETER = 15;
 /** Standard Minifix bolt diameter */
 const MINIFIX_BOLT_DIAMETER = 5;
 
+/**
+ * Diameter threshold: <=8mm = DRILL, >8mm = BORE.
+ * MUST match mapDrillMapToOps so the same physical hole maps to the SAME
+ * operation spec from both packet sources (drillmap.json + connectors.json).
+ * buildOperationGraph dedupes only spec-equal duplicates (ADR-065) — a spec
+ * mismatch between the two sources is a blocking conflict, not a dedupe.
+ */
+const DIAMETER_THRESHOLD = 8;
+
 // ============================================
 // MAPPER
 // ============================================
@@ -100,26 +110,6 @@ export function mapMinifixToOps(
   const unmappedPairs: PacketMinifixPair[] = [];
   const warnings: string[] = [];
 
-  // Find required tools
-  const boreTool = getToolByDiameter(machine, MINIFIX_CAM_DIAMETER, 'BORE');
-  const drillTool = getToolByDiameter(machine, MINIFIX_BOLT_DIAMETER, 'DRILL');
-
-  if (!boreTool) {
-    warnings.push(`No ${MINIFIX_CAM_DIAMETER}mm bore tool available for Minifix cam housing`);
-  }
-  if (!drillTool) {
-    warnings.push(`No ${MINIFIX_BOLT_DIAMETER}mm drill tool available for Minifix bolt`);
-  }
-
-  // If missing essential tools, return early
-  if (!boreTool && !drillTool) {
-    return {
-      operations: [],
-      unmappedPairs: connectors.minifix,
-      warnings,
-    };
-  }
-
   for (const pair of connectors.minifix) {
     // Skip based on status
     if (opts.skipErrorPairs && pair.status === 'ERROR') {
@@ -133,7 +123,7 @@ export function mapMinifixToOps(
       continue;
     }
 
-    const pairOps = mapSinglePair(pair, boreTool, drillTool, warnings);
+    const pairOps = mapSinglePair(pair, machine, warnings);
     if (pairOps.length > 0) {
       operations.push(...pairOps);
     } else {
@@ -145,19 +135,52 @@ export function mapMinifixToOps(
 }
 
 /**
+ * Find a tool for a connector hole.
+ * Mirrors mapDrillMapToOps.findTool: exact (diameter, type) match first,
+ * then for BORE fall back to any tool with the right diameter.
+ * Spec parity between the two mappers is what lets buildOperationGraph
+ * recognize drillmap-vs-connector re-descriptions as the SAME operation.
+ */
+function findConnectorTool(
+  machine: MachineProfile,
+  diameter: number,
+  type: 'DRILL' | 'BORE'
+): ToolCapability | undefined {
+  let tool = getToolByDiameter(machine, diameter, type);
+  if (!tool && type === 'BORE') {
+    tool = getToolByDiameter(machine, diameter);
+  }
+  return tool;
+}
+
+/**
+ * Workpiece context for a connector operation.
+ * ADR-065: panel identity MUST travel with the operation — the dedupe key and
+ * the per-panel DXF split are both scoped by workpieceContext.panelId.
+ */
+function connectorWorkpieceContext(panelId: string): OperationWorkpieceContext {
+  return {
+    panelId,
+    face: 'TOP',
+    appliedOffset: { x: 0, y: 0, z: 0 },
+  };
+}
+
+/**
  * Map a single minifix pair to operations
  */
 function mapSinglePair(
   pair: PacketMinifixPair,
-  boreTool: ToolCapability | undefined,
-  drillTool: ToolCapability | undefined,
+  machine: MachineProfile,
   warnings: string[]
 ): Operation[] {
   const ops: Operation[] = [];
 
   // Cam housing (bore operation)
+  const camDiameter = pair.cam.diameter ?? MINIFIX_CAM_DIAMETER;
+  const boreTool = findConnectorTool(machine, camDiameter, 'BORE');
   if (boreTool) {
-    const camOp = createCamBoreOperation(pair, boreTool);
+    const camOp = createCamBoreOperation(pair, boreTool, camDiameter);
     ops.push(camOp);
 
     // Check depth
@@ -167,22 +190,30 @@ function mapSinglePair(
       );
     }
   } else {
-    warnings.push(`Pair ${pair.id}: Cannot create cam operation - no bore tool`);
+    warnings.push(`Pair ${pair.id}: Cannot create cam operation - no ${camDiameter}mm bore tool`);
   }
 
-  // Bolt hole (drill operation)
-  if (drillTool) {
-    const boltOp = createBoltDrillOperation(pair, drillTool);
+  // Bolt hole — DRILL vs BORE by diameter, same rule as mapDrillMapToOps
+  const boltDiameter = pair.bolt.diameter ?? MINIFIX_BOLT_DIAMETER;
+  const boltType = boltDiameter > DIAMETER_THRESHOLD ? 'BORE' : 'DRILL';
+  const boltTool = findConnectorTool(machine, boltDiameter, boltType);
+  if (boltTool) {
+    const boltOp =
+      boltType === 'BORE'
+        ? createBoltBoreOperation(pair, boltTool, boltDiameter)
+        : createBoltDrillOperation(pair, boltTool);
     ops.push(boltOp);
 
     // Check depth
-    if (drillTool.maxDepth != null && pair.bolt.depth > drillTool.maxDepth) {
+    if (boltTool.maxDepth != null && pair.bolt.depth > boltTool.maxDepth) {
       warnings.push(
-        `Pair ${pair.id}: Bolt depth ${pair.bolt.depth}mm exceeds tool max ${drillTool.maxDepth}mm`
+        `Pair ${pair.id}: Bolt depth ${pair.bolt.depth}mm exceeds tool max ${boltTool.maxDepth}mm`
       );
     }
   } else {
-    warnings.push(`Pair ${pair.id}: Cannot create bolt operation - no drill tool`);
+    warnings.push(
+      `Pair ${pair.id}: Cannot create bolt operation - no ${boltDiameter}mm ${boltType.toLowerCase()} tool`
+    );
   }
 
   return ops;
@@ -193,7 +224,8 @@ function mapSinglePair(
  */
 function createCamBoreOperation(
   pair: PacketMinifixPair,
-  tool: ToolCapability
+  tool: ToolCapability,
+  diameter: number
 ): BoreOperation {
   return {
     type: 'BORE',
@@ -205,16 +237,17 @@ function createCamBoreOperation(
       y: pair.cam.position[1],
       z: pair.cam.position[2],
     },
-    diameter: pair.cam.diameter ?? MINIFIX_CAM_DIAMETER,
+    diameter,
     depth: pair.cam.depth,
     flatBottom: true, // Minifix cam needs flat bottom
     feedRate: tool.defaultFeedRate,
     comment: `Minifix cam housing (pair ${pair.id})`,
+    workpieceContext: connectorWorkpieceContext(pair.cam.panelId),
   };
 }
 
 /**
- * Create drill operation for Minifix bolt
+ * Create drill operation for Minifix bolt (small pilot, <=8mm)
  */
 function createBoltDrillOperation(
   pair: PacketMinifixPair,
@@ -234,6 +267,35 @@ function createBoltDrillOperation(
     throughHole: false,
     feedRate: tool.defaultFeedRate,
     comment: `Minifix bolt hole (pair ${pair.id})`,
+    workpieceContext: connectorWorkpieceContext(pair.bolt.panelId),
+  };
+}
+
+/**
+ * Create bore operation for a large Minifix bolt sleeve (>8mm).
+ * Mirrors mapDrillMapToOps (BOLT purpose, diameter > threshold → BORE).
+ */
+function createBoltBoreOperation(
+  pair: PacketMinifixPair,
+  tool: ToolCapability,
+  diameter: number
+): BoreOperation {
+  return {
+    type: 'BORE',
+    id: `minifix-bolt-${pair.id}`,
+    sourceId: pair.bolt.pointId,
+    toolId: tool.toolId,
+    position: {
+      x: pair.bolt.position[0],
+      y: pair.bolt.position[1],
+      z: pair.bolt.position[2],
+    },
+    diameter,
+    depth: pair.bolt.depth,
+    flatBottom: true, // same as mapDrillMapToOps BOLT purpose
+    feedRate: tool.defaultFeedRate,
+    comment: `Minifix bolt hole (pair ${pair.id})`,
+    workpieceContext: connectorWorkpieceContext(pair.bolt.panelId),
   };
 }
 

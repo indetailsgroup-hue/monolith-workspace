@@ -151,20 +151,38 @@ export function validateOperationGraph(
   };
 }
 
+/** Drill direction of an operation (V/H), undefined when unknown/not applicable */
+function operationDirection(op: Operation): 'V' | 'H' | undefined {
+  return op.type === 'DRILL' || op.type === 'BORE' ? op.direction : undefined;
+}
+
 /**
- * ADR-065: Flag operations that share the same coordinate.
+ * ADR-065: Flag operations that share the same panel + coordinate.
  * Position keys use 3 decimal places (packet precision).
+ *
+ * Scoping (must mirror buildOperationGraph.dedupeOperationsByPosition):
+ * - Keys carry workpieceContext.panelId — panel-local coordinates repeat
+ *   legitimately across panels (system-32 mirror panels), so a position-only
+ *   check would false-block valid external multi-panel graphs.
+ * - Ops with explicit, DIFFERENT V/H directions at the same coordinate are
+ *   not duplicates; unknown direction conservatively collides.
  */
 function validateNoDuplicatePositions(
   operations: Operation[],
   issues: ValidationIssue[]
 ): void {
-  const seen = new Map<string, Operation>();
+  const buckets = new Map<string, Operation[]>();
 
   for (const op of operations) {
     const { x, y, z } = op.position;
-    const key = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
-    const existing = seen.get(key);
+    const panelId = op.workpieceContext?.panelId ?? '';
+    const key = `${panelId}|${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
+    const bucket = buckets.get(key) ?? [];
+    const existing = bucket.find((candidate) => {
+      const a = operationDirection(candidate);
+      const b = operationDirection(op);
+      return a === undefined || b === undefined || a === b;
+    });
 
     if (existing) {
       issues.push({
@@ -174,9 +192,10 @@ function validateNoDuplicatePositions(
         operationId: op.id,
         details: { position: op.position, duplicateOf: existing.id },
       });
-    } else {
-      seen.set(key, op);
     }
+
+    bucket.push(op);
+    buckets.set(key, bucket);
   }
 }
 

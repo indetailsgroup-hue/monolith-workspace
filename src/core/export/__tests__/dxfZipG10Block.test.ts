@@ -192,6 +192,62 @@ describe('buildDxfZipFromPacket — blocks download when G10 FAILs', () => {
 });
 
 // ============================================
+// Slice 2 — genuine gate failure, end to end (no mocked verdict)
+// ============================================
+
+describe('buildDxfZipFromPacket — genuinely failing content blocks the zip (no mocked verdict)', () => {
+    /**
+     * Reviewer follow-up: the FAIL paths above force the G10 verdict via mock.
+     * This case drives the REAL gates end-to-end: a drill placed outside the
+     * panel outline (x=5000 on a 600mm panel) must be blocked by the semantic
+     * gate (G10.2 DRILL_INSIDE_OUTLINE) and refuse the zip — no forced verdict
+     * anywhere in the chain.
+     */
+    function createOutOfOutlinePacket(): FactoryPacket {
+        const packet = createPacket();
+        packet.drillMap.panels[0].points[0] = {
+            ...packet.drillMap.panels[0].points[0],
+            id: 'pt-outside',
+            position: [5000, 100, 0], // far outside the 600x800 panel outline
+        };
+        return packet;
+    }
+
+    it('export reports the panel as genuinely gate-blocked', async () => {
+        const actual = await vi.importActual<typeof import('../../gate/gate10DxfSafety')>(
+            '../../gate/gate10DxfSafety'
+        );
+        mockAssertDxfSafety.mockImplementation(actual.assertDxfSafety);
+
+        const result = await exportDxfFromPacket(createOutOfOutlinePacket(), { machineId: 'KDT' });
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+            expect(result.g10Status.allPassed).toBe(false);
+            const panel = result.panels[0];
+            // The REAL semantic gate produced the block — not a mocked verdict
+            expect(panel.semanticResult.blocked).toBe(true);
+            expect(
+                panel.semanticResult.issues.some(
+                    (i) => i.rule === 'DRILL_INSIDE_OUTLINE' && i.severity === 'BLOCK'
+                )
+            ).toBe(true);
+        }
+    });
+
+    it('refuses the ZIP naming the failing panel and gate', async () => {
+        const actual = await vi.importActual<typeof import('../../gate/gate10DxfSafety')>(
+            '../../gate/gate10DxfSafety'
+        );
+        mockAssertDxfSafety.mockImplementation(actual.assertDxfSafety);
+
+        await expect(
+            buildDxfZipFromPacket(createOutOfOutlinePacket(), { machineId: 'KDT' })
+        ).rejects.toThrow(/panel-g10-left.*G10\.2|G10\.2.*panel-g10-left/);
+    });
+});
+
+// ============================================
 // Slice 3 — DXF zip NFP labels while SHADOW_MODE
 // ============================================
 
