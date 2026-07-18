@@ -1,0 +1,181 @@
+{
+  "releasedRevision": {
+    "projectId": "project-alpha",
+    "revisionId": "revision-0042",
+    "state": "RELEASED"
+  },
+  "machineProfile": {
+    "schema": "monolith.machine-profile@1.0",
+    "id": "kdt_mvp_v1",
+    "version": "1.0.0",
+    "units": "um",
+    "parameters": {
+      "bedWidthUm": 1220000,
+      "bedLengthUm": 2440000,
+      "maxPanelThicknessUm": 50000,
+      "minBoreDiameterUm": 3000,
+      "maxBoreDiameterUm": 35000,
+      "supportedFaces": ["RIGHT", "LEFT", "BOTTOM", "TOP", "B", "A"]
+    }
+  },
+  "exporter": {
+    "id": "monolith.factory-exporter",
+    "version": "2.0.0",
+    "buildCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "artifactSha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "payloads": {
+    "connectorOps": {
+      "schema": "monolith.factory.connector-ops@2.0",
+      "operations": [
+        {
+          "operationId": "op-002",
+          "panelId": "panel-001",
+          "pairId": "pair-001",
+          "featureId": "feature-bolt",
+          "type": "DRILL",
+          "face": "LEFT",
+          "positionUm": { "xUm": 37000, "yUm": 500000, "zUm": 9000 },
+          "directionMicro": { "xMicro": 1000000, "yMicro": 0, "zMicro": 0 },
+          "diameterUm": 8000,
+          "depthUm": 30000,
+          "tags": ["minifix", "bolt"]
+        },
+        {
+          "operationId": "op-001",
+          "panelId": "panel-001",
+          "pairId": "pair-001",
+          "featureId": "feature-cam",
+          "type": "DRILL",
+          "face": "A",
+          "positionUm": { "xUm": 37000, "yUm": 100000, "zUm": 9000 },
+          "directionMicro": { "xMicro": 0, "yMicro": 0, "zMicro": 1000000 },
+          "diameterUm": 15000,
+          "depthUm": 12500,
+          "tags": ["minifix", "cam"]
+        }
+      ]
+    },
+    "connectorsMinifix": {
+      "schema": "monolith.factory.connectors-minifix@2.0",
+      "pairs": [
+        {
+          "pairId": "pair-001",
+          "connectorId": "minifix-15",
+          "cam": {
+            "pointId": "point-cam",
+            "panelId": "panel-001",
+            "positionUm": { "xUm": 37000, "yUm": 100000, "zUm": 9000 },
+            "directionMicro": { "xMicro": 0, "yMicro": 0, "zMicro": 1000000 },
+            "diameterUm": 15000,
+            "depthUm": 12500
+          },
+          "bolt": {
+            "pointId": "point-bolt",
+            "panelId": "panel-001",
+            "positionUm": { "xUm": 37000, "yUm": 500000, "zUm": 9000 },
+            "directionMicro": { "xMicro": 1000000, "yMicro": 0, "zMicro": 0 },
+            "diameterUm": 8000,
+            "depthUm": 30000
+          }
+        }
+      ]
+    },
+    "cutlist": {
+      "schema": "monolith.factory.cutlist@2.0",
+      "parts": [
+        {
+          "partId": "part-002",
+          "cabinetId": "cabinet-001",
+          "materialId": "mdf-18",
+          "quantity": 1,
+          "finishWidthUm": 600000,
+          "finishHeightUm": 720000,
+          "cutWidthUm": 599500,
+          "cutHeightUm": 720000,
+          "thicknessUm": 18000,
+          "grain": "VERTICAL",
+          "edgeBandUm": { "leftUm": 1000, "rightUm": 0, "topUm": 0, "bottomUm": 0 },
+          "premillUm": { "leftUm": 500, "rightUm": 0, "topUm": 0, "bottomUm": 0 }
+        },
+        {
+          "partId": "part-001",
+          "cabinetId": "cabinet-001",
+          "materialId": "mdf-18",
+          "quantity": 1,
+          "finishWidthUm": 600000,
+          "finishHeightUm": 720000,
+          "cutWidthUm": 600000,
+          "cutHeightUm": 719500,
+          "thicknessUm": 18000,
+          "grain": "VERTICAL",
+          "edgeBandUm": { "leftUm": 0, "rightUm": 0, "topUm": 1000, "bottomUm": 0 },
+          "premillUm": { "leftUm": 0, "rightUm": 0, "topUm": 500, "bottomUm": 0 }
+        }
+      ]
+    },
+    "drillmap": {
+      "schema": "monolith.factory.drillmap@2.0",
+      "panels": [
+        {
+          "panelId": "panel-001",
+          "cabinetId": "cabinet-001",
+          "role": "LEFT_SIDE",
+          "dimensionsUm": { "widthUm": 600000, "heightUm": 720000, "thicknessUm": 18000 },
+          "points": [
+            {
+              "pointId": "point-bolt",
+              "positionUm": { "xUm": 37000, "yUm": 500000, "zUm": 9000 },
+              "directionMicro": { "xMicro": 1000000, "yMicro": 0, "zMicro": 0 },
+              "diameterUm": 8000,
+              "depthUm": 30000,
+              "throughHole": false,
+              "purpose": "BOLT",
+              "componentType": "BOLT",
+              "face": "LEFT",
+              "status": "VALID",
+              "pairId": "pair-001",
+              "pairedPointId": "point-cam"
+            },
+            {
+              "pointId": "point-cam",
+              "positionUm": { "xUm": 37000, "yUm": 100000, "zUm": 9000 },
+              "directionMicro": { "xMicro": 0, "yMicro": 0, "zMicro": 1000000 },
+              "diameterUm": 15000,
+              "depthUm": 12500,
+              "throughHole": false,
+              "purpose": "CAM_LOCK",
+              "componentType": "HOUSING",
+              "face": "A",
+              "status": "VALID",
+              "pairId": "pair-001",
+              "pairedPointId": "point-bolt"
+            }
+          ]
+        }
+      ]
+    },
+    "gateResult": {
+      "schema": "monolith.factory.gate-result@2.0",
+      "policyVersion": "1.0.0",
+      "result": "PASS",
+      "findings": [
+        {
+          "code": "TOOL_MARGIN_INFO",
+          "severity": "INFO",
+          "entityIds": ["point-cam"],
+          "parameters": [{ "key": "toolId", "type": "STRING", "value": "tool-15mm" }]
+        },
+        {
+          "code": "EDGE_DISTANCE_WARN",
+          "severity": "WARNING",
+          "entityIds": ["point-cam", "panel-001"],
+          "parameters": [
+            { "key": "minimumUm", "type": "INTEGER", "value": 35000 },
+            { "key": "measuredUm", "type": "INTEGER", "value": 37000 }
+          ]
+        }
+      ]
+    }
+  }
+}
