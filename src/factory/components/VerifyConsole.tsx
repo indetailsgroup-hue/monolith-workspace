@@ -489,7 +489,9 @@ export function VerifyConsole({
           )}
 
           {/* Checks List */}
-          {apiResponse.checks.length > 0 && (
+          {/* defence in depth: an adapter that omits `checks` must degrade to
+              "no rows", never crash the console (live-run finding 2026-07-18) */}
+          {(apiResponse.checks?.length ?? 0) > 0 && (
             <VerifyChecks checks={apiResponse.checks} />
           )}
 
