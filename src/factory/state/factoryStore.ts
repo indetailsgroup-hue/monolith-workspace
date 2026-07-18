@@ -499,8 +499,12 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
 
         setVerifyResult(result);
 
-        // Log activity based on verdict
-        const isPassed = result.verdict === "PASS" || result.verdict === "PASS_WITH_WARN";
+        // Log activity based on verdict (STORAGE_HASH_MATCH = storage-integrity
+        // scope only — the activity detail carries the code for the record)
+        const isPassed =
+          result.verdict === "PASS" ||
+          result.verdict === "PASS_WITH_WARN" ||
+          result.verdict === "STORAGE_HASH_MATCH";
         addActivity({
           jobId,
           type: isPassed ? "VERIFY_PASSED" : "VERIFY_FAILED",

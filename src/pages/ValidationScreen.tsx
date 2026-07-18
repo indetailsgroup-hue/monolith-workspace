@@ -44,6 +44,12 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
           background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
           color: "white",
         };
+      // FS-B1-02: storage-integrity verdict — blue, never the full-PASS green
+      case "STORAGE_HASH_MATCH":
+        return {
+          background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+          color: "white",
+        };
       case "PASS_WITH_WARN":
         return {
           background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
@@ -65,6 +71,7 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
   const getVerdictIcon = (): string => {
     switch (verdict) {
       case "PASS":
+      case "STORAGE_HASH_MATCH":
         return "\u2713"; // checkmark
       case "PASS_WITH_WARN":
         return "\u26A0"; // warning
@@ -79,6 +86,8 @@ function VerdictPill({ verdict, code }: VerdictPillProps) {
     switch (verdict) {
       case "PASS":
         return "PASS - Safe to Produce";
+      case "STORAGE_HASH_MATCH":
+        return "STORAGE HASH MATCH - ตรวจไฟล์เก็บเท่านั้น (ไม่ใช่ full verification)";
       case "PASS_WITH_WARN":
         return "PASS WITH WARNING";
       case "FAIL":

@@ -301,18 +301,22 @@ function ProjectHomePage() {
   const isLoading = verifyEntry?.loading;
   const verifyError = verifyEntry?.error;
   const lastCheckedMs = verifyEntry?.status?.fetchedAtMs;
-  const gateComplete = verdict === 'PASS'; // PASS-only gate
+  // FS-B1-02: the server verify is a storage-integrity check — its verdict is
+  // STORAGE_HASH_MATCH (legacy PASS accepted during rollout). Either unlocks
+  // export of the STORED packet; neither claims full packet verification.
+  const gateComplete = verdict === 'PASS' || verdict === 'STORAGE_HASH_MATCH';
   const isStatusKnown = verdict !== undefined && !isLoading;
 
   // Derive swimlane status from server verify result
-  // Gate authority = server verify (Factory Check). Export unlocks only on PASS.
+  // Gate authority = server verify (Factory Check). Export unlocks only on a
+  // clean storage verdict.
   const swimlaneSteps = useMemo<SwimlaneStep[]>(() => {
     const designComplete = specState !== 'DRAFT';
 
     // Factory Check step status based on server verdict
     const factoryCheckStatus: SwimlaneStatus = !designComplete
       ? 'pending'
-      : verdict === 'PASS'
+      : gateComplete
         ? 'complete'
         : verdict === 'FAIL' || verdict === 'PASS_WITH_WARN'
           ? 'blocked'

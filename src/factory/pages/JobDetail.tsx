@@ -85,9 +85,12 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
   // Get gated export state for this job
   const gatedExportState = getExportCacheEntry(jobId);
 
-  // Check if export is allowed (PASS only - WARN requires remediation)
+  // Check if export is allowed. STORAGE_HASH_MATCH unlocks export of the
+  // STORED packet (bytes-at-rest integrity is the right gate for download) —
+  // it is NOT full verification and must never widen beyond export (FS-B1-02).
   const isVerifyPassed =
     verifyResult?.verdict === "PASS" ||
+    verifyResult?.verdict === "STORAGE_HASH_MATCH" ||
     selectedJob?.trust?.gate === "PASS";
 
   // Handle legacy export
@@ -468,8 +471,8 @@ interface FactoryCheckTabProps {
 function FactoryCheckTab({ jobId, onPassed }: FactoryCheckTabProps): React.ReactElement {
   const handleComplete = useCallback(
     (result: { verdict: string }) => {
-      // PASS only - WARN does not unlock export
-      if (result.verdict === "PASS") {
+      // PASS / STORAGE_HASH_MATCH only - WARN does not unlock export
+      if (result.verdict === "PASS" || result.verdict === "STORAGE_HASH_MATCH") {
         // Keep the short delay: operator sees result, then we advance
         setTimeout(onPassed, 800);
       }
