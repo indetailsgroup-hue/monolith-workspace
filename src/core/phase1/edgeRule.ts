@@ -45,6 +45,8 @@ const ROLE_EXPOSED_EDGES: Record<PanelRole, EdgeSide[]> = {
   BACK: [],                      // All edges hidden (against wall/inside)
   SHELF: ['LEFT'],               // Front edge exposed (back hidden)
   DIVIDER: ['LEFT'],             // Front edge exposed
+  KICKBOARD: ['TOP', 'LEFT', 'RIGHT'],  // Top edge + both ends visible; bottom sits on floor
+  WORKTOP: ['LEFT'],             // Front edge exposed; ends/back resolved per-panel
 
   // Fronts (all edges exposed)
   FRONT: ['TOP', 'BOTTOM', 'LEFT', 'RIGHT'],

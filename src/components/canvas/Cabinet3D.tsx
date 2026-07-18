@@ -1810,6 +1810,12 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
         return [panel.finishWidth, t, panel.finishHeight];
       case 'DIVIDER':
         return [t, panel.finishHeight, panel.finishWidth];
+      case 'WORKTOP':
+        // Horizontal slab: thickness runs up Y, depth runs along Z
+        return [panel.finishWidth, t, panel.finishHeight];
+      case 'KICKBOARD':
+        // Vertical front panel, same axis mapping as BACK
+        return [panel.finishWidth, panel.finishHeight, t];
       default:
         return [panel.finishWidth, panel.finishHeight, t];
     }

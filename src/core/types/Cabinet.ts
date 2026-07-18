@@ -27,6 +27,8 @@ export type PanelRole =
   | 'BACK'
   | 'SHELF'
   | 'DIVIDER'
+  | 'KICKBOARD'      // Recessed plinth closing the toe-kick void (บังตีนตู้)
+  | 'WORKTOP'        // Horizontal slab spanning a cabinet run
   | 'FRONT'
   | 'DRAWER_FRONT'
   | 'DRAWER_SIDE'
