@@ -1,6 +1,8 @@
 // หน้าแรก F3 "งานเงินของฉันวันนี้" (0137 — ADR-046 มติ 4): ระบบสแกนแล้วบอกว่าคุณค้างอะไร
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+// S18 Slice 3: ใบเสร็จแยก VAT (ACC-8 — composeFromNet ผ่าน src/tax/receipt ของ workspace)
+import { buildReceiptVatBreakdown } from '../../../../src/tax/receipt';
 
 interface Row {
   installment_id: string; project_id: string; name: string;
@@ -78,6 +80,13 @@ export function FinanceHome({ onOpenProject }: { onOpenProject: (id: string) => 
                 onClick={() => setPick(r.installment_id)}>ตรวจ/บันทึกรับ</button>
             ) : (
               <div style={{ marginTop: 6 }}>
+                {/* S18 Slice 3: ใบเสร็จแยก VAT (สมมติยอดงวด = ฐานก่อน VAT — รอบัญชียืนยัน ดู src/tax/receipt) */}
+                <div className="muted" style={{ margin: '4px 0 6px' }}>
+                  🧾 ใบเสร็จแยก VAT:
+                  {buildReceiptVatBreakdown(r.amount).text.split('\n').map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
                 <input placeholder="หมายเหตุ (เช่น โอน KBank 12:30)" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div style={{ display: 'flex', gap: 6 }}>
                   {!r.has_slip && (
