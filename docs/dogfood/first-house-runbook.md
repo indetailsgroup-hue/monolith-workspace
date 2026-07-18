@@ -52,3 +52,8 @@ dogfood house นับว่าเริ่มแล้วต่อเมื่
 
 ## 5. Redacted STARTED evidence (git)
 `docs/evidence/dogfood/house-NN/started.json` — ดู `started.template.json` · **ห้ามใส่ raw address/ชื่อลูกค้า** · เก็บแค่ id/ref/timestamp/role-label
+
+**วิธีบันทึก (บังคับผ่านเครื่องมือ — กัน PII หลุด + กันแก้ย้อนหลัง):**
+1. copy `started.template.json` ไปกรอกนอก git (เช่น temp) — ค่า id/ref เอาจากระบบจริง
+2. `node scripts/dogfood-start.mjs <ไฟล์ที่กรอกแล้ว>` — ตัว tool จะตรวจ acceptance §0 ครบ, รัน **PDPA redaction lint** (ปฏิเสธเบอร์โทร/LINE/อีเมล/คำบ่งที่อยู่/ข้อความไทยยาว), ปฏิเสธการ overwrite (start event = immutable; แก้ = record ใหม่) แล้วเขียน `started.json` + `started.sha256`
+3. commit ตามคำสั่งที่ tool พิมพ์ให้ (human ตรวจก่อน commit เสมอ)
