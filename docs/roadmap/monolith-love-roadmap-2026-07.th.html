@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Love Roadmap 2026-07</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Love Roadmap — &quot;ทุกฟังก์ชันทำงานจริง และเป็นที่รักของทุกตำแหน่ง&quot;</h1>
+<p>วันที่: 2026-07-18 · baseline: <code>main@955d127b</code> (G0 ปิดแล้ว — ทุกอย่างในเอกสารนี้อ้างจาก main เดียว) ที่มา: workflow 14 agents (10 readers กวาดทุก surface + 3 synthesizers + 1 adversarial critic ตรวจกับโค้ดจริง) → สังเคราะห์+แก้ baseline drift โดย reviewer track สถานะ: <strong>เสนอคุณเดฟตัดสิน</strong> — เอกสารนี้ไม่สร้าง authority ใด ๆ · NO_CUT ยังคุมทุกบรรทัด</p>
+<blockquote><p><strong>Tenet ที่ใช้วัดทุกข้อ:</strong> easy front, rigorous back — ความรักเกิดจาก &quot;กดแล้วได้จริง ไม่โกหก ไม่ทางตัน&quot; ส่วนความเข้มงวดอยู่หลังบ้านเสมอ</p></blockquote>
+<hr>
+<h2>0. ภาพรวมที่ readers เจอ (ความจริงที่ต้องกล้ามอง)</h2>
+<p>จุดแข็ง: <strong>เครื่องยนต์หลังบ้านแข็งแรงผิดคาด</strong> — nesting optimizer (47 tests), tax/eTax/WHT (เทสครบ), workflow engine (134/134), CNC chain, offline photo queue, S17 packet line ทั้งสาย — ปัญหาไม่ใช่ &quot;ยังสร้างไม่เสร็จ&quot; แต่คือ <strong>&quot;สร้างเสร็จแล้วไม่ได้ต่อสายถึงมือผู้ใช้&quot;</strong></p>
+<p>จุดเจ็บที่ซ้ำทุก lane: ปุ่มที่กดแล้วเงียบ · ข้อมูล mock บนจอจริง · ฟีเจอร์ถูกซ่อนหลัง role ที่สลับไม่ได้ · engine เทสผ่าน 100% แต่ไม่มี caller</p>
+<h2>1. Love Matrix — ตำแหน่ง × กลุ่มฟังก์ชัน (คะแนน 0–5)</h2>
+<blockquote><p>คะแนน = functionality audit จากโค้ดจริง (ยังไม่ใช่เสียงผู้ใช้จริง — การวัดความรักจริงครั้งแรกคือ dogfood house-01) · ทุกช่องมี evidence file:line ในรายงาน reader ฉบับเต็ม</p></blockquote>
+<div class="table-wrap"><table><thead><tr>
+<th>ตำแหน่ง (อ้าง DAPH JD)</th>
+<th>กลุ่มฟังก์ชัน</th>
+<th>คะแนน</th>
+<th>เหตุผลย่อ</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Designer</strong></td>
+<td>ออกแบบ 3D / catalog / minifix</td>
+<td><strong>4</strong></td>
+<td>WORKING มีเทสครบ — หัก: ไม่มี undo, ปุ่ม Materials ตาย 2 ปุ่ม</td>
+</tr>
+<tr>
+<td></td>
+<td>Safety Gate + Freeze</td>
+<td><strong>2</strong></td>
+<td>drillMap null = PASS เงียบ · gate ไม่ auto-run · <strong>freeze ข้าม blocker ได้</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>Export / ส่ง packet</td>
+<td><strong>2</strong></td>
+<td>ส่งได้จริงแต่ผลอยู่ที่ console.log · กติกา export ไม่ตรงกัน 3 จอ</td>
+</tr>
+<tr>
+<td></td>
+<td>บันทึกงาน / เวอร์ชัน</td>
+<td><strong>2</strong></td>
+<td>แบบอยู่ localStorage เครื่องเดียว ขณะ server จำว่า FROZEN — ล้าง browser = แบบหาย</td>
+</tr>
+<tr>
+<td></td>
+<td>Nesting / yield</td>
+<td><strong>1</strong></td>
+<td>optimizer จริง 47 tests แต่ซ่อนหลัง role FACTORY — Designer ไม่เห็น waste</td>
+</tr>
+<tr>
+<td><strong>Factory Operator</strong></td>
+<td>รับงาน / Verify</td>
+<td><strong>0</strong></td>
+<td><code>startVerify</code> ไม่แนบ auth → <strong>FAIL &quot;ห้ามผลิต&quot; ทุกครั้ง</strong> · PacketTab เรียก endpoint ที่ไม่มีจริง</td>
+</tr>
+<tr>
+<td></td>
+<td>Export / download</td>
+<td><strong>1</strong></td>
+<td>server พร้อม แต่ UI รอ options ที่ไม่มีวันมา</td>
+</tr>
+<tr>
+<td></td>
+<td>CNC + tool health</td>
+<td><strong>1</strong></td>
+<td>ทั้งสายมีเทสครบ แต่ PacketIngestPanel <strong>ไม่ถูก mount</strong> — เข้าไม่ถึงเลย</td>
+</tr>
+<tr>
+<td></td>
+<td>Audit / trust</td>
+<td><strong>0</strong></td>
+<td>endpoint ล่ม → โชว์ mock &quot;VERIFY PASS&quot; ปลอม · TrustStrip = PENDING ตลอดกาล</td>
+</tr>
+<tr>
+<td><strong>Field Operator</strong></td>
+<td>เช็คลิสต์ + LINE flows</td>
+<td><strong>4</strong></td>
+<td>ใช้จริงได้ — หัก: ติ๊กตอนเน็ตหลุดไม่ revert (ความจริงหายเงียบ)</td>
+</tr>
+<tr>
+<td></td>
+<td>คิวรูปหลักฐาน</td>
+<td><strong>2</strong></td>
+<td>แกนดี แต่ fail 5 ครั้ง = ค้างถาวร ไม่มีปุ่ม retry (โค้ด retry เขียน+เทสแล้ว!)</td>
+</tr>
+<tr>
+<td></td>
+<td>Offline</td>
+<td><strong>1</strong></td>
+<td>ทุกจอโหลด RPC สด — แอป &quot;หน้างาน&quot; ใช้ไม่ได้ในจุดอับสัญญาณ</td>
+</tr>
+<tr>
+<td></td>
+<td>งานหัวหน้าทีม (QC/ตรวจรับ)</td>
+<td><strong>4</strong></td>
+<td>ครบสายถึงการ์ดตรวจรับ flex</td>
+</tr>
+<tr>
+<td><strong>Surveyor</strong> <em>(persona สังเคราะห์ — ยังไม่มีไฟล์ JD ตรง)</em></td>
+<td>คิววัด/บันทึกวัด</td>
+<td><strong>1</strong></td>
+<td>มีแค่คิว — <strong>ไม่มีจอกรอกขนาด/โซนเลย</strong> ใบวัดยังกระดาษ (PFMEA sev 8)</td>
+</tr>
+<tr>
+<td><strong>Sale</strong></td>
+<td>Intake / สัญญา / turnkey</td>
+<td><strong>3</strong></td>
+<td>WORKING — หัก: 16 ฟิลด์ไม่มี autosave, รหัสผูกกลุ่มโชว์ผ่าน <code>alert()</code></td>
+</tr>
+<tr>
+<td><strong>Finance (F3)</strong></td>
+<td>งานเงินรายวัน (field-app)</td>
+<td><strong>3</strong></td>
+<td>สลิป/ใบเสร็จ/เตือนค้าง WORKING — หัก: กระทบยอดแบงก์ด้วยตาทุกงวด</td>
+</tr>
+<tr>
+<td></td>
+<td>แอปหลัก <code>/finance</code> + ภาษี</td>
+<td><strong>0</strong></td>
+<td><code>/finance</code> = &quot;Coming soon&quot; · eTax/WHT เทสผ่าน 100% แต่<strong>ไม่มี caller</strong></td>
+</tr>
+<tr>
+<td><strong>ลูกค้า</strong></td>
+<td>ดูแบบ/ตรวจรับ/งวดผ่าน LINE</td>
+<td><strong>3</strong></td>
+<td>backend พร้อม — หัก: reject ไม่มีช่องเหตุผล, ลิงก์หมดอายุ = ทางตัน</td>
+</tr>
+<tr>
+<td><strong>QA</strong></td>
+<td>อนุมัติของดี/เสีย</td>
+<td><strong>0</strong></td>
+<td>JD ให้อำนาจชัด แต่<strong>ไม่มี flow ในระบบเลย</strong></td>
+</tr>
+<tr>
+<td><strong>Owner/Admin</strong></td>
+<td>Governance / gates</td>
+<td><strong>3</strong></td>
+<td>แข็งแรงจริง — หัก: สถานะ real-cut กระจาย 5+ เอกสาร, <strong>ADR-064 ยังไม่มีแม้ตัวเอกสาร</strong></td>
+</tr>
+<tr>
+<td><strong>Production Planning / Draftsman / PM / MD / Manager สายต่าง ๆ</strong> <em>(เพิ่มตามผล adversarial H1)</em></td>
+<td>—</td>
+<td><strong>0–1</strong></td>
+<td>มี JD จริงแต่ matrix ยังไม่มี journey — เข้าคิว W2/W4</td>
+</tr>
+<tr>
+<td><strong>Warehouse / Purchasing / back-office (~8 ตำแหน่ง)</strong></td>
+<td>ทั้งหมด</td>
+<td><strong>0</strong></td>
+<td>PRD ระบุเอง &quot;(stock — roadmap)&quot; — W4</td>
+</tr>
+</tbody></table></div>
+<blockquote><p><strong>หมายเหตุ H1 (adversarial):</strong> ไฟล์ JD จริงมี ~22–27 ตำแหน่ง (ไม่ใช่ 38) — งานแรกของ lane เอกสารคือ mapping table matrix↔ไฟล์ JD ครบชุด แล้วปรับเลขเป้า W4 ตามจริง</p></blockquote>
+<h2>2. Top-10 Love Gaps (ความเจ็บ × จำนวนคนเจ็บ)</h2>
+<ol><li><strong>สาย Verify→Export โรงงานพังทั้งเส้น</strong> — กด VERIFY = FAIL เสมอ (ไม่แนบ auth) → แก้ชี้ <code>startVerify</code> ไปที่ <code>verifyJobApi</code> (adapter B1-02 <strong>merge แล้วมีเทสครบ</strong>)</li><li><strong>แอปหน้างานตายตอนไม่มีสัญญาณ + รูปค้างถาวร</strong> → ปุ่ม retry (โค้ดมีแล้ว) + cache + ย่อรูป + Background Sync</li><li><strong>ข้อมูลปลอมบนจอจริง</strong> — audit mock, dashboard 0/&quot;—&quot;, mock G-code พร้อม SHA จริง → honest empty-state + 501</li><li><strong>3 ใน 5 role ไม่มีทางเข้าบ้านตัวเอง</strong> — ไม่มี role switcher / login UI (hosted บังคับ JWT) → <em>นี่คือ blocker ของทุก hosted claim (adversarial C1)</em></li><li><strong>Safety Gate ผ่านแบบกลวง + freeze ข้าม gate</strong> — drillMap null = PASS, <code>canFreeze</code> ไม่เช็ค gate → ต่อ <code>isFreezeAllowed()</code> ที่มีอยู่แล้ว</li><li><strong>เครื่องมือโรงงาน client ไม่ถูก mount ทั้งชุด</strong> — mount PacketIngestPanel จุดเดียว ปลด CNC+tool wear ทั้งสาย</li><li><strong>Finance = ห้องว่าง + เครื่องภาษีเกาะเดี่ยว</strong> — dashboard read-only จาก <code>rpc_finance_home</code> + <code>composeFromNet</code> เข้าใบเสร็จ</li><li><strong>Surveyor ใช้ทุกวันแต่มีแค่ schema</strong> — จอวัด/โซนมือเดียว + รูปต่อโซนผ่านคิวเดิม</li><li><strong>~10 ตำแหน่งไม่มี journey เลย</strong> — reuse pattern ที่พิสูจน์แล้ว (การ์ด approve / คิว #ปัญหา / BOM)</li><li><strong>Trust leaks สาย CNC ก่อนวัน real-cut</strong> — double-drill latent, DXF โหลดได้แม้ G10 FAIL, ไฟล์ไม่มีป้าย NFP → ปิดใน W1 (เส้นแดง)</li></ol>
+<h2>3. Quick Wins (≤1 วัน/ชิ้น — ตรวจกับ main@955d127b แล้ว)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>งาน</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><code>startVerify</code> → <code>verifyJobApi</code> (ไฟล์เดียว)</td>
+<td>ปุ่ม Verify โรงงานมีชีวิต + STORAGE_HASH_MATCH โชว์จริงครั้งแรก</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mount PacketIngestPanel ใน Packet tab</td>
+<td>ปลด CNC gen + tool wear ทั้งสาย</td>
+</tr>
+<tr>
+<td>3</td>
+<td>ลบ mock fallback ใน activityApi (~30 บรรทัด)</td>
+<td>audit เลิกโกหก</td>
+</tr>
+<tr>
+<td>4</td>
+<td>ปุ่ม &quot;ลองส่งอีกครั้ง&quot; → <code>queue.retryFailed()</code> + revert checkbox + toast</td>
+<td>แก้สอง dead end ใหญ่สุดของช่าง</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ต่อ <code>isFreezeAllowed()</code> เข้า GateToolbar + drillMap null → WARNING</td>
+<td>gate พูดความจริง</td>
+</tr>
+<tr>
+<td>6</td>
+<td>mock G-code → 501 + banner DEMO DATA *(หมายเหตุ H4: <code>useMockApi</code> route จริงเป็น false อยู่แล้ว — ข้อนี้เหลือแค่ hygiene)*</td>
+<td>ปิดไฟล์ปลอม</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>/finance</code> stub → dashboard read-only <em>(ต้องมี login ก่อนถึงใช้บน hosted ได้ — C1)</em></td>
+<td>ห้องว่างกลายเป็นของจริง</td>
+</tr>
+<tr>
+<td>8</td>
+<td>โลโก้→Hub · Shift+G→Safety tab · PWA icons</td>
+<td>ระบบรู้สึกเป็นแอปเดียว</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>4. Roadmap 4 Waves</h2>
+<blockquote><p>การแก้จาก adversarial: ทุกข้อที่แตะ hosted ติดป้าย <strong>(prepare-only — human apply ตาม ADR-066)</strong> · exit evidence ทุกข้อนิยามเป็น assertion วัดได้ · งานที่ทำไปแล้วบน main@955d127b ตัดออก (G0 reconciliation, STORAGE_HASH_MATCH, factory-flow CI gate, dogfood tools — <strong>เสร็จแล้วทั้งหมด</strong>)</p></blockquote>
+<h3>W1 — รักได้ทันที (1–2 สัปดาห์)</h3>
+<p><strong>เป้า:</strong> ฆ่า dead end + ข้อมูลปลอม + รูรั่วเส้นแดง ด้วยโค้ดที่เสร็จแล้วแต่ไม่ได้ต่อสาย</p>
+<ul><li>งานหลัก = Quick wins 1–8 + เส้นแดง NO_CUT: ป้าย NFP ทุก artifact (.nc/DXF/bundle), block DXF เมื่อ G10 FAIL, DUPLICATE_POSITION dedupe, <code>gate:bypass-scan:strict</code> เข้า CI</li><li><strong>Login/session UI ขยับเข้า W1</strong> (มติจาก C1) — ไม่งั้นทุก hosted claim วัดไม่ได้</li><li>Human (จองทันที ไม่บล็อก): นัด KMS ceremony + นัด bench + เดิน house-01 ขั้น contract + เซ็น ADR-064 เมื่อ checklist พร้อม</li><li><strong>Exit (วัดได้):</strong> e2e &quot;verify คืน verdict จริง&quot; เขียวใน CI · grep ทั้ง repo ไม่มี mock ใน production path · ไฟล์ตัดทุกไฟล์มีป้าย NFP (เทส assert) · แบนเนอร์ค้างส่งมีปุ่มกดแล้วรายการลดจริง · ปฏิทินมีวันนัด KMS+bench</li></ul>
+<h3>W2 — ทุกฟังก์ชันทำงานจริง (2–4 สัปดาห์)</h3>
+<p><strong>เป้า:</strong> ทุกตำแหน่งมีเส้น end-to-end บน hosted — engine จมน้ำถูกต่อประตูครบ</p>
+<ul><li>Factory: PacketTab→<code>/state</code>+<code>/export</code> · CNC chain ครบ · URL navigation · Designer: nesting yield read-only + Export PDF drill map + design data ขึ้น server (ADR-060) · Field+Surveyor: offline cache + <strong>จอวัด Surveyor</strong> + QC ต่อห้อง · Finance: CSV bank import + <code>autoMatch</code> + จอสมุดรายวัน · Server: wire S17-4 generator เป็นต้นทาง packet <em>(prepare-only — human apply)</em> + S17-5 endpoint <strong>shadow เท่านั้น</strong> <em>(ห้ามเป็น authority จน SoD review ผ่าน)</em> · เพิ่ม journey แถวแรกให้ Production Planning / Draftsman / PM / MD (จาก H1)</li><li>Human ขนาน: KMS ceremony จริง · bench เครื่องแรก · house-01 ขั้น 3–5 · บัญชี/ทนาย review ใบเสร็จ+RD Prep</li><li><strong>Exit:</strong> ต่อ role หนึ่ง journey ระบุชื่อ + assertion ปลายทาง (เช่น Finance: &quot;import CSV → autoMatch ≥1 งวด → ยอดค้างลดบนจอ&quot;) · ทุก packet ใหม่มาจาก S17-4 generator · field-app 25 จอมี smoke test</li></ul>
+<h3>W3 — ปิด Real-Cut Gate (ตามจังหวะ human)</h3>
+<p><strong>เป้า:</strong> หลักฐานครบ 4 เงื่อนไข → ปิด <code>SHADOW_MODE_NOT_FOR_PRODUCTION</code> อย่างมีพิธีการ</p>
+<ul><li>AI: authority switch — export ปลดด้วย <strong>verifier receipt (S17-5)</strong> แทน storage hash <em>(หลัง SoD review เท่านั้น)</em> · B1-04: <code>markPacketAsValidated</code> → รับ opaque receipt · ตัดสิน ModelingReleasePanel (ลบ หรือ ed25519 จริง) · readiness dashboard เขียว 4 ช่องจาก evidence จริง</li><li>Human (critical path เรียงตาม dependency): SoD review S17-5 → KMS (ถ้ายังไม่จบ) → bench ครบ 2 เครื่อง → house-01 ครบ chain → ADR-064 ครบ 4 ลายเซ็น → prod-apply Track A ใน pilot window → <strong>flag closure ceremony</strong></li><li><strong>Exit:</strong> <code>readiness-status</code> เขียวครบ 4 ช่อง · เส้น export ทั้งระบบปลดด้วย receipt เท่านั้น</li></ul>
+<h3>W4 — ขยาย (หลัง G0–G3 + owner ratification เท่านั้น)</h3>
+<p>Back-office ~8 ตำแหน่ง (capture type ใหม่บน spine เดิม) · QA/Warehouse/Purchasing (reuse patterns) · ไซต์สอง <em>(hard gate: cross-site isolation tests)</em> · Entitlement Phase 3 <em>(trigger: มติเปิดขาย — ADR-069)</em> · LINE OA copilot <em>(AI advisory เท่านั้น)</em> · e-Tax เต็มรูป</p>
+<ul><li><strong>Exit:</strong> ทุกตำแหน่งใน mapping table JD (เลขจริงจาก H1) มี journey ≥1 เส้น = ลำดับ action ระบุชื่อ + assertion ปลายทาง</li></ul>
+<hr>
+<h2>5. S18 Subagent Lane Plan (แก้ตาม adversarial แล้ว)</h2>
+<p>**Base เดียว: <code>origin/main</code> (955d127b+)** — ไม่มี dual-base (C2 หมดสภาพเพราะ G0 ปิดแล้ว) · ทุก lane:</p>
+<pre><code>git worktree add worktrees/lane-&lt;ชื่อ&gt; -b lane/s18-&lt;ชื่อ&gt; origin/main</code></pre>
+<h3>กติกาเหล็กใส่ทุก prompt</h3>
+<ol><li>ห้ามแตะ <code>shadowMode.ts</code> / ห้ามลดป้าย NFP (L5 มีหน้าที่<strong>เพิ่ม</strong>)</li><li>hosted apply = คุณเดฟเท่านั้น (ADR-066) — งาน supabase จบที่ &quot;ไฟล์+เทสพร้อม&quot;</li><li>SoD: builder ≠ reviewer · reviewer ต้องรันคำสั่ง verify ซ้ำเองเห็น output เต็ม</li><li>ทุก slice จบด้วยคำสั่ง verify จริง + แปะ output (กติกา complete-output)</li></ol>
+<h3>Lanes (write-scope หลังแก้ H2)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Lane</th>
+<th>Write scope</th>
+<th>Slice แรก (TDD)</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>L1 designer-ux</strong></td>
+<td><code>src/App.tsx</code> · <code>src/components/**</code> (ยกเว้น layout/AppShell) · <code>src/gate/**</code> · <code>useSpecStore.ts</code></td>
+<td>① canFreeze ผ่าน gate ② drillMap null→WARNING ③ mount GateProvider + Shift+G</td>
+</tr>
+<tr>
+<td><strong>L2 factory-ux</strong></td>
+<td><code>src/factory/{state,pages,components,api}/**</code> (ห้ามแตะ <code>factory/packet/**</code>)</td>
+<td>① startVerify→verifyJobApi ② ลบ mock audit ③ align WARN + mount PacketIngestPanel</td>
+</tr>
+<tr>
+<td><strong>L3 field-app</strong></td>
+<td><code>packages/field-app/**</code> (ยกเว้น FinanceHome/MoneyPanel) · <code>src/installation/offline-queue/**</code></td>
+<td>① ปุ่ม retry ② revert checkbox+toast ③ ย่อรูปก่อน enqueue</td>
+</tr>
+<tr>
+<td><strong>L4 finance-tax</strong></td>
+<td>field-app Finance screens · <code>src/tax/**</code> · <code>src/ledger/**</code> · migrations <strong>0164–0169</strong> · <code>FinanceDashboard.tsx</code></td>
+<td>① pgTAP site-scoping lock ② FinanceDashboard read-only ③ composeFromNet เข้าใบเสร็จ <em>(apply=human)</em></td>
+</tr>
+<tr>
+<td><strong>L5 cnc-safety</strong> ⭐เส้นแดง</td>
+<td><code>src/cnc/**</code> · <code>src/core/export/**</code> · <code>src/core/gate/**</code> · <code>src/factory/packet/**</code> · **<code>scripts/gates/**</code> (ย้ายจาก L8 — H2)**</td>
+<td>① DUPLICATE_POSITION dedupe ② block DXF เมื่อ G10 FAIL ③ ป้าย NFP ทุก artifact</td>
+</tr>
+<tr>
+<td><strong>L6 server-api</strong></td>
+<td><code>supabase/functions/**</code> · <code>server/**</code> · <code>src/core/api/**</code> · migrations <strong>0170–0175</strong></td>
+<td>① mock G-code→501 ② Thai error map ③ เติม field จริง jobs_list <em>(apply=human)</em></td>
+</tr>
+<tr>
+<td><strong>L7 platform-core</strong></td>
+<td><code>src/routes/index.tsx</code> (single-writer) · <code>AppShell.tsx</code> · <code>src/core/auth/**</code></td>
+<td>① <strong>login/session UI + role switcher (ยกระดับจาก C1)</strong> ② โลโก้/footer จริง ③ RoleGateDialog</td>
+</tr>
+<tr>
+<td><strong>L8 evidence-gov</strong></td>
+<td><code>docs/**</code> · <code>.github/workflows/**</code> (single-writer) · <code>scripts/**</code> <em>(ยกเว้น scripts/gates)</em></td>
+<td>① ADR-064 checklist (pattern CT-DEC-002) ② เพิ่ม bypass-scan เข้า CI <em>(interop+tamper+no-skip มีแล้วบน main)</em> ③ <code>readiness-status.mjs</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>Must-wait-for:</strong> L4-② route wiring → L7 ทำ (ส่ง component+request) · L2 backlog PacketIngest → หลัง L2 ①–③ merge · ทุก migration apply → human window <strong>Race-risk (single-writer):</strong> <code>routes/index.tsx</code>=L7 · <code>App.tsx</code>=L1 · <code>factory/packet/**</code>=L5 · workflows=L8 · เลข migration จองช่วงแล้ว <strong>SoD pairing:</strong> L1⇄L5 <em>(L5 ต้องมี second review โดยคุณเดฟหรือ session อิสระ — M1)</em> · L2⇄L6 · L3⇄L4 · L7⇄L8</p>
+<h3>Kick-off กระจายสองวัน (แก้ M5 — ไม่บีบคุณเดฟวันเดียว)</h3>
+<p><strong>วันที่ 1 (Wave trust-critical):</strong></p>
+<ul><li>[ ] เช้า: สร้าง worktrees L2/L5/L8 → dispatch 3 ตัวพร้อมกัน (แนบกติกาเหล็ก+scope+slices)</li><li>[ ] เช้า: จองปฏิทิน KMS + bench (สองตัวปลดเงื่อนไข real-cut มากสุด)</li><li>[ ] บ่าย: รีวิว SoD (L5 = คุณเดฟ second review) → merge ตามลำดับ <strong>L8→L5→L2</strong></li><li>[ ] เกณฑ์ผ่านวัน 1: verify e2e เขียวใน CI · DXF ที่ G10 fail โหลดไม่ได้ · audit ไม่มีของปลอม</li></ul>
+<p><strong>วันที่ 2 (Wave ประตูบ้าน+หน้างาน):</strong></p>
+<ul><li>[ ] เช้า: dispatch L7+L1+L3 → บ่าย: dispatch L4+L6</li><li>[ ] เย็น: merge L7→L1→L3→L6→L4 · ปิดวันด้วย <code>node scripts/readiness-status.mjs</code></li></ul>
+<hr>
+<h2>6. คิว Human ตลอดเส้น (AI เร่งไม่ได้ — จองจากวันนี้)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>งาน</th>
+<th>ใคร</th>
+<th>ปลดเงื่อนไข</th>
+</tr></thead><tbody>
+<tr>
+<td>KMS ceremony ECDSA P-256 (ADR-068)</td>
+<td>PO+SO</td>
+<td>S17-5 signature leg / real-cut ①</td>
+</tr>
+<tr>
+<td>Bench KN-2409LP + KD-610R (ADR-070)</td>
+<td>วิศวกร+FO</td>
+<td>machine calibrated / real-cut ④</td>
+</tr>
+<tr>
+<td>Dogfood house-01 ขั้น 3–8 (<code>dogfood-record.mjs</code> <strong>อยู่บน main แล้ว</strong>)</td>
+<td>ทีมหน้างาน</td>
+<td>dogfood≥1 / real-cut ③</td>
+</tr>
+<tr>
+<td>เซ็น ADR-064 (4 บทบาท — L8 ร่าง checklist ให้)</td>
+<td>PO/TL/SO/FO</td>
+<td>real-cut ②</td>
+</tr>
+<tr>
+<td>SoD review S17-5 (prompt เตรียมแล้ว — ห้าม Codex/builder)</td>
+<td>คุณเดฟ หรือ AI ที่สาม</td>
+<td>authority switch W3</td>
+</tr>
+<tr>
+<td>Deploy Edge 0163 + migrations ที่ L4/L6 เตรียม</td>
+<td>คุณเดฟ</td>
+<td>hosted ตามทัน main</td>
+</tr>
+<tr>
+<td>Prod-apply Track A (0162) ใน pilot window</td>
+<td>คุณเดฟ</td>
+<td>ปิด P0 บน prod</td>
+</tr>
+</tbody></table></div>
+<h2>7. บันทึก Adversarial Review (โปร่งใสเต็ม — อะไรถูกจับได้และแก้อย่างไร)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Finding</th>
+<th>คำตัดสิน</th>
+<th>การแก้ในเอกสารนี้</th>
+</tr></thead><tbody>
+<tr>
+<td>C1 hosted exit วัดไม่ได้เพราะไม่มี login</td>
+<td><strong>จริง</strong></td>
+<td>login ยกเข้า W1 (L7-①) + exit W1 เปลี่ยนเป็น CI-verified</td>
+</tr>
+<tr>
+<td>C2 dual-base ทำ G0 พัง</td>
+<td>หมดสภาพ — critic ดู checkout เก่า (dd1119af); <strong>G0 ปิดแล้วที่ 955d127b</strong></td>
+<td>base เดียว origin/main</td>
+</tr>
+<tr>
+<td>C3 merge CI เข้มก่อนจะ block ทุกคน</td>
+<td>หมดสภาพบางส่วน — no-skip gate อยู่บน main แล้วและเขียว</td>
+<td>L8 เหลือแค่เพิ่ม bypass-scan</td>
+</tr>
+<tr>
+<td>H1 ตำแหน่งหาย + เลข 38 ไม่มีหลักฐาน</td>
+<td><strong>จริง</strong></td>
+<td>เพิ่มแถว matrix + งาน mapping table JD + แก้เลขเป้า W4</td>
+</tr>
+<tr>
+<td>H2 write-scope ชน <code>scripts/gates</code></td>
+<td><strong>จริง</strong></td>
+<td>ย้ายให้ L5 ถือ, L8 exclude</td>
+</tr>
+<tr>
+<td>H3 W2 hosted ไม่ annotate</td>
+<td><strong>จริง</strong></td>
+<td>ติดป้าย prepare-only ทุกข้อ</td>
+</tr>
+<tr>
+<td>H4 useMockApi quick win กลวง</td>
+<td><strong>จริง</strong></td>
+<td>ลดเป็น hygiene</td>
+</tr>
+<tr>
+<td>M1 SoD reciprocal + L5 เสี่ยง</td>
+<td><strong>จริง</strong></td>
+<td>L5 บังคับ second review อิสระ</td>
+</tr>
+<tr>
+<td>M2 dogfood-record ไม่อยู่บน base</td>
+<td>หมดสภาพ — merge แล้ว (PR #11)</td>
+<td>อ้าง main ตรง ๆ</td>
+</tr>
+<tr>
+<td>M3 love score ไม่มีเครื่องวัด</td>
+<td><strong>จริง</strong></td>
+<td>ประกาศชัด: วัดจริงครั้งแรก = dogfood house-01</td>
+</tr>
+<tr>
+<td>M4 exit vacuous</td>
+<td><strong>จริง</strong></td>
+<td>ทุก exit เป็น assertion ระบุชื่อ</td>
+</tr>
+<tr>
+<td>M5 วันแรกเกิน capacity</td>
+<td><strong>จริง</strong></td>
+<td>kick-off กระจายสองวัน</td>
+</tr>
+</tbody></table></div>
+<hr>
+<p><em>เอกสารนี้เป็น derived snapshot — สถานะ ณ 2026-07-18 · source: main@955d127b · ก่อน kick-off ให้ตรวจ repo ล่าสุด · การเริ่ม S18 = มติคุณเดฟ</em></p>
+</main>
+</body>
+</html>
