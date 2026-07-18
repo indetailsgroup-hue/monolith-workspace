@@ -190,7 +190,7 @@ export async function verifyPacket(
 
     // ---- check 11: shadow policy ----
     const marker = entries.find((e) => e.name === 'NOT_FOR_PRODUCTION.txt')?.bytes;
-    const c11 = await checkShadowPolicy(sourceFilename as string, marker, attestation, deps.governance);
+    const c11 = await checkShadowPolicy(sourceFilename as string, marker, manifest, attestation, deps.governance);
     if (!c11.ok) return fail(c11.code, 'shadow_policy', c11.detail);
 
     return shadowSuccess();

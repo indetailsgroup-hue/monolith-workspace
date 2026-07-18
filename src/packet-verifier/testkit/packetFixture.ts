@@ -24,20 +24,23 @@ export interface PacketFixture {
   sourceFilename: string;
 }
 
-/** canonical payload contents (JCS-canonical JSON + LF text marker) */
-function payloadBytes(): Map<string, { bytes: Uint8Array; mediaType: 'application/json' | 'text/plain; charset=utf-8'; contentSchema: string }> {
+/** canonical payload contents (JCS-canonical JSON + LF text marker).
+ *  contentSchema names follow the schema bundle's internal consts
+ *  (monolith.factory.*) — fixed 2026-07-18 after the interop review caught the
+ *  short non-canonical names this fixture originally used. */
+function payloadBytes(nfpContentSchema: string): Map<string, { bytes: Uint8Array; mediaType: 'application/json' | 'text/plain; charset=utf-8'; contentSchema: string }> {
   const m = new Map<string, { bytes: Uint8Array; mediaType: 'application/json' | 'text/plain; charset=utf-8'; contentSchema: string }>();
   m.set('NOT_FOR_PRODUCTION.txt', {
     bytes: te.encode(NOT_FOR_PRODUCTION_NOTICE),
     mediaType: 'text/plain; charset=utf-8',
-    contentSchema: 'monolith.nfp-marker@1.0',
+    contentSchema: nfpContentSchema,
   });
   const json = (v: JsonValue) => te.encode(jcsSerialize(v));
-  m.set('connector-ops.json', { bytes: json({ ops: [] }), mediaType: 'application/json', contentSchema: 'monolith.connector-ops@2.0' });
-  m.set('connectors.minifix.json', { bytes: json({ connectors: [] }), mediaType: 'application/json', contentSchema: 'monolith.connectors-minifix@2.0' });
-  m.set('cutlist.json', { bytes: json({ parts: [] }), mediaType: 'application/json', contentSchema: 'monolith.cutlist@2.0' });
-  m.set('drillmap.json', { bytes: json({ holes: [] }), mediaType: 'application/json', contentSchema: 'monolith.drillmap@2.0' });
-  m.set('gate-result.json', { bytes: json({ result: 'PASS' }), mediaType: 'application/json', contentSchema: 'monolith.gate-result@2.0' });
+  m.set('connector-ops.json', { bytes: json({ ops: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connector-ops@2.0' });
+  m.set('connectors.minifix.json', { bytes: json({ connectors: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connectors-minifix@2.0' });
+  m.set('cutlist.json', { bytes: json({ parts: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.cutlist@2.0' });
+  m.set('drillmap.json', { bytes: json({ holes: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.drillmap@2.0' });
+  m.set('gate-result.json', { bytes: json({ result: 'PASS' }), mediaType: 'application/json', contentSchema: 'monolith.factory.gate-result@2.0' });
   return m;
 }
 
@@ -54,10 +57,12 @@ const PAYLOAD_ORDER = [
 export interface FixtureOptions {
   /** when provided, the attestation is genuinely signed over the §10.1 preimage */
   sign?: (unsignedAttestationValue: JsonValue) => Promise<string>;
+  /** override the NFP marker's manifest contentSchema (corpus: §5 prose violation) */
+  nfpContentSchema?: string;
 }
 
 export async function makePacketFixture(options: FixtureOptions = {}): Promise<PacketFixture> {
-  const payloads = payloadBytes();
+  const payloads = payloadBytes(options.nfpContentSchema ?? 'monolith.factory.nfp-marker@1.0');
 
   const files = [] as { path: string; mediaType: string; contentSchema: string; sizeBytes: number; sha256: string }[];
   for (const path of PAYLOAD_ORDER) {

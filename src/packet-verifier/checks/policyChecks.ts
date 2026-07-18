@@ -104,6 +104,9 @@ export async function checkRunReplay(
 export const NFP_MARKER_SIZE_BYTES = 824;
 export const NFP_MARKER_SHA256 = '40a4d63fccde43c92e2f9ca3a0284db61254cd5b03d5eac072f33b2dc507d68a';
 
+/** §5 prose (normative): the NFP marker's manifest entry uses exactly this contentSchema. */
+export const NFP_CONTENT_SCHEMA = 'monolith.factory.nfp-marker@1.0';
+
 export interface GovernanceMode {
   /** v1: always true — flips only via governance config after the real-cut gate */
   shadowMode: boolean;
@@ -112,6 +115,7 @@ export interface GovernanceMode {
 export async function checkShadowPolicy(
   sourceFilename: string,
   markerBytes: Uint8Array | undefined,
+  manifest: PacketManifest,
   attestation: PacketAttestation,
   governance: GovernanceMode,
 ): Promise<CheckOutcome> {
@@ -131,6 +135,16 @@ export async function checkShadowPolicy(
     return {
       ok: false, code: 'PKT_NFP_POLICY_MISMATCH',
       detail: 'NFP marker bytes do not match the pinned nfp-marker@1.0 contract',
+    };
+  }
+  // §5 prose is normative even where packet-manifest leaves contentSchema free:
+  // the marker's manifest entry must be labelled monolith.factory.nfp-marker@1.0
+  // (interop finding 2026-07-18 — machine-readable schema alone does not pin it)
+  const markerEntry = manifest.files.find((f) => f.path === 'NOT_FOR_PRODUCTION.txt');
+  if (markerEntry === undefined || markerEntry.contentSchema !== NFP_CONTENT_SCHEMA) {
+    return {
+      ok: false, code: 'PKT_NFP_POLICY_MISMATCH',
+      detail: `NFP marker manifest entry must use contentSchema ${NFP_CONTENT_SCHEMA}`,
     };
   }
   // filename ↔ attestation consistency: NFP-factory-packet-<jobRunId>-<contentHex12>.zip

@@ -344,6 +344,20 @@ describe('corpus — shadow policy (§12.11, pinned marker contract)', () => {
     const { result } = await verifyPacket(h.zip, wrongName, h.deps);
     expect(result).toMatchObject({ code: 'PKT_NFP_POLICY_MISMATCH', failedCheck: 'shadow_policy' });
   });
+  it('NFP marker labelled with a non-canonical contentSchema (bytes correct) → PKT_NFP_POLICY_MISMATCH', async () => {
+    // §5 prose pins monolith.factory.nfp-marker@1.0 even though the machine-
+    // readable manifest schema leaves contentSchema free (interop finding
+    // 2026-07-18): the whole chain is coherent, only the label deviates.
+    const key = await generateTestKey();
+    const fx = await makePacketFixture({
+      sign: (v) => signPreimageLowS(buildSignaturePreimage(v), key),
+      nfpContentSchema: 'monolith.nfp-marker@1.0',
+    });
+    const audits: AuditRecord[] = [];
+    const { result } = await verifyPacket(writePacketZip(fx.entries), fx.sourceFilename, happyDeps(key, audits));
+    expect(result).toMatchObject({ code: 'PKT_NFP_POLICY_MISMATCH', failedCheck: 'shadow_policy' });
+    expect(result.diagnostics.join(' ')).toContain('contentSchema');
+  });
 });
 
 describe('corpus — audit (§12.12)', () => {
