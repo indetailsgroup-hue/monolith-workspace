@@ -1,0 +1,22 @@
+{
+  "_note": "REDACTED evidence. PII อยู่ใน Supabase operational เท่านั้น (RLS/PDPA) — git เก็บแค่ id/ref/timestamp/role-label",
+  "schema": "monolith.dogfood.started@1",
+  "houseId": "house-01",
+  "projectId": "proj_monolith_g0_001",
+  "siteCode": "BKK-HQ-01",
+  "roles": {
+    "owner": "staff-dave",
+    "operator": "staff-operator-01",
+    "designer": "staff-designer-01",
+    "finance": "staff-finance-01"
+  },
+  "firstEvent": {
+    "type": "line_order",
+    "ref": "evt-line-order-001",
+    "at": "2026-07-18T02:45:00.000Z"
+  },
+  "status": "STARTED",
+  "shadowPacketEnabled": true,
+  "realCutAllowed": false,
+  "recordedAt": "2026-07-18T14:10:00.000Z"
+}
