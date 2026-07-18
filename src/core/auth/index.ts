@@ -11,3 +11,6 @@ export {
   RequireRole,
   RoleBadge,
 } from './guards';
+export { useRoleStore } from './useRoleStore';
+export { useSessionStore } from './useSessionStore';
+export { getSupabaseClient, getAuthStorageKey } from './supabaseClient';

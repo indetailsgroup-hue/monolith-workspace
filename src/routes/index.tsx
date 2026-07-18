@@ -21,7 +21,7 @@
  * @version 0.12.6
  */
 
-import { useMemo, useEffect, useState, useCallback, Suspense, lazy } from 'react';
+import { useMemo, useEffect, useState, useCallback, Suspense, lazy, type ComponentType } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { isPitchMode, withSearchParams } from '../core/ui/pitch';
 
@@ -41,6 +41,26 @@ const SafetyGatePage = lazy(() =>
 // O4: Factory dashboard app
 const FactoryApp = lazy(() =>
   import('../factory/FactoryApp').then(m => ({ default: m.FactoryApp }))
+);
+
+// S18 L7 Slice 4: Finance dashboard (built by lane L4 as src/pages/FinanceDashboard).
+// import.meta.glob with literal patterns is statically analyzed by Vite, so the
+// module is code-split into the production bundle the moment L4's file lands —
+// a bundler-invisible variable import would 404 at runtime in a production
+// build and silently show FinanceComingSoon forever. While the file is absent
+// the glob record is empty and the route renders FinanceComingSoon; when it
+// lands, a rebuild picks it up with no manual integration step.
+const financeDashboardModules = import.meta.glob<{
+  FinanceDashboard?: ComponentType;
+  default?: ComponentType;
+}>(['../pages/FinanceDashboard.tsx', '../pages/FinanceDashboard/index.tsx']);
+const loadFinanceDashboard = Object.values(financeDashboardModules)[0];
+const FinanceDashboard = lazy(() =>
+  loadFinanceDashboard
+    ? loadFinanceDashboard().then((m) => ({
+        default: m.FinanceDashboard ?? m.default ?? FinanceComingSoon,
+      }))
+    : Promise.resolve({ default: FinanceComingSoon })
 );
 
 /**
@@ -108,10 +128,12 @@ function PageLoadingFallback({ message = 'Loading…' }: { message?: string }) {
 }
 
 import { ValidationScreen } from '../pages/ValidationScreen';
+import { SignIn } from '../pages/SignIn';
 import { JobDetail } from '../factory/pages/JobDetail';
 import { RequireRole } from '../core/auth/guards';
 import { hasRole, type Role } from '../core/auth/roles';
 import { useCabinetStore } from '../core/store/useCabinetStore';
+import { useProjectStore } from '../core/store/useProjectStore';
 import { useSpecStore } from '../core/store/useSpecStore';
 import { useVerifyStatusStore } from '../core/store/useVerifyStatusStore';
 import { VerifyVerdictPill } from '../components/ui/VerifyVerdictPill';
@@ -768,15 +790,29 @@ function ProjectListPage() {
   // Cache-only verify status (no fetch from list - saves verifier calls)
   const verifyCache = useVerifyStatusStore((s) => s.byJobId);
 
-  // Mock project list (in real app, fetch from API)
-  const projects = [
-    {
-      id: 'current',
-      name: cabinet?.name || 'Current Project',
-      status: 'DRAFT',
-      updatedAt: new Date().toISOString(),
-    },
-  ];
+  // S18 L7 Slice 3: real saved projects from useProjectStore (G9-validated
+  // localStorage list), not a mock. Falls back to the live cabinet as
+  // "current" when nothing has been saved yet.
+  const savedProjects = useProjectStore((s) => s.savedProjects);
+  const loadProjectsList = useProjectStore((s) => s.loadProjectsList);
+
+  useEffect(() => {
+    loadProjectsList();
+  }, [loadProjectsList]);
+
+  const projects = savedProjects.length > 0
+    ? savedProjects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        updatedAt: new Date(p.updatedAt).toISOString(),
+      }))
+    : [
+        {
+          id: 'current',
+          name: cabinet?.name || 'Current Project',
+          updatedAt: new Date().toISOString(),
+        },
+      ];
 
   // Get cached verdict for a project (returns UNKNOWN if not cached)
   const getCachedVerdict = (projectId: string) => {
@@ -862,7 +898,7 @@ function ProjectListPage() {
                 <VerifyVerdictPill verdict={getCachedVerdict(project.id)} size="sm" />
               </div>
               <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                Status: {project.status} • Updated: {new Date(project.updatedAt).toLocaleDateString()}
+                Updated: {new Date(project.updatedAt).toLocaleDateString()}
               </div>
             </div>
           ))}
@@ -900,17 +936,16 @@ function PacketViewerPage() {
 
 // FactoryDashboardPage removed - /factory now mounts FactoryApp directly
 
-function FinancePage() {
+// S18 L7 Slice 4: shown while L4's FinanceDashboard module is not merged yet
+function FinanceComingSoon() {
   return (
-    <RequireRole allow={['FINANCE', 'ADMIN']} fallback={<Navigate to="/" replace />}>
-      <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
-        <h1 className="text-2xl font-bold mb-4">Finance</h1>
-        <p className="text-gray-400">Cost breakdowns and invoicing - Coming soon</p>
-        <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
-          ← Back to Designer
-        </a>
-      </div>
-    </RequireRole>
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+      <h1 className="text-2xl font-bold mb-4">Finance</h1>
+      <p className="text-gray-400">Cost breakdowns and invoicing - Coming soon</p>
+      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+        ← Back to Designer
+      </a>
+    </div>
   );
 }
 
@@ -941,6 +976,11 @@ export const router = createBrowserRouter([
         <DesignerWorkspace />
       </Suspense>
     ),
+  },
+  // S18 L7 Slice 1: sign-in page (email + password via Supabase)
+  {
+    path: '/login',
+    element: <SignIn />,
   },
   // Project List
   {
@@ -987,10 +1027,12 @@ export const router = createBrowserRouter([
     element: <PacketViewerPage />,
   },
   // Factory dashboard (role-protected) - O4: Lazy loaded
+  // S18 L7 Slice 3: no silent bounce — default RoleGateDialog fallback explains
+  // which roles unlock the page.
   {
     path: '/factory',
     element: (
-      <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+      <RequireRole allow={['FACTORY', 'ADMIN']}>
         <Suspense fallback={<PageLoadingFallback message="Loading Factory…" />}>
           <FactoryApp useMockApi={false} />
         </Suspense>
@@ -1001,15 +1043,21 @@ export const router = createBrowserRouter([
   {
     path: '/factory/jobs/:jobId',
     element: (
-      <RequireRole allow={['FACTORY', 'ADMIN']} fallback={<Navigate to="/" replace />}>
+      <RequireRole allow={['FACTORY', 'ADMIN']}>
         <FactoryJobDetailPage />
       </RequireRole>
     ),
   },
-  // Finance page (role-protected)
+  // Finance page (role-protected) - S18 L7 Slice 4: lazy FinanceDashboard (L4)
   {
     path: '/finance',
-    element: <FinancePage />,
+    element: (
+      <RequireRole allow={['FINANCE', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Finance…" />}>
+          <FinanceDashboard />
+        </Suspense>
+      </RequireRole>
+    ),
   },
   // Legacy safety route - redirect to diagnostics
   {
