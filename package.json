@@ -21,7 +21,7 @@
     "test:minifix": "vitest run src/gate/rules/connectors/__tests__/ --reporter=verbose",
     "test:governance-tooling": "node --test scripts/governance-tooling.test.mjs scripts/governance-tooling-controls.test.mjs",
     "test:schema-bundle": "node --test scripts/schema-bundle.test.mjs",
-    "test:node": "node --test scripts/governance-tooling.test.mjs scripts/governance-tooling-controls.test.mjs scripts/schema-bundle.test.mjs",
+    "test:node": "node --test scripts/governance-tooling.test.mjs scripts/governance-tooling-controls.test.mjs scripts/schema-bundle.test.mjs scripts/governance-semantic-status.test.mjs",
     "test:s17-4": "npm --prefix server run test:s17-4",
     "gate:bypass-scan": "npx ts-node scripts/gates/bypass-scan.ts",
     "gate:bypass-scan:strict": "npx ts-node scripts/gates/bypass-scan.ts --strict",

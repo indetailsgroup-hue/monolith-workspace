@@ -21,3 +21,7 @@ docs/evidence/** text eol=lf
 docs/evidence/**/*.json -text
 docs/evidence/**/*.md text eol=lf
 docs/evidence/**/*.sha256 text eol=lf
+# S17 Track B black-box interop fixture: byte-exact artifacts from the frozen
+# S17-4 generator (eeed1ce6) — any byte change must fail the pinned hashes.
+src/packet-verifier/interop/fixtures/*.zip binary
+src/packet-verifier/interop/fixtures/*.json -text

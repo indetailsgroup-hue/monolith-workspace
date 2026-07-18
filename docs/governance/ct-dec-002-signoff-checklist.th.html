@@ -3,53 +3,61 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist v0.4.1</title>
+  <title>CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist</title>
   <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
 </head>
 <body>
 <main>
 <h1>CT-DEC-002 / S17-3 — Human Role Sign-Off Checklist</h1>
-<p><strong>Spec</strong>: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code> <strong>Hash anchor ที่ต้องเซ็น</strong>: <code>monolith-s17-v041-review-input.sha256</code> (sha256 <code>75cbc3e1501b3499515fcf86b973001314fa52c8f0ff25d0c4ae188233ee2046</code>) <strong>Aggregate schema digest</strong>: <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code> <strong>Independent re-review verdict</strong>: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)</p>
+<p><strong>Spec</strong>: Canonical Factory Packet Specification v0.4.1 — supersedes v0.4/v0.3 · reviewed artifact committed <code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code> <strong>Hash anchor ที่ต้องเซ็น</strong>: <code>monolith-s17-v041-review-input.sha256</code> (sha256 <strong>v3</strong> <code>f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16</code>) <strong>Anchor v3 (17 ก.ค. เย็น, มติ owner ก):</strong> ตัด <code>.gitattributes</code> ออกจาก frozen set (43 ไฟล์ spec-content ล้วน) — <code>.gitattributes</code> เป็น repo config ที่ต้อง mutable เมื่อ evidence ชนิดใหม่เข้า (ครั้งนี้: binary exception กัน PNG corruption ตอน land KDT library) เหตุผลโครงสร้างเดียวกับที่ตัด checklist ออกก่อนหน้า · **ลายเซ็น TL/FO (anchor v2 <code>de2a1ccf...</code>) ยังยึดได้<strong> — พิสูจน์ per-file แล้วว่า spec-content 43/43 byte-identical ณ เวลาสร้าง v3 (ไม่ต้อง re-sign) · SO เซ็นบน v3 </strong>Re-pin 16 ก.ค. 2026 (มติ owner ก):** anchor เดิม <code>75cbc3e1...2046</code> ถูก re-pin สองเหตุ — (1) <code>package.json</code> เลื่อนจากงาน FS-B1-01/B1-02 ที่ owner สั่งหลัง round-4 (delta = test:node scripts + vite 6/vitest 3.2.7 security bump; เนื้อหา spec/schemas byte-identical ทุกไฟล์) (2) แก้ circularity แต่กำเนิด: ไฟล์ checklist นี้ (signing surface ที่ต้องถูกแก้ตอนเซ็น) เคยอยู่ในชุด frozen เอง ทำให้ verify ไม่ผ่านตั้งแต่ <code>7cd09e81</code> และการเซ็นจะทำ anchor แตก — ชุดใหม่ 44 ไฟล์ไม่รวม checklist (checklist ถูก pin แยกด้วย <code>ct-dec-002-signoff-checklist.sha256</code> ต่อเหตุการณ์เซ็น) <strong>Aggregate schema digest</strong>: <code>sha256:aed32029309278053aec251b5eaef1468d1921f42f81ee6755cd76a4e8d62f55</code> <strong>Independent re-review verdict</strong>: READY FOR HUMAN ROLE REVIEW (round-4 clean; low-S constant verified = floor(n/2); advisory, non-authoritative)</p>
 <blockquote><p>การเซ็น = การรับผิดชอบของมนุษย์ว่าได้ review เองแล้ว ไม่ใช่การรับ AI verdict มาแปะ · AI ไม่ลงชื่อแทน · เมื่อครบสามลายเซ็น CT-DEC-002 = APPROVED และปลด Track B (S17-4/5)</p><p>คงบังคับจนกว่าจะครบสาม: DRAFT · Track B LOCKED · NO_CUT · ไม่มี P0 closure · ไม่มี bare PKT_OK ใน shadow mode</p></blockquote>
 <h2>0. Pre-Sign (ทุกบทบาททำก่อน)</h2>
-<ul><li>[ ] ยืนยันกำลัง review exact bytes ที่ pin ใน <code>monolith-s17-v041-review-input.sha256</code></li><li>[ ] verify aggregate schema digest จาก <code>schema-bundle.aggregate.sha256</code> ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)</li><li>[ ] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval</li></ul>
+<ul><li>[x] ยืนยันกำลัง review exact bytes ที่ pin ใน <code>monolith-s17-v041-review-input.sha256</code></li><li>[x] verify aggregate schema digest จาก <code>schema-bundle.aggregate.sha256</code> ด้วยเครื่องมืออิสระ (ไม่เชื่อเพราะ manifest มี)</li><li>[x] อ่าน independent re-review รอบ 4 ครบ + เข้าใจว่า review verdict != approval</li></ul>
 <h2>1. Tech Lead — Contract Correctness &amp; Implementability</h2>
-<ul><li>[ ] Schema bundle ครบ: 10 schemas, ทุก array มี <code>x-monolith-orderBy</code>, ทุก object <code>additionalProperties:false</code>, aggregate digest bound</li><li>[ ] Identity model: <code>packetContentId</code> (hash canonical content) / <code>jobRunId</code> (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide</li><li>[ ] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)</li><li>[ ] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -&gt; <code>PKT_FILE_MISSING</code> ชัด, first-fail-wins)</li><li>[ ] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)</li></ul>
+<ul><li>[x] Schema bundle ครบ: 10 schemas, ทุก array มี <code>x-monolith-orderBy</code>, ทุก object <code>additionalProperties:false</code>, aggregate digest bound</li><li>[x] Identity model: <code>packetContentId</code> (hash canonical content) / <code>jobRunId</code> (server-owned, ไม่อยู่ใน content hash) / signed identity รวม released revision + machine-profile ver + exporter ver + schema ver — ไม่ collide</li><li>[x] Determinism implementable โดยไม่เดา: JCS, integer micrometre, UTF-8 byte ordering, ZIP byte profile กำหนดครบ (S17-4 build ได้โดยไม่ต้องตีความ)</li><li>[x] Verifier check order (S12) + result codes (S13) deterministic (NFP-missing -&gt; <code>PKT_FILE_MISSING</code> ชัด, first-fail-wins)</li><li>[x] ยืนยัน S17-4/S17-5 มี contract พอเริ่ม implement (หลังเซ็นครบ)</li></ul>
 <h2>2. Factory Owner — Factory Operability &amp; Safety</h2>
-<ul><li>[ ] NFP/NO_CUT บังคับ: shadow mode ตัดจริงไม่ได้ · ผลสูงสุด <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code> · <code>PKT_OK</code> เปล่า emit ไม่ได้</li><li>[ ] Machine profile binding: id + version + digest (profile ปลอมไม่ผ่าน -&gt; <code>PKT_MACHINE_PROFILE_MISMATCH</code>)</li><li>[ ] Verifier fail-closed: packet เสีย/lookup ล่ม -&gt; ไม่ถึงเครื่อง (<code>PKT_AUTHORITY_UNAVAILABLE</code> -&gt; FAIL/NO_CUT, ไม่ &quot;warn and pass&quot;)</li><li>[ ] Exporter allowlist + gate evidence binding (gate ไม่ PASS -&gt; <code>PKT_GATE_FAILED</code>)</li><li>[ ] machine profile <code>kdt_mvp_v1</code> ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)</li></ul>
+<ul><li>[x] NFP/NO_CUT บังคับ: shadow mode ตัดจริงไม่ได้ · ผลสูงสุด <code>PKT_OK_SHADOW_ONLY / VERIFIED_SHADOW_ONLY / NO_CUT</code> · <code>PKT_OK</code> เปล่า emit ไม่ได้</li><li>[x] Machine profile binding: id + version + digest (profile ปลอมไม่ผ่าน -&gt; <code>PKT_MACHINE_PROFILE_MISMATCH</code>)</li><li>[x] Verifier fail-closed: packet เสีย/lookup ล่ม -&gt; ไม่ถึงเครื่อง (<code>PKT_AUTHORITY_UNAVAILABLE</code> -&gt; FAIL/NO_CUT, ไม่ &quot;warn and pass&quot;)</li><li>[x] Exporter allowlist + gate evidence binding (gate ไม่ PASS -&gt; <code>PKT_GATE_FAILED</code>)</li><li>[x] อนุมัติ contract <code>kdt_mvp_v1</code> สำหรับ shadow implementation ตามคำถาม §17.1 โดยรับ documented-profile-first ตาม ADR-070</li><li>[ ] <strong>Real-machine activation ยังคง CONDITIONAL:</strong> <code>kdt_mvp_v1</code> ตรงเครื่อง+controller จริง (ยืนยันจากโรงงาน)</li><li><strong>มติ owner 17 ก.ค. 2026 (ADR-070):</strong> รับหลักฐานระดับเอกสาร (<code>docs/evidence/machines/kdt-kn-2409lp/</code>; สถานะในตัวเอกสารคือ <code>PROHIBITED · NOT_ASSESSED</code>) เพื่อเดินงาน shadow implementation เท่านั้น · <strong>bench verification โดยวิศวกรหน้าเครื่อง = hard gate ก่อนทำงานจริง</strong> (assessment Gate E + CT-DEC-002 §11.6 &quot;machine profile calibrated&quot;) · เหตุผล: multi-machine onboarding — documented-profile first, ห้ามใช้ตัดจริงจนผ่าน bench ครบ</li></ul>
 <h2>3. Security Owner — Signature / Trust / Key</h2>
 <blockquote><p><strong>ADR-068 resolution (15 ก.ค.)</strong>: Owner เลือก AWS KMS <code>ECC_NIST_P256</code> และ <code>ECDSA_SHA_256</code>; v0.4 แทนที่ signature layer แบบ Ed25519 ของ v0.3 แล้ว การตรวจด้านล่างยังเป็น PENDING จน Security Owner review exact bytes และ hash anchor รอบ 4</p></blockquote>
-<ul><li>[ ] <strong>ECDSA-vs-KMS reconciled</strong>: protected algorithm คือ <code>ECDSA_P256_SHA256</code>; KMS <code>Sign</code> ใช้ <code>ECC_NIST_P256</code> + <code>ECDSA_SHA_256</code> + <code>MessageType=DIGEST</code> กับ exact SHA-256 digest</li><li>[ ] Signature encoding: DER จาก KMS ถูกแปลงเป็น raw <code>r‖s</code> 64-byte Base64; signer emit low-S; verifier reject DER/high-S/out-of-range ด้วย <code>PKT_SIGNATURE_INVALID</code></li><li>[ ] Non-determinism boundary: signature เป็น run-specific allowlist, ไม่อยู่ใน <code>packetContentId</code>; verifier verify เท่านั้น ไม่ recompute</li><li>[ ] Public-key registry: pin canonical DER SPKI (<code>id-ecPublicKey</code> + <code>prime256v1</code>) ซึ่ง BIT STRING เป็น uncompressed <code>0x04‖X‖Y</code>; packet key ห้าม establish trust เอง</li><li>[ ] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, <code>notBefore/notAfter</code>, anti-rollback, registry-unavailable = fail-closed</li><li>[ ] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (<code>PKT_KEY_UNKNOWN/REVOKED/EXPIRED</code>)</li><li>[ ] Server-owned actor ผูกกับ S17-1 (JWT-derived ไม่ใช่ client header) — attestation ใช้ identity ที่ปลอมไม่ได้</li><li>[ ] Tamper corpus (S14) ครอบพอ + custody model ตรง ADR-064/มติ custody (KMS/HSM non-exportable)</li></ul>
+<ul><li>[x] <strong>ECDSA-vs-KMS reconciled</strong>: protected algorithm คือ <code>ECDSA_P256_SHA256</code>; KMS <code>Sign</code> ใช้ <code>ECC_NIST_P256</code> + <code>ECDSA_SHA_256</code> + <code>MessageType=DIGEST</code> กับ exact SHA-256 digest</li><li>[x] Signature encoding: DER จาก KMS ถูกแปลงเป็น raw <code>r‖s</code> 64-byte Base64; signer emit low-S; verifier reject DER/high-S/out-of-range ด้วย <code>PKT_SIGNATURE_INVALID</code></li><li>[x] Non-determinism boundary: signature เป็น run-specific allowlist, ไม่อยู่ใน <code>packetContentId</code>; verifier verify เท่านั้น ไม่ recompute</li><li>[x] Public-key registry: pin canonical DER SPKI (<code>id-ecPublicKey</code> + <code>prime256v1</code>) ซึ่ง BIT STRING เป็น uncompressed <code>0x04‖X‖Y</code>; packet key ห้าม establish trust เอง</li><li>[x] Key lifecycle (S10.2): ACTIVE/RETIRED/REVOKED, <code>notBefore/notAfter</code>, anti-rollback, registry-unavailable = fail-closed</li><li>[x] Trusted-key registry: public key ใน packet ห้าม establish trust ตัวเอง (<code>PKT_KEY_UNKNOWN/REVOKED/EXPIRED</code>)</li><li>[x] Server-owned actor ผูกกับ S17-1 (JWT-derived ไม่ใช่ client header) — attestation ใช้ identity ที่ปลอมไม่ได้</li><li>[x] Tamper corpus (S14) ครอบพอ + custody model ตรง ADR-064/มติ custody (KMS/HSM non-exportable)</li></ul>
 <h2>4. Signature Block</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>บทบาท</th>
 <th>ชื่อ</th>
-<th>Commit ที่เซ็น</th>
+<th>Reviewed artifact commit</th>
+<th>Review anchor SHA-256</th>
 <th>วันที่</th>
 <th>สถานะ</th>
 </tr></thead><tbody>
 <tr>
 <td>Tech Lead</td>
-<td>(คุณเดฟ)</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
-<td>—</td>
-<td>PENDING</td>
+<td>คุณเดฟ</td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
+<td>2026-07-17</td>
+<td>SIGNED</td>
 </tr>
 <tr>
 <td>Factory Owner</td>
-<td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
-<td>—</td>
-<td>PENDING</td>
+<td>คุณเดฟ</td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>de2a1ccfa476271c4ca5949ec374a79bce786702d6b65a94b9e3435a6439a2c7</code></td>
+<td>2026-07-17</td>
+<td>SIGNED — SHADOW CONTRACT; ACTIVATION PENDING</td>
 </tr>
 <tr>
 <td>Security Owner</td>
-<td>—</td>
-<td><code>monolith-s17-v041-review-input.sha256</code></td>
-<td>—</td>
-<td>PENDING</td>
+<td>คุณเดฟ</td>
+<td><code>d3fb617fcb42e72085cce46cad03b5478b71e16d</code></td>
+<td><code>f7b35734bc3283e7fcc8a27b1842119178f79d2179fcfde1983e44e3e6381a16</code></td>
+<td>2026-07-17</td>
+<td>SIGNED</td>
 </tr>
 </tbody></table></div>
+<blockquote><p>บันทึกการรับรอง Tech Lead จากคำยืนยันโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: ผู้ตรวจเห็น anchor ตรง, manifest 44/44 PASS และ 0 FAIL, reproduce aggregate schema digest ได้, schema structural test ผ่าน และตอบ TL-1 ถึง TL-5 ด้วยตนเอง Codex ทำหน้าที่บันทึกคำยืนยันนี้ตามคำสั่งโดยตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์</p></blockquote>
+<blockquote><p>บันทึกการรับรอง Factory Owner จากคำตอบโดยตรงของคุณเดฟใน guided review session วันที่ 2026-07-17: คุณเดฟเลือก A ยืนยัน FO-1 ถึง FO-4 ทีละข้อ และออกมติ ADR-070 สำหรับ FO-5 ให้รับ documented profile เพื่อ shadow implementation แต่คง physical activation เป็น CONDITIONAL จนวิศวกรผ่าน gate หน้าเครื่อง Codex บันทึกคำยืนยันและขอบเขตนี้ตามคำสั่งโดยตรง ไม่ได้ตรวจหรือเซ็นแทนมนุษย์</p></blockquote>
+<blockquote><p>บันทึกการรับรอง Security Owner จากคำสั่งตรงของคุณเดฟ (&quot;เซ็นเลยครับ&quot;) ใน guided review session วันที่ 2026-07-17 หลังหลักฐานถูกแสดงสดครบทุกข้อ: §10 ข้อ 3–7 (ECDSA/KMS params, DER→P1363 r‖s 64B strict, low-S บังคับ, no-self-trust), §4.1 run allowlist, §10.2 SPKI/lifecycle/anti-rollback, §14 tamper corpus, custody kickoff (non-exportable HSM, Security Owner = Key Owner) และ <strong>ค่า low-S ถูกคำนวณซ้ำด้วย BigInt สดต่อหน้าผู้เซ็น — ตรงทุกหลัก</strong> · ผู้เซ็น <strong>acknowledge ชัดแจ้ง (SO-7)</strong> ว่า S17-1 server-owned actor ยัง staging-only และ prod-apply ตามมาที่ pilot window · pre-sign ณ วินาทีเซ็น: anchor v3 ตรง + 43/43 PASS 0 FAIL · Claude บันทึกคำยืนยันนี้ตามคำสั่งตรง ไม่ใช่ผู้ลงนามหรือผู้อนุมัติแทนมนุษย์</p></blockquote>
+<blockquote><p>✅ <strong>ครบสามบทบาท 17 ก.ค. 2026 → CT-DEC-002 = APPROVED · Track B (S17-4 determinism + S17-5 verifier) ปลดล็อก</strong> — ตามผล §5 · สิ่งที่ยังคงเดิม: NO_CUT/NFP จน real-cut gate สี่เงื่อนไขผ่าน, S17-1/2 prod-apply รอ pilot window, เครื่อง KDT ยัง PROHIBITED จน bench ผ่าน · การอัปเดตบรรทัดสถานะ &quot;DRAFT&quot; ในตัว spec file = งานของ Control Tower (ผู้ร่าง)</p></blockquote>
 <h2>5. Effect เมื่อครบสาม</h2>
 <ul><li>CT-DEC-002 = APPROVED</li><li>ปลด Track B: S17-4 determinism + S17-5 verifier</li><li>S17-5 ต้อง implement/review โดยผู้อิสระจาก S17-3/4 builder (SoD, ADR-065)</li><li>คง NFP/NO_CUT จนกว่า real-cut gate สี่เงื่อนไขผ่าน (S17x5 + ADR-064 ครบ + dogfood &gt;=1 + machine profile calibrated)</li></ul>
 <h2>6. ข้อควรระวัง (advisory)</h2>
