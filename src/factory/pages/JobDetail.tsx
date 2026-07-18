@@ -118,8 +118,25 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
 
   // Handle verify for export unlock
   const handleRunVerify = useCallback(async () => {
-    await startVerify(jobId);
+    try {
+      await startVerify(jobId);
+    } catch {
+      // Intentionally silent (S18 L2 PR #22 fix): startVerify rethrows by
+      // design for callers that need the raw error, but the UI state is
+      // already fully handled inside the store — normalizeError →
+      // setVerifyResult(errorResult), and `finally` clears `verifying`.
+      // Without this catch every failed verify becomes an unhandled
+      // promise rejection.
+    }
   }, [jobId, startVerify]);
+
+  // Retry export-options fetch (S18 L2 PR #22 fix): fetchExportOptions
+  // clears exportOptionsError before refetching, so this both dismisses the
+  // error UI and re-arms the request. fetchExportOptions never rejects
+  // (errors are captured into exportOptionsError).
+  const handleRetryExportOptions = useCallback(() => {
+    void fetchExportOptions();
+  }, [fetchExportOptions]);
 
   // Download handler
   const handleDownload = useCallback(() => {
@@ -218,6 +235,8 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
             onRunVerify={handleRunVerify}
             exportOptions={exportOptions}
             exportOptionsLoading={exportOptionsLoading}
+            exportOptionsError={exportOptionsError}
+            onRetryExportOptions={handleRetryExportOptions}
             isVerifyPassed={isVerifyPassed}
             exportConfig={exportConfig}
             onConfigChange={setExportConfig}
@@ -543,6 +562,11 @@ interface ExportTabProps {
   onRunVerify: () => void;
   exportOptions: import("../components/export").ExportOptionsResponse | null;
   exportOptionsLoading: boolean;
+  /** Last export-options fetch failure — non-null means the auto-fetch gave
+   *  up and the operator needs a manual retry (S18 L2 PR #22 fix). */
+  exportOptionsError: string | null;
+  /** Re-runs fetchExportOptions (clears the error first in the store). */
+  onRetryExportOptions: () => void;
   isVerifyPassed: boolean;
   exportConfig: ExportRequest | null;
   onConfigChange: (config: ExportRequest) => void;
@@ -566,6 +590,8 @@ function ExportTab({
   onRunVerify,
   exportOptions,
   exportOptionsLoading,
+  exportOptionsError,
+  onRetryExportOptions,
   isVerifyPassed,
   exportConfig,
   onConfigChange,
@@ -593,6 +619,57 @@ function ExportTab({
           onRunVerify={onRunVerify}
           isVerifying={isVerifying}
         />
+
+        {/* Export options fetch error + retry (S18 L2 PR #22 fix): the
+            auto-fetch effect stops after one failure by design — without
+            this panel a single transient failure leaves the Export tab
+            dead until a full page reload. */}
+        {exportOptionsError && (
+          <div
+            role="alert"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "16px 20px",
+              backgroundColor: "#ef444420",
+              border: "1px solid #ef4444",
+              borderRadius: 8,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#fecaca",
+                  marginBottom: 4,
+                }}
+              >
+                โหลดตัวเลือก Export ไม่สำเร็จ
+              </div>
+              <div style={{ fontSize: 13, color: "#fca5a5" }}>
+                {exportOptionsError}
+              </div>
+            </div>
+            <button
+              onClick={onRetryExportOptions}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 6,
+                border: "1px solid #fca5a5",
+                backgroundColor: "transparent",
+                color: "#fecaca",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              ↻ ลองใหม่
+            </button>
+          </div>
+        )}
 
         {/* Export Configurator */}
         <ExportConfigurator
