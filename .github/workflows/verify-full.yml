@@ -298,11 +298,19 @@ jobs:
       - run: npm ci
       - name: Run strict gate bypass scan (report-only)
         id: scan
-        run: npm run gate:bypass-scan:strict
+        # `|| true` because job-level continue-on-error still renders a red ✗
+        # on the PR checks list — true report-only must exit 0 and speak
+        # through the notice below (outcome captured for the summary).
+        run: |
+          if npm run gate:bypass-scan:strict; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=findings" >> "$GITHUB_OUTPUT"
+          fi
       - name: Summarize result as notice
         if: always()
         run: |
-          if [ "${{ steps.scan.outcome }}" = "success" ]; then
+          if [ "${{ steps.scan.outputs.result }}" = "success" ]; then
             echo "::notice title=gate-bypass-scan::strict scan PASS — ready to flip this job to required (remove continue-on-error)"
           else
             echo "::notice title=gate-bypass-scan::strict scan reported findings — report-only, NOT blocking this run (scripts/gates/** = L5 scope; flip to required after the L5 lane merges)"
