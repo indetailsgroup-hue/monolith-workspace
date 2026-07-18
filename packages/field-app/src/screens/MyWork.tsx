@@ -1,7 +1,7 @@
 // มุมช่าง — "งานของฉันวันนี้" (Wave C; UX tenet: เลนตัวเอง ชื่อห้องภาษาคน ไม่มีศัพท์ระบบ)
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { enqueuePhoto, flushPhotos, pendingPhotoCount } from '../lib/photoQueue';
+import { enqueuePhoto, failedPhotoCount, flushPhotos, pendingPhotoCount, retryFailedPhotos } from '../lib/photoQueue';
 
 // checklist ต่อ template (SOP จริงจาก 0091 — ครัว/ห้องทั่วไป ต่อเลน)
 const ITEMS: Record<string, string[]> = {
@@ -18,8 +18,13 @@ interface Lane { task_id: string; lane: number; template_ref: string; checklist_
 export function MyWork() {
   const [lanes, setLanes] = useState<Lane[] | null>(null);
   const [err, setErr] = useState('');
+  const [toast, setToast] = useState('');
   const [pending, setPending] = useState(0);
-  const refreshPending = () => { void pendingPhotoCount().then(setPending); };
+  const [failed, setFailed] = useState(0);
+  const refreshPending = () => {
+    void pendingPhotoCount().then(setPending);
+    void failedPhotoCount().then(setFailed);
+  };
 
   useEffect(() => {
     supabase().rpc('rpc_field_my_lanes').then(({ data, error }) => {
@@ -30,13 +35,30 @@ export function MyWork() {
     return () => clearInterval(t);
   }, []);
 
-  async function toggle(l: Lane, item: string, done: boolean) {
-    setLanes((ls) => ls!.map((x) => x.task_id === l.task_id
+  // toast เตือน "ยังไม่ได้บันทึก" หายเองใน 5 วิ (ช่างใส่ถุงมือ ไม่ต้องหาปุ่มปิด)
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  function setItem(taskId: string, item: string, done: boolean) {
+    setLanes((ls) => ls!.map((x) => x.task_id === taskId
       ? { ...x, checklist_state: { ...x.checklist_state, [item]: done } } : x));
+  }
+
+  async function toggle(l: Lane, item: string, done: boolean) {
+    const prev = l.checklist_state?.[item] ?? false;
+    setItem(l.task_id, item, done); // optimistic — ติ๊กติดทันที
     const { error } = await supabase().rpc('rpc_field_toggle_lane_item', {
       p_task_id: l.task_id, p_item: item, p_done: done,
     });
-    if (error) setErr(error.message);
+    if (error) {
+      // RPC fail: revert กลับสถานะเดิม + บอกตรง ๆ ว่ายังไม่บันทึก — ห้ามหลอกว่าเสร็จ
+      // (ไม่ใช้ setErr เพราะนั่นแทนที่ทั้งจอ — ช่างจะเสีย checklist ที่เหลือไปด้วย)
+      setItem(l.task_id, item, prev);
+      setToast('⚠️ ยังไม่ได้บันทึก — สัญญาณมีปัญหา ลองติ๊กใหม่อีกครั้ง');
+    }
   }
 
   async function takePhoto(l: Lane, file: File | null) {
@@ -51,7 +73,18 @@ export function MyWork() {
 
   return (
     <div className="page">
-      {pending > 0 && <div className="card" style={{ background: '#FFF6E5' }}>📤 ค้างส่ง {pending} รายการ — จะส่งเองเมื่อมีสัญญาณ</div>}
+      {toast && <div className="card" role="status" style={{ background: '#FDECEC' }}>{toast}</div>}
+      {pending > 0 && (
+        <div className="card" style={{ background: '#FFF6E5' }}>
+          📤 ค้างส่ง {pending} รายการ — จะส่งเองเมื่อมีสัญญาณ
+          {failed > 0 && (
+            <button className="btn" style={{ marginTop: 8 }}
+              onClick={() => { void retryFailedPhotos().then(refreshPending); }}>
+              🔁 ลองส่งอีกครั้ง
+            </button>
+          )}
+        </div>
+      )}
       {lanes.map((l) => {
         const items = ITEMS[l.template_ref] ?? [];
         const doneCount = items.filter((i) => l.checklist_state?.[i]).length;
