@@ -1,0 +1,37 @@
+{
+  "generatorCommit": "eeed1ce6b4388db5c661932a419e5d2c61267712",
+  "generatorTree": "da717b31f26f7000e5f94fad854cb0dd13c61004",
+  "inputPath": "./server/src/packet/v2/__tests__/fixtures/golden-input.json",
+  "inputSha256": "9ad24d6501ad0511f0cd1e9bb9d256d4bf22c710d00709b51ea25960f89fe574",
+  "zipFilename": "NFP-factory-packet-4f9be2a7-33c1-4d68-9b21-5f0e8d7a6c15-813ab601dcf7.zip",
+  "zipSha256": "8a40f975c9712baca03a9b441736671c17484528a8f40daac4adc40cbf990ddb",
+  "zipBytes": 8092,
+  "kmsSignCalls": 1,
+  "packetContentId": "sha256:813ab601dcf76abe06f61b41ea077fcd4accea2728fddfa9b3fc1e0c83083c7c",
+  "manifestSha256": "sha256:c6f1c6598ef52382f4d5ebca469a96b34aa52512cbb779411cf0383a28838fd8",
+  "machineProfileSha256": "sha256:a6fda0d93c71a753ff619d8fed386a6e7de270a3d227fff0bc5c6c9663132ed4",
+  "run": {
+    "jobRunId": "4f9be2a7-33c1-4d68-9b21-5f0e8d7a6c15",
+    "issuedAt": "2026-07-18T09:00:00.000Z",
+    "actorSubjectId": "actor-owner",
+    "authorizationContextId": "auth-context-1",
+    "idempotencyFingerprint": "sha256:af017fb843582987bfe4311a6a57c5b057b2602ffd11a54ecb9e73d1bbee6c85"
+  },
+  "signingIdentity": {
+    "keyId": "kms-key-interop-blackbox-1",
+    "registryVersion": "1.0.0"
+  },
+  "spkiDerBase64": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEN3BFd3tIcnc/TfKorXaMxWj1za4m7kk732y1ijUa/UpeO6Uj+m85nMR9nhTj3eHvKNCvC/2tKN+U0AvmiwJYJg==",
+  "releasedRevision": {
+    "projectId": "project-alpha",
+    "revisionId": "revision-0042",
+    "state": "RELEASED"
+  },
+  "exporter": {
+    "id": "monolith.factory-exporter",
+    "version": "2.0.0",
+    "buildCommit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "artifactSha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "gatePolicyVersion": "1.0.0"
+}
