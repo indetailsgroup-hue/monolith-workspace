@@ -356,7 +356,7 @@ export async function handleFactoryApi(
       }
 
       const body = (await req.json().catch(() => null)) as
-        { zipBase64?: string; manifestSha256?: string } | null;
+        { zipBase64?: string; manifestSha256?: string; jobName?: unknown; pieceCount?: unknown } | null;
       if (!body?.zipBase64) return json(400, { ok: false, error: "missing zipBase64" });
       let bytes: Uint8Array;
       try {
@@ -367,6 +367,15 @@ export async function handleFactoryApi(
       if (bytes.length === 0 || bytes.length > 20 * 1024 * 1024) {
         return json(400, { ok: false, error: "invalid packet size" });
       }
+      // S18 (0170): display metadata from the manifest — sanitized, never authority
+      // data. Anything that is not a plausible name/count degrades to null.
+      const jobName = typeof body.jobName === "string" && body.jobName.trim().length > 0
+        ? body.jobName.trim().slice(0, 200)
+        : null;
+      const pieceCount = typeof body.pieceCount === "number"
+          && Number.isInteger(body.pieceCount) && body.pieceCount >= 0
+        ? body.pieceCount
+        : null;
       const sha256 = await sha256Hex(bytes);
       const path = `${encodeURIComponent(jobId)}/${sha256}.zip`;
       await deps.storagePut(path, bytes);
@@ -376,6 +385,8 @@ export async function handleFactoryApi(
         p_manifest_sha256: body.manifestSha256 ?? null,
         p_storage_path: path,
         ...actorRpcParams(actor, role),
+        p_job_name: jobName,
+        p_piece_count: pieceCount,
       }) as Record<string, unknown>;
       return json(recorded.ok === false ? 409 : 200, recorded);
     }

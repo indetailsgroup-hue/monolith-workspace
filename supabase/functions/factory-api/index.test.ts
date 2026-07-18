@@ -399,7 +399,7 @@ describe("S17-2 RELEASED-only invariant", () => {
     expect(h.storage.sign).toBe(1);
   });
 
-  it("SQL migration removes legacy actor overloads and re-checks RELEASED under lock", () => {
+  it("SQL migration 0162 removes legacy actor overloads and re-checks RELEASED under lock", () => {
     const sql = readFileSync(
       new URL("../../migrations/0162_factory_server_identity_released_only.sql", import.meta.url),
       "utf8",
@@ -418,5 +418,68 @@ describe("S17-2 RELEASED-only invariant", () => {
     expect(sql.match(/v\.spec_state <> 'RELEASED'/g)?.length).toBeGreaterThanOrEqual(2);
     expect(sql).toContain("'canExport', v.spec_state = 'RELEASED'");
     expect(sql).not.toContain("v.spec_state in ('FROZEN', 'RELEASED')");
+  });
+});
+
+describe("S18 jobs list real fields (0170)", () => {
+  it("forwards jobName and pieceCount from the packet body to record_packet", async () => {
+    const h = harness(DESIGNER);
+    const response = await handleFactoryApi(request(
+      "/JOB-1/packet",
+      "POST",
+      { zipBase64: btoa("packet"), jobName: "  Kitchen Set A  ", pieceCount: 42 },
+    ), h.deps);
+    expect(response.status).toBe(200);
+    const packet = h.calls.find((call) => call.fn === "rpc_factory_job_record_packet");
+    expect(packet?.body).toMatchObject({ p_job_name: "Kitchen Set A", p_piece_count: 42 });
+  });
+
+  it("nulls invalid jobName/pieceCount instead of forwarding garbage", async () => {
+    const h = harness(DESIGNER);
+    const response = await handleFactoryApi(request(
+      "/JOB-1/packet",
+      "POST",
+      { zipBase64: btoa("packet"), jobName: 42, pieceCount: -3 },
+    ), h.deps);
+    expect(response.status).toBe(200);
+    const packet = h.calls.find((call) => call.fn === "rpc_factory_job_record_packet");
+    expect(packet?.body).toMatchObject({ p_job_name: null, p_piece_count: null });
+  });
+
+  it("omitting the metadata still uploads the packet and forwards nulls", async () => {
+    const h = harness(DESIGNER);
+    const response = await handleFactoryApi(request(
+      "/JOB-1/packet",
+      "POST",
+      { zipBase64: btoa("packet") },
+    ), h.deps);
+    expect(response.status).toBe(200);
+    expect(h.storage.put).toBe(1);
+    const packet = h.calls.find((call) => call.fn === "rpc_factory_job_record_packet");
+    expect(packet?.body).toMatchObject({ p_job_name: null, p_piece_count: null });
+  });
+
+  it("SQL migration 0170 adds jobName, pieceCount, and short packet hash to the jobs list", () => {
+    const sql = readFileSync(
+      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      "utf8",
+    );
+    // Columns behind the new fields.
+    expect(sql).toContain("add column if not exists job_name text");
+    expect(sql).toContain("add column if not exists piece_count integer");
+    // Jobs list tells the truth the factory can use.
+    expect(sql).toContain("'jobName', j.job_name");
+    expect(sql).toContain("'pieceCount', j.piece_count");
+    expect(sql).toContain("'packetShaShort', left(j.packet_sha256, 12)");
+    // Old record_packet signature is dropped before the new one exists —
+    // PostgREST must never see an ambiguous overload pair.
+    expect(sql).toContain(
+      "drop function if exists public.rpc_factory_job_record_packet(text, text, text, text, text, text[], text[], text, text, text)",
+    );
+    expect(sql).toContain("p_job_name");
+    expect(sql).toContain("p_piece_count");
+    // Service-role-only stays intact for every new signature.
+    expect(sql).toContain("from public, anon, authenticated");
+    expect(sql).toContain("to service_role");
   });
 });
