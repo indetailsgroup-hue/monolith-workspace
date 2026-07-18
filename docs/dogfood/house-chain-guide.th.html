@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คู่มือเดินสายบ้าน Dogfood (house-01)</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>คู่มือเดินสายบ้าน Dogfood — ปฏิบัติจริงทีละขั้น (house-01)</h1>
+<p>รุ่น: 1.0 (2026-07-18) · คู่กับ <code>first-house-runbook.md</code> (ขั้น 3–8 + shadow-compare) สำหรับ: ทีมหน้างาน (Field Operator / Finance / Designer) — เปิดอ่านได้เองไม่ต้องถามใคร</p>
+<hr>
+<h2>หลักการที่ใช้ทุกขั้น (อ่านครั้งเดียว ใช้ตลอด)</h2>
+<ol><li><strong>งานจริงเกิดในระบบเดิมก่อนเสมอ</strong> (แอป/RPC โดยคนตามบทบาท) → แล้วค่อยเอา <strong>id / ref / เวลา</strong> มาประทับลง git ด้วยเครื่องมือ — ไม่ใช่กลับกัน</li><li><strong>กรอกไฟล์นอก git เสมอ</strong> เช่น <code>C:\temp\house01-contract.json</code> — กัน PII หลุดเข้า history โดยอุบัติเหตุ</li><li>เวลาใช้รูปแบบ <strong>ISO8601 UTC มี ms</strong>: <code>2026-07-19T03:30:00.000Z</code> (เวลาไทย −7 ชั่วโมง)</li><li>ref ทุกช่อง ≥ 4 ตัวอักษร · <strong>ห้าม</strong>: ชื่อลูกค้า, ที่อยู่, เบอร์โทร, LINE, ยอดเงิน — ใส่มาเครื่องมือจะปฏิเสธเอง (PDPA redaction lint) แต่อย่าลองของ</li><li>คำสั่งรันจากรากโปรเจกต์ (checkout <code>main</code> ล่าสุด):</li></ol>
+<p><code></code><code> node scripts/dogfood-record.mjs house-01 &lt;step&gt; C:\temp\ไฟล์.json </code><code></code></p>
+<ol><li>สำเร็จแล้วเครื่องมือจะพิมพ์ path + sha256 + คำสั่ง commit — <strong>ตรวจตาด้วยคนหนึ่งครั้งก่อน commit</strong> แล้ว push/เปิด PR ตามปกติ (คุณเดฟ merge)</li><li><strong>Record เป็น immutable</strong> — กรอกผิดและ commit ไปแล้ว: ห้ามแก้ไฟล์เดิม ให้แจ้งเจ้าของระบบเปิด correction commit ใหม่ (ลบพร้อมบันทึกเหตุผล — ประวัติเดิมอยู่ใน git ตลอด)</li><li>เช็คความคืบหน้าได้ทุกเมื่อ:</li></ol>
+<p><code></code><code> node scripts/dogfood-record.mjs house-01 --status </code><code></code></p>
+<hr>
+<h2>ขั้น 3 — สัญญา (<code>contract</code>)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>Field Operator (ลูกค้าเซ็นจริง)</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td><code>rpc_field_generate_contract</code> → <code>send_contract</code> → <code>submit_signed_contract</code></td>
+</tr>
+<tr>
+<td>เก็บค่า</td>
+<td>id ของสัญญาในระบบ + เวลาที่เซ็นสำเร็จ</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;contractId&quot;: &quot;contract-h01-001&quot;,
+  &quot;signed&quot;: true,
+  &quot;signedAt&quot;: &quot;2026-07-19T03:30:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 contract C:\temp\h01-contract.json</code></pre>
+<p>หมายเหตุ: <code>signed</code> ต้องเป็น <code>true</code> เท่านั้น — ยังไม่เซ็น = ยังไม่บันทึก (record นี้คือหลักฐานว่า &quot;เซ็นแล้ว&quot;)</p>
+<hr>
+<h2>ขั้น 4 — แผนเงิน + สลิปงวดแรก (<code>payment</code>)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>Field Operator ตั้งแผน / Finance รับสลิป + เช็คยอดเอง</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td><code>rpc_field_set_payment_plan</code> → <code>rpc_finance_submit_slip</code> → <code>record_payment</code></td>
+</tr>
+<tr>
+<td>เก็บค่า</td>
+<td>id แผนเงิน + ref ของสลิปงวดแรก (id ในระบบ ไม่ใช่รูปสลิป)</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;paymentPlanId&quot;: &quot;plan-h01-001&quot;,
+  &quot;firstInstallmentSlipRef&quot;: &quot;slip-h01-001&quot;,
+  &quot;recordedAt&quot;: &quot;2026-07-20T04:00:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 payment C:\temp\h01-payment.json</code></pre>
+<p>🔴 <strong>ยอดเงินห้ามลง git</strong> — schema ปิดตาย ใส่ field <code>amount</code> ใด ๆ มาก็โดนปฏิเสธ ยอดจริงอยู่ในระบบ + สลิปเท่านั้น</p>
+<hr>
+<h2>ขั้น 5 — แผนติดตั้ง + วัดหน้างาน (<code>install-plan</code>)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>Field Operator (ไปวัดหน้างานจริง — human ตรวจก่อนอนุมัติตาม runbook §4)</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td><code>rpc_field_draft_install_plan</code> → <code>send_install_plan</code> + บันทึก SiteSurveyZone จากการวัดจริง</td>
+</tr>
+<tr>
+<td>เก็บค่า</td>
+<td>id แผนติดตั้ง + ref ของ SiteSurveyZone</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;installPlanId&quot;: &quot;install-h01-001&quot;,
+  &quot;siteSurveyZoneRef&quot;: &quot;zone-h01-001&quot;,
+  &quot;draftedAt&quot;: &quot;2026-07-21T06:00:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 install-plan C:\temp\h01-install.json</code></pre>
+<hr>
+<h2>ขั้น 6 — Variation Order (เฉพาะเมื่อมีแก้แบบ — ข้ามได้)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>Field Operator (ลูกค้าเซ็น VO)</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td><code>rpc_field_create_variation</code> → <code>submit_signed</code></td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;variationId&quot;: &quot;vo-h01-001&quot;,
+  &quot;submittedSignedAt&quot;: &quot;2026-07-22T05:00:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 variation C:\temp\h01-vo.json</code></pre>
+<p>ขั้นนี้<strong>ไม่นับ</strong>ใน core chain — ไม่มีก็ครบสายได้</p>
+<hr>
+<h2>ขั้น 7 — ผลิต (<code>production</code>) — ขั้นที่หลักเหล็กแรงที่สุด</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>โรงงาน + Field Operator ติดตาม milestone</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td>โรงงานตัดจาก<strong>ใบสั่งผลิตเดิม</strong> · ติดตามผ่าน <code>rpc_factory_list_milestones</code></td>
+</tr>
+<tr>
+<td>เก็บค่า</td>
+<td>ref ของ milestone การผลิต</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;milestoneRef&quot;: &quot;milestone-h01-cut-001&quot;,
+  &quot;source&quot;: &quot;legacy_work_order&quot;,
+  &quot;notedAt&quot;: &quot;2026-07-25T08:00:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 production C:\temp\h01-production.json</code></pre>
+<p>🔴 <code>source</code> รับค่าเดียวคือ <code>legacy_work_order</code> — พิมพ์อย่างอื่น (เช่นอ้าง packet) = ปฏิเสธทันที นี่คือหลัก <strong>&quot;ห้ามตัดจริงจาก packet&quot;</strong> ที่ถูกแปลงเป็นโค้ด</p>
+<hr>
+<h2>ขั้น 8 — ตรวจรับ/ส่งมอบ (<code>acceptance</code>)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>รายละเอียด</th>
+</tr></thead><tbody>
+<tr>
+<td>ใครทำ</td>
+<td>Field Operator + ลูกค้าตรวจรับหน้างาน</td>
+</tr>
+<tr>
+<td>ในระบบ</td>
+<td>milestone handover/acceptance</td>
+</tr>
+</tbody></table></div>
+<pre><code class="language-json">{
+  &quot;acceptanceRef&quot;: &quot;accept-h01-001&quot;,
+  &quot;handoverAt&quot;: &quot;2026-08-05T07:00:00.000Z&quot;
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 acceptance C:\temp\h01-accept.json</code></pre>
+<p>บันทึกขั้นนี้เสร็จ → รัน <code>--status</code> จะขึ้น <strong>&quot;✔ core chain COMPLETE — dogfood≥1&quot;</strong> — บ้านนี้กลายเป็นเครดิตแรกของ real-cut gate</p>
+<hr>
+<h2>ขนานตลอดสาย — Shadow-compare ของ Designer (ทำได้หลายรอบ ยิ่งบ่อยยิ่งดี)</h2>
+<p><strong>นี่คือของขวัญที่บ้านนี้ให้ S17</strong> — ทุกครั้งที่แบบนิ่งพอ:</p>
+<ol><li>Designer ในแอป: ออกแบบ → <strong>Freeze → Release → Export to CNC</strong> → ได้ไฟล์ <code>NFP-factory-packet-….zip</code></li><li>หา sha256 ของไฟล์ (PowerShell):</li></ol>
+<p><code></code><code> certutil -hashfile &quot;C:\ที่เก็บ\NFP-factory-packet-....zip&quot; SHA256 </code><code></code></p>
+<ol><li><strong>เทียบกับใบสั่งผลิตเดิม</strong>ที่โรงงานใช้จริง ชิ้นต่อชิ้น: ขนาดตัด, ตำแหน่ง/จำนวนรู — จดเฉพาะจุดที่<strong>ต่าง</strong></li><li>กรอก (diff กี่รายการก็ได้ — ว่าง <code>[]</code> = ตรงหมด ก็มีค่ามาก):</li></ol>
+<pre><code class="language-json">{
+  &quot;packetFilename&quot;: &quot;NFP-factory-packet-4f9be2a7-33c1-4d68-9b21-5f0e8d7a6c15-813ab601dcf7.zip&quot;,
+  &quot;packetSha256&quot;: &quot;8a40f975c9712baca03a9b441736671c17484528a8f40daac4adc40cbf990ddb&quot;,
+  &quot;legacyOrderRef&quot;: &quot;wo-h01-001&quot;,
+  &quot;comparedAt&quot;: &quot;2026-07-24T09:00:00.000Z&quot;,
+  &quot;partsCompared&quot;: 12,
+  &quot;diffs&quot;: [
+    { &quot;ref&quot;: &quot;part-07&quot;, &quot;field&quot;: &quot;cutWidthUm&quot;, &quot;packet&quot;: 600000, &quot;actual&quot;: 600500, &quot;unit&quot;: &quot;um&quot; },
+    { &quot;ref&quot;: &quot;part-11&quot;, &quot;field&quot;: &quot;holeCount&quot;, &quot;packet&quot;: 8, &quot;actual&quot;: 6 }
+  ]
+}</code></pre>
+<pre><code>node scripts/dogfood-record.mjs house-01 shadow-compare C:\temp\h01-compare.json</code></pre>
+<p>ไฟล์จะ auto-number (<code>shadow-compare-01</code>, <code>-02</code>, …) — รอบใหม่ = record ใหม่เสมอ · ชื่อไฟล์ packet ต้องเป็นรูปแบบ NFP จริง (กัน packet นอกระบบ) · 🔴 packet ใช้<strong>เทียบเท่านั้น ห้ามส่งเข้าเครื่องตัด</strong></p>
+<hr>
+<h2>สรุปภาพเดียว</h2>
+<pre><code>งานจริงในระบบ → เก็บ ref → กรอกไฟล์นอก git → รัน tool → ตรวจตา → commit/PR
+ทำซ้ำทีละขั้นจน --status ขึ้น &quot;core chain COMPLETE — dogfood≥1&quot;</code></pre>
+<p>ตลอดสาย: โรงงานตัดจากกระบวนการเดิมเท่านั้น · Designer packet = NFP เพื่อเทียบ · <code>realCutAllowed</code> เปลี่ยนได้ทางเดียวคือ real-cut gate 4 เงื่อนไข (ไม่ใช่ทางคู่มือนี้)</p>
+</main>
+</body>
+</html>
