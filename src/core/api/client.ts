@@ -46,6 +46,39 @@ export class ApiRequestError extends Error {
 }
 
 // ============================================================================
+// Thai Error Messages (S18)
+// ============================================================================
+
+/**
+ * จุดเดียวที่แปลง HTTP status เป็นข้อความไทยที่ผู้ใช้อ่านรู้เรื่อง
+ * คืน null เมื่อ status ไม่อยู่ใน map (ใช้ข้อความ server ตามเดิม)
+ * code/statusCode/details ใน ApiRequestError ไม่ถูกแตะ — โค้ดเดิมอ่านต่อได้
+ *
+ * FOLLOW-UP (S18 review → l2-factory-ux): FactoryApp ยังไม่เห็นข้อความไทยพวกนี้ —
+ * เส้นทาง fetch จริงของมันคือ apiFetch/apiFetchBlob ใน src/factory/api/client.ts
+ * (write scope ของ l2 ไม่ใช่ l6) ซึ่งยังสร้าง error อังกฤษ `API <status>` เอง
+ * งานฝั่ง l2: ให้จุดนั้น import thaiErrorMessage(res.status) มาใช้ก่อน fallback
+ * ข้อความ server — ห้าม copy map ไปไว้ซ้ำสองที่
+ */
+export function thaiErrorMessage(
+  statusCode: number,
+  options: { requiredRole?: string } = {}
+): string | null {
+  switch (statusCode) {
+    case 401:
+      return 'เซสชันหมดอายุ — เข้าสู่ระบบใหม่';
+    case 403:
+      return options.requiredRole
+        ? `สิทธิ์ไม่พอ (ต้องเป็น ${options.requiredRole})`
+        : 'สิทธิ์ไม่พอ';
+    case 409:
+      return 'ข้อมูลถูกเปลี่ยนโดยคนอื่น — รีเฟรชก่อน';
+    default:
+      return null;
+  }
+}
+
+// ============================================================================
 // Request/Response Types
 // ============================================================================
 
@@ -163,7 +196,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       throw new ApiRequestError({
         code: 'PARSE_ERROR',
-        message: 'Failed to parse response',
+        message: thaiErrorMessage(response.status) ?? 'Failed to parse response',
         statusCode: response.status,
       });
     }
@@ -171,10 +204,18 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
-    const errorData = data as { error?: string; message?: string; code?: string };
+    const errorData = data as {
+      error?: string;
+      message?: string;
+      code?: string;
+      requiredRole?: string;
+    };
     throw new ApiRequestError({
       code: errorData.code || errorData.error || 'UNKNOWN_ERROR',
-      message: errorData.message || 'Request failed',
+      message:
+        thaiErrorMessage(response.status, { requiredRole: errorData.requiredRole }) ??
+        errorData.message ??
+        'Request failed',
       statusCode: response.status,
       details: data as Record<string, unknown>,
     });
