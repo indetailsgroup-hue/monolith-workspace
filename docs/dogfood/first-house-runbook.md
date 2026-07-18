@@ -40,9 +40,19 @@ dogfood house นับว่าเริ่มแล้วต่อเมื่
 | 7 | ผลิต (ใบสั่งเดิม) | production_milestone (`rpc_factory_list_milestones`) | โรงงานตัดจาก **ใบสั่งเดิม** ไม่ใช่ packet |
 | 8 | ตรวจรับ/ส่งมอบ | milestone handover/acceptance | acceptance record |
 
+### บันทึก evidence ของขั้น 3–8 (บังคับผ่านเครื่องมือ)
+เมื่อขั้นใดเสร็จจริงในระบบ ให้บันทึก record ลง git ด้วย:
+```
+node scripts/dogfood-record.mjs house-NN <contract|payment|install-plan|variation|production|acceptance> <filled.json>
+node scripts/dogfood-record.mjs house-NN --status   # ดูความคืบหน้าสาย
+```
+- schema เป็นแบบ **ปิด** ต่อขั้น (field เกิน = ปฏิเสธ — ยอดเงิน/ชื่อ/เนื้อหาเข้า git ไม่ได้ทางโครงสร้าง) + PDPA lint + immutable เหมือน started.json
+- record `production` บังคับ `source: legacy_work_order` — อ้าง packet เป็นแหล่งตัดไม่ได้
+- core chain ครบ (contract → payment → install-plan → production → acceptance) = `--status` ประกาศ **dogfood≥1**
+
 ## 3. Shadow-mode Designer (ขนาน — evidence ป้อน S17 ฟรี)
 - Designer ออกแบบบ้านนี้ → Freeze → Release → **Export to CNC** → packet `NFP-...` NOT-FOR-PRODUCTION
-- เก็บ packet + **เทียบกับของที่โรงงานตัดจริง** (ใบสั่งเดิม) → บันทึกส่วนต่าง
+- เก็บ packet + **เทียบกับของที่โรงงานตัดจริง** (ใบสั่งเดิม) → บันทึกส่วนต่างด้วย `dogfood-record.mjs house-NN shadow-compare` (บังคับชื่อไฟล์ NFP + sha256 ของ packet; diff เก็บเป็นตัวเลข/ref ต่อชิ้น — ทำซ้ำได้หลายรอบ, auto-number)
 - 🔴 **ห้ามใช้ packet ตัดจริง** — โรงงานตัดจากกระบวนการเดิมเท่านั้น
 
 ## 4. Guardrails
