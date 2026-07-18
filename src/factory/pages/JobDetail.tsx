@@ -18,10 +18,12 @@ import { VerifyConsole } from "../components/VerifyConsole";
 import { MachineSelector } from "../components/MachineSelector";
 import { IncidentBanner } from "../components/IncidentBanner";
 import { PacketTab } from "../components/packet";
+import { PacketIngestPanel } from "../components/PacketIngestPanel";
 import {
   ExportLockBanner,
   ExportConfigurator,
   ExportActions,
+  isVerifyPassed as isVerifyPassedResult,
   type ExportRequest,
 } from "../components/export";
 import { ActivityTimeline } from "../components/activity/ActivityTimeline";
@@ -52,6 +54,7 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
     startVerify,
     exportOptions,
     exportOptionsLoading,
+    exportOptionsError,
     fetchExportOptions,
     getExportCacheEntry,
     runGatedExport,
@@ -75,23 +78,31 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
     loadJobDetailData(jobId);
   }, [jobId, loadJobDetailData]);
 
-  // Fetch export options when export tab is active
+  // Fetch export options when export tab is active.
+  // exportOptionsError guard (S18 L2): after a failed fetch the store keeps
+  // the error — without it this effect refires forever against a dead
+  // endpoint (options=null + loading=false again after every failure).
   useEffect(() => {
-    if (activeTab === "export" && !exportOptions && !exportOptionsLoading) {
+    if (
+      activeTab === "export" &&
+      !exportOptions &&
+      !exportOptionsLoading &&
+      !exportOptionsError
+    ) {
       fetchExportOptions();
     }
-  }, [activeTab, exportOptions, exportOptionsLoading, fetchExportOptions]);
+  }, [activeTab, exportOptions, exportOptionsLoading, exportOptionsError, fetchExportOptions]);
 
   // Get gated export state for this job
   const gatedExportState = getExportCacheEntry(jobId);
 
-  // Check if export is allowed. STORAGE_HASH_MATCH unlocks export of the
-  // STORED packet (bytes-at-rest integrity is the right gate for download) —
-  // it is NOT full verification and must never widen beyond export (FS-B1-02).
+  // Check if export is allowed — SAME rule as ExportLockBanner (S18 L2):
+  // PASS / PASS_WITH_WARN (amber banner explains the warning) /
+  // STORAGE_HASH_MATCH. STORAGE_HASH_MATCH unlocks export of the STORED
+  // packet (bytes-at-rest integrity is the right gate for download) — it is
+  // NOT full verification and must never widen beyond export (FS-B1-02).
   const isVerifyPassed =
-    verifyResult?.verdict === "PASS" ||
-    verifyResult?.verdict === "STORAGE_HASH_MATCH" ||
-    selectedJob?.trust?.gate === "PASS";
+    isVerifyPassedResult(verifyResult) || selectedJob?.trust?.gate === "PASS";
 
   // Handle legacy export
   const handleExport = useCallback(async () => {
@@ -174,7 +185,15 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
           <OverviewTab job={selectedJob} verifiedPacketEntry={verifiedPacketEntry} />
         )}
 
-        {activeTab === "packet" && <PacketTab jobId={jobId} />}
+        {activeTab === "packet" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* S18 L2 Slice 4: local ingest + verify (Phase C) — lets the
+                operator drop a packet ZIP even when the server packet
+                endpoint has nothing for this job */}
+            <PacketIngestPanel jobId={jobId} />
+            <PacketTab jobId={jobId} />
+          </div>
+        )}
 
         {activeTab === "validation" && (
           <FactoryCheckTab jobId={jobId} onPassed={() => setActiveTab("export")} />
@@ -470,9 +489,9 @@ interface FactoryCheckTabProps {
 
 function FactoryCheckTab({ jobId, onPassed }: FactoryCheckTabProps): React.ReactElement {
   const handleComplete = useCallback(
-    (result: { verdict: string }) => {
-      // PASS / STORAGE_HASH_MATCH only - WARN does not unlock export
-      if (result.verdict === "PASS" || result.verdict === "STORAGE_HASH_MATCH") {
+    (result: import("../types/job").VerifyApiResponse) => {
+      // Shared unlock rule (S18 L2): PASS / PASS_WITH_WARN / STORAGE_HASH_MATCH
+      if (isVerifyPassedResult(result)) {
         // Keep the short delay: operator sees result, then we advance
         setTimeout(onPassed, 800);
       }
@@ -497,7 +516,8 @@ function FactoryCheckTab({ jobId, onPassed }: FactoryCheckTabProps): React.React
       <VerifyConsole jobId={jobId} onVerifyComplete={handleComplete} />
 
       <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>
-        Policy: Export unlocks only on PASS. Warnings require remediation or re-run after fixes.
+        Policy: Export unlocks on PASS. PASS_WITH_WARN unlocks too — with an
+        amber caution banner on the Export tab. FAIL blocks export.
       </div>
     </div>
   );

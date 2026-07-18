@@ -52,6 +52,7 @@ import type {
   ActivityFetchStatus,
 } from "../types/activity";
 import { fetchJobActivityApi } from "../api/activityApi";
+import { verifyJobApi } from "../api/verifyApi";
 import type { VerifyPacketResult } from "../packet/verifyPacket";
 import type { FactoryPacket } from "../packet/types";
 
@@ -163,6 +164,12 @@ interface FactoryState {
   gatedExportByJobId: Record<string, ExportCacheEntry>;
   exportOptions: ExportOptionsResponse | null;
   exportOptionsLoading: boolean;
+  /**
+   * Last export-options fetch failure (S18 L2). Non-null stops the
+   * JobDetail auto-fetch effect from hammering a dead endpoint in a loop;
+   * cleared on every new fetchExportOptions call so an explicit retry works.
+   */
+  exportOptionsError: string | null;
 
   // Activity log (legacy client-side)
   activityLog: ActivityLogEntry[];
@@ -317,6 +324,7 @@ const initialState: FactoryState = {
   gatedExportByJobId: {},
   exportOptions: null,
   exportOptionsLoading: false,
+  exportOptionsError: null,
 
   activityLog: [],
 
@@ -485,17 +493,10 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
       });
 
       try {
-        // Call verify API endpoint
-        const response = await fetch(`/api/factory/jobs/${jobId}/verify`, {
-          method: "POST",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Verification failed: ${response.status}`);
-        }
-
-        // API returns VerifyApiResponse directly (already normalized on server)
-        const result: VerifyApiResponse = await response.json();
+        // Call verify through the auth-aware adapter (B1-02): attaches the
+        // Supabase JWT + apikey headers and maps storage-integrity verdicts.
+        // Never raw fetch here — an unauthenticated call can only lie.
+        const result = await verifyJobApi(jobId);
 
         setVerifyResult(result);
 
@@ -841,6 +842,7 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
 
       set((state) => {
         state.exportOptionsLoading = true;
+        state.exportOptionsError = null;
       });
 
       try {
@@ -850,13 +852,20 @@ export const useFactoryStore = create<FactoryState & FactoryActions>()(
         set((state) => {
           state.exportOptions = data;
           state.exportOptionsLoading = false;
+          state.exportOptionsError = null;
         });
 
         return data;
       } catch (error) {
         console.error("Failed to fetch export options:", error);
+        const message =
+          error instanceof Error ? error.message : "Failed to fetch export options";
         set((state) => {
           state.exportOptionsLoading = false;
+          // S18 L2: remember the failure — without this, the JobDetail
+          // auto-fetch effect sees (options=null, loading=false) again and
+          // refetches in an infinite loop against a dead endpoint.
+          state.exportOptionsError = message;
         });
         return null;
       }
