@@ -21,9 +21,14 @@
  * └─────────────────────────────────────────────────────────┘
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 import { SHADOW_MODE_NOT_FOR_PRODUCTION, NOT_FOR_PRODUCTION_LABEL } from '../../core/config/shadowMode';
+import { useSessionStore } from '../../core/auth/useSessionStore';
+import { useRoleStore } from '../../core/auth/useRoleStore';
+import { ROLES, ROLE_INFO, type Role } from '../../core/auth/roles';
+import { useCabinetStore } from '../../core/store/useCabinetStore';
 
 // Spec State Types
 export type SpecState = 'DRAFT' | 'FROZEN' | 'RELEASED';
@@ -163,6 +168,65 @@ function ExportButton({ enabled, onClick }: { enabled: boolean; onClick?: () => 
   );
 }
 
+// S18 L7 Slice 1: signed-in badge + sign out (session lives in supabase-js
+// localStorage sb-<ref>-auth-token; useSessionStore is the reactive mirror)
+function SessionBadge() {
+  const session = useSessionStore((s) => s.session);
+  const signOut = useSessionStore((s) => s.signOut);
+
+  if (!session?.user?.email) {
+    return (
+      <Link
+        to="/login"
+        className="px-3 py-1.5 rounded-lg border border-oi-border text-xs text-textc-primary hover:border-green-500/50 transition-all duration-200"
+      >
+        Sign in
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] font-mono text-gray-500 max-w-[180px] truncate">
+        signed in as {session.user.email}
+      </span>
+      <button
+        onClick={() => { void signOut(); }}
+        className="px-2 py-1 rounded-lg border border-oi-border text-[11px] text-gray-400 hover:text-textc-primary hover:border-red-500/40 transition-all duration-200"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
+// S18 L7 Slice 2: presentation-role switcher. Label is deliberate — this only
+// changes what the UI shows; real authorization stays on the server.
+const ROLE_SWITCHER_LABEL = 'สิทธิ์แสดงผลฝั่งจอ — สิทธิ์จริงอยู่ที่ server';
+
+function RoleSwitcher() {
+  const role = useRoleStore((s) => s.role);
+  const setRole = useRoleStore((s) => s.setRole);
+  const roleColor = ROLE_INFO[role].color;
+
+  return (
+    <select
+      aria-label={ROLE_SWITCHER_LABEL}
+      title={ROLE_SWITCHER_LABEL}
+      value={role}
+      onChange={(e) => setRole(e.target.value as Role)}
+      className="px-2 py-1.5 rounded-lg border text-xs font-mono bg-surface-3 cursor-pointer transition-all duration-200"
+      style={{ color: roleColor, borderColor: `${roleColor}66` }}
+    >
+      {ROLES.map((r) => (
+        <option key={r} value={r}>
+          {ROLE_INFO[r].label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 // Main AppShell Component
 export function AppShell({
   project,
@@ -175,19 +239,28 @@ export function AppShell({
 }: AppShellProps) {
   // Presentation guard only; factory-api + SQL independently enforce RELEASED-only.
   const canExport = project.gateStatus === 'OK' && project.specState === 'RELEASED';
-  
+
+  // S18 L7 Slice 3: footer shows real values from the live cabinet
+  const panelCount = useCabinetStore((s) => s.cabinet?.panels.length ?? 0);
+
+  // S18 L7 Slice 1: restore persisted supabase session on mount
+  useEffect(() => {
+    void useSessionStore.getState().initialize();
+  }, []);
+
   return (
     <div className="h-screen w-screen flex flex-col bg-surface-0 text-textc-primary overflow-hidden">
       {/* PROJECT HEADER */}
       <header className="h-12 bg-surface-1 border-b border-oi-border flex items-center justify-between px-4 shrink-0">
         {/* Left: Logo + Project Name */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+          {/* S18 L7 Slice 3: logo links to project home */}
+          <Link to="/projects/current" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-surface-3 border border-oi-border rounded-lg flex items-center justify-center">
               <span className="text-green-400 font-bold text-sm">II</span>
             </div>
             <span className="text-textc-primary font-medium text-sm">MONOLITH</span>
-          </div>
+          </Link>
 
           <div className="h-6 w-px bg-oi-border" />
 
@@ -202,8 +275,11 @@ export function AppShell({
           {headerToolbar}
         </div>
 
-        {/* Right: Status + Export */}
+        {/* Right: Session + Role + Status + Export */}
         <div className="flex items-center gap-3">
+          <SessionBadge />
+          <RoleSwitcher />
+          <div className="h-6 w-px bg-oi-border" />
           <SpecStateBadge state={project.specState} onChange={onSpecStateChange} />
           <GateStatusBadge
             status={project.gateStatus}
@@ -264,19 +340,13 @@ export function AppShell({
         </aside>
       </div>
       
-      {/* FOOTER */}
+      {/* FOOTER - S18 L7 Slice 3: real values only (no hardcoded machine claims) */}
       <footer className="h-8 bg-surface-1 border-t border-oi-border flex items-center justify-between px-4 text-xs shrink-0">
-        {/* Machine Compatibility */}
+        {/* Live cabinet stats */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Machine:</span>
-            <span className="text-green-400 font-mono">Homag CENTATEQ P-110</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          </div>
-          <div className="h-4 w-px bg-oi-border" />
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">Nesting:</span>
-            <span className="text-textc-primary">Ready</span>
+            <span className="text-gray-500">Panels:</span>
+            <span className="text-textc-primary font-mono">{panelCount}</span>
           </div>
         </div>
 
@@ -287,11 +357,6 @@ export function AppShell({
             <span className={`font-mono ${project.gateStatus === 'OK' ? 'text-green-400' : 'text-gray-400'}`}>
               {project.gateStatus === 'OK' ? '✓ PASSED' : '○ PENDING'}
             </span>
-          </div>
-          <div className="h-4 w-px bg-oi-border" />
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500">Panels:</span>
-            <span className="text-textc-primary font-mono">6</span>
           </div>
           <div className="h-4 w-px bg-oi-border" />
           <div className="text-gray-600 font-mono">

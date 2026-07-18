@@ -7,8 +7,10 @@
  * to certain roles or in certain states.
  */
 
-import React, { type ReactNode } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { type Role, getCurrentRole, hasRole, ROLE_INFO } from './roles';
+import { useRoleStore } from './useRoleStore';
+import { RoleGateDialog } from '../../components/ui/RoleGateDialog';
 import {
   type SpecState,
   type VerifyStatus,
@@ -31,14 +33,64 @@ export interface RequireRoleProps {
   allow: Role[];
   /** Content to render if authorized */
   children: ReactNode;
-  /** Optional fallback if unauthorized */
+  /** Optional fallback if unauthorized (overrides the RoleGateDialog default) */
   fallback?: ReactNode;
-  /** If true, completely hide (no fallback). Default: true */
+  /** If true, completely hide (no fallback, no dialog) for inline affordances. Default: false */
   hide?: boolean;
 }
 
 /**
+ * S18 L7 Slice 3: full-screen fallback for role-gated routes.
+ * No more silent bounce — explain which roles the page is for and how to
+ * proceed (switch presentation role in the AppShell, or contact admin).
+ */
+function RoleGateFallback({ allow }: { allow: Role[] }): React.ReactElement {
+  const [dialogOpen, setDialogOpen] = useState(true);
+  const roleLabels = allow.map((r) => ROLE_INFO[r].label).join(' / ');
+  const message = `หน้านี้สำหรับ ${roleLabels} — สลับ role หรือติดต่อ admin`;
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0a0a0a',
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px',
+      }}
+    >
+      <div style={{ textAlign: 'center', maxWidth: '480px' }}>
+        <div style={{ fontSize: '32px', marginBottom: '16px' }}>🔒</div>
+        <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '16px', lineHeight: 1.6 }}>
+          {message}
+        </p>
+        <a href="/" style={{ color: '#4ade80', fontSize: '13px', textDecoration: 'none' }}>
+          ← กลับหน้าหลัก
+        </a>
+      </div>
+      <RoleGateDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        requiredRoles={allow}
+        title="สลับ role เพื่อเข้าหน้านี้"
+        description={message}
+      />
+    </div>
+  );
+}
+
+/**
  * Guard that only renders children if current role is in allowed list.
+ *
+ * Reactive: subscribes to useRoleStore, so switching the presentation role in
+ * the AppShell re-renders the guard immediately (S18 L7 Slice 2).
+ *
+ * Unauthorized behavior (S18 L7 Slice 3 — no silent bounce):
+ * - explicit `fallback` prop → render it
+ * - `hide` → render nothing (for inline buttons/menus)
+ * - default → RoleGateFallback with RoleGateDialog explaining required roles
  *
  * @example
  * <RequireRole allow={['FACTORY', 'ADMIN']}>
@@ -48,21 +100,25 @@ export interface RequireRoleProps {
 export function RequireRole({
   allow,
   children,
-  fallback = null,
-  hide = true,
+  fallback,
+  hide = false,
 }: RequireRoleProps): React.ReactElement | null {
-  const currentRole = getCurrentRole();
+  const currentRole = useRoleStore((s) => s.role);
   const isAllowed = allow.includes(currentRole);
 
   if (isAllowed) {
     return <>{children}</>;
   }
 
+  if (fallback !== undefined) {
+    return <>{fallback}</>;
+  }
+
   if (hide) {
     return null;
   }
 
-  return <>{fallback}</>;
+  return <RoleGateFallback allow={allow} />;
 }
 
 // ============================================================================
