@@ -73,6 +73,9 @@ vi.mock('../../gate/g9PersistenceGate', () => ({
 
 import { useSpecStore } from '../useSpecStore';
 import { useCabinetStore } from '../useCabinetStore';
+import { useGateStore } from '../../../gate/ui/gateStore';
+import { freezeJob } from '../../api/stateApi';
+import type { GateFinding } from '../../../gate/ui/gateTypes';
 
 // ============================================
 // HELPERS
@@ -128,6 +131,26 @@ function setCabinetState(overrides: any = {}) {
  */
 function findRule(rules: any[], id: string) {
   return rules.find((r: any) => r.id === id);
+}
+
+/**
+ * Seed the Safety Gate (useGateStore) with a result.
+ * blockerCount = 0 → passing gate; > 0 → gate with blockers.
+ */
+function seedSafetyGate(blockerCount: number) {
+  const blockers: GateFinding[] = Array.from({ length: blockerCount }, (_, i) => ({
+    key: `TEST_BLOCKER_${i}`,
+    code: `TEST_RULE_${i}`,
+    message: `Test blocker ${i}`,
+    severity: 'BLOCKER' as const,
+    entityIds: [],
+  }));
+  useGateStore.getState().setResult({
+    passed: blockerCount === 0,
+    runAt: new Date().toISOString(),
+    policyVersion: 'test-1.0',
+    findings: { blockers, warnings: [], info: [] },
+  });
 }
 
 /**
@@ -1085,6 +1108,10 @@ describe('useSpecStore - Gate Status', () => {
   beforeEach(() => {
     resetSpecStore();
     setCabinetState();
+    // S18: canFreeze also requires the Safety Gate to have run with no blockers.
+    // Seed a passing gate so pre-S18 expectations still describe the happy path.
+    useGateStore.getState().reset();
+    seedSafetyGate(0);
   });
 
   describe('canFreeze', () => {
@@ -1128,6 +1155,55 @@ describe('useSpecStore - Gate Status', () => {
 
       expect(gate.canFreeze).toBe(false);
       expect(gate.blockers).toContain('Run validation first');
+    });
+  });
+
+  // S18: canFreeze ต้องผ่าน Safety Gate (drill map/hardware) ด้วย
+  // Designer freeze ข้าม gate ไม่ได้
+  describe('canFreeze x Safety Gate (S18)', () => {
+    it('should be false when Safety Gate has blockers (even if validation passes)', () => {
+      seedSafetyGate(2);
+      useSpecStore.setState({ specState: 'DRAFT' });
+      useSpecStore.getState().runValidation();
+      const gate = useSpecStore.getState().gateStatus;
+
+      expect(gate.canFreeze).toBe(false);
+      expect(gate.blockers.some((b: string) => b.includes('Safety Gate'))).toBe(true);
+    });
+
+    it('should be false when Safety Gate has not run yet', () => {
+      useGateStore.getState().reset();
+      useSpecStore.setState({ specState: 'DRAFT' });
+      useSpecStore.getState().runValidation();
+      const gate = useSpecStore.getState().gateStatus;
+
+      expect(gate.canFreeze).toBe(false);
+      expect(gate.blockers).toContain('Run Safety Gate first');
+    });
+
+    it('should refresh canFreeze when Safety Gate result arrives later', () => {
+      useGateStore.getState().reset();
+      useSpecStore.setState({ specState: 'DRAFT' });
+      useSpecStore.getState().runValidation();
+      expect(useSpecStore.getState().gateStatus.canFreeze).toBe(false);
+
+      // Gate passes later (e.g. autoRun completes) → gateStatus must refresh
+      seedSafetyGate(0);
+      expect(useSpecStore.getState().gateStatus.canFreeze).toBe(true);
+    });
+
+    it('freezeSpec should refuse and not call server when Safety Gate blocks', async () => {
+      vi.mocked(freezeJob).mockReset();
+      vi.mocked(freezeJob).mockResolvedValue({ ok: true, specState: 'FROZEN' } as any);
+      seedSafetyGate(1);
+      useSpecStore.setState({ specState: 'DRAFT' });
+      useSpecStore.getState().runValidation();
+
+      const ok = await useSpecStore.getState().freezeSpec();
+
+      expect(ok).toBe(false);
+      expect(freezeJob).not.toHaveBeenCalled();
+      expect(useSpecStore.getState().specState).toBe('DRAFT');
     });
   });
 

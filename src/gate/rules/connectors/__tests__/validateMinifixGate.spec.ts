@@ -269,11 +269,23 @@ describe('quickValidateMinifixAlignment', () => {
 // ============================================
 
 describe('validateMinifixGate', () => {
-  it('returns PASS for empty drillMap', () => {
+  // S18: null/empty drillMap ต้องพูดความจริง — ยังไม่มีอะไรให้ตรวจ = WARNING ไม่ใช่ PASS
+  it('returns WARNING (not PASS) for null drillMap', () => {
     const result = validateMinifixGate(null);
 
-    expect(result.status).toBe('PASS');
-    expect(result.findings.length).toBe(0);
+    expect(result.status).toBe('WARNING');
+    expect(result.summary.warnings).toBe(1);
+    expect(result.findings.length).toBe(1);
+    expect(result.findings[0].severity).toBe('WARNING');
+    expect(result.findings[0].code).toBe('MONO_MINIFIX_NO_DRILL_MAP');
+    expect(result.findings[0].message).toContain('drill map');
+  });
+
+  it('returns WARNING for drillMap with no panels', () => {
+    const result = validateMinifixGate(makeDrillMap([]));
+
+    expect(result.status).toBe('WARNING');
+    expect(result.findings[0].code).toBe('MONO_MINIFIX_NO_DRILL_MAP');
   });
 
   it('returns PASS for drillMap with no Minifix points', () => {

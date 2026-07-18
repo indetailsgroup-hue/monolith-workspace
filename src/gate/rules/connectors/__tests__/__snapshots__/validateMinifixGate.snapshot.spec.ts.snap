@@ -427,12 +427,22 @@ exports[`validateMinifixGate (snapshot: combined errors) > multiple errors: miss
 
 exports[`validateMinifixGate (snapshot: edge cases) > empty drillMap 1`] = `
 {
-  "findings": [],
+  "findings": [
+    {
+      "code": "MONO_MINIFIX_NO_DRILL_MAP",
+      "entityIds": [],
+      "measured": undefined,
+      "message": "ยังไม่มี drill map — สร้าง drill map ก่อน gate จึงจะตรวจ connector ได้",
+      "severity": "WARNING",
+      "suggestedFix": undefined,
+      "tolerance": undefined,
+    },
+  ],
   "gate": "HARDWARE_CONNECTOR_VALIDATION",
-  "status": "PASS",
+  "status": "WARNING",
   "summary": {
     "errors": 0,
-    "warnings": 0,
+    "warnings": 1,
   },
 }
 `;
