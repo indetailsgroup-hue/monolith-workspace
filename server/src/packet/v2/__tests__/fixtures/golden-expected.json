@@ -1,0 +1,9 @@
+{
+  "packetContentId": "sha256:813ab601dcf76abe06f61b41ea077fcd4accea2728fddfa9b3fc1e0c83083c7c",
+  "machineProfileSha256": "sha256:a6fda0d93c71a753ff619d8fed386a6e7de270a3d227fff0bc5c6c9663132ed4",
+  "manifestSha256": "sha256:c6f1c6598ef52382f4d5ebca469a96b34aa52512cbb779411cf0383a28838fd8",
+  "manifestSizeBytes": 1845,
+  "attestationSizeBytes": 1387,
+  "zipSizeBytes": 8090,
+  "zipSha256": "80757d3b4dbf72f18a7122f2996212f4ef28d411703a60a11399b7811d4b7c64"
+}
