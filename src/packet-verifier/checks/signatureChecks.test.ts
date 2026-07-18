@@ -24,10 +24,23 @@ function activeRecord(key: TestKey, overrides: Partial<TrustedKeyRecord> = {}): 
   };
 }
 
+/** matching parsed gate evidence for the fixture attestation (F-01) */
+const GATE_EVIDENCE = { policyVersion: '1.0.0', result: 'PASS' } as const;
+
 describe('check 7 — identity consistency', () => {
-  it('coherent fixture passes', async () => {
+  it('coherent fixture passes (with parsed gate evidence)', async () => {
     const fx = await makePacketFixture();
-    expect(checkIdentityConsistency(fx.manifest, fx.attestation)).toEqual({ ok: true });
+    expect(checkIdentityConsistency(fx.manifest, fx.attestation, GATE_EVIDENCE)).toEqual({ ok: true });
+  });
+  it('missing/unparsed gate evidence fails closed → PKT_GATE_EVIDENCE_MISMATCH (F-01)', async () => {
+    const fx = await makePacketFixture();
+    expect(checkIdentityConsistency(fx.manifest, fx.attestation))
+      .toMatchObject({ ok: false, code: 'PKT_GATE_EVIDENCE_MISMATCH' });
+  });
+  it('gate evidence policyVersion drift → PKT_GATE_EVIDENCE_MISMATCH (F-01)', async () => {
+    const fx = await makePacketFixture();
+    expect(checkIdentityConsistency(fx.manifest, fx.attestation, { ...GATE_EVIDENCE, policyVersion: '2.0.0' }))
+      .toMatchObject({ ok: false, code: 'PKT_GATE_EVIDENCE_MISMATCH' });
   });
   it('machineProfile.version drift → PKT_IDENTITY_MISMATCH', async () => {
     const fx = await makePacketFixture();
@@ -135,12 +148,39 @@ describe('check 8 — ECDSA signature over the §10.1 preimage', () => {
       .toMatchObject({ ok: false, code: 'PKT_KEY_NOT_YET_VALID' });
     expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { notAfter: '2026-01-02T00:00:00.000Z' }))))
       .toMatchObject({ ok: false, code: 'PKT_KEY_EXPIRED' });
-    // retirement AFTER issuedAt (2026-07-17) still verifies the old packet…
+    // F-04: retirement AFTER issuedAt (2026-07-17) verifies the old packet
+    // ONLY under an explicit allowHistorical policy — default fails closed…
     expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED', retiredAt: '2026-08-01T00:00:00.000Z' }))))
+      .toMatchObject({ ok: false, code: 'PKT_KEY_REVOKED' });
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED', retiredAt: '2026-08-01T00:00:00.000Z' })), { allowHistorical: true }))
       .toEqual({ ok: true });
-    // …retirement BEFORE issuedAt does not
-    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED', retiredAt: '2026-06-01T00:00:00.000Z' }))))
+    // …and retirement BEFORE issuedAt never verifies, history or not
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED', retiredAt: '2026-06-01T00:00:00.000Z' })), { allowHistorical: true }))
+      .toMatchObject({ ok: false, code: 'PKT_KEY_REVOKED' });
+  });
+
+  it('lifecycle boundaries are half-open + registry dates must be real calendar instants (F-04)', async () => {
+    const key = await generateTestKey();
+    const fx = await makePacketFixture({ sign: (v) => signPreimageLowS(buildSignaturePreimage(v), key) });
+    const value = JSON.parse(new TextDecoder().decode(fx.attestationBytes));
+    const issued = fx.attestation.issuedAt; // 2026-07-17T12:00:00.000Z
+
+    // issuedAt == notBefore is VALID (inclusive lower bound)
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { notBefore: issued }))))
+      .toEqual({ ok: true });
+    // issuedAt == notAfter → EXPIRED (exclusive upper bound: >= not >)
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { notAfter: issued }))))
       .toMatchObject({ ok: false, code: 'PKT_KEY_EXPIRED' });
+    // RETIRED without retiredAt boundary → record unusable
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED' }))))
+      .toMatchObject({ ok: false, code: 'PKT_KEY_UNKNOWN' });
+    // issuedAt == retiredAt → signed at/after retirement, even with history on
+    expect(await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { state: 'RETIRED', retiredAt: issued })), { allowHistorical: true }))
+      .toMatchObject({ ok: false, code: 'PKT_KEY_REVOKED' });
+    // impossible calendar date in the registry record → malformed, fail closed
+    const r = await checkSignature(value as never, fx.attestation, registryOf(activeRecord(key, { notBefore: '2026-02-30T00:00:00.000Z' })));
+    expect(r).toMatchObject({ ok: false, code: 'PKT_KEY_UNKNOWN' });
+    if (!r.ok) expect(r.detail).toContain('malformed');
   });
 
   it('malformed registry SPKI → PKT_KEY_UNKNOWN (trust data unusable)', async () => {

@@ -4,11 +4,13 @@
 // own stable code PKT_GATE_EVIDENCE_MISMATCH (§13).
 
 import type { PacketManifest, PacketAttestation } from '../shapes/shapes';
+import type { GateEvidence } from '../shapes/payloadShapes';
 import type { CheckOutcome } from './identityChecks';
 
 export function checkIdentityConsistency(
   manifest: PacketManifest,
   attestation: PacketAttestation,
+  gateEvidence?: GateEvidence,
 ): CheckOutcome {
   const mismatch = (detail: string): CheckOutcome => ({ ok: false, code: 'PKT_IDENTITY_MISMATCH', detail });
 
@@ -54,6 +56,30 @@ export function checkIdentityConsistency(
       ok: false,
       code: 'PKT_GATE_EVIDENCE_MISMATCH',
       detail: 'attested gate.evidenceSha256 does not match the manifest-listed digest',
+    };
+  }
+  // parsed gate evidence ↔ signed gate fields (review 2026-07-18 F-01, §12.7):
+  // the evidence PAYLOAD itself — not just its digest — must agree with the
+  // attestation. Absent/unparsed evidence fails closed.
+  if (gateEvidence === undefined) {
+    return {
+      ok: false,
+      code: 'PKT_GATE_EVIDENCE_MISMATCH',
+      detail: 'gate evidence payload missing/unparsed',
+    };
+  }
+  if (gateEvidence.policyVersion !== gate.policyVersion) {
+    return {
+      ok: false,
+      code: 'PKT_GATE_EVIDENCE_MISMATCH',
+      detail: 'gate evidence policyVersion does not match attested gate.policyVersion',
+    };
+  }
+  if (gateEvidence.result !== gate.result) {
+    return {
+      ok: false,
+      code: 'PKT_GATE_EVIDENCE_MISMATCH',
+      detail: 'gate evidence result does not match attested gate.result',
     };
   }
   return { ok: true };

@@ -197,4 +197,26 @@ describe('shape validators — schema-exact rejections', () => {
     const r = validateAttestationShape({ ...base, gate });
     expect(r).toMatchObject({ ok: false, code: 'PKT_ATTESTATION_INVALID' });
   });
+  it('attestation: impossible calendar issuedAt (2026-02-30) → PKT_ATTESTATION_INVALID (F-04)', async () => {
+    const fx = await makePacketFixture();
+    const base = JSON.parse(new TextDecoder().decode(fx.attestationBytes)) as Obj;
+    // passes the §7.10 shape regex but is not a real calendar instant
+    const r = validateAttestationShape({ ...base, issuedAt: '2026-02-30T12:00:00.000Z' });
+    expect(r).toMatchObject({ ok: false, code: 'PKT_ATTESTATION_INVALID' });
+  });
+  it('attestation: signature object without valueBase64 → PKT_SIGNATURE_MISSING (F-06)', async () => {
+    const fx = await makePacketFixture();
+    const base = JSON.parse(new TextDecoder().decode(fx.attestationBytes)) as Obj;
+    const sig: Obj = { protected: (base.signature as Obj).protected };
+    const r = validateAttestationShape({ ...base, signature: sig });
+    expect(r).toMatchObject({ ok: false, code: 'PKT_SIGNATURE_MISSING' });
+  });
+  it('manifest: path violating canonicalPath (Windows reserved name) → PKT_SCHEMA_UNSUPPORTED (F-02)', async () => {
+    const fx = await makePacketFixture();
+    const v = fx.manifestValue as Obj;
+    const files = (v.files as Obj[]).map((f) => (f.path === 'cutlist.json' ? { ...f, path: 'CON.json' } : { ...f }));
+    const r = validateManifestShape({ ...v, files: files as unknown as JsonValue });
+    expect(r).toMatchObject({ ok: false, code: 'PKT_SCHEMA_UNSUPPORTED' });
+    if (!r.ok) expect(r.detail).toContain('reserved');
+  });
 });

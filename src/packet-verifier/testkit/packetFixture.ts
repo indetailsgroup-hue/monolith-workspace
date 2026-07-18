@@ -35,12 +35,16 @@ function payloadBytes(nfpContentSchema: string): Map<string, { bytes: Uint8Array
     mediaType: 'text/plain; charset=utf-8',
     contentSchema: nfpContentSchema,
   });
+  // schema-valid minimal payloads (F-01, review 2026-07-18): check 2 now
+  // validates every JSON payload against the closed registry — the old
+  // free-form stubs ({"result":"PASS"} etc.) are exactly the false-accept the
+  // review demonstrated and live on ONLY as corpus mutations.
   const json = (v: JsonValue) => te.encode(jcsSerialize(v));
-  m.set('connector-ops.json', { bytes: json({ ops: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connector-ops@2.0' });
-  m.set('connectors.minifix.json', { bytes: json({ connectors: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connectors-minifix@2.0' });
-  m.set('cutlist.json', { bytes: json({ parts: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.cutlist@2.0' });
-  m.set('drillmap.json', { bytes: json({ holes: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.drillmap@2.0' });
-  m.set('gate-result.json', { bytes: json({ result: 'PASS' }), mediaType: 'application/json', contentSchema: 'monolith.factory.gate-result@2.0' });
+  m.set('connector-ops.json', { bytes: json({ schema: 'monolith.factory.connector-ops@2.0', operations: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connector-ops@2.0' });
+  m.set('connectors.minifix.json', { bytes: json({ schema: 'monolith.factory.connectors-minifix@2.0', pairs: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.connectors-minifix@2.0' });
+  m.set('cutlist.json', { bytes: json({ schema: 'monolith.factory.cutlist@2.0', parts: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.cutlist@2.0' });
+  m.set('drillmap.json', { bytes: json({ schema: 'monolith.factory.drillmap@2.0', panels: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.drillmap@2.0' });
+  m.set('gate-result.json', { bytes: json({ schema: 'monolith.factory.gate-result@2.0', policyVersion: '1.0.0', result: 'PASS', findings: [] }), mediaType: 'application/json', contentSchema: 'monolith.factory.gate-result@2.0' });
   return m;
 }
 
