@@ -339,7 +339,13 @@ import {
   generateCabinetDXFBundle,
   downloadCabinetDXFZip,
   type CabinetDxfOptions,
+  type CabinetDxfZipResult,
 } from './cabinetToDxf';
+import {
+  SHADOW_MODE_NOT_FOR_PRODUCTION,
+  NOT_FOR_PRODUCTION_FILE,
+  NOT_FOR_PRODUCTION_NOTICE,
+} from '../config/shadowMode';
 
 /**
  * Create DXF export artifacts for a cabinet
@@ -382,14 +388,16 @@ export async function quickDxfExport(
     await downloadCabinetDXFZip(cabinet, options);
   } else {
     // Download individual files
+    // ADR-065 Q3: no zip to carry NOT_FOR_PRODUCTION.txt → label each filename
     const dxfBundle = generateCabinetDXFBundle(cabinet, options);
     const downloader = createBrowserDownloader();
     const artifacts: ExportArtifact[] = [];
+    const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
 
     dxfBundle.forEach((content, filename) => {
       artifacts.push({
         kind: 'DXF',
-        filename,
+        filename: `${nfpPrefix}${filename}`,
         content,
       });
     });
@@ -399,12 +407,17 @@ export async function quickDxfExport(
 }
 
 /**
- * Export all cabinets to DXF
+ * Build the quick all-cabinets DXF ZIP.
+ *
+ * ADR-065 Q3: this legacy geometry path bypasses the OperationGraph/G10 chain
+ * (preview/dev only), so while SHADOW_MODE is on the archive MUST carry
+ * NOT_FOR_PRODUCTION.txt and an NFP- filename prefix — same convention as
+ * buildDxfZipFromPacket. No unlabeled DXF zip may leave the system.
  */
-export async function quickDxfExportAll(
+export async function buildAllCabinetsDxfZip(
   cabinets: Cabinet[],
   options?: CabinetDxfOptions
-): Promise<void> {
+): Promise<CabinetDxfZipResult> {
   // Dynamic import for JSZip
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
@@ -419,13 +432,40 @@ export async function quickDxfExportAll(
     });
   }
 
-  // Generate and download ZIP
-  const blob = await zip.generateAsync({ type: 'blob' });
+  // ADR-065 Q3: shadow-mode label inside the archive
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    zip.file(NOT_FOR_PRODUCTION_FILE, NOT_FOR_PRODUCTION_NOTICE);
+  }
+
+  const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+
+  // ADR-065 Q3: NFP- prefix in filename — visible before opening
+  const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
+  const filename = `${nfpPrefix}All_Cabinets_DXF.zip`;
+
+  return { zipBytes, filename };
+}
+
+/**
+ * Export all cabinets to DXF
+ *
+ * ADR-065 Q3: delegates to buildAllCabinetsDxfZip so the archive always
+ * carries the NOT-FOR-PRODUCTION labels while SHADOW_MODE is on.
+ */
+export async function quickDxfExportAll(
+  cabinets: Cabinet[],
+  options?: CabinetDxfOptions
+): Promise<void> {
+  const { zipBytes, filename } = await buildAllCabinetsDxfZip(cabinets, options);
+
+  // Create a fresh Uint8Array copy to satisfy BlobPart type requirements
+  const blobPart = new Uint8Array(zipBytes);
+  const blob = new Blob([blobPart], { type: 'application/zip' });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'All_Cabinets_DXF.zip';
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

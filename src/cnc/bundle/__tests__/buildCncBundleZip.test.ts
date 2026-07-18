@@ -169,7 +169,9 @@ describe('buildCncBundleZip - File Structure', () => {
 
     const paths = result.manifest.files.map((f) => f.path);
     // nc/ZZZZZ.nc should come after opgraph.json alphabetically
-    expect(paths).toEqual([...paths].sort());
+    // (localeCompare — same comparator as the builder; ADR-065 added the
+    // mixed-case NOT_FOR_PRODUCTION.txt where code-unit sort would diverge)
+    expect(paths).toEqual([...paths].sort((a, b) => a.localeCompare(b)));
   });
 
   it('should include file sizes', async () => {
@@ -333,7 +335,8 @@ describe('buildCncBundleZip - Filename', () => {
     const result = await buildCncBundleZip(input);
 
     // Format: cnc-{jobIdShort}-{machineId}-{hashShort}.zip
-    expect(result.filename).toMatch(/^cnc-JOB-1234-KDT-[a-f0-9]{8}\.zip$/);
+    // ADR-065 Q3: NFP- prefix while SHADOW_MODE is on (see cncBundleNfp.test.ts)
+    expect(result.filename).toMatch(/^NFP-cnc-JOB-1234-KDT-[a-f0-9]{8}\.zip$/);
   });
 });
 
@@ -411,6 +414,7 @@ describe('cncManifest - Utilities', () => {
     };
 
     const filename = getCncBundleFilename(manifest);
-    expect(filename).toBe('cnc-JOB-ABCD-KDT-abcd1234.zip');
+    // ADR-065 Q3: NFP- prefix while SHADOW_MODE is on (see cncBundleNfp.test.ts)
+    expect(filename).toBe('NFP-cnc-JOB-ABCD-KDT-abcd1234.zip');
   });
 });

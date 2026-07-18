@@ -15,6 +15,7 @@ import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations } from '../normalizeOperations';
 import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
+import { getNfpHeaderLines } from '../nfpHeader';
 
 // ============================================================================
 // WEEKE Post Processor
@@ -178,6 +179,10 @@ function generateWeekeHeader(
   // WEEKE header format with % start marker
   builder.addRaw('%');
   builder.addRaw(`O${programName}`);
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
   builder.addComment('WEEKE/HOMAG NC PROGRAM');
   builder.addComment(`Program: ${programName}`);
   builder.addComment(`Machine: ${machine.id} (${machine.manufacturer})`);
@@ -227,6 +232,10 @@ function generateEmptyProgram(opts: PostProcessOptions): string {
 
   builder.addRaw('%');
   builder.addRaw(`O${programName}`);
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
   builder.addComment('WEEKE/HOMAG NC PROGRAM');
   builder.addComment('Empty program');
   builder.programEnd();

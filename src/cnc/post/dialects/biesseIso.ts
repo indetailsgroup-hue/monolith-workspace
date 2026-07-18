@@ -14,6 +14,7 @@ import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations } from '../normalizeOperations';
 import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
+import { getNfpHeaderLines } from '../nfpHeader';
 
 // ============================================================================
 // Biesse ISO Post Processor
@@ -173,6 +174,11 @@ function generateBiesseHeader(
 ): void {
   const programName = formatProgramName(opts.programName);
 
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
+
   // Biesse header format (may vary by controller version)
   builder.addComment('BIESSE NC PROGRAM');
   builder.addComment(`Program: ${programName}`);
@@ -220,6 +226,10 @@ function generateEmptyProgram(opts: PostProcessOptions): string {
   const builder = new GcodeBuilder({ includeComments: true });
   const programName = formatProgramName(opts.programName);
 
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
   builder.addComment('BIESSE NC PROGRAM');
   builder.addComment(`Program: ${programName}`);
   builder.addComment('Empty program');

@@ -73,6 +73,8 @@ export const ValidationCodes = {
   INVALID_DEPTH: 'INVALID_DEPTH',
   INVALID_DIAMETER: 'INVALID_DIAMETER',
   EMPTY_GRAPH: 'EMPTY_GRAPH',
+  /** ADR-065: Two operations target the same coordinate (double drilling) */
+  DUPLICATE_POSITION: 'DUPLICATE_POSITION',
 
   // Machine issues
   MACHINE_MISMATCH: 'MACHINE_MISMATCH',
@@ -119,6 +121,11 @@ export function validateOperationGraph(
     validateOperation(op, machine, issues);
   }
 
+  // ADR-065: Duplicate coordinate check — drilling the same position twice
+  // is a red-line. buildOperationGraph dedupes internally; this guards
+  // externally supplied graphs (defense in depth).
+  validateNoDuplicatePositions(graph.operations, issues);
+
   // Check all tools exist
   for (const toolId of graph.toolsUsed) {
     if (!getTool(machine, toolId)) {
@@ -142,6 +149,54 @@ export function validateOperationGraph(
     warningCount,
     validatedAt: new Date().toISOString(),
   };
+}
+
+/** Drill direction of an operation (V/H), undefined when unknown/not applicable */
+function operationDirection(op: Operation): 'V' | 'H' | undefined {
+  return op.type === 'DRILL' || op.type === 'BORE' ? op.direction : undefined;
+}
+
+/**
+ * ADR-065: Flag operations that share the same panel + coordinate.
+ * Position keys use 3 decimal places (packet precision).
+ *
+ * Scoping (must mirror buildOperationGraph.dedupeOperationsByPosition):
+ * - Keys carry workpieceContext.panelId — panel-local coordinates repeat
+ *   legitimately across panels (system-32 mirror panels), so a position-only
+ *   check would false-block valid external multi-panel graphs.
+ * - Ops with explicit, DIFFERENT V/H directions at the same coordinate are
+ *   not duplicates; unknown direction conservatively collides.
+ */
+function validateNoDuplicatePositions(
+  operations: Operation[],
+  issues: ValidationIssue[]
+): void {
+  const buckets = new Map<string, Operation[]>();
+
+  for (const op of operations) {
+    const { x, y, z } = op.position;
+    const panelId = op.workpieceContext?.panelId ?? '';
+    const key = `${panelId}|${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
+    const bucket = buckets.get(key) ?? [];
+    const existing = bucket.find((candidate) => {
+      const a = operationDirection(candidate);
+      const b = operationDirection(op);
+      return a === undefined || b === undefined || a === b;
+    });
+
+    if (existing) {
+      issues.push({
+        severity: 'ERROR',
+        code: ValidationCodes.DUPLICATE_POSITION,
+        message: `Operation ${op.id} duplicates position (${key}) of operation ${existing.id}`,
+        operationId: op.id,
+        details: { position: op.position, duplicateOf: existing.id },
+      });
+    }
+
+    bucket.push(op);
+    buckets.set(key, bucket);
+  }
 }
 
 /**

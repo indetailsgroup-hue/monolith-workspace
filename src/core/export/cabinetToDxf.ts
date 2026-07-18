@@ -40,6 +40,11 @@ import {
   generateMinifixArrayPattern,
   getRecommendedMinifixConfig,
 } from '../catalog/MinifixHardware';
+import {
+  SHADOW_MODE_NOT_FOR_PRODUCTION,
+  NOT_FOR_PRODUCTION_FILE,
+  NOT_FOR_PRODUCTION_NOTICE,
+} from '../config/shadowMode';
 
 // ============================================
 // TYPES
@@ -830,26 +835,42 @@ export function generateCabinetDXFBundle(
 
 /**
  * Download all DXF files for a cabinet
+ *
+ * ADR-065 Q3: loose files have no zip to carry NOT_FOR_PRODUCTION.txt, so the
+ * shadow-mode label rides on each filename (NFP- prefix).
  */
 export function downloadCabinetDXF(
   cabinet: Cabinet,
   options: CabinetDxfOptions = {}
 ): void {
   const dxfBundle = generateCabinetDXFBundle(cabinet, options);
+  const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
 
   dxfBundle.forEach((content, filename) => {
-    downloadDXF(content, filename);
+    downloadDXF(content, `${nfpPrefix}${filename}`);
   });
 }
 
+export interface CabinetDxfZipResult {
+  /** ZIP file bytes */
+  zipBytes: Uint8Array;
+  /** Suggested filename (NFP- prefixed while SHADOW_MODE is on) */
+  filename: string;
+}
+
 /**
- * Download all DXF files as a single ZIP
- * Requires JSZip library
+ * Build the quick per-cabinet DXF ZIP.
+ *
+ * ADR-065 Q3: this legacy geometry path bypasses the OperationGraph/G10 chain
+ * (it exists for preview/dev only), so while SHADOW_MODE is on the archive
+ * MUST carry NOT_FOR_PRODUCTION.txt and an NFP- filename prefix — same
+ * labeling convention as buildDxfZipFromPacket. No unlabeled DXF zip may
+ * leave the system.
  */
-export async function downloadCabinetDXFZip(
+export async function buildCabinetDxfZip(
   cabinet: Cabinet,
   options: CabinetDxfOptions = {}
-): Promise<void> {
+): Promise<CabinetDxfZipResult> {
   // Dynamic import for JSZip (tree-shaking friendly)
   const JSZip = (await import('jszip')).default;
   const zip = new JSZip();
@@ -867,13 +888,41 @@ export async function downloadCabinetDXFZip(
     folder.file(filename, content);
   });
 
-  // Generate and download ZIP
-  const blob = await zip.generateAsync({ type: 'blob' });
+  // ADR-065 Q3: shadow-mode label inside the archive
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    zip.file(NOT_FOR_PRODUCTION_FILE, NOT_FOR_PRODUCTION_NOTICE);
+  }
+
+  const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+
+  // ADR-065 Q3: NFP- prefix in filename — visible before opening
+  const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
+  const filename = `${nfpPrefix}${cabinet.name}_DXF.zip`;
+
+  return { zipBytes, filename };
+}
+
+/**
+ * Download all DXF files as a single ZIP
+ * Requires JSZip library
+ *
+ * ADR-065 Q3: delegates to buildCabinetDxfZip so the archive always carries
+ * the NOT-FOR-PRODUCTION labels while SHADOW_MODE is on.
+ */
+export async function downloadCabinetDXFZip(
+  cabinet: Cabinet,
+  options: CabinetDxfOptions = {}
+): Promise<void> {
+  const { zipBytes, filename } = await buildCabinetDxfZip(cabinet, options);
+
+  // Create a fresh Uint8Array copy to satisfy BlobPart type requirements
+  const blobPart = new Uint8Array(zipBytes);
+  const blob = new Blob([blobPart], { type: 'application/zip' });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${cabinet.name}_DXF.zip`;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

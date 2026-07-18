@@ -460,7 +460,8 @@ describe('validateOperationGraph - Multiple Issues', () => {
     const graph = createGraph({
       operations: [
         createDrillOp({ id: 'drill-001', depth: 0 }),
-        createDrillOp({ id: 'drill-002', depth: -5 }),
+        // ADR-065: distinct position — same position would add a DUPLICATE_POSITION error
+        createDrillOp({ id: 'drill-002', depth: -5, position: { x: 150, y: 100, z: 0 } }),
         createBoreOp({ id: 'bore-001', depth: 0 }),
       ],
     });

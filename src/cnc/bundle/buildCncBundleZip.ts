@@ -9,6 +9,11 @@
 
 import { sha256Hex } from '../../crypto/sha256';
 import { stableStringify } from '../../core/kernelClient/stablejson';
+import {
+  SHADOW_MODE_NOT_FOR_PRODUCTION,
+  NOT_FOR_PRODUCTION_FILE,
+  NOT_FOR_PRODUCTION_NOTICE,
+} from '../../core/config/shadowMode';
 import type { OperationGraph } from '../operation/operationTypes';
 import {
   CNC_MANIFEST_SCHEMA,
@@ -124,7 +129,20 @@ export async function buildCncBundleZip(
       bytes: gcode.bytes.length,
       sha256: gcodeSha256,
     },
-  ].sort((a, b) => a.path.localeCompare(b.path));
+  ];
+
+  // ADR-065 Q3: shadow-mode label — entered in manifest with a real hash so
+  // factory-side verification covers the label file too
+  const nfpBytes = new TextEncoder().encode(NOT_FOR_PRODUCTION_NOTICE);
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    fileEntries.push({
+      path: NOT_FOR_PRODUCTION_FILE,
+      bytes: nfpBytes.length,
+      sha256: await sha256Hex(nfpBytes),
+    });
+  }
+
+  fileEntries.sort((a, b) => a.path.localeCompare(b.path));
 
   // ─────────────────────────────────────────────────────────────────────────
   // Step 4: Build manifest
@@ -167,6 +185,11 @@ export async function buildCncBundleZip(
     { path: gcode.path, bytes: gcode.bytes },
     { path: CNC_BUNDLE_FILES.CHECKSUMS, bytes: checksumsContent },
   ];
+
+  // ADR-065 Q3: shadow-mode label inside the zip
+  if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+    bundleFiles.push({ path: NOT_FOR_PRODUCTION_FILE, bytes: NOT_FOR_PRODUCTION_NOTICE });
+  }
 
   const zipBytes = await zipCncBundle(bundleFiles);
   const filename = getCncBundleFilename(manifest);
