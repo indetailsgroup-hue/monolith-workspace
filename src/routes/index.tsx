@@ -44,18 +44,23 @@ const FactoryApp = lazy(() =>
 );
 
 // S18 L7 Slice 4: Finance dashboard (built by lane L4 as src/pages/FinanceDashboard).
-// The module path is a variable so builds stay green while L4's PR is in flight;
-// until the file lands, the catch fallback renders FinanceComingSoon.
-// TODO(S18 integration): switch to a static `import('../pages/FinanceDashboard')`
-// once L4's FinanceDashboard is merged.
-const FINANCE_DASHBOARD_MODULE = '../pages/FinanceDashboard';
+// import.meta.glob with literal patterns is statically analyzed by Vite, so the
+// module is code-split into the production bundle the moment L4's file lands —
+// a bundler-invisible variable import would 404 at runtime in a production
+// build and silently show FinanceComingSoon forever. While the file is absent
+// the glob record is empty and the route renders FinanceComingSoon; when it
+// lands, a rebuild picks it up with no manual integration step.
+const financeDashboardModules = import.meta.glob<{
+  FinanceDashboard?: ComponentType;
+  default?: ComponentType;
+}>(['../pages/FinanceDashboard.tsx', '../pages/FinanceDashboard/index.tsx']);
+const loadFinanceDashboard = Object.values(financeDashboardModules)[0];
 const FinanceDashboard = lazy(() =>
-  (import(/* @vite-ignore */ FINANCE_DASHBOARD_MODULE) as Promise<{
-    FinanceDashboard?: ComponentType;
-    default?: ComponentType;
-  }>)
-    .then((m) => ({ default: (m.FinanceDashboard ?? m.default ?? FinanceComingSoon) }))
-    .catch(() => ({ default: FinanceComingSoon }))
+  loadFinanceDashboard
+    ? loadFinanceDashboard().then((m) => ({
+        default: m.FinanceDashboard ?? m.default ?? FinanceComingSoon,
+      }))
+    : Promise.resolve({ default: FinanceComingSoon })
 );
 
 /**
