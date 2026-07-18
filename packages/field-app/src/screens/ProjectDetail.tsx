@@ -24,6 +24,8 @@ interface Detail {
 export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const [d, setD] = useState<Detail | null>(null);
   const [err, setErr] = useState('');
+  const [issued, setIssued] = useState(''); // รหัสผูกที่เพิ่งออก — การ์ดค้างบนจอแทน alert (S18)
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(() => {
     supabase().rpc('rpc_field_project_detail', { p_project_id: id }).then(({ data, error }) => {
@@ -35,8 +37,19 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
   async function issueCode() {
     const { data, error } = await supabase().rpc('rpc_field_issue_bind_code', { p_project_id: id });
     if (error) { setErr(error.message); return; }
-    alert(`รหัสผูกกลุ่ม: ${data}\n\nส่งให้หัวหน้างาน/Sale พิมพ์ในกลุ่ม LINE:\n#ผูก ${data} ทีม  หรือ  #ผูก ${data} ลูกค้า`);
+    // alert() ปิดแล้วรหัสหาย จดไม่ทัน — โชว์เป็นการ์ดค้างบนจอ + ปุ่มคัดลอกแทน (S18)
+    setIssued(String(data));
+    setCopied(false);
     load();
+  }
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(issued);
+      setCopied(true);
+    } catch {
+      setCopied(false); // browser เก่า/ไม่มีสิทธิ์ clipboard — รหัสยังอ่านได้บนการ์ด พิมพ์ตามได้
+    }
   }
 
   if (err) return <div className="page"><p className="err">{err}</p><button className="btn btn-ghost" onClick={onBack}>ย้อนกลับ</button></div>;
@@ -55,6 +68,17 @@ export function ProjectDetail({ id, onBack }: { id: string; onBack: () => void }
           <p>รหัสผูกที่ใช้ได้: {d.bind_codes.map((c) => <span key={c.code} className="badge" style={{ marginRight: 6 }}>{c.code} (เหลือ {c.uses_left})</span>)}</p>
         )}
         <button className="btn btn-accent" onClick={issueCode}>ออกรหัสผูกกลุ่ม LINE</button>
+        {issued && (
+          <div className="card" style={{ background: '#FFF6E5', marginTop: 10 }}>
+            <strong>รหัสผูกกลุ่ม: {issued}</strong>
+            <p className="muted" style={{ margin: '6px 0' }}>
+              ส่งให้หัวหน้างาน/Sale พิมพ์ในกลุ่ม LINE:<br />
+              #ผูก {issued} ทีม  หรือ  #ผูก {issued} ลูกค้า
+            </p>
+            <button className="btn" onClick={() => { void copyCode(); }}>📋 คัดลอกรหัส</button>
+            {copied && <span style={{ color: 'var(--ok)', fontWeight: 600, marginLeft: 8 }}>คัดลอกแล้ว ✅</span>}
+          </div>
+        )}
       </div>
       <TurnkeyCard projectId={id} />
       <MoneyPanel projectId={id} />
