@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17-4 — Frozen Implementation Handoff</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17-4 — Frozen Implementation Handoff</h1>
+<ul><li>Date: 2026-07-18</li><li>Owner: Dave</li><li>Builder: Codex</li><li>Status: <strong>FROZEN E0 CANDIDATE — HANDOFF READY — NFP / NO_CUT</strong></li></ul>
+<h2>1. Exact freeze anchor</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Item</th>
+<th>Pinned value</th>
+</tr></thead><tbody>
+<tr>
+<td>Branch</td>
+<td><code>s17/track-b-generator</code></td>
+</tr>
+<tr>
+<td>Frozen implementation commit</td>
+<td><code>eeed1ce6b4388db5c661932a419e5d2c61267712</code></td>
+</tr>
+<tr>
+<td>Git tree</td>
+<td><code>da717b31f26f7000e5f94fad854cb0dd13c61004</code></td>
+</tr>
+<tr>
+<td>Parent / opening base</td>
+<td><code>6c1a6f59efe16b3aadfc64f582202b6ee16b9019</code></td>
+</tr>
+<tr>
+<td>Contract</td>
+<td>CT-DEC-002 / S17-3 Canonical Factory Packet Specification v0.4.1</td>
+</tr>
+<tr>
+<td>Spec manifest SHA-256</td>
+<td><code>5473958a64c7c19f3ce5288d7f2b9d0a42157bb1086a84f90256dbf56b370a69</code></td>
+</tr>
+<tr>
+<td>Schema aggregate</td>
+<td><code>1964b5d0f7346334cd764f21c31028ab8b38c52cf289f82511432346d93a67f2</code></td>
+</tr>
+</tbody></table></div>
+<p>“Frozen” in this record means that review and testing must target only the exact commit above. Any defect must be addressed by a new patch commit; this commit must not be silently rewritten or replaced. This handoff record lives in a separate child commit, so it does not alter the frozen implementation tree.</p>
+<h2>2. Frozen byte scope</h2>
+<p>The commit changes exactly 20 paths: three configuration paths and 17 S17-4 source, test, and fixture paths.</p>
+<h3>Configuration and CI</h3>
+<ul><li><code>.github/workflows/verify-full.yml</code></li><li><code>package.json</code></li><li><code>server/package.json</code></li></ul>
+<h3>Generator source</h3>
+<ul><li><code>server/src/packet/v2/canonical.ts</code></li><li><code>server/src/packet/v2/constants.ts</code></li><li><code>server/src/packet/v2/fileRunStore.ts</code></li><li><code>server/src/packet/v2/generator.ts</code></li><li><code>server/src/packet/v2/index.ts</code></li><li><code>server/src/packet/v2/payloads.ts</code></li><li><code>server/src/packet/v2/signature.ts</code></li><li><code>server/src/packet/v2/types.ts</code></li><li><code>server/src/packet/v2/zip.ts</code></li></ul>
+<h3>E0 tests and golden fixtures</h3>
+<ul><li><code>server/src/packet/v2/__tests__/canonical.test.ts</code></li><li><code>server/src/packet/v2/__tests__/file-run-store.test.ts</code></li><li><code>server/src/packet/v2/__tests__/fixtures.ts</code></li><li><code>server/src/packet/v2/__tests__/fixtures/golden-input.json</code></li><li><code>server/src/packet/v2/__tests__/fixtures/golden-expected.json</code></li><li><code>server/src/packet/v2/__tests__/generator.test.ts</code></li><li><code>server/src/packet/v2/__tests__/schema-contract.test.ts</code></li><li><code>server/src/packet/v2/__tests__/signature.test.ts</code></li></ul>
+<h2>3. Contract implemented by this candidate</h2>
+<ol><li>Build a deterministic content plane using JCS, integer micrometres, schema-owned array ordering, lowercase SHA-256, and a path-aware <code>packetContentId</code></li><li>Separate the run-specific plane from content identity: <code>jobRunId</code>, <code>issuedAt</code>, actor, and signature are not inputs to <code>packetContentId</code></li><li>Create a method-0 ZIP under the fixed byte profile, with <code>manifest.json</code> first, payloads in unsigned UTF-8 order, and <code>attestation.json</code> last</li><li>Enforce the shadow contract through the exact pinned <code>NOT_FOR_PRODUCTION.txt</code> bytes and an <code>NFP-</code> filename prefix</li><li>Use a mockable signing port for S17-6: <code>ECC_NIST_P256</code>, KMS <code>ECDSA_SHA_256</code>, and <code>MessageType=DIGEST</code>; convert KMS DER to raw 64-byte <code>r‖s</code>, normalize to low-S, and encode canonical Base64</li><li>Bind the idempotency key/fingerprint, server-owned UUID v4 <code>jobRunId</code>, actor, authorization context, and <code>packetContentId</code> through in-memory and durable file run stores</li><li>Add a separate CI job for compilation, the golden/determinism/adversarial suite, and a JSON evidence artifact</li></ol>
+<h2>4. Fresh pre-freeze verification</h2>
+<p>Every result below was run from the same worktree as the frozen commit before committing, with output read through the final summary and the exit code checked.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Command</th>
+<th>Scope</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr>
+<td><code>npm.cmd run test:s17-4</code> from the repository root</td>
+<td>root forwarding command + focused S17-4 suite</td>
+<td>exit 0; test files 5/5; tests 21/21; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:s17-4 -- --reporter=default --reporter=json --outputFile=s17-4-report.json</code> from <code>server/</code></td>
+<td>exact CI test command</td>
+<td>exit 0; test files 5/5; tests 21/21; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:run -- --reporter=default --reporter=json --outputFile=server-test-report.json</code> from <code>server/</code></td>
+<td>factory-server regression suite</td>
+<td>exit 0; test files 7/7; tests 51/51; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run build</code> from <code>server/</code></td>
+<td>TypeScript compilation</td>
+<td>exit 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:node</code> from the repository root</td>
+<td>governance tooling + schema-bundle controls</td>
+<td>exit 0; tests 13/13; fail 0</td>
+</tr>
+<tr>
+<td><code>node scripts/verify-sha256-manifest.mjs docs/specs/s17-canonical-packet-spec-v1.sha256</code></td>
+<td>approved spec/schema bytes</td>
+<td>exit 0; manifest entries 16/16 PASS</td>
+</tr>
+<tr>
+<td><code>git diff --cached --check</code></td>
+<td>exact staged implementation bytes</td>
+<td>exit 0</td>
+</tr>
+</tbody></table></div>
+<p>Environment note: the first invocation of the exact CI test inside a restricted execution sandbox stopped before loading <code>vitest.config.ts</code> because esbuild was denied access to a parent directory. That run was classified as UNKNOWN, not a source-test failure. The identical command was then run with normal repository read access and produced the exit-0 result above. No source change was made to bypass that environment restriction.</p>
+<h2>5. Independent S17-5 handoff contract</h2>
+<ol><li>Use <code>eeed1ce6b4388db5c661932a419e5d2c61267712</code> as builder provenance; do not substitute working-tree bytes or a moving branch head</li><li>The official S17-5 review must build the verifier independently from the approved specification and schemas; it must not import generator source, helpers, or golden fixtures from <code>server/src/packet/v2/</code></li><li>The builder must provide a packet ZIP produced from the exact frozen commit, together with SHA-256 values for the input, ZIP, commit, and environment as separate evidence. Producing and transferring that artifact is outside this freeze-only scope</li><li>The verifier must check the exact file set/order/profile, canonical bytes/digests/content identity, NFP precedence, signature encoding and low-S, trusted lookup/lifecycle, authoritative bindings, and the §12–§14 tamper corpus</li><li>Interoperability results must pin the verifier commit and input ZIP SHA-256. A failure must be filed against the frozen commit and fixed in a new commit</li></ol>
+<h2>6. What this record does not approve</h2>
+<ul><li>It does not merge into <code>main</code> and does not modify S17-5</li><li>It does not wire the generator into a production API/controller or the Track A authorization boundary</li><li>It does not provision, import, or activate an AWS KMS key; this is an interface/mock boundary only</li><li>It does not perform the S17-6 key ceremony, engineer bench work, machine calibration, or real-cut validation</li><li>It does not change NFP/NO_CUT and creates no production authority or manufacturing release</li><li>It does not declare S17-4 governance-complete; this is a frozen E0 implementation candidate awaiting independent S17-5/interoperability evidence</li><li>At record creation time the branch had not been pushed; remote publication must preserve the exact commit IDs above</li></ul>
+<h2>7. Reproduce</h2>
+<pre><code class="language-text">git checkout eeed1ce6b4388db5c661932a419e5d2c61267712
+npm.cmd run test:s17-4
+cd server
+npm.cmd run build
+npm.cmd run test:run</code></pre>
+<p>Use <code>npm</code> instead of <code>npm.cmd</code> on Linux/CI.</p>
+</main>
+</body>
+</html>

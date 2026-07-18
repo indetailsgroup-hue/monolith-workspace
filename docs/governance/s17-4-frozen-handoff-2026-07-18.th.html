@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17-4 — Frozen Implementation Handoff</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17-4 — Frozen Implementation Handoff</h1>
+<ul><li>วันที่: 2026-07-18</li><li>Owner: คุณเดฟ</li><li>Builder: Codex</li><li>สถานะ: <strong>FROZEN E0 CANDIDATE — HANDOFF READY — NFP / NO_CUT</strong></li></ul>
+<h2>1. Exact freeze anchor</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>รายการ</th>
+<th>ค่าที่ pin</th>
+</tr></thead><tbody>
+<tr>
+<td>Branch</td>
+<td><code>s17/track-b-generator</code></td>
+</tr>
+<tr>
+<td>Frozen implementation commit</td>
+<td><code>eeed1ce6b4388db5c661932a419e5d2c61267712</code></td>
+</tr>
+<tr>
+<td>Git tree</td>
+<td><code>da717b31f26f7000e5f94fad854cb0dd13c61004</code></td>
+</tr>
+<tr>
+<td>Parent / opening base</td>
+<td><code>6c1a6f59efe16b3aadfc64f582202b6ee16b9019</code></td>
+</tr>
+<tr>
+<td>Contract</td>
+<td>CT-DEC-002 / S17-3 Canonical Factory Packet Specification v0.4.1</td>
+</tr>
+<tr>
+<td>Spec manifest SHA-256</td>
+<td><code>5473958a64c7c19f3ce5288d7f2b9d0a42157bb1086a84f90256dbf56b370a69</code></td>
+</tr>
+<tr>
+<td>Schema aggregate</td>
+<td><code>1964b5d0f7346334cd764f21c31028ab8b38c52cf289f82511432346d93a67f2</code></td>
+</tr>
+</tbody></table></div>
+<p>คำว่า frozen ใน record นี้หมายถึงให้ review และทดสอบ exact commit ข้างต้นเท่านั้น หากพบ defect ต้องทำ patch เป็น commit ใหม่ ห้าม rewrite หรือแทนที่ commit นี้แบบเงียบ ๆ Handoff record นี้อยู่ใน child commit แยก จึงไม่เปลี่ยน implementation tree ที่ frozen แล้ว</p>
+<h2>2. ขอบเขต bytes ที่ frozen</h2>
+<p>Commit นี้เปลี่ยนทั้งหมด 20 path: configuration 3 path และ S17-4 source/test/fixture 17 path</p>
+<h3>Configuration และ CI</h3>
+<ul><li><code>.github/workflows/verify-full.yml</code></li><li><code>package.json</code></li><li><code>server/package.json</code></li></ul>
+<h3>Generator source</h3>
+<ul><li><code>server/src/packet/v2/canonical.ts</code></li><li><code>server/src/packet/v2/constants.ts</code></li><li><code>server/src/packet/v2/fileRunStore.ts</code></li><li><code>server/src/packet/v2/generator.ts</code></li><li><code>server/src/packet/v2/index.ts</code></li><li><code>server/src/packet/v2/payloads.ts</code></li><li><code>server/src/packet/v2/signature.ts</code></li><li><code>server/src/packet/v2/types.ts</code></li><li><code>server/src/packet/v2/zip.ts</code></li></ul>
+<h3>E0 tests และ golden fixtures</h3>
+<ul><li><code>server/src/packet/v2/__tests__/canonical.test.ts</code></li><li><code>server/src/packet/v2/__tests__/file-run-store.test.ts</code></li><li><code>server/src/packet/v2/__tests__/fixtures.ts</code></li><li><code>server/src/packet/v2/__tests__/fixtures/golden-input.json</code></li><li><code>server/src/packet/v2/__tests__/fixtures/golden-expected.json</code></li><li><code>server/src/packet/v2/__tests__/generator.test.ts</code></li><li><code>server/src/packet/v2/__tests__/schema-contract.test.ts</code></li><li><code>server/src/packet/v2/__tests__/signature.test.ts</code></li></ul>
+<h2>3. Contract ที่ implementation นี้ตั้งใจทำ</h2>
+<ol><li>สร้าง deterministic content plane ด้วย JCS, integer micrometre, schema-owned array ordering, lowercase SHA-256 และ path-aware <code>packetContentId</code></li><li>แยก run-specific plane ออกจาก content identity โดย <code>jobRunId</code>, <code>issuedAt</code>, actor และ signature ไม่เป็น input ของ <code>packetContentId</code></li><li>สร้าง ZIP แบบ method-0 ตาม fixed byte profile โดย entry แรกคือ <code>manifest.json</code>, payload เรียง unsigned UTF-8 และ entry สุดท้ายคือ <code>attestation.json</code></li><li>บังคับ shadow contract ด้วย <code>NOT_FOR_PRODUCTION.txt</code> ที่ pin exact bytes และชื่อไฟล์ขึ้นต้น <code>NFP-</code></li><li>ใช้ signing port ที่ mock ได้สำหรับ S17-6: <code>ECC_NIST_P256</code>, KMS <code>ECDSA_SHA_256</code>, <code>MessageType=DIGEST</code>; แปลง DER จาก KMS เป็น raw <code>r‖s</code> 64 bytes, normalize low-S แล้ว Base64 แบบ canonical</li><li>ผูก idempotency key/fingerprint, server-owned UUID v4 <code>jobRunId</code>, actor, authorization context และ <code>packetContentId</code> ผ่าน in-memory และ durable file run stores</li><li>เพิ่ม CI job แยกสำหรับ build, golden/determinism/adversarial suite และ JSON evidence artifact</li></ol>
+<h2>4. Fresh verification ก่อน freeze</h2>
+<p>ผลทั้งหมดต่อไปนี้รันจาก worktree เดียวกับ frozen commit ก่อน commit และอ่าน output ถึง final summary พร้อม exit code แล้ว</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Command</th>
+<th>Scope</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td><code>npm.cmd run test:s17-4</code> จาก repository root</td>
+<td>root forwarding command + S17-4 focused suite</td>
+<td>exit 0; test files 5/5; tests 21/21; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:s17-4 -- --reporter=default --reporter=json --outputFile=s17-4-report.json</code> จาก <code>server/</code></td>
+<td>exact CI test command</td>
+<td>exit 0; test files 5/5; tests 21/21; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:run -- --reporter=default --reporter=json --outputFile=server-test-report.json</code> จาก <code>server/</code></td>
+<td>factory-server regression suite</td>
+<td>exit 0; test files 7/7; tests 51/51; fail 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run build</code> จาก <code>server/</code></td>
+<td>TypeScript compile</td>
+<td>exit 0</td>
+</tr>
+<tr>
+<td><code>npm.cmd run test:node</code> จาก repository root</td>
+<td>governance tooling + schema-bundle controls</td>
+<td>exit 0; tests 13/13; fail 0</td>
+</tr>
+<tr>
+<td><code>node scripts/verify-sha256-manifest.mjs docs/specs/s17-canonical-packet-spec-v1.sha256</code></td>
+<td>approved spec/schema bytes</td>
+<td>exit 0; manifest entries 16/16 PASS</td>
+</tr>
+<tr>
+<td><code>git diff --cached --check</code></td>
+<td>exact staged implementation bytes</td>
+<td>exit 0</td>
+</tr>
+</tbody></table></div>
+<p>หมายเหตุ environment: การเรียก exact CI test ครั้งแรกภายใน restricted execution sandbox หยุดก่อน load <code>vitest.config.ts</code> เพราะ esbuild ถูกปฏิเสธสิทธิ์อ่าน parent directory จึงจัดเป็น UNKNOWN ไม่ใช่ผล test ของ source จากนั้นรันคำสั่งเดิมด้วยสิทธิ์อ่าน repository ปกติและได้ผล exit 0 ข้างต้น ไม่มีการแก้ source เพื่อหลบปัญหานี้</p>
+<h2>5. Independent S17-5 handoff contract</h2>
+<ol><li>ใช้ <code>eeed1ce6b4388db5c661932a419e5d2c61267712</code> เป็น builder provenance; ห้ามใช้ working-tree bytes หรือ moving branch head แทน</li><li>Official S17-5 review ต้องสร้าง verifier จาก approved spec และ schemas โดยอิสระ ห้าม import generator source, helper หรือ golden fixture จาก <code>server/src/packet/v2/</code></li><li>Builder ต้องส่ง packet ZIP ที่สร้างจาก exact frozen commit พร้อม SHA-256 ของ input, ZIP, commit และ environment เป็น evidence แยก การสร้าง/ส่ง artifact ดังกล่าวไม่รวมอยู่ใน freeze-only scope รอบนี้</li><li>Verifier ต้องตรวจ exact file set/order/profile, canonical bytes/digests/content identity, NFP precedence, signature encoding + low-S, trusted lookup/lifecycle, authoritative bindings และ tamper corpus ตาม §12–§14</li><li>ผล interop ต้องบันทึก verifier commit และ input ZIP SHA-256 ชัดเจน หากไม่ผ่านให้เปิด finding ต่อ frozen commit และแก้ด้วย commit ใหม่</li></ol>
+<h2>6. สิ่งที่ record นี้ไม่ได้อนุมัติ</h2>
+<ul><li>ไม่ได้ merge เข้า <code>main</code> และไม่ได้แก้ S17-5</li><li>ไม่ได้ wire generator เข้ากับ production API/controller หรือ Track A authorization boundary</li><li>ไม่ได้ provision/import/activate AWS KMS key; adapter นี้เป็น interface/mock boundary เท่านั้น</li><li>ไม่ได้ทำ S17-6 key ceremony, engineer bench, machine calibration หรือ real-cut validation</li><li>ไม่ได้เปลี่ยน NFP/NO_CUT และไม่สร้าง production authority หรือ manufacturing release</li><li>ไม่ได้ประกาศว่า S17-4 ปิดงานเชิง governance; สถานะคือ frozen E0 implementation candidate รอ independent S17-5/interoperability evidence</li><li>ณ เวลาสร้าง record ยังไม่ได้ push branch; remote publication ต้องรักษา exact commit IDs ข้างต้น</li></ul>
+<h2>7. Reproduce</h2>
+<pre><code class="language-text">git checkout eeed1ce6b4388db5c661932a419e5d2c61267712
+npm.cmd run test:s17-4
+cd server
+npm.cmd run build
+npm.cmd run test:run</code></pre>
+<p>บน Linux/CI ให้ใช้ <code>npm</code> แทน <code>npm.cmd</code></p>
+</main>
+</body>
+</html>
