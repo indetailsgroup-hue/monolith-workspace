@@ -28,15 +28,32 @@ export async function verifyJobApi(jobId: string): Promise<VerifyApiResponse> {
       // hosted deploy — ทั้งคู่คือ storage check จึง map เข้าคำเดียวกัน
       if (typeof data?.verdict === 'string' && ('computed' in data || 'expected' in data)) {
         const match = data.verdict === 'STORAGE_HASH_MATCH' || data.verdict === 'PASS';
-        return {
+        // Build the COMPLETE contract — VerifyConsole renders checks/timestamp
+        // unconditionally. An `as VerifyApiResponse` cast here previously hid
+        // the missing fields and crashed the console on the success path
+        // (found by the live local-stack run, 2026-07-18).
+        const response: VerifyApiResponse = {
           verdict: match ? 'STORAGE_HASH_MATCH' : 'FAIL',
-          code: match ? 'OK' : 'HASH_MISMATCH',
+          // E_PACKET_CHECKSUM is the real code for a digest mismatch — the old
+          // 'HASH_MISMATCH' string was not in VerifyErrorCode at all (the cast hid
+          // it, so ERROR_MESSAGES[code] resolved to undefined in the console)
+          code: match ? 'OK' : 'E_PACKET_CHECKSUM',
           summary: match
             ? `ไบต์ตรงกับที่บันทึกไว้ (${String(data.bytes ?? '?')} bytes) — ตรวจ storage integrity เท่านั้น ไม่ใช่การ verify packet เต็มรูป`
             : 'hash ไม่ตรงกับที่บันทึก — ห้ามใช้ไฟล์นี้',
           message: `expected ${String(data.expected ?? '')} computed ${String(data.computed ?? '')}`,
           log: JSON.stringify(data),
-        } as VerifyApiResponse;
+          timestamp: new Date().toISOString(),
+          // one honest row — this path never ran signature/manifest/gate/audit
+          checks: [
+            {
+              name: 'Storage hash (stored ZIP bytes vs recorded digest)',
+              status: match ? 'PASS' : 'FAIL',
+              message: match ? undefined : 'computed digest differs from the recorded packet digest',
+            },
+          ],
+        };
+        return response;
       }
       return data as unknown as VerifyApiResponse;
     } catch (e: unknown) {

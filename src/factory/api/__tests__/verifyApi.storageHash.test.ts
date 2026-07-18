@@ -40,10 +40,32 @@ describe('verifyJobApi — storage-hash verdict semantics (B1-02)', () => {
     expect(result.verdict).toBe('STORAGE_HASH_MATCH');
   });
 
-  it('maps STORAGE_HASH_MISMATCH to a hard FAIL with HASH_MISMATCH code', async () => {
+  it('maps STORAGE_HASH_MISMATCH to a hard FAIL with the real E_PACKET_CHECKSUM code', async () => {
     apiFetch.mockResolvedValueOnce(edgeResponse('STORAGE_HASH_MISMATCH'));
     const result = await verifyJobApi('job-1');
     expect(result.verdict).toBe('FAIL');
-    expect(result.code).toBe('HASH_MISMATCH');
+    expect(result.code).toBe('E_PACKET_CHECKSUM');
+  });
+
+  // Live-run finding 2026-07-18: an `as VerifyApiResponse` cast let the adapter
+  // return a response with no `checks`/`timestamp`; VerifyConsole reads
+  // `apiResponse.checks.length` unconditionally and crashed the whole page on
+  // the SUCCESS path. The contract must be complete, not cast-complete.
+  it('returns a COMPLETE VerifyApiResponse — checks + timestamp present (console renders them)', async () => {
+    apiFetch.mockResolvedValueOnce(edgeResponse('STORAGE_HASH_MATCH'));
+    const result = await verifyJobApi('job-1');
+    expect(Array.isArray(result.checks)).toBe(true);
+    expect(result.checks).toHaveLength(1);
+    expect(result.checks[0]).toMatchObject({ status: 'PASS' });
+    expect(result.checks[0].name).toContain('Storage hash');
+    expect(() => new Date(result.timestamp).toISOString()).not.toThrow();
+  });
+
+  it('mismatch also carries a complete contract with a failing check row', async () => {
+    apiFetch.mockResolvedValueOnce(edgeResponse('STORAGE_HASH_MISMATCH'));
+    const result = await verifyJobApi('job-1');
+    expect(result.checks).toHaveLength(1);
+    expect(result.checks[0].status).toBe('FAIL');
+    expect(result.timestamp).toBeTruthy();
   });
 });
