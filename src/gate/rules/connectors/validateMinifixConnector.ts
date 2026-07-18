@@ -852,13 +852,21 @@ export function validateMinifixGate(
   drillMap: DrillMap | null,
   options?: MinifixGateOptions
 ): MinifixGateResult {
-  // Early return for null/empty drillMap
+  // S18: null/empty drillMap = ยังไม่มีอะไรให้ตรวจ — gate ต้องพูดความจริง
+  // คืน WARNING (ไม่ใช่ PASS เงียบ ๆ) เพื่อไม่ให้ผู้ใช้เข้าใจผิดว่า hardware ผ่านการตรวจแล้ว
   if (!drillMap || !drillMap.panels?.length) {
     return {
       gate: 'HARDWARE_CONNECTOR_VALIDATION',
-      status: 'PASS',
-      summary: { errors: 0, warnings: 0 },
-      findings: [],
+      status: 'WARNING',
+      summary: { errors: 0, warnings: 1 },
+      findings: [
+        {
+          severity: 'WARNING',
+          code: 'MONO_MINIFIX_NO_DRILL_MAP',
+          entityIds: [],
+          message: 'ยังไม่มี drill map — สร้าง drill map ก่อน gate จึงจะตรวจ connector ได้',
+        },
+      ],
     };
   }
 

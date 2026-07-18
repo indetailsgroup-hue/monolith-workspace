@@ -35,6 +35,8 @@ import {
   type StateResponse,
 } from '../api/stateApi';
 import { g9ToValidationRules } from '../gate/g9PersistenceGate';
+import { getExportGateStatus, isFreezeAllowed } from '../../gate/ui/useExportGate';
+import { useGateStore } from '../../gate/ui/gateStore';
 
 // ============================================
 // TYPES
@@ -563,6 +565,13 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
       return false;
     }
 
+    // S18: Safety Gate (drill map/hardware) ต้องผ่านก่อน freeze — designer ข้าม gate ไม่ได้
+    // gate ต้องเคยรัน (hasRun) และไม่มี blocker
+    if (!isFreezeAllowed()) {
+      console.warn('[SpecStore] Cannot freeze: Safety Gate not passed (run gate, resolve blockers)');
+      return false;
+    }
+
     // P11.1: Server-only authority - no local fallback
     const projectMeta = useProjectStore.getState().metadata;
     const jobId = projectMeta?.id;
@@ -795,9 +804,21 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
     } else if (!validation.ok) {
       blockers.push(`${validation.failCount} validation error(s)`);
     }
-    
+
+    // S18: Safety Gate (drill map/hardware) ต้องผ่านก่อน freeze
+    // gate ต้องเคยรัน (hasRun) และไม่มี blocker — ที่มา: useExportGate/gateStore
+    const safetyGatePassed = isFreezeAllowed();
+    if (specState === 'DRAFT' && !safetyGatePassed) {
+      const safetyGate = getExportGateStatus();
+      blockers.push(
+        safetyGate.hasRun
+          ? `Safety Gate: ${safetyGate.blockerCount} blocker(s)`
+          : 'Run Safety Gate first'
+      );
+    }
+
     // Check state for freeze
-    const canFreeze = specState === 'DRAFT' && validation?.ok === true;
+    const canFreeze = specState === 'DRAFT' && validation?.ok === true && safetyGatePassed;
     
     // Check state for release
     const canRelease = specState === 'FROZEN' && validation?.ok === true;
@@ -1134,6 +1155,14 @@ export const useSpecStore = create<SpecStore>()((set, get) => ({
 
 // Register spec store for cross-store access (avoids circular dependency)
 registerSpecStore(useSpecStore);
+
+// S18: canFreeze ผูกกับผล Safety Gate — เมื่อ gate รันเสร็จ/ถูก reset
+// ต้อง refresh gateStatus ทันที ไม่งั้นปุ่ม Freeze ค้างสถานะเก่า
+useGateStore.subscribe((state, prevState) => {
+  if (state.lastResult !== prevState.lastResult) {
+    useSpecStore.getState().updateGateStatus();
+  }
+});
 
 // ============================================
 // SELECTOR HOOKS

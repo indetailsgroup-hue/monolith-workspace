@@ -22,7 +22,13 @@
 
 export type ConstraintSeverity = 'INFO' | 'WARNING' | 'ERROR';
 
-export type GateFindingStatus = 'PASS' | 'FAIL';
+/**
+ * Gate status:
+ * - PASS: validated, no errors
+ * - WARNING: nothing to validate yet (e.g. no drill map) — gate cannot claim PASS (S18)
+ * - FAIL: validated, has errors
+ */
+export type GateFindingStatus = 'PASS' | 'WARNING' | 'FAIL';
 
 // ============================================
 // 3D GEOMETRY TYPES
@@ -119,7 +125,9 @@ export type MinifixConstraintCode =
   | 'MONO_MINIFIX_BOLT_EDGE_CLEARANCE'
   | 'MONO_MINIFIX_BOLT_DIRECTION_MISMATCH'
   | 'MONO_MINIFIX_POCKET_CENTER_MISMATCH'
-  | 'MONO_MINIFIX_POINT_STATUS_PROPAGATED';
+  | 'MONO_MINIFIX_POINT_STATUS_PROPAGATED'
+  // S18: no drill map yet — gate has nothing to validate, must not claim PASS
+  | 'MONO_MINIFIX_NO_DRILL_MAP';
 
 // ============================================
 // CONSTRAINT DEFINITIONS

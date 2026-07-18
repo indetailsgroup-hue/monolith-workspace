@@ -16,7 +16,6 @@
  */
 
 import { useState, Suspense, useEffect, useRef, lazy } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { AppShell } from './components/layout/AppShell';
@@ -39,7 +38,6 @@ import { useProjectStore } from './core/store/useProjectStore';
 import { useIntentPanelStore } from './designer/state/useIntentPanelStore';
 import { useSpecStore, useSpecState, useGateStatus } from './core/store/useSpecStore';
 import { useToolStore, handleToolHotkey, useToolHotkeys } from './core/store/useToolStore';
-import { useSketchStore } from './core/sketch/useSketchStore';
 import { GlueModeOverlay } from './components/canvas/GlueFaceHighlights';
 import { useGlueStore } from './core/store/useGlueStore';
 import { calculateGlueAlignment, CabinetBounds } from './core/utils/glueSystem';
@@ -58,6 +56,9 @@ import { ConstructionPlane } from './components/canvas/ConstructionPlane';
 import { SnapGuides } from './components/canvas/SnapGuides';
 import { MeasureLayer } from './components/tools/MeasureLayer';
 import { ToastContainer } from './components/ui/ToastContainer';
+import { AppGateProvider } from './components/gate/AppGateProvider';
+import { handleSafetyHotkey } from './components/gate/safetyHotkey';
+import { exportFactoryPacketWithToasts } from './components/export/exportFactoryPacketWithToasts';
 import { useDrillMapStore } from './core/store/useDrillMapStore';
 import { useViewStore } from './core/store/useViewStore';
 import { useSelectionStore } from './core/store/useSelectionStore';
@@ -428,7 +429,6 @@ function Viewport({ currentView, showDimensions = false, hideTooltip = false, on
 }
 
 export function App() {
-  const navigate = useNavigate();
   // Use Zustand store for view state (syncs with Cabinet3D dimensions filtering)
   const currentView = useViewStore((s) => s.currentView);
   const setCurrentView = useViewStore((s) => s.setView);
@@ -652,27 +652,19 @@ export function App() {
         return;
       }
 
+      // S18: Shift+G / T เปิดแท็บ Safety ในแอป (แทน navigate ไป /safety หน้า demo)
+      // ต้องเช็คก่อน tool hotkeys — handleToolHotkey จับ 'G' แบบ case-insensitive
+      // ไม่งั้น Shift+G โดน Move tool กินคีย์ไปก่อน
+      if (!e.ctrlKey && !e.metaKey && handleSafetyHotkey(e)) {
+        return;
+      }
+
       // Tool hotkeys (V=Select, G=Move, R=Rotate, S=Scale, M=Measure, U=UV)
       if (!e.ctrlKey && !e.metaKey) {
         if (handleToolHotkey(e.key)) {
           e.preventDefault();
           return;
         }
-      }
-
-      // T014: Press Shift+G to toggle Safety & Gate page
-      // Note: Plain G is Move tool in useGlobalHotkeys, so we use Shift+G
-      // Also keep T for backwards compatibility (but not in sketch mode where T is rect tool)
-      if ((e.key === 'G' && e.shiftKey) || (e.key === 't' && !e.shiftKey)) {
-        if (e.key === 't') {
-          const sketchEnabled = useSketchStore.getState().enabled;
-          if (sketchEnabled) {
-            // Skip navigation - T is rect tool in sketch mode
-            return;
-          }
-        }
-        navigate('/safety');
-        return;
       }
 
       // Press 'D' to toggle dimensions
@@ -712,40 +704,13 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedPanelId, activeCabinetId, navigate, saveProject, showPanelModal, openPanelConfigModal, closePanelConfigModal, removeCabinet, duplicateCabinet]);
+  }, [selectedPanelId, activeCabinetId, saveProject, showPanelModal, openPanelConfigModal, closePanelConfigModal, removeCabinet, duplicateCabinet]);
 
   const handleExport = async () => {
     console.log('[Export] Starting factory packet export...');
-
-    try {
-      // Use the non-React utility to generate and download factory packet
-      const { generateFactoryPacketFromStores } = await import('./factory/packet');
-
-      const result = await generateFactoryPacketFromStores();
-
-      console.log('[Export] Factory packet generated successfully:', {
-        filename: result.filename,
-        compressedSize: `${(result.compressedSize / 1024).toFixed(1)} KB`,
-        uncompressedSize: `${(result.uncompressedSize / 1024).toFixed(1)} KB`,
-      });
-
-      // ADR-061 packet store: ส่ง packet ขึ้น server ให้โรงงานดึง (hash-anchored)
-      // job key ฝั่ง server = project id (ตัวเดียวกับ freeze)
-      const serverJobId = useProjectStore.getState().metadata?.id;
-      if (serverJobId) {
-        const { uploadPacket } = await import('./core/api/stateApi');
-        const up = await uploadPacket(serverJobId, result.blob);
-        if (up.ok) {
-          console.log('[Export] Packet uploaded to factory store:', up.packetSha256?.slice(0, 12), up.storagePath);
-        } else {
-          console.warn('[Export] Packet upload skipped/failed:', up.error);
-        }
-      }
-    } catch (error) {
-      console.error('[Export] Failed to export factory packet:', error);
-      // Show error to user - in production, this would use a toast notification
-      alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    // S18: ผล export/upload แสดงเป็น toast บนจอ (สำเร็จ = ชื่อไฟล์+ขนาด,
+    // ล้มเหลว = error) — ไม่เงียบอยู่ใน console/alert อีกต่อไป
+    await exportFactoryPacketWithToasts();
   };
   
   // Header Toolbar - consolidated in top bar
@@ -874,7 +839,9 @@ export function App() {
   );
 
   return (
-    <>
+    // S18: Safety Gate วิ่งเองเมื่อ cabinets/drillMap เปลี่ยน (autoRun)
+    // → canFreeze/gateStatus สดเสมอ ไม่ต้องรอผู้ใช้เปิดแท็บ Safety
+    <AppGateProvider>
       <AppShell
         project={{
           name: cabinet?.name || 'Kitchen Base Cabinet',
@@ -959,7 +926,7 @@ export function App() {
 
       {/* T014: Toast notifications for keyboard shortcuts */}
       <ToastContainer />
-    </>
+    </AppGateProvider>
   );
 }
 
