@@ -44,6 +44,7 @@ import type {
 } from '../types';
 import { normalizeOperations } from '../normalizeOperations';
 import { formatTimestamp } from '../emit/format';
+import { getNfpHeaderLines } from '../nfpHeader';
 
 // ============================================================================
 // Constants
@@ -109,6 +110,11 @@ function generateXxl(
   lines.push(`DIM_X=${formatXxlNumber(panelInfo.width)}`);
   lines.push(`DIM_Y=${formatXxlNumber(panelInfo.height)}`);
   lines.push(`DIM_Z=${formatXxlNumber(panelInfo.thickness)}`);
+
+  // ADR-065 Q3: NFP safety marking — always emitted, even without comments
+  for (const nfpLine of getNfpHeaderLines()) {
+    lines.push(`; ${nfpLine}`);
+  }
 
   // Comment with generation info
   if (opts.includeComments !== false) {

@@ -131,7 +131,12 @@ describe('buildGcodeBundle - Basic Generation', () => {
 
   it('should include statistics', async () => {
     const graph = createValidGraph({
-      operations: [createDrillOp(), createDrillOp({ id: 'drill-002' }), createBoreOp()],
+      operations: [
+        createDrillOp(),
+        // ADR-065: distinct position — same position now fails DUPLICATE_POSITION
+        createDrillOp({ id: 'drill-002', position: { x: 150, y: 100, z: 0 } }),
+        createBoreOp(),
+      ],
     });
     const result = await buildGcodeBundle({
       opGraph: graph,

@@ -41,6 +41,11 @@ import {
     validateMachineDialect,
     type MachineDialectResult,
 } from '../gate/gate10_3MachineDialect';
+import {
+    SHADOW_MODE_NOT_FOR_PRODUCTION,
+    NOT_FOR_PRODUCTION_FILE,
+    NOT_FOR_PRODUCTION_NOTICE,
+} from '../config/shadowMode';
 
 // ============================================
 // TYPES
@@ -51,8 +56,12 @@ export interface PanelDxfResult {
     panelName: string;
     filename: string;
     content: string;
-    /** G10-verified safe DXF content (same as content when G10 passes) */
-    safeDxf: SafeDxf;
+    /**
+     * G10-verified safe DXF content — ONLY present when G10 passes.
+     * ADR-065: never forged from raw content; absent means the panel
+     * failed G10 and must not reach the machine.
+     */
+    safeDxf?: SafeDxf;
     operationCount: number;
     validation: DxfValidationResult;
     /** G10 provenance tracking */
@@ -254,8 +263,8 @@ export async function exportDxfFromPacket(
         // G10: Validate DXF safety
         const g10Result = assertDxfSafety(dxfContent, provenance);
 
-        // G10: Get safe DXF (will be branded if G10 passes)
-        const safeDxf = g10Result.ok ? g10Result.dxf : dxfContent as SafeDxf;
+        // G10: Get safe DXF — branded ONLY when G10 passes (ADR-065: no forged cast)
+        const safeDxf = g10Result.ok ? g10Result.dxf : undefined;
 
         // Collect G10 warnings
         if (g10Result.ok && g10Result.warnings.length > 0) {
@@ -306,23 +315,60 @@ export async function exportDxfFromPacket(
 }
 
 // ============================================
-// ZIP DOWNLOAD
+// ZIP BUILD + DOWNLOAD
 // ============================================
 
+export interface DxfZipResult {
+    /** ZIP file bytes */
+    zipBytes: Uint8Array;
+    /** Suggested filename (NFP- prefixed while SHADOW_MODE is on) */
+    filename: string;
+}
+
 /**
- * Export DXF files as ZIP archive
+ * Build the DXF ZIP archive — HARD GATE on G10.
+ *
+ * ADR-065: the ZIP is refused (throws) when ANY panel fails G10/G10.2/G10.3.
+ * Only G10-branded SafeDxf content enters the archive; there is no raw-content
+ * fallback. While SHADOW_MODE is on, the archive carries NOT_FOR_PRODUCTION.txt
+ * and the filename is prefixed NFP-.
  *
  * @param packet - Verified FactoryPacket
  * @param options - Export options
+ * @returns ZIP bytes and suggested filename
+ * @throws Error when export fails or any panel fails G10
  */
-export async function downloadDxfZipFromPacket(
+export async function buildDxfZipFromPacket(
     packet: FactoryPacket,
     options: DxfExportOptions = {}
-): Promise<void> {
+): Promise<DxfZipResult> {
     const result = await exportDxfFromPacket(packet, options);
 
     if (!result.ok) {
         throw new Error(result.error);
+    }
+
+    // ADR-065 HARD GATE: no ZIP leaves the system when G10 fails
+    if (!result.g10Status.allPassed) {
+        const failedPanels = result.panels
+            .filter(p => !p.g10Result.ok || p.semanticResult.blocked || !p.dialectResult.ok)
+            .map(p => {
+                const reasons: string[] = [];
+                if (!p.g10Result.ok) {
+                    reasons.push(`G10: ${p.g10Result.issues.map(i => i.message).join('; ')}`);
+                }
+                if (p.semanticResult.blocked) {
+                    reasons.push(`G10.2: ${p.semanticResult.summary.blockCount} blocking issue(s)`);
+                }
+                if (!p.dialectResult.ok) {
+                    reasons.push(`G10.3: ${p.dialectResult.summary.blockingIssues} blocking issue(s)`);
+                }
+                return `${p.panelId} [${reasons.join(' | ')}]`;
+            });
+        throw new Error(
+            `DXF ZIP blocked — G10 FAIL on panel(s): ${failedPanels.join(', ')}. ` +
+            'No DXF may reach the machine without a passing G10 gate (ADR-065).'
+        );
     }
 
     // Create ZIP
@@ -334,7 +380,19 @@ export async function downloadDxfZipFromPacket(
     }
 
     for (const panel of result.panels) {
-        folder.file(panel.filename, panel.content);
+        // safeDxf is guaranteed by the allPassed gate above; the explicit check
+        // keeps the invariant fail-visible if the gate is ever weakened.
+        if (!panel.safeDxf) {
+            throw new Error(
+                `DXF ZIP blocked — panel ${panel.panelId} has no G10-branded SafeDxf (ADR-065)`
+            );
+        }
+        folder.file(panel.filename, panel.safeDxf);
+    }
+
+    // ADR-065 Q3: shadow-mode label inside the archive
+    if (SHADOW_MODE_NOT_FOR_PRODUCTION) {
+        zip.file(NOT_FOR_PRODUCTION_FILE, NOT_FOR_PRODUCTION_NOTICE);
     }
 
     // Add manifest with G10 verification status
@@ -387,13 +445,39 @@ export async function downloadDxfZipFromPacket(
 
     folder.file('_manifest.json', JSON.stringify(manifest, null, 2));
 
-    // Generate and download
-    const blob = await zip.generateAsync({ type: 'blob' });
+    // Generate ZIP bytes
+    const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+
+    // ADR-065 Q3: NFP- prefix in filename — visible before opening
+    const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
+    const filename = `${nfpPrefix}DXF_${result.machineId}_${Date.now()}.zip`;
+
+    return { zipBytes, filename };
+}
+
+/**
+ * Export DXF files as ZIP archive and trigger browser download.
+ *
+ * ADR-065: delegates to buildDxfZipFromPacket — download is refused (throws)
+ * when any panel fails G10.
+ *
+ * @param packet - Verified FactoryPacket
+ * @param options - Export options
+ */
+export async function downloadDxfZipFromPacket(
+    packet: FactoryPacket,
+    options: DxfExportOptions = {}
+): Promise<void> {
+    const { zipBytes, filename } = await buildDxfZipFromPacket(packet, options);
+
+    // Create a fresh Uint8Array copy to satisfy BlobPart type requirements
+    const blobPart = new Uint8Array(zipBytes);
+    const blob = new Blob([blobPart], { type: 'application/zip' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `DXF_${result.machineId}_${Date.now()}.zip`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

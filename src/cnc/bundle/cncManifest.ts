@@ -7,6 +7,8 @@
  * @version 1.1.0 - Phase D5-B: Policy-driven cycle selection
  */
 
+import { SHADOW_MODE_NOT_FOR_PRODUCTION } from '../../core/config/shadowMode';
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -165,6 +167,7 @@ export function isValidFileEntry(entry: unknown): entry is CncManifestFileEntry 
  * Generate deterministic bundle filename.
  *
  * Format: cnc-{jobId}-{machineId}-{hashShort}.zip
+ * ADR-065 Q3: prefixed NFP- while shadow mode is on — visible before opening.
  *
  * @param manifest - CNC manifest
  * @returns Filename for the bundle
@@ -172,7 +175,8 @@ export function isValidFileEntry(entry: unknown): entry is CncManifestFileEntry 
 export function getCncBundleFilename(manifest: CncManifest): string {
   const jobIdShort = manifest.jobId.slice(0, 8).toUpperCase();
   const hashShort = manifest.gcodeSha256.slice(0, 8);
-  return `cnc-${jobIdShort}-${manifest.machineId}-${hashShort}.zip`;
+  const nfpPrefix = SHADOW_MODE_NOT_FOR_PRODUCTION ? 'NFP-' : '';
+  return `${nfpPrefix}cnc-${jobIdShort}-${manifest.machineId}-${hashShort}.zip`;
 }
 
 /**

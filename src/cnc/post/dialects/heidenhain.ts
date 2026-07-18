@@ -13,6 +13,7 @@ import type { PostProcessor, PostProcessOptions, PostProcessResult, PostProcessS
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations } from '../normalizeOperations';
 import { decideDrillParams, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell } from '../decideDrillParams';
+import { getNfpHeaderLines } from '../nfpHeader';
 
 // ============================================================================
 // HEIDENHAIN Post Processor
@@ -83,6 +84,10 @@ function generateHeidenhainCode(
 
   // Generate HEIDENHAIN header
   lines.push(`BEGIN PGM ${programName} MM`);
+  // ADR-065 Q3: NFP safety marking — always emitted, even without comments
+  for (const nfpLine of getNfpHeaderLines()) {
+    lines.push(`;${nfpLine}`);
+  }
   lines.push(`;Program: ${programName}`);
   lines.push(`;Machine: ${machine.id} (${machine.manufacturer})`);
   lines.push(`;Generated: ${formatTimestamp()}`);
@@ -352,6 +357,10 @@ function generateEmptyProgram(opts: PostProcessOptions): string {
   const lines: string[] = [];
 
   lines.push(`BEGIN PGM ${programName} MM`);
+  // ADR-065 Q3: NFP safety marking — always emitted, even without comments
+  for (const nfpLine of getNfpHeaderLines()) {
+    lines.push(`;${nfpLine}`);
+  }
   lines.push(`;Empty program - no operations`);
   lines.push('1 M30');
   lines.push(`END PGM ${programName} MM`);

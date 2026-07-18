@@ -50,6 +50,8 @@ export interface BuildStats {
   toolsUsed: string[];
   /** D4: Number of operations with positions outside machine axis limits */
   outOfBoundsCount: number;
+  /** ADR-065: Number of duplicate-position operations dropped during dedupe */
+  duplicatePositionsRemoved: number;
 }
 
 export interface BuildOperationGraphOptions {
@@ -132,8 +134,14 @@ export function buildOperationGraph(
   // Combine operations
   const allOperations = [...drillResult.operations, ...minifixResult.operations];
 
+  // ADR-065: Dedupe operations sharing the same coordinate (DUPLICATE_POSITION)
+  // Minifix cam/bolt points live in BOTH drillmap.json and connectors.minifix.json,
+  // so the combined list can describe the same physical hole twice.
+  const dedupeResult = dedupeOperationsByPosition(allOperations);
+  warnings.push(...dedupeResult.warnings);
+
   // Sort operations for efficient toolpath
-  const sortedOperations = sortOperationsForEfficiency(allOperations, machine);
+  const sortedOperations = sortOperationsForEfficiency(dedupeResult.operations, machine);
 
   // D4: Validate operation positions against machine axis limits
   const boundsResult = validateOperationBounds(sortedOperations, machine);
@@ -168,9 +176,61 @@ export function buildOperationGraph(
     unmappedMinifixPairs: minifixResult.unmappedPairs.length,
     toolsUsed: graph.toolsUsed,
     outOfBoundsCount: boundsResult.outOfBoundsCount,
+    duplicatePositionsRemoved: dedupeResult.removedCount,
   };
 
   return { graph, warnings, errors, stats };
+}
+
+// ============================================
+// DUPLICATE POSITION DEDUPE (ADR-065)
+// ============================================
+
+interface DedupeResult {
+  operations: Operation[];
+  warnings: string[];
+  removedCount: number;
+}
+
+/** Decimal places for position keys — matches packet precision (3 decimals) */
+const POSITION_KEY_PRECISION = 3;
+
+function positionKey(op: Operation): string {
+  const { x, y, z } = op.position;
+  return `${x.toFixed(POSITION_KEY_PRECISION)},${y.toFixed(POSITION_KEY_PRECISION)},${z.toFixed(POSITION_KEY_PRECISION)}`;
+}
+
+/**
+ * ADR-065 red-line guard: no two operations may target the same coordinate.
+ *
+ * DrillMap points and connector pairs can describe the same physical hole
+ * (minifix cam/bolt appear in both drillmap.json and connectors.minifix.json).
+ * Without this guard the machine would drill the same position twice.
+ *
+ * First occurrence wins (drill map order). Dropped duplicates are reported
+ * as DUPLICATE_POSITION warnings — fail-visible, never silent.
+ */
+function dedupeOperationsByPosition(operations: Operation[]): DedupeResult {
+  const seen = new Map<string, Operation>();
+  const deduped: Operation[] = [];
+  const warnings: string[] = [];
+  let removedCount = 0;
+
+  for (const op of operations) {
+    const key = positionKey(op);
+    const existing = seen.get(key);
+    if (existing) {
+      removedCount++;
+      warnings.push(
+        `[DUPLICATE_POSITION] Op ${op.id} at (${key}) duplicates op ${existing.id} — dropped duplicate, kept ${existing.id}`
+      );
+      continue;
+    }
+    seen.set(key, op);
+    deduped.push(op);
+  }
+
+  return { operations: deduped, warnings, removedCount };
 }
 
 // ============================================

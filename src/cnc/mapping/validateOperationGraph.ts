@@ -73,6 +73,8 @@ export const ValidationCodes = {
   INVALID_DEPTH: 'INVALID_DEPTH',
   INVALID_DIAMETER: 'INVALID_DIAMETER',
   EMPTY_GRAPH: 'EMPTY_GRAPH',
+  /** ADR-065: Two operations target the same coordinate (double drilling) */
+  DUPLICATE_POSITION: 'DUPLICATE_POSITION',
 
   // Machine issues
   MACHINE_MISMATCH: 'MACHINE_MISMATCH',
@@ -119,6 +121,11 @@ export function validateOperationGraph(
     validateOperation(op, machine, issues);
   }
 
+  // ADR-065: Duplicate coordinate check — drilling the same position twice
+  // is a red-line. buildOperationGraph dedupes internally; this guards
+  // externally supplied graphs (defense in depth).
+  validateNoDuplicatePositions(graph.operations, issues);
+
   // Check all tools exist
   for (const toolId of graph.toolsUsed) {
     if (!getTool(machine, toolId)) {
@@ -142,6 +149,35 @@ export function validateOperationGraph(
     warningCount,
     validatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * ADR-065: Flag operations that share the same coordinate.
+ * Position keys use 3 decimal places (packet precision).
+ */
+function validateNoDuplicatePositions(
+  operations: Operation[],
+  issues: ValidationIssue[]
+): void {
+  const seen = new Map<string, Operation>();
+
+  for (const op of operations) {
+    const { x, y, z } = op.position;
+    const key = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
+    const existing = seen.get(key);
+
+    if (existing) {
+      issues.push({
+        severity: 'ERROR',
+        code: ValidationCodes.DUPLICATE_POSITION,
+        message: `Operation ${op.id} duplicates position (${key}) of operation ${existing.id}`,
+        operationId: op.id,
+        details: { position: op.position, duplicateOf: existing.id },
+      });
+    } else {
+      seen.set(key, op);
+    }
+  }
 }
 
 /**

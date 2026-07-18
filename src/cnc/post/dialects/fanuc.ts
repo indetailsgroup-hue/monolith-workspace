@@ -13,6 +13,7 @@ import { GcodeBuilder } from '../emit/gcodeBuilder';
 import { formatProgramName, formatTimestamp, sanitizeComment } from '../emit/format';
 import { normalizeOperations, countToolChanges } from '../normalizeOperations';
 import { decideDrillParams, isHoleOperation, getDefaultDwellTime, getDefaultPeckDepth, shouldApplyThroughHoleDwell, shouldEmitExitFeed } from '../decideDrillParams';
+import { getNfpHeaderLines } from '../nfpHeader';
 
 // ============================================================================
 // FANUC Post Processor
@@ -176,6 +177,10 @@ function generateHeader(
   // Program start
   builder.addRaw('%');
   builder.addRaw(`O${programName}`);
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
   builder.addComment(`Program: ${programName}`);
   builder.addComment(`Machine: ${machine.id} (${machine.manufacturer})`);
   builder.addComment(`Generated: ${formatTimestamp()}`);
@@ -254,6 +259,10 @@ function generateEmptyProgram(opts: PostProcessOptions): string {
 
   builder.addRaw('%');
   builder.addRaw(`O${programName}`);
+  // ADR-065 Q3: NFP safety marking — addRaw so it survives includeComments=false
+  for (const line of getNfpHeaderLines()) {
+    builder.addRaw(`(${line})`);
+  }
   builder.addComment('Empty program - no operations');
   builder.programEnd();
   builder.addRaw('%');
