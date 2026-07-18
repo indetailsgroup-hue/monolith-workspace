@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17-5 Full Verifier — Independent Review</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17-5 Full Verifier — Independent Review</h1>
+<p>Review date: 2026-07-18 Status: <strong>RECORDED — independent technical review; not approval and does not lift NO_CUT</strong> Verdict: <strong>FIX-THEN-SHIP</strong> Reviewer: OpenAI Codex desktop — independent-review session/branch <code>review/s17-5-independent</code> Reviewed commit: <code>955d127b9359de4a4c1b39792288120221c4aab8</code> Verifier tree: <code>905c4644abf225b89b5d1f4132fdb94126a68dbd</code> TH spec SHA-256: <code>ce597ef30f701d114f90852d4460c050bcf09e60bb1c2d468ce31136197faed3</code></p>
+<blockquote><p><strong>One-line verdict:</strong> **fix-then-ship — do not call S17-5 a Full Verifier or rely on <code>VERIFIED</code> until the payload/gate-schema false acceptance is fixed; this is the largest defect**</p></blockquote>
+<h2>1. Scope, pin, and independence</h2>
+<ul><li>Before review, <code>git rev-parse origin/main</code> and <code>HEAD</code> both resolved to <code>955d127b9359de4a4c1b39792288120221c4aab8</code>. <code>origin/main</code> advanced later due to concurrent work, while the review branch remained pinned to the reviewed commit.</li><li>Scope covered all 27 files under <code>src/packet-verifier/</code>, the bundle under <code>docs/specs/schemas/</code>, the TH specification at the digest above, the verifier plan, and interop evidence.</li><li>No production source, test, or fixture was changed. This branch changes only review-record editions and their manifest.</li><li>Method: trace the actual call path, compare each §12 ladder step to normative text, map the corpus to §14, run the mandated commands independently, and execute file-free boundary probes.</li><li>Claims from other sessions were not counted as evidence even when summaries or pasted reports appeared during the review.</li></ul>
+<h3>SoD limitation that must remain explicit</h3>
+<p>The S17-5 builder is identified as Claude, and this session did not build S17-5. However, governance history labels the S17-3/4 builder as “Codex,” which is also this reviewer's product identity. The repository therefore cannot prove identity-level separation from the S17-3/4 builder under the strictest reading of ADR-065, even though the session, worktree, branch, and evidence derivation were isolated. This record is an <strong>independent technical review</strong> suitable for defect decisions, but must not alone claim closure of the SoD identity leg. If the owner requires literal different-agent identity, a third reviewer must add a separate record.</p>
+<h2>2. Scrutinize: intent and simpler alternative</h2>
+<p>The intent is sound: the verifier must judge exact bytes independently of the generator, must not normalize ZIP input before judgment, and must fail closed. Sharing generator code/fixtures or using a ZIP library that repairs input would be shorter but would break SoD and the byte-profile threat model. A separate verifier and strict ZIP reader are therefore justified.</p>
+<p>The schema layer should not be expanded through more hand transcription. The current implementation transcribes only manifest/attestation and canonical-parses the remaining payloads, which loses the contract. The smaller safe approach is to compile or generate standalone validators from the <strong>exact pinned Draft 2020-12 bundle</strong> and enforce a closed <code>path ↔ contentSchema ↔ validator</code> map without sharing S17-4 implementation code.</p>
+<h2>3. §12 ladder assessment</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Assessment</th>
+<th>Short evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>1 Container safety</td>
+<td><strong>Confirmed correct in source</strong></td>
+<td>strict STORE profile, pinned headers/metadata, no gap/overlap/trailing bytes, CRC/size, ordering, and limits in <code>zipStrictReader.ts:94-265</code></td>
+</tr>
+<tr>
+<td>2 Strict parse</td>
+<td><strong>Incomplete — BLOCKER</strong></td>
+<td><code>verifyPacket.ts:86-121</code> validates schemas only for manifest/attestation; other JSON payloads get only a JCS parse</td>
+</tr>
+<tr>
+<td>3 Exact file set</td>
+<td><strong>Incomplete — MAJOR</strong></td>
+<td><code>identityChecks.ts:25-60</code> compares ZIP names to manifest names but does not require the v2 payload set or file-to-schema mapping</td>
+</tr>
+<tr>
+<td>4 Byte integrity</td>
+<td><strong>Confirmed correct</strong></td>
+<td>raw size before raw SHA-256 per path (<code>identityChecks.ts:67-89</code>)</td>
+</tr>
+<tr>
+<td>5 Content identity</td>
+<td><strong>Confirmed correct</strong></td>
+<td>omits only <code>packetContentId</code>, then JCS+hash (<code>identityChecks.ts:97-117</code>)</td>
+</tr>
+<tr>
+<td>6 Manifest binding</td>
+<td><strong>Confirmed correct</strong></td>
+<td>hashes exact manifest bytes and compares packet ID (<code>identityChecks.ts:125-145</code>)</td>
+</tr>
+<tr>
+<td>7 Identity consistency</td>
+<td><strong>Incomplete — BLOCKER</strong></td>
+<td>compares attestation↔manifest and gate digest only; does not read result/policy from gate evidence (<code>consistencyCheck.ts:41-58</code>)</td>
+</tr>
+<tr>
+<td>8 Signature</td>
+<td><strong>Primitives correct; lifecycle incomplete — MAJOR</strong></td>
+<td>preimage/raw Base64/range/low-S/SPKI/verify are sound; boundary/history policy is not (<code>signatureCheck.ts:97-110</code>)</td>
+</tr>
+<tr>
+<td>9 Authoritative</td>
+<td><strong>Incomplete — BLOCKER/MAJOR</strong></td>
+<td>checks the attested policy version but not gate-evidence PASS (<code>policyChecks.ts:64-68</code>); lookup exceptions are not mapped</td>
+</tr>
+<tr>
+<td>10 Run/replay</td>
+<td><strong>Core logic correct; exception path incomplete</strong></td>
+<td>one-to-one run/content and fingerprint/run checks (<code>policyChecks.ts:80-98</code>), but rejected Promises escape the result contract</td>
+</tr>
+<tr>
+<td>11 Shadow policy</td>
+<td><strong>Confirmed correct</strong></td>
+<td>exact marker bytes/hash/schema, filename binding, and NO_CUT ceiling (<code>policyChecks.ts:102-162</code>)</td>
+</tr>
+<tr>
+<td>12 Audit result</td>
+<td><strong>Incomplete — MAJOR</strong></td>
+<td>lacks policy versions, checked hashes, and actor/operator context (<code>verifyPacket.ts:38-52,199-216</code>)</td>
+</tr>
+</tbody></table></div>
+<h2>4. Findings by severity</h2>
+<h3>BLOCKER F-01 — verifier returns <code>VERIFIED</code> for schema-invalid gate evidence</h3>
+<p><strong>Evidence</strong></p>
+<ul><li>Specification §7 and §12.2/7/9 require the closed schema bundle, matching gate fields, and gate evidence that is PASS under a supported policy.</li><li><code>gate-result.schema.json:7-12</code> requires <code>schema</code>, <code>policyVersion</code>, <code>result</code>, and <code>findings</code>.</li><li><code>runStrictParse()</code> at <code>verifyPacket.ts:102-112</code> only performs a JCS parse for payloads; it neither validates payload schemas nor retains the parsed gate value.</li><li><code>checkIdentityConsistency()</code> at <code>consistencyCheck.ts:41-58</code> checks only filename/digest.</li><li><code>checkAuthoritative()</code> at <code>policyChecks.ts:64-68</code> asks the authority about the version in the attestation only.</li><li>The fixture itself writes <code>gate-result.json</code> as <code>{&quot;result&quot;:&quot;PASS&quot;}</code> at <code>testkit/packetFixture.ts:38-43</code>.</li><li>Independent probe on the pinned commit: gate bytes were <code>{&quot;result&quot;:&quot;PASS&quot;}</code>, yet the result was <code>{integrityStatus:&quot;VERIFIED&quot;, operationalDisposition:&quot;NO_CUT&quot;, code:&quot;PKT_OK_SHADOW_ONLY&quot;}</code>; probe exit 0.</li></ul>
+<p><strong>Impact</strong>: a coherently signed packet with schema-invalid payload or gate evidence can receive integrity <code>VERIFIED</code>. NO_CUT still prevents real cutting, but this blocks the Full Verifier claim and invalidates integrity evidence.</p>
+<p><strong>Suggested change</strong>: validate every payload against the exact bundle; enforce a closed path/media/schema registry; parse <code>gate-result.json</code>; require schema/result/policy agreement with the signed fields and authority. Upgrade the fixture to a genuinely valid packet and add negatives for gate FAIL, missing/unknown fields, policy mismatch, and array ordering.</p>
+<h3>MAJOR F-02 — exact v2 payload set and canonical-path policy are not enforced</h3>
+<p><code>identityChecks.ts:38-59</code> accepts any payload set on which the manifest and ZIP agree, as long as the NFP marker and manifest count pass. It does not require the §6 v2 payloads (<code>connector-ops</code>, <code>connectors.minifix</code>, <code>cutlist</code>, <code>drillmap</code>, <code>gate-result</code>). <code>shapes.ts:157-183</code> also omits NFC, Windows reserved-name, and trailing-dot/space rules from <code>common.schema.json:12-18</code>.</p>
+<p><strong>Suggested change</strong>: pin the required v2 set and exact schema/media mapping; permit extensions only for a supported schema-minor profile declared by this verifier; use one canonical-path validator for ZIP and manifest.</p>
+<h3>MAJOR F-03 — lookup exceptions escape the stable result and produce no audit for that run</h3>
+<p>Interfaces define an <code>unavailable</code> sentinel, but call sites use uncaught <code>await</code> operations (<code>signatureCheck.ts:89</code>, <code>policyChecks.ts:36-68,84-97</code>). <code>verifyPacket.ts:134-197</code> has no exception boundary before audit construction at <code>:199-216</code>.</p>
+<p>An independent probe made the key registry throw: <code>verifyPacket()</code> threw <code>simulated registry outage</code>; one successful run had produced one audit record, and the count remained one after the outage, proving that the outage run emitted neither <code>PKT_AUTHORITY_UNAVAILABLE</code> nor an audit.</p>
+<p><strong>Suggested change</strong>: wrap every dependency call and map rejected/thrown/malformed responses to <code>PKT_AUTHORITY_UNAVAILABLE</code>; guarantee an audit attempt in a finally path and define the returned behavior when the audit sink itself fails.</p>
+<h3>MAJOR F-04 — key lifecycle boundaries, historical policy, and issued-time policy do not match §10.2</h3>
+<ul><li>Code uses <code>issued &gt; notAfter</code> instead of required <code>issuedAt &lt; notAfter</code> (<code>signatureCheck.ts:101-106</code>).</li><li>RETIRED rejects only when <code>retiredAt</code> exists, and uses <code>&gt;</code> rather than <code>&lt;</code> (<code>:108-109</code>).</li><li>No verifier-policy input explicitly permits historical verification; <code>TrustedKeyRecord</code> has only optional <code>retiredAt</code> (<code>:30-39</code>).</li><li><code>deps.now()</code> is documented as audit-only (<code>verifyPacket.ts:65-66</code>), so the §8.1 verifier-policy skew is absent.</li><li>The calendar-valid timestamp helper exists but is used only by tests; attestation shape uses only a regex (<code>shapes.ts:20-21,234</code>; <code>formats.ts:25-31</code>).</li></ul>
+<p>An independent probe confirmed that <code>issuedAt == notAfter</code>, RETIRED without <code>retiredAt</code>, and <code>issuedAt == retiredAt</code> all returned <code>{ok:true}</code>.</p>
+<p><strong>Suggested change</strong>: enforce half-open windows; require a RETIRED boundary plus an explicit allowHistorical policy; validate registry timestamps/key identity/algorithm; pin registry digest as well as version; expose and enforce an issued-time skew policy.</p>
+<h3>MAJOR F-05 — audit record omits normative fields</h3>
+<p>Specification §12.12 requires verifier version, policy versions, checked hashes, result, time, and human/operator context. <code>AuditRecord</code> at <code>verifyPacket.ts:38-52</code> includes the schema aggregate, packet/manifest IDs, job run, and registry version, but omits gate/governance policy versions, per-file checked hashes, <code>actorSubjectId</code>/<code>authorizationContextId</code>, and operator context.</p>
+<p><strong>Suggested change</strong>: add the normative fields and exact pass/fail audit regression tests while retaining only opaque IDs and avoiding unnecessary PII.</p>
+<h3>MAJOR F-06 — 128 tests genuinely pass, but the §14 tamper corpus is incomplete</h3>
+<p>Missing or unproven cases include invalid payload schemas/unknown fields/order rules/micrometre constraints, gate-result FAIL/policy mismatch, thrown authority/run-registry operations, lifecycle equality/missing retiredAt/history flag, invalid registry dates, issued-time skew, ZIP64/multi-disk/64-MiB-total cases, and exact audit contents. <code>PKT_SIGNATURE_MISSING</code> appears only in the type union (<code>codes.ts:40</code>) with no production emission path; a missing signature is absorbed by the shape layer as <code>PKT_ATTESTATION_INVALID</code>.</p>
+<p><strong>Suggested change</strong>: add a spec-indexed corpus table with one row per §14 mutation and the expected check+stable code, and test thrown dependency failures separately from sentinel returns.</p>
+<h3>NIT F-07 — interop ZIP pin is strong, but metadata exact bytes are not pinned</h3>
+<p><code>blackbox.interop.test.ts:28-29</code> correctly pins the generator commit and ZIP SHA-256, and the one-byte negative keeps the gate non-vacuous. The test does not pin the SHA-256 of <code>interop-meta.json</code>; <code>generatorTree</code>/<code>inputSha256</code> are typed but not asserted against constants, and the evidence manifest currently lists only the runner and report rather than the fixture pair.</p>
+<p><strong>Suggested change</strong>: pin the metadata SHA-256, assert tree/input digest, and add both meta+ZIP to the evidence manifest.</p>
+<h2>5. Confirmed-correct behavior</h2>
+<ol><li><strong>Container byte profile is genuinely strict</strong>: contiguous local offsets, matching local/central order, no gaps/overlaps/trailing bytes, STORE-only, pinned flags/time/mode, real CRC+size validation, duplicate/case-collision rejection, and limits.</li><li><strong>JCS/strict JSON core is sound</strong>: duplicate keys are rejected before object construction; BOM, invalid UTF-8, negative zero, unsafe canonical integers, lone surrogates, and non-canonical bytes are rejected; UTF-16 key ordering matches RFC 8785.</li><li><strong>Content identity chain is correct</strong>: path/size/hash are inside the descriptor, only the content ID is omitted, exact manifest bytes are bound, and the attested packet ID is compared.</li><li><strong>Signature primitives are correct</strong>: protected header retained, only <code>valueBase64</code> omitted, correct domain prefix, strict padded raw 64-byte Base64, scalar range, high-S rejection using <code>s &gt; floor(n/2)</code> so the exact floor boundary is allowed, strict SPKI OIDs/DER/point form, and verify-only WebCrypto behavior.</li><li><strong>First-fail-wins holds for handled outcomes</strong>: the orchestrator returns immediately in ladder order and later diagnostics cannot replace the primary code. Thrown dependency paths are the F-03 exception.</li><li>**<code>PKT_OK</code> is unreachable by construction**: absent from <code>PacketResultCode</code>; the success constructor emits only <code>PKT_OK_SHADOW_ONLY</code>; the disposition type contains only <code>NO_CUT</code>.</li><li><strong>NFP pin is exact</strong>: independent recomputation produced 824 bytes and SHA-256 <code>40a4d63f…7d68a</code>; filename binds job run and content prefix.</li><li><strong>Black-box ZIP pin is real</strong>: fixture ZIP SHA-256 <code>8a40f975…90ddb</code> matches the literal; the test consumes frozen bytes and a one-byte mutation fails closed.</li></ol>
+<h2>6. Fresh execution evidence</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Command/probe</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr>
+<td><code>npm ci</code> (root)</td>
+<td>exit 0; 586 packages; npm audit reported 18 issues (not classified as S17-5 runtime defects because production verifier imports are local/WebCrypto only)</td>
+</tr>
+<tr>
+<td><code>cd server &amp;&amp; npm ci</code></td>
+<td>exit 0; 220 packages; npm audit reported 13 issues; required for suite collection dependencies</td>
+</tr>
+<tr>
+<td><code>npx vitest run src/packet-verifier</code></td>
+<td>exit 0; 6 files; <strong>128/128 PASS</strong></td>
+</tr>
+<tr>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>exit 0; no diagnostics</td>
+</tr>
+<tr>
+<td><code>npm run test:node</code></td>
+<td>exit 0; <strong>27/27 PASS</strong></td>
+</tr>
+<tr>
+<td>Gate-schema boundary probe</td>
+<td>exit 0; invalid <code>{&quot;result&quot;:&quot;PASS&quot;}</code> received <code>VERIFIED/NO_CUT/PKT_OK_SHADOW_ONLY</code></td>
+</tr>
+<tr>
+<td>Registry-throw probe</td>
+<td>probe wrapper exit 0; verifier threw and did not append an audit for the outage run</td>
+</tr>
+<tr>
+<td>Lifecycle boundary probe</td>
+<td>exit 0; all three invalid boundary/policy cases returned <code>{ok:true}</code></td>
+</tr>
+<tr>
+<td>NFP recomputation</td>
+<td>exit 0; byte count/hash match = <code>true</code></td>
+</tr>
+</tbody></table></div>
+<blockquote><p>Passing tests are evidence only for their covered scope; they do not negate the false acceptance demonstrated by independent probes.</p></blockquote>
+<h2>7. Required re-review gate</h2>
+<p>Before ship, the S17-5 builder must provide a fixing commit and an independent reviewer must verify at least:</p>
+<ol><li>payload/gate schemas and the exact file/schema registry reject invalid packets;</li><li>gate evidence PASS/policy/file fields agree with the attestation and authority;</li><li>every thrown lookup returns a stable fail-closed code and produces audit evidence;</li><li>lifecycle half-open boundaries, RETIRED history policy, and skew;</li><li>complete normative audit fields; and</li><li>full §14 tamper corpus with fresh passing output.</li></ol>
+<p>This review does not change production code under SoD. The owner merges the review-record PR; the builder fixes source through the receiving-code-review flow.</p>
+</main>
+</body>
+</html>
