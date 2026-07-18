@@ -26,6 +26,7 @@
 // central directory, then EOCD; no gaps, no prefix, no trailing bytes.
 
 import { crc32 } from './crc32';
+import { validateCanonicalPath } from '../shapes/canonicalPath';
 import type { PacketFailureCode } from '../codes';
 
 export interface ZipEntry {
@@ -84,6 +85,11 @@ function validateEntryName(nameBytes: Uint8Array): { name?: string; error?: stri
   if (name.includes('/')) return { error: 'folder prefix / directory component (root entries only)' };
   if (name === '.' || name === '..' || name.includes('..')) return { error: 'path traversal segment' };
   if (name.endsWith('/')) return { error: 'directory entry' };
+  // full canonicalPath contract (common.schema.json, review 2026-07-18 F-02):
+  // NFC, Windows reserved device names, trailing dot/space, forbidden
+  // characters — the SAME validator the manifest layer uses.
+  const canon = validateCanonicalPath(name);
+  if (!canon.ok) return { error: canon.detail as string };
   return { name };
 }
 

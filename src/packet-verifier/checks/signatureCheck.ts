@@ -7,12 +7,15 @@
 // Trust comes exclusively from the injected TrustedKeyRegistry (Security-Owner
 // owned). Registry lookup failure is fail-closed: PKT_AUTHORITY_UNAVAILABLE.
 //
-// Lifecycle interpretation (documented for corpus review): ACTIVE verifies;
-// RETIRED still verifies packets whose issuedAt ≤ retiredAt (retirement stops
-// new signing, not verification of the window); REVOKED never verifies;
-// issuedAt outside [notBefore, notAfter] → PKT_KEY_NOT_YET_VALID / PKT_KEY_EXPIRED.
+// Lifecycle interpretation (§10.2, review 2026-07-18 F-04): windows are
+// HALF-OPEN — issuedAt must sit inside [notBefore, notAfter). ACTIVE verifies;
+// REVOKED never verifies; RETIRED requires a retiredAt boundary, requires
+// issuedAt < retiredAt, and even then verifies ONLY under an explicit
+// allowHistorical verifier policy (default false — fail closed). Registry
+// timestamps must be real calendar instants before any comparison.
 
 import { jcsSerialize } from '../canonical/jcs';
+import { isCanonicalTimestamp } from '../canonical/formats';
 import type { JsonValue } from '../canonical/strictJson';
 import type { PacketAttestation } from '../shapes/shapes';
 import type { CheckOutcome } from './identityChecks';
@@ -32,10 +35,18 @@ export interface TrustedKeyRecord {
   state: KeyState;
   /** exact DER SubjectPublicKeyInfo bytes pinned by the Security Owner (§10.2) */
   spkiDer: Uint8Array;
-  /** RFC3339 ms-UTC bounds; issuedAt must sit inside [notBefore, notAfter] */
+  /** RFC3339 ms-UTC bounds; issuedAt must sit inside the HALF-OPEN window
+   *  [notBefore, notAfter) — §10.2 / review 2026-07-18 F-04 */
   notBefore: string;
   notAfter: string;
+  /** mandatory for RETIRED records; issuedAt must be strictly before it */
   retiredAt?: string;
+}
+
+/** Verifier-side policy input (F-04): RETIRED-key historical verification is
+ *  opt-in and defaults CLOSED. */
+export interface SignatureVerifyPolicy {
+  allowHistorical: boolean;
 }
 
 export interface TrustedKeyRegistry {
@@ -82,6 +93,7 @@ export async function checkSignature(
   attestationValue: JsonValue,
   attestation: PacketAttestation,
   registry: TrustedKeyRegistry,
+  policy: SignatureVerifyPolicy = { allowHistorical: false }, // default fail-closed (F-04)
 ): Promise<CheckOutcome> {
   const { protected: prot, valueBase64 } = attestation.signature;
 
@@ -94,19 +106,34 @@ export async function checkSignature(
     return { ok: false, code: 'PKT_KEY_UNKNOWN', detail: `keyId ${prot.keyId} not in registry ${prot.registryVersion}` };
   }
 
-  // 2) key lifecycle vs issuedAt (§10.2)
+  // 2) key lifecycle vs issuedAt (§10.2, review 2026-07-18 F-04)
   if (record.state === 'REVOKED') {
     return { ok: false, code: 'PKT_KEY_REVOKED', detail: `key ${record.keyId} is REVOKED` };
+  }
+  // registry timestamps must be real calendar instants (not just regex shape)
+  // before ANY comparison — a malformed trust record can never establish trust
+  if (!isCanonicalTimestamp(record.notBefore) || !isCanonicalTimestamp(record.notAfter) ||
+      (record.retiredAt !== undefined && !isCanonicalTimestamp(record.retiredAt))) {
+    return { ok: false, code: 'PKT_KEY_UNKNOWN', detail: 'registry record malformed' };
   }
   const issued = Date.parse(attestation.issuedAt);
   if (issued < Date.parse(record.notBefore)) {
     return { ok: false, code: 'PKT_KEY_NOT_YET_VALID', detail: 'issuedAt before key notBefore' };
   }
-  if (issued > Date.parse(record.notAfter)) {
-    return { ok: false, code: 'PKT_KEY_EXPIRED', detail: 'issuedAt after key notAfter' };
+  if (issued >= Date.parse(record.notAfter)) {
+    // half-open window: notAfter itself is OUTSIDE the validity window
+    return { ok: false, code: 'PKT_KEY_EXPIRED', detail: 'issuedAt at/after key notAfter (half-open window)' };
   }
-  if (record.state === 'RETIRED' && record.retiredAt !== undefined && issued > Date.parse(record.retiredAt)) {
-    return { ok: false, code: 'PKT_KEY_EXPIRED', detail: 'issuedAt after key retirement' };
+  if (record.state === 'RETIRED') {
+    if (record.retiredAt === undefined) {
+      return { ok: false, code: 'PKT_KEY_UNKNOWN', detail: 'RETIRED record missing retiredAt boundary' };
+    }
+    if (issued >= Date.parse(record.retiredAt)) {
+      return { ok: false, code: 'PKT_KEY_REVOKED', detail: 'signed at/after retirement' };
+    }
+    if (policy.allowHistorical !== true) {
+      return { ok: false, code: 'PKT_KEY_REVOKED', detail: 'historical verification not enabled by policy' };
+    }
   }
 
   // 3) pinned SPKI must be the exact canonical P-256 form (§10.2)

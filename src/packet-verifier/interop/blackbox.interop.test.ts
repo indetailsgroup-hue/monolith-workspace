@@ -26,7 +26,13 @@ const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 
 /** provenance pins — a re-generated fixture MUST update these deliberately */
 const GENERATOR_COMMIT = 'eeed1ce6b4388db5c661932a419e5d2c61267712';
+const GENERATOR_TREE = 'da717b31f26f7000e5f94fad854cb0dd13c61004';
 const ZIP_SHA256 = '8a40f975c9712baca03a9b441736671c17484528a8f40daac4adc40cbf990ddb';
+/** exact bytes of interop-meta.json itself (review 2026-07-18 F-07): the meta
+ *  file carries the deployment-config analog, so its own drift must be as
+ *  loud as ZIP drift */
+const META_SHA256 = '31a63f5a73dd1b24d23b895f217e152c01671a168c16aecd48afe571365016ca';
+const INPUT_SHA256 = '9ad24d6501ad0511f0cd1e9bb9d256d4bf22c710d00709b51ea25960f89fe574';
 
 interface InteropMeta {
   generatorCommit: string;
@@ -122,6 +128,32 @@ describe('S17 Track B black-box interop — frozen S17-4 artifact → S17-5 veri
     expect(zip.length).toBe(meta.zipBytes);
     expect(meta.kmsSignCalls).toBe(1);
     expect(meta.zipFilename).toMatch(NFP_FILENAME_REGEX);
+    // F-07: pin the meta EXACT BYTES + the generator tree and golden-input
+    // digests it claims — provenance drift in the meta must fail this gate
+    const metaBytes = readFileSync(join(FIXTURES, 'interop-meta.json'));
+    expect(createHash('sha256').update(metaBytes).digest('hex')).toBe(META_SHA256);
+    expect(meta.generatorTree).toBe(GENERATOR_TREE);
+    expect(meta.inputSha256).toBe(INPUT_SHA256);
+  });
+
+  it('fixtures.sha256 lists the exact fixture pair and matches the real bytes (F-07)', () => {
+    const lines = readFileSync(join(FIXTURES, 'fixtures.sha256'), 'utf8')
+      .split('\n')
+      .map((l) => l.replace(/\r$/, ''))
+      .filter((l) => l.length > 0);
+    expect(lines).toHaveLength(2);
+    const seen = new Map<string, string>();
+    for (const line of lines) {
+      const m = /^([0-9a-f]{64})  (\S+)$/.exec(line);
+      expect(m, line).not.toBeNull();
+      const [, hash, filename] = m as RegExpExecArray;
+      const actual = createHash('sha256').update(readFileSync(join(FIXTURES, filename))).digest('hex');
+      expect(actual, filename).toBe(hash);
+      seen.set(filename, hash);
+    }
+    const { meta } = loadFixture();
+    expect(seen.get(meta.zipFilename)).toBe(ZIP_SHA256);
+    expect(seen.get('interop-meta.json')).toBe(META_SHA256);
   });
 
   it('verifies as exactly {VERIFIED, NO_CUT, PKT_OK_SHADOW_ONLY}', async () => {

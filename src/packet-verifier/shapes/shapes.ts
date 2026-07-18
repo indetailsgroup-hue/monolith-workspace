@@ -9,6 +9,8 @@
 
 import type { JsonValue } from '../canonical/strictJson';
 import type { PacketFailureCode } from '../codes';
+import { validateCanonicalPath } from './canonicalPath';
+import { isCanonicalTimestamp } from '../canonical/formats';
 
 // --- common.schema.json $defs (transcribed verbatim) ---
 const OPAQUE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
@@ -72,7 +74,9 @@ function isObj(v: JsonValue): v is Obj {
 }
 
 class ShapeError extends Error {
-  constructor(public readonly detail: string) { super(detail); }
+  /** codeOverride: a §13 stable code more specific than the wrapper default
+   *  (e.g. PKT_SIGNATURE_MISSING — review 2026-07-18 F-06) */
+  constructor(public readonly detail: string, public readonly codeOverride?: PacketFailureCode) { super(detail); }
 }
 
 function need(o: Obj, allowed: readonly string[], required: readonly string[], where: string): void {
@@ -155,10 +159,13 @@ export function validateManifestShape(v: JsonValue): ShapeResult<PacketManifest>
       const fk = ['path', 'mediaType', 'contentSchema', 'sizeBytes', 'sha256'];
       need(f, fk, fk, where);
       const path = f.path;
-      if (typeof path !== 'string' || path.length === 0 || new TextEncoder().encode(path).length > 128) {
-        throw new ShapeError(`${where}.path: invalid`);
-      }
-      if (path.includes('/') || path.includes('\\') || path === '.' || path === '..') {
+      if (typeof path !== 'string') throw new ShapeError(`${where}.path: not a string`);
+      // full canonicalPath contract (common.schema.json, review 2026-07-18
+      // F-02): NFC, forbidden characters, Windows reserved device names,
+      // trailing dot/space — the SAME validator the ZIP layer uses.
+      const pathVerdict = validateCanonicalPath(path);
+      if (!pathVerdict.ok) throw new ShapeError(`${where}.path: ${pathVerdict.detail}`);
+      if (path.includes('/')) {
         throw new ShapeError(`${where}.path: must be a root-level canonical name`);
       }
       const mediaType = f.mediaType;
@@ -219,11 +226,23 @@ export function validateAttestationShape(v: JsonValue): ShapeResult<PacketAttest
     need(gate, gk, gk, 'attestation.gate');
     const sig = v.signature;
     if (!isObj(sig)) throw new ShapeError('attestation.signature: not an object');
+    // §13 (review 2026-07-18 F-06): an otherwise well-formed signature object
+    // that simply LACKS the value gets its own stable code — the absence of a
+    // signature is a distinct condition from a malformed attestation.
+    if (!('valueBase64' in sig)) {
+      throw new ShapeError('attestation.signature.valueBase64: missing', 'PKT_SIGNATURE_MISSING');
+    }
     need(sig, ['protected', 'valueBase64'], ['protected', 'valueBase64'], 'attestation.signature');
     const prot = sig.protected;
     if (!isObj(prot)) throw new ShapeError('attestation.signature.protected: not an object');
     const pk = ['algorithm', 'keyId', 'registryVersion'];
     need(prot, pk, pk, 'attestation.signature.protected');
+    // §7.10 + review 2026-07-18 F-04: the regex shape alone admits impossible
+    // calendar dates (2026-02-30) — require a real calendar instant.
+    const issuedAt = str(v, 'issuedAt', TIMESTAMP_MS_UTC, 'attestation', 24);
+    if (!isCanonicalTimestamp(issuedAt)) {
+      throw new ShapeError('attestation.issuedAt: not a real calendar instant');
+    }
     return {
       ok: true,
       value: {
@@ -231,7 +250,7 @@ export function validateAttestationShape(v: JsonValue): ShapeResult<PacketAttest
         jobRunId: str(v, 'jobRunId', UUID_V4, 'attestation', 36),
         packetContentId: str(v, 'packetContentId', SHA256_ID, 'attestation'),
         manifestSha256: str(v, 'manifestSha256', SHA256_ID, 'attestation'),
-        issuedAt: str(v, 'issuedAt', TIMESTAMP_MS_UTC, 'attestation', 24),
+        issuedAt,
         actorSubjectId: str(v, 'actorSubjectId', OPAQUE_ID, 'attestation'),
         authorizationContextId: str(v, 'authorizationContextId', OPAQUE_ID, 'attestation'),
         idempotencyFingerprint: str(v, 'idempotencyFingerprint', SHA256_ID, 'attestation'),
@@ -256,7 +275,9 @@ export function validateAttestationShape(v: JsonValue): ShapeResult<PacketAttest
       },
     };
   } catch (e) {
-    if (e instanceof ShapeError) return { ok: false, code: 'PKT_ATTESTATION_INVALID', detail: e.detail };
+    if (e instanceof ShapeError) {
+      return { ok: false, code: e.codeOverride ?? 'PKT_ATTESTATION_INVALID', detail: e.detail };
+    }
     throw e;
   }
 }
