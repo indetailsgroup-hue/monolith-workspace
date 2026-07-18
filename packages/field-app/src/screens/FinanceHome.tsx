@@ -15,6 +15,31 @@ interface Home {
 
 const THB = (n: number) => Number(n).toLocaleString('th-TH');
 
+// S18 Slice 3 + review fix R1: พรีวิวใบเสร็จแยก VAT พร้อม caveat บนจอเสมอ —
+// ยอดรวม VAT ไม่ตรงกับใบแจ้งงวดที่ลูกค้าเห็น (0137) จนกว่าบัญชียืนยันวิธีคิด (ดู src/tax/receipt)
+function ReceiptVatPreview({ amount }: { amount: number }) {
+  // Defense-in-depth (review S18): payment_installments.amount เป็น numeric NULL ได้ และ field-app
+  // ไม่มี ErrorBoundary — ถ้าปล่อยให้ buildReceiptVatBreakdown throw ตอน render = จอขาวทั้งหน้า
+  // → ยอดไม่ finite/ติดลบ: ซ่อน breakdown แสดง fallback แทน (แผงบันทึกรับยังใช้งานต่อได้)
+  if (!Number.isFinite(amount) || amount < 0) {
+    return (
+      <div className="muted" style={{ margin: '4px 0 6px' }}>
+        🧾 ใบเสร็จแยก VAT: — (ยอดงวดไม่พร้อมคำนวณ — แจ้งแอดมินตรวจยอดงวดนี้)
+      </div>
+    );
+  }
+  const vat = buildReceiptVatBreakdown(amount);
+  return (
+    <div className="muted" style={{ margin: '4px 0 6px' }}>
+      🧾 ใบเสร็จแยก VAT (พรีวิว):
+      {vat.text.split('\n').map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+      <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>{vat.caveat}</div>
+    </div>
+  );
+}
+
 export function FinanceHome({ onOpenProject }: { onOpenProject: (id: string) => void }) {
   const [home, setHome] = useState<Home | null>(null);
   const [note, setNote] = useState('');
@@ -80,13 +105,7 @@ export function FinanceHome({ onOpenProject }: { onOpenProject: (id: string) => 
                 onClick={() => setPick(r.installment_id)}>ตรวจ/บันทึกรับ</button>
             ) : (
               <div style={{ marginTop: 6 }}>
-                {/* S18 Slice 3: ใบเสร็จแยก VAT (สมมติยอดงวด = ฐานก่อน VAT — รอบัญชียืนยัน ดู src/tax/receipt) */}
-                <div className="muted" style={{ margin: '4px 0 6px' }}>
-                  🧾 ใบเสร็จแยก VAT:
-                  {buildReceiptVatBreakdown(r.amount).text.split('\n').map((line) => (
-                    <div key={line}>{line}</div>
-                  ))}
-                </div>
+                <ReceiptVatPreview amount={r.amount} />
                 <input placeholder="หมายเหตุ (เช่น โอน KBank 12:30)" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div style={{ display: 'flex', gap: 6 }}>
                   {!r.has_slip && (

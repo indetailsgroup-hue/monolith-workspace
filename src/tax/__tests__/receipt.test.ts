@@ -38,6 +38,26 @@ describe('buildReceiptVatBreakdown (composeFromNet caller)', () => {
   });
 });
 
+// S18 review fix R1: ยอดรวม VAT (107,000) ขัดกับใบแจ้งงวดที่ลูกค้าเห็น (100,000 — 0137 rpc_doc_view_resolve)
+// → breakdown ต้องพก caveat บนจอเสมอ จนกว่าบัญชียืนยันวิธีคิด (composeFromNet ↔ splitInclusive)
+describe('caveat (review R1 — กันตัวเลขชนใบแจ้งงวด 0137)', () => {
+  it('caveat บอกครบ: พรีวิว + สมมติฐานรอบัญชียืนยัน + ยอดรวมไม่ตรงใบแจ้งงวด + ห้ามใช้เป็นเอกสารภาษี', () => {
+    const b = buildReceiptVatBreakdown(100000);
+    expect(b.caveat).toContain('พรีวิว');
+    expect(b.caveat).toContain('รอบัญชียืนยัน');
+    expect(b.caveat).toContain('ใบแจ้งงวด');
+    expect(b.caveat).toContain('100,000.00'); // ยอดที่แจ้งลูกค้าจริง (ใบแจ้งงวด 0137)
+    expect(b.caveat).toContain('107,000.00'); // ยอดรวม VAT ที่ "ไม่ตรง" กับใบแจ้ง — ต้องชี้ให้ F3 เห็น
+    expect(b.caveat).toContain('เอกสารภาษี');
+  });
+
+  it('caveat ระบุชัดว่ากดบันทึกรับ = บันทึกยอดงวดเดิม (กัน F3 เข้าใจผิดว่าบันทึกยอดรวม VAT)', () => {
+    const b = buildReceiptVatBreakdown(100000);
+    expect(b.caveat).toContain('บันทึกรับ');
+    expect(b.caveat).toContain('ยอดงวดเดิม');
+  });
+});
+
 describe('formatThb2', () => {
   it('format เงินบาท 2 ตำแหน่งเสมอ (สตางค์)', () => {
     expect(formatThb2(7000)).toBe('7,000.00');
