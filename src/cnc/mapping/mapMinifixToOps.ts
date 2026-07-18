@@ -42,7 +42,11 @@ import type { PacketConnectors, PacketMinifixPair } from '../../factory/packet/t
 import type { MachineProfile, ToolCapability } from '../machine/machineProfile';
 import { getToolByDiameter } from '../machine/machineProfile';
 import type { DrillOperation, BoreOperation, Operation } from '../operation/operationTypes';
-import type { OperationWorkpieceContext } from '../transform/workpieceTypes';
+import type {
+  OperationWorkpieceContext,
+  WorkpieceTransformContext,
+} from '../transform/workpieceTypes';
+import { transformToMachine } from '../transform/transformPrimitives';
 
 // ============================================
 // TYPES
@@ -62,11 +66,26 @@ export interface MapMinifixOptions {
   skipErrorPairs?: boolean;
   /** Skip pairs with WARNING status */
   skipWarningPairs?: boolean;
+  /**
+   * D4: Workpiece transform contexts keyed by panel ID.
+   *
+   * ADR-065: MUST be the SAME map handed to mapDrillMapToOps. Minifix cam/bolt
+   * holes exist in BOTH drillmap.json and connectors.minifix.json; the dedupe
+   * guard in buildOperationGraph keys on panelId + position, so both sources
+   * must express positions in the same coordinate frame. If drillmap ops are
+   * transformed to machine coords while connector ops stay raw, the same
+   * physical hole gets two different keys and the machine drills it twice.
+   */
+  workpieceTransforms?: Map<string, WorkpieceTransformContext>;
+  /** Whether to apply workpiece transforms (mirrors MapDrillOptions) */
+  attachWorkpieceContext?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<MapMinifixOptions> = {
   skipErrorPairs: true,
   skipWarningPairs: false,
+  workpieceTransforms: new Map<string, WorkpieceTransformContext>(),
+  attachWorkpieceContext: false,
 };
 
 // ============================================
@@ -125,6 +144,13 @@ export function mapMinifixToOps(
 
     const pairOps = mapSinglePair(pair, machine, warnings);
     if (pairOps.length > 0) {
+      // D4: transform connector ops into machine coordinates with the SAME
+      // per-panel contexts as drillmap ops (ADR-065 dedupe-key parity).
+      if (opts.attachWorkpieceContext && opts.workpieceTransforms.size > 0) {
+        for (const op of pairOps) {
+          applyWorkpieceTransform(op, opts.workpieceTransforms);
+        }
+      }
       operations.push(...pairOps);
     } else {
       unmappedPairs.push(pair);
@@ -151,6 +177,35 @@ function findConnectorTool(
     tool = getToolByDiameter(machine, diameter);
   }
   return tool;
+}
+
+/**
+ * D4: Apply the panel's workpiece transform to a connector operation, in place.
+ *
+ * Mirrors the drillmap path in mapDrillMapToOps exactly: same
+ * transformToMachine primitive, same context shape, original position kept as
+ * workpiecePosition for the audit trail. Ops on panels without a transform
+ * context are left untouched (consistent with drillmap ops on those panels,
+ * which also stay raw).
+ */
+function applyWorkpieceTransform(
+  op: Operation,
+  transforms: Map<string, WorkpieceTransformContext>
+): void {
+  const panelId = op.workpieceContext?.panelId;
+  if (!panelId) return;
+
+  const context = transforms.get(panelId);
+  if (!context) return;
+
+  const originalPosition = { ...op.position };
+  const transformResult = transformToMachine(op.position, context);
+
+  op.position = transformResult.machinePosition;
+  op.workpieceContext = {
+    ...transformResult.context,
+    workpiecePosition: originalPosition,
+  };
 }
 
 /**

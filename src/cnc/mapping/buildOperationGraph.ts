@@ -126,8 +126,22 @@ export function buildOperationGraph(
   warnings.push(...(drillResult.warnings ?? []));
 
   // Map minifix connectors
+  // ADR-065 / D4: connector ops MUST be transformed with the SAME per-panel
+  // workpiece contexts as drillmap ops. The dedupe below keys on
+  // panelId + position; if drillmap ops are in machine coords while connector
+  // ops stay raw, the same physical hole gets two different keys and the
+  // duplicate silently survives into G-code. Inherit the drillmap transforms
+  // unless the caller explicitly provided minifix-specific ones.
+  const minifixOptions: MapMinifixOptions = {
+    ...options.minifixOptions,
+    workpieceTransforms:
+      options.minifixOptions?.workpieceTransforms ?? options.drillMapOptions?.workpieceTransforms,
+    attachWorkpieceContext:
+      options.minifixOptions?.attachWorkpieceContext ??
+      options.drillMapOptions?.attachWorkpieceContext,
+  };
   const minifixResult = packet.connectors
-    ? mapMinifixToOps(packet.connectors, machine, options.minifixOptions)
+    ? mapMinifixToOps(packet.connectors, machine, minifixOptions)
     : { operations: [], unmappedPairs: [], warnings: [] };
   warnings.push(...minifixResult.warnings);
 
