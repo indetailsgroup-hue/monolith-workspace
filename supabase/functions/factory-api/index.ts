@@ -379,6 +379,11 @@ export async function handleFactoryApi(
       const sha256 = await sha256Hex(bytes);
       const path = `${encodeURIComponent(jobId)}/${sha256}.zip`;
       await deps.storagePut(path, bytes);
+      // DEPLOY ORDER (ADR-066): this call always names p_job_name/p_piece_count,
+      // so migration 0170 must be applied BEFORE this edge is deployed —
+      // PostgREST matches RPCs by named-argument set and the pre-0170 signature
+      // rejects this call, breaking every packet upload. The old edge keeps
+      // working after 0170 because both new params default to null.
       const recorded = await deps.callRpc("rpc_factory_job_record_packet", {
         p_job_id: jobId,
         p_packet_sha256: sha256,

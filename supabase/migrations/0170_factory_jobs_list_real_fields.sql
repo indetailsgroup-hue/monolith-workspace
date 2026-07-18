@@ -5,6 +5,14 @@
 -- (factory-api ส่งต่อหลัง sanitize) — ไม่ใช่ authority data และไม่แตะ trust boundary 0162
 -- packetShaShort = 12 ตัวแรกของ packet_sha256 พอให้เทียบสายตากับฉลาก/ใบงาน
 -- (ตรวจจริงยังต้องผ่าน /verify เท่านั้น)
+--
+-- DEPLOY ORDER (ADR-066 human apply) — ลำดับบังคับ:
+--   1) apply 0170 (ไฟล์นี้) ก่อน   2) ค่อย deploy edge factory-api ตัวใหม่
+-- เหตุผล: edge ใหม่ส่ง p_job_name/p_piece_count เสมอ (ค่า null ได้) และ PostgREST
+-- จับ RPC ด้วยชุดชื่อ argument — ถ้า DB ยังเป็น signature 10 ตัว ทุก packet upload
+-- จะพังด้วย signature mismatch · ทางกลับปลอดภัย: edge เก่า (ไม่ส่ง 2 ตัวใหม่)
+-- เรียก function ใหม่ได้เพราะทั้งคู่มี default null
+-- (เทสยึดสัญญานี้: factory-api/index.test.ts "deploy-order gate")
 
 alter table public.factory_jobs
   add column if not exists job_name text,

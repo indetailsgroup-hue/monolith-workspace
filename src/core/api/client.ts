@@ -53,6 +53,12 @@ export class ApiRequestError extends Error {
  * จุดเดียวที่แปลง HTTP status เป็นข้อความไทยที่ผู้ใช้อ่านรู้เรื่อง
  * คืน null เมื่อ status ไม่อยู่ใน map (ใช้ข้อความ server ตามเดิม)
  * code/statusCode/details ใน ApiRequestError ไม่ถูกแตะ — โค้ดเดิมอ่านต่อได้
+ *
+ * FOLLOW-UP (S18 review → l2-factory-ux): FactoryApp ยังไม่เห็นข้อความไทยพวกนี้ —
+ * เส้นทาง fetch จริงของมันคือ apiFetch/apiFetchBlob ใน src/factory/api/client.ts
+ * (write scope ของ l2 ไม่ใช่ l6) ซึ่งยังสร้าง error อังกฤษ `API <status>` เอง
+ * งานฝั่ง l2: ให้จุดนั้น import thaiErrorMessage(res.status) มาใช้ก่อน fallback
+ * ข้อความ server — ห้าม copy map ไปไว้ซ้ำสองที่
  */
 export function thaiErrorMessage(
   statusCode: number,

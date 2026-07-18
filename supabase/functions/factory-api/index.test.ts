@@ -459,6 +459,44 @@ describe("S18 jobs list real fields (0170)", () => {
     expect(packet?.body).toMatchObject({ p_job_name: null, p_piece_count: null });
   });
 
+  it("edge record_packet params exactly match the 0170 signature (deploy-order gate)", async () => {
+    // Edge side: the exact named-argument set the packet route sends.
+    const h = harness(DESIGNER);
+    expect((await handleFactoryApi(request(
+      "/JOB-1/packet", "POST", { zipBase64: btoa("packet") },
+    ), h.deps)).status).toBe(200);
+    const packet = h.calls.find((call) => call.fn === "rpc_factory_job_record_packet");
+    const edgeParams = Object.keys(packet?.body ?? {}).sort();
+
+    // SQL side: parameter names declared by 0170's create function.
+    const sql = readFileSync(
+      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      "utf8",
+    );
+    const declaration = /create function public\.rpc_factory_job_record_packet\(([^)]*)\)/.exec(sql);
+    const sqlParams = (declaration?.[1].match(/p_[a-z0-9_]+/g) ?? []).sort();
+
+    // PostgREST resolves an RPC by its named-argument set: any drift between
+    // the two sides fails every packet upload with a signature mismatch.
+    expect(sqlParams.length).toBeGreaterThan(0);
+    expect(edgeParams).toEqual(sqlParams);
+  });
+
+  it("0170 keeps the old edge callable and documents the human apply order (ADR-066)", () => {
+    const sql = readFileSync(
+      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      "utf8",
+    );
+    // Transition safety: an edge deployed before S18 omits the two new params,
+    // so they must carry defaults for the function to keep resolving.
+    expect(sql).toMatch(/p_job_name text default null/);
+    expect(sql).toMatch(/p_piece_count integer default null/);
+    // The apply order must be written where the human operator will read it:
+    // apply 0170 first, deploy the new factory-api edge second.
+    expect(sql).toContain("DEPLOY ORDER");
+    expect(sql).toContain("apply 0170");
+  });
+
   it("SQL migration 0170 adds jobName, pieceCount, and short packet hash to the jobs list", () => {
     const sql = readFileSync(
       new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
