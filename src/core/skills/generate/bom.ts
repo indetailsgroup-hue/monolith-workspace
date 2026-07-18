@@ -9,6 +9,7 @@
 
 import type { Skill, SkillContext, SkillResult, BOMResult, BOMItem } from '../types';
 import type { Cabinet } from '../../types/Cabinet';
+import { buildHandleBomItems } from '../../hardware/handleBom';
 
 // ============================================
 // TYPES
@@ -195,22 +196,13 @@ function generateCabinetBOM(cabinet: Cabinet): BOMItem[] {
   // HANDLES
   // ─────────────────────────────────────────────────────────────────────
 
-  const handleCount = doorPanels.length + drawerPanels.length;
-  if (handleCount > 0) {
-    // Default to modern handles
-    const sku = 'HANDLE-MODERN';
-    const handlePrice = HARDWARE_PRICES[sku];
-
-    items.push({
-      sku,
-      name: 'Modern Bar Handle 160mm',
-      category: 'hardware',
-      quantity: handleCount,
-      unit: handlePrice.unit,
-      unitPrice: handlePrice.price,
-      totalPrice: handlePrice.price * handleCount,
-    });
-  }
+  // Handles come from the handle catalog, and their quantity is read from
+  // structure.doorConfig / drawerConfig rather than from panel roles. The
+  // doorPanels count above filters on role === 'FRONT', which matches none of
+  // the roles the door generator actually emits, so counting from it would
+  // silently bill zero door handles. Types that buy nothing ('none',
+  // 'push_latch', and the routed 'j_pull') emit no line rather than a free one.
+  items.push(...buildHandleBomItems(cabinet));
 
   // ─────────────────────────────────────────────────────────────────────
   // LEGS & KICK BOARD

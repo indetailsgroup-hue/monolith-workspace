@@ -32,6 +32,9 @@ import { GlueFaceHighlights } from './GlueFaceHighlights';
 import { SnapPreview } from './SnapPreview';
 import { useProjectStore } from '../../core/store/useProjectStore';
 import { useSnapStore } from '../../core/store/useSnapStore';
+import { useHandleViewStore } from '../../core/store/useHandleViewStore';
+import { HandleLayer } from './Handle3D';
+import { resolveHandlePlacements } from '../../core/hardware/handlePlacement';
 import { SceneObjectRef } from './scene';
 import type { Vec3 } from '../../core/types/SnapTypes';
 import { calculateSnap, type SnapTarget } from '../../core/utils/snapSystem';
@@ -792,6 +795,8 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
   const markDirty = useProjectStore((s) => s.markDirty);
   const allCabinets = useCabinetStore((s) => s.cabinets);
   const clearActiveSnap = useSnapStore((s) => s.clearActiveSnap);
+  // Handle hardware is display-only: hiding it does not change the BOM or cut list.
+  const showHandles = useHandleViewStore((s) => s.showHandles);
 
   // State to trigger re-render when group ref is ready
   // This is needed because CabinetTransformControls checks targetRef.current
@@ -1063,6 +1068,16 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
         drillPointsByPanelId={drillPointsByPanelId}
         useCSGHoles={useCSGHoles}
       />
+
+      {/* Handle hardware - bought parts, not panels. Rendered inside the cabinet
+          group so each handle inherits scenePosition/sceneRotation via its own
+          panel frame. Never reaches the cut list or the DXF. */}
+      {showHandles && (
+        <HandleLayer
+          placements={resolveHandlePlacements(cabinet)}
+          xRayMode={xRayMode}
+        />
+      )}
 
       {/* Glue Face Highlights - inside group for correct positioning */}
       {/* Use shouldShowGlueFaces (not isGlueMode) to let GlueFaceHighlights handle delayed unmount */}
