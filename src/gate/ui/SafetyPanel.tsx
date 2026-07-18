@@ -215,8 +215,12 @@ export function runGateValidation(): void {
       ];
 
       // Convert MinifixGateResult to GateResult format
+      // passed = ไม่มี blocker (FAIL) จาก checker ใด ๆ — warnings ไม่ทำให้ fail
+      // (สัญญาเดียวกับ useExportGate และ factory verifyPacket ที่อ่าน gate_result.json:
+      //  passed=false + 0 blockers จะกลายเป็น "Gate FAILED: 0 blocker(s)" ที่โรงงาน)
+      // status 'WARNING' (เช่น ยังไม่มี drill map) = ไม่ผ่านแบบเงียบ ๆ แต่ก็ไม่ FAIL
       const result: GateResult = {
-        passed: gateResult.status === 'PASS' && g11Result.status === 'PASS' && connectorAudit.status === 'PASS',
+        passed: gateResult.status !== 'FAIL' && g11Result.status !== 'FAIL' && connectorAudit.status !== 'FAIL',
         runAt: new Date().toISOString(),
         policyVersion: 'minifix-v1.0+g11-connector-os-v1.1',
         findings: {
