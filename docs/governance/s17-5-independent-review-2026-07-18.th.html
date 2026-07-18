@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S17-5 Full Verifier — Independent Review</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>S17-5 Full Verifier — Independent Review</h1>
+<p>วันที่ตรวจ: 2026-07-18 สถานะ: <strong>RECORDED — independent technical review; ไม่ใช่ approval และไม่ปลด NO_CUT</strong> Verdict: <strong>FIX-THEN-SHIP</strong> ผู้ตรวจ: OpenAI Codex desktop — independent-review session/branch <code>review/s17-5-independent</code> Commit ที่ตรวจ: <code>955d127b9359de4a4c1b39792288120221c4aab8</code> Verifier tree: <code>905c4644abf225b89b5d1f4132fdb94126a68dbd</code> Spec TH SHA-256: <code>ce597ef30f701d114f90852d4460c050bcf09e60bb1c2d468ce31136197faed3</code></p>
+<blockquote><p><strong>Verdict บรรทัดเดียว:</strong> **fix-then-ship — ห้ามเรียก S17-5 ว่า Full Verifier หรือใช้ผล <code>VERIFIED</code> จนกว่าจะแก้ false-accept ของ payload/gate schema; นี่คือ defect ใหญ่สุด**</p></blockquote>
+<h2>1. Scope, pin และความอิสระ</h2>
+<ul><li>ก่อนเริ่มตรวจ <code>git rev-parse origin/main</code> และ <code>HEAD</code> ตรงกันที่ <code>955d127b9359de4a4c1b39792288120221c4aab8</code>; ระหว่างการตรวจ <code>origin/main</code> เดินหน้าต่อเพราะมีงานขนาน แต่ review branch คงอยู่ที่ commit ที่ pin ไว้ตลอด</li><li>ตรวจ <code>src/packet-verifier/</code> 27 ไฟล์, schema bundle ใต้ <code>docs/specs/schemas/</code>, สเปก TH ที่ hash ข้างต้น, แผน verifier และ interop evidence</li><li>ไม่แก้ production source, tests หรือ fixtures ใด ๆ; การเปลี่ยนแปลงใน branch นี้มีเฉพาะ review record editions และ manifest</li><li>วิธีตรวจ: อ่าน source ตาม actual call path, เทียบ ladder §12 ทีละขั้น, ตรวจ tamper corpus กับ §14, รันชุดทดสอบเอง และยิง boundary probes แบบไม่สร้างไฟล์</li><li>ไม่ใช้คำอ้างจาก session อื่นเป็นหลักฐาน แม้มี summary/รายงานก่อนหน้าปรากฏระหว่างงาน</li></ul>
+<h3>ข้อจำกัด SoD ที่ต้องบันทึกตรง ๆ</h3>
+<p>S17-5 builder ถูกระบุเป็น Claude และ session นี้ไม่ได้สร้าง S17-5 อย่างไรก็ดี governance history เรียก S17-3/4 builder ว่า “Codex” เช่นเดียวกับ product identity ของผู้ตรวจนี้ จึงพิสูจน์จาก repo ไม่ได้ว่า identity-level separation จาก S17-3/4 builder ปิดครบตามการตีความที่เข้มที่สุดของ ADR-065 แม้ session/worktree/branch และ evidence derivation จะแยกขาดกัน Record นี้จึงเป็น <strong>independent technical review</strong> ที่ใช้ตัดสิน defect ได้ แต่ห้ามใช้เพียงลำพังเพื่ออ้างว่า SoD identity leg ปิดแล้ว หาก owner ต้องการ different-agent identity แบบ literal ต้องมี reviewer คนที่สามลงบันทึกเพิ่ม</p>
+<h2>2. Scrutinize: intent และทางที่ง่ายกว่า</h2>
+<p>Intent ถูกต้อง: verifier ต้องตัดสิน exact bytes โดยอิสระจาก generator, ห้าม normalize ZIP ก่อนตัดสิน, และต้อง fail closed การแชร์ generator code/fixtures หรือใช้ ZIP library ที่ repair input อัตโนมัติอาจสั้นกว่าแต่ทำลาย SoD และ byte-profile threat model ดังนั้น separate verifier + strict ZIP reader เป็น design ที่สมเหตุผล</p>
+<p>ส่วนที่ไม่ควรทำมือเพิ่มคือ schema layer: ตอนนี้ transcribe เฉพาะ manifest/attestation แล้ว canonical-parse payload ที่เหลือ ทำให้ contract หลุด วิธีที่เล็กและตรงกว่า คือ compile/generate standalone validators จาก <strong>exact pinned Draft 2020-12 schema bundle</strong> แล้ว map <code>path ↔ contentSchema ↔ validator</code> แบบ closed allowlist; ไม่แชร์ implementation กับ S17-4</p>
+<h2>3. ผลเทียบ ladder §12</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>ผลตรวจ</th>
+<th>หลักฐานย่อ</th>
+</tr></thead><tbody>
+<tr>
+<td>1 Container safety</td>
+<td><strong>ยืนยันว่าถูกใน source</strong></td>
+<td>strict STORE profile, header/metadata pins, no gap/overlap/trailing bytes, CRC/size, order และ limits อยู่ใน <code>zipStrictReader.ts:94-265</code></td>
+</tr>
+<tr>
+<td>2 Strict parse</td>
+<td><strong>ไม่ครบ — BLOCKER</strong></td>
+<td><code>verifyPacket.ts:86-121</code> validate schema เฉพาะ manifest/attestation; JSON payload อื่นแค่ JCS parse</td>
+</tr>
+<tr>
+<td>3 Exact file set</td>
+<td><strong>ไม่ครบ — MAJOR</strong></td>
+<td><code>identityChecks.ts:25-60</code> เทียบ ZIP กับรายการใน manifest แต่ไม่บังคับ v2 required payload set หรือ file↔schema mapping</td>
+</tr>
+<tr>
+<td>4 Byte integrity</td>
+<td><strong>ยืนยันว่าถูก</strong></td>
+<td>raw size ก่อน raw SHA-256 ต่อ path (<code>identityChecks.ts:67-89</code>)</td>
+</tr>
+<tr>
+<td>5 Content identity</td>
+<td><strong>ยืนยันว่าถูก</strong></td>
+<td>omit เฉพาะ <code>packetContentId</code>, JCS แล้ว hash (<code>identityChecks.ts:97-117</code>)</td>
+</tr>
+<tr>
+<td>6 Manifest binding</td>
+<td><strong>ยืนยันว่าถูก</strong></td>
+<td>hash exact manifest bytes + packet ID equality (<code>identityChecks.ts:125-145</code>)</td>
+</tr>
+<tr>
+<td>7 Identity consistency</td>
+<td><strong>ไม่ครบ — BLOCKER</strong></td>
+<td>ตรวจ attestation↔manifest และ gate digest เท่านั้น; ไม่อ่าน result/policy จาก gate evidence (<code>consistencyCheck.ts:41-58</code>)</td>
+</tr>
+<tr>
+<td>8 Signature</td>
+<td><strong>primitive ถูก แต่ lifecycle ไม่ครบ — MAJOR</strong></td>
+<td>preimage/raw Base64/range/low-S/SPKI/verify ถูก; boundary/history policy ผิด (<code>signatureCheck.ts:97-110</code>)</td>
+</tr>
+<tr>
+<td>9 Authoritative</td>
+<td><strong>ไม่ครบ — BLOCKER/MAJOR</strong></td>
+<td>ตรวจ signed policy version แต่ไม่ตรวจ gate evidence PASS (<code>policyChecks.ts:64-68</code>); exception จาก lookup ไม่ถูก map</td>
+</tr>
+<tr>
+<td>10 Run/replay</td>
+<td><strong>logic หลักถูก; exception path ไม่ครบ</strong></td>
+<td>one-to-one run/content + fingerprint/run (<code>policyChecks.ts:80-98</code>) แต่ rejected Promise หลุดออกนอก result contract</td>
+</tr>
+<tr>
+<td>11 Shadow policy</td>
+<td><strong>ยืนยันว่าถูก</strong></td>
+<td>exact marker bytes/hash/schema + filename↔attestation + NO_CUT ceiling (<code>policyChecks.ts:102-162</code>)</td>
+</tr>
+<tr>
+<td>12 Audit result</td>
+<td><strong>ไม่ครบ — MAJOR</strong></td>
+<td>record ขาด policy versions, checked hashes และ actor/operator context (<code>verifyPacket.ts:38-52,199-216</code>)</td>
+</tr>
+</tbody></table></div>
+<h2>4. Findings เรียงตาม severity</h2>
+<h3>BLOCKER F-01 — verifier ออก <code>VERIFIED</code> ให้ gate evidence ที่ผิด schema</h3>
+<p><strong>Evidence</strong></p>
+<ul><li>สเปก §7 และ §12.2/7/9 บังคับ closed schema bundle, gate fields ตรงกัน และ gate evidence PASS ตาม policy</li><li><code>gate-result.schema.json:7-12</code> บังคับ <code>schema</code>, <code>policyVersion</code>, <code>result</code>, <code>findings</code></li><li><code>runStrictParse()</code> ที่ <code>verifyPacket.ts:102-112</code> เพียง parse JCS ของ payload; ไม่ validate payload schema และไม่เก็บ parsed gate value</li><li><code>checkIdentityConsistency()</code> ที่ <code>consistencyCheck.ts:41-58</code> ตรวจเพียง filename/digest</li><li><code>checkAuthoritative()</code> ที่ <code>policyChecks.ts:64-68</code> ถาม authority ด้วย policy version จาก attestation เท่านั้น</li><li>fixture เองสร้าง <code>gate-result.json</code> เป็น <code>{&quot;result&quot;:&quot;PASS&quot;}</code> ที่ <code>testkit/packetFixture.ts:38-43</code></li><li>Independent probe บน commit ที่ pin: gate bytes <code>{&quot;result&quot;:&quot;PASS&quot;}</code> แต่ผลคือ <code>{integrityStatus:&quot;VERIFIED&quot;, operationalDisposition:&quot;NO_CUT&quot;, code:&quot;PKT_OK_SHADOW_ONLY&quot;}</code>; probe exit 0</li></ul>
+<p><strong>Impact</strong>: generator/packet ที่ลงลายเซ็นสอดคล้องกันแต่ payload หรือ gate evidence ผิด schemaสามารถได้สถานะ integrity <code>VERIFIED</code> แม้ NO_CUT ยังกันการตัดจริงอยู่ จึงเป็น blocker ต่อคำว่า Full Verifier และต่อการใช้ผล integrity เป็นหลักฐาน</p>
+<p><strong>Suggested change</strong>: เพิ่ม exact bundle validator ทุก payload, closed <code>path ↔ mediaType ↔ contentSchema</code> registry, parse <code>gate-result.json</code>, บังคับ schema/result/policy และเทียบกับ signed gate fields; ยก fixture ให้ valid จริงและเพิ่ม negative tests สำหรับ gate FAIL, missing field, unknown field, policy mismatch และ array ordering</p>
+<h3>MAJOR F-02 — exact v2 payload set และ canonical path policy ยังไม่ถูก enforce</h3>
+<p><code>identityChecks.ts:38-59</code> ยอมรับ payload set ใด ๆ ที่ manifest กับ ZIP เห็นตรงกัน ตราบใดที่มี NFP marker และจำนวน manifest files ผ่าน shape จึงไม่บังคับรายการ v2 ในสเปก §6 (<code>connector-ops</code>, <code>connectors.minifix</code>, <code>cutlist</code>, <code>drillmap</code>, <code>gate-result</code>) ขณะที่ <code>shapes.ts:157-183</code> ไม่บังคับ NFC, Windows reserved names หรือ trailing dot/space ตาม <code>common.schema.json:12-18</code></p>
+<p><strong>Suggested change</strong>: pin required v2 set และ exact schema/media mapping; extension รับได้เฉพาะ supported schema minor ที่ verifier build นี้ประกาศ; ใช้ canonical-path validatorตัวเดียวทั้ง ZIP และ manifest</p>
+<h3>MAJOR F-03 — lookup exception หลุดออกจาก stable result และไม่มี audit รอบนั้น</h3>
+<p>Interfaces ระบุ sentinel <code>unavailable</code> แต่ call sites ใช้ <code>await</code> โดยไม่มี catch (<code>signatureCheck.ts:89</code>, <code>policyChecks.ts:36-68,84-97</code>) และ <code>verifyPacket.ts:134-197</code> ไม่มี exception boundary ก่อนสร้าง audit ที่ <code>:199-216</code></p>
+<p>Independent probe ให้ key registry throw: <code>verifyPacket()</code> throw <code>simulated registry outage</code>; หลัง success run มี audit 1 รายการ และหลัง outage ยังมี 1 รายการ หมายความว่า outage run ไม่ได้ stable <code>PKT_AUTHORITY_UNAVAILABLE</code> และไม่ append audit</p>
+<p><strong>Suggested change</strong>: ครอบ dependency calls ทุกตัวและ map rejected/throw/malformed response เป็น <code>PKT_AUTHORITY_UNAVAILABLE</code>; รับประกัน audit attempt ใน finally พร้อมกำหนด contract ชัดเมื่อ audit sink เองล้มเหลว</p>
+<h3>MAJOR F-04 — key lifecycle boundary, historical policy และ issued-time policy ไม่ตรง §10.2</h3>
+<ul><li>code ใช้ <code>issued &gt; notAfter</code> แทน required <code>issuedAt &lt; notAfter</code> (<code>signatureCheck.ts:101-106</code>)</li><li>RETIRED reject เฉพาะเมื่อมี <code>retiredAt</code> และใช้ <code>&gt;</code> แทน <code>&lt;</code> (<code>:108-109</code>)</li><li>ไม่มี verifier-policy input ที่อนุญาต historical verification; <code>TrustedKeyRecord</code> มีเพียง optional <code>retiredAt</code> (<code>:30-39</code>)</li><li><code>deps.now()</code> ถูกประกาศว่าใช้ audit เท่านั้น (<code>verifyPacket.ts:65-66</code>) จึงไม่มี verifier-policy skew ตาม spec §8.1</li><li>canonical timestamp helper ที่ validate calendar จริงมีอยู่ แต่ใช้เฉพาะ test; attestation shape ใช้ regex เท่านั้น (<code>shapes.ts:20-21,234</code>; <code>formats.ts:25-31</code>)</li></ul>
+<p>Independent probe ยืนยันว่า <code>issuedAt == notAfter</code>, RETIRED ที่ไม่มี <code>retiredAt</code> และ <code>issuedAt == retiredAt</code> ได้ <code>{ok:true}</code> ทั้งหมด</p>
+<p><strong>Suggested change</strong>: บังคับ half-open windows, RETIRED ต้องมี boundary + explicit allowHistorical policy, validate registry timestamps/key identity/algorithm, pin registry digest นอกเหนือจาก version และ expose/enforce issued-time skew policy</p>
+<h3>MAJOR F-05 — audit record ไม่ครบ normative fields</h3>
+<p>สเปก §12.12 ต้องมี verifier version, policy versions, checked hashes, result, time และ human/operator context แต่ <code>AuditRecord</code> ที่ <code>verifyPacket.ts:38-52</code> มีเพียง schema aggregate, packet/manifest IDs, job run และ registry version; ไม่มี gate/governance policy versions, per-file checked hashes, <code>actorSubjectId</code>/<code>authorizationContextId</code> หรือ operator context</p>
+<p><strong>Suggested change</strong>: เพิ่ม field ที่ normative กำหนดและ regression test exact pass/fail audit records โดยไม่บันทึก PII เกิน opaque IDs</p>
+<h3>MAJOR F-06 — 128 tests ผ่านจริง แต่ tamper corpus ยังไม่ครบ §14</h3>
+<p>สิ่งที่ขาดหรือไม่ถูกพิสูจน์ ได้แก่ invalid payload schemas/unknown fields/order rules/micrometre constraints, gate-result FAIL/policy mismatch, thrown authority/run-registry, lifecycle equality/missing retiredAt/history flag, invalid registry dates, issued-time skew, ZIP64/multi-disk/64-MiB-total cases และ exact audit contents นอกจากนี้ <code>PKT_SIGNATURE_MISSING</code> อยู่เฉพาะ type union (<code>codes.ts:40</code>) ไม่มี production emission path; missing signature ถูก shape layer กลืนเป็น <code>PKT_ATTESTATION_INVALID</code></p>
+<p><strong>Suggested change</strong>: เพิ่ม spec-indexed corpus table ที่หนึ่งแถวต่อ mutation ใน §14 พร้อม expected check+stable code และทดสอบ exception paths แยกจาก sentinel paths</p>
+<h3>NIT F-07 — interop ZIP pin แข็ง แต่ meta exact bytes ยังไม่ถูก pin</h3>
+<p><code>blackbox.interop.test.ts:28-29</code> pin generator commit และ ZIP SHA-256 ดี และ one-byte negative ทำให้ gate ไม่ vacuous แต่ test ไม่ pin SHA-256 ของ <code>interop-meta.json</code>; <code>generatorTree</code>/<code>inputSha256</code> ถูกอ่านเป็น type แต่ไม่ assert ตรง constant และ evidence manifest ปัจจุบัน list เฉพาะ runner+report ไม่ list fixture pair</p>
+<p><strong>Suggested change</strong>: pin meta SHA-256, assert tree/input hash และเพิ่มทั้ง meta+ZIP ใน evidence manifest เพื่อกัน provenance drift ที่ test ยังไม่เห็น</p>
+<h2>5. สิ่งที่ trace แล้วยืนยันว่าถูก</h2>
+<ol><li><strong>Container byte profile แข็งจริง</strong>: local offsets ต้องต่อกัน, central/local order ตรง, no gap/overlap/trailing, STORE-only, header bits/time/mode pinned, CRC+sizes ตรวจจริง, duplicates/case collision และ limits fail closed</li><li><strong>JCS/strict JSON core ถูกทาง</strong>: duplicate key ก่อนสร้าง object, BOM/invalid UTF-8/negative zero/unsafe canonical integer/lone surrogate reject; roundtrip byte equality; object key sort ด้วย UTF-16 code unitsตาม RFC 8785</li><li><strong>Content identity chain ถูก</strong>: path/size/hash อยู่ใน descriptor, omit เฉพาะ content ID, bind exact manifest bytes และ attested packet ID</li><li><strong>Signature primitive ถูก</strong>: preimage คง protected header และ omit เฉพาะ <code>valueBase64</code>; domain prefix ตรง; strict padded Base64 raw 64 bytes; scalar range; high-S rejectด้วย <code>s &gt; floor(n/2)</code> จึงรับ boundary เท่ากับ floor; SPKI OIDs/DER/point form strict; WebCrypto verify ไม่ re-sign</li><li><strong>First-fail-wins ถูกสำหรับ handled outcomes</strong>: orchestrator return ทันทีตาม ladderและไม่มี later diagnostic มาแทน primary code; ข้อยกเว้นคือ thrown dependency path ใน F-03</li><li>**<code>PKT_OK</code> unreachable by construction**: ไม่มีใน <code>PacketResultCode</code>; success constructor ออกได้เฉพาะ <code>PKT_OK_SHADOW_ONLY</code>; disposition type มีเพียง <code>NO_CUT</code></li><li><strong>NFP pin ถูก exact</strong>: independent recompute ได้ 824 bytes และ SHA-256 <code>40a4d63f…7d68a</code> ตรง constants; filename ผูก jobRun/content prefix</li><li><strong>Black-box interop ZIP pin จริง</strong>: fixture ZIP SHA-256 <code>8a40f975…90ddb</code> ตรง literal; test consume frozen bytes และ one-byte mutation fail closed</li></ol>
+<h2>6. Fresh execution evidence</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>คำสั่ง/Probe</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td><code>npm ci</code> (root)</td>
+<td>exit 0; 586 packages; npm audit report 18 issues (ไม่ถูกตีความว่าเป็น S17-5 runtime defect เพราะ production verifier imports เป็น local/WebCrypto เท่านั้น)</td>
+</tr>
+<tr>
+<td><code>cd server &amp;&amp; npm ci</code></td>
+<td>exit 0; 220 packages; npm audit report 13 issues; ใช้เพื่อให้ suites collect dependencies ครบ</td>
+</tr>
+<tr>
+<td><code>npx vitest run src/packet-verifier</code></td>
+<td>exit 0; 6 files; <strong>128/128 PASS</strong></td>
+</tr>
+<tr>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>exit 0; no diagnostics</td>
+</tr>
+<tr>
+<td><code>npm run test:node</code></td>
+<td>exit 0; <strong>27/27 PASS</strong></td>
+</tr>
+<tr>
+<td>Gate-schema boundary probe</td>
+<td>exit 0; invalid <code>{&quot;result&quot;:&quot;PASS&quot;}</code> ได้ <code>VERIFIED/NO_CUT/PKT_OK_SHADOW_ONLY</code></td>
+</tr>
+<tr>
+<td>Registry-throw probe</td>
+<td>exit 0 ของ probe wrapper; verifier throw และไม่เพิ่ม audit ของ outage run</td>
+</tr>
+<tr>
+<td>Lifecycle boundary probe</td>
+<td>exit 0; three invalid boundary/policy cases returned <code>{ok:true}</code></td>
+</tr>
+<tr>
+<td>NFP recompute</td>
+<td>exit 0; byte count/hash match = <code>true</code></td>
+</tr>
+</tbody></table></div>
+<blockquote><p>Tests ผ่านคือหลักฐานเฉพาะสิ่งที่ tests ครอบ ไม่หักล้าง false-accept ที่ independent probes แสดง</p></blockquote>
+<h2>7. Required re-review gate</h2>
+<p>ก่อน ship ต้องมี commit แก้โดย S17-5 builder แล้วให้ reviewer ตรวจอย่างน้อย:</p>
+<ol><li>payload/gate schemas และ exact file/schema registry reject จริง</li><li>gate evidence PASS/policy/file fields ตรง attestation + authority</li><li>thrown lookup ทุกชนิดคืน stable fail-closed code และมี audit</li><li>lifecycle half-open boundaries + RETIRED history policy + skew</li><li>audit normative fields ครบ</li><li>tamper corpus §14 ครบและ fresh output ยังผ่าน</li></ol>
+<p>Review นี้ไม่แก้ production code ตาม SoD; owner เป็นผู้ merge PR review record และ builder เป็นผู้แก้ source ตาม receiving-code-review flow</p>
+</main>
+</body>
+</html>
