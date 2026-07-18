@@ -1957,6 +1957,34 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
         });
         // Skip top/bottom/back edges for dividers - they are hidden by other panels
         break;
+
+      case 'KICKBOARD':
+        // Kickboard: vertical XY panel, sizeX=width, sizeY=height, sizeZ=t
+        // Edge slots read literally here: top = upper edge, left/right = ends.
+        // Bottom sits on the floor and is never banded.
+
+        // Top edge - at Y = panel.finishHeight/2 - et/2
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, panel.finishHeight/2 - et/2, 0],
+          size: [panel.finishWidth, et, t + OFFSET],
+          color: topEdge.color,
+        });
+        // Left end - at X = -panel.finishWidth/2 + et/2
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [-panel.finishWidth/2 + et/2, 0, 0],
+          size: [et, panel.finishHeight, t + OFFSET],
+          color: leftEdge.color,
+        });
+        // Right end - at X = panel.finishWidth/2 - et/2
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [panel.finishWidth/2 - et/2, 0, 0],
+          size: [et, panel.finishHeight, t + OFFSET],
+          color: rightEdge.color,
+        });
+        break;
     }
 
     return strips;

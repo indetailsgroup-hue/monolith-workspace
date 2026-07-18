@@ -310,6 +310,32 @@ export interface DoorConfig {
 }
 
 /**
+ * Datum the kickboard setback is measured from.
+ * - 'CARCASS' (default): cabinet front face at Z = +D/2. Stable — toggling doors
+ *   does not move the plinth.
+ * - 'FRONT': door / drawer-front outer face. Matches the joinery convention
+ *   (typ. 50-100mm from the door face) but couples the plinth to doorConfig.
+ */
+export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
+
+/**
+ * Kickboard (plinth / บังตีนตู้) configuration.
+ * Only meaningful when dimensions.toeKickHeight > 0.
+ */
+export interface KickboardConfig {
+  /** Generate a KICKBOARD panel. Defaults to true when toeKickHeight > 0. */
+  hasKickboard: boolean;
+  /** Recess of the kickboard front face. Default: MANUFACTURING_PARAMS.kickSetback (50mm). */
+  setback?: number;
+  /** Datum the setback is measured from. Default: 'CARCASS'. */
+  setbackDatum?: KickboardSetbackDatum;
+  /** Optional core override (e.g. moisture-resistant). Falls back to cabinet defaults. */
+  coreMaterialId?: string;
+  /** Optional surface override. Falls back to cabinet defaults. */
+  surfaceMaterialId?: string;
+}
+
+/**
  * Default door panel configuration.
  */
 export const DEFAULT_DOOR_PANEL: Omit<DoorPanelConfig, 'id'> = {
@@ -457,6 +483,8 @@ export interface CabinetStructure {
   drawerConfig?: DrawerConfig;
   /** Door system configuration (optional) */
   doorConfig?: DoorConfig;
+  /** Kickboard / plinth configuration (optional). Only meaningful when toeKickHeight > 0. */
+  kickboardConfig?: KickboardConfig;
 
   /**
    * Per-shelf connector configuration.

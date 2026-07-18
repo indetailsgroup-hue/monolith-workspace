@@ -286,6 +286,12 @@ function getExposedEdges(panel: CabinetPanel, cabinet: Cabinet): EdgeSide[] {
       exposed.push('TOP', 'BOTTOM', 'LEFT', 'RIGHT');
       break;
 
+    case 'KICKBOARD':
+      // Plinth: top edge visible from a low angle, both ends visible at run
+      // ends / islands. Bottom sits on the floor. Matches ROLE_EXPOSED_EDGES.
+      exposed.push('TOP', 'LEFT', 'RIGHT');
+      break;
+
     default:
       // Default: front edge exposed
       exposed.push('LEFT');

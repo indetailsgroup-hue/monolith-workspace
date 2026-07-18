@@ -19,6 +19,7 @@
  * - Top/Bottom/Shelf: [width, thickness, depth]
  * - Back: [width, height, thickness]
  * - Divider: [thickness, height, depth]
+ * - Kickboard: [width, height, thickness]
  */
 
 // ============================================
@@ -123,7 +124,10 @@ export function getPanelHalfExtents(panel: PanelForAabb): [number, number, numbe
       return [w / 2, t / 2, h / 2];
 
     case 'BACK':
-      // Back panel: width in X, height in Y, thickness in Z
+    case 'KICKBOARD':
+      // Vertical XY panels: width in X, height in Y, thickness in Z.
+      // KICKBOARD must be listed explicitly — the default: below is the
+      // HORIZONTAL mapping and would silently give the plinth a wrong AABB.
       return [w / 2, h / 2, t / 2];
 
     default:

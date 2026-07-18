@@ -24,6 +24,7 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
   BACK: <Square size={14} />,
   SHELF: <Layers size={14} />,
   DIVIDER: <Layers size={14} className="rotate-90" />,
+  KICKBOARD: <Square size={14} />,
 };
 
 const PANEL_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ const PANEL_COLORS: Record<string, string> = {
   BACK: 'text-gray-400',
   SHELF: 'text-amber-400',
   DIVIDER: 'text-purple-400',
+  KICKBOARD: 'text-orange-400',
 };
 
 interface PanelListProps {

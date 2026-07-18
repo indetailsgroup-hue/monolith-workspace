@@ -204,6 +204,16 @@ export const DoorConfigSchema = z.object({
   revealGap: z.number().nonnegative(),
 });
 
+export const KickboardSetbackDatumSchema = z.enum(['CARCASS', 'FRONT']);
+
+export const KickboardConfigSchema = z.object({
+  hasKickboard: z.boolean(),
+  setback: z.number().nonnegative().optional(),
+  setbackDatum: KickboardSetbackDatumSchema.optional(),
+  coreMaterialId: z.string().optional(),
+  surfaceMaterialId: z.string().optional(),
+});
+
 // ============================================
 // CABINET STRUCTURE SCHEMAS
 // ============================================
@@ -231,6 +241,7 @@ export const CabinetStructureSchema = z.object({
   dividerCount: z.number().int().nonnegative(),
   drawerConfig: DrawerConfigSchema.optional(),
   doorConfig: DoorConfigSchema.optional(),
+  kickboardConfig: KickboardConfigSchema.optional(),
   cornerAngles: CornerAnglesSchema.optional(),
 });
 

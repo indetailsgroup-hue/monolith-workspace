@@ -53,6 +53,13 @@ import {
   createDoorPanelId,
   type DoorMaterialProps,
 } from '../manufacturing/door';
+import {
+  computeKickboardSize,
+  computeKickboardZ,
+  shouldGenerateKickboard,
+  resolveKickboardSetback,
+  resolveKickboardSetbackDatum,
+} from '../manufacturing/kickboard';
 import { CABINET_TYPES, type ConstructionType } from '../catalog/CabinetTaxonomy';
 import { checkMutationAllowed, type SpecState } from '../spec/specState';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
@@ -140,6 +147,9 @@ const MANUFACTURING_PARAMS = {
   backVoid: 20,           // Back_void: ระยะเว้นหลังตู้ (19-20 mm)
   backThickness: 6,       // Back_thk: ความหนาแผงหลัง (6 or 9 mm)
   safetyGap: 2,           // Gap_safety: ระยะเผื่อไม่ให้ชน (1-2 mm)
+
+  // === Kickboard / Plinth ===
+  kickSetback: 50,        // K_setback: ระยะร่นบังตีนตู้จากหน้าตู้ (typ. 50 mm)
 };
 
 // ============================================
@@ -1779,6 +1789,50 @@ function generatePanels(
     selected: false,
   });
 
+  // ========== KICKBOARD (PLINTH) ==========
+  // Closes the toe-kick void. Leg is a pure +Y offset for the carcass, so without
+  // this panel every base cabinet floats above open air.
+  // Generated HERE, inside generatePanels, so computePanel/makeEdges give it real
+  // cut sizes, edge length, surface area, cost and CO2 like any carcass panel.
+  if (shouldGenerateKickboard(dimensions, structure)) {
+    const kickSize = computeKickboardSize(dimensions);
+    const kickSetback = resolveKickboardSetback(structure, MFG.kickSetback);
+    const kickDatum = resolveKickboardSetbackDatum(structure);
+    // Door thickness only matters under the 'FRONT' datum, and only if doors exist
+    const kickDoorT = structure.doorConfig?.hasDoors
+      ? structure.doorConfig.doorThickness
+      : undefined;
+    // NOTE: no carcassZ term — the plinth is referenced to the FRONT face, so the
+    // back-panel construction must not move it (see kickboardGeometry.ts).
+    const kickZ = computeKickboardZ(D, T, kickSetback, kickDatum, kickDoorT);
+
+    // Edge slots read literally for this role (unlike side panels):
+    //   top = upper edge, visible from a low angle       -> BAND
+    //   bottom = floor edge                              -> NO BAND
+    //   left/right = ends, exposed at run ends & islands -> BAND
+    // Over-bands mid-run ends (hidden by the neighbour's kick) by at most
+    // 2 x Leg of tape per cabinet — never under-quotes.
+    panels.push({
+      id: createId(),
+      role: 'KICKBOARD',
+      name: 'Kickboard',
+      finishWidth: kickSize.width,
+      finishHeight: kickSize.height,
+      coreMaterialId: structure.kickboardConfig?.coreMaterialId ?? defaultCoreId,
+      faces: {
+        faceA: structure.kickboardConfig?.surfaceMaterialId ?? defaultSurfaceId,
+        faceB: null,
+      },
+      edges: makeEdges(true, false, true, true), // top, (no floor edge), left, right
+      grainDirection: 'HORIZONTAL',
+      computed: computePanel(kickSize.width, kickSize.height, ET, 0, ET, ET),
+      position: [0, kickSize.height / 2, kickZ],
+      rotation: [0, 0, 0],
+      visible: true,
+      selected: false,
+    });
+  }
+
   // ========== BACK PANEL ==========
   if (structure.hasBackPanel) {
     // backTotalT calculated above using Truth Module
@@ -2039,6 +2093,7 @@ interface ManufacturingParams {
   backVoid: number;          // 19 - 20 mm
   backThickness: number;     // 6 or 9 mm
   safetyGap: number;         // 1 - 2 mm
+  kickSetback: number;       // 40 - 100 mm (kickboard recess)
 }
 
 interface CabinetState {
@@ -2227,6 +2282,7 @@ export const useCabinetStore = create<CabinetStore>()(
       backVoid: MANUFACTURING_PARAMS.backVoid,              // 20 mm
       backThickness: MANUFACTURING_PARAMS.backThickness,    // 6 mm
       safetyGap: MANUFACTURING_PARAMS.safetyGap,            // 2 mm
+      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 50 mm
     },
 
     // Drilling parameters (editable from X-Ray mode labels)
@@ -3775,7 +3831,7 @@ export const useCabinetStore = create<CabinetStore>()(
     setManufacturingParam: (key, value) => {
       // Geometry-affecting params that require full panel regeneration
       const geometryParams: (keyof ManufacturingParams)[] = [
-        'backThickness', 'backVoid', 'grooveDepth', 'clearance', 'safetyGap'
+        'backThickness', 'backVoid', 'grooveDepth', 'clearance', 'safetyGap', 'kickSetback'
       ];
 
       // Keys shared between ManufacturingParams and CabinetManufacturing
@@ -3812,6 +3868,7 @@ export const useCabinetStore = create<CabinetStore>()(
           backVoid: MANUFACTURING_PARAMS.backVoid,
           backThickness: MANUFACTURING_PARAMS.backThickness,
           safetyGap: MANUFACTURING_PARAMS.safetyGap,
+          kickSetback: MANUFACTURING_PARAMS.kickSetback,
         };
       });
     },
