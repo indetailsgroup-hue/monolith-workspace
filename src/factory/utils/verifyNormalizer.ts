@@ -287,6 +287,12 @@ function extractDetails(log: string, exitCode: number): ExtractedDetails {
 // ============================================================================
 
 function generateChecks(code: VerifyErrorCode, verdict: VerifyVerdict): VerifyCheck[] {
+  // FS-B1-02: a storage-integrity verdict must NEVER fabricate rows for checks
+  // that did not run (signature/manifest/gate/audit) — one honest row only.
+  if (verdict === "STORAGE_HASH_MATCH") {
+    return [{ name: "Storage hash (stored ZIP bytes vs recorded digest)", status: "PASS" }];
+  }
+
   if (verdict === "PASS") {
     return [
       { name: "Signature verification", status: "PASS" },

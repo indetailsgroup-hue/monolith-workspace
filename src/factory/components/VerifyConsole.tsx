@@ -673,11 +673,14 @@ interface VerdictBannerProps {
 function VerdictBanner({ verdict, code, summary }: VerdictBannerProps): React.ReactElement {
   const isPass = verdict === "PASS";
   const isWarn = verdict === "PASS_WITH_WARN";
-  const bgColor = isPass ? "#22c55e20" : isWarn ? "#f59e0b20" : "#ef444420";
-  const borderColor = isPass ? "#22c55e" : isWarn ? "#f59e0b" : "#ef4444";
-  const textColor = isPass ? "#22c55e" : isWarn ? "#f59e0b" : "#ef4444";
-  const icon = isPass ? "✓" : isWarn ? "⚠" : "✕";
-  const banner = ERROR_MESSAGES[code]?.banner || summary;
+  // FS-B1-02: storage-integrity verdict renders in its own color so an
+  // operator can never mistake it for a full packet verification
+  const isStorage = verdict === "STORAGE_HASH_MATCH";
+  const bgColor = isStorage ? "#3b82f620" : isPass ? "#22c55e20" : isWarn ? "#f59e0b20" : "#ef444420";
+  const borderColor = isStorage ? "#3b82f6" : isPass ? "#22c55e" : isWarn ? "#f59e0b" : "#ef4444";
+  const textColor = isStorage ? "#3b82f6" : isPass ? "#22c55e" : isWarn ? "#f59e0b" : "#ef4444";
+  const icon = isPass || isStorage ? "✓" : isWarn ? "⚠" : "✕";
+  const banner = isStorage ? summary : ERROR_MESSAGES[code]?.banner || summary;
 
   return (
     <div
@@ -782,7 +785,7 @@ interface VerifierLogProps {
 }
 
 function VerifierLog({ log, verdict, showFullLog, onToggle, onCopy, copied }: VerifierLogProps): React.ReactElement {
-  const isPass = verdict === "PASS" || verdict === "PASS_WITH_WARN";
+  const isPass = verdict === "PASS" || verdict === "PASS_WITH_WARN" || verdict === "STORAGE_HASH_MATCH";
   const borderColor = isPass ? "#22c55e40" : "#ef444440";
   const textColor = isPass ? "#22c55e" : "#ef4444";
 

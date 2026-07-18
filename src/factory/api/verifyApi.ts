@@ -21,15 +21,19 @@ export async function verifyJobApi(jobId: string): Promise<VerifyApiResponse> {
   for (const path of VERIFY_PATHS(jobId)) {
     try {
       const { data } = await apiFetch<Record<string, unknown>>(path, { method: "POST" });
-      // ADR-061 packet store: backend คืน {ok, verdict PASS|FAIL, expected, computed, bytes}
+      // ADR-061 packet store + FS-B1-02: backend ตรวจแค่ storage integrity
+      // (whole-ZIP hash เทียบ digest ที่บันทึก) — verdict ฝั่ง client ต้องไม่
+      // กลายเป็น PASS เพราะไม่มีการตรวจ signature/authority/gate/NFP ใด ๆ
+      // รองรับทั้ง response ใหม่ (STORAGE_HASH_MATCH) และเก่า (PASS) ระหว่างรอ
+      // hosted deploy — ทั้งคู่คือ storage check จึง map เข้าคำเดียวกัน
       if (typeof data?.verdict === 'string' && ('computed' in data || 'expected' in data)) {
-        const pass = data.verdict === 'PASS';
+        const match = data.verdict === 'STORAGE_HASH_MATCH' || data.verdict === 'PASS';
         return {
-          verdict: pass ? 'PASS' : 'FAIL',
-          code: pass ? 'OK' : 'HASH_MISMATCH',
-          summary: pass
-            ? `แพ็คเก็ตตรง anchor (${String(data.bytes ?? '?')} bytes)`
-            : 'hash ไม่ตรง anchor — ห้ามผลิต',
+          verdict: match ? 'STORAGE_HASH_MATCH' : 'FAIL',
+          code: match ? 'OK' : 'HASH_MISMATCH',
+          summary: match
+            ? `ไบต์ตรงกับที่บันทึกไว้ (${String(data.bytes ?? '?')} bytes) — ตรวจ storage integrity เท่านั้น ไม่ใช่การ verify packet เต็มรูป`
+            : 'hash ไม่ตรงกับที่บันทึก — ห้ามใช้ไฟล์นี้',
           message: `expected ${String(data.expected ?? '')} computed ${String(data.computed ?? '')}`,
           log: JSON.stringify(data),
         } as VerifyApiResponse;

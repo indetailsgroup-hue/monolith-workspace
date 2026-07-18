@@ -416,7 +416,11 @@ export async function handleFactoryApi(
       }
       const bytes = await deps.storageGet(info.storagePath);
       const computed = await sha256Hex(bytes);
-      const verdict = computed === info.packetSha256 ? "PASS" : "FAIL";
+      // FS-B1-02: this endpoint proves ONLY that the stored ZIP bytes still
+      // match the recorded digest. It parses nothing and checks no signature,
+      // authority, gate, or NFP contract — the verdict vocabulary must not be
+      // able to impersonate the S17-5 full verifier's result.
+      const verdict = computed === info.packetSha256 ? "STORAGE_HASH_MATCH" : "STORAGE_HASH_MISMATCH";
       const recorded = await deps.callRpc("rpc_factory_job_verify_result", {
         p_job_id: jobId,
         p_verdict: verdict,
@@ -427,6 +431,7 @@ export async function handleFactoryApi(
       return json(200, {
         ok: true,
         verdict,
+        scope: "STORAGE_INTEGRITY_ONLY",
         expected: info.packetSha256,
         computed,
         bytes: bytes.length,

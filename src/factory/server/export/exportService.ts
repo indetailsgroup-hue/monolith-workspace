@@ -197,8 +197,13 @@ async function runVerifyOnExport(jobId: string): Promise<VerifyOnExportResult> {
   const result = await verifyJob(jobId);
 
   // Map VerifyApiResponse to VerifyOnExportResult
-  // PASS and PASS_WITH_WARN both allow export; only FAIL blocks
-  const passed = result.verdict === "PASS" || result.verdict === "PASS_WITH_WARN";
+  // PASS, PASS_WITH_WARN and STORAGE_HASH_MATCH allow export; only FAIL blocks
+  // (STORAGE_HASH_MATCH = bytes-at-rest integrity — the right gate for
+  // exporting the STORED packet, never wider than that; FS-B1-02)
+  const passed =
+    result.verdict === "PASS" ||
+    result.verdict === "PASS_WITH_WARN" ||
+    result.verdict === "STORAGE_HASH_MATCH";
 
   return {
     passed,

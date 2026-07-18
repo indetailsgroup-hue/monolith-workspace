@@ -76,7 +76,15 @@ export interface JobDetailData extends JobSummary {
  * - FAIL: DO NOT produce
  * - PASS_WITH_WARN: Can produce but with warning (e.g., audit unknown)
  */
-export type VerifyVerdict = "PASS" | "FAIL" | "PASS_WITH_WARN" | "ERROR";
+export type VerifyVerdict =
+  | "PASS"
+  | "FAIL"
+  | "PASS_WITH_WARN"
+  | "ERROR"
+  // FS-B1-02: server storage-integrity check (whole-ZIP hash vs recorded
+  // digest). Deliberately NOT "PASS": it proves bytes-at-rest only — no
+  // signature, authority, gate, or NFP verification happened.
+  | "STORAGE_HASH_MATCH";
 
 /** @deprecated Use VerifyVerdict instead */
 export type VerifyResult = VerifyVerdict;

@@ -29,7 +29,13 @@ interface ExportLockBannerProps {
 
 function isVerifyPassed(result: VerifyApiResponse | null): boolean {
   if (!result) return false;
-  return result.verdict === "PASS" || result.verdict === "PASS_WITH_WARN";
+  // STORAGE_HASH_MATCH: bytes-at-rest integrity — enough to export the stored
+  // packet, not a manufacturing verification (FS-B1-02)
+  return (
+    result.verdict === "PASS" ||
+    result.verdict === "PASS_WITH_WARN" ||
+    result.verdict === "STORAGE_HASH_MATCH"
+  );
 }
 
 function getLockedReason(

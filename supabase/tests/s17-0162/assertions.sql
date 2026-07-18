@@ -157,7 +157,7 @@ begin
   end;
   begin
     perform public.rpc_factory_job_verify_result(
-      v_job, 'PASS', repeat('1', 64),
+      v_job, 'STORAGE_HASH_MATCH', repeat('1', 64),
       'designer-user', array['designer'], array['BKK-HQ-01'],
       v_context, 'DESIGNER', 'designer@example.test'
     );
@@ -293,7 +293,7 @@ begin
   );
 
   v_result := public.rpc_factory_job_verify_result(
-    v_job, 'PASS', repeat('1', 64),
+    v_job, 'STORAGE_HASH_MATCH', repeat('1', 64),
     'factory-user', array['factory_operator'], array['BKK-HQ-01'],
     v_context, 'FACTORY', 'factory@example.test'
   );
@@ -330,11 +330,23 @@ begin
   );
 
   v_result := public.rpc_factory_job_verify_result(
-    v_job, 'PASS', repeat('1', 64),
+    v_job, 'STORAGE_HASH_MATCH', repeat('1', 64),
     'factory-user', array['factory_operator'], array['BKK-HQ-01'],
     v_context, 'FACTORY', 'factory@example.test'
   );
   perform pg_temp.s17_assert(v_result ->> 'ok' = 'true', 'RELEASED packet verification succeeds');
+
+  -- FS-B1-02 (0163): legacy full-verification vocabulary is rejected — a
+  -- whole-ZIP hash check can never be recorded as PASS again.
+  v_result := public.rpc_factory_job_verify_result(
+    v_job, 'PASS', repeat('1', 64),
+    'factory-user', array['factory_operator'], array['BKK-HQ-01'],
+    v_context, 'FACTORY', 'factory@example.test'
+  );
+  perform pg_temp.s17_assert(
+    v_result ->> 'ok' = 'false' and v_result ->> 'error' = 'invalid verdict',
+    'legacy PASS verdict is rejected by storage-hash vocabulary (B1-02)'
+  );
   perform pg_temp.s17_assert(
     exists (
       select 1 from public.factory_job_events

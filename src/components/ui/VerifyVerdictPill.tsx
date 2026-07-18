@@ -7,7 +7,15 @@
 
 import React from 'react';
 
-export type VerdictDisplay = 'PASS' | 'PASS_WITH_WARN' | 'FAIL' | 'ERROR' | 'UNKNOWN' | 'LOADING';
+export type VerdictDisplay =
+  | 'PASS'
+  | 'PASS_WITH_WARN'
+  | 'FAIL'
+  | 'ERROR'
+  | 'UNKNOWN'
+  | 'LOADING'
+  // FS-B1-02: storage-integrity result — rendered distinctly, never as PASS
+  | 'STORAGE_HASH_MATCH';
 
 interface VerifyVerdictPillProps {
   verdict: VerdictDisplay;
@@ -19,6 +27,8 @@ export function VerifyVerdictPill({ verdict, size = 'md' }: VerifyVerdictPillPro
     switch (verdict) {
       case 'PASS':
         return { bg: 'rgba(34, 197, 94, 0.15)', border: '#22c55e', text: '#86efac' };
+      case 'STORAGE_HASH_MATCH':
+        return { bg: 'rgba(59, 130, 246, 0.15)', border: '#3b82f6', text: '#93c5fd' };
       case 'PASS_WITH_WARN':
         return { bg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b', text: '#fcd34d' };
       case 'FAIL':
@@ -35,6 +45,8 @@ export function VerifyVerdictPill({ verdict, size = 'md' }: VerifyVerdictPillPro
     switch (verdict) {
       case 'PASS':
         return '✓ PASS';
+      case 'STORAGE_HASH_MATCH':
+        return '✓ STORAGE HASH';
       case 'PASS_WITH_WARN':
         return '⚠ WARN';
       case 'FAIL':
