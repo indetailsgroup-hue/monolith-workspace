@@ -27,7 +27,13 @@ interface ExportLockBannerProps {
 // Helpers
 // ============================================================================
 
-function isVerifyPassed(result: VerifyApiResponse | null): boolean {
+/**
+ * Single export-unlock rule (S18 L2) — shared with JobDetail so the tab
+ * gating and this banner can never disagree.
+ * PASS_WITH_WARN unlocks (type contract: "can produce but with warning")
+ * but callers should surface the warning — see the amber banner below.
+ */
+export function isVerifyPassed(result: VerifyApiResponse | null): boolean {
   if (!result) return false;
   // STORAGE_HASH_MATCH: bytes-at-rest integrity — enough to export the stored
   // packet, not a manufacturing verification (FS-B1-02)
@@ -66,8 +72,30 @@ export function ExportLockBanner({
 }: ExportLockBannerProps) {
   const isPassed = isVerifyPassed(verifyResult);
 
-  // Don't show banner if export is unlocked
   if (isPassed && jobStatus !== "BLOCKED") {
+    // PASS_WITH_WARN: export is unlocked, but the operator must see WHY the
+    // verdict carries a warning — amber banner instead of silence.
+    if (verifyResult?.verdict === "PASS_WITH_WARN") {
+      return (
+        <div style={styles.warnContainer}>
+          <div style={styles.warnIconContainer}>
+            <WarnIcon />
+          </div>
+          <div style={styles.content}>
+            <div style={styles.warnTitle}>Export Unlocked — With Warning</div>
+            <div style={styles.warnReason}>
+              {verifyResult.summary ||
+                "Verification passed with warnings. Production is allowed, but review the warning before export."}
+            </div>
+            {verifyResult.code && (
+              <div style={styles.warnCode}>Code: {verifyResult.code}</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Clean PASS / STORAGE_HASH_MATCH: no banner
     return null;
   }
 
@@ -102,6 +130,25 @@ export function ExportLockBanner({
 // ============================================================================
 // Icons
 // ============================================================================
+
+function WarnIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
 
 function LockIcon() {
   return (
@@ -165,6 +212,44 @@ const styles: Record<string, React.CSSProperties> = {
   code: {
     fontSize: "11px",
     color: "#f87171",
+    marginTop: "4px",
+    fontFamily: "monospace",
+  },
+  warnContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    padding: "16px 20px",
+    background: "linear-gradient(135deg, #78350f 0%, #92400e 100%)",
+    borderRadius: "8px",
+    border: "1px solid #f59e0b",
+    marginBottom: "16px",
+  },
+  warnIconContainer: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "40px",
+    height: "40px",
+    borderRadius: "8px",
+    background: "rgba(0, 0, 0, 0.2)",
+    color: "#fde68a",
+    flexShrink: 0,
+  },
+  warnTitle: {
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#fde68a",
+    marginBottom: "4px",
+  },
+  warnReason: {
+    fontSize: "13px",
+    color: "#fcd34d",
+    lineHeight: 1.4,
+  },
+  warnCode: {
+    fontSize: "11px",
+    color: "#fbbf24",
     marginTop: "4px",
     fontFamily: "monospace",
   },

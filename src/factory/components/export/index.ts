@@ -9,6 +9,6 @@
 export * from "./exportTypes";
 
 // Components
-export { ExportLockBanner } from "./ExportLockBanner";
+export { ExportLockBanner, isVerifyPassed } from "./ExportLockBanner";
 export { ExportConfigurator } from "./ExportConfigurator";
 export { ExportActions } from "./ExportActions";
