@@ -1,9 +1,12 @@
 /**
  * computeWorktopPanel — honest cut size, edge length, cost and CO2.
  *
- * This is a deliberate re-implementation of the computePanel closure inside
- * generatePanels (useCabinetStore.ts:1566-1590). The hand-computed vector below
- * is the anti-drift pin: if either copy of the formula changes, this goes red.
+ * The formula is NO LONGER duplicated. computeWorktopPanel and the computePanel
+ * closure inside generatePanels both delegate to computePanelComputed
+ * (src/core/manufacturing/panelComputed.ts), so the hand-computed vector below
+ * pins ONE implementation rather than pretending to pin two. The genuine
+ * cross-check that both call sites really share it lives in
+ * src/core/manufacturing/__tests__/panelComputed.parity.test.ts.
  *
  * The zero-cost regression at the bottom is the governance guard. Doors and
  * drawer fronts currently enter the BOM at zero cost (known open bug, owned by
@@ -11,8 +14,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { computeWorktopPanel, resolveWorktopMaterials } from '../computeWorktopPanel';
+import {
+  computeWorktopPanel,
+  resolveWorktopMaterials,
+  worktopRealThickness,
+} from '../computeWorktopPanel';
 import { DEFAULT_WORKTOP_CONFIG, ISLAND_WORKTOP_CONFIG } from '../types';
+import { EDGE_MATERIALS_CATALOG } from '../../materials/PanelMaterialSystem';
 
 describe('resolveWorktopMaterials', () => {
   it('resolves every id in the default configs against the real catalogs', () => {
@@ -31,22 +39,56 @@ describe('resolveWorktopMaterials', () => {
       resolveWorktopMaterials({ ...DEFAULT_WORKTOP_CONFIG, coreMaterialId: 'core-does-not-exist' })
     ).toThrow(/core-does-not-exist/);
   });
+
+  // ── the two buildability guards ──────────────────────────────────────────
+  // Both exist because a precise price on an unbuildable spec is worse than a
+  // missing price: it looks like a quote.
+
+  it('refuses a non-moisture-resistant core — it fails at the sink', () => {
+    // core-pb-35 was the previous default. It is a REAL board with a REAL price
+    // (THB 520/m2) and moistureResistant: false, so it must never be quoted as
+    // a worktop however correct the arithmetic is.
+    expect(() =>
+      resolveWorktopMaterials({ ...DEFAULT_WORKTOP_CONFIG, coreMaterialId: 'core-pb-35' })
+    ).toThrow(/moisture-resistant/i);
+  });
+
+  it('refuses tape shorter than the slab is thick', () => {
+    // Every tape in the catalog is 23mm tall, so any core over ~22.4mm is
+    // unbandable. core-hmr-28 -> 28.6mm slab, 23mm tape: 5.6mm of raw board.
+    expect(() =>
+      resolveWorktopMaterials({ ...DEFAULT_WORKTOP_CONFIG, coreMaterialId: 'core-hmr-28' })
+    ).toThrow(/cannot cover the edge/i);
+  });
+
+  it('the shipped default actually satisfies both guards', () => {
+    const m = resolveWorktopMaterials(DEFAULT_WORKTOP_CONFIG);
+    expect(m.core.moistureResistant).toBe(true);
+    expect(m.edge.height).toBeGreaterThanOrEqual(worktopRealThickness(m));
+  });
+
+  it('documents WHY the default slab is thin: no tape in the catalog is taller than 23mm', () => {
+    // This is the constraint that caps the worktop at an 18mm core. If a wider
+    // tape SKU ever lands, this test goes red and the config should be revisited.
+    const heights = Object.values(EDGE_MATERIALS_CATALOG).map(e => e.height);
+    expect(Math.max(...heights)).toBe(23);
+  });
 });
 
 describe('computeWorktopPanel — hand-computed parity vector', () => {
-  // 1800 x 580 slab on core-pb-35 (35mm, THB 520/m2, 15.0 kgCO2/m2),
+  // 1800 x 580 slab on core-hmr-18 (18mm, THB 450/m2, 10.2 kgCO2/m2),
   // surf-mel-white (0.3mm, THB 120/m2, 0.5) both faces,
   // edge-pvc-white-20 (2.0mm, THB 22/m) on the front edge and both ends,
   // no tape on the back edge (wall).
   //
-  //   realThickness = 35 + 0.3 + 0.3            = 35.6 mm
+  //   realThickness = 18 + 0.3 + 0.3            = 18.6 mm
   //   cutWidth      = 1800 - (2 + 2)            = 1796 mm
   //   cutHeight     = 580  - (2 + 0)            = 578 mm
   //   area          = 1800 * 580 / 1e6          = 1.044 m2
   //   edgeLength    = (1800 + 580 + 580) / 1000 = 2.96 m
-  //   cost          = 1.044*520 + 1.044*2*120 + 2.96*22
-  //                 = 542.88 + 250.56 + 65.12  = 858.56 THB
-  //   co2           = 1.044*15.0 + 1.044*2*0.5 = 16.704 kg
+  //   cost          = 1.044*450 + 1.044*2*120 + 2.96*22
+  //                 = 469.80 + 250.56 + 65.12  = 785.48 THB
+  //   co2           = 1.044*10.2 + 1.044*2*0.5 = 10.6488 + 1.044 = 11.6928 kg
   const m = resolveWorktopMaterials(DEFAULT_WORKTOP_CONFIG);
   const computed = computeWorktopPanel(1800, 580, {
     front: true,
@@ -56,7 +98,7 @@ describe('computeWorktopPanel — hand-computed parity vector', () => {
   }, m);
 
   it('realThickness derives from the real catalog core', () => {
-    expect(computed.realThickness).toBeCloseTo(35.6, 9);
+    expect(computed.realThickness).toBeCloseTo(18.6, 9);
   });
 
   it('cut sizes deduct only the banded edges', () => {
@@ -73,11 +115,11 @@ describe('computeWorktopPanel — hand-computed parity vector', () => {
   });
 
   it('cost matches the hand-computed vector', () => {
-    expect(computed.cost).toBeCloseTo(858.56, 6);
+    expect(computed.cost).toBeCloseTo(785.48, 6);
   });
 
   it('co2 matches the hand-computed vector', () => {
-    expect(computed.co2).toBeCloseTo(16.704, 6);
+    expect(computed.co2).toBeCloseTo(11.6928, 6);
   });
 });
 

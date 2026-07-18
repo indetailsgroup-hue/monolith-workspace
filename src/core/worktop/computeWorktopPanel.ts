@@ -1,16 +1,20 @@
 /**
  * Honest manufacturing data for a worktop slab.
  *
- * ⚠ FORMULA DUPLICATION — READ BEFORE EDITING.
- * This is a deliberate line-for-line re-implementation of the `computePanel`
- * closure inside generatePanels (src/core/store/useCabinetStore.ts:1566-1590).
- * That closure is not exported and extracting it would mean a large edit to the
- * highest-conflict file in the repo. If you change the cost/CO2/cut-size rule
- * in either place you MUST change it in the other; the hand-computed vector in
- * __tests__/computeWorktopPanel.test.ts goes red if the two drift.
+ * The cost / CO2 / cut-size arithmetic is NOT re-implemented here. It lives in
+ * src/core/manufacturing/panelComputed.ts and is called by both this module and
+ * the `computePanel` closure inside generatePanels, so there is exactly one
+ * money formula in the repo. The previous hand-copied twin was pinned by a test
+ * that re-derived the arithmetic rather than calling the original — a guard
+ * that could not detect the drift it advertised.
  */
 
-import { calculateCutSize, calculateRealThickness, type PanelComputed } from '../types/Cabinet';
+import type { PanelComputed } from '../types/Cabinet';
+import {
+  computePanelComputed,
+  panelRealThickness,
+  type PanelCostMaterials,
+} from '../manufacturing/panelComputed';
 import {
   CORE_MATERIALS_CATALOG,
   EDGE_MATERIALS_CATALOG,
@@ -18,10 +22,16 @@ import {
 } from '../materials/PanelMaterialSystem';
 import type { WorktopConfig } from './types';
 
-export interface WorktopMaterials {
-  readonly core: { id: string; thickness: number; costPerSqm: number; co2PerSqm: number };
+export interface WorktopMaterials extends PanelCostMaterials {
+  readonly core: {
+    id: string;
+    thickness: number;
+    costPerSqm: number;
+    co2PerSqm: number;
+    moistureResistant: boolean;
+  };
   readonly surface: { id: string; thickness: number; costPerSqm: number; co2PerSqm: number };
-  readonly edge: { id: string; thickness: number; costPerMeter: number };
+  readonly edge: { id: string; thickness: number; height: number; costPerMeter: number };
 }
 
 /** Which of a slab's four edges carry tape. */
@@ -37,13 +47,15 @@ export interface WorktopBanding {
 }
 
 /**
- * Resolve the configured material ids against the real catalogs.
+ * Resolve the configured material ids against the real catalogs AND check that
+ * the resolved spec can actually be built.
  *
- * Throws rather than falling back. generatePanels falls back to a default core
- * when an id is unknown, which is fine for a carcass panel the user is actively
- * editing but is exactly the failure mode governance cares about here: a slab
- * that silently swaps to a cheaper material would put a wrong-but-precise
- * number in the BOM. A hard failure is louder and safer.
+ * Throws rather than falling back, on all four counts. generatePanels falls
+ * back to a default core when an id is unknown, which is fine for a carcass
+ * panel the user is actively editing but is exactly the failure mode governance
+ * cares about here: a slab that silently swaps material, or that is quoted with
+ * tape too narrow to cover it, puts a wrong-but-precise number in the BOM and a
+ * packet the edgebander cannot run. A hard failure is louder and safer.
  */
 export function resolveWorktopMaterials(config: WorktopConfig): WorktopMaterials {
   const core = CORE_MATERIALS_CATALOG[config.coreMaterialId];
@@ -58,21 +70,47 @@ export function resolveWorktopMaterials(config: WorktopConfig): WorktopMaterials
   if (!edge) {
     throw new Error(`Worktop edge material not in catalog: ${config.edgeMaterialId}`);
   }
-  return { core, surface, edge };
+
+  // A worktop meets water at the sink and the hob. A non-MR board swells and
+  // the joint blows within a season, so it must never reach a cut list as a
+  // worktop however correct its price is.
+  if (!core.moistureResistant) {
+    throw new Error(
+      `Worktop core ${core.id} is not moisture-resistant and must not be used as a worktop. ` +
+        `Choose a moistureResistant core from CORE_MATERIALS_CATALOG.`
+    );
+  }
+
+  const materials = { core, surface, edge } as WorktopMaterials;
+  const thickness = worktopRealThickness(materials);
+
+  // flatPartBuilder.ts:172 copies edge.height verbatim into the manufacturing
+  // packet, so tape shorter than the slab instructs the edgebander to leave raw
+  // board on the kitchen's most visible edge — at the price of the narrow tape.
+  // No existing role was ever thick enough to expose this; a worktop is.
+  if (edge.height < thickness) {
+    throw new Error(
+      `Worktop edge ${edge.id} is ${edge.height}mm tall but the slab is ${thickness.toFixed(1)}mm ` +
+        `thick — the tape cannot cover the edge it is quoted for. Choose an edge material with ` +
+        `height >= ${thickness.toFixed(1)}mm.`
+    );
+  }
+
+  return materials;
 }
 
 /** Slab thickness, derived from the catalog exactly as generatePanels derives T_real. */
-export function worktopRealThickness(materials: WorktopMaterials): number {
-  return calculateRealThickness(
-    materials.core.thickness,
-    materials.surface.thickness,
-    materials.surface.thickness,
-    0 // no glue in displayed thickness — mirrors useCabinetStore.ts:1550
-  );
+export function worktopRealThickness(materials: PanelCostMaterials): number {
+  return panelRealThickness(materials);
 }
 
 /**
  * Compute cut sizes, edge length, cost and CO2 for one slab.
+ *
+ * Edge-slot mapping for this role: the slab's FRONT and BACK edges run along
+ * its length, so they consume the HEIGHT axis (`top`/`bottom` slots); the two
+ * run ENDS run across its depth, so they consume the WIDTH axis
+ * (`left`/`right`). deriveWorktopPanels writes panel.edges to match.
  *
  * @param finishWidth  slab length along the run, mm
  * @param finishHeight slab depth front-to-back, mm
@@ -81,40 +119,21 @@ export function computeWorktopPanel(
   finishWidth: number,
   finishHeight: number,
   banding: WorktopBanding,
-  materials: WorktopMaterials
+  materials: WorktopMaterials,
+  preMilling: number = 0.5
 ): PanelComputed {
-  const { core, surface, edge } = materials;
-  const ET = edge.thickness;
+  const ET = materials.edge.thickness;
 
-  const edgeFront = banding.front ? ET : 0;
-  const edgeBack = banding.back ? ET : 0;
-  const edgeLow = banding.lowEnd ? ET : 0;
-  const edgeHigh = banding.highEnd ? ET : 0;
-
-  // Width runs along the slab length, so it loses the two END edges.
-  // Height runs front-to-back, so it loses the FRONT and BACK edges.
-  const cutWidth = calculateCutSize(finishWidth, edgeLow, edgeHigh);
-  const cutHeight = calculateCutSize(finishHeight, edgeFront, edgeBack);
-
-  const area = (finishWidth * finishHeight) / 1000000; // m², single face
-  const edgeLength =
-    ((edgeFront > 0 ? finishWidth : 0) +
-      (edgeBack > 0 ? finishWidth : 0) +
-      (edgeLow > 0 ? finishHeight : 0) +
-      (edgeHigh > 0 ? finishHeight : 0)) /
-    1000; // metres
-
-  const cost =
-    area * core.costPerSqm + area * 2 * surface.costPerSqm + edgeLength * edge.costPerMeter;
-  const co2 = area * core.co2PerSqm + area * 2 * surface.co2PerSqm;
-
-  return {
-    realThickness: worktopRealThickness(materials),
-    cutWidth,
-    cutHeight,
-    surfaceArea: area * 2, // both faces
-    edgeLength,
-    cost,
-    co2,
-  };
+  return computePanelComputed(
+    finishWidth,
+    finishHeight,
+    {
+      top: banding.front ? ET : 0,
+      bottom: banding.back ? ET : 0,
+      left: banding.lowEnd ? ET : 0,
+      right: banding.highEnd ? ET : 0,
+    },
+    materials,
+    preMilling
+  );
 }

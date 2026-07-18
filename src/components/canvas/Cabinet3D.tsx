@@ -1985,6 +1985,45 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
           color: rightEdge.color,
         });
         break;
+
+      case 'WORKTOP':
+        // Horizontal slab: sizeX=length(finishWidth), sizeY=t, sizeZ=depth(finishHeight).
+        // Slots are NOT the carcass convention for this role — see
+        // deriveWorktopPanels.ts: top = FRONT edge, bottom = BACK edge,
+        // left/right = the two run ENDS. Without this case the slab rendered
+        // with no tape at all while computeWorktopPanel charged for every
+        // banded metre of it — the 3D view and the BOM disagreeing about a part
+        // the customer is paying for.
+
+        // Front edge - at Z = +finishHeight/2 (front of the slab)
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, 0, panel.finishHeight/2 - et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: topEdge.color,
+        });
+        // Back edge - at Z = -finishHeight/2. Banded on islands only.
+        if (bottomEdge) strips.push({
+          edge: 'bottom',
+          position: [0, 0, -panel.finishHeight/2 + et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: bottomEdge.color,
+        });
+        // Low-u end - at X = -finishWidth/2
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [-panel.finishWidth/2 + et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: leftEdge.color,
+        });
+        // High-u end - at X = +finishWidth/2
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [panel.finishWidth/2 - et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: rightEdge.color,
+        });
+        break;
     }
 
     return strips;

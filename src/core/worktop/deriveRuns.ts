@@ -186,6 +186,10 @@ function segmentsForRun(members: readonly CabinetPlacement[], runId: string): Ru
       const nBack = Math.min(...group.map(m => m.nc - m.depth / 2));
       const nFront = Math.max(...group.map(m => m.nc + m.depth / 2));
       const depths = new Set(group.map(m => q(m.depth, 0.1)));
+      // The slab must clear the PROUDEST front in the group. Members that
+      // cannot report one (no structure after a save/load) are skipped rather
+      // than counted as 0, so one reloaded cabinet cannot drag the slab back.
+      const knownProud = group.map(m => m.frontProud).filter((v): v is number => v !== undefined);
 
       segments.push({
         segmentId: stableId('seg', group.map(m => m.cabinetId)),
@@ -198,6 +202,7 @@ function segmentsForRun(members: readonly CabinetPlacement[], runId: string): Ru
         nFront,
         carcassTopY: group[0].carcassTopY,
         mixedDepth: depths.size > 1,
+        maxFrontProud: knownProud.length > 0 ? Math.max(...knownProud) : undefined,
       });
     }
   }

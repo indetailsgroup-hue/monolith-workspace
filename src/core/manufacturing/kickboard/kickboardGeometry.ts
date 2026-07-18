@@ -20,7 +20,13 @@
  * @version 1.0.0
  */
 
-import type { CabinetDimensions, KickboardConfig, KickboardSetbackDatum } from '../../types/Cabinet';
+import type {
+  CabinetDimensions,
+  CabinetType,
+  KickboardConfig,
+  KickboardSetbackDatum,
+} from '../../types/Cabinet';
+import { CABINET_TYPES } from '../../catalog/CabinetTaxonomy';
 
 // ============================================
 // CONSTANTS
@@ -118,16 +124,61 @@ export function computeKickboardZ(
 // ============================================
 
 /**
+ * Cabinet categories that never stand on a plinth, DERIVED from the taxonomy
+ * rather than hand-listed, so it cannot drift from CABINET_TYPES.
+ *
+ * A category qualifies only when EVERY entry in it declares hasToeKick: false.
+ * Today that yields exactly {WALL}: WALL_STANDARD/WALL_HOOD/WALL_OPEN all hang
+ * off the wall with no floor void.
+ *
+ * Deliberately NOT {WALL, TALL}: TALL_PANTRY and TALL_BROOM both declare
+ * hasToeKick: true with toeKickHeight 100 (CabinetTaxonomy.ts:509, 528) — a
+ * pantry stands on the floor and does get a plinth. The worktop lane's
+ * NON_WORKTOP_CABINET_TYPES excludes TALL because a pantry carries no counter;
+ * that is a different question and the two sets are correctly different.
+ *
+ * APPLIANCE is mixed (oven housing has a toe kick, an integrated fridge or
+ * washer does not), so it is not excluded wholesale — those cabinets are
+ * governed by their own toeKickHeight, which the check below still honours.
+ */
+export const NO_TOE_KICK_CABINET_TYPES: ReadonlySet<string> = (() => {
+  const byCategory = new Map<string, boolean>();
+  for (const def of Object.values(CABINET_TYPES)) {
+    const soFar = byCategory.get(def.category);
+    byCategory.set(def.category, (soFar ?? true) && !def.hasToeKick);
+  }
+  const out = new Set<string>();
+  for (const [category, noneHaveToeKick] of byCategory) {
+    if (noneHaveToeKick) out.add(category);
+  }
+  return out;
+})();
+
+/**
  * Whether this cabinet gets a kickboard.
  *
- * A cabinet with no toe kick (WALL cabinets) has no void to close, so it never
- * gets one regardless of config. Otherwise the default is ON: the toe-kick void
- * is real material in a real kitchen and leaving it out of the BOM under-quotes.
+ * Two independent gates, because they fail independently:
+ *   1. CABINET TYPE. createCabinet ignores `type` when it builds panels — it
+ *      always passes DEFAULT_DIMENSIONS (useCabinetStore.ts:2302-2310), so a
+ *      WALL cabinet is created carrying toeKickHeight 100 it has no business
+ *      having. Gating on toeKickHeight alone therefore put a fully-costed
+ *      600x100 plinth into the BOM and the cut list for a cabinet that hangs
+ *      on a wall. Type is checked FIRST and does not depend on that bug ever
+ *      being fixed.
+ *   2. TOE-KICK HEIGHT. No void, nothing to close.
+ *
+ * Otherwise the default is ON: the toe-kick void is real material in a real
+ * kitchen and leaving it out of the BOM under-quotes.
+ *
+ * @param cabinetType - Cabinet category. Omitted (legacy callers / bare
+ *                      geometry tests) skips gate 1 only.
  */
 export function shouldGenerateKickboard(
   dimensions: KickboardDimensionsInput,
-  structure: KickboardStructureInput
+  structure: KickboardStructureInput,
+  cabinetType?: CabinetType
 ): boolean {
+  if (cabinetType && NO_TOE_KICK_CABINET_TYPES.has(cabinetType)) return false;
   if (!(dimensions.toeKickHeight > 0)) return false;
   return structure.kickboardConfig?.hasKickboard ?? true;
 }

@@ -10,13 +10,34 @@
 import type { CabinetDimensions, CabinetType } from '../types/Cabinet';
 import { NON_WORKTOP_CABINET_TYPES, type CabinetPlacement } from './types';
 
+/** The slice of CabinetStructure that affects where the slab's front edge lands. */
+interface PlaceableStructure {
+  doorConfig?: { hasDoors?: boolean; doorThickness?: number };
+}
+
 /** The minimal shape resolvePlacement needs — everything a saved project keeps. */
 export interface PlaceableCabinet {
   id: string;
   type?: CabinetType;
   dimensions: CabinetDimensions;
+  /** Optional: absent for every non-active cabinet after a save/load round-trip. */
+  structure?: PlaceableStructure;
   scenePosition?: readonly number[];
   sceneRotation?: readonly number[];
+}
+
+/**
+ * How far this cabinet's fronts stand proud of the carcass face, mm.
+ *
+ * Returns undefined when structure is unavailable — "unknown", not "flush".
+ * generateDoorPanels.ts:185 centres the door at D/2 + doorThickness/2, so its
+ * OUTER face sits at D/2 + doorThickness.
+ */
+function resolveFrontProud(cabinet: PlaceableCabinet): number | undefined {
+  const doorConfig = cabinet.structure?.doorConfig;
+  if (!doorConfig) return undefined;
+  if (!doorConfig.hasDoors) return 0;
+  return doorConfig.doorThickness;
 }
 
 const TWO_PI = Math.PI * 2;
@@ -69,6 +90,7 @@ export function resolvePlacement(cabinet: PlaceableCabinet): CabinetPlacement | 
     n,
     uc: origin[0] * u[0] + origin[2] * u[1],
     nc: origin[0] * n[0] + origin[2] * n[1],
+    frontProud: resolveFrontProud(cabinet),
   };
 }
 

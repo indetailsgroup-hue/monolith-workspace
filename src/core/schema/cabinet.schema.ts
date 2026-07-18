@@ -140,6 +140,13 @@ export const CabinetPanelSchema = z.object({
   selected: z.boolean(),
   positionOverrides: PanelPositionOverridesSchema.optional(),
   useCustomPosition: z.boolean().optional(),
+  /**
+   * Run this panel belongs to, for RUN-level parts (WORKTOP slabs).
+   * Declared here as well as on the type because z.object() strips unknown
+   * keys — omitting it would silently drop the tag on every parse, which is
+   * what per-cabinet cost consumers need in order to exclude hosted slabs.
+   */
+  runId: z.string().optional(),
 });
 
 // ============================================

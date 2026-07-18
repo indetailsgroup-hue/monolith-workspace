@@ -84,7 +84,19 @@ export function applyWorktops(config: WorktopConfig = DEFAULT_WORKTOP_CONFIG): A
         p.finishHeight === d.finishHeight &&
         p.position[0] === d.position[0] &&
         p.position[1] === d.position[1] &&
-        p.position[2] === d.position[2]
+        p.position[2] === d.position[2] &&
+        // Money and banding too, not just geometry. A config change that swaps
+        // material without moving or resizing a slab leaves it in exactly the
+        // same place at a different price; comparing position alone would keep
+        // the stale number in the store and report changed:false.
+        p.computed.cost === d.computed.cost &&
+        p.computed.co2 === d.computed.co2 &&
+        p.computed.realThickness === d.computed.realThickness &&
+        p.coreMaterialId === d.coreMaterialId &&
+        p.edges.top === d.edges.top &&
+        p.edges.bottom === d.edges.bottom &&
+        p.edges.left === d.edges.left &&
+        p.edges.right === d.edges.right
       );
     });
   });

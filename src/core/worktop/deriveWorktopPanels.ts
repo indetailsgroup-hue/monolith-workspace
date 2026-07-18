@@ -53,13 +53,30 @@ const depth = (s: Slab) => s.nHi - s.nLo;
 const uMid = (s: Slab) => (s.uLo + s.uHi) / 2;
 const nMid = (s: Slab) => (s.nLo + s.nHi) / 2;
 
+/**
+ * How far past the CARCASS front face the slab reaches.
+ *
+ * Under the 'FRONT' datum the overhang is measured from the door's OUTER face,
+ * not the carcass. generateDoorPanels.ts:185 centres a door at D/2 + doorT/2,
+ * so its outer face sits doorT proud of the carcass — with the default 18mm
+ * door, measuring from the carcass left the slab 2mm past the door instead of
+ * 20mm, and that 580mm finishHeight went straight into the cut list, the BOM
+ * and the DXF. kickboardGeometry.ts:84-96 already models this datum for the
+ * plinth; the worktop now agrees with it.
+ */
+function frontReach(segment: RunSegment, config: WorktopConfig): number {
+  if (config.frontDatum !== 'FRONT') return config.frontOverhang;
+  const proud = segment.maxFrontProud ?? config.assumedDoorThickness;
+  return proud + config.frontOverhang;
+}
+
 function initialSlab(segment: RunSegment, config: WorktopConfig): Slab {
   return {
     segment,
     uLo: segment.u0 - config.endOverhang,
     uHi: segment.u1 + config.endOverhang,
     nLo: segment.nBack - config.backOverhang,
-    nHi: segment.nFront + config.frontOverhang,
+    nHi: segment.nFront + frontReach(segment, config),
     buttLow: false,
     buttHigh: false,
   };
@@ -215,7 +232,11 @@ function slabToPanels(
   const thickness = worktopRealThickness(materials);
   const worldY = slab.segment.carcassTopY + thickness / 2;
   const edgeId = config.edgeMaterialId;
-  const backIsExposed = config.backOverhang > 0;
+  // Explicit config flag, NOT `backOverhang > 0`. Deriving it from the overhang
+  // tied "is this edge visible" to "does the slab project", which meant every
+  // wall-abutting run — i.e. the default, i.e. all of them — declared its back
+  // edge hidden and shipped it raw and unquoted. See WorktopConfig.backIsExposed.
+  const backIsExposed = config.backIsExposed;
 
   const panels: CabinetPanel[] = [];
 
@@ -272,6 +293,9 @@ function slabToPanels(
       },
       grainDirection: 'HORIZONTAL',
       computed,
+      // Run-level part: the whole slab's cost lands on this host cabinet, so
+      // per-cabinet cost consumers need a way to see that and exclude it.
+      runId: run.runId,
       position: [localX, localY, localZ],
       rotation: [0, 0, 0],
       visible: true,
@@ -298,6 +322,7 @@ export function deriveWorktopPanels(
     return { panelsByHostId: new Map(), runs: [], notes: [] };
   }
 
+  // Resolve — and validate — once. Throws on an unbandable or non-MR spec.
   const materials = resolveWorktopMaterials(config);
   const notes: WorktopNote[] = [];
   const panelsByHostId = new Map<string, CabinetPanel[]>();

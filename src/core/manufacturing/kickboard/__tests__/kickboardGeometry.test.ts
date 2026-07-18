@@ -13,6 +13,7 @@ import {
   resolveKickboardSetback,
   shouldGenerateKickboard,
   DEFAULT_KICK_SETBACK,
+  NO_TOE_KICK_CABINET_TYPES,
 } from '../kickboardGeometry';
 
 // Worked example from the approved design
@@ -123,8 +124,32 @@ describe('kickboardGeometry', () => {
       expect(shouldGenerateKickboard(DIMS, {})).toBe(true);
     });
 
-    it('is false when toeKickHeight is 0 (e.g. WALL cabinets)', () => {
+    // NOTE the retitle. This used to read "(e.g. WALL cabinets)", which was
+    // untrue about the product and made the suite look like it covered the
+    // wall-cabinet case when it covered nothing of the sort: no WALL cabinet
+    // the store can build has toeKickHeight 0 — createCabinet always applies
+    // DEFAULT_DIMENSIONS, which carries 100. The real coverage is the
+    // store-level negative test in kickboardCosting.test.ts.
+    it('is false when toeKickHeight is 0', () => {
       expect(shouldGenerateKickboard({ ...DIMS, toeKickHeight: 0 }, {})).toBe(false);
+    });
+
+    it('is false for a WALL cabinet even when toeKickHeight is nonzero', () => {
+      // The bug this pins: createCabinet('WALL') produces toeKickHeight 100, so
+      // gating on height alone put a fully-costed 600x100 plinth in the BOM and
+      // the cut list for a cabinet that hangs on a wall over open floor.
+      expect(shouldGenerateKickboard(DIMS, {}, 'WALL')).toBe(false);
+    });
+
+    it('is TRUE for a TALL cabinet — a pantry stands on the floor', () => {
+      // Deliberately not excluded alongside WALL. CabinetTaxonomy declares
+      // TALL_PANTRY and TALL_BROOM with hasToeKick: true and toeKickHeight 100
+      // (CabinetTaxonomy.ts:509, 528), so a TALL unit does get a plinth.
+      expect(shouldGenerateKickboard(DIMS, {}, 'TALL')).toBe(true);
+    });
+
+    it('derives the excluded set from the taxonomy rather than hard-coding it', () => {
+      expect([...NO_TOE_KICK_CABINET_TYPES].sort()).toEqual(['WALL']);
     });
 
     it('is false when the user turns the kickboard off', () => {

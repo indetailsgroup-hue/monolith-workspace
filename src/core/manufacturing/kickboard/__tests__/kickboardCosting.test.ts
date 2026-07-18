@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useCabinetStore } from '../../../store/useCabinetStore';
 import { getPanelHalfExtents } from '../../../geometry/cabinetAabb';
 import { runPhase1Gate } from '../../../phase1/gate';
-import type { CabinetPanel } from '../../../types/Cabinet';
+import type { CabinetPanel, KickboardConfig } from '../../../types/Cabinet';
 
 const W = 600;
 const H = 720;
@@ -35,6 +35,22 @@ const resetStore = () => {
 
 const kickboardOf = (panels: CabinetPanel[]) =>
   panels.filter((p) => p.role === 'KICKBOARD');
+
+/**
+ * Write a kickboardConfig onto the active cabinet and regenerate its panels.
+ *
+ * There is no dedicated store action for this yet, so the config is written
+ * through the immer draft and `recalculate()` drives the real generatePanels
+ * path — the same one the app uses.
+ */
+const setKickboardConfig = (config: KickboardConfig) => {
+  useCabinetStore.setState((state) => {
+    for (const cab of [state.cabinet, ...state.cabinets]) {
+      if (cab) cab.structure.kickboardConfig = config;
+    }
+  });
+  useCabinetStore.getState().recalculate();
+};
 
 describe('KICKBOARD costing integration', () => {
   beforeEach(resetStore);
@@ -224,6 +240,102 @@ describe('KICKBOARD costing integration', () => {
         without.totals.totalEdgeLength + kick.computed.edgeLength,
         6
       );
+    });
+  });
+
+  // ==========================================================================
+  // WALL CABINETS MUST NOT GET A PLINTH
+  //
+  // Driven through the REAL store, because the bug lived precisely in the gap
+  // between the unit under test and the store: createCabinet ignores `type`
+  // when it builds panels and always passes DEFAULT_DIMENSIONS, which carries
+  // toeKickHeight 100. So every WALL cabinet in the product was born with a
+  // toe kick it does not have, and a height-only gate happily costed a plinth
+  // for it — real money in the quote and a real 600x100 part in the cut list
+  // and the DXF for a cabinet that hangs on a wall over open floor.
+  //
+  // The old unit test claimed to cover this by passing a hand-built
+  // {toeKickHeight: 0} literal. No WALL cabinet the store can create has that,
+  // so it proved nothing while reading as though it proved everything.
+  // ==========================================================================
+  describe('a WALL cabinet', () => {
+    it('gets no KICKBOARD panel at all', () => {
+      useCabinetStore.getState().createCabinet('WALL', 'Wall unit');
+      const cab = useCabinetStore.getState().cabinet!;
+
+      // The precondition that made the old test vacuous — assert it explicitly
+      // so this test cannot silently become vacuous the same way.
+      expect(cab.dimensions.toeKickHeight).toBeGreaterThan(0);
+
+      expect(kickboardOf(cab.panels)).toHaveLength(0);
+      expect(cab.panels.some((p) => p.role === 'KICKBOARD')).toBe(false);
+    });
+
+    it('is not charged for a plinth in its totals', () => {
+      useCabinetStore.getState().createCabinet('WALL', 'Wall unit');
+      const wall = useCabinetStore.getState().cabinet!;
+
+      resetStore();
+      useCabinetStore.getState().createCabinet('BASE', 'Base unit');
+      setKickboardConfig({ hasKickboard: false });
+      const baseNoKick = useCabinetStore.getState().cabinet!;
+
+      // Same dimensions (createCabinet uses DEFAULT_DIMENSIONS for both), so a
+      // WALL unit must cost exactly what a BASE unit with the plinth switched
+      // off costs. Any difference is a phantom part.
+      expect(wall.computed.totalCost).toBeCloseTo(baseNoKick.computed.totalCost, 6);
+      expect(wall.computed.totalCO2).toBeCloseTo(baseNoKick.computed.totalCO2, 6);
+      expect(wall.computed.panelCount).toBe(baseNoKick.computed.panelCount);
+    });
+  });
+
+  describe('a TALL cabinet', () => {
+    it('DOES get a plinth — a pantry stands on the floor', () => {
+      // Not a copy-paste of the WALL case. CabinetTaxonomy declares TALL_PANTRY
+      // and TALL_BROOM with hasToeKick: true, so excluding TALL would delete a
+      // real part from a real quote.
+      useCabinetStore.getState().createCabinet('TALL', 'Pantry');
+      const cab = useCabinetStore.getState().cabinet!;
+
+      expect(cab.dimensions.toeKickHeight).toBeGreaterThan(0);
+      expect(kickboardOf(cab.panels)).toHaveLength(1);
+      expect(kickboardOf(cab.panels)[0].computed.cost).toBeGreaterThan(0);
+    });
+  });
+
+  // ==========================================================================
+  // MATERIAL OVERRIDE MUST MOVE THE MONEY
+  //
+  // KickboardConfig advertises coreMaterialId as "e.g. moisture-resistant".
+  // It was recorded on the panel and read by nothing: computePanel resolves its
+  // materials once from the cabinet defaults and takes no material argument, so
+  // an MR plinth was quoted at standard particleboard cost and stamped with the
+  // default core's realThickness — which feeds nesting and the DXF.
+  // ==========================================================================
+  describe('the kickboard core override', () => {
+    it('changes cost, CO2 and realThickness, not just the recorded id', () => {
+      useCabinetStore.getState().createCabinet('BASE', 'Base');
+      const standard = kickboardOf(useCabinetStore.getState().cabinet!.panels)[0];
+
+      // Store default core is core-hmr-18 (18mm, THB 450/m2, 10.2 kg/m2).
+      // Override to a genuinely different board so the delta is unambiguous.
+      setKickboardConfig({ hasKickboard: true, coreMaterialId: 'core-pb-mr-16' });
+      const overridden = kickboardOf(useCabinetStore.getState().cabinet!.panels)[0];
+
+      expect(overridden.coreMaterialId).toBe('core-pb-mr-16');
+      // 16mm core vs the default 18mm: the plinth really is a different board.
+      // Surfaces are surf-hpl-grey-oak, 0.8mm a side, so 16 + 0.8 + 0.8 = 17.6.
+      expect(overridden.computed.realThickness).not.toBeCloseTo(
+        standard.computed.realThickness,
+        6
+      );
+      expect(standard.computed.realThickness).toBeCloseTo(19.6, 6);
+      expect(overridden.computed.realThickness).toBeCloseTo(17.6, 6);
+      // core-pb-mr-16 is THB 310/m2 against core-hmr-18's 450 — cheaper board,
+      // cheaper part. The point is that the number MOVED at all.
+      expect(overridden.computed.cost).not.toBeCloseTo(standard.computed.cost, 6);
+      expect(overridden.computed.co2).not.toBeCloseTo(standard.computed.co2, 6);
+      expect(overridden.computed.cost).toBeGreaterThan(0);
     });
   });
 });

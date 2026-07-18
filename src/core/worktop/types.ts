@@ -43,6 +43,15 @@ export interface CabinetPlacement {
   readonly uc: number;
   /** Footprint centre projected onto n. mm. */
   readonly nc: number;
+  /**
+   * Outer-face proudness of this cabinet's fronts past the carcass face, mm.
+   * = doorConfig.doorThickness when doors exist, 0 when they explicitly do not,
+   * and `undefined` when `structure` is unavailable (post-save/load, where only
+   * dimensions and the scene transform survive). Undefined means "unknown", NOT
+   * "zero" — the worktop deriver falls back to config.assumedDoorThickness so a
+   * reloaded project does not silently shrink its slabs.
+   */
+  readonly frontProud?: number;
 }
 
 /**
@@ -65,6 +74,11 @@ export interface RunSegment {
   readonly carcassTopY: number;
   /** True when members disagree on depth; the slab uses the deepest. */
   readonly mixedDepth: boolean;
+  /**
+   * Largest known frontProud across members, mm, or `undefined` when no member
+   * could report one. The slab must clear the PROUDEST front in the run.
+   */
+  readonly maxFrontProud?: number;
 }
 
 /** A connected component of the adjacency graph. An L-run has 2 segments; an island has 1. */
@@ -87,12 +101,61 @@ export interface CabinetRun {
  * every other panel. Swap coreMaterialId when a sourced worktop core lands.
  */
 export interface WorktopConfig {
-  /** Projection past the carcass front face, mm. */
+  /** Projection past the front DATUM (see frontDatum), mm. */
   readonly frontOverhang: number;
-  /** Projection past the carcass back face, mm. 0 = wall-abutting. */
+  /**
+   * Projection past the carcass back face, mm. 0 = wall-abutting.
+   *
+   * GEOMETRY ONLY — this no longer decides whether the back edge is banded.
+   * See backIsExposed.
+   */
   readonly backOverhang: number;
+  /**
+   * Whether the back edge is banded, quoted and shown as finished.
+   *
+   * DELIBERATELY DECOUPLED FROM backOverhang, and defaulted to true.
+   *
+   * It used to be derived as `backOverhang > 0`, which meant every run in the
+   * app shipped a raw, untaped, unquoted back edge — because both live entry
+   * points defaulted to backOverhang 0 and ISLAND_WORKTOP_CONFIG had no runtime
+   * caller at all.
+   *
+   * The obvious repair — "detect islands and give them the island config" — does
+   * not work. A free-standing island and a straight galley run against a wall
+   * are both a single segment with nothing adjacent; they are geometrically
+   * indistinguishable, because walls are not modelled anywhere in this codebase.
+   * Guessing island would push a 20mm overhang into the wall on the most common
+   * layout in the product, which is a slab that does not fit.
+   *
+   * So the two concerns are separated and each defaults to its own safe
+   * direction:
+   *   - OVERHANG defaults to 0. A slab that is too deep cannot be installed;
+   *     a slab that is flush always can.
+   *   - BANDING defaults to ON. Over-banding a wall run costs a metre of tape
+   *     that is honestly quoted. Under-banding an island ships bare
+   *     particleboard on one of the most visible edges in the room AND
+   *     under-quotes the job. Only the second one is a defect.
+   */
+  readonly backIsExposed: boolean;
   /** Projection past an exposed run end, mm. */
   readonly endOverhang: number;
+  /**
+   * Datum the front overhang is measured from.
+   * - 'CARCASS': the carcass front face at local Z = +D/2.
+   * - 'FRONT' (default): the door / drawer-front OUTER face, i.e. the carcass
+   *   face plus the door thickness. This is the joinery convention — an
+   *   overhang is a projection past the thing a person's knees touch.
+   * Mirrors KickboardSetbackDatum so the two applied parts share one datum
+   * vocabulary.
+   */
+  readonly frontDatum: 'CARCASS' | 'FRONT';
+  /**
+   * Door thickness assumed under the 'FRONT' datum when the segment cannot
+   * report one. saveProject drops `structure` for every non-active cabinet
+   * (useProjectStore.ts:233-241), so after a save/load round-trip doorConfig is
+   * simply not there to read. 18 = DEFAULT_DOOR_CONFIG.doorThickness.
+   */
+  readonly assumedDoorThickness: number;
   /** Max slab length obtainable from one blank, mm. */
   readonly maxBlankLength: number;
   readonly coreMaterialId: string;
@@ -101,28 +164,66 @@ export interface WorktopConfig {
 }
 
 /**
- * Wall-abutting default. Materials are all existing catalog entries with
- * already-sourced Thai-market figures — nothing here is a placeholder price.
+ * Wall-abutting default. Every material is an existing catalog entry with an
+ * already-sourced Thai-market figure — nothing here is a placeholder price.
  * maxBlankLength 2440 = the 2450mm SHEET_PB_MDF_HMR sheet minus 10mm trim.
+ *
+ * ── CORE: WHY 18mm HMR AND NOT 38mm ──────────────────────────────────────────
+ * A real kitchen worktop is 38-40mm on a moisture-resistant core. The catalog
+ * has no such entry and inventing a price for one would put a guessed number in
+ * a customer quote, which this project's rules forbid.
+ *
+ * The previous default, 'core-pb-35', was worse than a guess: it is a REAL
+ * price (THB 520/m2) attached to a board that must not be used as a worktop —
+ * PanelMaterialSystem.ts:165 declares it moistureResistant: false, so it fails
+ * at the sink. A precise number for the wrong board is still a wrong quote.
+ *
+ * 'core-hmr-18' is the thickest core in the catalog that satisfies BOTH real
+ * constraints simultaneously:
+ *   - moistureResistant: true (PanelMaterialSystem.ts:417-428), and
+ *   - thin enough for tape that exists. EVERY entry in EDGE_MATERIALS_CATALOG
+ *     is height 23mm, so 22.4mm of core+surface is the hard ceiling on any
+ *     bandable slab. 'core-hmr-28' and 'core-pb-35' cannot be banded by any
+ *     tape in this catalog at all.
+ * Both constraints are enforced by resolveWorktopMaterials, which throws rather
+ * than shipping an unbuildable packet.
+ *
+ * So this slab is honest but THIN: 18.6mm finished. It is a buildable, correctly
+ * priced part, not a guess — but it is not yet a premium worktop. Swap
+ * coreMaterialId and edgeMaterialId together the moment a sourced 38mm HMR core
+ * and a sourced ~45mm tape land in the catalog.
  */
 export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
   frontOverhang: 20,
   backOverhang: 0,
+  backIsExposed: true,
   endOverhang: 0,
+  frontDatum: 'FRONT',
+  assumedDoorThickness: 18,
   maxBlankLength: 2440,
-  coreMaterialId: 'core-pb-35',
+  coreMaterialId: 'core-hmr-18',
   surfaceMaterialId: 'surf-mel-white',
   edgeMaterialId: 'edge-pvc-white-20',
 };
 
 /**
- * Island variant: no wall behind, so the back edge overhangs and is exposed.
- * Kept as a named config rather than a geometric guess because "is there a
- * wall here" is not derivable from cabinet placements alone.
+ * Island / free-standing variant: the slab OVERHANGS at the back and at both
+ * ends, as a free-standing island does.
+ *
+ * This differs from the default in GEOMETRY only. Banding is not the difference
+ * any more — DEFAULT_WORKTOP_CONFIG already bands the back edge (see
+ * backIsExposed), so choosing the wrong one of these two can no longer ship a
+ * raw edge or under-quote tape. It only changes how far the slab projects.
+ *
+ * Pass it explicitly: `applyWorktops(ISLAND_WORKTOP_CONFIG)`. It is NOT selected
+ * automatically, because a free-standing island and a galley run against a wall
+ * are geometrically identical to this code and guessing wrong in this direction
+ * produces a slab that will not fit the room.
  */
 export const ISLAND_WORKTOP_CONFIG: WorktopConfig = {
   ...DEFAULT_WORKTOP_CONFIG,
   backOverhang: DEFAULT_WORKTOP_CONFIG.frontOverhang,
+  endOverhang: DEFAULT_WORKTOP_CONFIG.frontOverhang,
 };
 
 export interface WorktopNote {

@@ -143,6 +143,22 @@ export interface CabinetPanel {
   // Per-panel position overrides (for shelves/dividers)
   positionOverrides?: PanelPositionOverrides;
   useCustomPosition?: boolean;
+
+  /**
+   * Run this panel belongs to, when it is a RUN-level part rather than a
+   * cabinet-level one. Set on WORKTOP slabs only.
+   *
+   * A worktop spans several cabinets but must live in exactly one cabinet's
+   * panels[] so it inherits the cut list, BOM, DXF and gate — all of which are
+   * cabinet-scoped. The consequence is that the whole slab's cost and CO2 land
+   * on its host, so a 1800mm worktop appears under one 600mm base unit. Project
+   * totals are correct and nothing is double-counted or zero-costed, but a
+   * PER-CABINET cost view is not meaningful for a host.
+   *
+   * Consumers that report per-cabinet money should exclude or separately group
+   * panels carrying a runId. See the release note in the PR body.
+   */
+  runId?: string;
 }
 
 // ============================================

@@ -28,18 +28,22 @@ describe('deriveWorktopPanels — the design worked example', () => {
     expect(result.panelsByHostId.get('c1')).toHaveLength(1);
   });
 
-  it('sizes the slab 1800 long x 580 deep', () => {
+  it('sizes the slab 1800 long x 598 deep — measured from the DOOR face', () => {
     const p = result.panelsByHostId.get('c1')![0];
     expect(p.finishWidth).toBeCloseTo(1800, 6);
-    expect(p.finishHeight).toBeCloseTo(580, 6);
+    // 560 carcass + 18 door proudness + 20 overhang. Under the old CARCASS
+    // datum this was 580, which projected only 2mm past an 18mm door while
+    // being presented as a 20mm overhang. See WorktopConfig.frontDatum.
+    expect(p.finishHeight).toBeCloseTo(598, 6);
   });
 
-  it('places the slab at host-local [600, 837.8, 10] with no rotation', () => {
+  it('places the slab at host-local [600, 829.3, 19] with no rotation', () => {
     const p = result.panelsByHostId.get('c1')![0];
-    // carcassTopY 820 + half of the 35.6mm real thickness.
+    // carcassTopY 820 + half of the 18.6mm real thickness.
     expect(p.position[0]).toBeCloseTo(600, 6);
-    expect(p.position[1]).toBeCloseTo(837.8, 6);
-    expect(p.position[2]).toBeCloseTo(10, 6);
+    expect(p.position[1]).toBeCloseTo(829.3, 6);
+    // Slab spans n -280..+318, so its centre sits 19mm forward of the host's.
+    expect(p.position[2]).toBeCloseTo(19, 6);
     expect(p.rotation).toEqual([0, 0, 0]);
   });
 
@@ -64,8 +68,8 @@ describe('deriveWorktopPanels — the design worked example', () => {
     const p = result.panelsByHostId.get('c1')![0];
     const size = [p.finishWidth, p.computed.realThickness, p.finishHeight];
     expect(size[0]).toBeCloseTo(1800, 6);
-    expect(size[1]).toBeCloseTo(35.6, 6);
-    expect(size[2]).toBeCloseTo(580, 6);
+    expect(size[1]).toBeCloseTo(18.6, 6);
+    expect(size[2]).toBeCloseTo(598, 6);
     // The slab lies flat: thickness is the smallest axis.
     expect(size[1]).toBeLessThan(size[0]);
     expect(size[1]).toBeLessThan(size[2]);
@@ -73,21 +77,34 @@ describe('deriveWorktopPanels — the design worked example', () => {
 });
 
 describe('deriveWorktopPanels — edge banding', () => {
-  it('bands the front edge and both exposed ends, never the wall-side back', () => {
+  it('bands all four edges by default — including the back', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), DEFAULT_WORKTOP_CONFIG);
     const e = r.panelsByHostId.get('c1')![0].edges;
-    expect(e.top).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);   // front
-    expect(e.bottom).toBeNull();                                  // back, against wall
-    expect(e.left).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);   // low-u end
-    expect(e.right).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);  // high-u end
+    expect(e.top).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);     // front
+    // The back edge is banded and quoted even on a wall run. It used to be
+    // derived from `backOverhang > 0`, so in production it was NEVER banded and
+    // every island shipped a raw, unquoted edge. Over-banding a wall run costs
+    // a metre of honestly-quoted tape; under-banding an island is a defect.
+    expect(e.bottom).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);  // back
+    expect(e.left).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);    // low-u end
+    expect(e.right).toBe(DEFAULT_WORKTOP_CONFIG.edgeMaterialId);   // high-u end
   });
 
-  it('bands the back edge too when the slab overhangs at the back (island)', () => {
+  it('charges tape for the back edge, so the BOM cannot silently omit it', () => {
+    const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), DEFAULT_WORKTOP_CONFIG);
+    const p = r.panelsByHostId.get('c1')![0];
+    // front 1800 + back 1800 + two 598 ends = 4.796 m
+    expect(p.computed.edgeLength).toBeCloseTo(4.796, 6);
+  });
+
+  it('the island config additionally OVERHANGS at the back — geometry, not banding', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), ISLAND_WORKTOP_CONFIG);
     const p = r.panelsByHostId.get('c1')![0];
     expect(p.edges.bottom).toBe(ISLAND_WORKTOP_CONFIG.edgeMaterialId);
-    // 20mm at the back as well as the front.
-    expect(p.finishHeight).toBeCloseTo(600, 6);
+    // 598 as before, plus a 20mm back overhang.
+    expect(p.finishHeight).toBeCloseTo(618, 6);
+    // ...and a 20mm overhang at each end.
+    expect(p.finishWidth).toBeCloseTo(1840, 6);
   });
 
   it('leaves the butt-joint end untaped — that face is hidden inside the joint', () => {
@@ -111,9 +128,10 @@ describe('deriveWorktopPanels — L corner butt joint', () => {
     const butting = result.panelsByHostId.get('L1')![0];
     // Leg A: u-extent [-300, 1500] -> 1800, untouched.
     expect(through.finishWidth).toBeCloseTo(1800, 6);
-    // Leg B: u-extent [280, 1480] -> 1200, trimmed back to leg A's slab face
-    // (which reaches u = 300 thanks to its 20mm front overhang) -> 1180.
-    expect(butting.finishWidth).toBeCloseTo(1180, 6);
+    // Leg B: u-extent [280, 1480] -> 1200, trimmed back to leg A's slab face.
+    // Under the FRONT datum leg A's slab reaches u = 318 (280 carcass front +
+    // 18 door + 20 overhang), so leg B keeps 1480 - 318 = 1162.
+    expect(butting.finishWidth).toBeCloseTo(1162, 6);
   });
 
   it('produces two slabs that do not overlap in plan', () => {
@@ -121,8 +139,8 @@ describe('deriveWorktopPanels — L corner butt joint', () => {
     const butting = result.panelsByHostId.get('L1')![0];
     expect(through.finishWidth + butting.finishWidth).toBeGreaterThan(0);
     // Both slabs sit at the same height, so a plan overlap would be a real clash.
-    expect(through.position[1]).toBeCloseTo(837.8, 6);
-    expect(butting.position[1]).toBeCloseTo(837.8, 6);
+    expect(through.position[1]).toBeCloseTo(829.3, 6);
+    expect(butting.position[1]).toBeCloseTo(829.3, 6);
   });
 
   it('records a CORNER_BUTT note rather than joining silently', () => {
@@ -225,7 +243,8 @@ describe('deriveWorktopPanels — island and degenerate scenes', () => {
       DEFAULT_WORKTOP_CONFIG
     );
     expect(r.notes.some(n => n.code === 'MIXED_DEPTH')).toBe(true);
-    // Slab covers the deepest member: 600 + 20 front overhang.
-    expect(r.panelsByHostId.get('d1')![0].finishHeight).toBeCloseTo(620, 6);
+    // Slab covers the deepest member. Extreme back = d2's at -20 - 300 = -320;
+    // extreme front = d2's at -20 + 300 = 280, plus 18 door + 20 overhang = 318.
+    expect(r.panelsByHostId.get('d1')![0].finishHeight).toBeCloseTo(638, 6);
   });
 });
