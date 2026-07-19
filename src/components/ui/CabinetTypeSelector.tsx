@@ -102,6 +102,17 @@ export function CabinetTypeSelector({ onTypeSelected }: CabinetTypeSelectorProps
 
     // Calculate position offset based on existing cabinets
     const offsetX = cabinets.length * 700; // Space cabinets 700mm apart
+    //
+    // The Y passed below is IGNORED for wall units, deliberately. addCabinet derives a
+    // wall cabinet's mounting height from the counter height plus the backsplash gap and
+    // enforces the JIS A0017:2018 1300mm floor; only X and Z are the caller's to state.
+    //
+    // This call used to be the reason that derivation never ran: addCabinet only derived
+    // when `position` was omitted, and this — the sole production caller — always supplied
+    // one, so every wall unit added from the UI landed at Y=0, on the floor, through the
+    // worktop. Fixed in addCabinet rather than here, so that EVERY caller is covered
+    // rather than just this one. See wallCabinetPlacement.test.ts, which now drives this
+    // exact call shape.
 
     try {
       const result = addCabinet(

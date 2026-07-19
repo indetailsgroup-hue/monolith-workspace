@@ -17,7 +17,9 @@ import {
   DEFAULT_APPLIED_PART_DATUM,
   DEFAULT_ASSUMED_FRONT_PROUD_MM,
   PLINTH_SETBACK_FROM_FRONT_MM,
+  PLINTH_SETBACK_PROVENANCE,
   WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM,
+  WORKTOP_FRONT_OVERHANG_PROVENANCE,
   describeAppliedPartDatum,
   frontDatumOffsetMm,
 } from '../appliedPartDatum';
@@ -69,9 +71,33 @@ describe('applied-part datum — THE PIN', () => {
       expect(DEFAULT_KICK_SETBACK).toBe(PLINTH_SETBACK_FROM_FRONT_MM);
     });
 
-    it('pins worktop front overhang at 25mm FROM THE FRONT', () => {
-      expect(WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM).toBe(25);
+    it('pins worktop front overhang at 20mm FROM THE FRONT — UNCHANGED by the datum work', () => {
+      expect(WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM).toBe(20);
       expect(DEFAULT_WORKTOP_CONFIG.frontOverhang).toBe(WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM);
+    });
+
+    it('the worktop overhang moved by EXACTLY ZERO, unlike the plinth setback', () => {
+      // THE ASYMMETRY IS THE POINT, and this test exists to stop it being erased again.
+      //
+      // The plinth genuinely switched datum (CARCASS -> FRONT) and had to be renumbered
+      // 50 -> 65 to stay physically put. The worktop was ALREADY measured from FRONT
+      // (WorktopConfig.frontDatum defaulted to 'FRONT'), so declaring its datum required
+      // NO change to its number.
+      //
+      // An intermediate revision nonetheless moved it 20 -> 25. That was an unsourced
+      // +5mm on a dimension that flows straight into cut sizes, edge-tape metreage and
+      // quoted cost, landed under cover of a documentation change. It is reverted, and
+      // this assertion is the guard: a future "tidy-up" cannot move this number without
+      // failing here and having to justify itself.
+      expect(WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM).toBe(20);
+    });
+
+    it('marks both declared figures as DECLARED, not sourced', () => {
+      // Neither number is evidence. A downstream reader could previously not tell these
+      // apart from owner-confirmed or published figures the way it can for a leg's
+      // minHeightProvenance — so the distinction is now machine-readable.
+      expect(PLINTH_SETBACK_PROVENANCE).toBe('DECLARED');
+      expect(WORKTOP_FRONT_OVERHANG_PROVENANCE).toBe('DECLARED');
     });
 
     it('keeps the plinth geometrically close to where it was: ~47 from the carcass', () => {

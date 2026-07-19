@@ -955,10 +955,51 @@ describe('Multi-Cabinet Management', () => {
   });
 
   it('should add cabinet with custom dimensions', () => {
-    const custom = useCabinetStore.getState().addCabinet('BASE', 'Custom', { width: 400, height: 500, depth: 300 });
+    // CHANGED from 400 x 500 x 300, which is not a base cabinet: the base envelope is
+    // 680-900 high and 500-650 deep, so that fixture asked for a 500mm-tall, 300mm-deep
+    // "base unit". It only ever passed because validateDimensions had no callers and
+    // nothing checked. These are catalogue values inside the envelope.
+    const custom = useCabinetStore.getState().addCabinet('BASE', 'Custom', { width: 400, height: 760, depth: 600 });
     expect(custom.dimensions.width).toBe(400);
-    expect(custom.dimensions.height).toBe(500);
-    expect(custom.dimensions.depth).toBe(300);
+    expect(custom.dimensions.height).toBe(760);
+    expect(custom.dimensions.depth).toBe(600);
+  });
+
+  it('REJECTS a cabinet outside its dimensional envelope (fails if the gate is deleted)', () => {
+    // THE ANTI-DECORATIVE TEST for validateDimensions, which had ZERO production callers
+    // on this branch AND on main — so every bound it defines was unenforced and a caller
+    // could create anything. Driving the real store, not the validator directly, is the
+    // point: the bug was never that the validator was wrong, it was that nobody called it.
+    const before = useCabinetStore.getState().cabinets.length;
+
+    expect(() =>
+      useCabinetStore.getState().addCabinet('BASE', 'Impossible', { height: 500, depth: 300 })
+    ).toThrow(/outside its dimensional envelope/);
+
+    // ...and nothing was committed to the scene.
+    expect(useCabinetStore.getState().cabinets).toHaveLength(before);
+  });
+
+  it('REJECTS a wall unit deeper than the JIS A0017:2018 400mm ceiling', () => {
+    // A head-clearance bound over the worktop. 410mm is a real published depth
+    // (Poliform), so this is a genuine conflict between sourced standards rather than a
+    // typo — MONOLITH enforces the JIS ceiling and says so in the rejection.
+    expect(() =>
+      useCabinetStore.getState().addCabinet('WALL', 'Too Deep', { depth: 410 })
+    ).toThrow(/JIS A0017:2018/);
+  });
+
+  it('WARNS but allows an off-catalogue width — bespoke is legitimate', () => {
+    // 650mm is on no manufacturer's list and no appliance fits it, but fillers, end
+    // panels and scribes are real. So it is recorded, not blocked — the two severities
+    // doing their job.
+    useCabinetStore.getState().clearPlacementViolations();
+    const cab = useCabinetStore.getState().addCabinet('BASE', 'Filler', { width: 650 });
+
+    expect(cab.dimensions.width).toBe(650);
+    const violations = useCabinetStore.getState().placementViolations;
+    expect(violations.map((v) => v.code)).toContain('DIMENSION_OFF_CATALOGUE');
+    expect(violations.every((v) => v.severity === 'WARNING')).toBe(true);
   });
 
   it('should add cabinet at specified position', () => {

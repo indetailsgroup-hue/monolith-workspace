@@ -40,6 +40,8 @@ import {
   deriveMarketHeightStack,
   assertBuildableHeightStack,
   reportHeightStackWarnings,
+  reportDefaultHeightStackOnce,
+  resetDefaultHeightStackReportedForTest,
   resolveWorktopThickness,
   findClosestBuildableWorktop,
   DEFAULT_HEIGHT_STACK,
@@ -98,11 +100,35 @@ describe('height stack — the invariant', () => {
     // exactly, not approximately.
     expect(s.plinthHeight).toBe(THAI_ADJUSTABLE_LEG_70.minHeight);
     expect(s.legReachability.reachable).toBe(true);
-    expect(s.buildable).toBe(true);
 
     // ...which means ZERO downward levelling headroom. A flat floor is the lower bound.
     expect(s.levelling.shortenHeadroom).toBe(0);
     expect(s.warnings.map((w) => w.code)).toContain('NO_LEVELLING_HEADROOM_DOWNWARD');
+
+    // BUT THE STACK IS NOT BUILDABLE, AND THE REASON IS MATERIAL, NOT GEOMETRY.
+    // These are two different questions and this test now keeps them apart:
+    //   - is the derived 70mm plinth reachable on a real leg?  YES (above).
+    //   - does the slab we would actually cut match the 20mm we declare?  NO.
+    // The configured stack builds 18.6mm, so the kitchen assembles to 848.6mm while
+    // declaring 850mm. See the dedicated reconciliation suite below.
+    expect(s.buildable).toBe(false);
+    expect(s.errors.map((e) => e.code)).toEqual(['WORKTOP_BUILT_THICKNESS_OFF_TARGET']);
+  });
+
+  it('the GEOMETRY alone is buildable — proven by removing only the material term', () => {
+    // Same 850/760/20, but with no material stack asserted against it. Everything the
+    // owner stated still closes: 70mm plinth, reachable on the 70mm leg, no errors.
+    //
+    // This is the control that proves the failure above is about the CATALOG and not
+    // about the owner's numbers. If a 20mm slab is sourced — and 20mm is the standard
+    // 2cm stone thickness, which is the open question — this configuration builds.
+    const s = deriveHeightStack({ worktopConfig: null });
+    expect(s.plinthHeight).toBe(70);
+    expect(s.plinthHeight + s.carcassHeight + s.worktopThickness).toBeCloseTo(850, EXACT);
+    expect(s.legReachability.reachable).toBe(true);
+    expect(s.buildable).toBe(true);
+    // ...and it is loudly flagged as unreconciled rather than quietly passing.
+    expect(s.warnings.map((w) => w.code)).toContain('WORKTOP_MATERIAL_NOT_SOURCED');
   });
 
   it('closes for an EU-configured tenant: plinth + carcass + worktop === 900', () => {
@@ -134,8 +160,19 @@ describe('height stack — the invariant', () => {
     // STEP 5's second target.
     expect(th.legReachability.reachable).toBe(true);
     expect(eu.legReachability.reachable).toBe(true);
-    expect(th.buildable).toBe(true);
+
+    // BUILDABILITY DIFFERS, AND FOR AN HONEST REASON. The Thai profile names the real
+    // shipped material stack, so its 20mm target is reconciled against it — and fails,
+    // because that stack builds 18.6mm. The EU profile names NO material (nobody has
+    // sourced a European worktop SKU), so there is nothing to reconcile against and the
+    // gap is reported as unknown rather than as a fabricated 11.4mm finding about a slab
+    // no one proposed building.
+    expect(th.buildable).toBe(false);
+    expect(th.errors.map((e) => e.code)).toEqual(['WORKTOP_BUILT_THICKNESS_OFF_TARGET']);
+
     expect(eu.buildable).toBe(true);
+    expect(eu.builtWorktopThickness).toBeNull();
+    expect(eu.warnings.map((w) => w.code)).toContain('WORKTOP_MATERIAL_NOT_SOURCED');
 
     // And they differ exactly where the standards predict. The European assembly is
     // 720 + 30 = 750, which is precisely the assembly JIS's B = A - 750 rule assumes, so
@@ -323,12 +360,28 @@ describe('height stack — published plinth rungs', () => {
     // The control. It proves the off-rung Thai result is caused by a genuinely different
     // assembly and NOT by broken arithmetic — feed the derivation the assembly JIS assumes
     // and it reproduces JIS's own rungs.
-    const th = deriveHeightStack({ counterHeight: 850, carcassHeight: 720, worktopThickness: 30 });
+    //
+    // `worktopConfig: null` because these are GEOMETRIC hypotheticals: they ask what a
+    // 30mm worktop would do to the rung arithmetic, and nobody is claiming a 30mm slab
+    // exists in this catalog. Reconciling them against the shipped 18.6mm melamine would
+    // bury the rung finding under an 11.4mm material error about a slab that is not part
+    // of the question.
+    const th = deriveHeightStack({
+      counterHeight: 850,
+      carcassHeight: 720,
+      worktopThickness: 30,
+      worktopConfig: null,
+    });
     expect(th.plinthHeight).toBeCloseTo(100, EXACT);
     expect(th.onPublishedRung).toBe(true);
     expect(th.matchedRungStandards).toEqual(['JIS A0017:2018', 'next125']);
 
-    const eu = deriveHeightStack({ counterHeight: 900, carcassHeight: 720, worktopThickness: 30 });
+    const eu = deriveHeightStack({
+      counterHeight: 900,
+      carcassHeight: 720,
+      worktopThickness: 30,
+      worktopConfig: null,
+    });
     expect(eu.plinthHeight).toBeCloseTo(150, EXACT);
     expect(eu.onPublishedRung).toBe(true);
     expect(eu.matchedRungStandards).toEqual(['JIS A0017:2018', 'next125']);
@@ -449,15 +502,38 @@ describe('height stack — worktop thickness comes from the real material stack'
     expect(findClosestBuildableWorktop(30).closestAchievableMm).toBeCloseTo(19.6, 6);
   });
 
-  it('the 0.4mm shortfall is absorbed by the leg, which is what the leg is FOR', () => {
-    // Build the real 19.6mm slab under the Thai target and the stack still reaches 850 —
-    // the legs simply wind up 0.4mm, well inside the adjustment range.
-    const s = deriveHeightStack({ worktopThickness: 19.6 });
+  it('the 0.4mm shortfall would be absorbed by the leg — IF the 19.6mm slab were built', () => {
+    // THE HYPOTHETICAL IS NOW LABELLED AS ONE, AND IT IS BUILT FROM A REAL CONFIG.
+    //
+    // This test used to pass a bare `worktopThickness: 19.6` and conclude the stack was
+    // buildable. That quietly described a kitchen nobody is building: the shipped config
+    // is melamine-faced and builds 18.6mm, not 19.6mm. Reasoning about the catalog's best
+    // case while the product ships something else is precisely how the declared and the
+    // as-built numbers drifted apart in the first place.
+    //
+    // So the 19.6mm slab is constructed EXPLICITLY here, from the HPL surface that would
+    // actually produce it, and the reconciliation is what proves it: target and built now
+    // agree, so there is no error and the residual is pure leg adjustment.
+    const hpl = { ...DEFAULT_WORKTOP_CONFIG, surfaceMaterialId: 'surf-hpl-ash-silver' };
+    expect(resolveWorktopThickness(hpl)).toBeCloseTo(19.6, 6);
+
+    const s = deriveHeightStack({ worktopThickness: 19.6, worktopConfig: hpl });
     expect(s.plinthHeight).toBeCloseTo(70.4, 6);
     expect(s.plinthHeight + s.carcassHeight + s.worktopThickness).toBeCloseTo(850, EXACT);
     expect(s.legReachability.reachable).toBe(true);
-    expect(s.buildable).toBe(true);
     expect(s.levelling.shortenHeadroom).toBeCloseTo(0.4, 6);
+
+    // Target and built agree, so the reconciliation passes and the stack IS buildable.
+    expect(s.builtWorktopThickness).toBeCloseTo(19.6, 6);
+    expect(s.asBuiltCounterHeight).toBeCloseTo(850, EXACT);
+    expect(s.errors).toEqual([]);
+    expect(s.buildable).toBe(true);
+
+    // AND THIS IS NOT THE SHIPPED CONFIGURATION. Switching to it swaps a 0.3mm melamine
+    // face for a 0.8mm HPL one on every slab in the kitchen, changing the finish and the
+    // quoted cost. That is a human's decision, not something this suite endorses by
+    // demonstrating the arithmetic.
+    expect(DEFAULT_WORKTOP_CONFIG.surfaceMaterialId).not.toBe(hpl.surfaceMaterialId);
   });
 
   it('the unbuildable target is WARNED, not silently substituted', () => {
@@ -494,6 +570,108 @@ describe('height stack — worktop thickness comes from the real material stack'
   });
 });
 
+describe('height stack — DECLARED vs AS-BUILT, checked against emitted geometry', () => {
+  /**
+   * THE TEST THAT WOULD HAVE CAUGHT THE 1.4mm.
+   *
+   * Every invariant test above asserts the DECLARED triple against itself — plinth +
+   * carcass + worktopTHICKNESS === counterHeight — which is true by construction, because
+   * the plinth is derived by subtraction. It cannot fail, and so it never noticed that the
+   * slab the panel derivation actually emits is a different number entirely.
+   *
+   * These tests assert against the slab deriveWorktopPanels EMITS. That is the number the
+   * factory cuts, and it is the only one that can disagree with the declaration.
+   */
+  it('the EMITTED slab is 18.6mm, not the declared 20mm target', () => {
+    const emitted = worktopRealThickness(resolveWorktopMaterials(DEFAULT_WORKTOP_CONFIG));
+    expect(emitted).toBeCloseTo(18.6, 6);
+    expect(emitted).not.toBeCloseTo(DEFAULT_WORKTOP_THICKNESS_MM, 6);
+
+    // The height stack reads the same number, from the same config, so the two lanes
+    // cannot describe different slabs.
+    expect(DEFAULT_HEIGHT_STACK.builtWorktopThickness).toBeCloseTo(emitted, 9);
+    expect(DEFAULT_WORKTOP_BUILT_THICKNESS_MM).toBeCloseTo(emitted, 9);
+  });
+
+  it('THE REAL INVARIANT FAILS TODAY: toeKick + carcass + EMITTED slab !== 850', () => {
+    // This is the assertion the suite was missing. It uses DEFAULT_TOE_KICK_HEIGHT_MM —
+    // the actual cut dimension every carcass and kickboard is built from — and the actual
+    // emitted slab, and shows they do not reach the declared counter height.
+    const emitted = worktopRealThickness(resolveWorktopMaterials(DEFAULT_WORKTOP_CONFIG));
+    const asBuilt = DEFAULT_TOE_KICK_HEIGHT_MM + DEFAULT_CARCASS_HEIGHT_MM + emitted;
+
+    expect(asBuilt).toBeCloseTo(848.6, 6);
+    expect(asBuilt).not.toBeCloseTo(DEFAULT_COUNTER_HEIGHT_MM, 6);
+    expect(DEFAULT_COUNTER_HEIGHT_MM - asBuilt).toBeCloseTo(1.4, 6);
+
+    // And the stack reports exactly that, rather than leaving it to be discovered.
+    expect(DEFAULT_HEIGHT_STACK.asBuiltCounterHeight).toBeCloseTo(848.6, 6);
+  });
+
+  it('the divergence is an ERROR that makes the stack unbuildable — not a warning', () => {
+    // IT WAS A WARNING, AND THAT IS WHY IT SHIPPED. `buildable` stayed true, so
+    // assertBuildableHeightStack did not throw and nothing in any cut-list path could
+    // stop it. A gap between the number we declare and the number we cut is not an
+    // advisory.
+    const err = DEFAULT_HEIGHT_STACK.errors.find(
+      (e) => e.code === 'WORKTOP_BUILT_THICKNESS_OFF_TARGET'
+    );
+    expect(err).toBeDefined();
+    expect(DEFAULT_HEIGHT_STACK.buildable).toBe(false);
+    expect(() => assertBuildableHeightStack(DEFAULT_HEIGHT_STACK)).toThrow(/UNBUILDABLE/);
+
+    // The message must carry the REAL numbers, not the catalog's hypothetical best.
+    expect(err!.message).toContain('18.6mm');
+    expect(err!.message).toContain('848.6mm');
+    expect(err!.message).toContain('71.4mm');
+    // ...and must not propose closing the gap by swapping materials.
+    expect(err!.message).toContain('Do NOT close this by editing the worktop material');
+  });
+
+  it('names the required plinth for the CONFIGURED slab: 71.4mm, not 70.4mm', () => {
+    // 71.4 is what the shipped 18.6mm slab needs. 70.4 is what the catalog's closest
+    // 19.6mm slab would need — a configuration nobody is building. The remedy previously
+    // quoted only 70.4, so the single actionable number in the whole message was wrong
+    // for the only configuration that ships, and understated the wind-up by 1.0mm.
+    expect(DEFAULT_HEIGHT_STACK.plinthRequiredForBuiltWorktop).toBeCloseTo(71.4, 6);
+
+    const warn = DEFAULT_HEIGHT_STACK.warnings.find(
+      (w) => w.code === 'WORKTOP_TARGET_NOT_IN_CATALOG'
+    );
+    expect(warn).toBeDefined();
+    // Both figures present, and each labelled as to which slab it belongs to.
+    expect(warn!.message).toContain('19.6mm slab needs a 70.4mm plinth');
+    expect(warn!.message).toContain('CONFIGURED material stack builds 18.6mm');
+    expect(warn!.message).toContain('71.4mm plinth');
+  });
+
+  it('the reconciliation FOLLOWS the material, so it cannot be faked by a constant', () => {
+    // Swap the surface for the 0.8mm HPL that genuinely builds 19.6mm and the error
+    // changes with it. This is what makes DEFAULT_WORKTOP_BUILT_THICKNESS_MM load-bearing
+    // rather than decorative: it used to have no readers at all outside a test.
+    const hpl = { ...DEFAULT_WORKTOP_CONFIG, surfaceMaterialId: 'surf-hpl-ash-silver' };
+    const s = deriveHeightStack({ worktopConfig: hpl });
+
+    expect(s.builtWorktopThickness).toBeCloseTo(19.6, 6);
+    expect(s.asBuiltCounterHeight).toBeCloseTo(849.6, 6);
+    expect(s.plinthRequiredForBuiltWorktop).toBeCloseTo(70.4, 6);
+    expect(s.buildable).toBe(false);
+    expect(s.errors[0].message).toContain('19.6mm');
+  });
+
+  it('closes completely when target and built agree', () => {
+    // The positive control: a config whose built thickness IS the target produces no
+    // error at all, proving the check is a real comparison and not an unconditional fail.
+    const built = resolveWorktopThickness(DEFAULT_WORKTOP_CONFIG);
+    const s = deriveHeightStack({ worktopThickness: built });
+
+    expect(s.builtWorktopThickness).toBeCloseTo(built, 9);
+    expect(s.asBuiltCounterHeight).toBeCloseTo(s.counterHeight, EXACT);
+    expect(s.errors.map((e) => e.code)).not.toContain('WORKTOP_BUILT_THICKNESS_OFF_TARGET');
+    expect(s.buildable).toBe(true);
+  });
+});
+
 describe('height stack — single source of truth for toe kick', () => {
   it('DEFAULT_TOE_KICK_HEIGHT_MM is the derived plinth, not a literal', () => {
     expect(DEFAULT_TOE_KICK_HEIGHT_MM).toBe(DEFAULT_HEIGHT_STACK.plinthHeight);
@@ -525,14 +703,29 @@ describe('height stack — single source of truth for toe kick', () => {
     expect(DEFAULT_DIMENSIONS.depth).toBe(BASE_CABINET_STANDARDS.depth.default);
   });
 
-  it('the built stack matches the declared counter height (the original defect)', () => {
+  it('the DECLARED stack matches the declared counter height (the original defect)', () => {
     // Before: declared 900, built 838.6. Now the declaration IS the derivation.
-    const built =
+    //
+    // RENAMED, because the old title overclaimed. This composes the TARGET worktop
+    // thickness, so it checks that the three declared terms agree with each other — real
+    // and worth pinning (it is what caught the 61.4mm), but it is NOT a statement about
+    // what gets cut. The as-built check lives in the DECLARED vs AS-BUILT suite above and
+    // currently FAILS to reach 850, which is the honest state.
+    const declared =
       DEFAULT_DIMENSIONS.toeKickHeight +
       BASE_CABINET_STANDARDS.height.default +
       DEFAULT_WORKTOP_THICKNESS_MM;
-    expect(built).toBeCloseTo(ERGONOMIC_STANDARDS.counterHeight, EXACT);
+    expect(declared).toBeCloseTo(ERGONOMIC_STANDARDS.counterHeight, EXACT);
     expect(ERGONOMIC_STANDARDS.counterHeight).toBe(DEFAULT_COUNTER_HEIGHT_MM);
+
+    // The same three terms composed from the BUILT slab do NOT close, and saying so here
+    // stops this test being read as proof that the kitchen reaches 850.
+    const asBuilt =
+      DEFAULT_DIMENSIONS.toeKickHeight +
+      BASE_CABINET_STANDARDS.height.default +
+      DEFAULT_WORKTOP_BUILT_THICKNESS_MM;
+    expect(asBuilt).toBeCloseTo(848.6, 6);
+    expect(asBuilt).not.toBeCloseTo(ERGONOMIC_STANDARDS.counterHeight, 6);
   });
 
   it('no phantom "+40 clearance" term survives anywhere in the stack', () => {
@@ -674,5 +867,47 @@ describe('plinth leg — a plinth is a leg you can buy, with a range', () => {
     const lines = sink.mock.calls.map((c) => String(c[0]));
     expect(lines[0]).toContain('UNBUILDABLE');
     expect(lines.join(' ')).toContain('PLINTH_BELOW_LEG_MINIMUM');
+  });
+});
+
+describe('the default stack is reported ONCE, from a bootstrap — not at import time', () => {
+  /**
+   * THE DEFECT: `reportHeightStackWarnings(DEFAULT_HEIGHT_STACK, ...)` was a bare
+   * top-level statement in CabinetTaxonomy, so merely IMPORTING the module — which nearly
+   * every module does, for a constant — printed four multi-paragraph console.warn blocks.
+   * It fired inside unrelated suites, shipped in the browser bundle where no consumer
+   * could suppress it, made a constants module non-side-effect-free (defeating
+   * tree-shaking), and buried the genuinely important UNBUILDABLE lines under advisory
+   * noise repeated on every import.
+   *
+   * The requirement was sound — these findings must be discoverable at runtime — so the
+   * call still happens, once, from src/main.tsx.
+   */
+  it('emits on the first call and stays silent thereafter', () => {
+    resetDefaultHeightStackReportedForTest();
+
+    const first = vi.fn();
+    expect(reportDefaultHeightStackOnce(first)).toBe(true);
+    expect(first.mock.calls.length).toBeGreaterThan(0);
+
+    // The default stack is unbuildable today, so the FIRST line must be the error.
+    expect(String(first.mock.calls[0][0])).toContain('UNBUILDABLE');
+    expect(String(first.mock.calls[0][0])).toContain('WORKTOP_BUILT_THICKNESS_OFF_TARGET');
+
+    const second = vi.fn();
+    expect(reportDefaultHeightStackOnce(second)).toBe(false);
+    expect(second).not.toHaveBeenCalled();
+  });
+
+  it('importing the catalog does not emit anything by itself', async () => {
+    // The anti-regression: re-importing the module must not print. If someone reinstates
+    // the top-level call, this fails.
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await import('../CabinetTaxonomy');
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

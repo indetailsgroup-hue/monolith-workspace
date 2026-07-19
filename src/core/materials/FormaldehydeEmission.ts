@@ -133,6 +133,23 @@ export type EmissionLimitValue<S extends EmissionScheme> = number & {
 export type EmissionProvenance = 'VERIFIED' | 'SUPPLIER_DECLARED';
 
 /**
+ * Board substrates an emission limit can be published against.
+ *
+ * DECLARED HERE, NOT IMPORTED, and structurally identical to
+ * PanelMaterialSystem.CoreType. This module is a deliberate import-free leaf — see the
+ * header — and PanelMaterialSystem already imports FROM it, so importing CoreType back
+ * would close a cycle. The two are pinned together by a compile-time assertion at
+ * PanelMaterialSystem.ts (`CoreType extends EmissionSubstrate`), so adding a core type
+ * there without extending this union is a build error rather than a silent gap.
+ */
+export type EmissionSubstrate =
+  | 'PARTICLE_BOARD'
+  | 'MDF'
+  | 'HMR'
+  | 'PLYWOOD'
+  | 'BLOCKBOARD';
+
+/**
  * The compound emission field. Shape is exactly
  * `{ scheme, class, testMethod, numericLimit, unit, region }`, with every member after
  * `scheme` pinned to it by the type system.
@@ -148,6 +165,45 @@ export interface FormaldehydeEmission<S extends EmissionScheme = EmissionScheme>
   readonly provenance: EmissionProvenance;
   /** Where the figure came from, in words, so a reader can re-check it. */
   readonly sourceNote: string;
+}
+
+/**
+ * The SUBSTRATES each published limit actually covers, keyed `${scheme}:${class}`.
+ *
+ * A CLASS NAME IS NOT SUBSTRATE-INDEPENDENT, and treating it as one silently validates a
+ * board against the wrong number. CARB Phase 2 "P2" is the clearest case: 0.09 ppm is the
+ * PARTICLEBOARD limit, while MDF and thin MDF are regulated under the SAME class name at
+ * DIFFERENT limits. Because the emission field hangs off CoreMaterial — which includes MDF
+ * cores — nothing else stops a P2 certificate being attached to an MDF board and checked
+ * against a particleboard threshold.
+ *
+ * KEPT AS A SIDE TABLE rather than a field on FormaldehydeEmission ON PURPOSE. That record
+ * is stored on catalog materials and flows through an Immer store; adding a readonly array
+ * to it forces `WritableDraft` incompatibilities at every assignment, and the casts needed
+ * to silence those would be a worse outcome than the hazard being fixed. Scope is a
+ * property of the PUBLISHED LIMIT, not of a particular board's certificate, so a lookup
+ * keyed by scheme and class is also the more honest home for it.
+ *
+ * `null` means substrate-independent AS PUBLISHED — a positive finding about the standard,
+ * never a default for "nobody checked". Limits for substrates absent from a list are NOT
+ * recorded, because they have not been independently verified; a mismatch is therefore
+ * reported as UNKNOWN rather than resolved against a fabricated number.
+ */
+export const EMISSION_LIMIT_SUBSTRATE_SCOPE: Readonly<
+  Record<string, readonly EmissionSubstrate[] | null>
+> = {
+  // EN 120's perforator value is expressed per 100g of oven-dry board and E1 is applied
+  // across wood-based panels rather than being split by substrate the way CARB P2 is.
+  'EN:E1': null,
+  // PARTICLEBOARD ONLY. See CARB_P2.
+  'CARB:P2': ['PARTICLE_BOARD'],
+  // The F-star grades are defined by the desiccator result itself, across wood-based panels.
+  'JIS:F****': null,
+};
+
+/** Key an emission record into EMISSION_LIMIT_SUBSTRATE_SCOPE. */
+export function emissionScopeKey(emission: AnyFormaldehydeEmission): string {
+  return `${emission.scheme}:${emission.class}`;
 }
 
 /**
@@ -218,11 +274,19 @@ export const EN_E1: FormaldehydeEmission<'EN'> = defineEmission({
 });
 
 /**
- * CARB Phase 2 — 0.09 ppm by ASTM E1333 large chamber, for particleboard.
+ * CARB Phase 2 — 0.09 ppm by ASTM E1333 large chamber, FOR PARTICLEBOARD ONLY.
  *
  * CARB is a California regulation; TSCA Title VI (40 CFR 770) adopted the same limits
  * federally, which is why a US-destined packet is checked against this scheme even though
  * `region` records the originating jurisdiction as US-CA.
+ *
+ * THE SUBSTRATE IS PART OF THE LIMIT, NOT A FOOTNOTE. 0.09 ppm is the particleboard
+ * threshold. MDF and thin MDF are regulated under the SAME class name "P2" at DIFFERENT
+ * numeric limits, which are NOT recorded here because they have not been independently
+ * verified — and guessing them would be indistinguishable from the fabricated-figure
+ * defect this module exists to prevent. EMISSION_LIMIT_SUBSTRATE_SCOPE therefore scopes
+ * 'CARB:P2' to PARTICLE_BOARD alone, and attaching this record to an MDF core is reported
+ * as an UNKNOWN finding rather than silently validated against the wrong number.
  */
 export const CARB_P2: FormaldehydeEmission<'CARB'> = defineEmission({
   scheme: 'CARB',
@@ -234,7 +298,9 @@ export const CARB_P2: FormaldehydeEmission<'CARB'> = defineEmission({
   provenance: 'VERIFIED',
   sourceNote:
     'CARB Phase 2 particleboard limit, 0.09 ppm by ASTM E1333 large chamber. ' +
-    'Independently verified. Mirrored federally by TSCA Title VI / 40 CFR 770.',
+    'Independently verified. Mirrored federally by TSCA Title VI / 40 CFR 770. ' +
+    'PARTICLEBOARD ONLY — the MDF and thin-MDF limits under the same P2 class name are ' +
+    'different figures and are NOT sourced here.',
 });
 
 /**
@@ -426,7 +492,14 @@ export type EmissionFindingCode =
   /** Right scheme, but the class is not on the destination's accepted list. */
   | 'EMISSION_CLASS_NOT_ACCEPTED'
   /** We do not know what this destination requires. */
-  | 'DESTINATION_REQUIREMENT_UNSOURCED';
+  | 'DESTINATION_REQUIREMENT_UNSOURCED'
+  /**
+   * The class is accepted, but its published limit was NOT written for this board's
+   * substrate — e.g. a CARB P2 certificate on an MDF core, where 0.09 ppm is the
+   * particleboard figure. The correct limit for the actual substrate is unsourced, so this
+   * is UNKNOWN rather than BLOCKER: the board may well comply, but not against this number.
+   */
+  | 'EMISSION_LIMIT_SUBSTRATE_MISMATCH';
 
 /**
  * `BLOCKER` — a definite failure against a known rule.
@@ -449,6 +522,20 @@ export interface EmissionBearingMaterial {
   readonly id: string;
   readonly name?: string;
   readonly formaldehydeEmission?: AnyFormaldehydeEmission | null;
+  /**
+   * The board's substrate, checked against the published limit's scope.
+   *
+   * NAMED `substrate`, NOT `type`. CoreMaterial.type happens to hold exactly this, but
+   * SurfaceMaterial.type holds a finish ('MELAMINE', 'HPL', ...) — a completely different
+   * axis under the same word. Reusing `type` here made a surface material structurally
+   * unassignable to this interface and would have invited a cast at the one place the
+   * regulatory check is assembled. Callers map their own field in explicitly.
+   *
+   * Optional, so surface materials and any other catalog still satisfy the interface.
+   * `undefined` SKIPS the substrate check rather than assuming one — inferring a substrate
+   * is exactly the guess this module refuses to make.
+   */
+  readonly substrate?: EmissionSubstrate;
 }
 
 export interface EmissionComplianceReport {
@@ -539,6 +626,30 @@ export function validateEmissionForExport(
           `for ${destination} (${requirement.acceptedClasses.join(', ') || 'none'}).`,
       });
       continue;
+    }
+
+    // The class is accepted — but was its published limit written for THIS board?
+    // A scheme and a class name can both match while the number behind them belongs to a
+    // different substrate entirely. Checked last, because it only matters once everything
+    // else lines up, and skipped when the substrate is unstated rather than guessed.
+    const scope = EMISSION_LIMIT_SUBSTRATE_SCOPE[emissionScopeKey(emission)];
+    if (scope !== undefined && scope !== null && material.substrate !== undefined) {
+      if (!scope.includes(material.substrate)) {
+        findings.push({
+          code: 'EMISSION_LIMIT_SUBSTRATE_MISMATCH',
+          severity: 'UNKNOWN',
+          materialId: material.id,
+          message:
+            `${label} is a ${material.substrate} board declared ${describeEmission(emission)}, but ` +
+            `that ${emission.numericLimit}${emission.unit} limit is published for ` +
+            `${scope.join(', ')} only. The same class name carries a DIFFERENT limit for ` +
+            `${material.substrate}, and that figure is not sourced here — so this board has not ` +
+            `been checked against anything. Obtain the ${emission.scheme} ${emission.class} limit ` +
+            `for ${material.substrate} from the regulation text and record it; do not reuse the ` +
+            `${scope.join('/')} number.`,
+        });
+        continue;
+      }
     }
 
     declaredMaterialIds.push(material.id);

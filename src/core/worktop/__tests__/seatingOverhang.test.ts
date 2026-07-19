@@ -152,15 +152,15 @@ describe('seating is DISTINCT from backOverhang', () => {
 
   it('the unseated island still just mirrors the front — a drip edge, not knee space', () => {
     const p = deriveWorktopPanels(island(), ISLAND_WORKTOP_CONFIG).panelsByHostId.get('i1')![0];
-    // 600 carcass + 18 door + 25 front + 25 mirrored back = 668.
-    expect(p.finishHeight).toBeCloseTo(668, 6);
+    // 600 carcass + 18 door + 20 front + 20 mirrored back = 658.
+    expect(p.finishHeight).toBeCloseTo(658, 6);
   });
 
   it('the seated island projects the KNEE figure at the back instead', () => {
     const p = deriveWorktopPanels(island(), SEATED_ISLAND_WORKTOP_CONFIG)
       .panelsByHostId.get('i1')![0];
-    // 600 carcass + 18 door + 25 front + 380 seating = 1023.
-    expect(p.finishHeight).toBeCloseTo(1023, 6);
+    // 600 carcass + 18 door + 20 front + 380 seating = 1018.
+    expect(p.finishHeight).toBeCloseTo(1018, 6);
   });
 
   it('REPLACES backOverhang rather than adding to it', () => {
@@ -168,10 +168,10 @@ describe('seating is DISTINCT from backOverhang', () => {
       .panelsByHostId.get('i1')![0];
     const unseated = deriveWorktopPanels(island(), ISLAND_WORKTOP_CONFIG)
       .panelsByHostId.get('i1')![0];
-    // If the two were summed the difference would be 380, not 380 - 25 = 355.
+    // If the two were summed the difference would be 380, not 380 - 20 = 360.
     // They are different quantities measured for different reasons; a slab built
     // to their sum answers to neither.
-    expect(seated.finishHeight - unseated.finishHeight).toBeCloseTo(355, 6);
+    expect(seated.finishHeight - unseated.finishHeight).toBeCloseTo(360, 6);
   });
 
   it('is a 15x bigger projection than the mirror it replaces — the mirror was unusable', () => {

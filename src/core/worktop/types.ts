@@ -277,17 +277,33 @@ export interface WorktopConfig {
  *
  * This config is deliberately NOT switched to that combination: it would swap a
  * 0.3mm melamine face for a 0.8mm HPL one, changing the finish and the quoted
- * cost of every slab in the kitchen to chase 1.0mm. The 0.4mm residual against
- * target is absorbed by the adjustable leg instead. Material choice is a human
+ * cost of every slab in the kitchen to chase 1.0mm. Material choice is a human
  * decision; see the WORKTOP_TARGET_NOT_IN_CATALOG warning.
+ *
+ * ── THE RESIDUAL IS 1.4mm, NOT 0.4mm, AND IT IS NOT ABSORBED ────────────────
+ * An earlier version of this note said "the 0.4mm residual against target is
+ * absorbed by the adjustable leg". That arithmetic belongs to the 19.6mm slab,
+ * which is NOT what this config builds. THIS config builds 18.6mm, so the
+ * residual against the 20mm target is 1.4mm — and it is not absorbed by
+ * anything, because the plinth is derived from the TARGET and the toe kick is
+ * therefore cut at 70mm for a kitchen that assembles to 848.6mm. Winding a leg
+ * up cannot lengthen a board that has already been cut short.
+ *
+ * That divergence is now an ERROR (WORKTOP_BUILT_THICKNESS_OFF_TARGET) raised by
+ * CabinetTaxonomy.deriveHeightStack, and it BLOCKS the factory package export.
+ * Resolving it needs a sourced 20mm slab, or an owner decision to move the
+ * target, or the plinth re-derived to 71.4mm. All three are human calls.
  *
  * STILL OPEN, NOT ASSUMED: whether the Thai 20mm worktop is STONE (20mm is the
  * standard 2cm granite/quartz thickness) or a wood-based panel. Unconfirmed by
  * the owner. Nothing here branches on it.
  */
 export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
-  // 25mm past the FRONT datum (door face) — was 20mm past the same datum. The
-  // datum is now declared from one shared constant that the plinth also reads.
+  // 20mm past the FRONT datum (door face). The VALUE is unchanged from the literal
+  // 20 that shipped here before; only its SOURCE moved, to a shared constant the
+  // plinth lane reads too, so the two applied parts cannot drift onto different
+  // reference faces again. Declaring the datum was the fix and it costs no
+  // geometric change, because this slab was already measured from the front.
   frontOverhang: WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM,
   backOverhang: 0,
   backIsExposed: true,
@@ -318,7 +334,7 @@ export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
  * ── THIS ISLAND HAS NO SEATS, AND THAT IS NOW EXPLICIT ───────────────────────
  * The back and end projections below are a GEOMETRIC MIRROR of the front — the
  * slab floats symmetrically over its carcasses. That is correct for an UNSEATED
- * island and completely wrong for a seated one: a 25mm projection is a drip
+ * island and completely wrong for a seated one: a 20mm projection is a drip
  * edge, not knee space, and a stool pulled up to it puts the sitter's knees
  * against the carcass.
  *
@@ -336,7 +352,7 @@ export const ISLAND_WORKTOP_CONFIG: WorktopConfig = {
 /**
  * Island WITH SEATS at the back edge, at the Thai 850mm counter height.
  *
- * The back edge projection is no longer the front's 25mm mirror: it comes from
+ * The back edge projection is no longer the front's 20mm mirror: it comes from
  * the NKBA knee-clearance ladder via resolveSeatingOverhang, keyed to
  * `seating.counterHeightMm`. The end overhangs stay the geometric mirror,
  * because nobody's knees are under them.

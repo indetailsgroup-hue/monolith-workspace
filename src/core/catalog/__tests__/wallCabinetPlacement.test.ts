@@ -257,35 +257,101 @@ describe('the derivation is WIRED into placement (fails if the wiring is deleted
     expect(y).toBe(0);
   });
 
-  it('still honours an explicitly supplied position', () => {
+  it('THE PRODUCTION CALL SHAPE: an explicit position still gets the derived Y', () => {
+    // THIS IS THE TEST THE PREVIOUS ROUND WAS MISSING, and its absence hid a live bug.
+    //
+    // Every test above omits `position`, but NO production caller does.
+    // CabinetTypeSelector.handleAddCabinet passes [offsetX, 0, 0] to space units along X,
+    // which took the old "caller stated a position" branch: console.error, then place at
+    // Y=0 anyway. So a user adding a wall cabinet got it on the floor, through the
+    // worktop, while the suite reported the fix as proven.
+    //
+    // This call is shaped EXACTLY like CabinetTypeSelector's.
+    const offsetX = 700;
     const cab = useCabinetStore
       .getState()
-      .addCabinet('WALL', 'Dragged', undefined, [500, 1500, 200]);
-    expect(scenePositionOf(cab)).toEqual([500, 1500, 200]);
+      .addCabinet('WALL', 'From The UI', undefined, [offsetX, 0, 0]);
+
+    // X and Z are the caller's — that is layout, and callers own it.
+    expect(scenePositionOf(cab)[0]).toBe(offsetX);
+    expect(scenePositionOf(cab)[2]).toBe(0);
+    // Y is DERIVED and overrides the caller's 0. This is the assertion that would have
+    // caught the bug.
+    expect(placedUndersideOf(cab)).toBe(1350);
+    expect(placedUndersideOf(cab)).not.toBe(0);
+  });
+
+  it('a wall cabinet cannot be created below the JIS minimum, even explicitly', () => {
+    // 1200 is below the 1300mm floor. The Y is replaced by the derivation, so the unit
+    // lands legally rather than being created out of envelope and merely logged about.
+    const cab = useCabinetStore
+      .getState()
+      .addCabinet('WALL', 'Tried Too Low', undefined, [0, 1200, 0]);
+    expect(placedUndersideOf(cab)).toBe(1350);
+    expect(validateWallCabinetUnderside(placedUndersideOf(cab)).valid).toBe(true);
+  });
+
+  it('keepExplicitY opts out — and RECORDS the violation rather than only logging it', () => {
+    // The deliberate escape hatch, for a genuinely caller-owned Y: project restore,
+    // import, drag commit. The position is honoured and the breach is recorded on a
+    // surface code and UI can read, which is the half that was missing when this was a
+    // bare console.error.
+    useCabinetStore.getState().clearPlacementViolations();
+    const cab = useCabinetStore
+      .getState()
+      .addCabinet('WALL', 'Restored', undefined, [500, 1200, 200], { keepExplicitY: true });
+
+    expect(scenePositionOf(cab)).toEqual([500, 1200, 200]);
+
+    const violations = useCabinetStore.getState().placementViolations;
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.map((v) => v.code)).toContain('UNDERSIDE_BELOW_JIS_MINIMUM');
+    expect(violations.every((v) => v.severity === 'ERROR')).toBe(true);
+    expect(violations.map((v) => v.message).join('\n')).toContain('1300');
   });
 });
 
-describe('an out-of-envelope explicit placement is surfaced, not silent', () => {
-  let errSpy: ReturnType<typeof vi.spyOn>;
-
+describe('wall placement is enforced on MOVE, not only on creation', () => {
   beforeEach(() => {
     useCabinetStore.getState().createCabinet('BASE', 'Base');
-    errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-  });
-  afterEach(() => {
-    errSpy.mockRestore();
+    useCabinetStore.getState().clearPlacementViolations();
   });
 
-  it('reports a wall cabinet dropped at 1200mm', () => {
-    useCabinetStore.getState().addCabinet('WALL', 'Too Low', undefined, [0, 1200, 0]);
+  it('records a violation when a wall unit is DRAGGED below the JIS minimum', () => {
+    // THE BYPASS THIS CLOSES: creation was gated, movement was not. FloorDragControls,
+    // CabinetTransformControls, clampDeltaByCollision and commitSnapHelpers all commit
+    // through updateCabinetPosition, which wrote scenePosition with no validation at all
+    // — so the 1300mm hard bound was bypassable through the primary interaction surface
+    // by simply dragging.
+    const cab = useCabinetStore.getState().addCabinet('WALL', 'Draggable');
+    expect(placedUndersideOf(cab)).toBe(1350);
 
-    expect(errSpy).toHaveBeenCalled();
-    const said = errSpy.mock.calls.map((c) => String(c[0])).join('\n');
-    expect(said).toContain('1300');
+    useCabinetStore.getState().updateCabinetPosition(cab.id, [0, 900, 0]);
+
+    // COMMITTED, because throwing mid-drag would destroy the user's interaction...
+    const moved = useCabinetStore.getState().cabinets.find((c) => c.id === cab.id)!;
+    expect(placedUndersideOf(moved)).toBe(900);
+
+    // ...but MARKED, on a real surface, so nothing downstream can treat it as fine.
+    const violations = useCabinetStore.getState().placementViolations;
+    expect(violations.map((v) => v.code)).toContain('UNDERSIDE_BELOW_JIS_MINIMUM');
+    expect(violations.some((v) => v.source === 'updateCabinetPosition')).toBe(true);
+    expect(violations.some((v) => v.cabinetId === cab.id)).toBe(true);
   });
 
-  it('says nothing for a wall cabinet at a legal height', () => {
-    useCabinetStore.getState().addCabinet('WALL', 'Fine', undefined, [0, 1350, 0]);
-    expect(errSpy).not.toHaveBeenCalled();
+  it('records nothing for a legal move', () => {
+    const cab = useCabinetStore.getState().addCabinet('WALL', 'Draggable');
+    useCabinetStore.getState().clearPlacementViolations();
+
+    useCabinetStore.getState().updateCabinetPosition(cab.id, [1200, 1400, 0]);
+    expect(useCabinetStore.getState().placementViolations).toEqual([]);
+  });
+
+  it('ignores base cabinets, which have no underside bound', () => {
+    const cab = useCabinetStore.getState().addCabinet('BASE', 'Base Unit');
+    useCabinetStore.getState().clearPlacementViolations();
+
+    useCabinetStore.getState().updateCabinetPosition(cab.id, [0, 0, 0]);
+    expect(useCabinetStore.getState().placementViolations).toEqual([]);
   });
 });

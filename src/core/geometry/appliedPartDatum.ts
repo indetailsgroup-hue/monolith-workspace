@@ -30,7 +30,7 @@
  * explicitly in the type, in every call site, and in the emitted spec:
  *
  *   PLINTH_SETBACK_FROM_FRONT_MM           65mm from the FRONT datum
- *   WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM   25mm from the FRONT datum
+ *   WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM   20mm from the FRONT datum
  *
  * The GEOMETRIC change is deliberately small. Under the default 18mm door,
  * 65 from the front is 65 - 18 = 47 from the carcass, against the 50 from the
@@ -39,6 +39,15 @@
  * 70 + 18 = 88mm of recess measured from the door face, deeper than ANY figure in
  * any source the audit read. Adopting an undeclared number under the wrong datum
  * is how the 88mm would have got in.
+ *
+ * THE WORKTOP MOVES BY EXACTLY ZERO, and that asymmetry is the point. The plinth
+ * genuinely switched datum (CARCASS -> FRONT) and so had to be renumbered to stay
+ * put. The worktop was ALREADY on the FRONT datum, so declaring its datum costs
+ * no geometric change at all — and an earlier revision that took the opportunity
+ * to bump it 20 -> 25 was shipping an unsourced +5mm to the cut list under cover
+ * of a documentation fix. Reverted. Neither number is sourced; both now say so in
+ * a field a machine can read (PLINTH_SETBACK_PROVENANCE,
+ * WORKTOP_FRONT_OVERHANG_PROVENANCE) rather than only in prose.
  *
  * Pinned by src/core/geometry/__tests__/appliedPartDatum.test.ts so a future
  * change cannot silently switch reference faces again.
@@ -79,22 +88,65 @@ export const DEFAULT_APPLIED_PART_DATUM: AppliedPartDatum = 'FRONT';
 export const DEFAULT_ASSUMED_FRONT_PROUD_MM = 18;
 
 /**
+ * Where a dimension in this module came from.
+ *
+ * Structurally identical to catalog/PlinthLegCatalog.LegProvenance and
+ * DELIBERATELY DUPLICATED rather than imported: this module's whole value is
+ * being a dependency-free leaf both the plinth lane and the worktop lane can
+ * share (see the header). Importing the catalog to save six tokens would
+ * reintroduce the coupling the leaf exists to avoid.
+ *
+ * - 'OWNER_CONFIRMED' — stated by the business owner. Outranks documents.
+ * - 'PUBLISHED'       — traceable to a named standard or manufacturer table.
+ * - 'DECLARED'        — an internal convention chosen by this codebase. It is
+ *                       NOT evidence. It exists so the geometry is defined and
+ *                       reproducible, and it must not be quoted to a customer,
+ *                       a factory or a reviewer as though a source backed it.
+ */
+export type AppliedPartProvenance = 'OWNER_CONFIRMED' | 'PUBLISHED' | 'DECLARED';
+
+/**
  * Plinth (kickboard) setback from the FRONT datum, mm.
  *
  * Under the default 18mm door this is ~47mm from the carcass face, close to the
  * 50mm-from-carcass that shipped before, so the parts move ~3mm. See the header:
  * the value is chosen to keep the geometry where it was while making the datum
  * explicit — the declaration is the fix.
+ *
+ * DECLARED, NOT SOURCED. This moves a fabricated part's position by ~3mm, so it
+ * carries the same needs-sourcing status as the leg's maximum adjustment height
+ * and the 20mm worktop core. See PLINTH_SETBACK_PROVENANCE, which makes that
+ * machine-readable instead of leaving it to a reader to infer from prose.
  */
 export const PLINTH_SETBACK_FROM_FRONT_MM = 65;
+
+/** PLINTH_SETBACK_FROM_FRONT_MM is an internal convention, not a sourced figure. */
+export const PLINTH_SETBACK_PROVENANCE: AppliedPartProvenance = 'DECLARED';
 
 /**
  * Worktop front overhang past the FRONT datum, mm.
  *
- * The slab projects 25mm past the door face — i.e. 25 + doorThickness past the
- * carcass. Previously 20mm past the same datum.
+ * The slab projects 20mm past the door face — i.e. 20 + doorThickness past the
+ * carcass.
+ *
+ * DELIBERATELY UNCHANGED AT 20. An earlier revision of this module set it to 25.
+ * That was wrong and has been reverted: unlike the plinth setback below, the
+ * worktop was ALREADY on the FRONT datum before this module existed (see the
+ * header — `WorktopConfig.frontDatum` defaulted to 'FRONT'), so declaring the
+ * datum here required NO change to the number. The 25 was therefore a pure
+ * unsourced +5mm on a dimension that flows straight into cut sizes, edge-tape
+ * metreage and quoted cost — the exact defect class this effort exists to
+ * eliminate. The declaration is the fix; the value is not ours to move.
+ *
+ * NOT SOURCED, and marked as such — see WORKTOP_FRONT_OVERHANG_PROVENANCE. 20mm
+ * is the value that shipped, preserved to keep the geometry identical, not a
+ * figure any document supports. Changing it needs a real sourced overhang that
+ * declares its own datum, landed as its own separately-reviewed change.
  */
-export const WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM = 25;
+export const WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM = 20;
+
+/** WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM is the pre-existing value, not a sourced figure. */
+export const WORKTOP_FRONT_OVERHANG_PROVENANCE: AppliedPartProvenance = 'DECLARED';
 
 /**
  * Distance from the CARCASS front face out to the chosen datum plane, mm.

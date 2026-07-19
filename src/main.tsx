@@ -3,6 +3,15 @@ import ReactDOM from 'react-dom/client';
 import { AppRouter } from './routes';
 import './index.css';
 import { readTheme, writeTheme } from './core/persistence/appPrefs';
+import { reportDefaultHeightStackOnce } from './core/catalog';
+
+// Surface the default height stack's findings once, at startup, on the real console.
+// A derived plinth that is not a purchasable rung — or a declared worktop thickness the
+// configured materials do not build — is a procurement problem that must not be
+// discoverable only by reading source. This used to fire at import time from inside
+// CabinetTaxonomy, which printed it on every import in every test suite; it is an
+// explicit bootstrap step now.
+reportDefaultHeightStackOnce();
 
 // One-time migration: reset theme to dark (v2.1 fix)
 // Old logic auto-set 'light' from OS preference - clear that

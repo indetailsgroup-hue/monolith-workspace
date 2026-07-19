@@ -496,7 +496,15 @@ export type HeightStackWarningCode =
   | 'COUNTER_HEIGHT_OFF_PUBLISHED_LIST'
   | 'WORKTOP_TARGET_NOT_IN_CATALOG'
   | 'LEG_ADJUSTMENT_TOP_UNSOURCED'
-  | 'NO_LEVELLING_HEADROOM_DOWNWARD';
+  | 'NO_LEVELLING_HEADROOM_DOWNWARD'
+  /**
+   * No worktop material stack was supplied for this configuration, so the declared
+   * thickness could NOT be reconciled against a built one. Advisory rather than an
+   * error because an unreconciled configuration is unknown, not known-wrong — but it
+   * is emitted loudly, because "nobody checked" reads identically to "checked and
+   * fine" unless something says otherwise.
+   */
+  | 'WORKTOP_MATERIAL_NOT_SOURCED';
 
 /**
  * UNBUILDABLE. The configuration cannot be assembled from hardware that exists.
@@ -509,7 +517,30 @@ export type HeightStackWarningCode =
 export type HeightStackErrorCode =
   | 'PLINTH_NOT_POSITIVE'
   | 'PLINTH_BELOW_LEG_MINIMUM'
-  | 'PLINTH_ABOVE_LEG_MAXIMUM';
+  | 'PLINTH_ABOVE_LEG_MAXIMUM'
+  /**
+   * THE DECLARED WORKTOP AND THE BUILT WORKTOP DISAGREE.
+   *
+   * The plinth — and therefore DEFAULT_TOE_KICK_HEIGHT_MM, and therefore a real cut
+   * dimension on every carcass — is derived from the TARGET worktop thickness. The slab
+   * that deriveWorktopPanels actually emits is derived from the MATERIAL STACK. When
+   * those two numbers differ, the kitchen as cut does not reach the counter height the
+   * same system declares, and every part is cut to an assembly that will not close.
+   *
+   * ERROR, NOT WARNING, AND THAT IS THE WHOLE POINT. This is the original 61.4mm defect
+   * in miniature: declared 850, built 848.6. It was previously surfaced only as an
+   * advisory inside `warnings`, so `buildable` stayed true and nothing stopped a cut
+   * list. A divergence between the number we declare and the number we cut is not
+   * something a human should be invited to notice — it must stop the line.
+   *
+   * IT IS NOT CLOSED BY SUBSTITUTING MATERIALS. Editing the worktop config to whatever
+   * combination happens to hit the target would change the finish and the quoted cost of
+   * every slab in the kitchen to chase a millimetre, which is exactly the silent
+   * substitution resolveWorktopMaterials throws to prevent. The resolution is a human
+   * decision: source a slab at the target, or move the target to a slab that exists, or
+   * re-derive the plinth from the slab actually being built.
+   */
+  | 'WORKTOP_BUILT_THICKNESS_OFF_TARGET';
 
 export interface HeightStackWarning {
   readonly code: HeightStackWarningCode;
@@ -539,14 +570,57 @@ export interface HeightStackInput {
    * Pass a different leg to model another market's hardware.
    */
   readonly leg?: PlinthLeg;
+  /**
+   * The MATERIAL STACK that will actually be cut, reconciled against `worktopThickness`.
+   *
+   *   - omitted   -> DEFAULT_WORKTOP_CONFIG, i.e. the slab this product ships. This is
+   *                  the case that matters: it is what makes the reconciliation happen
+   *                  by default rather than only when someone remembers to ask for it.
+   *   - a config  -> reconcile against that config's built thickness. Use this to model
+   *                  a hypothetical ("if we sourced the HPL slab, does the stack close?").
+   *   - null      -> NO MATERIAL SOURCED. Reconciliation is skipped and
+   *                  WORKTOP_MATERIAL_NOT_SOURCED is warned. Use this only where there
+   *                  genuinely is no material yet — e.g. the EU profile, whose worktop
+   *                  SKU nobody has sourced. It is deliberately explicit: you have to
+   *                  type `null` to opt out of the check, so opting out is a visible act
+   *                  in a diff rather than an omission.
+   */
+  readonly worktopConfig?: WorktopConfig | null;
 }
 
 export interface HeightStack {
   readonly counterHeight: number;
   readonly carcassHeight: number;
+  /** TARGET slab thickness, mm. A specification. What the stack is designed around. */
   readonly worktopThickness: number;
+  /**
+   * What the supplied material stack ACTUALLY builds, mm — or null when no material was
+   * supplied (see HeightStackInput.worktopConfig).
+   *
+   * This is the number deriveWorktopPanels emits and the factory cuts. Kept beside the
+   * target rather than collapsed into it, because the two being allowed to differ
+   * silently is the defect this whole module exists to prevent.
+   */
+  readonly builtWorktopThickness: number | null;
   /** DERIVED: counterHeight - carcassHeight - worktopThickness. Never rounded. */
   readonly plinthHeight: number;
+  /**
+   * What this configuration actually assembles to, mm: plinth + carcass + BUILT worktop.
+   *
+   * Equals `counterHeight` only when the built slab hits the target. Null when no
+   * material was supplied. THIS, not `counterHeight`, is the height a finished kitchen
+   * stands at, and quoting `counterHeight` at a customer while cutting to this is the
+   * failure mode the error tier now blocks.
+   */
+  readonly asBuiltCounterHeight: number | null;
+  /**
+   * The plinth the BUILT slab would need in order to still reach `counterHeight`, mm.
+   *
+   * The actionable number when target and built disagree: it is what the toe kick would
+   * have to be cut to, and what the legs would have to be wound to. Null when no
+   * material was supplied.
+   */
+  readonly plinthRequiredForBuiltWorktop: number | null;
   readonly onPublishedRung: boolean;
   /** Which published standards list this exact plinth height. */
   readonly matchedRungStandards: readonly string[];
@@ -671,7 +745,15 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
           tiedCombinationCount: 1,
         };
         tied = 1;
-      } else if (Math.abs(Math.abs(delta) - Math.abs(best.deltaMm)) <= RUNG_MATCH_EPSILON_MM) {
+      } else if (Math.abs(t - best.closestAchievableMm) <= RUNG_MATCH_EPSILON_MM) {
+        // TIED ON THICKNESS, NOT MERELY ON DISTANCE. Comparing |delta| would count a
+        // 19.6mm slab and a 20.4mm slab as one tie group around a 20mm target, because
+        // both are 0.4mm away — but they are DIFFERENT SLABS and only one thickness is
+        // reported in `closestAchievableMm`, so the count would describe a set the result
+        // does not name. It does not bite on today's catalog (both 19mm cores are
+        // moistureResistant:false, so nothing lands above the target) but
+        // `tiedCombinationCount` is a number consumers are invited to trust, and it must
+        // count combinations that genuinely build the thickness being reported.
         tied += 1;
       }
     }
@@ -713,18 +795,37 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
  * to 19.6mm means swapping a 0.3mm melamine surface for a 0.8mm HPL one, which changes
  * the finish and the quoted cost of every slab in the kitchen. Chasing 0.4mm of thickness
  * by rewriting a customer's material spec is exactly the silent substitution
- * resolveWorktopMaterials throws to prevent. The 0.4mm is absorbed by the adjustable leg
- * instead — see DEFAULT_HEIGHT_STACK — and the material choice is left to a human.
+ * resolveWorktopMaterials throws to prevent. The material choice is left to a human.
+ *
+ * ── AND 0.4mm IS NOT THE GAP THAT SHIPS. READ THIS BEFORE QUOTING IT. ────────────────
+ * 0.4mm is the distance from the target to the catalog's BEST slab, which is NOT the slab
+ * the default config builds. The shipped config is melamine-faced and builds 18.6mm, so
+ * the gap that actually reaches a cut list is 1.4mm — and unlike 0.4mm it is NOT absorbed
+ * by winding the legs up, because the toe kick has already been CUT at 70mm from the
+ * 20mm target. An earlier version of this comment said the residual "is absorbed by the
+ * adjustable leg", describing a 19.6mm kitchen nobody is building.
+ *
+ * The configured divergence is raised as WORKTOP_BUILT_THICKNESS_OFF_TARGET, an ERROR, by
+ * deriveHeightStack — see DEFAULT_HEIGHT_STACK.
  */
 export const DEFAULT_WORKTOP_THICKNESS_GAP: WorktopThicknessGap =
   findClosestBuildableWorktop(DEFAULT_WORKTOP_THICKNESS_MM);
 
 /**
- * What the DEFAULT_WORKTOP_CONFIG material stack actually builds today, mm.
+ * What the DEFAULT_WORKTOP_CONFIG material stack actually builds today, mm. Currently
+ * 18.6 — core-hmr-18 (18mm) + two 0.3mm melamine faces.
  *
  * Kept as a distinct constant from DEFAULT_WORKTOP_THICKNESS_MM precisely so the two can
  * be compared. Collapsing them is what produced the original defect: the number the code
  * built and the number the code declared were different, and nothing said so.
+ *
+ * AND THE COMPARISON NOW HAPPENS. This constant used to be read by nothing but the
+ * barrel export and one test assertion — a declared-but-unread number whose own comment
+ * claimed it existed "so the two can be compared" while no code compared them, which is
+ * the same failure mode as the old ERGONOMIC_STANDARDS.wallCabinetBottom. `deriveHeightStack`
+ * now reconciles the active config's built thickness against the target on every call and
+ * raises WORKTOP_BUILT_THICKNESS_OFF_TARGET when they differ, so this value is load-bearing:
+ * change the default worktop material and the height stack's buildability changes with it.
  */
 export const DEFAULT_WORKTOP_BUILT_THICKNESS_MM: number = resolveWorktopThickness();
 
@@ -754,7 +855,19 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
   const worktopThickness = input.worktopThickness ?? DEFAULT_WORKTOP_THICKNESS_MM;
   const leg = input.leg ?? DEFAULT_PLINTH_LEG;
 
+  // `undefined` means "use the shipped config" and `null` means "no material sourced".
+  // They are different states and `??` cannot tell them apart, so test for undefined.
+  const worktopConfig =
+    input.worktopConfig === undefined ? DEFAULT_WORKTOP_CONFIG : input.worktopConfig;
+  const builtWorktopThickness =
+    worktopConfig === null ? null : resolveWorktopThickness(worktopConfig);
+
   const plinthHeight = counterHeight - carcassHeight - worktopThickness;
+
+  const asBuiltCounterHeight =
+    builtWorktopThickness === null ? null : plinthHeight + carcassHeight + builtWorktopThickness;
+  const plinthRequiredForBuiltWorktop =
+    builtWorktopThickness === null ? null : counterHeight - carcassHeight - builtWorktopThickness;
 
   const warnings: HeightStackWarning[] = [];
   const errors: HeightStackError[] = [];
@@ -872,10 +985,27 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
   }
 
   // Can the specified worktop actually be built from the catalog? The target is a
-  // specification; this is the reality check against it, and it is a WARNING rather than
-  // an error because a 0.4mm shortfall is absorbed by the adjustable leg — see below.
+  // specification; this is the reality check against it. It stays a WARNING because it
+  // describes the CATALOG's best case, which may not be what this configuration builds —
+  // the configuration's own divergence is the separate, ERROR-tier check below.
   const gap = findClosestBuildableWorktop(worktopThickness);
   if (!gap.exact) {
+    // THE REMEDY MUST NAME THE SLAB THIS CONFIGURATION ACTUALLY BUILDS, not only the
+    // catalog's closest. An earlier version quoted "a 19.6mm slab needs a 70.4mm plinth"
+    // while the shipped config builds 18.6mm and needs 71.4mm — so the one actionable
+    // number in the message was wrong for the only configuration anybody was building,
+    // and understated the wind-up by 1.0mm. Both are now stated, and labelled.
+    const configuredClause =
+      builtWorktopThickness === null
+        ? ` NO MATERIAL STACK was supplied for this configuration, so what it would ` +
+          `actually build is UNKNOWN.`
+        : Math.abs(builtWorktopThickness - gap.closestAchievableMm) <= RUNG_MATCH_EPSILON_MM
+          ? ` The CONFIGURED material stack builds exactly that slab.`
+          : ` NOTE: that is the catalog's closest, NOT what this configuration builds. The ` +
+            `CONFIGURED material stack builds ${builtWorktopThickness.toFixed(1)}mm, which ` +
+            `needs a ${(counterHeight - carcassHeight - builtWorktopThickness).toFixed(1)}mm ` +
+            `plinth to reach ${counterHeight}mm.`;
+
     warnings.push({
       code: 'WORKTOP_TARGET_NOT_IN_CATALOG',
       message:
@@ -893,14 +1023,75 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
         `${Math.abs(gap.deltaMm).toFixed(1)}mm and absorb it in the leg — a ` +
         `${gap.closestAchievableMm.toFixed(1)}mm slab needs a ` +
         `${(counterHeight - carcassHeight - gap.closestAchievableMm).toFixed(1)}mm plinth to ` +
-        `still reach ${counterHeight}mm.`,
+        `still reach ${counterHeight}mm.` +
+        configuredClause,
     });
+  }
+
+  // ── THE RECONCILIATION: DOES THE SLAB WE CUT MATCH THE SLAB WE DECLARE? ─────────────
+  //
+  // Everything above reasons about the TARGET. This is the only place the target meets
+  // the material stack that deriveWorktopPanels will actually emit, and it is the check
+  // that makes DEFAULT_WORKTOP_BUILT_THICKNESS_MM load-bearing instead of decorative — a
+  // constant whose doc comment said it existed "precisely so the two can be compared"
+  // while no code compared them.
+  //
+  // The plinth derived above becomes DEFAULT_TOE_KICK_HEIGHT_MM, which is a REAL CUT
+  // DIMENSION on every carcass in the kitchen. If it was computed from a target the
+  // material stack does not build, then the carcasses are cut for an assembly that cannot
+  // reach the declared counter height, and no amount of care further down the pipeline
+  // recovers it.
+  if (worktopConfig === null) {
+    warnings.push({
+      code: 'WORKTOP_MATERIAL_NOT_SOURCED',
+      message:
+        `No worktop material stack is sourced for this configuration, so the ${worktopThickness.toFixed(1)}mm ` +
+        `target has NOT been reconciled against anything buildable. The ` +
+        `${plinthHeight.toFixed(1)}mm plinth — and every toe kick cut from it — rests on a ` +
+        `slab thickness nobody has verified. This is UNKNOWN, not verified-fine.`,
+    });
+  } else {
+    // Narrowed on worktopConfig itself, so `built`, `asBuilt` and `required` are all
+    // genuinely non-null here rather than asserted to be. Recomputed from the narrowed
+    // config instead of reusing the nullable outer bindings — the alternative was three
+    // `as number` casts to paper over a narrowing the compiler could not see, and a cast
+    // that silences a null check in the one function that decides whether a kitchen is
+    // buildable is not a style question.
+    const built = resolveWorktopThickness(worktopConfig);
+    if (Math.abs(built - worktopThickness) > RUNG_MATCH_EPSILON_MM) {
+      const delta = built - worktopThickness;
+      const asBuilt = plinthHeight + carcassHeight + built;
+      const required = counterHeight - carcassHeight - built;
+      errors.push({
+        code: 'WORKTOP_BUILT_THICKNESS_OFF_TARGET',
+        message:
+          `DECLARED vs AS-BUILT MISMATCH. The target worktop is ` +
+          `${worktopThickness.toFixed(1)}mm, but the configured material stack ` +
+          `(${worktopConfig.coreMaterialId} + 2 x ${worktopConfig.surfaceMaterialId}) builds ` +
+          `${built.toFixed(1)}mm — ${delta > 0 ? '+' : ''}${delta.toFixed(1)}mm. ` +
+          `The plinth is derived from the TARGET, so the toe kick is cut at ` +
+          `${plinthHeight.toFixed(1)}mm, and this kitchen therefore assembles to ` +
+          `${asBuilt.toFixed(1)}mm — NOT the ${counterHeight}mm it declares. To reach ` +
+          `${counterHeight}mm on the slab actually configured, the plinth must be ` +
+          `${required.toFixed(1)}mm, ${Math.abs(required - plinthHeight).toFixed(1)}mm ` +
+          `${required > plinthHeight ? 'MORE' : 'LESS'} than is being cut. THREE HONEST ` +
+          `RESOLUTIONS, all of them a human's call: source a slab at ` +
+          `${worktopThickness.toFixed(1)}mm; or move the target to ${built.toFixed(1)}mm and ` +
+          `accept the finished height that follows; or keep the slab and re-derive the plinth ` +
+          `to ${required.toFixed(1)}mm. Do NOT close this by editing the worktop material to ` +
+          `whatever hits the number — that is a silent substitution that rewrites the finish ` +
+          `and the cost of every slab in the kitchen.`,
+      });
+    }
   }
 
   return {
     counterHeight,
     carcassHeight,
     worktopThickness,
+    builtWorktopThickness,
+    asBuiltCounterHeight,
+    plinthRequiredForBuiltWorktop,
     plinthHeight,
     onPublishedRung,
     matchedRungStandards,
@@ -920,6 +1111,18 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
  * a bad configuration and explain it. This is the gate for anything that would commit the
  * configuration to a cut list, a quote or a packet, where an unbuildable stack must stop
  * the line rather than be rendered.
+ *
+ * INSTALLED AT: createMONOLITHFactoryPackageExporter (export/monolith/
+ * monolithFactoryPackageExporter.ts), as the first statement of exportFactoryPackage —
+ * before the export context is even fetched, so a refusal cannot leave half a packet
+ * behind. Pinned by export/monolith/__tests__/exportGates.test.ts, which drives the real
+ * exporter and fails if the call site is removed.
+ *
+ * THE CALL SITE IS NAMED HERE ON PURPOSE. This docstring previously made exactly the
+ * claim above while the function had ZERO production callers: the rejection was real only
+ * inside its own unit test, and an unbuildable stack reached a cut list unimpeded. If this
+ * function is ever unwired again, this paragraph is the thing that must be deleted with
+ * it — a gate's documentation should be falsifiable.
  */
 export function assertBuildableHeightStack(stack: HeightStack, context = 'height stack'): void {
   if (stack.buildable) return;
@@ -955,10 +1158,33 @@ export function assertBuildableHeightStack(stack: HeightStack, context = 'height
  * hardware that makes that work is a shorter leg — which is precisely the leg the owner
  * buys. The off-rung warning is retained as information, not as a defect.
  *
- * KNOWN OPEN GAP: the 20mm worktop is a target this catalog cannot currently build; the
- * closest is 19.6mm. See DEFAULT_WORKTOP_THICKNESS_GAP. The 0.4mm is absorbed by winding
- * the legs up 0.4mm (to 70.4mm), which is inside the adjustment range — the levelling
- * tolerance doing exactly the job it exists for.
+ * ── THIS STACK IS CURRENTLY buildable: false, AND THAT IS THE HONEST ANSWER ──────────
+ * The 20mm target is a target this catalog cannot build. Two different gaps follow from
+ * that, and conflating them is what let the smaller one hide:
+ *
+ *   CATALOG BEST   19.6mm (18mm MR core + 2 x 0.8mm HPL) — 0.4mm under target.
+ *                  Reported as WORKTOP_TARGET_NOT_IN_CATALOG, a warning, because 0.4mm
+ *                  is genuinely absorbable by winding the legs to 70.4mm.
+ *   AS CONFIGURED  18.6mm (core-hmr-18 + 2 x 0.3mm melamine) — 1.4mm under target, and
+ *                  this is the slab deriveWorktopPanels ACTUALLY emits.
+ *
+ * The second is an ERROR (WORKTOP_BUILT_THICKNESS_OFF_TARGET), because the toe kick is
+ * cut at 70mm from the 20mm target while the slab on top of it is 18.6mm: the kitchen
+ * assembles to 848.6mm and declares 850mm. Reaching 850mm on the configured slab needs a
+ * 71.4mm plinth, which is 1.4mm MORE than is being cut, and winding the legs up cannot
+ * fix a toe kick that has already been cut short.
+ *
+ * So DEFAULT_HEIGHT_STACK.buildable is false and assertBuildableHeightStack throws for
+ * it. That is not a regression — it is the NO_CUT posture working. The previous state
+ * shipped this divergence as a console warning nobody was required to read, which is
+ * structurally the same defect as the original 61.4mm miss, merely smaller. Nothing here
+ * is resolved by editing DEFAULT_WORKTOP_CONFIG to the 19.6mm HPL combination: that is a
+ * silent material substitution, and the 0.4mm that would remain still is not zero.
+ *
+ * WHAT UNBLOCKS IT: a sourced 20mm worktop. See the open question at
+ * DEFAULT_WORKTOP_THICKNESS_MM — 20mm is the standard 2cm STONE thickness, and if the
+ * owner confirms stone, the wood-panel catalog searched here is simply the wrong
+ * catalog and the gap closes by sourcing rather than by arithmetic.
  */
 export const DEFAULT_HEIGHT_STACK: HeightStack = deriveHeightStack();
 
@@ -976,6 +1202,13 @@ export interface MarketHeightProfile {
   readonly worktopThickness: number;
   readonly leg: PlinthLeg;
   readonly provenance: LegProvenance;
+  /**
+   * The material stack this market's worktop is actually built from, or `null` where no
+   * material has been sourced for it. A market is not just a set of target numbers — the
+   * slab has to come from somewhere, and a profile that names a 30mm worktop without
+   * naming a 30mm material is stating an intention, not a specification.
+   */
+  readonly worktopConfig: WorktopConfig | null;
   readonly note: string;
 }
 
@@ -1005,6 +1238,9 @@ export const MARKET_HEIGHT_PROFILES: Readonly<Record<'TH' | 'EU', MarketHeightPr
     worktopThickness: 20,
     leg: DEFAULT_PLINTH_LEG,
     provenance: 'OWNER_CONFIRMED',
+    // The shipped material stack, reconciled against the 20mm target — which is how the
+    // 1.4mm as-built divergence becomes visible instead of staying a comment.
+    worktopConfig: DEFAULT_WORKTOP_CONFIG,
     note: '850 = 70 leg + 760 carcass + 20 worktop. Stated by the business owner.',
   },
   EU: {
@@ -1014,10 +1250,17 @@ export const MARKET_HEIGHT_PROFILES: Readonly<Record<'TH' | 'EU', MarketHeightPr
     worktopThickness: 30,
     leg: DEFAULT_PLINTH_LEG,
     provenance: 'UNSOURCED',
+    // NULL, NOT the Thai config. No European worktop material has been sourced, and
+    // reconciling a 30mm European target against an 18mm Thai melamine core would
+    // manufacture a 11.4mm "finding" about a slab nobody proposed building. The honest
+    // state is that this term is unsourced, and WORKTOP_MATERIAL_NOT_SOURCED says so.
+    worktopConfig: null,
     note:
       '900 = 150 plinth + 720 carcass + 30 worktop. Published European practice; 150 is a ' +
       'JIS A0017:2018 and next125 rung. Leg SKU is NOT sourced for this market — the Thai ' +
-      '70mm leg is used as a stand-in and only its lower bound is meaningful here.',
+      '70mm leg is used as a stand-in and only its lower bound is meaningful here. The 30mm ' +
+      'worktop MATERIAL is likewise unsourced, so the stack is unreconciled rather than ' +
+      'verified.',
   },
 };
 
@@ -1028,6 +1271,7 @@ export function deriveMarketHeightStack(profile: MarketHeightProfile): HeightSta
     carcassHeight: profile.carcassHeight,
     worktopThickness: profile.worktopThickness,
     leg: profile.leg,
+    worktopConfig: profile.worktopConfig,
   });
 }
 
@@ -1065,7 +1309,40 @@ export function reportHeightStackWarnings(
   }
 }
 
-reportHeightStackWarnings(DEFAULT_HEIGHT_STACK, `default (counter ${DEFAULT_COUNTER_HEIGHT_MM}mm)`);
+/**
+ * Emit the default stack's findings exactly once per process.
+ *
+ * CALLED FROM AN EXPLICIT BOOTSTRAP (src/main.tsx), NOT AT IMPORT TIME. It used to be a
+ * bare top-level statement here, which meant that merely importing this module — which
+ * nearly everything does, for a constant — printed four multi-paragraph console.warn
+ * blocks. That fired inside unrelated test suites, shipped in the browser bundle where no
+ * consumer could suppress it, and made a constants module non-side-effect-free, which
+ * defeats tree-shaking. Worst of all it buried the genuinely important UNBUILDABLE lines
+ * under advisory noise repeated on every import.
+ *
+ * The requirement it was serving is real — these findings must be discoverable at runtime
+ * and not only by reading source — so the call still happens. It just happens once, from a
+ * place that chose to make it.
+ */
+let defaultHeightStackReported = false;
+
+export function reportDefaultHeightStackOnce(
+  sink: (message: string) => void = console.warn
+): boolean {
+  if (defaultHeightStackReported) return false;
+  defaultHeightStackReported = true;
+  reportHeightStackWarnings(
+    DEFAULT_HEIGHT_STACK,
+    `default (counter ${DEFAULT_COUNTER_HEIGHT_MM}mm)`,
+    sink
+  );
+  return true;
+}
+
+/** Test-only: reset the once-guard so a suite can assert the emission itself. */
+export function resetDefaultHeightStackReportedForTest(): void {
+  defaultHeightStackReported = false;
+}
 
 // ============================================
 // DIMENSIONAL STANDARDS
@@ -1201,9 +1478,17 @@ export const BASE_CABINET_STANDARDS: CabinetStandards = {
  *
  * ERGONOMIC NOTES:
  * - Floor to wall-unit underside: JIS A0017:2018 minimum is 1300mm; MONOLITH derives
- *   ERGONOMIC_STANDARDS.wallCabinetBottom = counter 850 + backsplash 450 = 1300, which
- *   lands exactly on that minimum.
- * - Gap between worktop and wall unit: 450mm (backsplash zone).
+ *   ERGONOMIC_STANDARDS.wallCabinetBottom = counter 850 + gap DEFAULT_WALL_CABINET_GAP_MM
+ *   (500) = 1350mm, which CLEARS that minimum by 50mm rather than landing on it. A minimum
+ *   is a bound to clear, not a target to hit — see DEFAULT_WALL_CABINET_GAP_MM.
+ * - Gap between worktop and wall unit: DEFAULT_WALL_CABINET_GAP_MM (backsplash zone).
+ *
+ * NUMBERS ARE NAMED HERE, NOT REPEATED. This block previously hard-coded "450 = 1300,
+ * which lands exactly on that minimum" and kept saying it after the gap constant moved to
+ * 500 and the derived underside to 1350 — a comment asserting figures the code no longer
+ * produced, sitting directly above the standards object a reader would trust. That is the
+ * same defect class this file exists to remove, so the prose now points at the constants
+ * instead of duplicating them.
  */
 export const WALL_CABINET_STANDARDS: CabinetStandards = {
   width: widthStandard(300, 1200, 600),
@@ -2019,6 +2304,42 @@ export function calculateLazySusanSpace(
  */
 export function getCabinetType(id: string): CabinetTypeDefinition | undefined {
   return CABINET_TYPES[id];
+}
+
+/**
+ * Canonical catalogue entry for a COARSE cabinet category.
+ *
+ * `addCabinet` accepts two different vocabularies in one parameter: a CABINET_TYPES id
+ * ('WALL_STANDARD', what CabinetTypeSelector passes) and a coarse CabinetType category
+ * ('WALL', what most other callers pass). Only the first is a key of CABINET_TYPES.
+ *
+ * THE BUG THIS CLOSES: callers used `CABINET_TYPES[type] || CABINET_TYPES['BASE_STANDARD']`,
+ * so every coarse category that is not 'BASE' silently resolved to a BASE cabinet. A
+ * 'WALL' unit was given base defaults and — once dimension validation was wired — was
+ * checked against the BASE envelope (500-650mm deep) instead of the wall one, meaning the
+ * JIS A0017:2018 400mm wall-depth ceiling could never fire for it. The `String(type).includes('WALL')`
+ * hack at the placement branch existed precisely because its author had hit this.
+ */
+export const COARSE_CABINET_TYPE_DEFAULTS: Readonly<Record<string, string>> = {
+  BASE: 'BASE_STANDARD',
+  WALL: 'WALL_STANDARD',
+  TALL: 'TALL_PANTRY',
+  CORNER: 'CORNER_BLIND',
+};
+
+/**
+ * Resolve either vocabulary to a real catalogue entry.
+ *
+ * Falls back to BASE_STANDARD only for genuinely unknown input, which preserves the old
+ * behaviour for cases nobody has named — but no longer swallows the four coarse
+ * categories, which are the common case and were all being mis-resolved.
+ */
+export function resolveCabinetTypeDefinition(typeId: string): CabinetTypeDefinition {
+  const direct = CABINET_TYPES[typeId];
+  if (direct) return direct;
+  const coarse = COARSE_CABINET_TYPE_DEFAULTS[typeId];
+  if (coarse && CABINET_TYPES[coarse]) return CABINET_TYPES[coarse];
+  return CABINET_TYPES['BASE_STANDARD'];
 }
 
 /**

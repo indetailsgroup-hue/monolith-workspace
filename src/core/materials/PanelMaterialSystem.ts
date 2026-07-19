@@ -10,13 +10,29 @@
  * User can assign materials per-panel with defaults from cabinet
  */
 
-import type { AnyFormaldehydeEmission } from './FormaldehydeEmission';
+import type { AnyFormaldehydeEmission, EmissionSubstrate } from './FormaldehydeEmission';
 
 // ============================================
 // CORE MATERIALS (Substrate)
 // ============================================
 
 export type CoreType = 'PARTICLE_BOARD' | 'MDF' | 'HMR' | 'PLYWOOD' | 'BLOCKBOARD';
+
+/**
+ * Pins CoreType to FormaldehydeEmission.EmissionSubstrate at COMPILE TIME.
+ *
+ * The two unions are declared separately because FormaldehydeEmission is a deliberate
+ * import-free leaf and this module already imports from it, so it cannot import back.
+ * Separate declarations drift, and drift here is not cosmetic: a core type this file knows
+ * about but EMISSION_LIMIT_SUBSTRATE_SCOPE does not would silently skip the substrate check
+ * that stops a CARB P2 particleboard limit being applied to an MDF board.
+ *
+ * Adding a member to CoreType without adding it to EmissionSubstrate is now a build error
+ * on this line, which is the cheapest possible place to find out.
+ */
+type _CoreTypeCoversEmissionSubstrate = CoreType extends EmissionSubstrate ? true : never;
+const _coreTypeIsAnEmissionSubstrate: _CoreTypeCoversEmissionSubstrate = true;
+void _coreTypeIsAnEmissionSubstrate;
 
 export interface CoreMaterial {
   id: string;
@@ -52,6 +68,21 @@ export interface CoreMaterial {
    *
    * Absence is legal for day-to-day design work. It becomes a blocker only when an
    * export-destined packet is validated — see validateEmissionForExport().
+   *
+   * ── ENFORCEMENT STATUS, STATED PRECISELY ─────────────────────────────────────────
+   * The gate is now INSTALLED, but CONDITIONALLY. assertEmissionCompliantForExport is
+   * called from createMONOLITHFactoryPackageExporter, and it runs when — and only when —
+   * the caller declares an `exportDestination`. Naming a destination is itself the
+   * regulatory claim, so the exporter must not default one on a caller's behalf.
+   *
+   * The practical consequence, said plainly: A PACKET EXPORTED WITHOUT A DECLARED
+   * DESTINATION HAS HAD NO EMISSION CHECK AT ALL, and must not be presented as compliant
+   * with anything. And because no entry in this catalog sets the field, declaring ANY
+   * destination currently BLOCKS — which is correct, and is the state that will persist
+   * until supplier certificates are collected.
+   *
+   * Previously this comment pointed at a validator with zero production callers, so a
+   * reader could reasonably conclude an active control existed where none did.
    */
   formaldehydeEmission?: AnyFormaldehydeEmission | null;
 }
