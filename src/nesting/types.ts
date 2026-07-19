@@ -53,12 +53,13 @@ export interface NestingPart {
   materialId: string;
 
   /**
-   * Whether 90° rotation is allowed.
+   * Caller's PERMISSION to rotate 90°. It is a veto, not a grant.
    *
-   * When `grainDirection` is 'NONE', this is always `true`.
-   * When `grainDirection` is 'HORIZONTAL' or 'VERTICAL', rotation is
-   * allowed only if the result maintains a consistent grain direction
-   * across the sheet — controlled by the algorithm.
+   * Effective rotatability is `canRotate && grainDirection === 'NONE'`,
+   * evaluated by `canRotatePart()` in ffdh.ts. Setting `canRotate: true` on a
+   * part whose `grainDirection` is 'HORIZONTAL' or 'VERTICAL' does NOT make it
+   * rotatable — the algorithm refuses, because turning a visibly grained part
+   * 90° scraps it.
    */
   canRotate: boolean;
 

@@ -16,7 +16,7 @@ export type {
 export { DEFAULT_NESTING_CONFIG } from './types';
 
 // Algorithm
-export { packSingleSheet, ffdhMultiSheet } from './ffdh';
+export { packSingleSheet, ffdhMultiSheet, canRotatePart } from './ffdh';
 
 // Orchestrator
 export {

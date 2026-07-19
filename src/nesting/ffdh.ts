@@ -44,20 +44,36 @@ interface Orientation {
 }
 
 /**
+ * Whether a part may be turned 90° on the sheet.
+ *
+ * BOTH conditions must hold — this is the single authority on rotation:
+ * 1. `canRotate` — the caller permits rotation at all.
+ * 2. `grainDirection === 'NONE'` — the material has no visible grain.
+ *
+ * The grain half of the rule is enforced HERE, in the algorithm, not only in
+ * `optimizer.canRotateWithGrain`. `packSingleSheet` and `ffdhMultiSheet` are
+ * public API (src/nesting/index.ts); a caller that builds `NestingPart` by hand
+ * must not be able to opt out. Rotating a visibly grained door 90° scraps the
+ * part, so the algorithm refuses regardless of what `canRotate` says.
+ */
+export function canRotatePart(part: NestingPart): boolean {
+  return part.canRotate && part.grainDirection === 'NONE';
+}
+
+/**
  * Get possible orientations for a part.
  * Always returns original orientation first, then rotated if allowed & different.
  *
- * Grain direction constraint:
- * - `grainDirection='NONE'`: rotation freely allowed (if canRotate=true)
- * - `grainDirection='HORIZONTAL'|'VERTICAL'`: rotation only if canRotate=true
- *   (optimizer sets canRotate based on grain compatibility)
+ * Grain direction constraint (see `canRotatePart`):
+ * - `grainDirection='NONE'`: rotation allowed when `canRotate=true`
+ * - `grainDirection='HORIZONTAL'|'VERTICAL'`: rotation NEVER offered
  */
 function getOrientations(part: NestingPart): Orientation[] {
   const orientations: Orientation[] = [
     { w: part.width, h: part.height, rotation: 0 },
   ];
   // Add 90° rotation if allowed and dimensions differ
-  if (part.canRotate && part.width !== part.height) {
+  if (canRotatePart(part) && part.width !== part.height) {
     orientations.push({ w: part.height, h: part.width, rotation: 90 });
   }
   return orientations;

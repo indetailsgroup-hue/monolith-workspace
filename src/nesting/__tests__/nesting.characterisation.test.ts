@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ffdhMultiSheet } from '../ffdh';
+import { ffdhMultiSheet, canRotatePart } from '../ffdh';
 import { runNesting, resolveSheetConfig } from '../optimizer';
 import { DEFAULT_NESTING_CONFIG } from '../types';
 import type { NestingPart } from '../types';
@@ -369,20 +369,27 @@ describe('CHARACTERISATION: a batch with mixed grainDirection', () => {
 // ============================================
 
 describe('CHARACTERISATION: the grain rule at the ffdh boundary', () => {
-  it('DEFECT PINNED: ffdhMultiSheet rotates a grained part when the caller sets canRotate=true — the grain rule lives only in the optimizer', () => {
+  // DEFECT FIXED (was: ffdh trusted part.canRotate blindly and never inspected
+  // part.grainDirection, so any caller building NestingPart by hand bypassed
+  // the grain rule and got a rotated grained part back).
+  it('ffdhMultiSheet refuses to rotate a grained part even when the caller sets canRotate=true', () => {
     // packSingleSheet and ffdhMultiSheet are public API (src/nesting/index.ts).
-    // Today ffdh trusts part.canRotate blindly and never inspects
-    // part.grainDirection, so a caller that builds NestingPart itself bypasses
-    // the grain rule entirely — and the placement still reports VERTICAL grain.
+    // The grain rule is enforced in the algorithm, not just in the optimizer.
     const cfg = resolveSheetConfig('core-pb-18');
     const { sheets, unplacedParts } = ffdhMultiSheet(
       [part('GRAINED', 1400, 500, { canRotate: true, grainDirection: 'VERTICAL' })],
       cfg,
     );
 
-    expect(unplacedParts).toEqual([]);
-    expect(sheets[0].placements[0].rotation).toBe(90);
-    expect(sheets[0].placements[0].grainDirection).toBe('VERTICAL');
+    expect(sheets).toEqual([]);
+    expect(unplacedParts.map((p) => p.id)).toEqual(['GRAINED']);
+  });
+
+  it('canRotatePart is the single authority: grain vetoes canRotate', () => {
+    expect(canRotatePart(part('A', 100, 200, { canRotate: true, grainDirection: 'NONE' }))).toBe(true);
+    expect(canRotatePart(part('B', 100, 200, { canRotate: true, grainDirection: 'VERTICAL' }))).toBe(false);
+    expect(canRotatePart(part('C', 100, 200, { canRotate: true, grainDirection: 'HORIZONTAL' }))).toBe(false);
+    expect(canRotatePart(part('D', 100, 200, { canRotate: false, grainDirection: 'NONE' }))).toBe(false);
   });
 
   it('ffdhMultiSheet still rotates when grain is NONE and canRotate is true', () => {
