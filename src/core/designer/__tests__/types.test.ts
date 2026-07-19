@@ -22,8 +22,21 @@ describe('Designer Types', () => {
       expect(intent.cabinetType).toBe('BASE');
       expect(intent.jointType).toBe('INSET');
       expect(intent.dimensions.width).toBe(600);
-      expect(intent.dimensions.height).toBe(720);
-      expect(intent.dimensions.depth).toBe(560);
+      // CHANGED 720 -> 760, because the test encoded a WRONG CONSTANT, not because the
+      // code regressed. 720 is the EUROPEAN carcass height; the owner of the Thai kitchen
+      // business this system is built for confirms 760. A first-hand statement of what a
+      // business builds outranks a published standard describing what someone else builds.
+      // A European tenant gets 720 from MARKET_HEIGHT_PROFILES.EU, not from this default.
+      expect(intent.dimensions.height).toBe(760);
+      // CHANGED 560 -> 600: the test encoded a wrong constant. The designer default now
+      // derives from BASE_CABINET_STANDARDS, whose depth default moved to the 600mm
+      // that Thai sources, JIS A0017:2018 and AU all specify. Previously the designer
+      // intent and the cabinet catalog could disagree; now they cannot.
+      expect(intent.dimensions.depth).toBe(600);
+      // CHANGED 111.4 -> 70. Derived, not a literal: 850 counter - 760 carcass - 20
+      // worktop = 70, which is exactly the minimum height of the adjustable leg the owner
+      // buys. See src/core/catalog/PlinthLegCatalog.ts.
+      expect(intent.dimensions.toeKickHeight).toBe(70);
     });
 
     it('should have valid dimension ranges', () => {

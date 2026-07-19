@@ -16,6 +16,10 @@ import type {
   ConnectorIntent,
   MaterialPreferences,
 } from './types';
+import {
+  BASE_CABINET_STANDARDS,
+  DEFAULT_TOE_KICK_HEIGHT_MM,
+} from '../catalog/CabinetTaxonomy';
 
 // ============================================
 // DIMENSION LIMITS
@@ -268,6 +272,10 @@ export const DEFAULT_MATERIAL_PREFERENCES: MaterialPreferences = {
 
 /**
  * Create a default DesignerIntent for a base cabinet.
+ *
+ * Dimensions are DERIVED from BASE_CABINET_STANDARDS and the height stack, not restated
+ * as literals. A designer intent that defaulted to a different toe-kick height than the
+ * catalog would put two plinth heights into one kitchen.
  */
 export function createDefaultIntent(): DesignerIntent {
   return {
@@ -275,10 +283,10 @@ export function createDefaultIntent(): DesignerIntent {
     cabinetType: 'BASE',
     jointType: 'INSET',
     dimensions: {
-      width: 600,
-      height: 720,
-      depth: 560,
-      toeKickHeight: 100,
+      width: BASE_CABINET_STANDARDS.width.default,
+      height: BASE_CABINET_STANDARDS.height.default,
+      depth: BASE_CABINET_STANDARDS.depth.default,
+      toeKickHeight: DEFAULT_TOE_KICK_HEIGHT_MM,
     },
     backPanel: {
       enabled: true,

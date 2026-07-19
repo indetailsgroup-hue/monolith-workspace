@@ -30,6 +30,15 @@ export {
   type ConstructionTypeSpec,
   type OmniClassCode,
   type UniclassCode,
+  type CounterHeightMarket,
+  type HeightStack,
+  type HeightStackInput,
+  type HeightStackWarning,
+  type HeightStackWarningCode,
+  type HeightStackError,
+  type HeightStackErrorCode,
+  type MarketHeightProfile,
+  type WorktopThicknessGap,
 
   // Constants
   BASE_CABINET_STANDARDS,
@@ -43,7 +52,34 @@ export {
   OMNICLASS_CODES,
   UNICLASS_CODES,
 
+  // Height stack (counter height in, plinth out)
+  JIS_A0017_2018,
+  NEXT125_PLINTH_RUNGS_MM,
+  PUBLISHED_PLINTH_RUNGS_MM,
+  COUNTER_HEIGHT_TARGETS_MM,
+  DEFAULT_COUNTER_HEIGHT_MM,
+  DEFAULT_CARCASS_HEIGHT_MM,
+  DEFAULT_WORKTOP_THICKNESS_MM,
+  DEFAULT_WORKTOP_BUILT_THICKNESS_MM,
+  DEFAULT_WORKTOP_THICKNESS_GAP,
+  DEFAULT_HEIGHT_STACK,
+  DEFAULT_TOE_KICK_HEIGHT_MM,
+  MARKET_HEIGHT_PROFILES,
+
+  // Discrete dimensional sets
+  CABINET_WIDTH_SET_MM,
+  BASE_DEPTH_SET_MM,
+  WALL_DEPTH_SET_MM,
+  WALL_DEPTHS_EXCEEDING_JIS_CEILING_MM,
+  OVEN_HOUSING_MIN_DEPTH_MM,
+
   // Functions
+  deriveHeightStack,
+  deriveMarketHeightStack,
+  assertBuildableHeightStack,
+  findClosestBuildableWorktop,
+  resolveWorktopThickness,
+  reportHeightStackWarnings,
   getCabinetType,
   getCabinetsByCategory,
   validateDimensions,
@@ -56,6 +92,30 @@ export {
   calculateInteriorWidth,
   get32mmHolePositions,
 } from './CabinetTaxonomy';
+
+// ============================================
+// PLINTH LEG HARDWARE
+// ============================================
+
+export {
+  // Types
+  type PlinthLeg,
+  type LegProvenance,
+  type LegReachability,
+  type LegReachabilityCode,
+  type LevellingTolerance,
+
+  // Constants
+  THAI_ADJUSTABLE_LEG_70,
+  THAI_LEG_100_RETIRED,
+  PLINTH_LEG_CATALOG,
+  DEFAULT_PLINTH_LEG,
+
+  // Functions
+  resolvePlinthLeg,
+  assessLegReachability,
+  computeLevellingTolerance,
+} from './PlinthLegCatalog';
 
 // ============================================
 // WALL DECORATION
