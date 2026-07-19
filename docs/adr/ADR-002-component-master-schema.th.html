@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADR-002 — โครงสร้าง Component Master สองชั้น</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>ADR-002 — โครงสร้าง Component Master สองชั้น</h1>
+<ul><li><strong>สถานะ:</strong> Proposed</li><li><strong>วันที่:</strong> 2026-07-19</li><li><strong>อำนาจตัดสินใจ:</strong> MONOLITH Platform Owner, Architecture Authority และ Component Master Governance</li><li><strong>Pilot ที่ให้คำปรึกษา:</strong> Daph ให้หลักฐานด้าน workflow แต่ไม่มีอำนาจ ratify ระดับแพลตฟอร์มหรือเขียน canonical kernel</li><li><strong>Bounded context:</strong> Component Master</li><li><strong>เกี่ยวข้อง:</strong> ADR-001 Tenant Boundary; ADR-003 Finish Library IP; ADR-005 Boring Standard</li><li><strong>เก็บต้นฉบับหลักฐานไว้ที่:</strong> <code>All aboute kitchen/adr-002-component-master-schema.md</code></li></ul>
+<h2>บริบท</h2>
+<p>การออกแบบครัวและตู้ต้องมีเจตนาเชิงหน้าที่ที่คงที่ ขณะที่งานจัดซื้อต้องใช้อะไหล่ผู้ผลิตจริง จำนวนบรรจุ สต็อก สัญญา และรุ่นแค็ตตาล็อกตามภูมิภาค หากรวมข้อมูลที่เปลี่ยนคนละจังหวะไว้ในรหัสเดียว การเปลี่ยน SKU ของ supplier ทุกครั้งจะกลายเป็นการเปลี่ยนแบบ การใช้ชื่อแบรนด์เป็นหมวด generic ยังลดความสามารถในการทำงานข้ามผู้ผลิตและเสี่ยงต่อการใช้เครื่องหมายการค้าไม่เหมาะสม</p>
+<p>ADR-001 กำหนดนโยบาย tenant แล้ว ได้แก่ shared kernel ที่ MONOLITH เป็นเจ้าของ membership และ overlay ที่จำกัดตาม tenant, tenant context ที่มาจากการยืนยันตัวตน และการแยกทุก storage/execution plane ส่วน ADR-003 กำกับ identity ของ finish และทรัพย์สินทางปัญญาของ supplier และ ADR-005 กำกับ geometry การเจาะรวมถึง variant ของ supplier/เครื่องจักร</p>
+<h2>มติ</h2>
+<p>MONOLITH ใช้ Component Master แบบสองชั้น</p>
+<h3>ชั้นที่ 1 — Component Specification</h3>
+<p>ชั้นที่ 1 เก็บเจตนาการออกแบบ canonical ของ MONOLITH เป็นข้อมูล tenant-agnostic มี version, tenant อ่านได้แต่เขียนไม่ได้ และแก้ไขได้ผ่าน MONOLITH governance เท่านั้น</p>
+<p>ทุก specification ต้องมี:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Field</th>
+<th>ความหมายที่บังคับ</th>
+</tr></thead><tbody>
+<tr>
+<td><code>spec_id</code></td>
+<td>รหัสหน้าที่ที่ไม่เปลี่ยนและใช้คำ generic</td>
+</tr>
+<tr>
+<td><code>spec_version</code></td>
+<td>Semantic version ซึ่ง project ต้อง pin</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>หมวดควบคุมของ Component Master</td>
+</tr>
+<tr>
+<td><code>function_i18n</code></td>
+<td>คำอธิบายหน้าที่ ไม่ใช่ข้อความการตลาดของ supplier</td>
+</tr>
+<tr>
+<td><code>parameters</code></td>
+<td>ข้อจำกัดด้านแบบ การประกอบ โหลด วัสดุ และ interface ที่มี type</td>
+</tr>
+<tr>
+<td><code>boring_profile_refs</code></td>
+<td>อ้างอิง core/variant ของ <code>MON-BS-001</code> แบบมี version เมื่อมีงาน machining</td>
+</tr>
+<tr>
+<td><code>assembly_sequence</code></td>
+<td>ขั้นตอนเรียงลำดับพร้อมเครื่องมือ ความปลอดภัย และแหล่งหลักฐาน</td>
+</tr>
+<tr>
+<td><code>symbols</code></td>
+<td>รหัสสัญลักษณ์ที่กำกับแล้ว ไม่ฝัง artwork ที่ไม่มีสิทธิ์</td>
+</tr>
+<tr>
+<td><code>substitutability_class</code></td>
+<td>ชั้นของตัวเลือกทดแทน ไม่ใช่หลักฐานว่าแทนกันได้อัตโนมัติ</td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>แหล่ง รุ่น/วันที่ ตำแหน่งอ้างอิง สิทธิ์ และ evidence class</td>
+</tr>
+<tr>
+<td><code>governance_status</code></td>
+<td><code>Proposed</code>, <code>Ratified</code>, <code>Deprecated</code> หรือ <code>Withdrawn</code></td>
+</tr>
+</tbody></table></div>
+<p>ชื่อ generic เป็น canonical ส่วนเครื่องหมายการค้าและชื่อสายผลิตภัณฑ์ของ supplier เป็น alias บน supplier record เท่านั้น ไม่เป็น canonical category</p>
+<h3>ชั้นที่ 2 — Supplier SKU Instance</h3>
+<p>ชั้นที่ 2 เก็บสินค้าจริงเชิงพาณิชย์ของ specification ชั้นที่ 1 หนึ่งรายการ</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Field</th>
+<th>ความหมายที่บังคับ</th>
+</tr></thead><tbody>
+<tr>
+<td><code>sku_id</code></td>
+<td>รหัส supplier instance ที่ไม่เปลี่ยน</td>
+</tr>
+<tr>
+<td><code>spec_id</code> / <code>spec_version_range</code></td>
+<td>Foreign key และช่วง version ที่ประกาศว่าเข้ากันได้</td>
+</tr>
+<tr>
+<td><code>supplier_id</code></td>
+<td>อ้างอิง Supplier Master</td>
+</tr>
+<tr>
+<td><code>manufacturer_part_no</code></td>
+<td>เลขอะไหล่ native ที่เก็บครบไม่สูญหาย</td>
+</tr>
+<tr>
+<td><code>supplier_finish_ref</code></td>
+<td>finish native ของ supplier ที่ map ตาม ADR-003</td>
+</tr>
+<tr>
+<td><code>dimensions</code> / <code>tolerances</code></td>
+<td>ข้อมูลกายภาพที่มีแหล่งอ้างอิง</td>
+</tr>
+<tr>
+<td><code>pack_qty</code> / <code>order_unit</code></td>
+<td>ข้อเท็จจริงด้านบรรจุภัณฑ์และหน่วยสั่งซื้อ</td>
+</tr>
+<tr>
+<td><code>availability</code></td>
+<td>ความพร้อมจำหน่ายตามภูมิภาคและช่วงวันที่</td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>รุ่นเอกสาร ตำแหน่ง วันที่สืบค้น และสิทธิ์</td>
+</tr>
+<tr>
+<td><code>lifecycle</code></td>
+<td>วันที่เริ่มใช้ เลิกผลิต ตัวทดแทน และวันที่ตรวจสอบล่าสุด</td>
+</tr>
+</tbody></table></div>
+<p>ข้อเท็จจริงจาก public catalog ที่ได้รับอนุญาตอาจอยู่ใน shared catalog ที่กำกับแล้ว ส่วนราคาตามสัญญา MOQ ที่เจรจา supplier ที่ต้องการ การอนุมัติ และการเลือกระดับ project เป็น tenant overlay ตาม ADR-001 การลบ tenant จะลบ overlay ของ tenant แต่ไม่ลบ canonical specification หรือข้อเท็จจริง shared catalog ที่จัดเก็บได้โดยชอบ</p>
+<h2>การ resolve และการทดแทน</h2>
+<ol><li>งานออกแบบเลือกและ pin <code>spec_id</code> พร้อม version</li><li>Tenant policy สร้างรายการ SKU ที่ tenant นั้นมองเห็นและได้รับอนุญาต</li><li>Rules engine ตรวจมิติ boring วัสดุ โหลด finish กฎระเบียบ ภูมิภาค lifecycle เครื่องจักร และข้อจำกัด project</li><li>ต้องมีมนุษย์อนุมัติเมื่อ evidence class, tolerance, finish, ผลต่อความปลอดภัย หรือนโยบาย tenant กำหนด</li><li>BOM และเอกสารจัดซื้อ pin SKU กับ commercial snapshot ส่วน CAM pin boring/profile variant ที่แน่นอน ไม่อนุมานจาก specification generic</li></ol>
+<p>การมี <code>spec_id</code> เดียวกันหมายถึง “เป็นผู้สมัครให้ประเมินการทดแทน” ไม่ได้หมายถึง “เปลี่ยนแทนได้โดยไม่ตรวจ” ความต่างด้านรูเจาะ tolerance เครื่องจักร finish evidence โหลด หรือกฎระเบียบต้องขวาง silent substitution การเปลี่ยนข้าม <code>spec_id</code> เป็น design revision</p>
+<h2>ความเป็นเจ้าของและขอบเขต tenant</h2>
+<ul><li>MONOLITH governance เท่านั้นที่สร้าง แก้ไข ratify deprecate หรือ withdraw canonical specification</li><li>Supplier และ tenant ส่งหลักฐานหรือ mapping proposal ได้ แต่แก้ shared kernel โดยตรงไม่ได้</li><li>Global identity ระบุตัวบุคคล ส่วน membership และ role ของ tenant อนุญาตการกระทำแต่ละครั้ง</li><li>Customer profile, contract, ราคา preference, approval และ project selection เป็นข้อมูล tenant-local</li><li>Daph เป็น pilot tenant ที่ให้คำปรึกษาหนึ่งราย ไม่มีสิทธิ์พิเศษระดับแพลตฟอร์ม</li><li>การเข้าถึงของ support ใช้ break-glass-only ตาม ADR-001</li></ul>
+<h2>Version และ lifecycle</h2>
+<ul><li>การเปลี่ยนหน้าที่ การประกอบ geometry ความปลอดภัย หรือความหมายแบบ breaking ต้องเป็น major version ใหม่ หรือ <code>spec_id</code> ใหม่เมื่อ identity เปลี่ยน</li><li>Metadata แบบ additive ใช้ minor version ได้ต่อเมื่อ interpretation และ output เดิมไม่เปลี่ยน</li><li>การแก้คำผิดที่ไม่เปลี่ยนความหมายหรือ output ใช้ patch version พร้อมเหตุผลใน audit</li><li>Project เดิมคง version ที่ pin ไว้ การ upgrade ต้องวิเคราะห์ผล สร้าง output ใหม่ และอนุมัติ</li><li>Record ที่ Deprecated ยังอ่านและ reproduce ได้ แต่ค่าเริ่มต้นห้ามเลือกในงานใหม่</li></ul>
+<h2>Security, provenance และ IP</h2>
+<p>ทุก write ต้องบันทึก actor, authority, tenant context เมื่อเกี่ยวข้อง เหตุผล before/after hash หลักฐาน และเวลา ข้อความ รหัส เครื่องหมายการค้า รูป CAD texture และ layout แค็ตตาล็อกของ supplier ต้องเก็บ source identity กับข้อมูลสิทธิ์ การมี citation พิสูจน์ที่มาแต่ไม่ได้แปลว่ามีสิทธิ์เผยแพร่ซ้ำ ข้อมูล finish ใช้ ADR-003 และ geometry ใช้ ADR-005</p>
+<h2>การย้ายข้อมูล</h2>
+<ol><li>Copy source module และเอกสารเดิมเข้าสู่ package Component Master โดยไม่แก้ทับต้นฉบับหลักฐาน</li><li>Import record เป็น <code>Proposed</code> พร้อม evidence class; ค่าที่ไม่ทราบต้องคงเป็น unknown</li><li>Seed connector 15 specification ที่ Book 11 ระบุครบ และเพิ่ม hinge 2 กับ drawer runner 2 เป็น expansion record อย่างชัดเจน รวม 19 รายการ</li><li>Import supplier part เป็นชั้นที่ 2 เฉพาะเมื่อเก็บ native identity และ source anchor ครบ</li><li>Map ชื่อ model เดิมไปยัง candidate specification; ชื่อกำกวมเข้าคิว review</li><li>Pin version ใน sample project และเปรียบเทียบ BOM, CNC/CAM, การติดตั้ง และการจัดซื้อก่อน cutover</li></ol>
+<h2>Rollback</h2>
+<p>Rollback ต้องคืน catalog/version pin และ resolution policy เดิม ห้ามลบ audit history หรือ supplier-native record และ materialized project snapshot ต้อง reproduce ได้ การยุบสองชั้นหรือเปลี่ยน canonical ownership ต้องมี ADR ใหม่และ export ที่พิสูจน์ว่า specification, SKU, provenance, tenant overlay และ project pin ไม่สูญหาย</p>
+<h2>ทางเลือกที่พิจารณา</h2>
+<h3>ใช้ Manufacturer SKU เป็น canonical identity — ปฏิเสธ</h3>
+<p>ทำให้ design intent ผูกกับการเปลี่ยนแค็ตตาล็อก supplier และไม่สามารถประเมินข้าม supplier อย่างมี governance</p>
+<h3>Record เดียวพร้อม supplier alias — ปฏิเสธ</h3>
+<p>รวมข้อจำกัดเชิงหน้าที่ที่คงที่กับข้อมูลพาณิชย์ที่เปลี่ยนเร็ว และทำให้ผู้มีอำนาจด้าน version ไม่ชัด</p>
+<h3>ใช้ชื่อ model เท่านั้น — ปฏิเสธ</h3>
+<p>ไม่เพียงพอสำหรับ validation, BOM, procurement, machining, substitution และ field service ที่ตรวจสอบย้อนกลับได้</p>
+<h2>Gate การยอมรับและ ratification</h2>
+<p>ADR นี้คงสถานะ Proposed จนมีหลักฐานตรวจสอบย้อนหลังได้ครบ:</p>
+<ol><li>Schema และ validator ปฏิเสธ ID ผิดรูป version ไม่ถูก SKU กำพร้า มิติไม่มี type provenance ไม่ครบ และ substitution ที่ไม่ปลอดภัย</li><li>Seed 19 specification แรกกับ SKU ผ่าน test ด้านจำนวน ความไม่ซ้ำ foreign key provenance และ round-trip</li><li>ขยายเป็นอย่างน้อย 50 specification ครอบคลุม 8 หมวด และ 300 SKU จาก supplier อิสระอย่างน้อย 5 ราย; seed 19 รายการเพียงอย่างเดียวยังไม่ใช่หลักฐาน ratification</li><li>สาธิต substitution ข้าม supplier อย่างน้อยหนึ่งกรณีที่ผ่านและหนึ่งกรณีที่ถูกขวาง พร้อมหลักฐาน BOM/CAM ที่ควรคงเดิมหรือเปลี่ยนตามกรณี</li><li>Test isolation ตาม ADR-001 พิสูจน์ว่า tenant อ่านหรือแก้ overlay ของ tenant อื่นและ canonical kernel ไม่ได้</li><li>Finish mapping และ boring variant ผ่าน gate ของ ADR-003 และ ADR-005</li><li>Reviewer จาก procurement, design, manufacturing, installation, service, security/privacy และ legal/IP บันทึกผลกับความเสี่ยงคงค้าง</li><li>MONOLITH Platform Owner, Architecture Authority และ Component Master Governance เป็นผู้ ratify; การยอมรับของ pilot เป็นหลักฐานประกอบเท่านั้น</li></ol>
+<h2>การแทนที่ ADR</h2>
+<ul><li><strong>Supersedes:</strong> ส่วนอำนาจตัดสินใจและ tenant policy ที่ยังไม่มี governing ADR ใน draft ต้นฉบับ โดยคงต้นฉบับไว้เป็นหลักฐานประวัติศาสตร์</li><li><strong>Superseded by:</strong> ไม่มี</li><li>การเปลี่ยน schema, ownership หรือการยุบ layer ต้องมี ADR ใหม่พร้อม migration, rollback และการวิเคราะห์ผลต่อหลักฐาน</li></ul>
+<h2>สถานะหลักฐาน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Claim</th>
+<th>สถานะ ณ 2026-07-19</th>
+</tr></thead><tbody>
+<tr>
+<td>มติสองชั้นและ governance</td>
+<td>Owner อนุมัติมติและบันทึกเป็น Proposed</td>
+</tr>
+<tr>
+<td>Dependency ADR-001/003/005</td>
+<td>Governing decision สถานะ Proposed</td>
+</tr>
+<tr>
+<td>19 specification แรก</td>
+<td>Planned จนกว่าจะมี machine-readable data และ test</td>
+</tr>
+<tr>
+<td>Production database, tenant enforcement และ hosted deployment</td>
+<td>ไม่มีหลักฐาน / ยังไม่ implement</td>
+</tr>
+<tr>
+<td>Daph workflow validation</td>
+<td>ยังไม่มีบันทึก consultative evidence และไม่ใช่อำนาจ ratification</td>
+</tr>
+</tbody></table></div>
+</main>
+</body>
+</html>

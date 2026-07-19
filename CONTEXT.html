@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Repository Context</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Repository Context</h1>
+<h2>Purpose</h2>
+<p>This repository is the governed bootstrap for MONOLITH, a multi-tenant platform serving kitchen brands, studios, dealers, designers, factories, installers, customers, and customers-of-customers. Daph is one pilot tenant and does not own platform governance or shared canonical data.</p>
+<h2>Current authority</h2>
+<ul><li>Repository state: bootstrap, not production.</li><li>Governance records: Proposed until their evidence and ratification gates pass.</li><li>Runtime claims: none. Contracts, schemas, and reference engines do not prove deployed isolation, manufacturing safety, or field use.</li><li>Canonical shared knowledge: writable only through MONOLITH governance.</li><li>Tenant data: isolated by the ADR-001 Bridge model; runtime implementation remains future work.</li></ul>
+<h2>Source evidence</h2>
+<p>The original kitchen encyclopedia and reference implementation remain under <code>All aboute kitchen/</code>. New governed artifacts live under <code>docs/</code>, <code>packages/</code>, <code>data/</code>, and <code>tests/</code>. Original evidence is copied into governed structures only when provenance is retained.</p>
+<h2>Working rules</h2>
+<ol><li>Distinguish <code>VERIFIED FACT</code>, <code>OWNER DECISION</code>, <code>INFERENCE</code>, <code>PROPOSAL</code>, <code>UNKNOWN</code>, and <code>CONTRADICTED</code>.</li><li>Never promote a passing unit test into a production-readiness claim.</li><li>Keep supplier-native codes lossless; canonical mappings must retain provenance and rights metadata.</li><li>Treat <code>MON-BS-001</code> as an internal interoperability profile, never an ISO/EN standard.</li><li>Produce project-facing deliverables in English and Thai, with standalone HTML aligned to Markdown.</li></ol>
+</main>
+</body>
+</html>

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.invalid/schemas/tenant-boundary.schema.json",
+  "title": "MONOLITH authenticated tenant context",
+  "description": "Proposed executable policy contract for ADR-001. This schema is not evidence of production enforcement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "global_identity_id",
+    "active_tenant_id",
+    "membership_id",
+    "home_region",
+    "request_id"
+  ],
+  "properties": {
+    "global_identity_id": {"type": "string", "pattern": "^identity:[A-Za-z0-9_-]+$"},
+    "active_tenant_id": {"type": "string", "pattern": "^tenant:[A-Za-z0-9_-]+$"},
+    "membership_id": {"type": "string", "pattern": "^membership:[A-Za-z0-9_-]+$"},
+    "home_region": {"type": "string", "minLength": 2, "maxLength": 64},
+    "request_id": {"type": "string", "pattern": "^request:[A-Za-z0-9_-]+$"}
+  },
+  "x-monolith-policy": {
+    "adr": "ADR-001",
+    "status": "Proposed",
+    "isolation_model": "Bridge",
+    "identity_model": "global-identity+tenant-scoped-membership",
+    "customer_profile_scope": "tenant-local",
+    "shared_kernel_write_authority": "MONOLITH-governance-only",
+    "tenant_context_source": "authenticated-membership-only",
+    "active_tenant_count_per_request": 1,
+    "tenant_context_planes": [
+      "database",
+      "object-storage",
+      "cache",
+      "jobs",
+      "events",
+      "webhooks",
+      "audit"
+    ],
+    "support_access": {
+      "mode": "break-glass-only",
+      "standing_access": false,
+      "required_metadata": [
+        "ticket",
+        "purpose",
+        "tenant_id",
+        "actor_id",
+        "scope",
+        "approver_id",
+        "starts_at",
+        "expires_at",
+        "audit_event_id"
+      ],
+      "emergency_policy": "incident-start allowed only under documented policy; tenant notification and retrospective review required within contractual SLA"
+    },
+    "database": {
+      "pooled_tenant_discriminator": "tenant_id",
+      "rls_required": true,
+      "force_rls": true,
+      "runtime_role_forbidden": ["superuser", "table-owner", "BYPASSRLS"],
+      "migration_role": "separate",
+      "isolation_ci_matrix_required": true
+    },
+    "encryption": {
+      "standard": "tenant-specific-DEK",
+      "envelope_provider": "KMS",
+      "dedicated": "customer-managed-key",
+      "cryptographic_erase": "two-person-audited"
+    },
+    "residency": {
+      "home_region_immutable": true,
+      "silent_cross_region_failover": false,
+      "covered_assets": ["database", "object-storage", "backup", "encryption-keys"]
+    },
+    "analytics_ai": {
+      "raw_cross_tenant_default": false,
+      "default_allowed": "irreversible-aggregate-only",
+      "broader_use": "contractual-opt-in"
+    },
+    "offboarding": {
+      "export_window_days": 7,
+      "recovery_window_days": 30,
+      "production_delete_by_days": 30,
+      "backup_unusable_by_days": 90,
+      "legal_hold": "controlled-and-audited"
+    },
+    "resilience": {
+      "standard_rpo_minutes": 15,
+      "standard_rto_minutes": 240,
+      "tenant_scoped_restore": true,
+      "dedicated_tenant_objectives": "contract-specific-stricter-objectives"
+    },
+    "pool_to_dedicated": {
+      "triggers": [
+        "contract-or-law",
+        "data-residency",
+        "customer-managed-key",
+        "sla-or-load",
+        "incident-containment"
+      ],
+      "governed_migration": true,
+      "reconciliation_and_rollback_required": true
+    },
+    "ratification": {
+      "required_roles": ["Platform Owner", "Architecture", "Security/Privacy"],
+      "Daph": "consulted-pilot-only"
+    }
+  }
+}

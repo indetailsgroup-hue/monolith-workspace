@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แผนที่ MONOLITH Bounded Context</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>แผนที่ MONOLITH Bounded Context</h1>
+<p>หัวข้อใน Encyclopedia เขียนว่า “12 bounded contexts” แต่ตารางแจกแจงจริง 14 รายการ และ ADR-002 กำหนด Component Master เป็น bounded context แยกต่างหาก Bootstrap นี้จึงบันทึก 15 contexts ในสถานะ Proposed ซึ่งเป็นการแก้ contradiction ตามหลักฐาน ไม่ใช่การกล่าวอ้างว่า ratify แล้ว</p>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>โฟลเดอร์</th>
+<th>วัตถุประสงค์</th>
+<th>สิ่งที่เป็นเจ้าของ</th>
+<th>การพึ่งพาหลัก</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><code>packages/identity-tenancy/</code></td>
+<td>Identity, tenancy, memberships และ entitlements</td>
+<td>Actor, Tenant, Membership, Role, Policy Contract</td>
+<td>ไม่มี</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>packages/product-configuration/</code></td>
+<td>Collections, module grids และ vertical packs</td>
+<td>Collection, Module Grid, Tenant Product Overlay</td>
+<td>Identity/Tenancy, Component Master</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>packages/component-master/</code></td>
+<td>Canonical specs, supplier SKUs, finishes และ boring profiles</td>
+<td>Component Spec, Supplier SKU, Finish, Boring Profile</td>
+<td>Governance</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>packages/cad-parametric-design/</code></td>
+<td>Parametric designs และ revisions</td>
+<td>Design, Revision, Parameter Set</td>
+<td>Product Configuration, Geometry Kernel</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>packages/geometry-kernel/</code></td>
+<td>ตรวจ geometry และแลกเปลี่ยนข้อมูล</td>
+<td>Solid, Face, Edge, Topology, STEP/IFC codec</td>
+<td>ไม่มี</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>packages/bom-costing/</code></td>
+<td>Design-to-BOM, estimation และ quote</td>
+<td>BOM, Cost Roll-up, Quote Version</td>
+<td>CAD, Product Configuration, Component Master</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>packages/manufacturing/</code></td>
+<td>CAM, nesting, CNC และ manufacturing gates</td>
+<td>Nest, Toolpath, Machine Program, Gate</td>
+<td>Geometry Kernel, BOM, Boring Profile</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>packages/workflow/</code></td>
+<td>วงจร project ตั้งแต่ lead ถึง warranty</td>
+<td>Project, Stage Gate, Site Survey</td>
+<td>ทุก business context</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>packages/procurement/</code></td>
+<td>Procurement, inventory, MRP และ MES</td>
+<td>PO, Receipt, WIP, Work Order</td>
+<td>BOM, Manufacturing, Component Master</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>packages/quality-field-service/</code></td>
+<td>Quality, installation, warranty และ service</td>
+<td>Non-conformance, Installation Record, Warranty Case</td>
+<td>Workflow, Manufacturing</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>packages/finance/</code></td>
+<td>Accounting, tax, audit และ revenue</td>
+<td>Journal, Invoice, Tax Registration</td>
+<td>BOM/Quote, Procurement, Workflow</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>packages/customer-partner/</code></td>
+<td>Customer, dealer, designer, marketplace และ aftercare</td>
+<td>Tenant-local Customer, Partner Membership, Digital Twin</td>
+<td>Identity/Tenancy, Workflow</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>packages/ai-governance/</code></td>
+<td>RAG, agents, evaluation และ AI governance</td>
+<td>Agent, Corpus, Eval Suite, Approval Record</td>
+<td>อ่านผ่าน governed contract เท่านั้น</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>packages/platform-api/</code></td>
+<td>APIs, events, webhooks และ SDKs</td>
+<td>API Route, Event Contract, SDK</td>
+<td>ทุก context ผ่าน explicit contract</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>packages/security-observability/</code></td>
+<td>Audit, incident, SRE, privacy และ compliance</td>
+<td>Audit Record, Trace, Incident, DPA</td>
+<td>ทุก context</td>
+</tr>
+</tbody></table></div>
+<h2>กติกาการพึ่งพา</h2>
+<p>แต่ละ context เป็นเจ้าของ write model ของตน การอ่าน/เขียนข้าม context ต้องผ่าน contract หรือ event ที่ประกาศชัด ห้าม context ใดหา tenant scope จาก identifier ที่ผู้ใช้ควบคุม; active tenant context ต้องมาจาก authenticated membership ตาม ADR-001</p>
+</main>
+</body>
+</html>

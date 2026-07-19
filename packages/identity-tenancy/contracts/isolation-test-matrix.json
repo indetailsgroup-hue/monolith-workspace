@@ -1,0 +1,103 @@
+{
+  "matrix_id": "ADR-001-isolation-matrix",
+  "version": "0.1.0",
+  "status": "Proposed",
+  "scope": "Contract fixtures only; adapters must bind these cases to real database, storage, cache, queue, event, webhook, audit, and analytics systems.",
+  "negative_cases": [
+    {
+      "case_id": "ISO-DB-001",
+      "plane": "database",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "select/update/delete B row by object identifier while authenticated only to A",
+      "expected": "deny",
+      "required_evidence": ["RLS denial", "object authorization denial", "immutable audit event", "no target data in response"]
+    },
+    {
+      "case_id": "ISO-OBJ-001",
+      "plane": "object-storage",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "read or overwrite B object using guessed key or signed URL",
+      "expected": "deny",
+      "required_evidence": ["authorization denial", "signature scope failure", "immutable audit event", "no object bytes returned"]
+    },
+    {
+      "case_id": "ISO-CACHE-001",
+      "plane": "cache",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "resolve B response through an unscoped or poisoned cache key",
+      "expected": "deny",
+      "required_evidence": ["tenant-qualified cache key", "no B payload", "cache isolation assertion"]
+    },
+    {
+      "case_id": "ISO-JOB-001",
+      "plane": "jobs",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "enqueue or execute a background job carrying B target under A membership",
+      "expected": "deny",
+      "required_evidence": ["signed tenant context mismatch", "job rejected before side effect", "immutable audit event"]
+    },
+    {
+      "case_id": "ISO-EVENT-001",
+      "plane": "events",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "publish or consume B event stream under A membership",
+      "expected": "deny",
+      "required_evidence": ["tenant envelope mismatch", "event rejected or quarantined", "no B projection mutation"]
+    },
+    {
+      "case_id": "ISO-WEBHOOK-001",
+      "plane": "webhooks",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "register, replay, or deliver B webhook through A endpoint credentials",
+      "expected": "deny",
+      "required_evidence": ["tenant-scoped signing key mismatch", "delivery blocked", "no B payload emitted"]
+    },
+    {
+      "case_id": "ISO-AUDIT-001",
+      "plane": "audit",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "search, alter, or suppress B audit entries under A membership",
+      "expected": "deny",
+      "required_evidence": ["query denied", "append-only integrity retained", "security alert recorded"]
+    },
+    {
+      "case_id": "ISO-AI-001",
+      "plane": "analytics-ai",
+      "actor_tenant": "tenant:A",
+      "target_tenant": "tenant:B",
+      "attempt": "retrieve raw B records or train on raw B data without contractual opt-in",
+      "expected": "deny",
+      "required_evidence": ["dataset policy denial", "lineage proof", "aggregate irreversibility test", "no raw B feature exposed"]
+    }
+  ],
+  "break_glass_cases": [
+    {
+      "case_id": "BG-001",
+      "attempt": "support actor uses standing privilege without incident record",
+      "expected": "deny"
+    },
+    {
+      "case_id": "BG-002",
+      "attempt": "support actor uses expired or over-broad approval",
+      "expected": "deny"
+    },
+    {
+      "case_id": "BG-003",
+      "attempt": "approved actor accesses exact tenant, purpose, scope, and time window",
+      "expected": "allow-with-immutable-audit-and-tenant-notification-policy"
+    }
+  ],
+  "restore_and_migration_cases": [
+    "restore tenant A without overwriting B",
+    "verify export/delete/backup-expiry/cryptographic-erase evidence",
+    "pool-to-dedicated reconcile counts, checksums, events, access tests, and restore",
+    "rollback routing without mixed-tenant writes"
+  ]
+}

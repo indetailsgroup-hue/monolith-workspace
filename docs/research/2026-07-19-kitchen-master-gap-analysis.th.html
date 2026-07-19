@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Kitchen Master Encyclopedia — รายงานวิเคราะห์ช่องว่างทุกมิติระดับผู้บริหาร</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Kitchen Master Encyclopedia — รายงานวิเคราะห์ช่องว่างทุกมิติระดับผู้บริหาร</h1>
+<ul><li><strong>ฉบับ:</strong> ภาษาไทย</li><li><strong>วันที่ประเมิน:</strong> 2026-07-19</li><li><strong>เอกสารหลักในเครื่อง:</strong> <code>All aboute kitchen/MONOLITH-Kitchen-Master-Encyclopedia.html</code></li><li><strong>SHA-256 ของเอกสาร:</strong> <code>561C0F6E7D5A0486913F476B46587A3F1A92B9F677C8E9201F36681A23719728</code></li><li><strong>ผู้ใช้รายงานเพื่อตัดสินใจ:</strong> คณะกรรมการ MONOLITH, Platform Owner, Architecture, Security/Privacy, Manufacturing, Product Data, Legal/IP และผู้บริหาร tenant</li><li><strong>กฎหลักฐาน:</strong> ใช้ Perplexity เพื่อค้นหาเบาะแสสาธารณะเท่านั้น ผลจาก Perplexity จะไม่ถือเป็นแหล่งอำนาจจนกว่าจะตรวจซ้ำกับแหล่งปฐมภูมิอย่างอิสระ</li></ul>
+<h2>1. ข้อวินิจฉัยสำหรับผู้บริหาร</h2>
+<h3>คำตัดสิน</h3>
+<p><strong>ควรเดินหน้าโครงการ governed knowledge kernel แต่ห้ามทำตลาด Encyclopedia ว่าเป็นแค็ตตาล็อกที่ครบทุกผลิตภัณฑ์ เป็นอำนาจสั่งผลิต เป็นระบบ compliance หรือเป็นแพลตฟอร์ม multi-tenant ที่พร้อม production</strong> เอกสารนี้เป็นคลังวิจัยและภาษากลางเชิงยุทธศาสตร์ที่กว้างมาก แต่ยังไม่ใช่ system of record ที่ควบคุมหลักฐานแล้ว</p>
+<p>คณะกรรมการควรลงทุนเปลี่ยนจาก “เอกสารขนาดใหญ่” เป็น “กราฟหลักฐานที่มี version + กฎที่รันตรวจได้ + หลักฐานจากการปฏิบัติจริง” งานที่ให้มูลค่าสูงสุดไม่ใช่การเพิ่มร้อยแก้ว แต่คือปิดวงจร <code>source revision → canonical identity → tenant policy → configured design → BOM/SKU → machine/site instruction → inspection → installed asset → service event</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>คำถามของคณะกรรมการ</th>
+<th>คำตอบที่ใช้ตัดสินใจได้</th>
+</tr></thead><tbody>
+<tr>
+<td>คลังนี้มีคุณค่าหรือไม่</td>
+<td><strong>มี</strong> ครอบคลุมมิติ โครงสร้าง ฮาร์ดแวร์ เครื่องใช้/MEP ตลาด ชิ้นส่วน cut list connector ภาษาภาพ และ blueprint ของแพลตฟอร์มในระดับที่หาได้ยาก</td>
+</tr>
+<tr>
+<td>ครบทุกสินค้า รุ่น ขนาด/ความสูงตู้ เครื่องมือ วิธีติดตั้ง และทุกเขตอำนาจแล้วหรือไม่</td>
+<td><strong>ไม่ครบ; ระดับความครบยังเป็น UNKNOWN และเอกสารคงที่ทำให้ครบไม่ได้</strong> ต้องมี supplier feed ที่ได้รับสิทธิ์ เอกสารเทคนิคล่าสุด กฎรายภูมิภาค วันหมดอายุหลักฐาน และ steward ที่รับผิดชอบ</td>
+</tr>
+<tr>
+<td>ปล่อยไฟล์ผลิตได้อย่างปลอดภัยหรือไม่</td>
+<td><strong>ยังไม่ได้</strong> <code>MON-BS-001</code> และ supplier/machine variants ยังเป็น Proposed และไม่มี calibrated coupon, first article, machine qualification หรือ post-processor evidence</td>
+</tr>
+<tr>
+<td>ขอบเขต multi-tenant ตัดสินใจแล้วหรือไม่</td>
+<td><strong>owner decisions ถูกกำหนดใน ADR-001 และ contract fixtures แล้ว แต่ runtime enforcement ยังไม่ได้ implement</strong></td>
+</tr>
+<tr>
+<td>MONOLITH อ้าง finish equivalence ได้หรือไม่</td>
+<td><strong>ไม่ได้</strong> เก็บ supplier-native code และ candidate mapping ได้ แต่การทดแทนทางกายภาพต้องมีตัวอย่างที่วัดจริงและการอนุมัติ</td>
+</tr>
+<tr>
+<td>อะไรทำให้ระบบเป็นที่รักและเปลี่ยนออกได้ยาก</td>
+<td><strong>Trustworthy indispensability:</strong> ข้อมูลพกพาได้ หลักฐานสะสมที่ตรวจสอบแล้ว ทำถูกครั้งแรก การตัดสินใจโปร่งใส บริการเร็ว และระบบนิเวศที่ดีขึ้นเมื่อใช้ โดยไม่กักข้อมูลหรือใช้ dark pattern</td>
+</tr>
+</tbody></table></div>
+<h3>คะแนนความพร้อม</h3>
+<p>คะแนนเป็นข้ออนุมานสำหรับผู้บริหารจากหลักฐานที่มี ไม่ใช่ใบรับรอง</p>
+<div class="table-wrap"><table><thead><tr>
+<th>มิติ</th>
+<th>คะแนน / 5</th>
+<th>ความหมาย</th>
+</tr></thead><tbody>
+<tr>
+<td>ความกว้างขององค์ความรู้</td>
+<td>4.0</td>
+<td>วิจัยและคำศัพท์ครอบคลุมมาก</td>
+</tr>
+<tr>
+<td>ความเป็นปัจจุบันและการควบคุมแหล่งปฐมภูมิ</td>
+<td>1.8</td>
+<td>มี citation จำนวนมาก แต่ยังไม่มี global source register, expiry, rights และการให้ระดับแหล่งอย่างเป็นระบบ</td>
+</tr>
+<tr>
+<td>ข้อมูล product/module แบบ canonical</td>
+<td>1.5</td>
+<td>ร้อยแก้วมาก แต่ coverage ของ model/variant ที่รันตรวจได้ยังน้อย</td>
+</tr>
+<tr>
+<td>Component Master</td>
+<td>2.0</td>
+<td>มี ADR สองชั้นและ seed 19 specs ชุดแรก แต่ coverage และ SKU ที่ verified ยังต่ำกว่า ratification gate</td>
+</tr>
+<tr>
+<td>Finish science และ library</td>
+<td>1.2</td>
+<td>มี governance/safety contract แต่ยังไม่มี physical sample และ mapping ที่วัดจริง</td>
+</tr>
+<tr>
+<td>CAD/CAM/manufacturing authority</td>
+<td>1.0</td>
+<td>เป็น reference engine; ยังไม่มี machine/post-processor/physical output ที่ qualify แล้ว</td>
+</tr>
+<tr>
+<td>Installation/commissioning/service traceability</td>
+<td>1.4</td>
+<td>แนวคิดมีคุณค่า แต่ยังไม่มีวงจรปฏิบัติการและ installed-asset evidence</td>
+</tr>
+<tr>
+<td>Multi-tenant governance</td>
+<td>2.5</td>
+<td>การตัดสินใจและ fixtures สอดคล้องกัน แต่ identity/RLS/KMS/restore ใน runtime ยังไม่มี</td>
+</tr>
+<tr>
+<td>Compliance และ standards management</td>
+<td>1.5</td>
+<td>รายชื่อกว้าง แต่ยังไม่ควบคุม current-version drift และ jurisdictional applicability</td>
+</tr>
+<tr>
+<td>ความพร้อมเปิดใช้ระดับผู้บริหาร</td>
+<td>1.3</td>
+<td>เหมาะเป็นฐาน governed foundation ไม่ใช่คำกล่าวอ้าง production</td>
+</tr>
+</tbody></table></div>
+<h2>2. ขอบเขต วิธีประเมิน และชนิดหลักฐาน</h2>
+<h3>การตรวจคลังในเครื่อง</h3>
+<p>HTML ที่ประเมินมี 15,151 บรรทัด ขนาด 1.41 MB, <code>&lt;h2&gt;</code> 215 หัวข้อ, <code>&lt;h3&gt;</code> 549 หัวข้อ, 186 ตาราง, 1,559 แถวตาราง และ external links 1,855 ลิงก์ พบคำ “Proposed” 77 ครั้ง “Unknown” 16 ครั้ง และ “Unverified” 91 ครั้ง ตัวเลขนี้พิสูจน์ความกว้างและความระมัดระวังบางส่วน แต่ไม่พิสูจน์ความถูกต้อง สิทธิ์ ความสดใหม่ หรือ coverage เชิงปฏิบัติการ</p>
+<p>คลังครอบคลุม dimensions/ergonomics (บรรทัด 1065–1839), hardware (2319 เป็นต้นไป), appliance/MEP (2636–2675), manufacturing (2676 เป็นต้นไป), sustainability (2718 เป็นต้นไป), ตลาดและแบรนด์, parts/cut lists, IFC mapping (9200 เป็นต้นไป), connector และข้อเสนอ Component Master อย่างชัดเจน</p>
+<h3>ป้ายกำกับหลักฐาน</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>ป้าย</th>
+<th>ความหมาย</th>
+</tr></thead><tbody>
+<tr>
+<td><code>VERIFIED FACT</code></td>
+<td>ทำซ้ำได้ในเครื่องหรือมีแหล่งปฐมภูมิปัจจุบันรองรับ</td>
+</tr>
+<tr>
+<td><code>OWNER DECISION</code></td>
+<td>เจ้าของ MONOLITH ยืนยันชัดเจน แต่ยังไม่ใช่ runtime proof</td>
+</tr>
+<tr>
+<td><code>INFERENCE</code></td>
+<td>ข้อสรุปเชิงเหตุผลจากข้อเท็จจริง ห้ามนำเสนอว่าเป็นผลวัดจริง</td>
+</tr>
+<tr>
+<td><code>PROPOSAL</code></td>
+<td>เป้าหมาย control KPI หรือลำดับงานที่เสนอ</td>
+</tr>
+<tr>
+<td><code>UNKNOWN</code></td>
+<td>ไม่มีหลักฐาน หลักฐานหมดอายุ เข้าถึงไม่ได้ หรือไม่ละเอียดพอ</td>
+</tr>
+<tr>
+<td><code>CONTRADICTED</code></td>
+<td>หลักฐานปัจจุบันขัดกับคลังหรือข้อกล่าวอ้างอื่น</td>
+</tr>
+</tbody></table></div>
+<h3>การใช้ผลค้นคว้า</h3>
+<p>คำค้นสาธารณะทั่วไปใน Perplexity ช่วยหาเบาะแส แต่บางผลชี้ไปแหล่งทุติยภูมิหรือเหมารวมโดยไม่มีหลักฐาน โดยเฉพาะ System 32 และมาตรฐาน finish จึงไม่ยกระดับผลเหล่านั้นเป็นหลักฐาน เนื้อหาโครงการส่วนตัวไม่ได้ส่งเมื่อส่วนเชื่อมต่อวิจัยปฏิเสธ ข้อกล่าวอ้างสำคัญด้านล่างจึงผูกใหม่กับ ISO, W3C, NIST, GS1, EUR-Lex, PostgreSQL, OWASP, EPA หรือ supplier source ปัจจุบัน</p>
+<h2>3. บัญชีหลักฐาน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>ชั้นหลักฐาน</th>
+<th>ข้อกล่าวอ้าง</th>
+<th>หลักฐาน / ผลต่อการตัดสินใจ</th>
+</tr></thead><tbody>
+<tr>
+<td>E-01</td>
+<td>VERIFIED FACT</td>
+<td>Encyclopedia ใน workspace และ Downloads เหมือนกัน</td>
+<td>SHA-256 ด้านบน เป็น baseline ของการทบทวน</td>
+</tr>
+<tr>
+<td>E-02</td>
+<td>VERIFIED FACT</td>
+<td>คลังมีความกว้าง: H2 215 หัวข้อ 186 ตาราง และ 1,855 external links</td>
+<td>ผลตรวจโครงสร้างในเครื่อง; ความกว้างไม่ใช่ assurance</td>
+</tr>
+<tr>
+<td>E-03</td>
+<td>CONTRADICTED</td>
+<td>หัวข้อ architecture ระบุ 12 bounded contexts แต่ตารางมี 14</td>
+<td>บรรทัด 5269–5382; context map ใหม่เพิ่ม Component Master เป็นลำดับที่ 15</td>
+</tr>
+<tr>
+<td>E-04</td>
+<td>OWNER DECISION</td>
+<td>Bridge isolation, global identity + tenant membership, tenant-local customer profile, governance-only kernel และ break-glass support</td>
+<td>ADR-001 และ tenant contract fixtures; runtime ยัง UNKNOWN</td>
+</tr>
+<tr>
+<td>E-05</td>
+<td>OWNER DECISION</td>
+<td>MONOLITH เป็นเจ้าของ canonical finish taxonomy และเก็บ supplier-native code แบบ lossless</td>
+<td>ADR-003; ไม่อ้าง physical equivalence</td>
+</tr>
+<tr>
+<td>E-06</td>
+<td>OWNER DECISION</td>
+<td>ประกาศ <code>MON-BS-001</code> เป็น internal profile ตอนนี้ และห้ามอ้างว่าเป็น ISO/EN/DIN</td>
+<td>ADR-005 และ machine-readable profile</td>
+</tr>
+<tr>
+<td>E-07</td>
+<td>VERIFIED FACT</td>
+<td>Seed แรกมี connector 15 specs ตาม Book 11 + hinge 2 + drawer runner 2 = 19 specs</td>
+<td>JSONL และ integrity tests; ทั้งหมดยัง Proposed</td>
+</tr>
+<tr>
+<td>E-08</td>
+<td>UNKNOWN</td>
+<td>ความครบถ้วนและเป็นปัจจุบันของทุก supplier product/model/SKU</td>
+<td>ไม่มี licensed feeds, coverage denominator หรือ lifecycle SLA</td>
+</tr>
+<tr>
+<td>E-09</td>
+<td>UNKNOWN</td>
+<td>Connector load ratings</td>
+<td>บรรทัด 13290 และ 13433 ระบุว่าแทบทุก 15 connector specs ไม่มีข้อมูลสาธารณะ</td>
+</tr>
+<tr>
+<td>E-10</td>
+<td>CONTRADICTED</td>
+<td>Book 12 กล่าวถึง “24 spec entries in this Book alone” ขณะที่ Book 11 มี connector 15 และ seed ที่อนุมัติมี 19</td>
+<td>บรรทัด 14724 เทียบกับ 10920 และ seed ที่มี governance; ต้อง reconcile denominator</td>
+</tr>
+<tr>
+<td>E-11</td>
+<td>CONTRADICTED</td>
+<td>คลังใช้ ISO 23387:2020 เสมือนเป็น current context</td>
+<td>ฉบับ 2020 ถูกถอนและแทนด้วย <a href="https://www.iso.org/standard/85391.html">ISO 23387:2025</a></td>
+</tr>
+<tr>
+<td>E-12</td>
+<td>VERIFIED FACT</td>
+<td>IFC data schema publication ปัจจุบันคือ ISO 16739-1:2024</td>
+<td><a href="https://www.iso.org/standard/84123.html">ISO 16739-1:2024</a>; ต้องปรับส่วน IFC บรรทัด 9200</td>
+</tr>
+<tr>
+<td>E-13</td>
+<td>VERIFIED FACT</td>
+<td>Hardware performance standards ปัจจุบันรวม ISO 4769:2022, ISO 12808:2024 และ ISO 25131:2025</td>
+<td><a href="https://www.iso.org/standard/80333.html">hinges</a>, <a href="https://www.iso.org/standard/84112.html">extension elements</a>, <a href="https://www.iso.org/standard/89083.html">horizontal-axis hinges/stays</a>; ไม่ได้กำหนด universal drilling coordinates</td>
+</tr>
+<tr>
+<td>E-14</td>
+<td>VERIFIED FACT</td>
+<td>ISO 7171:2019 ถูกถอนและแก้โดย ISO 7170:2021</td>
+<td><a href="https://www.iso.org/standard/76864.html">ISO 7170:2021</a></td>
+</tr>
+<tr>
+<td>E-15</td>
+<td>VERIFIED FACT</td>
+<td>ข้อจำกัด EU formaldehyde สำหรับ furniture/wood-based articles ที่อยู่ในขอบเขต เริ่มใช้ 6 สิงหาคม 2026 ที่ 0.062 mg/m³ ภายใต้ chamber conditions ที่กำหนด</td>
+<td><a href="https://eur-lex.europa.eu/eli/reg/2023/1464/oj/eng">Commission Regulation (EU) 2023/1464</a>; เป็น market-pack issue เร่งด่วน ไม่ใช่ threshold โลก</td>
+</tr>
+<tr>
+<td>E-16</td>
+<td>VERIFIED FACT</td>
+<td>ISO 16000-9:2024 เป็น chamber method สำหรับ VOC emission จาก building products/furnishing รวม formaldehyde จาก wood-based panels</td>
+<td><a href="https://www.iso.org/standard/79022.html">ISO 16000-9:2024</a></td>
+</tr>
+<tr>
+<td>E-17</td>
+<td>VERIFIED FACT</td>
+<td>ISO 14025:2026 แทนฉบับ 2006 ในเดือนมิถุนายน 2026</td>
+<td><a href="https://www.iso.org/standard/87610.html">ISO 14025:2026</a>; standards register ต้องติดตาม lifecycle ใกล้เวลาจริง</td>
+</tr>
+<tr>
+<td>E-18</td>
+<td>VERIFIED FACT</td>
+<td>Blum เผย native finish code <code>NI</code> ว่า Nickel; Häfele เผย “bright/nickel-plated” สำหรับ item 262.26.531</td>
+<td><a href="https://www.blum.com/us/en/products/hingesystems/hinge-programme/">Blum hinge range</a>, <a href="https://www.hafele.com/us/en/product/26226531/26226531/">Häfele item</a>; ชื่อ/รหัสยังไม่พิสูจน์ physical equivalence</td>
+</tr>
+<tr>
+<td>E-19</td>
+<td>PROPOSAL</td>
+<td>Persona KPIs และ roadmap ใน Encyclopedia เป็นสมมติฐาน ไม่ใช่ baseline</td>
+<td>บรรทัด 5384 เป็นต้นไประบุ Proposed; ต้องมี measured baseline และ experiment owner</td>
+</tr>
+<tr>
+<td>E-20</td>
+<td>UNKNOWN</td>
+<td>Production identity, RLS, KMS, regional storage, backup expiry, tenant restore และ break-glass operations</td>
+<td>มี contracts แต่ไม่มี deployed evidence</td>
+</tr>
+</tbody></table></div>
+<h2>4. สิ่งที่ Encyclopedia ทำได้ดีแล้ว</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>จุดแข็ง</th>
+<th>คุณค่าต่อผู้บริหาร</th>
+<th>ขอบเขต</th>
+</tr></thead><tbody>
+<tr>
+<td>Regional cabinet dimensions และ ergonomics</td>
+<td>ให้ภาษากลางเปรียบเทียบแก่ designer</td>
+<td>ตารางเป็น advisory ไม่ใช่ tenant/jurisdiction rules ที่รันได้</td>
+</tr>
+<tr>
+<td>Construction systems และ hardware vocabulary</td>
+<td>ครอบคลุม frameless/face-frame, boards, hinges, drawers, accessories</td>
+<td>series, revision, tolerance, load และ lifecycle ไม่สม่ำเสมอ</td>
+</tr>
+<tr>
+<td>Appliance, ventilation, plumbing, electrical overview</td>
+<td>เปิด dependency ด้าน coordination ตั้งแต่ต้น</td>
+<td>ห้ามแทน OEM instruction ปัจจุบันหรือ licensed MEP review</td>
+</tr>
+<tr>
+<td>Parts, cut lists, nesting, machining vocabulary</td>
+<td>เป็นสะพานดีจากภาษาการออกแบบสู่การผลิต</td>
+<td>ยังไม่มี qualified solver/machine/post-processor/coupon/first article</td>
+</tr>
+<tr>
+<td>ภาพรวมตลาดและแบรนด์</td>
+<td>มีประโยชน์ต่อ positioning, taxonomy และ supplier outreach</td>
+<td>ข้อมูลแบรนด์/collection เปลี่ยนเร็วและมักมาจาก secondary source</td>
+</tr>
+<tr>
+<td>Connector depth</td>
+<td>Book 11 เปิดเผย missing load, single-source risk และ machine lock-in ได้ถูกต้อง</td>
+<td>เป็นเพียงหนึ่งหมวด ยังไม่พอ ratify Component Master</td>
+</tr>
+<tr>
+<td>ภาษาสถานะหลักฐาน</td>
+<td>พบ Proposed/Unknown/Unverified บ่อย</td>
+<td>ยังไม่ normalize ต่อ claim และไม่ machine-enforce ทั้งคลัง</td>
+</tr>
+<tr>
+<td>Persona thinking</td>
+<td>ครอบคลุมผู้บริหาร การเงิน dealer designer installer ลูกค้า CNC quality safety</td>
+<td>ยังขาด role ownership, baseline, accessibility, service operation และ ethical retention controls</td>
+</tr>
+</tbody></table></div>
+<h2>5. แผนที่ความร้อนของช่องว่างทุกมิติ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>มิติ</th>
+<th>สถานะปัจจุบัน</th>
+<th>ช่องว่างสำคัญ</th>
+<th>Target artifact ที่ต้องมี</th>
+<th>ลำดับ</th>
+</tr></thead><tbody>
+<tr>
+<td>Product/collection/model coverage</td>
+<td>มี narrative brand survey มาก</td>
+<td>ไม่มี denominator, supplier feed contract, revision SLA, market-effective date หรือ rights ledger</td>
+<td>Supplier Source Registry + Product/Model/Variant graph + freshness dashboard</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Cabinet modules, sizes, heights</td>
+<td>ตาราง base/tall/wall/accessibility กว้าง</td>
+<td>รันไม่ได้; ปะปน nominal/finished/opening และ applicability</td>
+<td>Module Family schema + dimension rules + golden configurations</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Component hardware</td>
+<td>มี two-layer decision และ seed 19 specs</td>
+<td>19 Proposed specs, 20 SKU records, research-pending placeholders, ขาด load/tolerance</td>
+<td>≥50 specs/8 categories, ≥300 current SKUs/5 suppliers และ tested substitution</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Hinges และ runners</td>
+<td>เพิ่มชนิดละ 2 specs</td>
+<td>series, plate/locking device, length, load class, drilling, opening/protrusion/collision ยังไม่ครบ</td>
+<td>Series-specific technical packs + ISO performance evidence + golden assemblies</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Finish library</td>
+<td>ADR-003 + lossless native mappings 3 รายการ</td>
+<td>ไม่มี Italiana 50-code register, master samples, measurement, gloss/texture/batch, licence</td>
+<td>Finish Registry + lab/sample workflow + rights-aware mappings</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Boring/drilling</td>
+<td>Reference recipe + <code>MON-BS-001</code> Proposed</td>
+<td>supplier/machine variants ยัง research-pending; ค่า 37/32/5 แบบ generic ไม่ใช่อำนาจผลิต</td>
+<td>Qualified variant + machine profile + post-processor + coupon/FAI</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Manufacturing</td>
+<td>มี vocabulary ด้าน cut/nest/CNC/MES</td>
+<td>ไม่มี deterministic released packet หรือ safety interlock proof</td>
+<td>Manufacturing Release Packet + signed gates + checksum + quarantine/rollback</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Installation/commissioning</td>
+<td>มีแนวคิด installer app และคำแนะนำกว้าง</td>
+<td>ไม่มี site-ready version pin, package/box/part identity, torque/cure, inspection, as-built</td>
+<td>Installation Work Pack + commissioning checklist + acceptance certificate</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Appliances/MEP</td>
+<td>ครอบคลุม ventilation/plumbing/electrical</td>
+<td>ไม่มี OEM model instruction ingestion ปัจจุบัน, jurisdiction pack, service zone, conflict rule, licensed signoff</td>
+<td>OEM Appliance Pack + MEP Jurisdiction Pack + site-survey constraints</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Product/machine safety</td>
+<td>มีชื่อมาตรฐานและ safety gates บางส่วน</td>
+<td>standards drift; ไม่มี risk assessment, qualification, test dossier, recall workflow</td>
+<td>Safety Case ต่อ product/machine/market + standards watch</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Accessibility/ergonomics</td>
+<td>มี ADA/universal design และ ISO 21542</td>
+<td>“ความสูงมาตรฐานเดียว” ไม่รองรับประชากร ความพิการ ท่าทาง งาน และการปรับได้</td>
+<td>Inclusive Design Profile + population data + user validation</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Digital accessibility</td>
+<td>ยังไม่ governed</td>
+<td>ไม่มี WCAG target หรือ keyboard/screen-reader/offline/mobile evidence</td>
+<td>WCAG 2.2 AA policy + automated/manual evidence</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Procurement/inventory</td>
+<td>มี MRP/MES concepts และ SKU layer</td>
+<td>ไม่มี contract terms, lead-time confidence, MOQ/UOM conversion, approval, alternate risk, receiving QC</td>
+<td>Supplier/Sourcing Master + effective commercial snapshot + approval workflow</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Quality/traceability</td>
+<td>มี proposed checklist/NCR concept</td>
+<td>ไม่มี lot/serial genealogy จาก material ถึง installed asset และ recall blast-radius query</td>
+<td>Product/batch/item identity + genealogy + NCR/CAPA + recall simulation</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Sustainability</td>
+<td>มี certification และ proposed LCA กว้าง</td>
+<td>ไม่มี verified mass balance, EPD, transport/waste, CoC, repair/end-of-life</td>
+<td>LCA/EPD model + ISO 22095 CoC + DPP-ready identity</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>BIM/PIM/interoperability</td>
+<td>มี IFC และเป้าหมายหลาย format</td>
+<td>มาตรฐานล้าสมัย ไม่มี property dictionary/template/requirement/round-trip corpus</td>
+<td>ISO 23386 governance + ISO 23387:2025 templates + IFC 2024 mappings</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Warranty/field service</td>
+<td>มี digital twin/one-tap service vision</td>
+<td>ไม่มี installed config, entitlement, SLA, supersession, diagnosis, visit/fix verification</td>
+<td>Installed Asset Twin + warranty/service knowledge + first-time-fix metrics</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>AI/RAG/agents</td>
+<td>มี persona copilots/governance concept</td>
+<td>ไม่มี risk tier, eval set, permission, tenant isolation, human authority, lineage</td>
+<td>AI Use-Case Registry + NIST AI RMF profile + release gates</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Tenant/security/privacy</td>
+<td>มี ADR-001 + fixture matrix</td>
+<td>ไม่มี runtime auth/RLS/storage/cache/queue isolation/KMS/region/delete/restore/break-glass proof</td>
+<td>Deployed control plane + continuous isolation evidence</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Economics/pricing</td>
+<td>มี proposed KPI/pricing questions</td>
+<td>ไม่มี cost-to-serve, API/AI/CAD, data licence, support, warranty, CAC/LTV</td>
+<td>Cohort unit-economics model + pricing experiments + usage ledger</td>
+<td>B1</td>
+</tr>
+<tr>
+<td>Organization/governance</td>
+<td>ระบุ ADR authorities แล้ว</td>
+<td>ไม่มี permanent stewards, standards/rights owner, release board, escalation SLA</td>
+<td>RACI + stewardship queues + decision calendar + audit KPIs</td>
+<td>B0</td>
+</tr>
+<tr>
+<td>Ecosystem/dealers/designers</td>
+<td>Persona/marketplace concepts กว้าง</td>
+<td>ไม่มี federation, certification, sharing contract, commission authority, dispute model</td>
+<td>Partner Registry + credentials + scoped sharing + settlement rules</td>
+<td>B2</td>
+</tr>
+<tr>
+<td>Internationalization</td>
+<td>มีเป้าหมายคำศัพท์ 7 ภาษา</td>
+<td>ไม่มี concept-ID translation, locale QA, regulated-term governance, fallback/TM</td>
+<td>i18n termbase + reviewer workflow</td>
+<td>B2</td>
+</tr>
+<tr>
+<td>Content/experience</td>
+<td>งานนำเสนอและ visual language แข็งแรง</td>
+<td>claim อาจเกิน evidence; ไม่บังคับ accessibility/asset rights</td>
+<td>Evidence-aware publishing + WCAG + asset licence gate</td>
+<td>B2</td>
+</tr>
+</tbody></table></div>
+<h2>6. ประเด็นปิดกั้นและสิ่งที่ต้องแก้</h2>
+<h3>B0-01 — แยกความจริงด้านความรู้ การตัดสินใจ และ runtime</h3>
+<p>คลังปัจจุบันผสม market observation, prescriptive dimensions, supplier facts, proposed architecture, code examples และ target KPIs ไว้ด้วยกัน Kernel รุ่นต่อไปต้องเก็บแต่ละชนิดเป็น evidence class ต่างกัน พร้อม owner และวันหมดอายุแยกกัน</p>
+<p><strong>Controls ที่ต้องมี:</strong> claim ID, subject ID, value/unit, applicability, source และ exact locator, publisher, revision/effective/retrieval dates, rights, evidence class, reviewer, expiry, supersession, contradiction links และ affected outputs ช่องทาง publishing, configuration, BOM, CAM, installation และ AI retrieval ต้องดึงเฉพาะ claim ที่อนุญาตสำหรับการใช้นั้น</p>
+<p><strong>เกณฑ์รับงาน:</strong> claim ที่ตั้งใจทำให้ expired, contradicted, unlicensed หรือ Proposed ต้องไม่ไหลเงียบเข้า client spec, purchase order, machine packet หรือ regulatory declaration</p>
+<h3>B0-02 — เปลี่ยนมิติตู้ทั้งหมดเป็น governed rule packs</h3>
+<p>ตาราง base/tall/wall และ regional ใน Encyclopedia มีคุณค่าเชิงวิจัย แต่ไม่ตอบว่าค่าใดเป็น nominal, finished, opening, site, manufacturing หรือ accessible-use dimension ตู้ไม่อาจนิยามด้วย width/height/depth เท่านั้น</p>
+<p>กฎ canonical ต้องมี family, construction system, front style, panel/back thickness, top/bottom/rail logic, width/height/depth range และ grid, fillers/scribes, plinth, worktop, reveal, internal opening, hinge/runner envelope, appliance/service void, MEP zone, ventilation, door/drawer collision, load, installation tolerance, accessibility profile, shipping split, tenant policy, region, source revision และ manufacturing capability</p>
+<p><strong>เกณฑ์รับงาน:</strong> golden configurations อย่างน้อย 100 แบบ ครอบคลุม base, wall, tall, corner, island, appliance, sink, accessible และ bespoke พร้อม boundary/collision/opening/service/manufacturing checks และ round trip <code>design → BOM → parts → as-built</code></p>
+<h3>B0-03 — สร้าง standards และ regulatory register แบบมีชีวิต</h3>
+<p>งานวิจัยปัจจุบันเปลี่ยนเร็วกว่าหนังสือคงที่ หลังการเรียบเรียงมี ISO 23387:2025, ISO 16739-1:2024, ISO 16000-9:2024, ISO 14025:2026, ISO 12808:2024 และ ISO 25131:2025 ที่กระทบเนื้อหา ขณะเดียวกัน ISO 21542:2021 อยู่ระหว่าง systematic review และ ISO 9001 รุ่น 2026 อยู่ระหว่าง publication <a href="https://www.iso.org/standard/88464.html">ISO 9001 revision</a> Register ต้องแยก Published, Under Review, Under Development, Withdrawn และ Replaced พร้อม jurisdiction, scope, licensed-text access, applicability, effective date และ impacted rules</p>
+<p>สำหรับเฟอร์นิเจอร์ไม้ในตลาด EU, Commission Regulation (EU) 2023/1464 เป็น B0 ใกล้ตัว: articles ที่อยู่ในขอบเขตและวางตลาดหลัง 6 สิงหาคม 2026 ต้องผ่าน formaldehyde release limit ตามเงื่อนไขที่กำหนด Legal/compliance ต้องตัดสิน applicability; ซอฟต์แวร์ห้ามอนุมานจาก marketing label “E0/E1”</p>
+<h3>B0-04 — เปลี่ยน “ครบทุกผลิตภัณฑ์/รุ่น” เป็น measurable coverage service</h3>
+<p>ไม่มีองค์กรใดรักษาทุกผลิตภัณฑ์ครัวทั่วโลกด้วย web research เพียงอย่างเดียวได้อย่างสัตย์จริง ต้องกำหนด completeness ต่อ contracted source: expected collections, models, variants, SKUs, finishes, documents, certifications, markets และ effective dates Supplier connector แต่ละรายต้องมี last successful sync, change/diff review, licence, rate/usage terms และ missing-record alerts</p>
+<p>กราฟเป้าหมายคือ <code>Supplier → Brand → ProductLine → Collection → Model → Variant → Module → ComponentSpec → SupplierSKU → Finish → Asset/Document/Certificate → MarketOffer</code> และ project snapshot ต้อง pin version ทุกตัวเพื่อไม่ให้ catalog change ย้อนแก้งานที่ขายแล้ว</p>
+<h3>B0-05 — Finish identity ไม่เท่ากับ appearance equivalence</h3>
+<p>รหัส Italiana, descriptor ของ Häfele และรหัส Blum อยู่คนละ native vocabulary Registry แรกเก็บ Italiana <code>ZN</code>, Häfele <code>bright</code> และ Blum <code>NI</code> โดย lossless และตั้ง physical equivalence เป็น false การปิดโจทย์ “Italiana 50 finish codes vs Häfele/Blum” ทำไม่ได้จนกว่าจะได้ official code sets และ usage rights</p>
+<p>Physical mapping แต่ละรายการต้องมี substrate/coating compatibility, master sample พร้อม custody, calibrated CIELAB/LCh measurement พร้อม illuminant/observer/geometry, colour-difference method และ approved tolerance ที่ระบุชื่อ, ISO 2813 geometry เมื่อใช้ได้, texture/grain/batch, metamerism/lighting review, application limits, sample approval, tenant/project approval และ revalidation <a href="https://www.iso.org/standard/74166.html">ISO/CIE 11664-4:2019</a> ใช้กำกับบันทึก CIELAB; <a href="https://www.iso.org/standard/56807.html">ISO 2813:2014</a> มีขอบเขตการวัด gloss จำกัดและอธิบาย texture ทุกชนิดไม่ได้</p>
+<h3>B0-06 — กักค่า boring แบบ generic ออกจาก production</h3>
+<p>Pitch 32 mm เป็น de facto interoperability convention ไม่ใช่มาตรฐาน universal supplier geometry <code>MON-BS-001</code> แยก core semantics, generic reference, supplier/series variant, machine profile, post-processor และ project pin ได้ถูกทาง แต่ supplier variants ปัจจุบันยัง research-pending และ <code>manufacturing_allowed=false</code></p>
+<p><strong>เกณฑ์ก่อนปล่อยโรงงาน:</strong> primary technical sheet ปัจจุบัน, coordinate/tolerance schema, verified tool, machine datum/transforms, calibrated coupon, first-article measurement, deterministic output checksum, collision/breakthrough/edge checks, operator/safety approval, rollback/quarantine และ sampled production checks ISO 19085-1:2021 ครอบคลุม common woodworking-machine safety และต้องใช้ร่วมกับ machine-specific parts เช่น ISO 19085-3 สำหรับ NC/CNC boring/routing ห้ามใช้ software geometry check แทน <a href="https://www.iso.org/standard/77655.html">ISO 19085-1:2021</a></p>
+<h3>B0-07 — กำกับ MEP และ appliance ตามตลาดและรุ่น</h3>
+<p>Ventilation, electrical, gas, plumbing, drainage, water treatment, fire และ appliance clearances ขึ้นกับ jurisdiction และ model ต้องสร้าง versioned OEM Appliance Pack ที่มี cutout, ventilation, electrical/gas/water/drain, service access, adjacent-material temperature, door swing, installation sequence และ source revision แล้วรวมกับ Jurisdiction Pack และการอนุมัติโดย licensed professional เมื่อ OEM กับ generic rule ขัดกัน ต้อง block design release</p>
+<p><strong>ข้อห้าม:</strong> AI หรือข้อความ generic ใน Encyclopedia ห้ามอนุมัติ electrical, gas, ventilation, fire หรือ plumbing ขั้นสุดท้าย</p>
+<h3>B0-08 — สร้าง safety case ของผลิตภัณฑ์ วัสดุ และเครื่องจักร</h3>
+<p>Safety ต้องเชื่อม <code>hazard → requirement → design control → test method → result → certificate → market → expiry → affected models</code> ครอบคลุม stability/strength, hinge/runner durability, anti-tip, glass, sharp edge, hot surface, child access, chemicals/emissions, food-contact interface, outdoor exposure, machine hazard, dust/fire/explosion, lockout/tagout, installation และ foreseeable misuse</p>
+<p>ขอบเขตทดสอบ storage unit อยู่ใน <a href="https://www.iso.org/standard/76864.html">ISO 7170:2021</a> ส่วน hardware performance มีมาตรฐานแยก VOC/formaldehyde ต้องใช้วิธีปัจจุบัน เช่น <a href="https://www.iso.org/standard/79022.html">ISO 16000-9:2024</a> และกฎตลาด ไม่ใช่ field “E0/E1” เดียวทั่วโลก สำหรับสหรัฐ EPA TSCA Title VI กำกับ hardwood plywood, MDF และ particleboard พร้อม testing/certification และ supply-chain record สำหรับผลิตภัณฑ์ที่อยู่ในขอบเขต <a href="https://www.epa.gov/sites/default/files/2018-04/documents/small_entity_compliance_for_formaldehyde_standards-fabricators_4.20.2018.pdf">EPA guidance</a></p>
+<h3>B0-09 — Trace ตั้งแต่วัตถุดิบถึง installed asset</h3>
+<p>Material lot, panel, finish batch, hardware SKU, machined part, box, room, installed cabinet, inspection และ service action ต้องมี genealogy GS1 แยก class-, batch/lot- และ instance-level identity; MONOLITH ต้องเลือกระดับต่ำสุดที่ควบคุม safety, finish consistency, recall, warranty และ service risk ได้ <a href="https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard">GS1 Global Traceability Standard</a> ส่วน <a href="https://www.gs1.org/standards/gs1-digital-link">GS1 Digital Link</a> เชื่อม standard identifier ไปยัง certification, instruction, product information และ traceability service ได้</p>
+<p><a href="https://www.iso.org/standard/72532.html">ISO 22095:2020</a> ให้ chain-of-custody models แต่ไม่ได้พิสูจน์ sustainability claim ด้วยตัวเอง เกณฑ์รับงานคือ timed recall simulation: จาก supplier lot ต้องระบุทุก tenant/project/room/asset ที่ได้รับผล, block การใช้ใหม่, แจ้งผู้มีอำนาจ, เลือก verified substitute และเก็บ audit trail</p>
+<h3>B0-10 — สิทธิ์และการอนุญาตแหล่งต้องเป็น content gate</h3>
+<p>URL พิสูจน์ provenance แต่ไม่ใช่สิทธิ์คัดลอกภาพ CAD texture manual ตาราง trademark หรือ catalog layout Asset ทุกชิ้นต้องมี owner, licence, permitted channel/territory, attribution, expiry, checksum, transformation rights และ takedown state แยก supplier-native identifiers/factual metadata ออกจาก protected assets และให้ Legal/IP อนุมัติก่อนใช้ supplier content เพื่อ train/retrieve เกินวัตถุประสงค์ที่ตกลง</p>
+<h2>7. ลำดับพัฒนา B1–B3</h2>
+<h3>B1 — ความลึกเชิงปฏิบัติการที่จำเป็นต่อการเปิดใช้</h3>
+<ol><li><strong>Installation/commissioning:</strong> QR/box/part identity, versioned work pack, site deviation, calibrated measurement, photo evidence, torque/adhesive/cure records, punch list, customer acceptance และ as-built update</li><li><strong>Quality/CAPA:</strong> receiving/in-process/final inspection, NCR, containment, root cause, corrective/preventive action, effectiveness review และ supplier scorecard</li><li><strong>BIM/PIM:</strong> ใช้ ISO 23386:2020 สำหรับ property governance และ <a href="https://www.iso.org/standard/85391.html">ISO 23387:2025</a> สำหรับ data template; pin <a href="https://www.iso.org/standard/84123.html">ISO 16739-1:2024</a>, กำหนด exchange requirements และทดสอบ geometry/identity/property round trip ไฟล์ IFC ที่ดาวน์โหลดได้เพียงอย่างเดียวไม่ใช่ interoperability</li><li><strong>Sustainability:</strong> mass/material BOM, energy, transport, waste, recycled/biogenic content พร้อม CoC, repairability, spare parts, disassembly, end-of-life, LCA boundary/uncertainty และ EPD verification โดยใช้ <a href="https://www.iso.org/standard/37456.html">ISO 14040</a>, <a href="https://www.iso.org/standard/87610.html">ISO 14025:2026</a>, <a href="https://www.iso.org/standard/61694.html">ISO 21930:2017</a> และ <a href="https://www.iso.org/standard/72463.html">ISO 22057:2022</a> เป็น evidence chain</li><li><strong>DPP readiness:</strong> EU Regulation 2024/1781 วางกรอบ product passport และข้อมูล open/interoperable/portable แต่ภาระเฉพาะผลิตภัณฑ์ขึ้นกับ delegated acts จึงสร้าง model/batch/item identity และ access control ได้โดยยังไม่อ้าง mandate สำหรับเฟอร์นิเจอร์ <a href="https://eur-lex.europa.eu/eli/reg/2024/1781/oj/eng">EU 2024/1781</a></li><li><strong>Inclusive design:</strong> ใช้ accessibility เป็น user/environment profile ที่ configure ได้ ISO 21542:2021 ครอบคลุม built-environment accessibility และอยู่ระหว่าง review; ISO 15535:2023 กำกับ anthropometric database <a href="https://www.iso.org/standard/71860.html">ISO 21542</a>, <a href="https://www.iso.org/standard/82541.html">ISO 15535</a> ต้อง validate กับผู้ใช้ ไม่ใช่ฝังความสูงเดียว</li><li><strong>Digital accessibility:</strong> ตั้งเป้า WCAG 2.2 AA สำหรับ web/mobile รวม keyboard, focus, accessible authentication, touch target, alternatives, language, error และ offline workflow <a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2</a></li></ol>
+<h3>B2 — ขยายขนาดด้วยความไว้วางใจที่แตกต่าง</h3>
+<ul><li>Partner identity, credential, certification, tenant-approved sharing, conflict/dispute, commission authority และ settlement audit</li><li>Installed Asset Twin ที่เก็บ component/finish/batch จริง, entitlement, maintenance, cleaning, spare-part supersession, diagnosis, visit, repair และ verification</li><li>Multilingual termbase ที่ผูกคำแปลกับ canonical concept ID พร้อม domain reviewer และ regulated-term controls</li><li>Tenant-configurable vertical packs ที่ override platform safety, evidence, privacy หรือ kernel governance ไม่ได้</li><li>Evidence-aware publishing ที่แสดง source class, market, effective date และข้อจำกัดของ public claim เมื่อมีนัยสำคัญ</li></ul>
+<h3>B3 — ปรับประสบการณ์หลังผ่าน trust gates</h3>
+<ul><li>Visual storytelling, AR, mood board, marketplace discovery และ personalization</li><li>Recommendation/sales copilots หลังมี permission, evidence, fairness และ outcome measurement</li><li>Advanced optimization ด้าน nesting, scheduling, inventory และ service routing หลังพิสูจน์ deterministic baseline และ human override</li></ul>
+<h2>8. Portfolio ลำดับสำคัญ พร้อมเจ้าของและหลักฐานรับงาน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>ลำดับ</th>
+<th>ผลลัพธ์</th>
+<th>Accountable owner</th>
+<th>Dependencies</th>
+<th>หลักฐานรับงาน</th>
+</tr></thead><tbody>
+<tr>
+<td>P-01</td>
+<td>B0</td>
+<td>Claim/evidence firewall</td>
+<td>Product Data Governance</td>
+<td>Source registry, rights model</td>
+<td>expired/contradicted/unlicensed claim ถูก block ใน 5 output channels</td>
+</tr>
+<tr>
+<td>P-02</td>
+<td>B0</td>
+<td>Executable module/size rules</td>
+<td>Product Configuration Owner</td>
+<td>Geometry, Component Master, MEP</td>
+<td>100 golden configs; boundary/collision/round-trip ผ่าน</td>
+</tr>
+<tr>
+<td>P-03</td>
+<td>B0</td>
+<td>Standards/applicability register</td>
+<td>Compliance Authority</td>
+<td>Legal, Product Safety</td>
+<td>lifecycle current/withdrawn/replaced, impact alerts และ EU formaldehyde decision</td>
+</tr>
+<tr>
+<td>P-04</td>
+<td>B0</td>
+<td>Finish sample lab pilot</td>
+<td>Finish Governance + Quality</td>
+<td>ADR-003, supplier rights</td>
+<td>supplier จริง 2 ราย, measured samples, tolerance/lighting/batch approval, ไม่มี image-only equivalence</td>
+</tr>
+<tr>
+<td>P-05</td>
+<td>B0</td>
+<td>Qualified manufacturing cell</td>
+<td>Manufacturing + Safety</td>
+<td>ADR-005, machine vendor</td>
+<td>coupon, FAI, post-processor checksum, rollback, operator approval</td>
+</tr>
+<tr>
+<td>P-06</td>
+<td>B0</td>
+<td>Tenant runtime isolation</td>
+<td>Security/Privacy + Platform</td>
+<td>ADR-001</td>
+<td>real-service matrix, no cross-tenant data, key/region/restore/delete/break-glass evidence</td>
+</tr>
+<tr>
+<td>P-07</td>
+<td>B0</td>
+<td>Product genealogy/recall</td>
+<td>Quality + Supply Chain</td>
+<td>Identity, SKU, installed asset</td>
+<td>lot-to-installed-asset recall simulation ภายในเวลาเป้าหมาย</td>
+</tr>
+<tr>
+<td>P-08</td>
+<td>B0</td>
+<td>AI release governance</td>
+<td>AI Governance</td>
+<td>permissions, evidence graph</td>
+<td>risk tiers, eval corpus, prompt/model/source versions, human authority, incident rollback</td>
+</tr>
+<tr>
+<td>P-09</td>
+<td>B1</td>
+<td>Supplier catalog coverage service</td>
+<td>Supplier Data Owner</td>
+<td>Contracts, API/files</td>
+<td>denominator, freshness SLA, diff review, rights, supplier ≥5 ราย</td>
+</tr>
+<tr>
+<td>P-10</td>
+<td>B1</td>
+<td>Installation/commissioning loop</td>
+<td>Field Operations</td>
+<td>Packet, mobile/offline</td>
+<td>work pack → as-built → acceptance → service trace ใน pilot</td>
+</tr>
+<tr>
+<td>P-11</td>
+<td>B1</td>
+<td>BIM/PIM exchange contract</td>
+<td>Interoperability Owner</td>
+<td>Dictionary, geometry</td>
+<td>IFC/property round trip โดย identity ไม่หายและ pin standard ปัจจุบัน</td>
+</tr>
+<tr>
+<td>P-12</td>
+<td>B1</td>
+<td>Sustainability evidence model</td>
+<td>Sustainability/Compliance</td>
+<td>Mass BOM, evidence</td>
+<td>pilot LCA ระบุ boundary, EPD/CoC links verified, ไม่มี green claim ไร้ evidence</td>
+</tr>
+<tr>
+<td>P-13</td>
+<td>B1</td>
+<td>Unit economics/pricing experiments</td>
+<td>CFO/Product</td>
+<td>Usage ledger, allocation</td>
+<td>contribution margin ต่อ tenant รวม AI/API/CAD/support/warranty และ controlled tests</td>
+</tr>
+<tr>
+<td>P-14</td>
+<td>B2</td>
+<td>Partner credential/settlement</td>
+<td>Ecosystem Owner</td>
+<td>Identity, finance, contracts</td>
+<td>certified workflow, scoped access, commission/dispute ที่ audit ได้</td>
+</tr>
+</tbody></table></div>
+<h2>9. AI governance และการเชื่อม Perplexity</h2>
+<p>AI ควรเป็น evidence navigator และ constrained copilot ไม่ใช่อำนาจล่องหน ต้องสร้าง AI Use-Case Registry ที่มี tenant, purpose, affected persona, data class, source, model/provider/version, prompt/retrieval version, tools, decision authority, risk tier, evaluation set, threshold, human approval, monitoring, incident route และ rollback</p>
+<p>ใช้ฟังก์ชัน Govern, Map, Measure และ Manage ของ NIST AI RMF โดย pin version เพราะ AI RMF 1.0 อยู่ระหว่างปรับปรุง และใช้ Generative AI Profile สำหรับ cross-sector risk actions <a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI RMF</a>, <a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf">NIST Generative AI Profile</a></p>
+<p>Hard controls:</p>
+<ul><li>ปฏิเสธ raw cross-tenant retrieval/training โดย default</li><li>บังคับ supplier licence และ project permission ก่อน indexing</li><li>citation ต้องชี้ exact source revision และ passage</li><li>instruction ใน retrieved document เป็น data ไม่ใช่ agent authority</li><li>price, contract, safety, compliance, CAM/CNC และ MEP ต้องมี named human authority</li><li>ทดสอบ hallucination, stale source, prompt injection, data poisoning, leakage, over-reliance และ provider unavailable</li><li>วัด provider/API cost, latency, quota, retention และ geographic processing ต่อ tenant/use case</li></ul>
+<p>การใช้ Perplexity API คิดเงินจาก API account/credits ของ Perplexity ที่ผูกกับคีย์ ไม่ได้ตัดจาก MONOLITH Codex/OpenAI subscription จึงต้อง meter เป็น provider cost และห้ามวาง key ใน browser code, document, log, Git หรือ tenant-visible export</p>
+<h2>10. โครงสร้างองค์กรและอำนาจตัดสินใจ</h2>
+<p>ต้องสร้างความรับผิดชอบถาวรที่ระบุชื่อ ไม่ใช่โครงการเอกสารชั่วคราว</p>
+<div class="table-wrap"><table><thead><tr>
+<th>บทบาท</th>
+<th>เป็นเจ้าของ</th>
+</tr></thead><tbody>
+<tr>
+<td>Platform Owner</td>
+<td>Portfolio, funding, ratification quorum, risk acceptance</td>
+</tr>
+<tr>
+<td>Architecture Authority</td>
+<td>Context boundary, contracts, versioning, integration</td>
+</tr>
+<tr>
+<td>Security/Privacy Authority</td>
+<td>Isolation, identity, keys, region, retention, break-glass, AI data use</td>
+</tr>
+<tr>
+<td>Product Data Steward</td>
+<td>Canonical IDs, property dictionary, conflict, lifecycle, coverage</td>
+</tr>
+<tr>
+<td>Supplier Data/Rights Owner</td>
+<td>Feeds, licence, native codes, change notice, takedown</td>
+</tr>
+<tr>
+<td>Finish Governance + Laboratory</td>
+<td>Sample, measurement, tolerance, batch, approval</td>
+</tr>
+<tr>
+<td>Manufacturing Authority</td>
+<td>Machine/profile/post-processor qualification และ release</td>
+</tr>
+<tr>
+<td>Product Safety/Compliance</td>
+<td>Standards register, test dossier, market release, recall</td>
+</tr>
+<tr>
+<td>Quality Authority</td>
+<td>Inspection, NCR/CAPA, genealogy, supplier quality, commissioning</td>
+</tr>
+<tr>
+<td>Interoperability Owner</td>
+<td>BIM/PIM/CAD exchange contracts และ round-trip corpus</td>
+</tr>
+<tr>
+<td>Field Operations/Service Owner</td>
+<td>Installation, acceptance, installed assets, warranty, outcomes</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td>Unit economics, pricing, revenue/commission authority, controls</td>
+</tr>
+<tr>
+<td>Legal/IP</td>
+<td>Supplier/customer contracts, asset rights, claims, interpretation</td>
+</tr>
+</tbody></table></div>
+<p>Daph และ tenant อื่นให้ workflow evidence และ acceptance feedback ได้ แต่ไม่มีอำนาจ ratify tenant, kernel, security, finish, manufacturing หรือ evidence policy ระดับแพลตฟอร์ม</p>
+<h2>11. คุณค่าที่ขาดไม่ได้อย่างน่าไว้วางใจสำหรับแต่ละ persona</h2>
+<p>เป้าหมายผลิตภัณฑ์ที่มีจริยธรรมคือทำให้ออกจากระบบง่าย แต่ทำให้คุณค่าของการอยู่ต่อชัดเจนจนเลือกอยู่เอง</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Persona</th>
+<th>คุณค่าที่ขาดไม่ได้</th>
+<th>คำมั่นไม่ lock-in</th>
+<th>ตัววัดหลัก</th>
+</tr></thead><tbody>
+<tr>
+<td>Tenant executive</td>
+<td>Margin/order/risk truth ที่ผูก source transaction</td>
+<td>Export ครบและมี version history</td>
+<td>Contribution margin, forecast accuracy, export drill</td>
+</tr>
+<tr>
+<td>CFO/auditor</td>
+<td>Commercial snapshot และ approval ที่ trace ได้</td>
+<td>Standard export, immutable link, ไม่มี hidden fee</td>
+<td>Close time, audit exception, cost-to-serve</td>
+</tr>
+<tr>
+<td>Designer</td>
+<td>Multi-brand validated rules และ client package ที่เร็ว</td>
+<td>Open BIM/CAD/data handoff</td>
+<td>Design time, rule violation, round-trip success</td>
+</tr>
+<tr>
+<td>Dealer/sales</td>
+<td>Configure/quote เร็วและแม่น</td>
+<td>สิทธิ์ customer/project ชัดตามสัญญา</td>
+<td>Quote cycle, rework, conversion ภายใต้ guardrail</td>
+</tr>
+<tr>
+<td>Factory/operator</td>
+<td>Released packet ตรงกับเครื่องจริง</td>
+<td>Human stop, rollback, portable machine profiles</td>
+<td>First-pass yield, downtime, scrap, safety event</td>
+</tr>
+<tr>
+<td>Quality/safety</td>
+<td>Evidence และ genealogy ครบ</td>
+<td>Export อ่านได้และ independent audit</td>
+<td>Escape rate, CAPA effectiveness, recall time</td>
+</tr>
+<tr>
+<td>Installer/foreman</td>
+<td>Box/part/site instruction ถูกต้องแม้ออฟไลน์</td>
+<td>PDF/QR package ใช้นอกแอปได้</td>
+<td>Install time, snag rate, first-visit completion</td>
+</tr>
+<tr>
+<td>Service technician</td>
+<td>Installed configuration จริงและ verified substitute</td>
+<td>Export asset record ของลูกค้า</td>
+<td>First-time-fix, part lead time, repeat visit</td>
+</tr>
+<tr>
+<td>End customer</td>
+<td>Progress, care, warranty และความช่วยเหลือโปร่งใส</td>
+<td>Portable asset passport, consent/delete controls</td>
+<td>NPS, resolution time, self-service success</td>
+</tr>
+<tr>
+<td>Supplier/partner</td>
+<td>Native identity ถูกต้อง, demand signal, rights control</td>
+<td>ไม่บังคับโอน IP และ mapping โปร่งใส</td>
+<td>Data freshness, dispute, forecast quality</td>
+</tr>
+<tr>
+<td>Regulator/insurer</td>
+<td>Safety/traceability evidence ตามตลาด</td>
+<td>Independent evidence access ตามอำนาจ</td>
+<td>Release exception, retrieval time</td>
+</tr>
+</tbody></table></div>
+<h2>12. แผนดำเนินงาน 365 วันตามลำดับ</h2>
+<h3>วันที่ 0–30 — หยุดคำกล่าวอ้างไม่ปลอดภัยและตรึงฐาน</h3>
+<ul><li>Ratify ADR-001/002/003/005 หรือยืนยันคงสถานะ Proposed อย่างชัดเจน</li><li>เปิด source/standards/rights registers และ claim classification</li><li>ตัดสิน EU formaldehyde applicability ก่อน 6 สิงหาคม 2026 สำหรับ market offers ที่เกี่ยวข้อง</li><li>Reconcile จำนวน 12/14/15 contexts และ 15/19/24 spec denominators</li><li>Freeze manufacturing release จาก generic/research-pending profiles</li><li>กำหนด IDs สำหรับ product/module, supplier source, installed asset และ evidence</li></ul>
+<h3>วันที่ 31–90 — สร้าง minimum operational evidence spine</h3>
+<ul><li>Implement module/size rules และ 100 golden configurations</li><li>ขยาย Component Master ด้วย current hinge/runner technical packs</li><li>ทำ physical finish pilot กับ supplier 2 ราย</li><li>ทำ supplier coverage/freshness dashboard และ rights-aware asset ingestion</li><li>Implement identity/membership จริงและ tenant-context propagation ใน test environment</li><li>สร้าง OEM appliance/MEP pack และ jurisdiction pilot หนึ่งแห่ง</li></ul>
+<h3>วันที่ 91–180 — พิสูจน์ closed-loop workflow กับ tenant หนึ่งราย</h3>
+<ul><li>ปิดวงจร quote → configured design → pinned BOM/SKU → machine packet → qualified cell → inspection → boxed identity → installation → as-built → acceptance → service record</li><li>ซ้อม isolation, restore, pool-to-dedicated rollback, deletion, key erasure และ break-glass</li><li>ทำ product genealogy/recall simulation ให้ครบ</li><li>ทำ BIM/property round-trip corpus และ digital accessibility audit</li><li>ตั้ง unit-economics baseline รวม Perplexity/AI/provider costs</li></ul>
+<h3>วันที่ 181–365 — พิสูจน์การทำซ้ำกับ tenant รายที่สอง</h3>
+<ul><li>Onboard tenant รายที่สองโดยไม่มี policy exception ซ่อนใน Daph-specific code</li><li>ขยาย supplier feeds และ Component Master ไปสู่ threshold ratification ของ ADR-002</li><li>Qualify machine/series profile เพิ่มแยกทีละชุด</li><li>Pilot LCA/EPD/DPP-ready records และ chain of custody</li><li>Release เฉพาะ AI use case ที่ผ่าน risk-tier evaluation และ tenant isolation</li><li>ขอ independent review evidence ด้าน security, privacy, manufacturing และ product safety</li></ul>
+<h2>13. การตัดสินใจที่คณะกรรมการต้องทำตอนนี้</h2>
+<ol><li><strong>อนุมัติ claim firewall:</strong> client, procurement, manufacturing, compliance และ AI output ห้ามใช้ claim นอก evidence class ที่อนุญาต</li><li><strong>ลงทุน product data acquisition:</strong> supplier licence, technical sheet, update SLA, steward และ sample laboratory เป็น core product cost</li><li><strong>อนุมัติ release sequence:</strong> สร้าง evidence spine และพิสูจน์ closed loop หนึ่งวงก่อน marketplace/AR/copilot วงกว้าง</li><li><strong>อนุมัติ portability เป็น policy:</strong> export/delete ที่ documented, interoperable IDs/formats และไม่มี punitive exit mechanism</li><li><strong>อนุมัติ manufacturing non-claim:</strong> generic/research-pending profile ห้ามสร้าง released machine packet</li><li><strong>อนุมัติ market-pack governance:</strong> compliance ต้องผูก product, market, customer, date และ use ไม่ใช่ badge สากลหนึ่งใบ</li><li><strong>บังคับ measured economics:</strong> conversion, margin, waste, NPS และ time reduction เป็นสมมติฐานจนกว่าจะ baseline และทดลองวัด</li></ol>
+<h2>14. สิ่งที่รายงานไม่ได้กล่าวอ้างและความเสี่ยงคงเหลือ</h2>
+<ul><li>รายงานนี้ไม่ certify ครัว ผลิตภัณฑ์ เครื่องจักร โรงงาน installer supplier tenant หรือ software platform</li><li>ไม่แทน licensed standards, OEM instruction, engineering judgement, legal advice, accessibility validation หรือ jurisdictional approval</li><li>Seed 19 specs เป็นจุดเริ่มที่ audit ได้ ไม่ใช่ Component Master ratification</li><li>Finish mappings 3 รายการเก็บ native identity แต่ไม่สร้าง physical equivalence และไม่ทำ supplier libraries ที่ขอให้ครบ</li><li>Tenant contract พิสูจน์ policy consistency เท่านั้น ไม่พิสูจน์ production isolation หรือ privacy compliance</li><li><code>MON-BS-001</code> ยัง Proposed และไม่พร้อมผลิต</li><li>Product/model completeness, supplier asset rights, physical finish performance, load ratings, regional availability และ production evidence ยังเป็น material UNKNOWN</li></ul>
+<p>โอกาสเชิงยุทธศาสตร์ยังแข็งแรง: MONOLITH สามารถเป็น operating memory ที่น่าเชื่อถือ เชื่อม design intent ไปสู่ physical outcome ข้าม tenant และ partner ได้ ความได้เปรียบนี้ต้องมาจากหลักฐานที่ verified, portable และดูแลต่อเนื่อง ไม่ใช่ปริมาณเอกสารหรือการบังคับพึ่งพา</p>
+</main>
+</body>
+</html>

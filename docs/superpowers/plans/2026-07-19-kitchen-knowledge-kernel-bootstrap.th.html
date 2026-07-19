@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แผนดำเนินการตั้งต้น MONOLITH Kitchen Knowledge Kernel</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>แผนดำเนินการตั้งต้น MONOLITH Kitchen Knowledge Kernel</h1>
+<blockquote><p><strong>สำหรับผู้ปฏิบัติงานแบบ agentic:</strong> ใช้ <code>subagent-driven-development</code> เฉพาะเมื่อเจ้าของอนุญาต subagent อย่างชัดเจน มิฉะนั้นให้ใช้ <code>executing-plans</code> ทีละงาน และติดตามด้วย checkbox</p></blockquote>
+<p><strong>เป้าหมาย:</strong> ตั้งต้น MONOLITH monorepo ที่มี governance, บันทึก ADR-001/003/005 และ ADR-002 ฉบับแก้ไข, สร้าง seed Component Master 19 specs ที่ตรวจสอบได้ และส่งมอบ gap report สองภาษาระดับผู้บริหารโดยไม่อ้างความพร้อมเกินหลักฐาน</p>
+<p><strong>จำนวนงานโดยประมาณ:</strong> 8 | <strong>เวลาโดยประมาณ:</strong> ~240–360 นาที | <strong>พื้นที่ที่แตะ:</strong> Git / เอกสาร governance / Python package / JSONL data / tests / research evidence</p>
+<h2>ปัญหาและสภาพปัจจุบัน</h2>
+<p>Workspace ยังไม่เป็น Git repository ข้อมูลครัวอยู่เป็นไฟล์ HTML, Markdown และ Python กระจัดกระจายใน <code>All aboute kitchen/</code> ADR-002 ยังเป็น Proposed และเรียก <code>tenant_policy</code> ทั้งที่ ADR-001 ยังไม่มี อีกทั้งให้ Daph ซึ่งเป็น pilot tenant มีอำนาจตัดสินใจระดับแพลตฟอร์ม Tests ปัจจุบันต้องใช้ <code>data/specs.jsonl</code> และ <code>data/skus.jsonl</code> แต่ไม่มีทั้งสองไฟล์ ผลรันสดจึงผ่าน 3 และล้ม 7 จาก 10 tests Book 11 กำหนด connector 15 specs อย่างชัดเจนและแยก hinge/drawer runner ออก ส่วนหัว Encyclopedia เขียนว่า 12 bounded contexts แต่ตารางมี 14 และ ADR-002 ต้องมี Component Master แยกต่างหาก</p>
+<p>เนื้อหาครอบคลุมกว้าง แต่ยังขาดรายละเอียดที่มีนัยสำคัญด้าน tenancy, การวัด appearance ของ finish, มาตรฐาน ISO ปัจจุบัน, data governance, field commissioning, traceability, interoperability และหลักฐานปฏิบัติการ ผลจาก Perplexity ใช้เพื่อค้นหาเบาะแส ไม่ใช่อำนาจอ้างอิง; ข้อเท็จจริงสำคัญต้องตรวจซ้ำกับแหล่งปฐมภูมิ</p>
+<h2>แนวทางที่เสนอ</h2>
+<p>สร้าง monorepo ขั้นต่ำที่มีโฟลเดอร์ bounded context และ Component Master package โดยรักษาไฟล์ต้นฉบับไว้เป็นหลักฐานและใช้วิธีคัดลอกแทนการแก้เงียบ บันทึก owner decisions ของ tenant, finish และ boring เป็น ADR ภาษาไทย/อังกฤษพร้อม HTML สร้าง seed connector 15 specs ตาม Book 11 บวก hinge 2 และ drawer runner 2 รวม 19 พร้อม supplier SKUs, provenance, boring profiles และ tests ประกาศ <code>MON-BS-001</code> เป็น internal interoperability profile ที่มี version โดยไม่กล่าวอ้างว่าเป็น ISO/EN และสร้าง gap report ที่แยก verified facts, owner decisions, proposals, unknowns และ contradictions</p>
+<h2>เปรียบเทียบก่อนและหลัง</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>สถานการณ์</th>
+<th>ก่อน</th>
+<th>หลัง</th>
+</tr></thead><tbody>
+<tr>
+<td>อำนาจของ repository</td>
+<td>ไฟล์กระจัดกระจาย ไม่มี revision ของ Git</td>
+<td>Git repository พร้อม context map, ADR, packages, tests และ revision trace</td>
+</tr>
+<tr>
+<td>Tenant policy</td>
+<td>dictionary ที่ยังไม่มี governance</td>
+<td>ADR-001 แบบ Bridge และ tenant contract ที่ MONOLITH governance เป็นเจ้าของ</td>
+</tr>
+<tr>
+<td>Finish identity</td>
+<td>supplier codes โดยไม่มี canonical appearance model</td>
+<td>canonical taxonomy ของ MONOLITH พร้อม mapping supplier-native แบบไม่สูญข้อมูล</td>
+</tr>
+<tr>
+<td>Boring geometry</td>
+<td>constants แบบ de facto โดยไม่มี profile กำกับ</td>
+<td><code>MON-BS-001</code> core และ supplier/machine variants ที่มี version</td>
+</tr>
+<tr>
+<td>Component seed</td>
+<td>ไม่มี JSONL และ 7/10 tests ล้ม</td>
+<td>19 specs ที่ valid, SKU FK ถูกต้อง และ tests ผ่าน</td>
+</tr>
+<tr>
+<td>มาตรฐาน</td>
+<td>เน้น EN และบางส่วนล้าสมัย</td>
+<td>บันทึก ISO ปัจจุบัน รวม ISO 4769:2022, ISO 12808:2024, ISO 25131:2025 และ ISO 7171:2019 ที่ถูกถอน</td>
+</tr>
+<tr>
+<td>Readiness claim</td>
+<td>เอกสารอาจถูกเข้าใจผิดว่าเป็น runtime</td>
+<td>มี evidence class ชัดและไม่อ้าง production/ratification หาก gate ยังไม่ผ่าน</td>
+</tr>
+</tbody></table></div>
+<h2>สมมติฐานและความเสี่ยง</h2>
+<ul><li><strong>สมมติ:</strong> ไฟล์ Encyclopedia ใน workspace และ Downloads เหมือนกัน; ตรวจ SHA-256 แล้วเป็น <code>561C0F6E7D5A0486913F476B46587A3F1A92B9F677C8E9201F36681A23719728</code></li><li><strong>สมมติ:</strong> การตัดสินใจ ADR-001 จาก grill เป็น owner decisions แต่ยังไม่ใช่ runtime facts</li><li><strong>สมมติ:</strong> Context map มาตรฐานใช้ 14 contexts ที่ตารางระบุจริง บวก Component Master เป็น context ที่ 15 ตาม ADR-002</li><li><strong>สมมติ:</strong> Release นี้เป็น reference kernel ยังไม่สร้าง production database, IdP, KMS, billing หรือ hosted deployment</li><li><strong>เสี่ยง:</strong> เอกสาร supplier อาจเปลี่ยนหรือจำกัดสิทธิ์ใช้ ต้องรักษารหัส/URL เดิมแต่ไม่คัดลอก artwork หรือกล่าวอ้างสิทธิ์</li><li><strong>เสี่ยง:</strong> ค่า finish แบบ digital พิสูจน์การทดแทนทางกายภาพไม่ได้ ต้องมี physical master sample และ tolerance ที่วัดจริง</li><li><strong>เสี่ยง:</strong> System 32 variants อาจ pitch เท่ากันแต่ fixing geometry ต่าง ห้ามรวมเป็น universal pattern ที่ไม่จริง</li><li><strong>เสี่ยง:</strong> การ <code>git init</code> ทำให้ไฟล์เดิมของผู้ใช้ปรากฏเป็น untracked จึงห้าม stage/commit หากยังไม่ได้รับคำสั่ง</li></ul>
+<h2>ผลกระทบ</h2>
+<ul><li>แยกอำนาจแพลตฟอร์มออกจาก Daph และ tenant อื่นอย่างชัดเจน</li><li>เปลี่ยนข้อความใน Book 11/12 ให้เป็น data contracts ที่ทดสอบได้</li><li>สร้างฐานปลอดภัยสำหรับ database, CAD/CAM, procurement และ field service ในอนาคต</li><li>ให้ผู้บริหารเห็นลำดับลงทุนตามความรุนแรงและหลักฐาน</li></ul>
+<hr>
+<h2>ภาพรวมงาน</h2>
+<blockquote><p><strong>สำหรับ implementation tasks:</strong> ต้องใช้ <code>test-driven-development</code> ก่อนแก้ production code และทำ RED → GREEN → REFACTOR</p><p><strong>ออกแบบแบบ parallel-first:</strong> ระบุ lane ที่แยกกันได้ แต่ session นี้ทำตามลำดับจนกว่าเจ้าของจะอนุญาต subagents ห้ามทำ ADR, fixtures, generated HTML หรือ Git initialization พร้อมกัน</p></blockquote>
+<ol><li><strong>ตั้งต้น repository และ context</strong> — Lane A | ทำพร้อมกัน: ไม่มี | รอ: ไม่มี | TDD slice: ตรวจ docs/config → สร้าง Git/context skeleton → ตรวจ inventory</li><li><strong>ชุด Governance ADR</strong> — Lane B | ทำพร้อมกัน: Task 7 หลัง Task 1 | รอ: Task 1 | TDD slice: decision checklist ที่ยังขาด → ADR สองภาษา → ตรวจ HTML/parity</li><li><strong>ฐาน Component Master package</strong> — Lane C | ทำพร้อมกัน: ไม่มี | รอ: Task 1 | TDD slice: import/path tests ล้ม → package ที่คัดลอก → targeted tests</li><li><strong>Seed 19 specs และ supplier SKUs</strong> — Lane C | ทำพร้อมกัน: ไม่มี | รอ: Task 3 | TDD slice: count/FK tests ล้ม → JSONL seed → catalog tests</li><li><strong>Finish taxonomy และ <code>MON-BS-001</code></strong> — Lane C | ทำพร้อมกัน: Task 7 | รอ: Tasks 2, 4 | TDD slice: behavior ยังไม่มี → schemas/validators → conformance tests</li><li><strong>Tenant-boundary executable contracts</strong> — Lane D | ทำพร้อมกัน: Task 7 | รอ: Tasks 1, 2 | TDD slice: contract tests ล้ม → machine-readable fixtures → isolation matrix</li><li><strong>Multidimensional gap report ระดับผู้บริหาร</strong> — Lane B | ทำพร้อมกัน: Tasks 3 หรือ 6 | รอ: Task 1 | TDD slice: evidence ledger → รายงาน TH/EN → citation/render checks</li><li><strong>Integrated verification และ implementation report</strong> — ตามลำดับ | ทำพร้อมกัน: ไม่มี | รอ: Tasks 2–7 | TDD slice: evidence inventory → แก้เฉพาะ failure → verification report</li></ol>
+<hr>
+<h3>Task 1: ตั้งต้น Repository และ Context</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>.gitignore</code>, <code>pyproject.toml</code>, <code>CONTEXT.md</code>, <code>CONTEXT-MAP.md</code>, <code>apps/.gitkeep</code>, bounded-context folders 15 ชุดโดยใช้ <code>.gitkeep</code> สำหรับ placeholder และให้ <code>CONTEXT-MAP.md</code> เป็นทะเบียนกลางจนกว่า context จะมี contract จริง รวมทั้งโฟลเดอร์ <code>docs/adr</code>, <code>docs/research</code>, <code>docs/reports</code>, <code>tests</code>, <code>data/component-master</code></p>
+<p><strong>การทำงานร่วมกัน:</strong> ทำพร้อมงานอื่นไม่ได้; มี race risk ที่ Git initialization และ root paths</p>
+<ul><li>[x] <strong>Step 0:</strong> เป็นงาน docs/config-only; ตรวจ path และยืนยันว่าไม่มี <code>.git</code></li><li>[x] <strong>Step 1:</strong> เก็บ inventory ก่อน bootstrap ด้วย <code>rg --files</code> และรักษา source artifacts</li><li>[x] <strong>Step 2:</strong> <code>git init</code> และสร้าง 15 contexts: identity-tenancy, product-configuration, component-master, cad-parametric-design, geometry-kernel, bom-costing, manufacturing, workflow, procurement, quality-field-service, finance, customer-partner, ai-governance, platform-api, security-observability</li><li>[x] <strong>Step 3:</strong> ตรวจ <code>git status --short --branch</code>, ให้ทุก context ปรากฏครั้งเดียวใน <code>CONTEXT-MAP.md</code> และไม่ commit/push</li></ul>
+<h3>Task 2: ชุด Governance ADR</h3>
+<p><strong>ไฟล์:</strong> สร้าง ADR-001, ADR-002, ADR-003 และ ADR-005 เป็น <code>.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code> ใน <code>docs/adr/</code> และรักษา <code>All aboute kitchen/adr-002-component-master-schema.md</code> เป็น evidence source</p>
+<p><strong>การทำงานร่วมกัน:</strong> ทำร่วม Task 7 ได้หลัง evidence ledger คงที่; ต้องรอ Task 1; ระวัง cross-reference และชื่อ HTML</p>
+<ul><li>[x] <strong>Step 0:</strong> docs-only exception; ตรวจด้วยโครงสร้างและหลักฐาน</li><li>[x] <strong>Step 1:</strong> สร้าง decision checklist ที่ต้องพบว่า ADR ปัจจุบันยังขาด Bridge, membership, tenant-local profile, break-glass, 7/30/90, RPO/RTO, RLS role red lines, keys, home region และ separation of duties</li><li>[x] <strong>Step 2:</strong> เขียน TH/EN ให้ aligned, สถานะ Proposed, แยก owner decision จาก implementation evidence และถอด Daph ออกจาก ratification authority</li><li>[x] <strong>Step 3:</strong> Render HTML standalone และตรวจ title/lang/headings/tables/links</li><li>[x] <strong>Step 4:</strong> ใช้ <code>rg</code> ตรวจ decisions ทุกข้อ ให้ Daph เป็น consulted pilot เท่านั้น และมีครบ 4 ไฟล์ต่อ ADR</li></ul>
+<h3>Task 3: ฐาน Component Master Package</h3>
+<p><strong>ไฟล์:</strong> สร้าง package ที่ <code>packages/component-master/</code> พร้อม <code>catalog.py</code>, <code>boring.py</code>, <code>validators.py</code>, <code>__init__.py</code>, package config และ <code>tests/component_master/test_catalog_baseline.py</code>; คัดลอกจาก reference files โดยไม่แก้ต้นฉบับ</p>
+<p><strong>การทำงานร่วมกัน:</strong> ต้องรอ Task 1 และไม่ทำพร้อม seed fixtures</p>
+<ul><li>[x] <strong>Step 0:</strong> ใช้ <code>test-driven-development</code></li><li>[x] <strong>Step 1:</strong> เขียน failing import/data-path tests ให้ path ไม่ขึ้นกับ working directory</li><li>[x] <strong>Step 2:</strong> รันด้วย bundled Python + <code>unittest</code>; ต้องล้มเพราะ behavior ขาด ไม่ใช่ dependency</li><li>[x] <strong>Step 3:</strong> คัดลอกและปรับเฉพาะ imports/path handling ที่จำเป็น ไม่สร้าง database abstraction</li><li>[x] <strong>Step 4:</strong> รัน targeted tests และ compile modules ให้ผ่าน</li><li>[x] <strong>Step 5:</strong> refactor หลัง green เท่านั้น และรักษา evidence files เดิม</li></ul>
+<h3>Task 4: Seed 19 Specs และ Supplier SKUs</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>data/component-master/specs.jsonl</code>, <code>skus.jsonl</code>, <code>boring-profiles.jsonl</code>, <code>tests/component_master/test_seed_integrity.py</code> และปรับ catalog เฉพาะที่จำเป็น</p>
+<p><strong>การทำงานร่วมกัน:</strong> ต้องรอ Task 3; JSONL และ counts เป็น shared state</p>
+<ul><li>[x] <strong>Step 0:</strong> ใช้ <code>test-driven-development</code></li><li>[x] <strong>Step 1:</strong> เขียน tests ให้ต้องมี 19 unique specs: connector 15 ตาม Book 11, hinge 2, drawer runner 2 พร้อม category count, semver, provenance, unique SKU และ valid FK</li><li>[x] <strong>Step 2:</strong> รันให้ RED เพราะไฟล์ยังไม่มี/จำนวนไม่ครบ</li><li>[x] <strong>Step 3:</strong> สร้าง seed ขั้นต่ำ ใช้ functional generic IDs เก็บ trademark ใน SKU/model เท่านั้น ทุก record เป็น Proposed และ evidence เป็น Verified/Reported/Unknown ตามจริง</li><li>[x] <strong>Step 4:</strong> รัน integrity, resolution, substitution rejection และ boring lookup ให้ GREEN</li><li>[x] <strong>Step 5:</strong> ลดความซ้ำเฉพาะเมื่อ tests ยังผ่านและ JSONL ยัง review ได้ทีละบรรทัด</li></ul>
+<h3>Task 5: Finish Taxonomy และ <code>MON-BS-001</code></h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>finishes.py</code>, <code>finish-taxonomy.jsonl</code>, <code>finish-mappings.jsonl</code>, <code>boring-standards/MON-BS-001.json</code> และ tests ของ finish/boring</p>
+<p><strong>การทำงานร่วมกัน:</strong> ทำร่วม Task 7 ได้; ต้องรอ Tasks 2 และ 4; ระวัง Component Master schema/ADR IDs</p>
+<ul><li>[x] <strong>Step 0:</strong> ใช้ <code>test-driven-development</code></li><li>[x] <strong>Step 1:</strong> เขียน safety tests ที่ปฏิเสธ finish equivalence จากชื่อ/ภาพอย่างเดียว และปฏิเสธ profile/version mismatch</li><li>[x] <strong>Step 2:</strong> รัน RED เพราะ validators/profile ยังไม่มี</li><li>[x] <strong>Step 3:</strong> เก็บ CIELAB/LCh, illuminant/observer, ΔE method/tolerance, ISO 2813 geometry, texture/grain/batch, rights/provenance และสร้าง MON-BS-001 core + named variants พร้อม non-safety disclaimer</li><li>[x] <strong>Step 4:</strong> รันให้ valid mapping ผ่าน, unsafe substitution ล้ม, pitch 32 mm ถูกต้อง และ project pin ป้องกัน silent upgrade</li><li>[x] <strong>Step 5:</strong> รักษา supplier-native mapping โดยไม่ normalize จนข้อมูลสูญหาย</li></ul>
+<h3>Task 6: Tenant-Boundary Executable Contracts</h3>
+<p><strong>สถานะ:</strong> เสร็จด้วยหลักฐานจาก contract fixtures โดยไม่กล่าวอ้างว่ามีการบังคับใช้ใน runtime แล้ว</p>
+<p><strong>ไฟล์:</strong> สร้าง <code>tenant-boundary.schema.json</code>, <code>isolation-test-matrix.json</code>, README ของ identity-tenancy และ <code>tests/identity_tenancy/test_contracts.py</code></p>
+<p><strong>การทำงานร่วมกัน:</strong> ทำร่วม Task 7 ได้; ต้องรอ Tasks 1 และ 2; ระวังคำศัพท์ใน ADR</p>
+<ul><li>[x] <strong>Step 0:</strong> ใช้ <code>test-driven-development</code>; ทดสอบ contract โดยไม่สร้าง database ปลอม</li><li>[x] <strong>Step 1:</strong> เขียน tests ที่บังคับ Bridge, active tenant เดียว, authenticated membership, tenant scope ใน storage/cache/job/event/webhook, break-glass metadata, home region, key identity, deadlines, RPO/RTO และ ratification roles</li><li>[x] <strong>Step 2:</strong> รัน RED เพราะ fixtures ยังไม่มี</li><li>[x] <strong>Step 3:</strong> เพิ่ม machine-readable contracts และ negative matrix สำหรับ tenant A พยายามอ่าน/เขียน/file/job ของ tenant B</li><li>[x] <strong>Step 4:</strong> รัน schema parsing และ decision checklist ให้ครอบคลุม 100%</li><li>[x] <strong>Step 5:</strong> ระบุชัดว่า runtime RLS/KMS/restore เป็นงานอนาคต ไม่อ้างว่ามีจริง</li></ul>
+<h3>Task 7: Multidimensional Gap Report ระดับผู้บริหาร</h3>
+<p><strong>สถานะ:</strong> เสร็จแล้ว — รายงานไทย/อังกฤษสอดคล้องกัน Render แล้ว และผ่านการตรวจโครงสร้าง</p>
+<p><strong>ไฟล์:</strong> สร้าง <code>docs/research/2026-07-19-kitchen-master-gap-analysis.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></p>
+<p><strong>การทำงานร่วมกัน:</strong> ทำร่วม Task 3 หรือ 6 ได้; ต้องรอ Task 1; ระวัง citations/terminology ร่วม ADR</p>
+<ul><li>[x] <strong>Step 0:</strong> docs-only exception; ตรวจ evidence classification, parity, citations และ render</li><li>[x] <strong>Step 1:</strong> สร้าง ledger ด้วย VERIFIED FACT, OWNER DECISION, INFERENCE, PROPOSAL, UNKNOWN, CONTRADICTED พร้อม local line และ primary source; Perplexity เป็น discovery จนกว่าจะ verify</li><li>[x] <strong>Step 2:</strong> ครอบคลุม products/modules, sizes/heights, hardware, finishes, boring, manufacturing, installation, MEP, safety, accessibility, procurement, quality, traceability, sustainability, BIM/PIM, service design, ethical retention, AI, tenancy, economics, organization และ ecosystem</li><li>[x] <strong>Step 3:</strong> เรียง B0/B1/B2/B3 พร้อม decision, owner, dependency, evidence gap และ acceptance criteria; เปลี่ยนเป้าหมาย “หยุดใช้ไม่ได้” เป็น trustworthy indispensability, portability และ excellent service</li><li>[x] <strong>Step 4:</strong> Render HTML และตรวจ heading topology/decision tables/citations/risk labels ให้ TH/EN ตรงกัน</li></ul>
+<h3>Task 8: Integrated Verification และ Implementation Report</h3>
+<p><strong>สถานะ:</strong> เสร็จแล้ว — ซ่อม findings จาก outsider review และเผยแพร่หลักฐานกับ handoff สองภาษาครบ</p>
+<p><strong>ไฟล์:</strong> สร้าง implementation report TH/EN Markdown+HTML ใน <code>docs/reports/</code> และ <code>artifacts/verification/kitchen-kernel-bootstrap-summary.json</code></p>
+<p><strong>การทำงานร่วมกัน:</strong> ต้องรอ Tasks 2–7 และทำตามลำดับ</p>
+<ul><li>[x] <strong>Step 0:</strong> ใช้ <code>verification-before-completion</code></li><li>[x] <strong>Step 1:</strong> รัน <code>unittest</code>, compile, JSON/JSONL parsing, exact counts, ADR checks, bilingual pairs, standalone HTML, git status และ secret scan</li><li>[x] <strong>Step 2:</strong> แก้เฉพาะ failure ที่พิสูจน์ได้และรันคำสั่งเดิมซ้ำ</li><li>[x] <strong>Step 3:</strong> บันทึก command, timestamp, exit code, totals, paths และ limitations เป็น JSON</li><li>[x] <strong>Step 4:</strong> เขียน report สองภาษา แยกสิ่งที่สร้างจริง/เสนอ/ยังไม่ implement และไม่อ้าง production/ratification</li><li>[x] <strong>Step 5:</strong> ตรวจ output ครบไม่ถูกตัด และแยก <code>git init</code> ออกจาก commit/push อย่างชัดเจน</li></ul>
+</main>
+</body>
+</html>

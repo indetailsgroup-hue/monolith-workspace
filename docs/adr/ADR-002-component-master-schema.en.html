@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADR-002 — Component Master Two-Layer Schema</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>ADR-002 — Component Master Two-Layer Schema</h1>
+<ul><li><strong>Status:</strong> Proposed</li><li><strong>Date:</strong> 2026-07-19</li><li><strong>Decision authority:</strong> MONOLITH Platform Owner, Architecture Authority, and Component Master Governance</li><li><strong>Consulted pilot:</strong> Daph provides workflow evidence but has no platform-wide ratification or canonical-write authority</li><li><strong>Bounded context:</strong> Component Master</li><li><strong>Related:</strong> ADR-001 Tenant Boundary; ADR-003 Finish Library IP; ADR-005 Boring Standard</li><li><strong>Evidence source preserved:</strong> <code>All aboute kitchen/adr-002-component-master-schema.md</code></li></ul>
+<h2>Context</h2>
+<p>Kitchen and cabinet design needs stable functional intent, while procurement needs exact manufacturer parts, packs, availability, contracts, and regional catalog revisions. Combining those clocks in one identifier makes every supplier change a design change. Treating supplier brand names as generic component classes also weakens interoperability and can misuse trademarks.</p>
+<p>The governing tenant policy now exists in ADR-001. It requires a MONOLITH-owned shared kernel, tenant-scoped memberships and overlays, authenticated tenant context, and isolation across all storage and execution planes. ADR-003 separately governs finish identity and supplier-native intellectual property. ADR-005 governs boring geometry and supplier/machine variants.</p>
+<h2>Decision</h2>
+<p>MONOLITH adopts a two-layer Component Master.</p>
+<h3>Layer 1 — Component Specification</h3>
+<p>Layer 1 records MONOLITH canonical design intent. It is tenant-agnostic, versioned, read-only to tenants, and writable only through MONOLITH governance.</p>
+<p>Every specification must contain:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Field</th>
+<th>Required meaning</th>
+</tr></thead><tbody>
+<tr>
+<td><code>spec_id</code></td>
+<td>Immutable functional identifier using generic terminology</td>
+</tr>
+<tr>
+<td><code>spec_version</code></td>
+<td>Semantic version; projects pin the version</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>Controlled Component Master category</td>
+</tr>
+<tr>
+<td><code>function_i18n</code></td>
+<td>Functional description, not supplier marketing copy</td>
+</tr>
+<tr>
+<td><code>parameters</code></td>
+<td>Typed design, fit, load, material, and interface constraints</td>
+</tr>
+<tr>
+<td><code>boring_profile_refs</code></td>
+<td>Versioned <code>MON-BS-001</code> core/variant references when machining applies</td>
+</tr>
+<tr>
+<td><code>assembly_sequence</code></td>
+<td>Ordered operations with tools, safety, and evidence references</td>
+</tr>
+<tr>
+<td><code>symbols</code></td>
+<td>Governed symbol identifiers, not embedded unlicensed artwork</td>
+</tr>
+<tr>
+<td><code>substitutability_class</code></td>
+<td>Candidate-equivalence classification, never automatic proof</td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>Source, revision/date, locator, rights, and evidence class</td>
+</tr>
+<tr>
+<td><code>governance_status</code></td>
+<td><code>Proposed</code>, <code>Ratified</code>, <code>Deprecated</code>, or <code>Withdrawn</code></td>
+</tr>
+</tbody></table></div>
+<p>Generic names are canonical. Supplier trademarks such as product-line names remain aliases on supplier records, never the canonical category.</p>
+<h3>Layer 2 — Supplier SKU Instance</h3>
+<p>Layer 2 records the exact commercial realization of one Layer-1 specification.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Field</th>
+<th>Required meaning</th>
+</tr></thead><tbody>
+<tr>
+<td><code>sku_id</code></td>
+<td>Immutable supplier-instance identifier</td>
+</tr>
+<tr>
+<td><code>spec_id</code> / <code>spec_version_range</code></td>
+<td>Foreign key and declared compatibility range</td>
+</tr>
+<tr>
+<td><code>supplier_id</code></td>
+<td>Supplier-master reference</td>
+</tr>
+<tr>
+<td><code>manufacturer_part_no</code></td>
+<td>Lossless native part number</td>
+</tr>
+<tr>
+<td><code>supplier_finish_ref</code></td>
+<td>Supplier-native finish mapped under ADR-003</td>
+</tr>
+<tr>
+<td><code>dimensions</code> / <code>tolerances</code></td>
+<td>Sourced physical realization data</td>
+</tr>
+<tr>
+<td><code>pack_qty</code> / <code>order_unit</code></td>
+<td>Procurement packaging facts</td>
+</tr>
+<tr>
+<td><code>availability</code></td>
+<td>Region and effective-date scoped availability</td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>Catalog/source revision, locator, retrieval date, and rights</td>
+</tr>
+<tr>
+<td><code>lifecycle</code></td>
+<td>Effective, discontinued, successor, and last-verified dates</td>
+</tr>
+</tbody></table></div>
+<p>Default public catalog facts may live in the governed shared catalog. Contract prices, negotiated MOQ, preferred suppliers, approvals, and project selections are tenant overlays governed by ADR-001. Tenant deletion removes tenant overlays without deleting the canonical specification or permitted shared catalog facts.</p>
+<h2>Resolution and substitution</h2>
+<ol><li>Design selects and pins a <code>spec_id</code> plus version.</li><li>Tenant policy produces candidate SKUs visible and permitted for that tenant.</li><li>A rules engine evaluates dimensional, boring, material, load, finish, regulatory, region, lifecycle, machine, and project constraints.</li><li>Human approval is required when the evidence class, tolerance, finish, safety impact, or tenant policy demands it.</li><li>BOM and purchasing outputs pin the chosen SKU and commercial snapshot; CAM pins the exact boring/profile variant rather than inferring it from a generic specification.</li></ol>
+<p>Sharing a <code>spec_id</code> means “candidate for evaluated substitution,” not “interchangeable without checks.” A different hole diameter, tolerance, machine dependency, finish evidence, load class, or regulatory scope blocks silent substitution. Cross-<code>spec_id</code> replacement is a design revision.</p>
+<h2>Ownership and tenant boundary</h2>
+<ul><li>MONOLITH governance alone creates, changes, ratifies, deprecates, or withdraws canonical specifications.</li><li>Suppliers and tenants may submit evidence and mapping proposals; they cannot directly mutate the shared kernel.</li><li>Global identity identifies a person; tenant membership and role authorize each tenant action.</li><li>Customer profiles, contracts, pricing, preferences, approvals, and project selections are tenant-local.</li><li>Daph is one consulted pilot tenant and has no privileged platform authority.</li><li>Support access follows ADR-001 break-glass-only controls.</li></ul>
+<h2>Versioning and lifecycle</h2>
+<ul><li>A breaking functional, fit, geometry, safety, or semantic change requires a new major specification version or a new <code>spec_id</code> when identity changes.</li><li>Additive metadata may use a minor version only when existing interpretation and output remain unchanged.</li><li>Corrections with no semantic/output effect may use a patch version with an audit reason.</li><li>Existing projects keep pinned versions. Upgrades require impact analysis, regenerated outputs, and approval.</li><li>Deprecated records remain readable and reproducible but are not selectable for new work by default.</li></ul>
+<h2>Security, provenance, and IP</h2>
+<p>Every write records actor, authority, tenant context when applicable, reason, before/after hash, evidence, and timestamp. Supplier-native text, codes, trademarks, images, CAD, textures, and catalog layouts retain source identity and rights metadata. A citation proves provenance, not permission to redistribute. Supplier finish data follows ADR-003; geometry follows ADR-005.</p>
+<h2>Migration</h2>
+<ol><li>Copy existing source modules and documents into the Component Master package without rewriting the evidence originals.</li><li>Import records as <code>Proposed</code> with evidence classes; unknown values remain unknown.</li><li>Seed the 15 connector specifications enumerated by Book 11, plus two hinge and two drawer-runner specifications as explicit expansion records: 19 total.</li><li>Import supplier parts as Layer-2 instances only where native identity and source anchors are retained.</li><li>Map legacy model-name references to candidate specifications; ambiguous names enter a review queue.</li><li>Pin versions in sample projects and compare BOM, CNC/CAM, installation, and procurement outputs before cutover.</li></ol>
+<h2>Rollback</h2>
+<p>Rollback restores the prior catalog/version pins and resolution policy. It never deletes audit history or supplier-native records. Materialized project snapshots remain reproducible. Flattening the two layers or changing canonical ownership requires a superseding ADR and an export demonstrating that specifications, SKUs, provenance, tenant overlays, and project pins remain lossless.</p>
+<h2>Alternatives considered</h2>
+<h3>Manufacturer SKU as canonical identity — rejected</h3>
+<p>It couples design intent to supplier catalog churn and prevents governed cross-supplier evaluation.</p>
+<h3>One record with supplier aliases — rejected</h3>
+<p>It conflates stable functional constraints with volatile commercial attributes and makes version ownership ambiguous.</p>
+<h3>Model names only — rejected</h3>
+<p>They cannot reliably drive validation, BOM, procurement, machining, substitution, or traceable field service.</p>
+<h2>Acceptance and ratification gates</h2>
+<p>This ADR remains Proposed until all of the following have auditable evidence:</p>
+<ol><li>Schema and validators reject malformed IDs, invalid versions, orphan SKUs, untyped dimensions, missing provenance, and unsafe substitutions.</li><li>The first 19-spec seed and its SKU instances pass count, uniqueness, foreign-key, provenance, and round-trip tests.</li><li>Coverage expands to at least 50 specifications across at least eight categories and 300 SKU instances across at least five independent suppliers; the 19-record seed alone is not ratification evidence.</li><li>At least one positive and one blocked cross-supplier substitution are demonstrated with unchanged/changed BOM and CAM evidence as appropriate.</li><li>ADR-001 tenant-isolation tests prove no tenant can read or mutate another tenant's overlays or the canonical kernel.</li><li>Finish mappings and boring variants pass ADR-003 and ADR-005 gates.</li><li>Procurement, design, manufacturing, installation, service, security/privacy, and legal/IP reviewers record results and unresolved risks.</li><li>MONOLITH Platform Owner, Architecture Authority, and Component Master Governance ratify; pilot acceptance is consulted evidence only.</li></ol>
+<h2>Supersession</h2>
+<ul><li><strong>Supersedes:</strong> the decision-authority and ungoverned tenant-policy portions of the preserved original draft; the original remains historical evidence.</li><li><strong>Superseded by:</strong> none.</li><li>Any schema, ownership, or layer collapse requires a new ADR with migration, rollback, and evidence-impact analysis.</li></ul>
+<h2>Evidence status</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Claim</th>
+<th>Status on 2026-07-19</th>
+</tr></thead><tbody>
+<tr>
+<td>Two-layer model and governance decision</td>
+<td>Owner-approved decision, documented as Proposed</td>
+</tr>
+<tr>
+<td>ADR-001/003/005 dependencies</td>
+<td>Proposed governing decisions</td>
+</tr>
+<tr>
+<td>First 19 specifications</td>
+<td>Planned until machine-readable data and tests exist</td>
+</tr>
+<tr>
+<td>Production database, tenant enforcement, and hosted deployment</td>
+<td>No evidence / not implemented</td>
+</tr>
+<tr>
+<td>Daph workflow validation</td>
+<td>Consulted evidence not yet recorded; never a ratification authority</td>
+</tr>
+</tbody></table></div>
+</main>
+</body>
+</html>

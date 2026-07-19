@@ -1,0 +1,94 @@
+{
+  "profile_id": "MON-BS-001",
+  "version": "0.1.0",
+  "status": "Proposed",
+  "title": "MONOLITH Internal Boring and Drilling Interoperability Profile",
+  "claims": {
+    "is_internal_profile": true,
+    "is_iso_en_din_standard": false,
+    "brand_ownership_claim": false
+  },
+  "safety_disclaimer": "Geometry conformance does not prove hardware strength, cabinet stability, installation safety, machine safety, or ISO/EN performance compliance. Physical qualification and supplier instructions remain mandatory.",
+  "core": {
+    "units": "mm",
+    "pitch_mm": 32.0,
+    "coordinate_system": {
+      "scope": "finished component-local coordinates",
+      "origin": "lower-front reference corner selected by the pinned component orientation",
+      "axes": {"x": "component width", "y": "component length", "z": "into material from selected face"},
+      "faces": ["FACE", "BACK", "L1", "L2", "W1", "W2"],
+      "orientation_required": true
+    },
+    "reference_line_semantics": {
+      "pitch": "Successive grid points are separated by exactly 32.0 mm along the declared axis",
+      "setback": "No universal setback is asserted; each generic or supplier variant declares its own sourced value and tolerance",
+      "sequence": "Coordinate order and selected face are output-significant"
+    },
+    "hole_operation_contract": ["operation_id", "face", "x_mm", "y_mm", "diameter_mm", "depth_mm", "tolerance_mm", "tool_id", "source_revision"],
+    "generic_nominals": {
+      "line_bore_hole_diameter_mm": 5.0,
+      "front_reference_setback_mm": 37.0,
+      "evidence_status": "Reported convention; not universal and not production authority"
+    }
+  },
+  "variants": [
+    {
+      "variant_id": "generic-reference",
+      "status": "Proposed",
+      "pitch_mm": 32.0,
+      "source_revision": "ADR-005 / Book 12 reference engine 2026-07-19",
+      "manufacturing_allowed": false,
+      "unknowns": ["production tolerance", "machine datum", "supplier-specific fixing geometry"]
+    },
+    {
+      "variant_id": "blum-process32-research-pending",
+      "status": "ResearchPending",
+      "manufacturing_allowed": false,
+      "source_revision": null,
+      "unknowns": ["current official coordinate contract", "tolerances", "series compatibility"]
+    },
+    {
+      "variant_id": "hettich-system32-research-pending",
+      "status": "ResearchPending",
+      "manufacturing_allowed": false,
+      "source_revision": null,
+      "unknowns": ["current official coordinate contract", "tolerances", "series compatibility"]
+    },
+    {
+      "variant_id": "grass-kissii-research-pending",
+      "status": "ResearchPending",
+      "manufacturing_allowed": false,
+      "source_revision": null,
+      "unknowns": ["current official coordinate contract", "tolerances", "series compatibility"]
+    },
+    {
+      "variant_id": "hafele-lr32-research-pending",
+      "status": "ResearchPending",
+      "manufacturing_allowed": false,
+      "source_revision": null,
+      "unknowns": ["current official coordinate contract", "tolerances", "jig compatibility"]
+    },
+    {
+      "variant_id": "lamello-p-reported",
+      "status": "ResearchPending",
+      "manufacturing_allowed": false,
+      "source_revision": "Book 11 reported evidence only",
+      "unknowns": ["current primary technical sheet", "tool calibration", "exact variant geometry"]
+    }
+  ],
+  "machine_profile_contract": ["machine_profile_id", "version", "datum", "face_transform", "tools", "post_processor_id", "post_processor_version", "calibration_evidence", "last_qualified_at"],
+  "project_pin_contract": ["profile_id", "version", "variant_id", "machine_profile_id", "machine_profile_version", "post_processor_id", "post_processor_version"],
+  "versioning": {
+    "major": "coordinate, datum, face, tolerance, or transform change affecting output",
+    "minor": "additive metadata with unchanged existing output",
+    "patch": "non-behavioural correction",
+    "silent_upgrade_allowed": false
+  },
+  "provenance": [
+    "ADR-005 owner decision dated 2026-07-19",
+    "ISO 4769:2022 performance scope: https://www.iso.org/standard/80333.html",
+    "ISO 12808:2024 performance scope: https://www.iso.org/standard/84112.html",
+    "ISO 25131:2025 performance scope: https://www.iso.org/standard/89083.html",
+    "ISO 7170:2021 storage-unit test scope: https://www.iso.org/standard/76864.html"
+  ]
+}
