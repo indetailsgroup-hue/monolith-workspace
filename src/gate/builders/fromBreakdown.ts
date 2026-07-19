@@ -159,12 +159,43 @@ export type BuildGateInputOptions = {
   // Optional: drill operations (may not have yet in v0.1)
   drillOps?: DrillOp[];
 
+  /**
+   * Optional: extra parts whose ids the `drillOps` reference — typically
+   * `buildPartsFromDrillMap(drillMap)`, captured from the same drill map as the
+   * ops.
+   *
+   * The material rules (depth, margin, edge-bore) join each op to a part by
+   * `partId`. Drill-map ops are keyed by the panelId scheme ('panel-left');
+   * breakdown parts by the cut-list scheme ('PANEL_SIDE_L'). With no bridge
+   * between the two, every op misses and a drill-through is silently dropped
+   * (see `if (!p) continue` in the rules). Supplying the drill-map parts here
+   * lets every captured hole resolve. Merged with the breakdown parts, deduped
+   * by `partId`; a breakdown part wins a collision (it carries the authoritative
+   * cut/edge data).
+   */
+  drillParts?: PartSpec[];
+
   // Optional: fitting intents (may not have yet in v0.1)
   fittings?: FittingIntent[];
 
   // Optional: cabinet-level context
   cabinet?: { backPanelThicknessMm?: number };
 };
+
+/**
+ * Merge two part lists by `partId`, keeping the FIRST occurrence of any id and
+ * appending the rest. Deterministically sorted for reproducible gate reports.
+ *
+ * Used to fold drill-map-derived parts in beside the breakdown parts without
+ * letting a coincidental id collision silently replace the authoritative
+ * (breakdown) part.
+ */
+function mergePartsById(primary: PartSpec[], extra: PartSpec[]): PartSpec[] {
+  const byId = new Map<string, PartSpec>();
+  for (const p of primary) if (!byId.has(p.partId)) byId.set(p.partId, p);
+  for (const p of extra) if (!byId.has(p.partId)) byId.set(p.partId, p);
+  return [...byId.values()].sort((a, b) => a.partId.localeCompare(b.partId));
+}
 
 /**
  * Build complete GateInput from breakdown rows
@@ -183,7 +214,10 @@ export type BuildGateInputOptions = {
  * ```
  */
 export function buildGateInputFromBreakdown(opts: BuildGateInputOptions): GateInput {
-  const parts = buildPartsFromBreakdown(opts.rows);
+  const parts = mergePartsById(
+    buildPartsFromBreakdown(opts.rows),
+    opts.drillParts ?? [],
+  );
 
   return {
     snapshotId: opts.snapshotId,

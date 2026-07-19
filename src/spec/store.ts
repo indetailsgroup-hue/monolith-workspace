@@ -15,8 +15,8 @@ import type {
   GateReport,
 } from './types';
 import type { SpecServices } from './services';
-import type { PartBreakdownRow, DrillOp, FittingIntent } from '../gate';
-import { buildDrillOpsFromDrillMap } from '../gate/builders';
+import type { PartBreakdownRow, DrillOp, FittingIntent, PartSpec } from '../gate';
+import { buildDrillOpsFromDrillMap, buildPartsFromDrillMap } from '../gate/builders';
 import { useDrillMapStore } from '../core/store/useDrillMapStore';
 
 // ============================================
@@ -304,13 +304,29 @@ export function createSpecStore(
         //
         // draftManufacturing.drillOps still wins when non-empty so an
         // explicit setDrillOps (e.g. from a test) is honoured.
-        const drillOps: DrillOp[] = draftManufacturing.drillOps.length
+        const usingExplicitOps = draftManufacturing.drillOps.length > 0;
+        const drillMap = useDrillMapStore.getState().drillMap;
+        const drillOps: DrillOp[] = usingExplicitOps
           ? draftManufacturing.drillOps
-          : buildDrillOpsFromDrillMap(useDrillMapStore.getState().drillMap).ops;
+          : buildDrillOpsFromDrillMap(drillMap).ops;
+
+        // Capture the parts the ops REFERENCE, from the same drill map, so the
+        // persisted gate can actually resolve every hole. buildDrillOpsFromDrillMap
+        // keys ops by the drill-map panelId ('panel-left'); the breakdown rows use
+        // the cut-list scheme ('PANEL_SIDE_L') and nothing bridges the two. Without
+        // these parts every op misses in the material rules (if (!p) continue) and
+        // a real through-drill is dropped from the stored report — the exact
+        // divergence this lane exists to close. When ops came from an explicit
+        // setDrillOps they already key to breakdown parts, so no drill-map parts
+        // are needed (or available).
+        const drillParts: PartSpec[] = usingExplicitOps
+          ? []
+          : buildPartsFromDrillMap(drillMap);
 
         const payload = {
           breakdownRows: draftManufacturing.breakdownRows,
           drillOps,
+          drillParts,
           fittings: draftManufacturing.fittings,
           cabinet: draftManufacturing.cabinet,
         };
