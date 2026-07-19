@@ -45,6 +45,15 @@ const ROLE_EXPOSED_EDGES: Record<PanelRole, EdgeSide[]> = {
   BACK: [],                      // All edges hidden (against wall/inside)
   SHELF: ['LEFT'],               // Front edge exposed (back hidden)
   DIVIDER: ['LEFT'],             // Front edge exposed
+  KICKBOARD: ['TOP', 'LEFT', 'RIGHT'],  // Top edge + both ends visible; bottom sits on floor
+  // WORKTOP slots are NOT the carcass convention: for this horizontal slab the
+  // `top` slot holds the FRONT edge, `bottom` the back edge, and `left`/`right`
+  // the two run ends. Only the front is exposed on every slab in every layout;
+  // ends and back vary per slab (a split or L-corner butt face is hidden) and
+  // are resolved by deriveWorktopPanels, not by role. Was ['LEFT'] with the
+  // comment "Front edge exposed" — the comment described the intent, the value
+  // pointed at an end.
+  WORKTOP: ['TOP'],
 
   // Fronts (all edges exposed)
   FRONT: ['TOP', 'BOTTOM', 'LEFT', 'RIGHT'],

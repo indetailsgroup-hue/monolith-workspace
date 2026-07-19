@@ -27,6 +27,8 @@ export type PanelRole =
   | 'BACK'
   | 'SHELF'
   | 'DIVIDER'
+  | 'KICKBOARD'      // Recessed plinth closing the toe-kick void (บังตีนตู้)
+  | 'WORKTOP'        // Horizontal slab spanning a cabinet run
   | 'FRONT'
   | 'DRAWER_FRONT'
   | 'DRAWER_SIDE'
@@ -141,6 +143,22 @@ export interface CabinetPanel {
   // Per-panel position overrides (for shelves/dividers)
   positionOverrides?: PanelPositionOverrides;
   useCustomPosition?: boolean;
+
+  /**
+   * Run this panel belongs to, when it is a RUN-level part rather than a
+   * cabinet-level one. Set on WORKTOP slabs only.
+   *
+   * A worktop spans several cabinets but must live in exactly one cabinet's
+   * panels[] so it inherits the cut list, BOM, DXF and gate — all of which are
+   * cabinet-scoped. The consequence is that the whole slab's cost and CO2 land
+   * on its host, so a 1800mm worktop appears under one 600mm base unit. Project
+   * totals are correct and nothing is double-counted or zero-costed, but a
+   * PER-CABINET cost view is not meaningful for a host.
+   *
+   * Consumers that report per-cabinet money should exclude or separately group
+   * panels carrying a runId. See the release note in the PR body.
+   */
+  runId?: string;
 }
 
 // ============================================
@@ -308,6 +326,32 @@ export interface DoorConfig {
 }
 
 /**
+ * Datum the kickboard setback is measured from.
+ * - 'CARCASS' (default): cabinet front face at Z = +D/2. Stable — toggling doors
+ *   does not move the plinth.
+ * - 'FRONT': door / drawer-front outer face. Matches the joinery convention
+ *   (typ. 50-100mm from the door face) but couples the plinth to doorConfig.
+ */
+export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
+
+/**
+ * Kickboard (plinth / บังตีนตู้) configuration.
+ * Only meaningful when dimensions.toeKickHeight > 0.
+ */
+export interface KickboardConfig {
+  /** Generate a KICKBOARD panel. Defaults to true when toeKickHeight > 0. */
+  hasKickboard: boolean;
+  /** Recess of the kickboard front face. Default: MANUFACTURING_PARAMS.kickSetback (50mm). */
+  setback?: number;
+  /** Datum the setback is measured from. Default: 'CARCASS'. */
+  setbackDatum?: KickboardSetbackDatum;
+  /** Optional core override (e.g. moisture-resistant). Falls back to cabinet defaults. */
+  coreMaterialId?: string;
+  /** Optional surface override. Falls back to cabinet defaults. */
+  surfaceMaterialId?: string;
+}
+
+/**
  * Default door panel configuration.
  */
 export const DEFAULT_DOOR_PANEL: Omit<DoorPanelConfig, 'id'> = {
@@ -455,6 +499,8 @@ export interface CabinetStructure {
   drawerConfig?: DrawerConfig;
   /** Door system configuration (optional) */
   doorConfig?: DoorConfig;
+  /** Kickboard / plinth configuration (optional). Only meaningful when toeKickHeight > 0. */
+  kickboardConfig?: KickboardConfig;
 
   /**
    * Per-shelf connector configuration.

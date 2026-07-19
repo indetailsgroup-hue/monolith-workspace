@@ -224,8 +224,12 @@ describe('Panel Generation', () => {
     expect(dividers).toHaveLength(0);
   });
 
-  it('should create 6 panels total by default (L, R, T, B, Back, 1 Shelf)', () => {
-    expect(getCabinet().panels).toHaveLength(6);
+  it('should create 7 panels total by default (L, R, T, B, Kickboard, Back, 1 Shelf)', () => {
+    // Was 6 before the KICKBOARD role existed. DEFAULT_DIMENSIONS.toeKickHeight
+    // is 100mm, so the default cabinet now also carries a plinth — a real part
+    // with real cost that the old model left as open air.
+    expect(getCabinet().panels).toHaveLength(7);
+    expect(findPanels('KICKBOARD')).toHaveLength(1);
   });
 
   it('should assign correct names to panels', () => {
@@ -1619,8 +1623,8 @@ describe('Edge Cases', () => {
     resetAndCreate();
     useCabinetStore.getState().setShelfCount(0);
     expect(findPanels('SHELF')).toHaveLength(0);
-    // 5 panels: L, R, T, B, Back
-    expect(getCabinet().panels).toHaveLength(5);
+    // 6 panels: L, R, T, B, Kickboard, Back
+    expect(getCabinet().panels).toHaveLength(6);
   });
 
   it('should not crash when updating material on nonexistent panel', () => {

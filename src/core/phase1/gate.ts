@@ -24,6 +24,7 @@ import type {
   EdgeSide,
 } from './types';
 import { GATE_ISSUE_CODES } from './types';
+import { EDGE_MATERIALS_CATALOG } from '../materials/PanelMaterialSystem';
 
 // ============================================
 // RULE CONFIGURATION
@@ -83,6 +84,7 @@ export function runPhase1Gate(cabinetId: string): GateSnapshot {
   issues.push(...checkDimensionRules(cabinet));
   issues.push(...checkStructuralRules(cabinet));
   issues.push(...checkEdgeRules(cabinet));
+  issues.push(...checkEdgeTapeHeight(cabinet));
   issues.push(...checkMaterialRules(cabinet));
 
   return createGateSnapshot(issues);
@@ -242,6 +244,59 @@ function checkEdgeRules(cabinet: Cabinet): GateIssue[] {
 }
 
 /**
+ * Every BANDED edge must use tape at least as tall as the panel is thick.
+ *
+ * This check was missing repo-wide. It never mattered while every panel was
+ * ~18.6mm and every tape in EDGE_MATERIALS_CATALOG is 23mm tall, but nothing
+ * enforced the relationship — and flatPartBuilder.ts:172 copies edge.height
+ * straight into the manufacturing packet, so an undersized tape tells the
+ * edgebander to leave raw board exposed while the BOM confidently charges for
+ * a finished edge. rule_edge_allowance only compares premill against edge
+ * THICKNESS; nothing compared HEIGHT against panel thickness.
+ *
+ * FAIL rather than WARN: the part cannot be built to the spec it is quoted at.
+ */
+function checkEdgeTapeHeight(cabinet: Cabinet): GateIssue[] {
+  const issues: GateIssue[] = [];
+  const slots: Array<[EdgeSide, keyof CabinetPanel['edges']]> = [
+    ['TOP', 'top'],
+    ['BOTTOM', 'bottom'],
+    ['LEFT', 'left'],
+    ['RIGHT', 'right'],
+  ];
+
+  for (const panel of cabinet.panels) {
+    const thickness = panel.computed.realThickness;
+    for (const [side, slot] of slots) {
+      const edgeId = panel.edges[slot];
+      if (!edgeId) continue;
+
+      const edge = EDGE_MATERIALS_CATALOG[edgeId];
+      // An unknown id is MONO_MATERIAL_NOT_FOUND's business, not this rule's.
+      if (!edge) continue;
+
+      if (edge.height < thickness) {
+        issues.push({
+          code: GATE_ISSUE_CODES.MONO_EDGE_TAPE_TOO_NARROW,
+          severity: 'FAIL',
+          entityType: 'EDGE',
+          entityId: `${panel.id}:${side}`,
+          message:
+            `Panel ${panel.name} edge ${side} is banded with ${edge.id} (${edge.height}mm tall) ` +
+            `but the panel is ${thickness.toFixed(1)}mm thick — the tape cannot cover the edge`,
+          messageTH:
+            `แผง ${panel.name} ขอบ ${side} ใช้เทป ${edge.height}mm แต่แผงหนา ` +
+            `${thickness.toFixed(1)}mm — เทปปิดขอบไม่มิด`,
+          hint: `Choose an edge material with height >= ${thickness.toFixed(1)}mm`,
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
+/**
  * Determine which edges of a panel are exposed
  */
 function getExposedEdges(panel: CabinetPanel, cabinet: Cabinet): EdgeSide[] {
@@ -284,6 +339,35 @@ function getExposedEdges(panel: CabinetPanel, cabinet: Cabinet): EdgeSide[] {
     case 'DRAWER_FRONT':
       // All edges exposed for drawer fronts
       exposed.push('TOP', 'BOTTOM', 'LEFT', 'RIGHT');
+      break;
+
+    case 'KICKBOARD':
+      // Plinth: top edge visible from a low angle, both ends visible at run
+      // ends / islands. Bottom sits on the floor. Matches ROLE_EXPOSED_EDGES.
+      exposed.push('TOP', 'LEFT', 'RIGHT');
+      break;
+
+    case 'WORKTOP':
+      // EDGE SLOTS MEAN SOMETHING DIFFERENT FOR THIS ROLE. A worktop slab is
+      // horizontal, so its slots hold:
+      //   top    = FRONT edge  -> always exposed, always checked here
+      //   bottom = BACK edge   -> exposed only on an island (no wall behind)
+      //   left   = low-u END   -> exposed only when it is not a split/butt face
+      //   right  = high-u END  -> likewise
+      //
+      // Only the front is checked. It is the one face that is exposed on every
+      // slab in every layout, so it is the one that can be a pure function of
+      // role. Ends genuinely vary slab-by-slab: an internal joint where a long
+      // run is split for blank length, or a square butt at an L-corner, is
+      // hidden and correctly carries no tape. Falling through to `default:`
+      // checked 'LEFT' instead — raising a FAIL on every correctly-untaped
+      // split joint (i.e. on essentially every real kitchen run) while never
+      // once inspecting the real front edge.
+      //
+      // Ends and back are decided by deriveWorktopPanels, which bands
+      // exposed-by-default; that is over-banding, which costs tape rather than
+      // shipping raw board.
+      exposed.push('TOP');
       break;
 
     default:

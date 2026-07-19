@@ -32,6 +32,9 @@ import { GlueFaceHighlights } from './GlueFaceHighlights';
 import { SnapPreview } from './SnapPreview';
 import { useProjectStore } from '../../core/store/useProjectStore';
 import { useSnapStore } from '../../core/store/useSnapStore';
+import { useHandleViewStore } from '../../core/store/useHandleViewStore';
+import { HandleLayer } from './Handle3D';
+import { resolveHandlePlacements } from '../../core/hardware/handlePlacement';
 import { SceneObjectRef } from './scene';
 import type { Vec3 } from '../../core/types/SnapTypes';
 import { calculateSnap, type SnapTarget } from '../../core/utils/snapSystem';
@@ -792,6 +795,8 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
   const markDirty = useProjectStore((s) => s.markDirty);
   const allCabinets = useCabinetStore((s) => s.cabinets);
   const clearActiveSnap = useSnapStore((s) => s.clearActiveSnap);
+  // Handle hardware is display-only: hiding it does not change the BOM or cut list.
+  const showHandles = useHandleViewStore((s) => s.showHandles);
 
   // State to trigger re-render when group ref is ready
   // This is needed because CabinetTransformControls checks targetRef.current
@@ -1063,6 +1068,16 @@ function SingleCabinet({ cabinet, cabinetId, isActive, position, rotation, showD
         drillPointsByPanelId={drillPointsByPanelId}
         useCSGHoles={useCSGHoles}
       />
+
+      {/* Handle hardware - bought parts, not panels. Rendered inside the cabinet
+          group so each handle inherits scenePosition/sceneRotation via its own
+          panel frame. Never reaches the cut list or the DXF. */}
+      {showHandles && (
+        <HandleLayer
+          placements={resolveHandlePlacements(cabinet)}
+          xRayMode={xRayMode}
+        />
+      )}
 
       {/* Glue Face Highlights - inside group for correct positioning */}
       {/* Use shouldShowGlueFaces (not isGlueMode) to let GlueFaceHighlights handle delayed unmount */}
@@ -1810,6 +1825,12 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
         return [panel.finishWidth, t, panel.finishHeight];
       case 'DIVIDER':
         return [t, panel.finishHeight, panel.finishWidth];
+      case 'WORKTOP':
+        // Horizontal slab: thickness runs up Y, depth runs along Z
+        return [panel.finishWidth, t, panel.finishHeight];
+      case 'KICKBOARD':
+        // Vertical front panel, same axis mapping as BACK
+        return [panel.finishWidth, panel.finishHeight, t];
       default:
         return [panel.finishWidth, panel.finishHeight, t];
     }
@@ -1935,6 +1956,73 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
           color: topEdge.color,
         });
         // Skip top/bottom/back edges for dividers - they are hidden by other panels
+        break;
+
+      case 'KICKBOARD':
+        // Kickboard: vertical XY panel, sizeX=width, sizeY=height, sizeZ=t
+        // Edge slots read literally here: top = upper edge, left/right = ends.
+        // Bottom sits on the floor and is never banded.
+
+        // Top edge - at Y = panel.finishHeight/2 - et/2
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, panel.finishHeight/2 - et/2, 0],
+          size: [panel.finishWidth, et, t + OFFSET],
+          color: topEdge.color,
+        });
+        // Left end - at X = -panel.finishWidth/2 + et/2
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [-panel.finishWidth/2 + et/2, 0, 0],
+          size: [et, panel.finishHeight, t + OFFSET],
+          color: leftEdge.color,
+        });
+        // Right end - at X = panel.finishWidth/2 - et/2
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [panel.finishWidth/2 - et/2, 0, 0],
+          size: [et, panel.finishHeight, t + OFFSET],
+          color: rightEdge.color,
+        });
+        break;
+
+      case 'WORKTOP':
+        // Horizontal slab: sizeX=length(finishWidth), sizeY=t, sizeZ=depth(finishHeight).
+        // Slots are NOT the carcass convention for this role — see
+        // deriveWorktopPanels.ts: top = FRONT edge, bottom = BACK edge,
+        // left/right = the two run ENDS. Without this case the slab rendered
+        // with no tape at all while computeWorktopPanel charged for every
+        // banded metre of it — the 3D view and the BOM disagreeing about a part
+        // the customer is paying for.
+
+        // Front edge - at Z = +finishHeight/2 (front of the slab)
+        if (topEdge) strips.push({
+          edge: 'top',
+          position: [0, 0, panel.finishHeight/2 - et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: topEdge.color,
+        });
+        // Back edge - at Z = -finishHeight/2. Banded on islands only.
+        if (bottomEdge) strips.push({
+          edge: 'bottom',
+          position: [0, 0, -panel.finishHeight/2 + et/2],
+          size: [panel.finishWidth, t + OFFSET, et],
+          color: bottomEdge.color,
+        });
+        // Low-u end - at X = -finishWidth/2
+        if (leftEdge) strips.push({
+          edge: 'left',
+          position: [-panel.finishWidth/2 + et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: leftEdge.color,
+        });
+        // High-u end - at X = +finishWidth/2
+        if (rightEdge) strips.push({
+          edge: 'right',
+          position: [panel.finishWidth/2 - et/2, 0, 0],
+          size: [et, t + OFFSET, panel.finishHeight],
+          color: rightEdge.color,
+        });
         break;
     }
 

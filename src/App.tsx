@@ -27,6 +27,7 @@ import { UnderlayPlane } from './components/canvas/UnderlayPlane';
 import { DxfUnderlay } from './components/canvas/DxfUnderlay';
 import { ReferenceWalls } from './components/canvas/ReferenceWalls';
 import { useUnderlayStore } from './core/store/useUnderlayStore';
+import { mountWorktopReconciler } from './core/worktop/worktopReconciler';
 import { CameraController, ViewType, VIEW_PRESETS } from './components/canvas/ViewportController';
 import { ProjectToolbar } from './components/ui/ProjectToolbar';
 import { GateToolbar } from './components/ui/GateToolbar';
@@ -471,6 +472,12 @@ export function App() {
       void useSpecStore.getState().syncWithServer();
     }
   }, [projectId]);
+
+  // Worktops are DERIVED from cabinet placement, never persisted, so they have
+  // to be re-derived whenever the scene geometry moves. One subscription covers
+  // every mutating action; its signature excludes WORKTOP panels, so the pass
+  // cannot re-trigger itself. See core/worktop/worktopReconciler.ts.
+  useEffect(() => mountWorktopReconciler(), []);
 
   // Glue confirmation effect - moves target cabinet when glue is confirmed
   // Subscribe to glue confirmation - when mode goes to 'idle' after 'preview', move cabinet

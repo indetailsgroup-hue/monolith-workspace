@@ -53,6 +53,17 @@ import {
   createDoorPanelId,
   type DoorMaterialProps,
 } from '../manufacturing/door';
+import {
+  computeKickboardSize,
+  computeKickboardZ,
+  shouldGenerateKickboard,
+  resolveKickboardSetback,
+  resolveKickboardSetbackDatum,
+} from '../manufacturing/kickboard';
+import {
+  computePanelComputed,
+  type PanelCostMaterials,
+} from '../manufacturing/panelComputed';
 import { CABINET_TYPES, type ConstructionType } from '../catalog/CabinetTaxonomy';
 import { checkMutationAllowed, type SpecState } from '../spec/specState';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
@@ -140,6 +151,9 @@ const MANUFACTURING_PARAMS = {
   backVoid: 20,           // Back_void: ระยะเว้นหลังตู้ (19-20 mm)
   backThickness: 6,       // Back_thk: ความหนาแผงหลัง (6 or 9 mm)
   safetyGap: 2,           // Gap_safety: ระยะเผื่อไม่ให้ชน (1-2 mm)
+
+  // === Kickboard / Plinth ===
+  kickSetback: 50,        // K_setback: ระยะร่นบังตีนตู้จากหน้าตู้ (typ. 50 mm)
 };
 
 // ============================================
@@ -1527,7 +1541,8 @@ function generatePanels(
     useCustomPosition?: boolean;
     xPosition?: number; // Custom X position for dividers
   }>,
-  mfgParams?: ManufacturingParams
+  mfgParams?: ManufacturingParams,
+  cabinetType?: CabinetType
 ): CabinetPanel[] {
   const panels: CabinetPanel[] = [];
   const { width: W, height: H, depth: D, toeKickHeight: Leg } = dimensions;
@@ -1562,29 +1577,24 @@ function generatePanels(
   // 3. ANTI-COLLISION: Calculate internal depth
   const depthInternal = D - backObstruction - MFG.safetyGap;
   
-  // Helper to compute panel manufacturing data
-  const computePanel = (finishW: number, finishH: number, edgeTop: number, edgeBottom: number, edgeLeft: number, edgeRight: number) => {
-    // 4. FINISH TO CUT transformation
-    const cutW = calculateCutSize(finishW, edgeLeft, edgeRight, MFG.preMilling);
-    const cutH = calculateCutSize(finishH, edgeTop, edgeBottom, MFG.preMilling);
-    const area = (finishW * finishH) / 1000000; // m² (single face)
-    const edgeLen = ((edgeTop > 0 ? finishW : 0) + (edgeBottom > 0 ? finishW : 0) +
-                     (edgeLeft > 0 ? finishH : 0) + (edgeRight > 0 ? finishH : 0)) / 1000; // meters
+  // Panel materials for this cabinet's defaults, in the shape the shared
+  // formula reads. Overrides (e.g. the kickboard's MR core) build their own.
+  const defaultPanelMaterials: PanelCostMaterials = { core, surface, edge };
 
-    const cost = (area * core.costPerSqm) + (area * 2 * surface.costPerSqm) + (edgeLen * edge.costPerMeter);
-    const co2 = (area * core.co2PerSqm) + (area * 2 * surface.co2PerSqm);
+  // Helper to compute panel manufacturing data.
+  //
+  // The arithmetic lives in src/core/manufacturing/panelComputed.ts so the
+  // worktop lane calls the SAME function rather than a hand-copied twin.
+  const computePanel = (finishW: number, finishH: number, edgeTop: number, edgeBottom: number, edgeLeft: number, edgeRight: number) =>
+    computePanelComputed(
+      finishW,
+      finishH,
+      { top: edgeTop, bottom: edgeBottom, left: edgeLeft, right: edgeRight },
+      defaultPanelMaterials,
+      MFG.preMilling
+    );
 
-    return {
-      realThickness: T_real,
-      cutWidth: cutW,
-      cutHeight: cutH,
-      surfaceArea: area * 2, // Total surface area (both faces)
-      edgeLength: edgeLen,
-      cost,
-      co2,
-    };
-  };
-  
+
   // Helper to create edge assignment
   // Default: ALL 4 edges get default edge material
   // This ensures Apply Material with "All Panels" applies to ALL sides
@@ -1778,6 +1788,72 @@ function generatePanels(
     visible: true,
     selected: false,
   });
+
+  // ========== KICKBOARD (PLINTH) ==========
+  // Closes the toe-kick void. Leg is a pure +Y offset for the carcass, so without
+  // this panel every base cabinet floats above open air.
+  // Generated HERE, inside generatePanels, so computePanel/makeEdges give it real
+  // cut sizes, edge length, surface area, cost and CO2 like any carcass panel.
+  if (shouldGenerateKickboard(dimensions, structure, cabinetType)) {
+    const kickSize = computeKickboardSize(dimensions);
+    const kickSetback = resolveKickboardSetback(structure, MFG.kickSetback);
+    const kickDatum = resolveKickboardSetbackDatum(structure);
+    // Door thickness only matters under the 'FRONT' datum, and only if doors exist
+    const kickDoorT = structure.doorConfig?.hasDoors
+      ? structure.doorConfig.doorThickness
+      : undefined;
+    // NOTE: no carcassZ term — the plinth is referenced to the FRONT face, so the
+    // back-panel construction must not move it (see kickboardGeometry.ts).
+    // MATERIAL OVERRIDE MUST BE COSTED, NOT JUST RECORDED.
+    // KickboardConfig advertises coreMaterialId as "e.g. moisture-resistant" —
+    // precisely the case where the price and CO2 differ. The shared computePanel
+    // closure resolves its materials once from defaultCoreId/defaultSurfaceId and
+    // takes no material argument, so calling it here would file an MR plinth at
+    // standard particleboard cost AND stamp it with the default core's
+    // realThickness, which feeds nesting and the DXF. Resolve locally instead.
+    const kickCoreId = structure.kickboardConfig?.coreMaterialId ?? defaultCoreId;
+    const kickSurfaceId = structure.kickboardConfig?.surfaceMaterialId ?? defaultSurfaceId;
+    const kickCore = CORE_MATERIALS[kickCoreId as keyof typeof CORE_MATERIALS] ?? core;
+    const kickSurface = SURFACE_MATERIALS[kickSurfaceId as keyof typeof SURFACE_MATERIALS] ?? surface;
+    const kickMaterials: PanelCostMaterials = { core: kickCore, surface: kickSurface, edge };
+    const kickComputed = computePanelComputed(
+      kickSize.width,
+      kickSize.height,
+      { top: ET, bottom: 0, left: ET, right: ET },
+      kickMaterials,
+      MFG.preMilling
+    );
+
+    // The plinth's OWN thickness — an MR override is usually a different board,
+    // so the carcass T would place it wrong.
+    const kickZ = computeKickboardZ(D, kickComputed.realThickness, kickSetback, kickDatum, kickDoorT);
+
+    // Edge slots read literally for this role (unlike side panels):
+    //   top = upper edge, visible from a low angle       -> BAND
+    //   bottom = floor edge                              -> NO BAND
+    //   left/right = ends, exposed at run ends & islands -> BAND
+    // Over-bands mid-run ends (hidden by the neighbour's kick) by at most
+    // 2 x Leg of tape per cabinet — never under-quotes.
+    panels.push({
+      id: createId(),
+      role: 'KICKBOARD',
+      name: 'Kickboard',
+      finishWidth: kickSize.width,
+      finishHeight: kickSize.height,
+      coreMaterialId: kickCoreId,
+      faces: {
+        faceA: kickSurfaceId,
+        faceB: null,
+      },
+      edges: makeEdges(true, false, true, true), // top, (no floor edge), left, right
+      grainDirection: 'HORIZONTAL',
+      computed: kickComputed,
+      position: [0, kickSize.height / 2, kickZ],
+      rotation: [0, 0, 0],
+      visible: true,
+      selected: false,
+    });
+  }
 
   // ========== BACK PANEL ==========
   if (structure.hasBackPanel) {
@@ -2039,6 +2115,7 @@ interface ManufacturingParams {
   backVoid: number;          // 19 - 20 mm
   backThickness: number;     // 6 or 9 mm
   safetyGap: number;         // 1 - 2 mm
+  kickSetback: number;       // 40 - 100 mm (kickboard recess)
 }
 
 interface CabinetState {
@@ -2227,6 +2304,7 @@ export const useCabinetStore = create<CabinetStore>()(
       backVoid: MANUFACTURING_PARAMS.backVoid,              // 20 mm
       backThickness: MANUFACTURING_PARAMS.backThickness,    // 6 mm
       safetyGap: MANUFACTURING_PARAMS.safetyGap,            // 2 mm
+      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 50 mm
     },
 
     // Drilling parameters (editable from X-Ray mode labels)
@@ -2251,7 +2329,10 @@ export const useCabinetStore = create<CabinetStore>()(
         defaultSurfaceId,
         defaultEdgeId,
         undefined,
-        get().manufacturingParams
+        get().manufacturingParams,
+        // NOTE: DEFAULT_DIMENSIONS carries toeKickHeight 100 regardless of type,
+        // so the type must reach generatePanels or a WALL cabinet gets a plinth.
+        type
       );
 
       // Get wood thickness from core material for auto-applying Minifix config
@@ -2319,7 +2400,8 @@ export const useCabinetStore = create<CabinetStore>()(
         defaultSurfaceId,
         defaultEdgeId,
         undefined,
-        get().manufacturingParams
+        get().manufacturingParams,
+        type
       );
 
       // Get wood thickness from core material for auto-applying Minifix config
@@ -3775,7 +3857,7 @@ export const useCabinetStore = create<CabinetStore>()(
     setManufacturingParam: (key, value) => {
       // Geometry-affecting params that require full panel regeneration
       const geometryParams: (keyof ManufacturingParams)[] = [
-        'backThickness', 'backVoid', 'grooveDepth', 'clearance', 'safetyGap'
+        'backThickness', 'backVoid', 'grooveDepth', 'clearance', 'safetyGap', 'kickSetback'
       ];
 
       // Keys shared between ManufacturingParams and CabinetManufacturing
@@ -3812,6 +3894,7 @@ export const useCabinetStore = create<CabinetStore>()(
           backVoid: MANUFACTURING_PARAMS.backVoid,
           backThickness: MANUFACTURING_PARAMS.backThickness,
           safetyGap: MANUFACTURING_PARAMS.safetyGap,
+          kickSetback: MANUFACTURING_PARAMS.kickSetback,
         };
       });
     },
@@ -4273,7 +4356,8 @@ export const useCabinetStore = create<CabinetStore>()(
           cabinet.materials.defaultSurface,
           cabinet.materials.defaultEdge,
           existingOverrides,
-          state.manufacturingParams
+          state.manufacturingParams,
+          cabinet.type
         );
 
         // Recalculate partial panel dimensions based on new compartment boundaries

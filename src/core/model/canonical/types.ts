@@ -106,6 +106,8 @@ export type CanonicalPanelRole =
   | 'BACK'
   | 'SHELF'
   | 'DIVIDER'
+  | 'KICKBOARD'
+  | 'WORKTOP'
   | 'FRONT'
   | 'DRAWER_FRONT'
   | 'DRAWER_SIDE'

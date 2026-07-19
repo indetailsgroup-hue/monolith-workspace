@@ -19,6 +19,7 @@
  * - Top/Bottom/Shelf: [width, thickness, depth]
  * - Back: [width, height, thickness]
  * - Divider: [thickness, height, depth]
+ * - Kickboard: [width, height, thickness]
  */
 
 // ============================================
@@ -123,8 +124,18 @@ export function getPanelHalfExtents(panel: PanelForAabb): [number, number, numbe
       return [w / 2, t / 2, h / 2];
 
     case 'BACK':
-      // Back panel: width in X, height in Y, thickness in Z
+    case 'KICKBOARD':
+      // Vertical XY panels: width in X, height in Y, thickness in Z.
+      // KICKBOARD must be listed explicitly — the default: below is the
+      // HORIZONTAL mapping and would silently give the plinth a wrong AABB.
       return [w / 2, h / 2, t / 2];
+
+    case 'WORKTOP':
+      // Horizontal slab: length in X, thickness in Y, depth in Z. Matches
+      // Cabinet3D.tsx:1828. Listed explicitly for the same reason KICKBOARD is
+      // — relying on `default:` here happens to be right today, which is
+      // exactly how it stops being right after the next role lands.
+      return [w / 2, t / 2, h / 2];
 
     default:
       // Default: treat as horizontal panel
@@ -217,6 +228,54 @@ export function computeCabinetAabbs(cabinet: CabinetForAabb): CabinetAabbResult 
     },
     panelAabbs,
   };
+}
+
+// ============================================
+// OD BUDGET ENVELOPE
+// ============================================
+
+/**
+ * Roles that legitimately sit OUTSIDE the declared outer dimensions.
+ *
+ * `cabinet.dimensions` describes the CARCASS envelope. Three families of part
+ * are attached to that carcass and are, by construction, not bounded by it:
+ *
+ * - KICKBOARD occupies Y 0..toeKickHeight. `height` measures the carcass only —
+ *   the toe kick is a separate field precisely because it is not part of it —
+ *   so a 720mm cabinet with a 100mm plinth spans 820mm and always will.
+ * - WORKTOP spans a RUN, not a cabinet. An 1800mm slab is hosted on one 600mm
+ *   cabinet so it inherits cut list, BOM, DXF and gate for free; budgeting it
+ *   against that host's width is a category error.
+ * - Fronts (doors, drawer fronts) sit proud of the carcass front face by their
+ *   own thickness, plus overlay above and below the opening.
+ *
+ * Left in the SET, all three make the OD budget permanently unsatisfiable on
+ * healthy designs. That matters even though ruleG4_OdBudget has no live caller
+ * today: the next person to wire G4 in meets a wall of false BLOCKERs on
+ * correct cabinets, and the tempting fix is to loosen odToleranceMm — which
+ * would weaken a safety gate for real. Encoding the contract here instead
+ * keeps the rule strict about the thing it actually governs.
+ */
+export const OD_BUDGET_EXCLUDED_ROLES: ReadonlySet<string> = new Set([
+  'KICKBOARD',
+  'WORKTOP',
+  'FRONT',
+  'DOOR',
+  'DOOR_LEFT',
+  'DOOR_RIGHT',
+  'DRAWER_FRONT',
+]);
+
+/**
+ * Carcass-only AABB, for the OD budget check specifically.
+ *
+ * Returns a zero box when a cabinet has no carcass panels at all, matching
+ * computeCabinetAabbs' empty-cabinet behaviour.
+ */
+export function computeCarcassOdAabb(cabinet: CabinetForAabb): Aabb {
+  const carcass = cabinet.panels.filter(p => !OD_BUDGET_EXCLUDED_ROLES.has(p.role));
+  if (carcass.length === 0) return { min: [0, 0, 0], max: [0, 0, 0] };
+  return computeCabinetAabbs({ ...cabinet, panels: carcass }).cabinetAabb;
 }
 
 // ============================================

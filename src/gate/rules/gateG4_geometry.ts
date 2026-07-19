@@ -27,6 +27,7 @@ import type { GateIssue } from '../types';
 import { issueId } from '../utils/idGen';
 import {
   computeCabinetAabbs,
+  computeCarcassOdAabb,
   checkOdBudget,
   findOverlappingPanels,
   type CabinetForAabb,
@@ -93,8 +94,10 @@ export function ruleG4_OdBudget(
   const issues: GateIssue[] = [];
   const p = { ...DEFAULT_G4_POLICY, ...policy };
 
-  // Compute AABBs for all panels
-  const { cabinetAabb } = computeCabinetAabbs(cabinet);
+  // CARCASS ONLY. cabinet.dimensions declares the carcass envelope; plinths,
+  // run-spanning worktops and proud fronts sit outside it by construction.
+  // See OD_BUDGET_EXCLUDED_ROLES in cabinetAabb.ts for the full contract.
+  const cabinetAabb = computeCarcassOdAabb(cabinet);
 
   // Check against declared dimensions
   const result = checkOdBudget(

@@ -29,6 +29,8 @@ export const PanelRoleSchema = z.enum([
   'BACK',
   'SHELF',
   'DIVIDER',
+  'KICKBOARD',
+  'WORKTOP',
   'FRONT',
   'DRAWER_FRONT',
   'DRAWER_SIDE',
@@ -138,6 +140,13 @@ export const CabinetPanelSchema = z.object({
   selected: z.boolean(),
   positionOverrides: PanelPositionOverridesSchema.optional(),
   useCustomPosition: z.boolean().optional(),
+  /**
+   * Run this panel belongs to, for RUN-level parts (WORKTOP slabs).
+   * Declared here as well as on the type because z.object() strips unknown
+   * keys — omitting it would silently drop the tag on every parse, which is
+   * what per-cabinet cost consumers need in order to exclude hosted slabs.
+   */
+  runId: z.string().optional(),
 });
 
 // ============================================
@@ -202,6 +211,16 @@ export const DoorConfigSchema = z.object({
   revealGap: z.number().nonnegative(),
 });
 
+export const KickboardSetbackDatumSchema = z.enum(['CARCASS', 'FRONT']);
+
+export const KickboardConfigSchema = z.object({
+  hasKickboard: z.boolean(),
+  setback: z.number().nonnegative().optional(),
+  setbackDatum: KickboardSetbackDatumSchema.optional(),
+  coreMaterialId: z.string().optional(),
+  surfaceMaterialId: z.string().optional(),
+});
+
 // ============================================
 // CABINET STRUCTURE SCHEMAS
 // ============================================
@@ -229,6 +248,7 @@ export const CabinetStructureSchema = z.object({
   dividerCount: z.number().int().nonnegative(),
   drawerConfig: DrawerConfigSchema.optional(),
   doorConfig: DoorConfigSchema.optional(),
+  kickboardConfig: KickboardConfigSchema.optional(),
   cornerAngles: CornerAnglesSchema.optional(),
 });
 
