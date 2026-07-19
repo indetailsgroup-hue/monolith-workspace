@@ -207,7 +207,21 @@ export interface G11DrillPoint {
   face?: string;
   /** Panel role (LEFT_SIDE, RIGHT_SIDE, TOP, BOTTOM) */
   connectedPanelRole?: string;
+  /** Thickness in mm of the panel this hole is drilled into, when known. */
+  panelThickness?: number;
 }
+
+/**
+ * World-space size of a panel along each axis, in mm.
+ *
+ * `[X, Y, Z]`. This is what lets the gate tell a FACE bore from an EDGE bore:
+ * a bore running along the panel's THICKNESS axis penetrates the thickness
+ * (FACE bore, only ~18mm of material); a bore running along either other axis
+ * runs down the panel's length or width (EDGE bore, hundreds of mm of material).
+ *
+ * @see {@link thicknessAxisOf}
+ */
+export type G11PanelSpan = [number, number, number];
 
 /**
  * Panel for G11 validation.
@@ -222,6 +236,12 @@ export interface G11Panel {
   computed?: {
     realThickness: number;
   };
+  /**
+   * World-space extent along [X, Y, Z] in mm.
+   * Supplying this lets depth rules measure a bore against the material it
+   * actually enters instead of assuming every bore is a face bore.
+   */
+  spanMm?: G11PanelSpan;
 }
 
 /**
@@ -346,6 +366,98 @@ export function isSidePanel(panelRole: string): boolean {
  */
 export function isHorizontalPanel(panelRole: string): boolean {
   return ['TOP', 'BOTTOM', 'SHELF'].includes(panelRole);
+}
+
+// ============================================
+// BORE AXIS DISCRIMINATION
+// ============================================
+
+/** World axis index: 0 = X, 1 = Y, 2 = Z. */
+export type WorldAxis = 0 | 1 | 2;
+
+/**
+ * Dominant world axis of a (near axis-aligned) direction vector.
+ * 0 = X, 1 = Y, 2 = Z.
+ */
+export function dominantAxisOf(normal: [number, number, number]): WorldAxis {
+  const abs = normal.map(Math.abs) as [number, number, number];
+  let axis: WorldAxis = 0;
+  if (abs[1] > abs[axis]) axis = 1;
+  if (abs[2] > abs[axis]) axis = 2;
+  return axis;
+}
+
+/**
+ * World axis a panel's THICKNESS runs along, inferred from its role.
+ *
+ * This mirrors `calculatePanelAABB()` in
+ * `core/manufacturing/drillMap/panelBasis.ts`, which is what actually places
+ * every drill point. Panels are treated as axis-aligned there (panel.rotation
+ * is not applied), so the same convention holds here.
+ *
+ *   TOP / BOTTOM / SHELF   → thickness along Y (panel lies flat)
+ *   LEFT_SIDE / RIGHT_SIDE → thickness along X (panel stands upright)
+ *   BACK and everything else → thickness along Z
+ *
+ * Used only when explicit panel spans are unavailable.
+ */
+export function thicknessAxisFromRole(panelRole: string): WorldAxis {
+  if (isHorizontalPanel(panelRole)) return 1;
+  if (isSidePanel(panelRole)) return 0;
+  return 2;
+}
+
+/**
+ * World-space spans of a panel, derived from role + finish sizes + thickness.
+ *
+ * Mirrors the box construction in `calculatePanelAABB()`. Used to build
+ * {@link G11Panel.spanMm} from a DrillMap panel record.
+ */
+export function panelSpanFromRole(
+  panelRole: string,
+  finishWidth: number,
+  finishHeight: number,
+  thickness: number,
+): G11PanelSpan {
+  if (isHorizontalPanel(panelRole)) {
+    // Lies flat: finishWidth = X, thickness = Y, finishHeight = Z (cabinet depth)
+    return [finishWidth, thickness, finishHeight];
+  }
+  if (isSidePanel(panelRole)) {
+    // Stands upright: thickness = X, finishHeight = Y, finishWidth = Z (cabinet depth)
+    return [thickness, finishHeight, finishWidth];
+  }
+  // BACK and friends: stands upright facing front, thickness = Z
+  return [finishWidth, finishHeight, thickness];
+}
+
+/**
+ * Which world axis a panel's thickness runs along, measured from its spans.
+ *
+ * Returns `undefined` when the spans cannot single out a thickness axis (for
+ * example a cube-ish offcut, where two axes tie). Callers must then fall back
+ * to {@link thicknessAxisFromRole} rather than guess.
+ *
+ * @param span - World-space extents [X, Y, Z] in mm
+ * @param thicknessMm - Known panel thickness, when available
+ */
+export function thicknessAxisOf(
+  span: G11PanelSpan,
+  thicknessMm?: number,
+): WorldAxis | undefined {
+  const axes: WorldAxis[] = [0, 1, 2];
+
+  // Preferred: the axis whose span IS the declared thickness.
+  if (thicknessMm !== undefined && thicknessMm > 0) {
+    const matches = axes.filter(a => Math.abs(span[a] - thicknessMm) <= 0.51);
+    if (matches.length === 1) return matches[0];
+  }
+
+  // Otherwise: the single thinnest axis. A tie means we genuinely cannot tell.
+  let thinnest: WorldAxis = 0;
+  for (const a of axes) if (span[a] < span[thinnest]) thinnest = a;
+  const ties = axes.filter(a => a !== thinnest && Math.abs(span[a] - span[thinnest]) <= 0.51);
+  return ties.length === 0 ? thinnest : undefined;
 }
 
 /**

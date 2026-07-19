@@ -62,11 +62,18 @@ export function ruleMinMargins(
     if (!p) continue;
 
     const min = policy.minMarginToEdgeMm;
+
+    // An EDGE bore enters through one of the face-plane edges: along that axis
+    // its distance to the edge is zero by construction, which is geometry, not
+    // a blowout risk. Measuring it there would condemn every correct edge bore
+    // — the same category error that made G11 reject 18mm dowel joinery. The
+    // perpendicular axis is still a real margin and is still checked.
+    const skipX = d.edgeEntryAxis === 'x';
+    const skipY = d.edgeEntryAxis === 'y';
+
     const nearEdge =
-      d.x < min ||
-      d.y < min ||
-      p.finishW - d.x < min ||
-      p.finishH - d.y < min;
+      (!skipX && (d.x < min || p.finishW - d.x < min)) ||
+      (!skipY && (d.y < min || p.finishH - d.y < min));
 
     if (nearEdge) {
       issues.push({

@@ -289,6 +289,29 @@ export type DrillOp = {
   depthMm: number;
   /** Drill diameter in mm (optional) */
   diaMm?: number;
+  /**
+   * Material available along the bore's own axis, in mm — the dimension this
+   * hole actually eats into.
+   *
+   * For a FACE bore that is the panel thickness (~18mm). For an EDGE bore it is
+   * the panel's length or width along the bore axis (hundreds of mm), because
+   * the bore runs down the board instead of through it.
+   *
+   * Omit when unknown: depth rules then fall back to the panel's composite
+   * thickness, which is the strictest reading and never lets a real
+   * drill-through slip past.
+   */
+  boreAxisMaterialMm?: number;
+  /** How the bore meets the panel. Reported in messages for traceability. */
+  boreType?: 'FACE_BORE' | 'EDGE_BORE';
+  /**
+   * For an EDGE bore: the face-plane axis the bore travels along.
+   *
+   * The hole enters through that edge by design, so its distance to that edge
+   * is zero and carries no blowout meaning. Edge-margin checks skip this axis
+   * and still measure the perpendicular one.
+   */
+  edgeEntryAxis?: 'x' | 'y';
 };
 
 /**

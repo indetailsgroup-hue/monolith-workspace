@@ -35,6 +35,7 @@ import {
   type G11Panel,
   type G11Cabinet,
   type G11MatingPair,
+  type G11PanelSpan,
   getExpectedBoreType,
   getExpectedDowelDepth,
   isSidePanel,
@@ -43,6 +44,10 @@ import {
   issueId,
   calculateBoltTipPosition,
   calculateCamPocketCenter,
+  dominantAxisOf,
+  thicknessAxisOf,
+  thicknessAxisFromRole,
+  panelSpanFromRole,
 } from './gateG11_types';
 
 // ============================================
@@ -171,6 +176,7 @@ export function ruleG11_DowelDepth(
 
   // Build panel role lookup
   const panelRoleMap = new Map(panels.map(p => [p.id, p.role]));
+  const panelSpans = buildPanelSpanMap(panels);
 
   // Filter DOWEL points
   const dowelPoints = drillPoints.filter(p => p.purpose === 'DOWEL');
@@ -186,7 +192,15 @@ export function ruleG11_DowelDepth(
     // Construction-aware (S16): ความลึกตามชนิดรูจริง ไม่ใช่ตามแผ่น —
     // EDGE_BORE (end grain) = 18mm, FACE_BORE = 12mm, รวม 30mm ทั้ง OVERLAY และ INSET
     // (เดิม hardcode ตาม role แบบ INSET v4.0 → ด่าตู้ OVERLAY ทุกใบทั้งที่ generator ถูก)
-    const boreType = inferBoreTypeFromNormal(point.normal, panelRole);
+    // S19: ชนิดรูมาจากแกนความหนาของแผ่นจริง ไม่ใช่ "normal แนวนอน/แนวตั้ง" —
+    // เดิมแยก Y ออกจาก {X,Z} ได้ แต่แยก X จาก Z ไม่ได้ → รูขอบหลัง (±Z) ของแผ่นข้าง
+    // ถูกอ่านเป็น FACE_BORE แล้วด่างานที่ถูกต้อง
+    const boreType = inferBoreTypeFromNormal(
+      point.normal,
+      panelRole,
+      spanForPoint(point, panelSpans),
+      point.panelThickness,
+    );
     const expectedDepth = boreType === 'EDGE_BORE'
       ? G11_CONSTANTS.DOWEL_DEPTH_HORIZ_EDGE
       : G11_CONSTANTS.DOWEL_DEPTH_SIDE_FACE;
@@ -259,6 +273,7 @@ export function ruleG11_DrillType(
 
   // Build panel role lookup
   const panelRoleMap = new Map(panels.map(p => [p.id, p.role]));
+  const panelSpans = buildPanelSpanMap(panels);
 
   // Filter relevant drill points (BOLT, CAM, DOWEL)
   const relevantPurposes = ['BOLT', 'CAM_LOCK', 'MINIFIX', 'DOWEL'];
@@ -276,8 +291,13 @@ export function ruleG11_DrillType(
     // → ตรวจแบบคู่ (ต้องเป็น EDGE+FACE ผสมกัน) ด้านล่างแทน ไม่ตรวจ per-role
     if (point.purpose === 'DOWEL') continue;
 
-    // Infer actual bore type from drill normal and panel role (v4.0 context-aware)
-    const actualBoreType = inferBoreTypeFromNormal(point.normal, panelRole);
+    // Infer actual bore type from the panel's thickness axis (S19)
+    const actualBoreType = inferBoreTypeFromNormal(
+      point.normal,
+      panelRole,
+      spanForPoint(point, panelSpans),
+      point.panelThickness,
+    );
     const expectedBoreType = getExpectedBoreType(panelRole, point.purpose);
 
     if (actualBoreType !== expectedBoreType) {
@@ -309,8 +329,18 @@ export function ruleG11_DrillType(
   for (const pair of dowelPairs) {
     const sideRole = pair.sidePoint.connectedPanelRole || 'SIDE';
     const horizRole = pair.horizontalPoint.connectedPanelRole || 'TOP';
-    const sideType = inferBoreTypeFromNormal(pair.sidePoint.normal, sideRole);
-    const horizType = inferBoreTypeFromNormal(pair.horizontalPoint.normal, horizRole);
+    const sideType = inferBoreTypeFromNormal(
+      pair.sidePoint.normal,
+      sideRole,
+      spanForPoint(pair.sidePoint, panelSpans),
+      pair.sidePoint.panelThickness,
+    );
+    const horizType = inferBoreTypeFromNormal(
+      pair.horizontalPoint.normal,
+      horizRole,
+      spanForPoint(pair.horizontalPoint, panelSpans),
+      pair.horizontalPoint.panelThickness,
+    );
 
     if (sideType === horizType) {
       issues.push({
@@ -467,32 +497,67 @@ function perpendicularDistance(
 }
 
 /**
- * Infer bore type from drill normal vector and panel role.
+ * Infer bore type by comparing the bore's axis to the panel's THICKNESS axis.
  *
- * Construction-aware (S16):
- * - SIDE panels: horizontal normal [±X] = FACE_BORE (into inner face — INSET v4.0)
- * - SIDE panels: vertical normal [±Y] = EDGE_BORE (into top/bottom edge — OVERLAY)
- * - HORIZ panels: vertical normal [±Y] = FACE_BORE (into face — CAM / OVERLAY dowel)
- * - HORIZ panels: horizontal normal [±X] = EDGE_BORE (into left/right edge — INSET dowel)
+ * A bore is a FACE bore when it runs along the axis the panel's thickness runs
+ * along — it penetrates ~18mm of material and must stay shallow. A bore along
+ * either other axis is an EDGE bore: it runs down the panel's length or width,
+ * into hundreds of mm of material, and is drilled deeper on purpose.
  *
- * @param normal - Drill normal vector
- * @param panelRole - Optional panel role for context-aware inference
+ * S16 derived this from the drill normal alone, splitting the Y axis from
+ * {X, Z}. That fixed OVERLAY (whose side bores are ±Y) but left X and Z
+ * indistinguishable, so a ±Z bore into a side panel's BACK EDGE was read as a
+ * face bore and correct 18mm joinery was condemned. Which of X / Y / Z is the
+ * thickness axis is a property of the panel, not of the normal, so the panel is
+ * now asked directly.
+ *
+ * @param normal - Drill direction (into material)
+ * @param panelRole - Panel role, used when spans are unavailable
+ * @param panelSpan - World-space panel extents [X, Y, Z] in mm (authoritative)
+ * @param panelThicknessMm - Declared panel thickness, disambiguates the span match
  */
 function inferBoreTypeFromNormal(
   normal: [number, number, number],
-  panelRole?: string
+  panelRole?: string,
+  panelSpan?: G11PanelSpan,
+  panelThicknessMm?: number,
 ): 'EDGE_BORE' | 'FACE_BORE' {
-  const [nx, ny, nz] = normal.map(Math.abs);
-  const isHorizontalNormal = (nx > ny) || (nz > ny);
+  const boreAxis = dominantAxisOf(normal);
 
-  // v4.0 context-aware inference
-  if (panelRole && isSidePanel(panelRole)) {
-    // SIDE panels: horizontal = FACE_BORE (v4.0), vertical = EDGE_BORE (wrong)
-    return isHorizontalNormal ? 'FACE_BORE' : 'EDGE_BORE';
+  // Measured geometry wins when we have it.
+  const measured = panelSpan ? thicknessAxisOf(panelSpan, panelThicknessMm) : undefined;
+  const thicknessAxis = measured ?? (panelRole ? thicknessAxisFromRole(panelRole) : undefined);
+
+  // No role and no geometry: assume the bore penetrates the thickness. That is
+  // the shallower expected depth, so an over-deep bore is still reported.
+  if (thicknessAxis === undefined) return 'FACE_BORE';
+
+  return boreAxis === thicknessAxis ? 'FACE_BORE' : 'EDGE_BORE';
+}
+
+/**
+ * Look up the world-space spans recorded for a drill point's panel.
+ */
+function spanForPoint(
+  point: G11DrillPoint,
+  panelSpans: Map<string, G11PanelSpan>,
+): G11PanelSpan | undefined {
+  return panelSpans.get(point.panelId);
+}
+
+/**
+ * Build a panelId → world span index from the supplied panels.
+ */
+function buildPanelSpanMap(panels: G11Panel[]): Map<string, G11PanelSpan> {
+  const map = new Map<string, G11PanelSpan>();
+  for (const p of panels) {
+    const span = p.spanMm
+      ?? (p.computed?.realThickness !== undefined
+        ? panelSpanFromRole(p.role, p.finishWidth, p.finishHeight, p.computed.realThickness)
+        : undefined);
+    if (span) map.set(p.id, span);
   }
-
-  // HORIZ panels: horizontal = EDGE_BORE (for dowels), vertical = FACE_BORE (for CAM)
-  return isHorizontalNormal ? 'EDGE_BORE' : 'FACE_BORE';
+  return map;
 }
 
 /**
@@ -1056,9 +1121,35 @@ export function validateG11FromDrillMap(
   // Flatten drill points from nested structure
   const allPoints: G11DrillPoint[] = [];
 
+  // Panels carry the geometry that tells a FACE bore from an EDGE bore.
+  // Callers rarely pass `panels` (the Safety tab passes none), so derive them
+  // from the drill map itself — it already records role + finish size +
+  // thickness for every panel it drilled. Without this the depth rules fall
+  // back to the role convention and cannot see a rotated or unusual panel.
+  const derivedPanels: G11Panel[] = [];
+
   for (const panel of drillMap.panels || []) {
     // DrillMapPanel uses single `points` array (not separated by type)
     if (!panel.points) continue;
+
+    const thickness = panel.dimensions?.thickness;
+    if (panel.dimensions && thickness !== undefined) {
+      derivedPanels.push({
+        id: panel.panelId,
+        role: panel.role,
+        position: panel.worldPosition ?? [0, 0, 0],
+        rotation: panel.worldRotation ?? [0, 0, 0],
+        finishWidth: panel.dimensions.width,
+        finishHeight: panel.dimensions.height,
+        computed: { realThickness: thickness },
+        spanMm: panelSpanFromRole(
+          panel.role,
+          panel.dimensions.width,
+          panel.dimensions.height,
+          thickness,
+        ),
+      });
+    }
 
     for (const point of panel.points) {
       allPoints.push({
@@ -1076,11 +1167,19 @@ export function validateG11FromDrillMap(
         cornerType: point.cornerType,
         face: point.face,
         connectedPanelRole: point.connectedPanelRole,
+        panelThickness: point.panelThickness ?? thickness,
       });
     }
   }
 
-  return runG11Rules(allPoints, panels, policy);
+  // Caller-supplied panels win; derived ones fill the gaps.
+  const suppliedIds = new Set(panels.map(p => p.id));
+  const effectivePanels = [
+    ...panels,
+    ...derivedPanels.filter(p => !suppliedIds.has(p.id)),
+  ];
+
+  return runG11Rules(allPoints, effectivePanels, policy);
 }
 
 // ============================================
