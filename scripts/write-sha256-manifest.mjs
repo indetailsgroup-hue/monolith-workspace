@@ -47,6 +47,9 @@ function canonicalRelativePath(file) {
     canonical.startsWith('/') ||
     canonical.includes('\\') ||
     win32.isAbsolute(canonical) ||
+    // INTENTIONAL: control chars in a manifest path are exactly what this
+    // validator exists to reject.
+    // eslint-disable-next-line no-control-regex -- see comment above
     /[\u0000-\u001f\u007f]/u.test(canonical) ||
     segments.some((segment) =>
       !segment ||

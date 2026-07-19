@@ -211,7 +211,10 @@ export function GateProvider({
         clearTimeout(timerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // NOTE(react-hooks/exhaustive-deps): intentionally not satisfied —
+    // deps array spreads caller-supplied ...dependencies, which the rule cannot analyse.
+    // The rule is not installed yet; restore a real eslint-disable directive
+    // when eslint-plugin-react-hooks is added.
   }, [autoRun, debounceMs, runGate, ...dependencies]);
 
   // Derive context value

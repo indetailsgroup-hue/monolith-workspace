@@ -44,7 +44,7 @@ test('verifier rejects BOM, non-lowercase hex, malformed hex, and bad trailing n
   const good = `${sha256('inside')}  inside.txt`;
 
   const fixtures = new Map([
-    ['bom.sha256', `﻿${good}\n`],
+    ['bom.sha256', `\uFEFF${good}\n`],
     ['uppercase-hex.sha256', `${sha256('inside').toUpperCase()}  inside.txt\n`],
     ['short-hex.sha256', `${sha256('inside').slice(0, 63)}  inside.txt\n`],
     ['no-final-newline.sha256', `${good}`],

@@ -16,7 +16,7 @@
  * // In your Canvas/Scene component:
  * <Canvas>
  *   <CollisionHighlight />
- *   {/* ... other scene content ... *​/}
+ *   ... other scene content ...
  * </Canvas>
  * ```
  *

@@ -657,6 +657,14 @@ export function applyEntryExitStrategy(
   const decoratedSubpaths: DecoratedSubpath[] = [];
   const audits: EntryExitAudit[] = [];
   const report: EntryExitReportItem[] = [];
+  // prefer-const proved this flag is NEVER assigned false anywhere in this
+  // function, so the `valid` field it populates on EntryExitResult can only ever
+  // report PASS. That makes this half of a validity gate on machine-bound
+  // output structurally dead. Left as `let` rather than const-ified so the
+  // linter keeps pointing at the unimplemented check instead of the `const`
+  // making a bug look like a decision. Either implement the failure conditions
+  // or delete `valid` from the result type.
+  // eslint-disable-next-line prefer-const -- TODO(MONOLITH-lint-1): validity is never computed
   let valid = true;
 
   for (const sp of subpaths) {

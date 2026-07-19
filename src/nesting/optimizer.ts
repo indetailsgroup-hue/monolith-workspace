@@ -157,22 +157,39 @@ export function resolveSheetConfig(
  * runs FFDH per group, and returns NestingSheet[] compatible with the existing
  * export pipeline (consumed by buildDxfSheets, buildCutListCsv, etc.).
  *
+ * IMPORTANT — `sheets` is a PARTIAL layout whenever `unplacedParts` is
+ * non-empty. `NestingSheet[]` contains only parts that were actually placed;
+ * a part too large for the board (a full-length worktop, a machine-max panel,
+ * or any grained part wider than the usable sheet width) is simply absent from
+ * it. A part missing from the layout is a part that never gets cut and never
+ * gets quoted, so `unplacedParts` is returned at the SAME level as `sheets`:
+ * any caller that consumes `sheets` must check it and refuse to export, or
+ * surface it, when it is non-empty. Do not treat `sheets` as complete without
+ * looking.
+ *
  * @param cutListRows - Parts with calculated cut dimensions
  * @param configOverrides - User-adjustable parameters (kerf, edge clearance)
- * @returns sheets: NestingSheet[] for export pipeline, results: detailed per-material results
+ * @returns sheets: NestingSheet[] for export pipeline (PARTIAL if unplacedParts
+ *          is non-empty), unplacedParts: every part that fit no sheet in any
+ *          allowed orientation, results: detailed per-material results
  */
 export function runNesting(
   cutListRows: CutListRow[],
   configOverrides?: Partial<NestingConfig>,
-): { sheets: NestingSheet[]; results: Map<string, NestingResult> } {
+): {
+  sheets: NestingSheet[];
+  unplacedParts: NestingPart[];
+  results: Map<string, NestingResult>;
+} {
   if (cutListRows.length === 0) {
-    return { sheets: [], results: new Map() };
+    return { sheets: [], unplacedParts: [], results: new Map() };
   }
 
   const parts = extractNestingParts(cutListRows);
   const groups = groupByMaterial(parts);
 
   const allSheets: NestingSheet[] = [];
+  const allUnplaced: NestingPart[] = [];
   const allResults = new Map<string, NestingResult>();
   let globalSheetIndex = 1;
 
@@ -189,6 +206,10 @@ export function runNesting(
       config,
     );
     const computeTimeMs = performance.now() - startTime;
+
+    // Surface unplaceable parts at the top level, alongside `sheets`, so a
+    // caller cannot consume a silently-truncated layout without seeing them.
+    allUnplaced.push(...unplacedParts);
 
     // Map SheetResult[] → NestingSheet[]
     for (const sr of sheetResults) {
@@ -231,5 +252,5 @@ export function runNesting(
     });
   }
 
-  return { sheets: allSheets, results: allResults };
+  return { sheets: allSheets, unplacedParts: allUnplaced, results: allResults };
 }

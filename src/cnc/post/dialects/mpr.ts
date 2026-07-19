@@ -405,7 +405,7 @@ export function formatMprNumber(value: number, decimals = 3): string {
 export function sanitizeMprString(text: string): string {
   return text
     .replace(/"/g, "'")
-    .replace(/[\[\]]/g, '')
+    .replace(/[[\]]/g, '')
     .replace(/[^\x20-\x7E]/g, '')
     .trim()
     .substring(0, 80);

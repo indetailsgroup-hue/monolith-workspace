@@ -348,7 +348,7 @@ export function estimateIrProgramTime(
 ): number {
   let totalTime = 0;
   let currentFeed = 1000;
-  let lastPos = { x: 0, y: 0, z: 0 };
+  const lastPos = { x: 0, y: 0, z: 0 };
 
   for (const move of program.moves) {
     if (move.kind === "SET_FEED") {

@@ -221,9 +221,11 @@ function generatePocketOp(op: Operation, config: GCodeConfig): string[] {
     lines.push(`G0 X${(x + offset).toFixed(3)} Y${(y + offset).toFixed(3)}`);
     lines.push(`G1 Z${z.toFixed(3)} F${config.plungeRate}`);
 
-    // Spiral outward pocket
-    let currentX = x + offset;
-    let currentY = y + offset;
+    // Spiral outward pocket.
+    // (There is no currentX/currentY cursor here: every G1 below recomputes its
+    // coordinate from `x + offset` / `y + offset`. Two vestigial cursor
+    // variables used to be declared at this point and were never read — they
+    // are removed rather than const-ified, which would have hidden that.)
     let pocketWidth = config.stepover;
     let pocketHeight = config.stepover;
 

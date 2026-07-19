@@ -44,13 +44,11 @@ describe('approval quorum aggregation (Req 15)', () => {
         if (total >= 3 && needed >= 2) {
           const partial = makeDecisions(['approved']);
           const remaining = total - 1;
-          const expected = 1 + remaining < needed ? 'rejected' : '1' >= '0' && 1 >= needed ? 'approved' : 'pending';
           // ตรวจแบบตรง: 1 approve, ที่เหลือยังไม่ตัดสิน
           const out = aggregateQuorum('majority', total, partial);
           if (1 >= needed) expect(out).toBe('approved');
           else if (1 + remaining < needed) expect(out).toBe('rejected');
           else expect(out).toBe('pending');
-          void expected;
         }
       }),
       { numRuns: 100 },

@@ -224,7 +224,7 @@ function extractSubpath(
   keepInterval: Interval
 ): Path {
   const segs: Segment[] = [];
-  let { a: s, b: e } = keepInterval;
+  const { a: s, b: e } = keepInterval;
 
   // Find starting segment
   let idx = 0;

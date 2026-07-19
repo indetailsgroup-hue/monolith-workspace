@@ -19,7 +19,9 @@ import type { ObstacleKind } from './obbTypes';
 
 export interface SpatialRegistries {
   obstacles: SpatialHash<{ kind: ObstacleKind }>;
-  cabinets: SpatialHash<{}>;
+  // No per-cabinet payload today; `{}` would have accepted any non-nullish
+  // value (including 0 and ""), which is not what "no payload" means.
+  cabinets: SpatialHash<Record<string, never>>;
 }
 
 export interface ShapeRegistries {

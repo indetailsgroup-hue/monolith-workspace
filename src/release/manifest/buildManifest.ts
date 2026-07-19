@@ -229,8 +229,8 @@ export async function buildSignedManifestWithArtifacts(input: BuildSignedManifes
     { path: 'manifest.json', mime: 'application/json;charset=utf-8', content: manifestJsonA },
   ]);
 
-  let manifestB: SignedManifest = { ...manifestA, files: filesB };
-  let manifestJsonB = JSON.stringify(manifestB, null, 2) + '\n';
+  const manifestB: SignedManifest = { ...manifestA, files: filesB };
+  const manifestJsonB = JSON.stringify(manifestB, null, 2) + '\n';
 
   // If not signing, return here
   if (!sign) {
@@ -353,17 +353,17 @@ export async function buildReleasePackageManifest(
     { path: 'manifest.json', mime: 'application/json;charset=utf-8', content: manifestJsonA },
   ]);
 
-  let manifestB: SignedManifest = { ...manifestA, files: filesB };
-  let manifestJsonB = JSON.stringify(manifestB, null, 2) + '\n';
+  const manifestB: SignedManifest = { ...manifestA, files: filesB };
+  const manifestJsonB = JSON.stringify(manifestB, null, 2) + '\n';
 
   // Pass C: Sign manifestJsonB (unsigned)
   const { keyId: keyIdC, sigBase64: sigBase64C } = await signManifestJson(manifestJsonB);
 
-  let manifestC: SignedManifest = {
+  const manifestC: SignedManifest = {
     ...manifestB,
     signature: { alg: 'ed25519', publicKeyId: keyIdC, sigBase64: sigBase64C },
   };
-  let manifestJsonC = JSON.stringify(manifestC, null, 2) + '\n';
+  const manifestJsonC = JSON.stringify(manifestC, null, 2) + '\n';
 
   // Pass D: Re-hash manifest.json with signature included
   const filesD = await hashArtifacts([
@@ -372,12 +372,12 @@ export async function buildReleasePackageManifest(
     { path: 'manifest.json', mime: 'application/json;charset=utf-8', content: manifestJsonC },
   ]);
 
-  let manifestD: SignedManifest = {
+  const manifestD: SignedManifest = {
     ...manifestC,
     files: filesD,
     signature: { alg: 'none' },
   };
-  let manifestJsonD = JSON.stringify(manifestD, null, 2) + '\n';
+  const manifestJsonD = JSON.stringify(manifestD, null, 2) + '\n';
 
   // Pass E: Sign final manifestJsonD
   const { keyId: keyIdE, sigBase64: sigBase64E } = await signManifestJson(manifestJsonD);

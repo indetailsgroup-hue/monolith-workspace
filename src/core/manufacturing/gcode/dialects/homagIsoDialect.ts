@@ -89,10 +89,11 @@ export const HomagIsoDialect: Dialect = {
     const p = this.caps.decimal.maxPlaces;
 
     switch (m.kind) {
-      case "COMMENT":
+      case "COMMENT": {
         // Parentheses comment style, sanitize
         const text = m.text.replace(/[()]/g, "");
         return [`(${text})`];
+      }
 
       case "SET_UNITS":
         return ["G21"];

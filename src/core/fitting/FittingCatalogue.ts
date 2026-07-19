@@ -479,7 +479,7 @@ export function rankFittingsForContext(
   category?: FittingCategory
 ): RankedFitting[] {
   // Filter by category if specified
-  let filtered = category 
+  const filtered = category 
     ? fittings.filter(f => f.category === category)
     : fittings;
   

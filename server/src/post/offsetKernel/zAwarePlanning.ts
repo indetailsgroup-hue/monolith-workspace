@@ -366,13 +366,13 @@ export function defaultZProfile(
   const isAcrylic = material === 'ACRYLIC';
 
   // Adjust feeds and depths based on material
-  let plungeFeed = isFragile ? 600 : isAcrylic ? 500 : 900;
+  const plungeFeed = isFragile ? 600 : isAcrylic ? 500 : 900;
   let cutFeed = isFragile ? 3000 : isAcrylic ? 2500 : 4500;
-  let rampFeedScale = isFragile ? 0.55 : isAcrylic ? 0.5 : 0.65;
+  const rampFeedScale = isFragile ? 0.55 : isAcrylic ? 0.5 : 0.65;
   let stepdownMM = isFragile ? 3.0 : isAcrylic ? 2.5 : 4.5;
-  let finishingStepdownMM = isFragile ? 2.0 : isAcrylic ? 1.5 : 3.0;
-  let onionSkinMM = isFragile ? 0.35 : isAcrylic ? 0.4 : 0.25;
-  let spindleRPM = isFragile ? 18000 : isAcrylic ? 16000 : 18000;
+  const finishingStepdownMM = isFragile ? 2.0 : isAcrylic ? 1.5 : 3.0;
+  const onionSkinMM = isFragile ? 0.35 : isAcrylic ? 0.4 : 0.25;
+  const spindleRPM = isFragile ? 18000 : isAcrylic ? 16000 : 18000;
 
   // Adjust for tool diameter (smaller tools = slower)
   if (tool.diameterMm <= 4) {

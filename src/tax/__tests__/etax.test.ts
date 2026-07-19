@@ -96,7 +96,7 @@ describe('eTax — Property ACC-9 (invoice number uniqueness)', () => {
 
   it('fail-safe: บังคับออกเลขที่ชนของเดิม → throw', () => {
     const fmt: InvoiceNumberFormat = { prefix: 'INV', year: 2026, width: 6 };
-    let st = newIssuer(1);
+    const st = newIssuer(1);
     const r1 = issueInvoiceNumber(st, fmt);
     // ปลอม state ให้ seq ย้อนกลับไปเลขเดิม → ต้อง throw
     const tampered = { seq: 1, issued: r1.state.issued };

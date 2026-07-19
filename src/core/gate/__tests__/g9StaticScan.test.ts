@@ -154,7 +154,7 @@ describe('G9 Static Scan - Persistence Gate Enforcement', () => {
       if (!content) return;
 
       // loadProject should use parseAndValidateSafe, not raw JSON.parse
-      const loadProjectSection = content.match(/loadProject:\s*\([^)]*\)\s*=>\s*\{[\s\S]*?\n  },/);
+      const loadProjectSection = content.match(/loadProject:\s*\([^)]*\)\s*=>\s*\{[\s\S]*?\n {2}},/);
 
       if (loadProjectSection) {
         const section = loadProjectSection[0];
@@ -167,7 +167,7 @@ describe('G9 Static Scan - Persistence Gate Enforcement', () => {
       if (!content) return;
 
       // importProject should use parseAndValidateSafe
-      const importProjectSection = content.match(/importProject:\s*\([^)]*\)\s*=>\s*\{[\s\S]*?\n  },/);
+      const importProjectSection = content.match(/importProject:\s*\([^)]*\)\s*=>\s*\{[\s\S]*?\n {2}},/);
 
       if (importProjectSection) {
         const section = importProjectSection[0];
@@ -180,7 +180,7 @@ describe('G9 Static Scan - Persistence Gate Enforcement', () => {
       if (!content) return;
 
       // loadProjectsList should use parseAndValidateSafe
-      const loadListSection = content.match(/loadProjectsList:\s*\(\)\s*=>\s*\{[\s\S]*?\n  },/);
+      const loadListSection = content.match(/loadProjectsList:\s*\(\)\s*=>\s*\{[\s\S]*?\n {2}},/);
 
       if (loadListSection) {
         const section = loadListSection[0];

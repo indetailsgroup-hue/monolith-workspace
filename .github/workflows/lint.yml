@@ -1,0 +1,118 @@
+name: Lint
+
+# Until this workflow landed, no CI job in this repo ran ESLint — the linter
+# had never executed on a single PR. See eslint.config.js for the migration.
+#
+# GATE POLICY (deliberate, two-stage):
+#   errors   -> BLOCKING from day one. The tree is at 0 errors, so any error is
+#               something the PR itself introduced.
+#   warnings -> REPORTED, NOT BLOCKING, for now. There are ~1187 pre-existing
+#               warnings (two mechanical rules account for ~1182 of them).
+#               Making them blocking today would red-line every open PR across
+#               the other worktrees for problems they did not introduce.
+#               Flip `continue-on-error` to false on the warning-budget job
+#               once the burn-down lands.
+#
+# THE CEILING HAS ONE DEFINITION. It lives in package.json as
+# `lint:budget` ("eslint . --max-warnings <N>") and this workflow INVOKES that
+# script rather than restating the number. It was previously duplicated here as
+# LINT_WARNING_BUDGET, which meant lowering one and forgetting the other left
+# either a local/CI split or a stale ceiling that silently permitted regrowth.
+# A ratchet with two independent settings is not a ratchet.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eslint:
+    name: ESLint (errors block)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Pinned to the local binary on purpose. `npx eslint` resolves to the
+      # latest registry version (observed: 10.7.0) instead of the 9.39.2 the
+      # lockfile pins, which would lint with a different major than anyone can
+      # reproduce locally.
+      - name: Confirm ESLint version matches the lockfile
+        run: |
+          echo "resolved: $(./node_modules/.bin/eslint --version)"
+          ./node_modules/.bin/eslint --version | grep -q '^v9\.' || {
+            echo "::error::ESLint major changed; update this check deliberately"
+            exit 1
+          }
+
+      - name: Run ESLint (any error fails the build)
+        run: npm run lint
+
+  warning-budget:
+    name: ESLint warning budget (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true # flip to false after the warning burn-down
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Single source of truth: the ceiling is the --max-warnings value inside
+      # the lint:budget script in package.json. Do not restate it here.
+      - name: Enforce the warning ceiling
+        run: npm run lint:budget
+
+  typecheck:
+    name: TypeScript (app + server)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # server/ is NOT a workspace in the root package.json, so the root
+      # `npm ci` above does not install its dependencies. Without this step
+      # `tsc -p server` reports ~28 spurious "Cannot find module 'express'"
+      # errors that look like real breakage and are not.
+      - name: Install server dependencies
+        run: npm run install:server
+
+      - name: Typecheck app
+        run: npm run typecheck:all
+
+      # Nothing typechecked server/ before this job existed: tsconfig.build.json
+      # includes only "src", server/package.json has no typecheck script, and
+      # Vitest transpiles without typechecking. A type error under server/ —
+      # including in the CNC post-processor — would have shipped unnoticed.
+      - name: Typecheck server
+        run: npm run typecheck:server

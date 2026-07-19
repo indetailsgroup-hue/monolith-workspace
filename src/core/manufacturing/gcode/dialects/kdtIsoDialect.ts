@@ -83,10 +83,11 @@ export const KdtIsoDialect: Dialect = {
     const p = this.caps.decimal.maxPlaces;
 
     switch (m.kind) {
-      case "COMMENT":
+      case "COMMENT": {
         // Sanitize comment text (no parentheses inside)
         const text = m.text.replace(/[()]/g, "");
         return [`(${text})`];
+      }
 
       case "SET_UNITS":
         return ["G21"]; // Always mm

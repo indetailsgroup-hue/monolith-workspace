@@ -440,11 +440,12 @@ describe('Golden: drill-baseline (OPERATIONS)', () => {
         case 'no_nan':
           expect(dxf).not.toContain('NaN');
           break;
-        case 'entity_count':
+        case 'entity_count': {
           // Count entities in ENTITIES section
           const entities = parseEntities(dxf);
           expect(entities.length).toBe(assertion.expected);
           break;
+        }
       }
     }
   });

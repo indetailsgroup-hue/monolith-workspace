@@ -254,6 +254,9 @@ export function assertCanonicalPath(value: string): void {
     value !== value.normalize('NFC') ||
     value.startsWith('/') ||
     value.includes('\\') ||
+    // INTENTIONAL: rejecting C0 controls and DEL in packet entry paths is
+    // the security check itself.
+    // eslint-disable-next-line no-control-regex -- see comment above
     /[\u0000-\u001f\u007f<>:"|?*]/u.test(value)
   ) {
     throw new PacketGenerationError('PKT_ZIP_PROFILE_INVALID', `non-canonical path ${value}`);

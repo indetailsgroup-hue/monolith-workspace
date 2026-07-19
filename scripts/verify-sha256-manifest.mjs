@@ -30,6 +30,9 @@ function validateCanonicalPath(path) {
     !path.startsWith('/') &&
     !path.includes('\\') &&
     !win32.isAbsolute(path) &&
+    // INTENTIONAL: control chars in a manifest path are exactly what this
+    // validator exists to reject.
+    // eslint-disable-next-line no-control-regex -- see comment above
     !/[\u0000-\u001f\u007f]/u.test(path) &&
     segments.every((segment) =>
       segment &&
@@ -87,7 +90,7 @@ for (const manifestPath of manifests) {
   const seen = new Set();
   const seenCaseFolded = new Set();
   for (const line of lines) {
-    const match = line.match(/^([0-9a-f]{64})  (.+)$/);
+    const match = line.match(/^([0-9a-f]{64}) {2}(.+)$/);
     if (!match) {
       markInvalid(manifestPath, `invalid entry: ${line}`);
       continue;

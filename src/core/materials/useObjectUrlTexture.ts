@@ -134,7 +134,7 @@ export function useObjectUrlTexture(objectUrl: string | null): THREE.Texture | n
     }
 
     let cancelled = false;
-    let currentUrl = objectUrl;
+    const currentUrl = objectUrl;
 
     acquireTexture(objectUrl)
       .then((tex) => {

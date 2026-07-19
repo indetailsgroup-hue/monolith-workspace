@@ -399,7 +399,7 @@ export function compileSheetToGcode(
   // Group operations by tool
   const groups = groupByTool(sheet, plan.defaults, toolTable);
 
-  let stats = {
+  const stats = {
     toolChanges: 0,
     totalDrills: 0,
     totalProfiles: 0,

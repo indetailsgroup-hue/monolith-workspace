@@ -14,7 +14,7 @@
  */
 
 import type { Path, Pt, SegLine, TabConfig } from './planTypes.js';
-import { buildSegMeta, totalLengthFromMeta, sampleRange } from './pathParam.js';
+import { buildSegMeta, totalLengthFromMeta, sampleRange, pointAtDistance } from './pathParam.js';
 
 // ============================================================================
 // Types
@@ -304,7 +304,6 @@ export function getTabCenterPoints(
   const totalLen = totalLengthFromMeta(metas);
   const centers = calculateTabCenters(totalLen, tab.count, tab.insetMm);
 
-  const { pointAtDistance } = require('./pathParam.js');
   return centers.map(c => pointAtDistance(metas, c));
 }
 
