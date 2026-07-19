@@ -32,6 +32,13 @@ import { compositeThicknessMm } from '../compute/composite';
 import { issueId } from '../utils/idGen';
 
 /**
+ * Float slack for "the residual is exactly the margin".
+ * Not a tolerance knob — it only absorbs binary-float error on sums like
+ * 18 - 17.5, so the equality case is detected reliably.
+ */
+const RESIDUAL_EQUALITY_EPSILON_MM = 1e-6;
+
+/**
  * Validates that drill operations stay within safe depth limits.
  *
  * Calculates maximum safe depth for each part's material and checks all
@@ -67,23 +74,81 @@ export function ruleDrillDepthSafety(
     if (!p) continue;
 
     const thickness = compositeThicknessMm(p.material);
-    const maxDepth = Math.max(0, thickness - policy.thicknessSafetyMarginMm);
+
+    // Measure the bore against the material it actually enters. An EDGE bore
+    // runs down the length of the board, not through its thickness, so
+    // checking it against thickness would condemn correct joinery — the same
+    // mistake gate G11 made with dowel depths.
+    //
+    // When the bore axis is unknown, fall back to the panel's composite
+    // thickness. That is the SMALLEST dimension the bore could possibly be
+    // eating into, so it is the strictest reading available and no real
+    // drill-through can slip past it. This branch is reachable: the drill-map
+    // builder omits boreAxisMaterialMm whenever a panel's orientation cannot
+    // be established, rather than supplying a value it cannot stand behind.
+    const axisUnknown = op.boreAxisMaterialMm === undefined;
+    const material = op.boreAxisMaterialMm ?? thickness;
+    const maxDepth = Math.max(0, material - policy.thicknessSafetyMarginMm);
+    const residual = material - op.depthMm;
+    // Report the bore type only when it is known. The unknown case used to be
+    // labelled FACE_BORE, which stated as fact the very thing that could not
+    // be determined.
+    const boreType = op.boreType;
+    const basis = axisUnknown
+      ? ' [bore axis unknown — measured against panel thickness, the strictest reading]'
+      : '';
 
     if (op.depthMm > maxDepth) {
       issues.push({
         id: issueId('B_SAFETY_DRILL_DEPTH', op.opId, op.depthMm, maxDepth),
         severity: 'BLOCKER',
         code: 'B_SAFETY_DRILL_DEPTH',
-        message: `Drill depth ${op.depthMm}mm exceeds safe max ${maxDepth.toFixed(2)}mm for thickness ${thickness.toFixed(2)}mm.`,
+        message:
+          `Drill depth ${op.depthMm}mm exceeds safe max ${maxDepth.toFixed(2)}mm ` +
+          `for ${material.toFixed(2)}mm of material along the bore axis` +
+          `${boreType ? ` (${boreType})` : ''}. Residual would be ${residual.toFixed(2)}mm.${basis}`,
         partIds: [p.partId],
         context: {
           opId: op.opId,
           depthMm: op.depthMm,
           thicknessMm: Math.round(thickness * 100) / 100,
+          boreAxisMaterialMm: Math.round(material * 100) / 100,
+          boreAxisKnown: !axisUnknown,
+          boreType: boreType ?? null,
+          residualMm: Math.round(residual * 100) / 100,
           safetyMarginMm: policy.thicknessSafetyMarginMm,
           safeMaxDepthMm: Math.round(maxDepth * 100) / 100,
-          x: op.x,
-          y: op.y,
+          x: op.x ?? null,
+          y: op.y ?? null,
+        },
+      });
+      continue;
+    }
+
+    // Passes — but by how much? A hole whose residual lands exactly on the
+    // margin is only admitted because the threshold happens to equal it.
+    // Surface that instead of letting a rubber stamp look like a safety check.
+    // This does NOT relax the blocker above; it adds visibility beside it.
+    if (residual <= policy.thicknessSafetyMarginMm + RESIDUAL_EQUALITY_EPSILON_MM) {
+      issues.push({
+        id: issueId('W_SAFETY_DRILL_DEPTH_ZERO_MARGIN', op.opId, op.depthMm, residual),
+        severity: 'WARNING',
+        code: 'W_SAFETY_DRILL_DEPTH_ZERO_MARGIN',
+        message:
+          `Drill depth ${op.depthMm}mm leaves ${residual.toFixed(2)}mm of material, ` +
+          `exactly the ${policy.thicknessSafetyMarginMm}mm safety margin — this hole passes with zero margin to spare. ` +
+          `The margin is UNSOURCED (see MIN_RESIDUAL_MATERIAL_MM); a human should confirm it is adequate for this bore.`,
+        partIds: [p.partId],
+        context: {
+          opId: op.opId,
+          depthMm: op.depthMm,
+          boreAxisMaterialMm: Math.round(material * 100) / 100,
+          boreAxisKnown: !axisUnknown,
+          boreType: boreType ?? null,
+          residualMm: Math.round(residual * 100) / 100,
+          safetyMarginMm: policy.thicknessSafetyMarginMm,
+          x: op.x ?? null,
+          y: op.y ?? null,
         },
       });
     }

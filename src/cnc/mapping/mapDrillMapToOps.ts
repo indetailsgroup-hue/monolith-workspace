@@ -27,6 +27,11 @@ import type {
 } from '../operation/operationTypes';
 import type { WorkpieceTransformContext, OperationWorkpieceContext, DrillMapVisualMetadata } from '../transform/workpieceTypes';
 import { transformToMachine } from '../transform/transformPrimitives';
+import {
+  dominantAxisOf,
+  isAxisAlignedRotation,
+  panelSpanFromRole,
+} from '../../gate/rules/gateG11_types';
 
 // ============================================
 // TYPES
@@ -127,11 +132,22 @@ export function mapDrillMapToOps(
         continue;
       }
 
-      // Validate blind hole depth vs panel thickness
-      if (!point.throughHole && panel.dimensions?.thickness && point.depth > panel.dimensions.thickness) {
-        warnings.push(
-          `Point ${point.id}: blind hole depth ${point.depth}mm exceeds panel thickness ${panel.dimensions.thickness}mm (panel: ${panel.panelId})`
-        );
+      // Validate blind hole depth vs the material along the bore's OWN axis.
+      // A face bore eats the panel thickness (~18mm); an edge bore — e.g. a
+      // dowel into a side panel's back edge — runs down the panel's length or
+      // width (hundreds of mm). Measuring every bore against thickness is the
+      // exact category error round 1 removed from gate G11; here it feeds the
+      // machine, so getting it wrong sends a false drill-through warning on
+      // correct joinery — or, if inverted, would hide a real one. Where the
+      // bore axis cannot be established we measure against thickness, the
+      // strictest reading, rather than guess a larger span.
+      if (!point.throughHole && panel.dimensions?.thickness) {
+        const material = boreAxisMaterialMm(point, panel) ?? panel.dimensions.thickness;
+        if (point.depth > material) {
+          warnings.push(
+            `Point ${point.id}: blind hole depth ${point.depth}mm exceeds available material ${material}mm along its bore axis (panel: ${panel.panelId}, thickness ${panel.dimensions.thickness}mm)`
+          );
+        }
       }
 
       // Map point to operation
@@ -429,6 +445,44 @@ function convertPosition(position: [number, number, number]): Position3D {
     y: position[1],
     z: position[2],
   };
+}
+
+/**
+ * Material available to a bore along its OWN axis, in mm — NOT the panel
+ * thickness.
+ *
+ * A blind bore only threatens to break through when its depth exceeds the
+ * material along the axis it travels. A face bore travels the thickness; an
+ * edge bore travels the panel's length or width. This reuses the SAME axis
+ * primitives the gate lane feeds its safety rules
+ * (`gate/rules/gateG11_types`) so the machine-facing converter and the gate
+ * cannot drift apart in how they tell a face bore from an edge bore.
+ *
+ * Returns `undefined` when the bore axis cannot be established — a degenerate
+ * normal, an unknown/off-axis panel role, or a rotated panel the axis-aligned
+ * span convention cannot describe. Callers MUST then fall back to the panel
+ * thickness (the strictest, smallest reading), never a larger guessed span: a
+ * permissive guess here would let a real drill-through reach the machine.
+ */
+function boreAxisMaterialMm(
+  point: DrillMapPoint,
+  panel: DrillMapPanel
+): number | undefined {
+  const dims = panel.dimensions;
+  if (!dims || dims.thickness === undefined) return undefined;
+
+  // A degenerate normal cannot name an axis; refuse rather than let
+  // dominantAxisOf fall back to X by default.
+  if (!point.normal || point.normal.every((c) => c === 0)) return undefined;
+
+  // The role→span convention assumes an axis-aligned panel. A rotated one
+  // permutes which world axis carries the thickness, so it cannot be used.
+  if (!isAxisAlignedRotation(panel.worldRotation)) return undefined;
+
+  const span = panelSpanFromRole(panel.role, dims.width, dims.height, dims.thickness);
+  if (!span) return undefined;
+
+  return span[dominantAxisOf(point.normal)];
 }
 
 /**

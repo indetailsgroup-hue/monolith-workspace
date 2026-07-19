@@ -15,7 +15,9 @@ import type {
   GateReport,
 } from './types';
 import type { SpecServices } from './services';
-import type { PartBreakdownRow, DrillOp, FittingIntent } from '../gate';
+import type { PartBreakdownRow, DrillOp, FittingIntent, PartSpec } from '../gate';
+import { buildDrillOpsFromDrillMap, buildPartsFromDrillMap } from '../gate/builders';
+import { useDrillMapStore } from '../core/store/useDrillMapStore';
 
 // ============================================
 // UI STATE TYPES
@@ -290,10 +292,41 @@ export function createSpecStore(
       set({ async: { busy: true, error: undefined } });
 
       try {
-        // Capture immutable manufacturing payload from DRAFT state
+        // Capture immutable manufacturing payload from DRAFT state.
+        //
+        // The real holes live in useDrillMapStore (the generator's output),
+        // NOT in draftManufacturing.drillOps — nothing in production ever
+        // calls setDrillOps, so that field is always []. Before this wiring
+        // the UI gate (which reads useDrillMapStore) saw hundreds of holes
+        // while the PERSISTED gate report saw none, so the stored, audited
+        // artifact disagreed with what the operator was shown. Capture the
+        // same holes both paths use so the record matches the screen.
+        //
+        // draftManufacturing.drillOps still wins when non-empty so an
+        // explicit setDrillOps (e.g. from a test) is honoured.
+        const usingExplicitOps = draftManufacturing.drillOps.length > 0;
+        const drillMap = useDrillMapStore.getState().drillMap;
+        const drillOps: DrillOp[] = usingExplicitOps
+          ? draftManufacturing.drillOps
+          : buildDrillOpsFromDrillMap(drillMap).ops;
+
+        // Capture the parts the ops REFERENCE, from the same drill map, so the
+        // persisted gate can actually resolve every hole. buildDrillOpsFromDrillMap
+        // keys ops by the drill-map panelId ('panel-left'); the breakdown rows use
+        // the cut-list scheme ('PANEL_SIDE_L') and nothing bridges the two. Without
+        // these parts every op misses in the material rules (if (!p) continue) and
+        // a real through-drill is dropped from the stored report — the exact
+        // divergence this lane exists to close. When ops came from an explicit
+        // setDrillOps they already key to breakdown parts, so no drill-map parts
+        // are needed (or available).
+        const drillParts: PartSpec[] = usingExplicitOps
+          ? []
+          : buildPartsFromDrillMap(drillMap);
+
         const payload = {
           breakdownRows: draftManufacturing.breakdownRows,
-          drillOps: draftManufacturing.drillOps,
+          drillOps,
+          drillParts,
           fittings: draftManufacturing.fittings,
           cabinet: draftManufacturing.cabinet,
         };

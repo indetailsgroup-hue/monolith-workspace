@@ -20,6 +20,12 @@ import { runConnectorOsAudit, type ConnectorAuditIssue } from '../rules/gateG11_
 import { runShadowCompare } from '../../core/connector/shadowCompare';
 import { compareWorldParity } from '../../core/connector/worldSynthesis';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
+import { buildDrillOpsFromDrillMap, buildPartsFromDrillMap } from '../builders/fromDrillMap';
+import { ruleDrillDepthSafety } from '../rules/rule_drillDepthSafety';
+import { ruleEdgeBoreCentering } from '../rules/rule_edgeBoreCentering';
+import { ruleMinMargins } from '../rules/rule_minMargins';
+import { DEFAULT_GATE_POLICY_V1 } from '../policy';
+import type { GateIssue } from '../types';
 
 // ============================================
 // ICONS
@@ -172,6 +178,31 @@ export function runGateValidation(): void {
       const activeCab = useCabinetStore.getState().cabinet;
       const world = activeCab ? compareWorldParity(activeCab, drillMap, { density: connectorDensity }) : null;
 
+      // Gate v0.1 material-safety rules, on the REAL holes.
+      // These two consume GateInput.drillOps, which production never filled —
+      // the Freeze payload defaults it to [] and the only caller that ever put
+      // data in it was a unit test. So the drill-depth safety rule had never
+      // examined a real hole. The drill map is right here; feed it.
+      const safetyParts = buildPartsFromDrillMap(drillMap);
+      const { ops: safetyOps, skipped: safetySkipped } = buildDrillOpsFromDrillMap(drillMap);
+      const safetyIssues: GateIssue[] = [
+        ...ruleDrillDepthSafety(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps),
+        ...ruleEdgeBoreCentering(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps),
+        ...ruleMinMargins(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps, []),
+      ];
+      if (safetySkipped.length > 0) {
+        console.warn(`[SafetyPanel] ${safetySkipped.length} drill point(s) skipped — panel geometry unusable`, safetySkipped);
+      }
+
+      const safetyToFinding = (i: GateIssue): GateFinding => ({
+        key: `${i.code}:${i.partIds?.join(',') ?? ''}:${String(i.context?.opId ?? '')}`,
+        code: i.code,
+        message: i.message,
+        severity: i.severity as Severity,
+        entityIds: i.context?.opId ? [String(i.context.opId)] : (i.partIds ?? []),
+        context: i.context as Record<string, unknown> | undefined,
+      });
+
       const g11ToFinding = (i: (typeof g11Result.issues)[number]): GateFinding => ({
         key: `${i.code}:${(i.drillPointIds ?? i.panelIds ?? []).join(',')}`,
         code: i.code,
@@ -192,10 +223,12 @@ export function runGateValidation(): void {
       const extraBlockers = [
         ...g11Result.issues.filter(i => i.severity === 'BLOCKER').map(g11ToFinding),
         ...connectorAudit.issues.filter(i => i.severity === 'BLOCKER').map(auditToFinding),
+        ...safetyIssues.filter(i => i.severity === 'BLOCKER').map(safetyToFinding),
       ];
       const extraWarnings = [
         ...g11Result.issues.filter(i => i.severity === 'WARNING').map(g11ToFinding),
         ...connectorAudit.issues.filter(i => i.severity === 'WARNING').map(auditToFinding),
+        ...safetyIssues.filter(i => i.severity === 'WARNING').map(safetyToFinding),
       ];
       const shadowInfo: GateFinding[] = shadow.jointsCompared > 0 ? [{
         key: 'CONNECTOR_OS_SHADOW',
@@ -219,8 +252,15 @@ export function runGateValidation(): void {
       // (สัญญาเดียวกับ useExportGate และ factory verifyPacket ที่อ่าน gate_result.json:
       //  passed=false + 0 blockers จะกลายเป็น "Gate FAILED: 0 blocker(s)" ที่โรงงาน)
       // status 'WARNING' (เช่น ยังไม่มี drill map) = ไม่ผ่านแบบเงียบ ๆ แต่ก็ไม่ FAIL
+      const safetyBlockerCount = safetyIssues.filter(i => i.severity === 'BLOCKER').length;
+      const safetyWarningCount = safetyIssues.filter(i => i.severity === 'WARNING').length;
+
       const result: GateResult = {
-        passed: gateResult.status !== 'FAIL' && g11Result.status !== 'FAIL' && connectorAudit.status !== 'FAIL',
+        // A drill-through must FAIL the gate, not merely appear in the list.
+        passed: gateResult.status !== 'FAIL'
+          && g11Result.status !== 'FAIL'
+          && connectorAudit.status !== 'FAIL'
+          && safetyBlockerCount === 0,
         runAt: new Date().toISOString(),
         policyVersion: 'minifix-v1.0+g11-connector-os-v1.1',
         findings: {
@@ -261,8 +301,8 @@ export function runGateValidation(): void {
           info: extraInfo,
         },
         metrics: {
-          errors: gateResult.summary.errors + g11Result.summary.blockers + connectorAudit.summary.blockers,
-          warnings: gateResult.summary.warnings + g11Result.summary.warnings + connectorAudit.summary.warnings,
+          errors: gateResult.summary.errors + g11Result.summary.blockers + connectorAudit.summary.blockers + safetyBlockerCount,
+          warnings: gateResult.summary.warnings + g11Result.summary.warnings + connectorAudit.summary.warnings + safetyWarningCount,
           connectorJointsAudited: connectorAudit.summary.jointsAudited,
         },
       };
@@ -270,7 +310,8 @@ export function runGateValidation(): void {
       setResult(result);
       console.log('[SafetyPanel] Gate validation completed:', gateResult.status,
         '| G11:', g11Result.status, `(${g11Result.issues.length} issues)`,
-        '| ConnectorOS:', connectorAudit.status, `(${connectorAudit.summary.jointsAudited} joints)`);
+        '| ConnectorOS:', connectorAudit.status, `(${connectorAudit.summary.jointsAudited} joints)`,
+        '| Material safety:', `${safetyOps.length} holes checked, ${safetyBlockerCount} blocker(s), ${safetyWarningCount} warning(s)`);
     } catch (error) {
       console.error('[SafetyPanel] Gate validation error:', error);
       setRunning(false);

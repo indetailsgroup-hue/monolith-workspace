@@ -193,6 +193,25 @@ export interface DrillPolicyConfig {
 
 /**
  * Classify hole kind from diameter and depth.
+ *
+ * ## Axis-blindness here is deliberate and fails SAFE — recorded, not fixed
+ *
+ * The `depth >= panelThickness - 0.5` test below is axis-blind: it compares the
+ * bore depth against the panel THICKNESS, with no notion of the bore's own axis.
+ * An EDGE bore — e.g. a 30mm dowel into a side panel's 560mm-long back edge,
+ * 18mm thick — therefore classifies as `THROUGH` even though it runs down the
+ * board's length and exits nothing. `HoleSpec` carries no bore-axis field, so
+ * this function cannot currently tell an edge bore from a face through-drill.
+ *
+ * This was NOT in the two sites the bore-axis pass named (conservativePolicy.ts,
+ * decideDrillParams.ts); the audit's "every site" claim missed it. It is left
+ * as-is on purpose: a spurious `THROUGH` only selects a G83 peck cycle, an exit
+ * dwell and extra clean-exit care (see conservativePolicy / decideDrillParams).
+ * It never DEEPENS the commanded depth, so the error is toward MORE conservative
+ * machining, not less — it fails safe. Making it axis-aware would require adding
+ * a bore-axis-material field to HoleSpec and would move some edge bores OUT of
+ * THROUGH, i.e. toward LESS clean-exit care — a machine-behaviour change that
+ * belongs in a dedicated CNC lane with machine validation, not a gate review-fix.
  */
 export function classifyHoleKind(hole: HoleSpec): HoleKind {
   // Explicit kind takes precedence
@@ -200,7 +219,8 @@ export function classifyHoleKind(hole: HoleSpec): HoleKind {
     return hole.kind;
   }
 
-  // Through-hole check
+  // Through-hole check. Axis-blind (see docblock): over-classifies edge bores as
+  // THROUGH, which only adds conservative machining. Fails safe.
   if (hole.throughHole || hole.depth >= hole.panelThickness - 0.5) {
     return 'THROUGH';
   }

@@ -51,6 +51,9 @@ export type FreezeInput = {
   payload?: {
     breakdownRows: PartBreakdownRow[];
     drillOps?: import('../gate').DrillOp[];
+    /** Parts derived from the same drill map as `drillOps`, so captured holes
+     *  resolve to a part at Gate time. See SnapshotPayload.drillParts. */
+    drillParts?: import('../gate').PartSpec[];
     fittings?: import('../gate').FittingIntent[];
     cabinet?: { backPanelThicknessMm?: number };
   };
@@ -413,6 +416,7 @@ export function createMockSpecServices(
         payload: {
           breakdownRows,
           drillOps: input.payload?.drillOps ?? [],
+          drillParts: input.payload?.drillParts ?? [],
           fittings: input.payload?.fittings ?? [],
           cabinet: input.payload?.cabinet ?? { backPanelThicknessMm: 9 },
         },
@@ -445,6 +449,10 @@ export function createMockSpecServices(
               snapshotId: snapshot.snapshotId,
               rows: snapshot.payload!.breakdownRows,
               drillOps: snapshot.payload!.drillOps ?? [],
+              // Parts derived from the drill map, so ops keyed by the drill-map
+              // panelId scheme resolve. Without this the material rules drop
+              // every captured hole and a through-drill passes silently.
+              drillParts: snapshot.payload!.drillParts ?? [],
               fittings: snapshot.payload!.fittings ?? [],
               cabinet: snapshot.payload!.cabinet,
             })
@@ -460,6 +468,52 @@ export function createMockSpecServices(
         const blockers = gateOutput.issues.filter((i) => i.severity === 'BLOCKER');
         const warnings = gateOutput.issues.filter((i) => i.severity === 'WARNING');
         const info = gateOutput.issues.filter((i) => i.severity === 'INFO');
+
+        // Make an evidence-free run impossible to mistake for a clean pass.
+        //
+        // The drill-depth, edge-margin and edge-bore-centring rules all read
+        // gateInput.drillOps and resolve each op to a part by partId. Two ways a
+        // stored report can end up having examined ZERO holes yet read as "all
+        // clear":
+        //   1. no ops were supplied at all (Freeze taken before the drill map
+        //      existed), or
+        //   2. ops WERE supplied but none resolve to a part — every op hits the
+        //      `if (!p) continue` in the rules and is silently dropped. This is
+        //      exactly what an id-scheme mismatch produces (ops keyed
+        //      'panel-left', parts keyed 'PANEL_SIDE_L'), and it is the defect
+        //      this lane closes: the array is non-empty, so a length===0 guard
+        //      would miss it and the release-gating report would pass clean over
+        //      unchecked holes.
+        // A stored artifact that silently omits the fact it had no evidence is
+        // worse than one that says so. Emit it loudly (WARNING) so the record
+        // states on its face that no holes were checked. The normal path now
+        // captures both the holes AND their parts at Freeze (store.ts freeze()),
+        // so this fires only when evidence is genuinely missing.
+        const partIdSet = new Set(gateInput.parts.map((p) => p.partId));
+        const evaluatedHoleCount = gateInput.drillOps.filter((op) =>
+          partIdSet.has(op.partId)
+        ).length;
+        if (gateInput.drillOps.length === 0) {
+          warnings.push(
+            createIssue(
+              'WARNING',
+              'W_DRILLOPS_NOT_SUPPLIED',
+              'NOT CHECKED — the frozen snapshot supplied no drill operations, so the drill-depth, edge-margin and edge-bore-centring safety rules examined zero holes. This is not a pass.',
+              undefined,
+              { drillOpsCount: 0, evaluatedHoleCount: 0 }
+            )
+          );
+        } else if (evaluatedHoleCount === 0) {
+          warnings.push(
+            createIssue(
+              'WARNING',
+              'W_DRILLOPS_NOT_SUPPLIED',
+              `NOT CHECKED — ${gateInput.drillOps.length} drill operation(s) were supplied but NONE resolved to a part, so the drill-depth, edge-margin and edge-bore-centring safety rules examined zero holes. The ops and parts use mismatched id schemes; this is not a pass.`,
+              undefined,
+              { drillOpsCount: gateInput.drillOps.length, evaluatedHoleCount: 0 }
+            )
+          );
+        }
 
         // Add summary metrics as INFO
         info.push(

@@ -10,7 +10,7 @@
  */
 
 import type { PartBreakdownRow } from '../gate/builders/fromBreakdown';
-import type { DrillOp, FittingIntent } from '../gate/types';
+import type { DrillOp, FittingIntent, PartSpec } from '../gate/types';
 
 // ============================================
 // CORE STATE TYPES
@@ -58,6 +58,20 @@ export type SnapshotPayload = {
 
   /** Drill operations (resolved from fitting intents) */
   drillOps?: DrillOp[];
+
+  /**
+   * Parts derived from the SAME drill map as `drillOps`, so every captured hole
+   * resolves to a part at Gate time.
+   *
+   * `drillOps` are keyed by the drill-map panelId ('panel-left'); breakdown rows
+   * are keyed by the cut-list partId ('PANEL_SIDE_L'). Nothing maps one scheme
+   * to the other, so without these parts every op misses its part in the
+   * material rules and a real drill-through is silently dropped. Captured
+   * alongside the ops at Freeze so the persisted report evaluates the same holes
+   * the UI does. Empty when the ops came from an explicit `setDrillOps` that
+   * already keys to breakdown parts.
+   */
+  drillParts?: PartSpec[];
 
   /** Fitting placement intents */
   fittings?: FittingIntent[];
