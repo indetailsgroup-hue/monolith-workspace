@@ -13,6 +13,12 @@
  */
 
 import type { CabinetPanel } from '../types/Cabinet';
+import {
+  DEFAULT_APPLIED_PART_DATUM,
+  DEFAULT_ASSUMED_FRONT_PROUD_MM,
+  WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM,
+  type AppliedPartDatum,
+} from '../geometry/appliedPartDatum';
 
 /**
  * World-space transform of one cabinet, resolved once so nothing downstream has
@@ -90,6 +96,51 @@ export interface CabinetRun {
 }
 
 /**
+ * Which edge of a run people SIT AT.
+ *
+ * 'NONE' is the default and the only safe default. Auto-detecting a seated
+ * island is impossible here for the same reason auto-detecting an island at all
+ * is impossible: this codebase has NO CONCEPT OF WALLS. A free-standing island
+ * and a galley run against a wall are both a single segment with nothing
+ * adjacent — geometrically identical to this code. Guessing 'BACK' would push a
+ * 380mm slab projection into a wall on the most common layout in the product.
+ *
+ * Whether anyone sits at a run is a human fact about the room, not a derivable
+ * property of the cabinets. It must be declared.
+ */
+export type SeatingSide = 'NONE' | 'BACK';
+
+/**
+ * Seated-island knee clearance. Distinct from backOverhang by design — see
+ * src/core/worktop/seatingOverhang.ts for why mirroring the front projection to
+ * the back is a geometric mirror and not knee space.
+ *
+ * DATUM: the seating overhang is measured from the CARCASS BACK FACE. Declared
+ * here rather than inferred, per src/core/geometry/appliedPartDatum.ts.
+ */
+export interface SeatingConfig {
+  /** Which edge is seated. 'NONE' (default) leaves backOverhang in charge. */
+  readonly side: SeatingSide;
+  /**
+   * Finished counter height AT THE SEAT, mm. Keys into the NKBA knee-clearance
+   * ladder — the required overhang depends on how high the sitter is perched.
+   *
+   * Defaults to the owner-confirmed Thai 850mm (leg 70 + carcass 760 + worktop
+   * 20). NOT imported from CabinetTaxonomy.DEFAULT_COUNTER_HEIGHT_MM: that
+   * module imports DEFAULT_WORKTOP_CONFIG from THIS file, so the import would
+   * be a cycle. The literal is kept honest by a test that asserts it equals
+   * DEFAULT_COUNTER_HEIGHT_MM.
+   *
+   * 850mm is BELOW the lowest published rung (900mm). resolveSeatingOverhang
+   * reports that explicitly as a lower bound rather than extrapolating.
+   */
+  readonly counterHeightMm: number;
+}
+
+/** No seats. backOverhang governs the back edge. */
+export const NO_SEATING: SeatingConfig = { side: 'NONE', counterHeightMm: 850 };
+
+/**
  * Worktop material + overhang policy.
  *
  * NOTE ON THICKNESS — deviation from the approved design, stated plainly:
@@ -140,20 +191,38 @@ export interface WorktopConfig {
   /** Projection past an exposed run end, mm. */
   readonly endOverhang: number;
   /**
-   * Datum the front overhang is measured from.
-   * - 'CARCASS': the carcass front face at local Z = +D/2.
-   * - 'FRONT' (default): the door / drawer-front OUTER face, i.e. the carcass
-   *   face plus the door thickness. This is the joinery convention — an
-   *   overhang is a projection past the thing a person's knees touch.
-   * Mirrors KickboardSetbackDatum so the two applied parts share one datum
-   * vocabulary.
+   * Knee clearance for seats at this run. OPT-IN — see SeatingConfig.
+   *
+   * When `side` is 'BACK' this REPLACES backOverhang on the back edge; the two
+   * are different quantities measured for different reasons and must not be
+   * added together.
    */
-  readonly frontDatum: 'CARCASS' | 'FRONT';
+  readonly seating: SeatingConfig;
+  /**
+   * Datum the front overhang is measured from.
+   *
+   * NO LONGER A LOCAL STRING UNION. It is the shared AppliedPartDatum, defined
+   * once in src/core/geometry/appliedPartDatum.ts and used by the PLINTH as
+   * well. The two applied parts that bracket a cabinet front previously
+   * defaulted to DIFFERENT datums (plinth 'CARCASS', worktop 'FRONT') with
+   * nothing declaring it, so their two "distance from the front" figures were
+   * not comparable to each other or to any published number. Both now default
+   * to 'FRONT' from one constant.
+   *
+   * - 'CARCASS': the carcass front face at local Z = +D/2.
+   * - 'FRONT' (default): the door / drawer-front OUTER face.
+   */
+  readonly frontDatum: AppliedPartDatum;
   /**
    * Door thickness assumed under the 'FRONT' datum when the segment cannot
    * report one. saveProject drops `structure` for every non-active cabinet
    * (useProjectStore.ts:233-241), so after a save/load round-trip doorConfig is
-   * simply not there to read. 18 = DEFAULT_DOOR_CONFIG.doorThickness.
+   * simply not there to read. 18 = DEFAULT_DOOR_CONFIG.doorThickness, shared
+   * with the plinth as DEFAULT_ASSUMED_FRONT_PROUD_MM.
+   *
+   * UNKNOWN, NOT ZERO. A segment that is genuinely doorless reports
+   * maxFrontProud === 0 and that 0 is honoured; only absence falls back here.
+   * Collapsing the two would silently demote the slab to the CARCASS datum.
    */
   readonly assumedDoorThickness: number;
   /** Max slab length obtainable from one blank, mm. */
@@ -192,14 +261,56 @@ export interface WorktopConfig {
  * priced part, not a guess — but it is not yet a premium worktop. Swap
  * coreMaterialId and edgeMaterialId together the moment a sourced 38mm HMR core
  * and a sourced ~45mm tape land in the catalog.
+ *
+ * ── UPDATE: THE THAI TARGET IS 20mm, AND 18.6 IS 1.4mm SHORT OF IT ───────────
+ * The "38-40mm real worktop" premise above is EUROPEAN. The owner of the Thai
+ * kitchen business this system is built for specifies a 20mm worktop, which
+ * makes the 23mm edge tape a non-issue — the blocker recorded above does not
+ * apply at the real target thickness.
+ *
+ * The target now lives at CabinetTaxonomy.DEFAULT_WORKTOP_THICKNESS_MM (20) and
+ * the gap between it and this catalog is computed, not asserted, at
+ * DEFAULT_WORKTOP_THICKNESS_GAP. The finding: exactly 20.0mm is UNREACHABLE
+ * (no 20mm core exists; surfaces are only 0.3 and 0.8, so core + 2 x surface
+ * cannot land on 20.0). The closest BUILDABLE slab is 19.6mm — 18mm HMR + two
+ * 0.8mm HPL faces.
+ *
+ * This config is deliberately NOT switched to that combination: it would swap a
+ * 0.3mm melamine face for a 0.8mm HPL one, changing the finish and the quoted
+ * cost of every slab in the kitchen to chase 1.0mm. Material choice is a human
+ * decision; see the WORKTOP_TARGET_NOT_IN_CATALOG warning.
+ *
+ * ── THE RESIDUAL IS 1.4mm, NOT 0.4mm, AND IT IS NOT ABSORBED ────────────────
+ * An earlier version of this note said "the 0.4mm residual against target is
+ * absorbed by the adjustable leg". That arithmetic belongs to the 19.6mm slab,
+ * which is NOT what this config builds. THIS config builds 18.6mm, so the
+ * residual against the 20mm target is 1.4mm — and it is not absorbed by
+ * anything, because the plinth is derived from the TARGET and the toe kick is
+ * therefore cut at 70mm for a kitchen that assembles to 848.6mm. Winding a leg
+ * up cannot lengthen a board that has already been cut short.
+ *
+ * That divergence is now an ERROR (WORKTOP_BUILT_THICKNESS_OFF_TARGET) raised by
+ * CabinetTaxonomy.deriveHeightStack, and it BLOCKS the factory package export.
+ * Resolving it needs a sourced 20mm slab, or an owner decision to move the
+ * target, or the plinth re-derived to 71.4mm. All three are human calls.
+ *
+ * STILL OPEN, NOT ASSUMED: whether the Thai 20mm worktop is STONE (20mm is the
+ * standard 2cm granite/quartz thickness) or a wood-based panel. Unconfirmed by
+ * the owner. Nothing here branches on it.
  */
 export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
-  frontOverhang: 20,
+  // 20mm past the FRONT datum (door face). The VALUE is unchanged from the literal
+  // 20 that shipped here before; only its SOURCE moved, to a shared constant the
+  // plinth lane reads too, so the two applied parts cannot drift onto different
+  // reference faces again. Declaring the datum was the fix and it costs no
+  // geometric change, because this slab was already measured from the front.
+  frontOverhang: WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM,
   backOverhang: 0,
   backIsExposed: true,
   endOverhang: 0,
-  frontDatum: 'FRONT',
-  assumedDoorThickness: 18,
+  seating: NO_SEATING,
+  frontDatum: DEFAULT_APPLIED_PART_DATUM,
+  assumedDoorThickness: DEFAULT_ASSUMED_FRONT_PROUD_MM,
   maxBlankLength: 2440,
   coreMaterialId: 'core-hmr-18',
   surfaceMaterialId: 'surf-mel-white',
@@ -219,15 +330,62 @@ export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
  * automatically, because a free-standing island and a galley run against a wall
  * are geometrically identical to this code and guessing wrong in this direction
  * produces a slab that will not fit the room.
+ *
+ * ── THIS ISLAND HAS NO SEATS, AND THAT IS NOW EXPLICIT ───────────────────────
+ * The back and end projections below are a GEOMETRIC MIRROR of the front — the
+ * slab floats symmetrically over its carcasses. That is correct for an UNSEATED
+ * island and completely wrong for a seated one: a 20mm projection is a drip
+ * edge, not knee space, and a stool pulled up to it puts the sitter's knees
+ * against the carcass.
+ *
+ * Seating is therefore a separate, opt-in parameter rather than something this
+ * config implies. `seating` stays NO_SEATING here; use SEATED_ISLAND_WORKTOP_CONFIG
+ * or set `seating` yourself. See src/core/worktop/seatingOverhang.ts.
  */
 export const ISLAND_WORKTOP_CONFIG: WorktopConfig = {
   ...DEFAULT_WORKTOP_CONFIG,
   backOverhang: DEFAULT_WORKTOP_CONFIG.frontOverhang,
   endOverhang: DEFAULT_WORKTOP_CONFIG.frontOverhang,
+  seating: NO_SEATING,
+};
+
+/**
+ * Island WITH SEATS at the back edge, at the Thai 850mm counter height.
+ *
+ * The back edge projection is no longer the front's 20mm mirror: it comes from
+ * the NKBA knee-clearance ladder via resolveSeatingOverhang, keyed to
+ * `seating.counterHeightMm`. The end overhangs stay the geometric mirror,
+ * because nobody's knees are under them.
+ *
+ * OPT-IN, like ISLAND_WORKTOP_CONFIG and for a stronger reason: "is this run
+ * seated" is a fact about the room and the client's furniture, not a property
+ * of the cabinets. Nothing detects it.
+ *
+ * HONEST CAVEAT: at 850mm this run sits BELOW the lowest published rung, so the
+ * figure it resolves (380mm) is a documented LOWER BOUND, not a sourced answer
+ * for 850mm. deriveWorktopPanels surfaces that as a SEATING_OVERHANG note on
+ * every derivation rather than letting it pass silently.
+ */
+export const SEATED_ISLAND_WORKTOP_CONFIG: WorktopConfig = {
+  ...ISLAND_WORKTOP_CONFIG,
+  seating: { side: 'BACK', counterHeightMm: 850 },
 };
 
 export interface WorktopNote {
-  readonly code: 'SPLIT_FOR_BLANK' | 'CORNER_BUTT' | 'MIXED_DEPTH';
+  readonly code:
+    | 'SPLIT_FOR_BLANK'
+    | 'CORNER_BUTT'
+    | 'MIXED_DEPTH'
+    /**
+     * The datum every front dimension on this slab was measured from, emitted on
+     * EVERY derivation whether or not anything is unusual. That is deliberate:
+     * an undeclared datum is not a rare failure, it is the normal state of a
+     * spec, and the only way it stops being normal is if the declaration is
+     * unconditional.
+     */
+    | 'DATUM_DECLARED'
+    /** Knee clearance applied, with its evidence level and any lower-bound caveat. */
+    | 'SEATING_OVERHANG';
   readonly runId: string;
   readonly message: string;
 }

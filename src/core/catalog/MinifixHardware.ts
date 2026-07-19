@@ -38,6 +38,8 @@
  * ══════════════════════════════════════════════════════════════════════════════
  */
 
+import { SYSTEM_32_GRID } from './System32';
+
 // ============================================
 // MINIFIX HOUSING TYPES
 // ============================================
@@ -700,15 +702,16 @@ export function generateMinifixArrayPattern(
   // Can be overridden by user for custom configurations
   const drillingDistanceB = overrides?.drillingDistanceB ?? housing.edgeDistance;
 
-  // SYSTEM 32 STANDARD: First hole at 50mm from front/back edges
-  // This is the industry standard for European 32mm cabinet construction
-  // Allows proper clearance for door hinges and drawer systems
-  // Can be overridden by user for custom configurations
-  const SYSTEM_32_FIRST_HOLE = 37;
-  const firstHoleDistance = overrides?.firstHoleZ ?? SYSTEM_32_FIRST_HOLE;
+  // SYSTEM 32: first hole one front-setback in from the front/back edges.
+  // SINGLE SOURCE OF TRUTH — the setback comes from SYSTEM_32_GRID in
+  // ./System32.ts, not from a local literal. A previously local constant here
+  // agreed with the other three declaration sites only by coincidence, and the
+  // comment above it still claimed 50mm while the code used 37mm.
+  // Can be overridden by user for custom configurations.
+  const firstHoleDistance = overrides?.firstHoleZ ?? SYSTEM_32_GRID.frontSetback;
 
   // Calculate number of Minifix points
-  // First and last holes are positioned at 50mm from panel edges (System 32)
+  // First and last holes sit one System 32 front-setback in from the panel edges
   const usableLength = panelLength - (2 * firstHoleDistance);
   const count = Math.max(2, Math.floor(usableLength / spacing) + 1);
 
@@ -716,7 +719,7 @@ export function generateMinifixArrayPattern(
   const actualSpacing = count > 1 ? usableLength / (count - 1) : 0;
   const positions: number[] = [];
   for (let i = 0; i < count; i++) {
-    // Positions from front edge: 37mm, 37mm+spacing, ... (panelLength - 37mm)
+    // Positions from front edge: setback, setback+spacing, ... (panelLength - setback)
     positions.push(firstHoleDistance + (i * actualSpacing));
   }
 

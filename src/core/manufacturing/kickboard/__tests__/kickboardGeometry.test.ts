@@ -66,8 +66,23 @@ describe('kickboardGeometry', () => {
       expect(computeKickboardFrontZ(D, S, 'FRONT', 18)).toBe(248);
     });
 
-    it('falls back to the carcass datum when FRONT is asked for but there are no doors', () => {
-      expect(computeKickboardFrontZ(D, S, 'FRONT')).toBe(230);
+    it('treats UNKNOWN front proudness as assumed, NOT as a silent switch to CARCASS', () => {
+      // CHANGED, and the old expectation was the bug. This used to assert 230 —
+      // i.e. asking for the FRONT datum with no known door thickness quietly
+      // returned a CARCASS measurement while still calling itself 'FRONT'. That
+      // is the exact defect this lane exists to remove, one layer down from the
+      // 50-vs-20 mismatch.
+      //
+      // `undefined` means UNKNOWN (saveProject drops `structure` for every
+      // non-active cabinet), so it now resolves to the assumed 18mm front,
+      // matching what WorktopConfig.assumedDoorThickness has always done for the
+      // slab above: D/2 + 18 - 50 = 248.
+      expect(computeKickboardFrontZ(D, S, 'FRONT')).toBe(248);
+    });
+
+    it('honours an EXPLICIT zero front proudness — a doorless carcass is not "unknown"', () => {
+      // 0 is a fact, not an absence: the front face of a doorless carcass really
+      // is at +D/2, so 'FRONT' and 'CARCASS' genuinely coincide here.
       expect(computeKickboardFrontZ(D, S, 'FRONT', 0)).toBe(230);
     });
   });

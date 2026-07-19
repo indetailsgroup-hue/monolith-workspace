@@ -11,6 +11,12 @@
  * - Magic: 3D Visual rendering (Cabinet3D.tsx)
  */
 
+import {
+  BASE_CABINET_STANDARDS,
+  DEFAULT_TOE_KICK_HEIGHT_MM,
+} from '../catalog/CabinetTaxonomy';
+import type { AppliedPartDatum } from '../geometry/appliedPartDatum';
+
 // ============================================
 // ENUMS & CONSTANTS
 // ============================================
@@ -327,12 +333,21 @@ export interface DoorConfig {
 
 /**
  * Datum the kickboard setback is measured from.
- * - 'CARCASS' (default): cabinet front face at Z = +D/2. Stable — toggling doors
- *   does not move the plinth.
- * - 'FRONT': door / drawer-front outer face. Matches the joinery convention
- *   (typ. 50-100mm from the door face) but couples the plinth to doorConfig.
+ *
+ * AN ALIAS, NOT A SEPARATE UNION. It resolves to AppliedPartDatum, the single
+ * vocabulary shared with the worktop above (WorktopConfig.frontDatum). They used
+ * to be two identical-looking string unions declared in two files that DEFAULTED
+ * DIFFERENTLY — plinth 'CARCASS', worktop 'FRONT' — so the plinth setback and
+ * the worktop overhang were measured from planes 18mm apart with nothing saying
+ * so. Both now default to 'FRONT'.
+ *
+ * - 'FRONT' (default): door / drawer-front outer face — the joinery convention.
+ * - 'CARCASS': cabinet front face at Z = +D/2. Still selectable per cabinet, and
+ *   still the right answer for a doorless carcass.
+ *
+ * See src/core/geometry/appliedPartDatum.ts.
  */
-export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
+export type KickboardSetbackDatum = AppliedPartDatum;
 
 /**
  * Kickboard (plinth / บังตีนตู้) configuration.
@@ -341,9 +356,13 @@ export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
 export interface KickboardConfig {
   /** Generate a KICKBOARD panel. Defaults to true when toeKickHeight > 0. */
   hasKickboard: boolean;
-  /** Recess of the kickboard front face. Default: MANUFACTURING_PARAMS.kickSetback (50mm). */
+  /**
+   * Recess of the kickboard front face, MEASURED FROM `setbackDatum`.
+   * Default: MANUFACTURING_PARAMS.kickSetback (65mm from the FRONT datum,
+   * = 47mm from the carcass under an 18mm door).
+   */
   setback?: number;
-  /** Datum the setback is measured from. Default: 'CARCASS'. */
+  /** Datum the setback is measured from. Default: 'FRONT'. */
   setbackDatum?: KickboardSetbackDatum;
   /** Optional core override (e.g. moisture-resistant). Falls back to cabinet defaults. */
   coreMaterialId?: string;
@@ -731,11 +750,22 @@ export interface Cabinet {
 // DEFAULTS
 // ============================================
 
+/**
+ * Default cabinet dimensions.
+ *
+ * Every term is now DERIVED from the dimensional standards rather than restated as a
+ * literal here. `toeKickHeight` in particular used to be a bare `100` — one of twelve
+ * copies of that literal across the codebase, any one of which could be missed and
+ * produce a run of cabinets standing at two different heights inside one kitchen.
+ *
+ * The depth default moves 560 -> 600 with BASE_CABINET_STANDARDS: 600 is what Thai
+ * sources, JIS A0017:2018 and AU all specify, and JIS does not list 560 at all.
+ */
 export const DEFAULT_DIMENSIONS: CabinetDimensions = {
-  width: 600,
-  height: 720,
-  depth: 560,
-  toeKickHeight: 100,
+  width: BASE_CABINET_STANDARDS.width.default,
+  height: BASE_CABINET_STANDARDS.height.default,
+  depth: BASE_CABINET_STANDARDS.depth.default,
+  toeKickHeight: DEFAULT_TOE_KICK_HEIGHT_MM,
 };
 
 export const DEFAULT_STRUCTURE: CabinetStructure = {
@@ -765,70 +795,16 @@ export const DEFAULT_MANUFACTURING: CabinetManufacturing = {
 // ============================================
 
 /**
- * Calculate real thickness including surface materials and glue
- * 
- * Formula: T_real = T_core + T_surfA + T_surfB + (T_glue × 2)
- * 
- * Note: Glue is applied on BOTH sides of core (surfA-core and core-surfB)
- * So we multiply glue thickness by 2
- * 
- * @param coreThickness - Core material thickness (mm)
- * @param surfaceA - Surface A thickness (mm) - typically front face
- * @param surfaceB - Surface B thickness (mm) - typically back face
- * @param glueThicknessPerLayer - Glue layer thickness PER SIDE (mm), default 0.1
- * @returns Real thickness in mm
- * 
- * @example
- * // HMR 18mm + HPL 0.8mm both sides + glue 0.1mm per layer
- * calculateRealThickness(18, 0.8, 0.8, 0.1)
- * // Returns: 18 + 0.8 + 0.8 + (0.1 × 2) = 19.8mm
+ * The two truth-layer panel formulas now live in `./panelFormulas`, a leaf module
+ * with no imports, and are re-exported here so every existing importer is unchanged.
+ *
+ * They had to move because `catalog/CabinetTaxonomy.ts` derives the finished counter
+ * height from the REAL worktop material stack (and therefore needs
+ * `calculateRealThickness`), while this file reads the derived plinth height back for
+ * `DEFAULT_DIMENSIONS.toeKickHeight`. Keeping the formula here would make that a
+ * runtime import cycle. See panelFormulas.ts for the full rationale.
  */
-export function calculateRealThickness(
-  coreThickness: number,
-  surfaceA: number,
-  surfaceB: number,
-  glueThicknessPerLayer: number = 0.1
-): number {
-  // Glue on both interfaces: surfA↔core and core↔surfB
-  const totalGlue = glueThicknessPerLayer * 2;
-  return coreThickness + surfaceA + surfaceB + totalGlue;
-}
-
-/**
- * Calculate cut size from finish size
- * 
- * Formula: CutSize = FinishSize - (E1 + E2) + preMill_per_edged_side
- * 
- * Pre-milling is ONLY applied to sides that have edge banding!
- * This is because the edge bander needs material to trim before applying tape.
- * 
- * @param finishSize - Finish dimension after edge banding (mm)
- * @param edge1 - Edge thickness side 1 (mm), 0 if no edge
- * @param edge2 - Edge thickness side 2 (mm), 0 if no edge
- * @param preMillPerSide - Pre-milling allowance PER SIDE that has edge (mm), default 0.5
- * @returns Cut size in mm
- * 
- * @example
- * // Panel 600mm finish, 1mm edge both sides, 0.5mm preMill
- * calculateCutSize(600, 1, 1, 0.5)
- * // Returns: 600 - (1+1) + (0.5+0.5) = 599mm
- * 
- * @example
- * // Panel 600mm finish, 1mm edge LEFT only
- * calculateCutSize(600, 1, 0, 0.5)
- * // Returns: 600 - (1+0) + (0.5+0) = 599.5mm
- */
-export function calculateCutSize(
-  finishSize: number,
-  edge1: number,
-  edge2: number,
-  _preMillPerSide: number = 0.5  // Kept for API compatibility but not used
-): number {
-  // Cut Size = Finish Size - Edge Thicknesses
-  // This is the panel size AFTER pre-milling, ready for edge banding
-  // Pre-milling is a machine operation, not added to cut dimensions
-  return finishSize - (edge1 + edge2);
-}
+export { calculateRealThickness, calculateCutSize } from './panelFormulas';
 
 /**
  * Generate unique ID for panels

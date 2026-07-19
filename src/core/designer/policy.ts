@@ -16,6 +16,11 @@ import type {
   ConnectorIntent,
   MaterialPreferences,
 } from './types';
+import {
+  BASE_CABINET_STANDARDS,
+  DEFAULT_TOE_KICK_HEIGHT_MM,
+} from '../catalog/CabinetTaxonomy';
+import { SYSTEM_32_GRID, nearestSystem32Position, isOnSystem32Grid } from '../catalog/System32';
 
 // ============================================
 // DIMENSION LIMITS
@@ -147,15 +152,24 @@ export const CONNECTOR_LIMITS = {
 // SYSTEM 32 CONSTANTS
 // ============================================
 
+/**
+ * System 32 policy view.
+ *
+ * SINGLE SOURCE OF TRUTH: every value is derived from SYSTEM_32_GRID in
+ * src/core/catalog/System32.ts. Do not hard-code a number here — if the grid
+ * needs to change it changes in one place and every consumer follows.
+ * `firstHoleZ` is this module's historical name for the grid's `frontSetback`;
+ * it is the same dimension, kept as an alias so existing callers do not break.
+ */
 export const SYSTEM_32 = {
   /** Vertical hole spacing (mm) */
-  pitch: 32,
-  /** First hole from front edge (mm) */
-  firstHoleZ: 37,
+  pitch: SYSTEM_32_GRID.pitch,
+  /** First hole from front edge (mm) — alias of SYSTEM_32_GRID.frontSetback */
+  firstHoleZ: SYSTEM_32_GRID.frontSetback,
   /** Standard hole diameter (mm) */
-  holeDiameter: 5,
+  holeDiameter: SYSTEM_32_GRID.holeDiameter,
   /** Standard hole depth (mm) */
-  holeDepth: 13,
+  holeDepth: SYSTEM_32_GRID.holeDepth,
 } as const;
 
 // ============================================
@@ -268,6 +282,10 @@ export const DEFAULT_MATERIAL_PREFERENCES: MaterialPreferences = {
 
 /**
  * Create a default DesignerIntent for a base cabinet.
+ *
+ * Dimensions are DERIVED from BASE_CABINET_STANDARDS and the height stack, not restated
+ * as literals. A designer intent that defaulted to a different toe-kick height than the
+ * catalog would put two plinth heights into one kitchen.
  */
 export function createDefaultIntent(): DesignerIntent {
   return {
@@ -275,10 +293,10 @@ export function createDefaultIntent(): DesignerIntent {
     cabinetType: 'BASE',
     jointType: 'INSET',
     dimensions: {
-      width: 600,
-      height: 720,
-      depth: 560,
-      toeKickHeight: 100,
+      width: BASE_CABINET_STANDARDS.width.default,
+      height: BASE_CABINET_STANDARDS.height.default,
+      depth: BASE_CABINET_STANDARDS.depth.default,
+      toeKickHeight: DEFAULT_TOE_KICK_HEIGHT_MM,
     },
     backPanel: {
       enabled: true,
@@ -345,15 +363,14 @@ export function getMinThicknessForConnector(
  * Returns true if within 2mm tolerance.
  */
 export function isAlignedToSystem32(positionY: number, tolerance = 2): boolean {
-  const { pitch, firstHoleZ } = SYSTEM_32;
-  const nearestHole = Math.round((positionY - firstHoleZ) / pitch) * pitch + firstHoleZ;
-  return Math.abs(positionY - nearestHole) <= tolerance;
+  // Delegates to the single source of truth so "on the grid" cannot mean two
+  // different things in two different modules.
+  return isOnSystem32Grid(positionY, tolerance, SYSTEM_32_GRID);
 }
 
 /**
  * Get nearest System 32 position.
  */
 export function getNearestSystem32Position(positionY: number): number {
-  const { pitch, firstHoleZ } = SYSTEM_32;
-  return Math.round((positionY - firstHoleZ) / pitch) * pitch + firstHoleZ;
+  return nearestSystem32Position(positionY, SYSTEM_32_GRID);
 }

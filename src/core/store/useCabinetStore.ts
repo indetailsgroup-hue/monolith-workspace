@@ -59,12 +59,21 @@ import {
   shouldGenerateKickboard,
   resolveKickboardSetback,
   resolveKickboardSetbackDatum,
+  DEFAULT_KICK_SETBACK,
 } from '../manufacturing/kickboard';
 import {
   computePanelComputed,
   type PanelCostMaterials,
 } from '../manufacturing/panelComputed';
-import { CABINET_TYPES, type ConstructionType } from '../catalog/CabinetTaxonomy';
+import {
+  CABINET_TYPES,
+  resolveCabinetTypeDefinition,
+  deriveWallCabinetPlacement,
+  assertPlaceableWallCabinet,
+  validateWallCabinetUnderside,
+  validateDimensions,
+  type ConstructionType,
+} from '../catalog/CabinetTaxonomy';
 import { checkMutationAllowed, type SpecState } from '../spec/specState';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
 import {
@@ -153,7 +162,11 @@ const MANUFACTURING_PARAMS = {
   safetyGap: 2,           // Gap_safety: ระยะเผื่อไม่ให้ชน (1-2 mm)
 
   // === Kickboard / Plinth ===
-  kickSetback: 50,        // K_setback: ระยะร่นบังตีนตู้จากหน้าตู้ (typ. 50 mm)
+  // K_setback: ระยะร่นบังตีนตู้ วัดจาก "หน้าบาน" (FRONT datum) ไม่ใช่หน้าตู้
+  // 65mm from the FRONT datum = 47mm from the carcass under an 18mm door.
+  // Was 50 measured from the CARCASS with the datum undeclared; the datum now
+  // matches the worktop overhang above. See geometry/appliedPartDatum.ts.
+  kickSetback: DEFAULT_KICK_SETBACK,
 };
 
 // ============================================
@@ -1798,9 +1811,18 @@ function generatePanels(
     const kickSize = computeKickboardSize(dimensions);
     const kickSetback = resolveKickboardSetback(structure, MFG.kickSetback);
     const kickDatum = resolveKickboardSetbackDatum(structure);
-    // Door thickness only matters under the 'FRONT' datum, and only if doors exist
-    const kickDoorT = structure.doorConfig?.hasDoors
-      ? structure.doorConfig.doorThickness
+    // Front proudness under the 'FRONT' datum. THREE STATES, NOT TWO:
+    //   doors present      -> the real door thickness
+    //   doorConfig present, hasDoors false -> 0, KNOWN to have no proud front
+    //   doorConfig absent  -> undefined, UNKNOWN (saveProject drops `structure`
+    //                         for non-active cabinets), assumed downstream
+    // Collapsing the last two into `undefined`, as this did, made an open
+    // carcass and a reloaded project indistinguishable — and once the default
+    // datum became 'FRONT' that difference is 18mm of plinth position.
+    const kickDoorT = structure.doorConfig
+      ? structure.doorConfig.hasDoors
+        ? structure.doorConfig.doorThickness
+        : 0
       : undefined;
     // NOTE: no carcassZ term — the plinth is referenced to the FRONT face, so the
     // back-panel construction must not move it (see kickboardGeometry.ts).
@@ -2144,6 +2166,38 @@ interface CabinetState {
   // Cabinet visibility (Plasticity-style H/Shift+H/Alt+H)
   // Using array instead of Set because Immer doesn't support Set without enableMapSet()
   hiddenCabinetIds: string[];
+
+  /**
+   * Standards violations recorded against the CURRENT scene.
+   *
+   * A REAL SURFACE, not a console call. Wall-unit placement bounds and dimensional
+   * envelopes were previously reported with console.error/console.warn, which meant the
+   * JIS A0017:2018 1300mm minimum was advisory in practice: nothing could read it, no UI
+   * could show it, no test could assert it, and the user saw nothing at all.
+   *
+   * Two severities, matching the rest of the system:
+   *   'ERROR'   — a hard bound was broken. The scene holds something unbuildable.
+   *   'WARNING' — off-catalogue but legitimate (bespoke widths, fillers, scribes).
+   *
+   * Recorded rather than thrown for MOVE operations specifically: throwing mid-drag is
+   * the wrong ergonomics — it would tear down the interaction and lose the user's work —
+   * so a drag that lands out of bounds commits and is MARKED. Creation still throws,
+   * because nothing is lost by refusing to create.
+   */
+  placementViolations: PlacementViolation[];
+}
+
+/** One recorded standards violation. See CabinetState.placementViolations. */
+export interface PlacementViolation {
+  readonly id: string;
+  readonly severity: 'ERROR' | 'WARNING';
+  readonly code: string;
+  readonly cabinetId: string | null;
+  readonly cabinetName: string;
+  /** Which action produced it, so a stale violation can be traced. */
+  readonly source: string;
+  readonly message: string;
+  readonly at: number;
 }
 
 interface CabinetActions {
@@ -2151,7 +2205,23 @@ interface CabinetActions {
   createCabinet: (type?: CabinetType, name?: string) => void;
 
   // Multi-cabinet actions
-  addCabinet: (type: CabinetType, name: string, dimensions?: Partial<CabinetDimensions>, position?: [number, number, number]) => Cabinet;
+  /**
+   * @param position  X and Z are the caller's. For a WALL cabinet the Y is DERIVED and
+   *                  replaces whatever is passed, unless `options.keepExplicitY` is set —
+   *                  see the comment in the implementation for why.
+   * @param options   `keepExplicitY` opts out of the Y derivation for wall units (project
+   *                  restore, import, drag commit). The position is then validated and any
+   *                  violation is RECORDED in `placementViolations`.
+   */
+  addCabinet: (
+    type: CabinetType,
+    name: string,
+    dimensions?: Partial<CabinetDimensions>,
+    position?: [number, number, number],
+    options?: { keepExplicitY?: boolean }
+  ) => Cabinet;
+  /** Discard recorded standards violations (e.g. after the user resolves them). */
+  clearPlacementViolations: () => void;
   removeCabinet: (cabinetId: string) => void;
   selectCabinet: (cabinetId: string | null) => void;
   duplicateCabinet: (cabinetId: string) => Cabinet | null;
@@ -2283,6 +2353,90 @@ interface CabinetActions {
 
 type CabinetStore = CabinetState & CabinetActions;
 
+/**
+ * Append violations to the store.
+ *
+ * Free functions taking `set` rather than store methods, so they can be called from
+ * inside an action without re-entering the store. Each keeps its own `console` emission
+ * as well: the recorded state is what code and tests read, and the console line is what a
+ * developer sees. The bug being fixed was that the console line was the ONLY output.
+ */
+function pushViolations(
+  set: (fn: (state: CabinetStore) => void) => void,
+  entries: readonly Omit<PlacementViolation, 'id' | 'at'>[]
+): void {
+  if (entries.length === 0) return;
+  const at = Date.now();
+  set((state) => {
+    for (const e of entries) {
+      state.placementViolations.push({
+        ...e,
+        id: `${e.code}-${e.cabinetName}-${at}-${state.placementViolations.length}`,
+        at,
+      });
+    }
+  });
+}
+
+function recordPlacementViolation(
+  set: (fn: (state: CabinetStore) => void) => void,
+  _get: () => CabinetStore,
+  args: {
+    cabinetId?: string | null;
+    cabinetName: string;
+    undersideHeight: number;
+    errors: readonly { code: string; message: string }[];
+    warnings: readonly { code: string; message: string }[];
+    source: string;
+  }
+): void {
+  for (const e of args.errors) {
+    console.error(`[${args.source}] wall unit "${args.cabinetName}": ${e.message}`);
+  }
+  for (const w of args.warnings) {
+    console.warn(`[${args.source}] wall unit "${args.cabinetName}": ${w.message}`);
+  }
+  pushViolations(set, [
+    ...args.errors.map((e) => ({
+      severity: 'ERROR' as const,
+      code: e.code,
+      cabinetId: args.cabinetId ?? null,
+      cabinetName: args.cabinetName,
+      source: args.source,
+      message: e.message,
+    })),
+    ...args.warnings.map((w) => ({
+      severity: 'WARNING' as const,
+      code: w.code,
+      cabinetId: args.cabinetId ?? null,
+      cabinetName: args.cabinetName,
+      source: args.source,
+      message: w.message,
+    })),
+  ]);
+}
+
+function recordDimensionWarnings(
+  set: (fn: (state: CabinetStore) => void) => void,
+  _get: () => CabinetStore,
+  args: { cabinetName: string; typeId: string; warnings: readonly string[] }
+): void {
+  for (const w of args.warnings) {
+    console.warn(`[addCabinet] "${args.cabinetName}" (${args.typeId}): ${w}`);
+  }
+  pushViolations(
+    set,
+    args.warnings.map((w) => ({
+      severity: 'WARNING' as const,
+      code: 'DIMENSION_OFF_CATALOGUE',
+      cabinetId: null,
+      cabinetName: args.cabinetName,
+      source: 'addCabinet',
+      message: w,
+    }))
+  );
+}
+
 export const useCabinetStore = create<CabinetStore>()(
   immer((set, get) => ({
     // Initial state
@@ -2304,7 +2458,7 @@ export const useCabinetStore = create<CabinetStore>()(
       backVoid: MANUFACTURING_PARAMS.backVoid,              // 20 mm
       backThickness: MANUFACTURING_PARAMS.backThickness,    // 6 mm
       safetyGap: MANUFACTURING_PARAMS.safetyGap,            // 2 mm
-      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 50 mm
+      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 65 mm FROM THE FRONT (door) datum
     },
 
     // Drilling parameters (editable from X-Ray mode labels)
@@ -2315,6 +2469,9 @@ export const useCabinetStore = create<CabinetStore>()(
 
     // Cabinet visibility state (Plasticity-style H/Shift+H/Alt+H)
     hiddenCabinetIds: [],
+
+    // Standards violations against the current scene. See CabinetState.
+    placementViolations: [],
 
     // ========== CABINET CRUD ==========
     createCabinet: (type = 'BASE', name = 'Base Cabinet') => {
@@ -2330,8 +2487,9 @@ export const useCabinetStore = create<CabinetStore>()(
         defaultEdgeId,
         undefined,
         get().manufacturingParams,
-        // NOTE: DEFAULT_DIMENSIONS carries toeKickHeight 100 regardless of type,
-        // so the type must reach generatePanels or a WALL cabinet gets a plinth.
+        // NOTE: DEFAULT_DIMENSIONS carries DEFAULT_TOE_KICK_HEIGHT_MM (the derived
+        // plinth, 70mm on the Thai default) regardless of type, so the type must
+        // reach generatePanels or a WALL cabinet gets a plinth.
         type
       );
 
@@ -2370,13 +2528,76 @@ export const useCabinetStore = create<CabinetStore>()(
     },
 
     // ========== MULTI-CABINET ACTIONS ==========
-    addCabinet: (type, name, dimensions, position = [0, 0, 0]) => {
+    clearPlacementViolations: () => {
+      set((state) => {
+        state.placementViolations = [];
+      });
+    },
+
+    addCabinet: (type, name, dimensions, position, options) => {
       const defaultCoreId = 'core-hmr-18';
       const defaultSurfaceId = 'surf-hpl-grey-oak';
       const defaultEdgeId = 'edge-pvc-grey-10';
 
-      // Get cabinet type standards from imported CABINET_TYPES
-      const typeConfig = CABINET_TYPES[type] || CABINET_TYPES['BASE_STANDARD'];
+      // Resolve BOTH vocabularies this parameter accepts — a CABINET_TYPES id
+      // ('WALL_STANDARD') and a coarse category ('WALL') — to a real catalogue entry.
+      // The previous `CABINET_TYPES[type] || CABINET_TYPES['BASE_STANDARD']` resolved
+      // every non-BASE coarse category to a BASE cabinet, so a 'WALL' unit silently
+      // received base defaults and a base envelope. See resolveCabinetTypeDefinition.
+      const typeConfig = resolveCabinetTypeDefinition(type);
+
+      // ===== WALL CABINET MOUNTING HEIGHT =====
+      // Until this was wired, `position` defaulted to [0, 0, 0] and a WALL unit was
+      // placed ON THE FLOOR, colliding with the worktop and with every base cabinet.
+      // ERGONOMIC_STANDARDS.wallCabinetBottom existed but had ZERO consumers, so nothing
+      // caught it.
+      //
+      // ── AND THE FIRST FIX DID NOT ACTUALLY FIRE IN THE APP ──────────────────────────
+      // The derivation below used to run ONLY when `position` was omitted. Every
+      // production caller passes one: CabinetTypeSelector.handleAddCabinet supplies
+      // [offsetX, 0, 0] to space units along X. So real users took the "caller stated a
+      // position" branch, which merely console.error'd and then placed the unit at Y=0
+      // anyway — on the floor, through the worktop. The tests that proved the fix all
+      // exercised the omitted-position path that no production code used.
+      //
+      // THE Y AXIS IS NOT THE CALLER'S TO STATE for a wall unit. X and Z are layout, and
+      // a caller legitimately owns those. Y is a derived ergonomic bound (counter height
+      // + backsplash gap, snapped, JIS A0017:2018 floor enforced) and letting a caller
+      // pass 0 for it is how the unit ends up on the floor. So an explicit position for a
+      // WALL cabinet now keeps its X and Z and has its Y REPLACED by the derivation,
+      // unless the caller opts out deliberately via `keepExplicitY`.
+      const isWallCabinet =
+        typeConfig?.category === 'WALL' || String(type).includes('WALL');
+
+      let scenePosition: [number, number, number];
+      if (isWallCabinet) {
+        const placement = deriveWallCabinetPlacement();
+        assertPlaceableWallCabinet(placement);
+
+        if (position === undefined) {
+          scenePosition = [0, placement.undersideHeight, 0];
+        } else if (options?.keepExplicitY) {
+          // OPT-OUT, for a genuinely caller-owned Y: a restored project, an import, a
+          // drag commit. Still validated, and the violation is RECORDED rather than only
+          // logged — see recordPlacementViolation.
+          scenePosition = position;
+          const check = validateWallCabinetUnderside(position[1]);
+          if (!check.valid) {
+            recordPlacementViolation(set, get, {
+              cabinetName: name,
+              undersideHeight: position[1],
+              errors: check.errors,
+              warnings: check.warnings,
+              source: 'addCabinet(keepExplicitY)',
+            });
+          }
+        } else {
+          // THE PRODUCTION PATH. Keep the caller's X/Z layout, derive the Y.
+          scenePosition = [position[0], placement.undersideHeight, position[2]];
+        }
+      } else {
+        scenePosition = position ?? [0, 0, 0];
+      }
 
       const cabinetDimensions: CabinetDimensions = {
         width: dimensions?.width ?? typeConfig?.standards?.width?.default ?? DEFAULT_DIMENSIONS.width,
@@ -2384,6 +2605,48 @@ export const useCabinetStore = create<CabinetStore>()(
         depth: dimensions?.depth ?? typeConfig?.standards?.depth?.default ?? DEFAULT_DIMENSIONS.depth,
         toeKickHeight: dimensions?.toeKickHeight ?? (typeConfig?.toeKickHeight ?? DEFAULT_DIMENSIONS.toeKickHeight),
       };
+
+      // ===== DIMENSIONAL ENVELOPE =====
+      // validateDimensions had ZERO production callers — on this branch AND on main — so
+      // every bound it defines was decorative: the JIS A0017:2018 400mm wall-depth
+      // ceiling, the 560mm oven-housing floor, and the discrete catalogue width set could
+      // all be violated by simply calling addCabinet, which passed dimensions straight
+      // into CabinetDimensions unchecked. This is the wiring, placed after the defaults
+      // resolve so it validates the dimensions actually committed rather than the
+      // caller's partial input.
+      //
+      // ERRORS REJECT. They are hard bounds: a wall unit deeper than the head-clearance
+      // ceiling or an oven housing too shallow for the appliance plus its vent gap are
+      // not buildable, and returning them would put an unbuildable cabinet into a cut
+      // list. Warnings (off-catalogue but bespoke-legitimate widths) are recorded, not
+      // thrown — a filler panel is a real thing.
+      // VALIDATE AGAINST THE RESOLVED TYPE, NOT THE RAW ARGUMENT. `type` is overloaded:
+      // CabinetTypeSelector passes a CABINET_TYPES id ('BASE_STANDARD'), while other
+      // callers pass a coarse category ('BASE'), which is not a catalog key at all — the
+      // `|| CABINET_TYPES['BASE_STANDARD']` fallback above is what absorbs that. Passing
+      // the raw string to validateDimensions made every coarse-category caller fail with
+      // "Unknown cabinet type: BASE", i.e. the gate would have rejected legitimate
+      // cabinets on a lookup miss rather than on a real bound. Use the same resolved
+      // config the dimensions themselves were defaulted from.
+      const dimensionCheck = validateDimensions(
+        typeConfig.id,
+        cabinetDimensions.width,
+        cabinetDimensions.height,
+        cabinetDimensions.depth
+      );
+      if (!dimensionCheck.valid) {
+        throw new Error(
+          `Cabinet "${name}" (${type}) is outside its dimensional envelope and was not created:\n` +
+            dimensionCheck.errors.map((e: string) => `  - ${e}`).join('\n')
+        );
+      }
+      if (dimensionCheck.warnings.length > 0) {
+        recordDimensionWarnings(set, get, {
+          cabinetName: name,
+          typeId: typeConfig.id,
+          warnings: dimensionCheck.warnings,
+        });
+      }
 
       const structure: CabinetStructure = {
         ...DEFAULT_STRUCTURE,
@@ -2426,7 +2689,7 @@ export const useCabinetStore = create<CabinetStore>()(
         computed: calculateTotals(panels),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        scenePosition: position,
+        scenePosition,
         sceneRotation: [0, 0, 0],
         // Auto-apply Minifix S200 hardware config based on wood thickness
         hardware: {
@@ -2535,6 +2798,32 @@ export const useCabinetStore = create<CabinetStore>()(
       const MAX_POSITION = 10000;
       if (Math.abs(position[0]) > MAX_POSITION || Math.abs(position[1]) > MAX_POSITION || Math.abs(position[2]) > MAX_POSITION) {
         return; // Don't update with invalid position
+      }
+
+      // ===== WALL UNIT BOUNDS ON MOVE, NOT ONLY ON CREATE =====
+      // Placement used to be checked at creation only. Every drag/move path —
+      // FloorDragControls, CabinetTransformControls, clampDeltaByCollision,
+      // commitSnapHelpers — writes scenePosition through here and none of them validated,
+      // so a user could simply DRAG a wall unit below the JIS A0017:2018 1300mm minimum
+      // and the hard bound was bypassed through the primary interaction surface.
+      //
+      // COMMIT AND MARK, DO NOT THROW. Throwing mid-drag tears down the interaction and
+      // loses the user's work for a bound they can see themselves violating. The move is
+      // applied and the violation is RECORDED, so the blocker surface and any UI reading
+      // `placementViolations` can show it and an export gate can refuse it later.
+      const existing = get().cabinets.find((c) => c.id === cabinetId);
+      if (existing && existing.type === 'WALL') {
+        const check = validateWallCabinetUnderside(position[1]);
+        if (!check.valid || check.warnings.length > 0) {
+          recordPlacementViolation(set, get, {
+            cabinetId,
+            cabinetName: existing.name,
+            undersideHeight: position[1],
+            errors: check.errors,
+            warnings: check.warnings,
+            source: 'updateCabinetPosition',
+          });
+        }
       }
 
       set((state) => {

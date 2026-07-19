@@ -27,17 +27,48 @@ import type {
   KickboardSetbackDatum,
 } from '../../types/Cabinet';
 import { CABINET_TYPES } from '../../catalog/CabinetTaxonomy';
+import {
+  DEFAULT_APPLIED_PART_DATUM,
+  DEFAULT_ASSUMED_FRONT_PROUD_MM,
+  PLINTH_SETBACK_FROM_FRONT_MM,
+  frontDatumOffsetMm,
+} from '../../geometry/appliedPartDatum';
 
 // ============================================
 // CONSTANTS
 // ============================================
 
 /**
- * Fallback recess of the kickboard front face (mm).
- * Mirrors MANUFACTURING_PARAMS.kickSetback; used when no param is supplied.
- * Joinery convention is 50 - 100mm.
+ * Fallback recess of the kickboard front face (mm), measured from
+ * DEFAULT_KICK_SETBACK_DATUM.
+ *
+ * ── THE NUMBER CHANGED BECAUSE THE DATUM DID ─────────────────────────────────
+ * Was 50, measured from the CARCASS. Now 65, measured from the FRONT (door
+ * face). Under the default 18mm door that is 65 - 18 = 47mm from the carcass, so
+ * the plinth moves 3mm forward and no more — the GEOMETRY is essentially
+ * unchanged. What changed is that the figure now states what it is measured
+ * from, and states it in the same terms as the worktop overhang above it.
+ *
+ * WHY NOT 70 FROM THE CARCASS, which is the figure the UK literature quotes?
+ * Because no published setback figure the document audit read declares its own
+ * datum — not one, including that 70. Adopting it as a carcass dimension gives
+ * 70 + 18 = 88mm of recess from the door face, deeper than any figure in any
+ * source. An undeclared number cannot be transplanted into a declared system
+ * without first deciding what it meant, and we cannot decide that from here.
+ *
+ * Joinery convention is 50 - 100mm; 65 from the front sits inside it either way
+ * you measure.
  */
-export const DEFAULT_KICK_SETBACK = 50;
+export const DEFAULT_KICK_SETBACK = PLINTH_SETBACK_FROM_FRONT_MM;
+
+/**
+ * Datum DEFAULT_KICK_SETBACK is measured from.
+ *
+ * Was 'CARCASS' while the worktop's frontDatum was already 'FRONT'. Two applied
+ * parts bracketing the same cabinet front, measuring from faces 18mm apart, with
+ * nothing anywhere saying so. Both are now 'FRONT', from one shared constant.
+ */
+export const DEFAULT_KICK_SETBACK_DATUM = DEFAULT_APPLIED_PART_DATUM;
 
 // ============================================
 // TYPES
@@ -80,25 +111,36 @@ export function computeKickboardSize(dimensions: KickboardDimensionsInput): Kick
 /**
  * Z of the kickboard FRONT FACE.
  *
+ * ── UNKNOWN FRONT PROUDNESS IS NO LONGER A SILENT DATUM SWITCH ───────────────
+ * This used to fall back to the carcass plane whenever `doorThickness` was
+ * undefined, while still reporting its datum as 'FRONT'. That is the same defect
+ * this lane is here to fix, one layer down: the caller asks for 65mm from the
+ * door face and silently receives 65mm from the carcass, an 18mm error in the
+ * emitted geometry with nothing to signal it. It mattered more after the datum
+ * unification, because 65-from-carcass is a visibly deeper recess than the 50
+ * that shipped before.
+ *
+ * `undefined` now means UNKNOWN and resolves to DEFAULT_ASSUMED_FRONT_PROUD_MM,
+ * matching what WorktopConfig.assumedDoorThickness has always done for the slab.
+ * An explicit `0` still means "known to have no proud front" and is honoured as
+ * 0 — a doorless carcass genuinely has its front face at +D/2.
+ *
  * @param depth - Cabinet overall finished depth D (mm)
  * @param setback - Recess from the datum (mm)
- * @param datum - 'CARCASS' (default) measures from the cabinet front face at +D/2;
- *                'FRONT' measures from the door / drawer-front outer face.
- * @param doorThickness - Door thickness (mm); only used under the 'FRONT' datum.
- *                        Omitted / 0 falls back to the carcass datum.
+ * @param datum - 'FRONT' (default) measures from the door / drawer-front outer
+ *                face; 'CARCASS' measures from the cabinet front face at +D/2.
+ * @param frontProud - How far the front sits proud of the carcass (mm). Only used
+ *                     under 'FRONT'. `undefined` = UNKNOWN (assumed); `0` = none.
+ * @param assumedFrontProud - Fallback for UNKNOWN. Defaults to 18mm.
  */
 export function computeKickboardFrontZ(
   depth: number,
   setback: number,
-  datum: KickboardSetbackDatum = 'CARCASS',
-  doorThickness?: number
+  datum: KickboardSetbackDatum = DEFAULT_KICK_SETBACK_DATUM,
+  frontProud?: number,
+  assumedFrontProud: number = DEFAULT_ASSUMED_FRONT_PROUD_MM
 ): number {
-  const frontDatumZ =
-    datum === 'FRONT' && doorThickness !== undefined && doorThickness > 0
-      ? depth / 2 + doorThickness
-      : depth / 2;
-
-  return frontDatumZ - setback;
+  return depth / 2 + frontDatumOffsetMm(datum, frontProud, assumedFrontProud) - setback;
 }
 
 /**
@@ -113,10 +155,13 @@ export function computeKickboardZ(
   depth: number,
   thickness: number,
   setback: number,
-  datum: KickboardSetbackDatum = 'CARCASS',
-  doorThickness?: number
+  datum: KickboardSetbackDatum = DEFAULT_KICK_SETBACK_DATUM,
+  frontProud?: number,
+  assumedFrontProud: number = DEFAULT_ASSUMED_FRONT_PROUD_MM
 ): number {
-  return computeKickboardFrontZ(depth, setback, datum, doorThickness) - thickness / 2;
+  return (
+    computeKickboardFrontZ(depth, setback, datum, frontProud, assumedFrontProud) - thickness / 2
+  );
 }
 
 // ============================================
@@ -132,8 +177,9 @@ export function computeKickboardZ(
  * off the wall with no floor void.
  *
  * Deliberately NOT {WALL, TALL}: TALL_PANTRY and TALL_BROOM both declare
- * hasToeKick: true with toeKickHeight 100 (CabinetTaxonomy.ts:509, 528) — a
- * pantry stands on the floor and does get a plinth. The worktop lane's
+ * hasToeKick: true with toeKickHeight = DEFAULT_TOE_KICK_HEIGHT_MM (70mm on the
+ * Thai default; formerly a hardcoded 100) — a pantry stands on the floor and
+ * does get a plinth. The worktop lane's
  * NON_WORKTOP_CABINET_TYPES excludes TALL because a pantry carries no counter;
  * that is a different question and the two sets are correctly different.
  *
@@ -160,11 +206,11 @@ export const NO_TOE_KICK_CABINET_TYPES: ReadonlySet<string> = (() => {
  * Two independent gates, because they fail independently:
  *   1. CABINET TYPE. createCabinet ignores `type` when it builds panels — it
  *      always passes DEFAULT_DIMENSIONS (useCabinetStore.ts:2302-2310), so a
- *      WALL cabinet is created carrying toeKickHeight 100 it has no business
+ *      WALL cabinet is created carrying a toe-kick height it has no business
  *      having. Gating on toeKickHeight alone therefore put a fully-costed
- *      600x100 plinth into the BOM and the cut list for a cabinet that hangs
- *      on a wall. Type is checked FIRST and does not depend on that bug ever
- *      being fixed.
+ *      600 x DEFAULT_TOE_KICK_HEIGHT_MM plinth into the BOM and the cut list
+ *      for a cabinet that hangs on a wall. Type is checked FIRST and does not
+ *      depend on that bug ever being fixed.
  *   2. TOE-KICK HEIGHT. No void, nothing to close.
  *
  * Otherwise the default is ON: the toe-kick void is real material in a real
@@ -191,9 +237,16 @@ export function resolveKickboardSetback(
   return structure.kickboardConfig?.setback ?? defaultSetback;
 }
 
-/** Setback datum for this cabinet ('CARCASS' unless overridden). */
+/**
+ * Setback datum for this cabinet.
+ *
+ * Defaults to DEFAULT_KICK_SETBACK_DATUM ('FRONT'), the SAME datum the worktop
+ * above measures its front overhang from. Was 'CARCASS'. A per-cabinet override
+ * can still select 'CARCASS' — that is a legitimate choice for a doorless
+ * carcass — but it is now a choice someone made, not a default nobody declared.
+ */
 export function resolveKickboardSetbackDatum(
   structure: KickboardStructureInput
 ): KickboardSetbackDatum {
-  return structure.kickboardConfig?.setbackDatum ?? 'CARCASS';
+  return structure.kickboardConfig?.setbackDatum ?? DEFAULT_KICK_SETBACK_DATUM;
 }

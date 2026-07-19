@@ -31,9 +31,17 @@ describe('deriveWorktopPanels — the design worked example', () => {
   it('sizes the slab 1800 long x 598 deep — measured from the DOOR face', () => {
     const p = result.panelsByHostId.get('c1')![0];
     expect(p.finishWidth).toBeCloseTo(1800, 6);
-    // 560 carcass + 18 door proudness + 20 overhang. Under the old CARCASS
-    // datum this was 580, which projected only 2mm past an 18mm door while
-    // being presented as a 20mm overhang. See WorktopConfig.frontDatum.
+    // 560 carcass + 18 door proudness + 20 overhang = 598.
+    //
+    // 598 IS THE PRE-EXISTING GEOMETRY AND IT IS DELIBERATELY UNCHANGED. An
+    // intermediate revision moved this to 603 by bumping the overhang 20 -> 25
+    // while declaring the datum. That +5mm had no source, and it changed a cut
+    // size, edge-tape metreage and quoted cost on every slab. Reverted: the
+    // datum here was ALREADY 'FRONT', so declaring it costs no geometric change
+    // at all, and the declaration was the whole fix.
+    // Two revisions back this was 580 under the CARCASS datum, which projected
+    // only 2mm past an 18mm door while calling itself a 20mm overhang — THAT is
+    // the bug the datum work exists to fix, and it is still fixed.
     expect(p.finishHeight).toBeCloseTo(598, 6);
   });
 
@@ -42,7 +50,8 @@ describe('deriveWorktopPanels — the design worked example', () => {
     // carcassTopY 820 + half of the 18.6mm real thickness.
     expect(p.position[0]).toBeCloseTo(600, 6);
     expect(p.position[1]).toBeCloseTo(829.3, 6);
-    // Slab spans n -280..+318, so its centre sits 19mm forward of the host's.
+    // Slab spans n -280..+318 (20mm past the 18mm door face), so its centre sits
+    // 19mm forward of the host's.
     expect(p.position[2]).toBeCloseTo(19, 6);
     expect(p.rotation).toEqual([0, 0, 0]);
   });
@@ -93,7 +102,7 @@ describe('deriveWorktopPanels — edge banding', () => {
   it('charges tape for the back edge, so the BOM cannot silently omit it', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), DEFAULT_WORKTOP_CONFIG);
     const p = r.panelsByHostId.get('c1')![0];
-    // front 1800 + back 1800 + two 598 ends = 4.796 m
+    // front 1800 + back 1800 + two 598 ends = 4.796 m.
     expect(p.computed.edgeLength).toBeCloseTo(4.796, 6);
   });
 
@@ -101,7 +110,10 @@ describe('deriveWorktopPanels — edge banding', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), ISLAND_WORKTOP_CONFIG);
     const p = r.panelsByHostId.get('c1')![0];
     expect(p.edges.bottom).toBe(ISLAND_WORKTOP_CONFIG.edgeMaterialId);
-    // 598 as before, plus a 20mm back overhang.
+    // 598 as before, plus a 20mm back overhang. That back figure is a GEOMETRIC
+    // MIRROR of the front, and it is deliberately NOT knee space — a 20mm
+    // projection is a drip edge. See SEATED_ISLAND_WORKTOP_CONFIG and
+    // seatingOverhang.test.ts for the seated case, which projects 380mm.
     expect(p.finishHeight).toBeCloseTo(618, 6);
     // ...and a 20mm overhang at each end.
     expect(p.finishWidth).toBeCloseTo(1840, 6);

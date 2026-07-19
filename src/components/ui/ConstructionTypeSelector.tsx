@@ -206,12 +206,25 @@ export function ConstructionTypeSelector({
               <span className="text-gray-500">Overlay</span>
               <span className="text-white capitalize">{selectedSpec.typicalOverlay}</span>
             </div>
+            {/*
+              Shows the OPENING reduction (total across both sides), not the
+              stile stock width. These are different quantities — see
+              ConstructionTypeSpec.faceFrameOpeningReductionPerSide.
+            */}
             <div className="flex justify-between">
               <span className="text-gray-500">Interior -</span>
-              <span className={`font-mono ${selectedSpec.interiorWidthReduction > 0 ? 'text-amber-400' : 'text-green-400'}`}>
-                {selectedSpec.interiorWidthReduction}mm
+              <span className={`font-mono ${selectedSpec.faceFrameOpeningReductionPerSide > 0 ? 'text-amber-400' : 'text-green-400'}`}>
+                {selectedSpec.faceFrameOpeningReductionPerSide * 2}mm
               </span>
             </div>
+            {selectedSpec.faceFrameStockWidth > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Stile stock</span>
+                <span className="font-mono text-gray-300">
+                  {selectedSpec.faceFrameStockWidth}mm
+                </span>
+              </div>
+            )}
           </div>
 
           {selectedSpec.holePatternSpacing && (

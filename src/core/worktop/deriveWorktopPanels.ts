@@ -25,6 +25,11 @@ import {
   type WorktopMaterials,
 } from './computeWorktopPanel';
 import {
+  describeAppliedPartDatum,
+  frontDatumOffsetMm,
+} from '../geometry/appliedPartDatum';
+import { resolveSeatingOverhang } from './seatingOverhang';
+import {
   DEFAULT_WORKTOP_CONFIG,
   type CabinetPlacement,
   type CabinetRun,
@@ -60,14 +65,32 @@ const nMid = (s: Slab) => (s.nLo + s.nHi) / 2;
  * not the carcass. generateDoorPanels.ts:185 centres a door at D/2 + doorT/2,
  * so its outer face sits doorT proud of the carcass — with the default 18mm
  * door, measuring from the carcass left the slab 2mm past the door instead of
- * 20mm, and that 580mm finishHeight went straight into the cut list, the BOM
- * and the DXF. kickboardGeometry.ts:84-96 already models this datum for the
- * plinth; the worktop now agrees with it.
+ * the intended projection, and that finishHeight went straight into the cut
+ * list, the BOM and the DXF.
+ *
+ * The datum offset itself is NOT computed here. It comes from
+ * frontDatumOffsetMm in src/core/geometry/appliedPartDatum.ts, the one place
+ * that defines what a datum means, so the plinth below this cabinet and the
+ * worktop above it cannot drift onto different reference faces again.
  */
 function frontReach(segment: RunSegment, config: WorktopConfig): number {
-  if (config.frontDatum !== 'FRONT') return config.frontOverhang;
-  const proud = segment.maxFrontProud ?? config.assumedDoorThickness;
-  return proud + config.frontOverhang;
+  return (
+    config.frontOverhang +
+    frontDatumOffsetMm(config.frontDatum, segment.maxFrontProud, config.assumedDoorThickness)
+  );
+}
+
+/**
+ * How far past the CARCASS BACK face the slab reaches.
+ *
+ * Seating REPLACES backOverhang rather than adding to it. They are different
+ * quantities: backOverhang is a decorative projection, the seating overhang is
+ * knee clearance off the NKBA ladder. Summing them would produce a slab depth
+ * that answers to neither.
+ */
+function backReach(config: WorktopConfig): number {
+  if (config.seating.side !== 'BACK') return config.backOverhang;
+  return resolveSeatingOverhang(config.seating.counterHeightMm).overhangMm;
 }
 
 function initialSlab(segment: RunSegment, config: WorktopConfig): Slab {
@@ -75,7 +98,7 @@ function initialSlab(segment: RunSegment, config: WorktopConfig): Slab {
     segment,
     uLo: segment.u0 - config.endOverhang,
     uHi: segment.u1 + config.endOverhang,
-    nLo: segment.nBack - config.backOverhang,
+    nLo: segment.nBack - backReach(config),
     nHi: segment.nFront + frontReach(segment, config),
     buttLow: false,
     buttHigh: false,
@@ -329,6 +352,43 @@ export function deriveWorktopPanels(
 
   for (const run of runs) {
     const slabs = run.segments.map(s => initialSlab(s, config));
+
+    // THE DATUM IS DECLARED ON EVERY RUN, UNCONDITIONALLY.
+    // Not "when it is unusual" — the whole defect is that an undeclared datum
+    // looks perfectly normal. A note that only fires on an exception teaches a
+    // reader that silence means CARCASS, which is precisely the assumption that
+    // made 50mm and 20mm look comparable when they were measured from planes
+    // 18mm apart.
+    const proud = run.segments[0]?.maxFrontProud;
+    notes.push({
+      code: 'DATUM_DECLARED',
+      runId: run.runId,
+      message:
+        describeAppliedPartDatum(
+          'Worktop',
+          'front overhang',
+          config.frontOverhang,
+          config.frontDatum,
+          proud,
+          config.assumedDoorThickness
+        ) +
+        ` The PLINTH under the same cabinets is measured from the SAME datum ` +
+        `(kickboardGeometry.DEFAULT_KICK_SETBACK_DATUM), so the two figures are ` +
+        `directly comparable.`,
+    });
+
+    if (config.seating.side === 'BACK') {
+      const finding = resolveSeatingOverhang(config.seating.counterHeightMm);
+      notes.push({
+        code: 'SEATING_OVERHANG',
+        runId: run.runId,
+        message:
+          finding.note +
+          ` This REPLACES the ${config.backOverhang}mm decorative backOverhang on ` +
+          `the seated edge; the two are not summed.`,
+      });
+    }
+
     applyCornerButts(slabs, run, notes);
 
     for (const slab of slabs) {

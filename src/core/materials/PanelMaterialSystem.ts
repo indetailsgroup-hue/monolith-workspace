@@ -10,11 +10,29 @@
  * User can assign materials per-panel with defaults from cabinet
  */
 
+import type { AnyFormaldehydeEmission, EmissionSubstrate } from './FormaldehydeEmission';
+
 // ============================================
 // CORE MATERIALS (Substrate)
 // ============================================
 
 export type CoreType = 'PARTICLE_BOARD' | 'MDF' | 'HMR' | 'PLYWOOD' | 'BLOCKBOARD';
+
+/**
+ * Pins CoreType to FormaldehydeEmission.EmissionSubstrate at COMPILE TIME.
+ *
+ * The two unions are declared separately because FormaldehydeEmission is a deliberate
+ * import-free leaf and this module already imports from it, so it cannot import back.
+ * Separate declarations drift, and drift here is not cosmetic: a core type this file knows
+ * about but EMISSION_LIMIT_SUBSTRATE_SCOPE does not would silently skip the substrate check
+ * that stops a CARB P2 particleboard limit being applied to an MDF board.
+ *
+ * Adding a member to CoreType without adding it to EmissionSubstrate is now a build error
+ * on this line, which is the cheapest possible place to find out.
+ */
+type _CoreTypeCoversEmissionSubstrate = CoreType extends EmissionSubstrate ? true : never;
+const _coreTypeIsAnEmissionSubstrate: _CoreTypeCoversEmissionSubstrate = true;
+void _coreTypeIsAnEmissionSubstrate;
 
 export interface CoreMaterial {
   id: string;
@@ -33,6 +51,40 @@ export interface CoreMaterial {
   // Sheet size
   sheetWidth: number;       // mm (typically 1220)
   sheetHeight: number;      // mm (typically 2440)
+
+  /**
+   * Formaldehyde emission class, as a compound regulatory fact
+   * `{ scheme, class, testMethod, numericLimit, unit, region }`.
+   *
+   * OPTIONAL, and every entry in this catalog currently omits it. That is deliberate:
+   * MONOLITH holds no supplier certificate for any of these SKUs, and a certificate is the
+   * only thing that can populate it. `undefined` means UNKNOWN — it never means "compliant"
+   * and never means "unregulated".
+   *
+   * Do not populate this from a product NAME. Several entries below are called
+   * "Particleboard E1"; that is a purchasing convention, not evidence, and turning it into
+   * a declared EN E1 record would manufacture the compliance claim this field exists to
+   * make verifiable. See FormaldehydeEmission.ts.
+   *
+   * Absence is legal for day-to-day design work. It becomes a blocker only when an
+   * export-destined packet is validated — see validateEmissionForExport().
+   *
+   * ── ENFORCEMENT STATUS, STATED PRECISELY ─────────────────────────────────────────
+   * The gate is now INSTALLED, but CONDITIONALLY. assertEmissionCompliantForExport is
+   * called from createMONOLITHFactoryPackageExporter, and it runs when — and only when —
+   * the caller declares an `exportDestination`. Naming a destination is itself the
+   * regulatory claim, so the exporter must not default one on a caller's behalf.
+   *
+   * The practical consequence, said plainly: A PACKET EXPORTED WITHOUT A DECLARED
+   * DESTINATION HAS HAD NO EMISSION CHECK AT ALL, and must not be presented as compliant
+   * with anything. And because no entry in this catalog sets the field, declaring ANY
+   * destination currently BLOCKS — which is correct, and is the state that will persist
+   * until supplier certificates are collected.
+   *
+   * Previously this comment pointed at a validator with zero production callers, so a
+   * reader could reasonably conclude an active control existed where none did.
+   */
+  formaldehydeEmission?: AnyFormaldehydeEmission | null;
 }
 
 /**
@@ -45,8 +97,14 @@ const SHEET_PLYWOOD     = { sheetWidth: 1220, sheetHeight: 2440 } as const;
 
 export const CORE_MATERIALS_CATALOG: Record<string, CoreMaterial> = {
   // ============================================
-  // PARTICLEBOARD E1 (Low Formaldehyde ≤8mg/100g)
+  // PARTICLEBOARD, named "E1" by purchasing convention
   // ความหนา: 9, 12, 15, 16, 18, 19, 25, 28, 35mm
+  //
+  // The "E1" in these names is a PRODUCT NAME, not a declared emission class. The EN E1
+  // limit is 8 mg/100g by the EN 120 perforator method (see EN_E1 in
+  // FormaldehydeEmission.ts), but no supplier certificate has been collected for any SKU
+  // here, so none of them sets `formaldehydeEmission`. Leaving it unset keeps the gap
+  // visible to validateEmissionForExport() instead of hiding it behind a name.
   // ============================================
   'core-pb-9': {
     id: 'core-pb-9',
