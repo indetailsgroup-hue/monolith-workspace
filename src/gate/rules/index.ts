@@ -7,6 +7,7 @@ export { ruleEdgeAllowance } from './rule_edge_allowance';
 export { ruleMinMargins } from './rule_minMargins';
 export { ruleClearanceBackPanel } from './rule_clearance_backPanel';
 export { ruleDrillDepthSafety } from './rule_drillDepthSafety';
+export { ruleEdgeBoreCentering } from './rule_edgeBoreCentering';
 export { ruleFittingSpacing } from './rule_fitting_spacing';
 
 // Connector validation rules

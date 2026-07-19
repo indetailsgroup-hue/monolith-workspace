@@ -16,6 +16,7 @@ import { ruleEdgeAllowance } from './rules/rule_edge_allowance';
 import { ruleMinMargins } from './rules/rule_minMargins';
 import { ruleClearanceBackPanel } from './rules/rule_clearance_backPanel';
 import { ruleDrillDepthSafety } from './rules/rule_drillDepthSafety';
+import { ruleEdgeBoreCentering } from './rules/rule_edgeBoreCentering';
 import { ruleFittingSpacing } from './rules/rule_fitting_spacing';
 
 /**
@@ -51,6 +52,12 @@ export function runGateV01(
 
   // 4. Drill Depth Safety (critical safety check)
   issues.push(...ruleDrillDepthSafety(policy, input.parts, input.drillOps));
+
+  // 4b. Edge Bore Centring — depth safety checks the material AHEAD of the bit;
+  // this checks the material BESIDE it. An edge bore off-centre in the panel's
+  // thickness breaks out sideways along the whole length of the bore, and no
+  // other rule can see it.
+  issues.push(...ruleEdgeBoreCentering(policy, input.parts, input.drillOps));
 
   // 5. Fitting Spacing (hardware clearance)
   issues.push(...ruleFittingSpacing(policy, input.parts, input.fittings));

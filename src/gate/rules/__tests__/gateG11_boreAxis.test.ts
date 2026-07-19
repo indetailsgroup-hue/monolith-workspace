@@ -30,6 +30,7 @@ import {
   thicknessAxisOf,
   thicknessAxisFromRole,
   panelSpanFromRole,
+  isAxisAlignedRotation,
   type G11PanelSpan,
 } from '../gateG11_types';
 
@@ -279,7 +280,119 @@ describe('thicknessAxisOf', () => {
   it('role convention agrees with measured spans for standard panels', () => {
     for (const role of ['LEFT_SIDE', 'RIGHT_SIDE', 'TOP', 'BOTTOM', 'SHELF', 'BACK']) {
       const span = panelSpanFromRole(role, WIDTH, HEIGHT, T);
-      expect(thicknessAxisOf(span, T)).toBe(thicknessAxisFromRole(role));
+      expect(span).toBeDefined();
+      expect(thicknessAxisOf(span!, T)).toBe(thicknessAxisFromRole(role));
     }
+  });
+});
+
+// ============================================
+// THE ROLE FALLBACK MUST REFUSE, NOT GUESS
+// ============================================
+
+describe('thicknessAxisFromRole refuses roles it cannot place', () => {
+  // The old implementation routed through isHorizontalPanel/isSidePanel and
+  // defaulted EVERYTHING else to thickness-along-Z. That default was not merely
+  // permissive — it was wrong for roles this product already ships, and a wrong
+  // thickness axis flips every FACE/EDGE verdict on that panel.
+  it('places roles whose orientation is verified against their placement code', () => {
+    expect(thicknessAxisFromRole('TOP')).toBe(1);
+    expect(thicknessAxisFromRole('BOTTOM')).toBe(1);
+    expect(thicknessAxisFromRole('SHELF')).toBe(1);
+    // deriveWorktopPanels: finishWidth along the run, finishHeight = slab depth
+    expect(thicknessAxisFromRole('WORKTOP')).toBe(1);
+
+    expect(thicknessAxisFromRole('LEFT_SIDE')).toBe(0);
+    expect(thicknessAxisFromRole('RIGHT_SIDE')).toBe(0);
+    // useCabinetStore: finishWidth = carcass depth, so thickness runs along X
+    expect(thicknessAxisFromRole('DIVIDER')).toBe(0);
+
+    expect(thicknessAxisFromRole('BACK')).toBe(2);
+    expect(thicknessAxisFromRole('KICKBOARD')).toBe(2);
+    expect(thicknessAxisFromRole('DRAWER_FRONT')).toBe(2);
+  });
+
+  it('WORKTOP is Y and DIVIDER is X — the old default said Z for both', () => {
+    // Pinning the two the old code got wrong, so a revert to `return 2` is loud.
+    expect(thicknessAxisFromRole('WORKTOP')).not.toBe(2);
+    expect(thicknessAxisFromRole('DIVIDER')).not.toBe(2);
+  });
+
+  it('returns undefined for roles nothing in this repo places yet', () => {
+    // Doors are created by no code on this branch. An axis here would be a
+    // guess, and a guessed axis is what this whole branch exists to remove.
+    for (const role of ['DOOR', 'DOOR_LEFT', 'DOOR_RIGHT', 'FRONT']) {
+      expect(thicknessAxisFromRole(role)).toBeUndefined();
+      expect(panelSpanFromRole(role, WIDTH, HEIGHT, T)).toBeUndefined();
+    }
+  });
+
+  it('returns undefined for rotated drawer parts and unknown future roles', () => {
+    for (const role of ['DRAWER_SIDE', 'DRAWER_BACK', 'DRAWER_BOTTOM', 'SOMETHING_NEW', '']) {
+      expect(thicknessAxisFromRole(role)).toBeUndefined();
+      expect(panelSpanFromRole(role, WIDTH, HEIGHT, T)).toBeUndefined();
+    }
+  });
+});
+
+describe('an unplaceable panel is reported, never silently judged', () => {
+  const unknownPanel: G11Panel = {
+    id: 'panel-door',
+    role: 'DOOR',
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    finishWidth: WIDTH,
+    finishHeight: HEIGHT,
+    computed: { realThickness: T },
+    // no spanMm: the role convention cannot supply one
+  };
+
+  it('does NOT rubber-stamp a dowel on a panel it cannot orient', () => {
+    const point = dowel('d-door', 'panel-door', 'DOOR', [0, 0, 1], 18);
+    const issues = ruleG11_DowelDepth([point], [unknownPanel]);
+
+    // The old code assumed FACE_BORE, silently applied the 12mm expectation and
+    // raised a BLOCKER against an 18mm bore it had never established was a face
+    // bore. Refusing is right; refusing SILENTLY would not be.
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('WARNING');
+    expect(issues[0].code).toBe('W_G11_BORE_TYPE_UNKNOWN');
+    expect(issues[0].message).toContain('NOT CHECKED');
+  });
+
+  it('reports the same for a drill-type check it cannot run', () => {
+    const bolt: G11DrillPoint = {
+      id: 'bolt-door',
+      panelId: 'panel-door',
+      position: [0, 100, 0],
+      normal: [0, 0, -1],
+      diameter: G11_CONSTANTS.BOLT_SLEEVE_DIAMETER,
+      depth: G11_CONSTANTS.BOLT_SLEEVE_DEPTH,
+      purpose: 'BOLT',
+      connectedPanelRole: 'DOOR',
+    };
+    const issues = ruleG11_DrillType([bolt], [unknownPanel]);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].code).toBe('W_G11_BORE_TYPE_UNKNOWN');
+  });
+
+  it('a rotated panel gets no derived span even on a known role', () => {
+    const rotatedSide: G11Panel = {
+      ...sidePanel(),
+      id: 'panel-rot',
+      spanMm: undefined,
+      rotation: [0, Math.PI / 2, 0],
+    };
+    const point = dowel('d-rot', 'panel-rot', 'LEFT_SIDE', [0, 0, 1], 18);
+    // Role says thickness is X, but the 90° yaw puts it along Z. The gate must
+    // not apply the unrotated convention to it.
+    const issues = ruleG11_DowelDepth([point], [rotatedSide]);
+    expect(issues.every(i => i.severity !== 'BLOCKER')).toBe(true);
+  });
+
+  it('isAxisAlignedRotation accepts unrotated and absent, rejects yaw', () => {
+    expect(isAxisAlignedRotation([0, 0, 0])).toBe(true);
+    expect(isAxisAlignedRotation(undefined)).toBe(true);
+    expect(isAxisAlignedRotation([0, Math.PI / 2, 0])).toBe(false);
   });
 });

@@ -48,6 +48,7 @@ import {
   thicknessAxisOf,
   thicknessAxisFromRole,
   panelSpanFromRole,
+  isAxisAlignedRotation,
 } from './gateG11_types';
 
 // ============================================
@@ -201,6 +202,12 @@ export function ruleG11_DowelDepth(
       spanForPoint(point, panelSpans),
       point.panelThickness,
     );
+    if (boreType === undefined) {
+      // 12mm vs 18mm is decided entirely by which bore this is. Without that,
+      // there is no expectation to compare against.
+      issues.push(unknownBoreTypeIssue(point, panelRole, 'G11.2 dowel depth'));
+      continue;
+    }
     const expectedDepth = boreType === 'EDGE_BORE'
       ? G11_CONSTANTS.DOWEL_DEPTH_HORIZ_EDGE
       : G11_CONSTANTS.DOWEL_DEPTH_SIDE_FACE;
@@ -275,21 +282,22 @@ export function ruleG11_DrillType(
   const panelRoleMap = new Map(panels.map(p => [p.id, p.role]));
   const panelSpans = buildPanelSpanMap(panels);
 
-  // Filter relevant drill points (BOLT, CAM, DOWEL)
-  const relevantPurposes = ['BOLT', 'CAM_LOCK', 'MINIFIX', 'DOWEL'];
-  const relevantPoints = drillPoints.filter(p => relevantPurposes.includes(p.purpose));
+  // Every purpose whose required bore type is fixed by the hardware itself.
+  // BOLT_ENTRY and BOLT_THREAD were previously excluded and therefore never
+  // checked at all — BOLT_ENTRY is exactly where the edge-bore expectation
+  // lives, so leaving it out meant the only EDGE case went unexamined.
+  for (const point of drillPoints) {
+    const expectedBoreType = getExpectedBoreType(point.purpose);
 
-  for (const point of relevantPoints) {
+    // DOWEL and anything else the hardware does not pin down: handled by the
+    // pair check below, not by a per-point expectation.
+    if (expectedBoreType === undefined) continue;
+
     const panelRole = point.connectedPanelRole ||
                       panelRoleMap.get(point.panelId) ||
                       inferPanelRoleFromPoint(point);
 
     if (!panelRole) continue;
-
-    // Construction-aware (S16): DOWEL เจาะได้ทั้งสองแบบตาม construction
-    // (OVERLAY: side EDGE + horiz FACE · INSET v4.0: side FACE + horiz EDGE)
-    // → ตรวจแบบคู่ (ต้องเป็น EDGE+FACE ผสมกัน) ด้านล่างแทน ไม่ตรวจ per-role
-    if (point.purpose === 'DOWEL') continue;
 
     // Infer actual bore type from the panel's thickness axis (S19)
     const actualBoreType = inferBoreTypeFromNormal(
@@ -298,13 +306,21 @@ export function ruleG11_DrillType(
       spanForPoint(point, panelSpans),
       point.panelThickness,
     );
-    const expectedBoreType = getExpectedBoreType(panelRole, point.purpose);
+
+    if (actualBoreType === undefined) {
+      issues.push(unknownBoreTypeIssue(point, panelRole, 'G11.3 drill type'));
+      continue;
+    }
 
     if (actualBoreType !== expectedBoreType) {
-      const isSide = isSidePanel(panelRole);
-      const code: G11IssueCode = isSide
-        ? 'B_G11_DRILL_TYPE_SIDE_NOT_FACE'  // v4.0: SIDE must use FACE_BORE
-        : 'B_G11_DRILL_TYPE_HORIZONTAL_NOT_FACE';
+      // Keep the two long-standing codes for the "should have been a face
+      // bore" cases they already name, and add one for the opposite direction
+      // rather than filing an edge-bore failure under a *_NOT_FACE code.
+      const code: G11IssueCode = expectedBoreType === 'EDGE_BORE'
+        ? 'B_G11_DRILL_TYPE_NOT_EDGE'
+        : isSidePanel(panelRole)
+          ? 'B_G11_DRILL_TYPE_SIDE_NOT_FACE'
+          : 'B_G11_DRILL_TYPE_HORIZONTAL_NOT_FACE';
 
       issues.push({
         id: issueId(code, point.id),
@@ -341,6 +357,16 @@ export function ruleG11_DrillType(
       spanForPoint(pair.horizontalPoint, panelSpans),
       pair.horizontalPoint.panelThickness,
     );
+
+    if (sideType === undefined || horizType === undefined) {
+      // One end unclassifiable means the EDGE+FACE invariant cannot be tested.
+      // Without this guard `undefined === undefined` would read as "both bores
+      // are the same type" and raise a blocker naming a bore type of undefined.
+      const unknownEnd = sideType === undefined ? pair.sidePoint : pair.horizontalPoint;
+      const unknownRole = sideType === undefined ? sideRole : horizRole;
+      issues.push(unknownBoreTypeIssue(unknownEnd, unknownRole, 'G11.3 dowel pair'));
+      continue;
+    }
 
     if (sideType === horizType) {
       issues.push({
@@ -521,18 +547,49 @@ function inferBoreTypeFromNormal(
   panelRole?: string,
   panelSpan?: G11PanelSpan,
   panelThicknessMm?: number,
-): 'EDGE_BORE' | 'FACE_BORE' {
+): 'EDGE_BORE' | 'FACE_BORE' | undefined {
   const boreAxis = dominantAxisOf(normal);
 
   // Measured geometry wins when we have it.
   const measured = panelSpan ? thicknessAxisOf(panelSpan, panelThicknessMm) : undefined;
   const thicknessAxis = measured ?? (panelRole ? thicknessAxisFromRole(panelRole) : undefined);
 
-  // No role and no geometry: assume the bore penetrates the thickness. That is
-  // the shallower expected depth, so an over-deep bore is still reported.
-  if (thicknessAxis === undefined) return 'FACE_BORE';
+  // Neither measured spans nor a role whose orientation is known. Refuse to
+  // classify: this used to assume FACE_BORE, which silently applied the 12mm
+  // face expectation to bores it had never established were face bores.
+  if (thicknessAxis === undefined) return undefined;
 
   return boreAxis === thicknessAxis ? 'FACE_BORE' : 'EDGE_BORE';
+}
+
+/**
+ * Report that a point's bore type could not be established, so the rule that
+ * needed it declined to run.
+ *
+ * Silence here would be indistinguishable from a pass. The gate says out loud
+ * which hole it could not judge and why.
+ */
+function unknownBoreTypeIssue(
+  point: G11DrillPoint,
+  panelRole: string,
+  rule: string,
+): G11Issue {
+  return {
+    id: issueId('W_G11_BORE_TYPE_UNKNOWN', point.id, rule),
+    severity: 'WARNING',
+    code: 'W_G11_BORE_TYPE_UNKNOWN',
+    message:
+      `${rule} could not run on ${point.id}: the thickness axis of panel ${point.panelId} ` +
+      `(role ${panelRole || 'unknown'}) is not established, so a FACE bore cannot be told from an EDGE bore. ` +
+      `NOT CHECKED — this is not a pass.`,
+    drillPointIds: [point.id],
+    panelIds: [point.panelId],
+    context: {
+      panelRole,
+      rule,
+      purpose: point.purpose,
+    },
+  };
 }
 
 /**
@@ -551,8 +608,11 @@ function spanForPoint(
 function buildPanelSpanMap(panels: G11Panel[]): Map<string, G11PanelSpan> {
   const map = new Map<string, G11PanelSpan>();
   for (const p of panels) {
+    // An explicit span is measured, so it survives rotation. A span derived
+    // from the role convention does not: that convention assumes the panel is
+    // axis-aligned, so a rotated panel gets no derived span at all.
     const span = p.spanMm
-      ?? (p.computed?.realThickness !== undefined
+      ?? (p.computed?.realThickness !== undefined && isAxisAlignedRotation(p.rotation)
         ? panelSpanFromRole(p.role, p.finishWidth, p.finishHeight, p.computed.realThickness)
         : undefined);
     if (span) map.set(p.id, span);
@@ -1134,6 +1194,18 @@ export function validateG11FromDrillMap(
 
     const thickness = panel.dimensions?.thickness;
     if (panel.dimensions && thickness !== undefined) {
+      // No span for a role whose orientation is unknown, or for a rotated
+      // panel: the rules then report the point as unclassifiable instead of
+      // being handed a fabricated span to measure against.
+      const spanMm = isAxisAlignedRotation(panel.worldRotation)
+        ? panelSpanFromRole(
+            panel.role,
+            panel.dimensions.width,
+            panel.dimensions.height,
+            thickness,
+          )
+        : undefined;
+
       derivedPanels.push({
         id: panel.panelId,
         role: panel.role,
@@ -1142,12 +1214,7 @@ export function validateG11FromDrillMap(
         finishWidth: panel.dimensions.width,
         finishHeight: panel.dimensions.height,
         computed: { realThickness: thickness },
-        spanMm: panelSpanFromRole(
-          panel.role,
-          panel.dimensions.width,
-          panel.dimensions.height,
-          thickness,
-        ),
+        spanMm,
       });
     }
 

@@ -181,15 +181,35 @@ describe('G11 Helper Functions', () => {
   });
 
   describe('getExpectedBoreType', () => {
-    // v4.0 Side-covers-Top: SIDE=FACE_BORE, HORIZ=FACE_BORE for CAM, EDGE_BORE for DOWEL
-    it('should return FACE_BORE for SIDE panels (v4.0 face drilling)', () => {
-      expect(getExpectedBoreType('LEFT_SIDE')).toBe('FACE_BORE');
-      expect(getExpectedBoreType('RIGHT_SIDE')).toBe('FACE_BORE');
+    // The expectation now comes from the HARDWARE, not the panel role. Keying
+    // off role returned FACE_BORE for every side panel, which is wrong for the
+    // OVERLAY bolt-entry bore (±Y through the top edge) and for the back-panel
+    // joint (±Z through the back edge) — both real generator output.
+    it('requires a FACE bore for the cam housing and the bolt', () => {
+      // Ø15 cam housing sunk into an 18mm EDGE would leave ~1.5mm of wall.
+      expect(getExpectedBoreType('CAM_LOCK')).toBe('FACE_BORE');
+      expect(getExpectedBoreType('MINIFIX')).toBe('FACE_BORE');
+      expect(getExpectedBoreType('BOLT')).toBe('FACE_BORE');
+      expect(getExpectedBoreType('BOLT_THREAD')).toBe('FACE_BORE');
     });
 
-    it('should return FACE_BORE for horizontal panels', () => {
-      expect(getExpectedBoreType('TOP')).toBe('FACE_BORE');
-      expect(getExpectedBoreType('BOTTOM')).toBe('FACE_BORE');
+    it('requires an EDGE bore for the bolt clearance hole', () => {
+      // Carcass panels meet edge-to-face, so the shaft always crosses into the
+      // mating panel through an edge — INSET, OVERLAY and back panel alike.
+      expect(getExpectedBoreType('BOLT_ENTRY')).toBe('EDGE_BORE');
+    });
+
+    it('refuses to state an expectation for a DOWEL', () => {
+      // A dowel is face at one end and edge at the other, and which end lands
+      // on which panel flips between constructions. The pair rule enforces the
+      // real constraint; a per-point expectation here would be a false claim.
+      expect(getExpectedBoreType('DOWEL')).toBeUndefined();
+    });
+
+    it('refuses to state an expectation for purposes it does not know', () => {
+      expect(getExpectedBoreType('SHELF_PIN')).toBeUndefined();
+      expect(getExpectedBoreType('HINGE')).toBeUndefined();
+      expect(getExpectedBoreType('SOMETHING_NEW')).toBeUndefined();
     });
   });
 

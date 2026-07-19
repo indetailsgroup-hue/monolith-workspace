@@ -22,6 +22,7 @@ import { compareWorldParity } from '../../core/connector/worldSynthesis';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
 import { buildDrillOpsFromDrillMap, buildPartsFromDrillMap } from '../builders/fromDrillMap';
 import { ruleDrillDepthSafety } from '../rules/rule_drillDepthSafety';
+import { ruleEdgeBoreCentering } from '../rules/rule_edgeBoreCentering';
 import { ruleMinMargins } from '../rules/rule_minMargins';
 import { DEFAULT_GATE_POLICY_V1 } from '../policy';
 import type { GateIssue } from '../types';
@@ -186,6 +187,7 @@ export function runGateValidation(): void {
       const { ops: safetyOps, skipped: safetySkipped } = buildDrillOpsFromDrillMap(drillMap);
       const safetyIssues: GateIssue[] = [
         ...ruleDrillDepthSafety(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps),
+        ...ruleEdgeBoreCentering(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps),
         ...ruleMinMargins(DEFAULT_GATE_POLICY_V1, safetyParts, safetyOps, []),
       ];
       if (safetySkipped.length > 0) {

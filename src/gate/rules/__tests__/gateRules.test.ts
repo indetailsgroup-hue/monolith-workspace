@@ -71,13 +71,20 @@ const createDrillOp = (
   partId: string,
   x: number,
   y: number,
-  depthMm: number = 10
+  depthMm: number = 10,
+  // Every real drill op carries a diameter — the drill map records one for
+  // every point. Ops built without one are measured from the bore CENTRE,
+  // which understates the true edge margin, so ruleMinMargins flags them.
+  // Defaulting to Ø8 (the standard dowel) keeps these fixtures representative
+  // of real holes and exercises the wall-based measurement.
+  diaMm: number = 8
 ): DrillOp => ({
   opId,
   partId,
   x,
   y,
   depthMm,
+  diaMm,
 });
 
 const createFitting = (
@@ -332,9 +339,13 @@ describe('ruleMinMargins', () => {
       expect(issues.length).toBe(0);
     });
 
-    it('should pass when drill exactly at minimum margin', () => {
+    it('should pass when the bore WALL is exactly at minimum margin', () => {
       const part = createPart('p1', 400, 500);
-      const drill = createDrillOp('d1', 'p1', 8, 8);
+      // The margin is the material between the hole and the edge, so a Ø8 bore
+      // sits at min + radius = 8 + 4 = 12mm from the edge to leave exactly 8mm.
+      // This used to place the CENTRE at 8mm and call it compliant, which left
+      // only 4mm of material — the understatement Item 4 removes.
+      const drill = createDrillOp('d1', 'p1', 12, 12);
 
       const issues = ruleMinMargins(policy, [part], [drill], []);
 

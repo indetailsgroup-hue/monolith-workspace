@@ -66,12 +66,102 @@ import type { GatePolicy } from './types';
  */
 export const MIN_RESIDUAL_MATERIAL_MM = 0.5;
 
+/**
+ * Minimum wall, in mm, that must remain BESIDE an edge bore — between the bore
+ * and the nearer face of the panel it runs through.
+ *
+ * ## BASIS: INHERITED FROM {@link MIN_RESIDUAL_MATERIAL_MM}, AND PROBABLY TOO LOW
+ *
+ * This is deliberately set equal to the residual-material margin, and that is a
+ * decision worth stating plainly rather than burying:
+ *
+ * The two numbers describe DIFFERENT physics. `MIN_RESIDUAL_MATERIAL_MM` is
+ * material ahead of the bit; the failure it prevents is the tip punching
+ * through, making one small hole. This constant is material beside the bit
+ * along the whole length of the bore; the failure it prevents is a wall
+ * splitting open down that entire length. On a side panel's back-edge dowel the
+ * bore runs 560mm, so the two failures are not remotely the same size.
+ *
+ * A worked case, which is the example that motivated {@link ruleEdgeBoreCentering}:
+ *
+ *     Ø8 dowel, 2mm off centre in an 18mm panel
+ *     offset 7mm  →  wall = 7 - 4 = 3.00mm
+ *     3.00 >= 0.50  →  PASSES
+ *
+ * Three millimetres of particleboard over a 560mm bore is thin, and a human who
+ * knows this shop's material may well judge it unacceptable. The rule as it
+ * stands does NOT catch that case.
+ *
+ * ## WHY IT HAS NOT SIMPLY BEEN RAISED
+ *
+ * Nothing sources a figure for this. Picking one that happens to catch the
+ * example in front of it would be the same move criticised on
+ * {@link MIN_RESIDUAL_MATERIAL_MM} — a threshold chosen to fit a case is not a
+ * safety margin — only in the stricter direction, and it would convert a
+ * fleet-wide pass into a fleet-wide blocker from inside a review-fix lane.
+ *
+ * So the rule ships at the floor it CAN defend ("do not break out of the
+ * panel"), which catches bores outside the material, bores wider than the panel
+ * and zero-wall bores, and the open question is recorded here instead of being
+ * settled by whoever happened to write the rule.
+ *
+ * @see {@link ruleEdgeBoreCentering}
+ * @see {@link MIN_RESIDUAL_MATERIAL_MM} for the same problem on the depth axis
+ */
+export const MIN_EDGE_BORE_WALL_MM = MIN_RESIDUAL_MATERIAL_MM;
+
+/**
+ * Minimum distance, in mm, from a drill's WALL to a panel edge before the
+ * Safety Gate calls it a blowout risk.
+ *
+ * ## A FINDING, recorded per the Item 4 instruction — READ BEFORE TRUSTING A PASS
+ *
+ * This is a FREE-EDGE blowout margin: it exists because drilling too near an
+ * unsupported edge splits it. `ruleMinMargins` was measuring from the hole
+ * CENTRE, which understates the true wall by the bore radius; measuring from
+ * the wall is correct and is what catches a Ø35 hinge cup whose centre clears
+ * 8mm but whose rim has already broken through the edge.
+ *
+ * Applying the wall-based measurement to a REAL 7-cabinet scene turned up a
+ * finding, exactly as Item 4 warned it might:
+ *
+ *     0 → 356 B_MIN_MARGIN_DRILL blockers, ALL one root cause:
+ *       106  Minifix bolt   Ø10  → 4.0mm wall
+ *       144  corner dowel   Ø8   → 5.0mm wall
+ *       106  bolt thread    Ø5   → 6.5mm wall
+ *
+ * Every one is a CONNECTOR bore sitting 9mm — exactly half of an 18mm mating
+ * panel's thickness — from its JOINT edge, because that is where it must sit to
+ * align with the cam in the centre of the mating panel. This is correct Häfele
+ * S200 placement, built this way millions of times. The 4–6.5mm walls are real,
+ * but the edge they are near is a SUPPORTED joint edge, not the free edge this
+ * threshold was written for.
+ *
+ * ## WHY THE THRESHOLD WAS NOT TUNED, AND CONNECTORS WERE NOT EXEMPTED
+ *
+ * Both are forbidden by this branch's charter: never move a threshold or carve
+ * an exemption to make blockers disappear. Lowering 8mm to hide connector bores
+ * would also blind the rule to genuine free-edge violations of the same size.
+ *
+ * The rule is therefore left failing LOUD. What it cannot yet TELL APART is a
+ * bore near a free edge from a connector bore parallel to a supported joint
+ * edge — the honest fix is that discrimination (it needs a joint-edge signal on
+ * DrillOp, which the drill map does not currently carry), NOT a softer number.
+ * Until that exists, or the shop rules on whether 4mm to a glued joint edge is
+ * acceptable, the count stands and is reported rather than silently passed.
+ *
+ * @see {@link MIN_RESIDUAL_MATERIAL_MM} — the same unsourced-threshold-meets-
+ *   real-geometry question, on the depth axis.
+ */
+export const MIN_MARGIN_TO_EDGE_MM = 8;
+
 export const DEFAULT_GATE_POLICY_V1: GatePolicy = {
   policyVersion: 'gate-policy-0.1.0',
 
   // Safety margins
   thicknessSafetyMarginMm: MIN_RESIDUAL_MATERIAL_MM,
-  minMarginToEdgeMm: 8,
+  minEdgeBoreWallMm: MIN_EDGE_BORE_WALL_MM,
+  minMarginToEdgeMm: MIN_MARGIN_TO_EDGE_MM,
   minFeatureSizeMm: 12,
 
   // Clearance rules

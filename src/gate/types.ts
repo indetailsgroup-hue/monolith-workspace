@@ -129,6 +129,14 @@ export type GatePolicy = {
   // Safety margins
   /** Minimum material remaining after drilling (e.g., 0.5mm) */
   thicknessSafetyMarginMm: number;
+  /**
+   * Minimum wall left BESIDE an edge bore, between it and the nearer face.
+   *
+   * Distinct physics from `thicknessSafetyMarginMm`, which governs material
+   * ahead of the bit. Defaults to `MIN_EDGE_BORE_WALL_MM` when omitted — read
+   * the note there before changing it.
+   */
+  minEdgeBoreWallMm?: number;
   /** Minimum distance from drill to panel edge (e.g., 8mm) */
   minMarginToEdgeMm: number;
   /** Minimum size for any CNC feature (e.g., 12mm) */
@@ -281,10 +289,17 @@ export type DrillOp = {
   opId: string;
   /** ID of the part this operation is on */
   partId: string;
-  /** X position in mm from panel origin */
-  x: number;
-  /** Y position in mm from panel origin */
-  y: number;
+  /**
+   * X position in mm from panel origin, on the panel's face plane.
+   *
+   * Omitted when the panel's orientation could not be established: which world
+   * axis is the face plane's X is unknowable then, so any number here would be
+   * fiction. Position-dependent rules must refuse to judge rather than measure
+   * against a fabricated coordinate.
+   */
+  x?: number;
+  /** Y position in mm from panel origin. Omitted with `x`, for the same reason. */
+  y?: number;
   /** Drill depth in mm */
   depthMm: number;
   /** Drill diameter in mm (optional) */
@@ -300,6 +315,13 @@ export type DrillOp = {
    * Omit when unknown: depth rules then fall back to the panel's composite
    * thickness, which is the strictest reading and never lets a real
    * drill-through slip past.
+   *
+   * That fallback is genuinely reachable — `buildDrillOpsFromDrillMap` omits
+   * this field for any panel whose orientation it cannot establish (an
+   * unenumerated role, or a panel rotated off-axis). It was previously
+   * unreachable, because the builder always supplied a value derived from a
+   * role convention that defaulted rather than refused; the docblock promised a
+   * safety net that could not fire.
    */
   boreAxisMaterialMm?: number;
   /** How the bore meets the panel. Reported in messages for traceability. */
@@ -312,6 +334,24 @@ export type DrillOp = {
    * and still measure the perpendicular one.
    */
   edgeEntryAxis?: 'x' | 'y';
+  /**
+   * Where the bore axis sits ACROSS the panel's thickness, in mm from the
+   * lower-coordinate face.
+   *
+   * This is the one thing `boreAxisMaterialMm` and `edgeEntryAxis` cannot say.
+   * They record how much material lies along the bore and which face-plane axis
+   * to ignore; neither reveals how close to a face the bore runs. An Ø8 dowel
+   * bored 2mm off-centre in an 18mm panel edge has 3mm of wall on one side and
+   * is one clamp away from breaking out, and every field above reads normal.
+   *
+   * Only meaningful for an EDGE bore. A FACE bore enters ON a face, so this is
+   * ~0 or ~thickness for one by construction — {@link ruleEdgeBoreCentering}
+   * reads it for edge bores only.
+   *
+   * Omit when the panel's thickness axis is unknown; the rule then refuses to
+   * judge instead of treating an unmeasured bore as a centred one.
+   */
+  boreThicknessOffsetMm?: number;
 };
 
 /**
