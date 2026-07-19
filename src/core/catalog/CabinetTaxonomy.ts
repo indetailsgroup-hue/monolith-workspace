@@ -554,8 +554,14 @@ export interface WorktopThicknessGap {
   /** closestAchievableMm - targetMm. Negative = the best slab is thinner than the target. */
   readonly deltaMm: number;
   readonly exact: boolean;
+  /**
+   * ONE combination achieving `closestAchievableMm`, chosen by sorted id for determinism.
+   * When `tiedCombinationCount` > 1 this is an EXAMPLE, not a recommendation.
+   */
   readonly coreMaterialId: string;
   readonly surfaceMaterialId: string;
+  /** How many catalog combinations hit `closestAchievableMm`. > 1 means the pick is a tie. */
+  readonly tiedCombinationCount: number;
 }
 
 export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessGap {
@@ -563,10 +569,23 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
     ...Object.values(EDGE_MATERIALS_CATALOG).map((e) => e.height)
   );
 
+  // SORTED, so the answer does not depend on object key order. Several combinations
+  // genuinely TIE at the same thickness (every 18mm moisture-resistant core paired with
+  // any 0.8mm HPL gives 19.6mm), and which one an unordered iteration happened to reach
+  // first is not a material recommendation. Ties are surfaced in `tiedCombinationCount`
+  // rather than hidden behind an arbitrary winner — choosing between real boards on
+  // grounds other than thickness is a human's call.
+  const cores = Object.values(CORE_MATERIALS_CATALOG)
+    .filter((c) => c.moistureResistant)
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const surfaces = Object.values(SURFACE_MATERIALS_CATALOG).sort((a, b) =>
+    a.id.localeCompare(b.id)
+  );
+
   let best: WorktopThicknessGap | null = null;
-  for (const core of Object.values(CORE_MATERIALS_CATALOG)) {
-    if (!core.moistureResistant) continue;
-    for (const surface of Object.values(SURFACE_MATERIALS_CATALOG)) {
+  let tied = 0;
+  for (const core of cores) {
+    for (const surface of surfaces) {
       const t = calculateRealThickness(core.thickness, surface.thickness, surface.thickness, 0);
       if (t > tallestTape) continue;
       const delta = t - targetMm;
@@ -578,7 +597,11 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
           exact: Math.abs(delta) <= RUNG_MATCH_EPSILON_MM,
           coreMaterialId: core.id,
           surfaceMaterialId: surface.id,
+          tiedCombinationCount: 1,
         };
+        tied = 1;
+      } else if (Math.abs(Math.abs(delta) - Math.abs(best.deltaMm)) <= RUNG_MATCH_EPSILON_MM) {
+        tied += 1;
       }
     }
   }
@@ -589,7 +612,7 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
         'A worktop cannot be specified until one is sourced.'
     );
   }
-  return best;
+  return { ...best, tiedCombinationCount: tied };
 }
 
 /**
@@ -601,7 +624,13 @@ export function findClosestBuildableWorktop(targetMm: number): WorktopThicknessG
  *   slab = core + 2 x surface, so reaching 20.0 needs a 1.0mm surface on an 18mm core,
  *   or a 0.5mm surface on a 19mm core. NEITHER SURFACE EXISTS.
  *
- * Closest buildable:  18mm HMR + 2 x 0.8mm HPL = 19.6mm, i.e. 0.4mm UNDER target.
+ * Closest buildable:  any 18mm MOISTURE-RESISTANT core + 2 x 0.8mm HPL = 19.6mm, i.e.
+ *                     0.4mm UNDER target. Several combinations TIE at 19.6 (core-hmr-18,
+ *                     core-pb-mr-18 and core-ply-18 each pair with any of the six 0.8mm
+ *                     HPL surfaces); `tiedCombinationCount` reports how many, and the
+ *                     single pair named in the result is an example, not a
+ *                     recommendation. Picking between real boards on grounds other than
+ *                     thickness is a materials decision for a human.
  * Next candidate up:  19mm core + 2 x 0.8 = 20.6mm, but BOTH 19mm cores (core-pb-19,
  *                     core-mdf-19) are moistureResistant: false, so 20.6mm is not
  *                     buildable as a worktop at any price.
@@ -720,9 +749,31 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
     // Quantify the miss against the JIS rule rather than just saying "not a rung".
     // B = A - 750 means the rung a JIS kitchen would use here is counterHeight - 750,
     // and the gap is entirely explained by how far the real assembly sits from 750.
+    //
+    // THE SIGN MATTERS AND THE ADVICE FLIPS WITH IT. An assembly SHORTER than 750 leaves
+    // a plinth taller than the rung, and the fix is a thicker worktop. An assembly TALLER
+    // than 750 — which is the Thai case, 760 + 20 = 780 — leaves a plinth SHORTER than the
+    // rung, and no worktop can fix that: you would need to remove 10mm of material that
+    // does not exist. The fix there is a shorter leg, which is exactly the hardware this
+    // business already buys. An earlier version of this message ran the shortfall
+    // arithmetic unconditionally and told the reader to "source a -10.0mm worktop".
     const jisRung = counterHeight - JIS_A0017_2018.plinthRuleOffsetMm;
     const assembly = carcassHeight + worktopThickness;
-    const shortfall = JIS_A0017_2018.plinthRuleOffsetMm - assembly;
+    const assemblyDelta = assembly - JIS_A0017_2018.plinthRuleOffsetMm;
+
+    const remedy =
+      assemblyDelta > 0
+        ? `The assembly is ${assemblyDelta.toFixed(1)}mm TALLER than the rule assumes, so the ` +
+          `plinth is correspondingly shorter than the rung. No worktop change can close this: ` +
+          `it would have to lose ${assemblyDelta.toFixed(1)}mm from a ` +
+          `${worktopThickness.toFixed(1)}mm target, which is not a slab that exists. The ` +
+          `correct hardware is a shorter leg, and ${plinthHeight.toFixed(1)}mm is reachable by ` +
+          `leg ${leg.id} (minimum ${leg.minHeight}mm). Off-rung here is a market difference, ` +
+          `not a defect.`
+        : `The assembly is ${Math.abs(assemblyDelta).toFixed(1)}mm SHORTER than the rule ` +
+          `assumes, so the plinth overshoots the rung. Source a ` +
+          `${(worktopThickness - assemblyDelta).toFixed(1)}mm worktop to land on it.`;
+
     warnings.push({
       code: 'PLINTH_OFF_PUBLISHED_RUNG',
       message:
@@ -730,10 +781,9 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
         `(JIS A0017:2018 ${JIS_A0017_2018.plinthRungsMm.join('/')}; ` +
         `next125 ${NEXT125_PLINTH_RUNGS_MM.join('/')}). ` +
         `JIS rule B = A - ${JIS_A0017_2018.plinthRuleOffsetMm} would give ${jisRung}mm here. ` +
-        `The ${shortfall.toFixed(1)}mm difference is the whole miss: carcass ${carcassHeight} + ` +
-        `worktop ${worktopThickness.toFixed(1)} = ${assembly.toFixed(1)}mm, against the ` +
-        `${JIS_A0017_2018.plinthRuleOffsetMm}mm assembly the rule assumes. ` +
-        `NOT rounded — source a ${(worktopThickness + shortfall).toFixed(1)}mm worktop to land on the rung.`,
+        `Carcass ${carcassHeight} + worktop ${worktopThickness.toFixed(1)} = ` +
+        `${assembly.toFixed(1)}mm, against the ${JIS_A0017_2018.plinthRuleOffsetMm}mm assembly ` +
+        `the rule assumes. NOT rounded. ${remedy}`,
     });
   }
 
@@ -760,8 +810,12 @@ export function deriveHeightStack(input: HeightStackInput = {}): HeightStack {
       message:
         `Target worktop thickness ${worktopThickness.toFixed(1)}mm cannot be built from this ` +
         `catalog. The closest buildable moisture-resistant, bandable slab is ` +
-        `${gap.closestAchievableMm.toFixed(1)}mm (${gap.coreMaterialId} + 2 x ` +
-        `${gap.surfaceMaterialId}), a ${gap.deltaMm > 0 ? '+' : ''}${gap.deltaMm.toFixed(1)}mm ` +
+        `${gap.closestAchievableMm.toFixed(1)}mm (e.g. ${gap.coreMaterialId} + 2 x ` +
+        `${gap.surfaceMaterialId}` +
+        (gap.tiedCombinationCount > 1
+          ? `, one of ${gap.tiedCombinationCount} catalog combinations at that thickness`
+          : '') +
+        `), a ${gap.deltaMm > 0 ? '+' : ''}${gap.deltaMm.toFixed(1)}mm ` +
         `difference. NOT substituted automatically: changing the surface material to chase ` +
         `thickness would change the finish and the quoted cost of every slab. Either source a ` +
         `material that hits ${worktopThickness.toFixed(1)}mm, or accept the ` +

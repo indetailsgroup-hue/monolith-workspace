@@ -271,6 +271,28 @@ describe('height stack — published plinth rungs', () => {
     expect(w).toBeDefined();
     expect(w!.message).toContain('70.0');
     expect(w!.message).toContain('NOT rounded');
+
+    // THE ADVICE MUST FLIP WITH THE SIGN. The Thai assembly (780) is TALLER than the 750
+    // the JIS rule assumes, so the plinth is SHORTER than the rung and no worktop can
+    // close the gap. An earlier version ran the shortfall arithmetic unconditionally and
+    // emitted "source a -10.0mm worktop", which is not a thing that exists.
+    expect(w!.message).not.toMatch(/source a -/);
+    expect(w!.message).toContain('TALLER than the rule assumes');
+    expect(w!.message).toContain('shorter leg');
+    expect(w!.message).toContain('not a defect');
+  });
+
+  it('the rung advice reverses correctly when the assembly is SHORTER than 750', () => {
+    // The other branch: 720 + 18.6 = 738.6, 11.4mm short of 750, so the plinth overshoots
+    // the rung and a THICKER worktop genuinely is the fix. Proves the sign handling is a
+    // real branch, not a one-sided patch for the Thai case.
+    const s = deriveHeightStack({ carcassHeight: 720, worktopThickness: 18.6 });
+    expect(s.plinthHeight).toBeCloseTo(111.4, 6);
+
+    const w = s.warnings.find((x) => x.code === 'PLINTH_OFF_PUBLISHED_RUNG')!;
+    expect(w.message).toContain('SHORTER than the rule');
+    // 18.6 + 11.4 = 30.0mm, a real and sensible worktop thickness.
+    expect(w.message).toContain('Source a 30.0mm worktop');
   });
 
   it('off-rung is EXPECTED here, because the Thai assembly is not the one JIS assumes', () => {
@@ -401,9 +423,17 @@ describe('height stack — worktop thickness comes from the real material stack'
     expect(gap.closestAchievableMm).toBeCloseTo(19.6, 6);
     expect(gap.deltaMm).toBeCloseTo(-0.4, 6);
 
-    // The arithmetic, spelled out: 18mm core + 2 x 0.8mm HPL = 19.6mm.
+    // The arithmetic, spelled out: an 18mm moisture-resistant core + 2 x 0.8mm HPL.
     expect(gap.coreMaterialId).toMatch(/-18$/);
     expect(gap.surfaceMaterialId).toMatch(/^surf-hpl-/);
+
+    // The named pair is an EXAMPLE, not a recommendation: several combinations tie at
+    // 19.6mm and the result must say so rather than presenting an arbitrary winner as
+    // though the catalog had picked a material.
+    expect(gap.tiedCombinationCount).toBeGreaterThan(1);
+
+    // Deterministic: object key order must not decide the answer.
+    expect(findClosestBuildableWorktop(20)).toEqual(gap);
 
     // WHY 20.0 is unreachable: slab = core + 2 x surface. Surfaces are ONLY 0.3 (melamine)
     // and 0.8 (HPL), so hitting 20.0 needs a 1.0mm surface on an 18 core or a 0.5mm
