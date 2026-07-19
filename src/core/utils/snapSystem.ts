@@ -265,10 +265,11 @@ export function calculateSnap(
   const guides: SnapGuide[] = [];
   const snappedAxes = { x: false, y: false, z: false };
 
-  // snapX and snapZ ARE reassigned below; only snapY happens not to be on this path. Splitting the
-  // destructuring to satisfy the rule would obscure that these are one
-  // position triple.
-  // eslint-disable-next-line prefer-const -- see comment above
+  // snapX and snapZ ARE reassigned further down; snapY simply never is on this
+  // path. prefer-const therefore fires on snapY alone. Splitting the
+  // destructuring to satisfy the rule would obscure that these three are one
+  // position triple, so the whole binding stays `let`.
+  // eslint-disable-next-line prefer-const -- snapY is the only never-reassigned member of a position triple
   let [snapX, snapY, snapZ] = moving.position;
 
   // Filter out the moving cabinet from targets (moved up for vertex snap)

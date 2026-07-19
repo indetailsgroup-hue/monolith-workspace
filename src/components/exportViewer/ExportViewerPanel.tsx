@@ -148,11 +148,8 @@ export function ExportViewerPanel(props: ExportViewerPanelProps) {
   useEffect(() => {
     st.loadLatest();
     // NOTE(react-hooks/exhaustive-deps): intentionally not satisfied —
-
     // mount-only effect: loadLatest() must run exactly once, not on every st change.
-
     // The rule is not installed yet; restore a real eslint-disable directive
-
     // when eslint-plugin-react-hooks is added.
   }, []);
 

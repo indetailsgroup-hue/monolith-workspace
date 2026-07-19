@@ -33,7 +33,13 @@ export function resolvePfmeaRows(extractDir: string): PfmeaSourceResult {
   const flags = new Map<string, { sourceFile: string; canonicalStep: string; note: string }>();
   const filesRead: string[] = [];
   const filesMissing: string[] = [];
-  const ignoredCount = 0;
+  // prefer-const proved this counter is NEVER incremented, so
+  // PfmeaSourceResult.ignoredCount is reported as 0 on every run regardless of
+  // how many rows were skipped. Left as `let` rather than const-ified so the
+  // linter keeps pointing at the missing increment instead of the `const`
+  // making a bug look like a decision.
+  // eslint-disable-next-line prefer-const -- TODO(MONOLITH-lint-2): implement the increment or drop the field
+  let ignoredCount = 0;
 
   for (const file of CANONICAL_PFMEA_FILES) {
     const path = join(extractDir, file);

@@ -530,7 +530,15 @@ export function emitGcode(
 ): PostResult {
   const lines: string[] = [];
   const report: PostReportItem[] = [];
-  const valid = true;
+  // prefer-const proved this flag is NEVER assigned false anywhere in this
+  // function, so the `valid` field it populates on PostResult can only ever
+  // report PASS. That makes this half of a validity gate on machine-bound
+  // output structurally dead. Left as `let` rather than const-ified so the
+  // linter keeps pointing at the unimplemented check instead of the `const`
+  // making a bug look like a decision. Either implement the failure conditions
+  // or delete `valid` from the result type.
+  // eslint-disable-next-line prefer-const -- TODO(MONOLITH-lint-1): validity is never computed
+  let valid = true;
 
   // Current position tracking
   let cur: XYZ = { x: 0, y: 0, z: ctx.safeZ };

@@ -24,8 +24,9 @@ import type { CabinetPanel } from '../../core/types/Cabinet';
 import { useExportGate, GateBlockerModal } from '../../gate/ui';
 import { useFactoryPacket, PacketPreviewModal } from '../../factory/packet';
 import { NestingPanel } from '../nesting/NestingPanel';
+import type { NestingCompletion } from '../nesting/NestingPanel';
 import { useNestingStore } from '../../core/store/useNestingStore';
-import type { NestingSheet, CutListRow } from '../../core/export/monolith/monolithExportContext';
+import type { CutListRow } from '../../core/export/monolith/monolithExportContext';
 
 // Validation types
 interface ValidationResult {
@@ -737,6 +738,10 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
   // Nesting state (T027 Step 8 wiring)
   const nestingStore = useNestingStore();
   const nestingSheetsAvailable = nestingStore.nestingSheets !== null;
+  // A run that dropped parts is NOT an 'ok' gate, even though it produced a
+  // non-null array. A run where every part was dropped stores [] — non-null —
+  // and would otherwise render a green ✓ over a layout that placed nothing.
+  const nestingIncomplete = nestingStore.unplacedParts.length > 0;
 
   // Build CutListRow[] from cabinet panels for NestingPanel
   const cutListRows = useMemo((): CutListRow[] => {
@@ -766,8 +771,10 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
   }, [cabinet?.id, cabinet?.panels]);
 
   // Handle nesting completion → store results
-  const handleNestingComplete = useCallback((sheets: NestingSheet[]) => {
-    nestingStore.setNestingSheets(sheets);
+  // Both halves of the result go into the store. Storing `sheets` alone would
+  // persist a layout that is missing parts but looks complete to every reader.
+  const handleNestingComplete = useCallback((result: NestingCompletion) => {
+    nestingStore.setNestingSheets(result.sheets, result.unplacedParts);
   }, []);
 
   // Initialize panel states when cabinet changes
@@ -1178,8 +1185,8 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
 
       {/* Cut Optimization / Nesting (T027) */}
       <Section
-        title={`Cut Optimization${nestingSheetsAvailable ? ` (${nestingStore.nestingSheets!.length} sheets)` : ''}`}
-        status={nestingSheetsAvailable ? 'ok' : undefined}
+        title={`Cut Optimization${nestingSheetsAvailable ? ` (${nestingStore.nestingSheets!.length} sheets)` : ''}${nestingIncomplete ? ` — ${nestingStore.unplacedParts.length} UNPLACED` : ''}`}
+        status={nestingIncomplete ? 'warning' : nestingSheetsAvailable ? 'ok' : undefined}
       >
         <div className="space-y-3">
           {cutListRows.length > 0 ? (
@@ -1195,7 +1202,25 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
               Create a cabinet with panels first.
             </p>
           )}
-          {nestingSheetsAvailable && (
+          {nestingSheetsAvailable && nestingIncomplete && (
+            <div
+              role="alert"
+              className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400 space-y-1"
+            >
+              <div className="font-semibold">
+                ✕ Nesting INCOMPLETE — {nestingStore.unplacedParts.length} part(s) could not be
+                placed on any sheet.
+              </div>
+              <div>
+                This layout is missing parts and will not be handed to the export pipeline.
+                Fix the oversized parts, then re-run.
+              </div>
+              <div className="text-red-300/80">
+                {nestingStore.unplacedParts.map((p) => p.id).join(', ')}
+              </div>
+            </div>
+          )}
+          {nestingSheetsAvailable && !nestingIncomplete && (
             <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex justify-between">
               <span>✓ Nesting: {nestingStore.nestingSheets!.length} sheet(s) optimized</span>
               <span>{nestingStore.nestingSheets!.reduce((s, sh) => s + sh.placements.length, 0)} parts placed</span>

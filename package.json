@@ -32,17 +32,19 @@
     "test:all": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:budget": "eslint . --max-warnings 1187",
+    "lint:budget": "eslint . --max-warnings 1199",
     "lint:strict": "eslint . --max-warnings 0",
     "format:all": "npm run format --workspaces --if-present",
     "typecheck:all": "tsc -b tsconfig.build.json",
+    "typecheck:server": "tsc -p server --noEmit",
+    "install:server": "npm --prefix server ci",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:smoke": "playwright test --grep @smoke",
     "e2e:debug": "playwright test --debug",
     "e2e:report": "playwright show-report",
-    "verify": "npm run lint && npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e:smoke",
-    "verify:full": "npm run lint && npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e"
+    "verify": "npm run lint && npm run test:run && npm run test:node && npm run typecheck:all && npm run typecheck:server && npm run e2e:smoke",
+    "verify:full": "npm run lint && npm run test:run && npm run test:node && npm run typecheck:all && npm run typecheck:server && npm run e2e"
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",

@@ -15,12 +15,34 @@
 //   ignorePatterns            -> ignores (see notes below).
 //   the three rule overrides  -> reproduced verbatim at the end of the array.
 //
-// NOTHING WAS SILENTLY DROPPED. Two deliberate deviations, both documented:
-//   1. 'node_modules' is omitted from ignores — flat config ignores it by
-//      default, so restating it is noise.
-//   2. '*.config.js' / '*.config.cjs' become '**/*.config.js' / '**/*.config.cjs'.
+// DEVIATIONS FROM .eslintrc.cjs — the complete list. The previous version of
+// this header claimed "NOTHING WAS SILENTLY DROPPED. Two deliberate deviations"
+// while the ignores block below added eleven entries that were not in
+// .eslintrc.cjs. That was wrong, and it was the kind of wrong that stops a
+// reviewer from looking further. The real list:
+//
+//   1. 'node_modules' omitted — flat config ignores it by default.
+//   2. '*.config.js' / '*.config.cjs' -> '**/*.config.js' / '**/*.config.cjs'.
 //      eslintrc's ignorePatterns matched at any depth; flat config ignores are
 //      path-relative, so the '**/' prefix preserves the original meaning.
+//      NOTE: this glob also matches eslint.config.js itself, so a negation is
+//      added below — the one file this branch adds must not be the one file the
+//      linter never checks.
+//   3. ADDED to ignores: 'build/**', 'playwright-report/**', 'test-results/**'.
+//      Generated output, same class as the dist/** and coverage/** entries that
+//      were already there.
+//   4. ADDED to ignores: 'daph-second-brain/**', 'minifix-skill-pack/**',
+//      'furniture-hardware-vault/**'. Foreign project snapshots that live in
+//      this folder but are not MONOLITH source — the same trees vite.config.ts
+//      excludes from the test run. All three contain 0 JS/TS files today.
+//
+// NOT ignored, though an earlier draft of this file ignored them:
+//   - supabase/** — 35 production TypeScript edge functions. Ignoring them
+//     removed real server-side code from the gate. They are now linted under a
+//     Deno-globals config block (see below).
+//   - docs/**, specs/**, public/**, patches/** — 0 JS/TS files today, so
+//     ignoring them changed nothing NOW, but a broad directory ignore silently
+//     swallows whatever is added there later. Removed for that reason.
 //
 // NOT ENABLED HERE, ON PURPOSE:
 //   - Type-aware linting (flat/recommended-type-checked). It needs
@@ -47,28 +69,27 @@ export default [
     // the linted source tree. Kept explicit so `eslint .` is safe to run from
     // the repo root and new source directories are covered by default.
     ignores: [
+      // Generated output.
       'dist/**',
       '**/dist/**',
       'coverage/**',
       '**/coverage/**',
-      '**/*.config.js',
-      '**/*.config.cjs',
       'build/**',
       '**/build/**',
       'playwright-report/**',
       'test-results/**',
-      // Deno runtime (Supabase edge functions): different globals and URL
-      // imports. Linting it with browser/node globals produces pure noise.
-      // Needs its own config; out of scope for this migration.
-      'supabase/**',
-      // Non-code content trees.
+      // Config files, carried over from ignorePatterns...
+      '**/*.config.js',
+      '**/*.config.cjs',
+      // ...except this one. The '**/*.config.js' glob above matches
+      // eslint.config.js, which would exempt the lint config itself from the
+      // linter. Negated so it is checked like everything else.
+      '!eslint.config.js',
+      // Foreign project snapshots. Not MONOLITH source; vite.config.ts
+      // excludes the same trees from the test run.
       'daph-second-brain/**',
       'minifix-skill-pack/**',
       'furniture-hardware-vault/**',
-      'patches/**',
-      'public/**',
-      'docs/**',
-      'specs/**',
     ],
   },
 
@@ -88,19 +109,33 @@ export default [
       },
     },
     rules: {
-      // Verbatim from .eslintrc.cjs, with two additions that match the
-      // existing argsIgnorePattern convention (underscore = intentionally
-      // unused) and were simply missing before.
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
+      // Verbatim from .eslintrc.cjs. An earlier draft of this file also added
+      // varsIgnorePattern and caughtErrorsIgnorePattern; measured, those two
+      // additions suppressed 14 real warnings (1187 reported vs 1201 without
+      // them). Since the warning budget is pinned to this count and is supposed
+      // to only ever ratchet DOWN, relaxing the rule in the same commit that
+      // sets the baseline would have started the ratchet 14 notches loose.
+      // Widening the underscore convention is a defensible change — but it is a
+      // separate one, made against a baseline that was not moved to meet it.
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'off',
+    },
+  },
+
+  {
+    // Supabase edge functions run on Deno, not Node: `Deno` is a global, and
+    // modules are imported from URLs. They were previously excluded from the
+    // linter entirely, which quietly removed 35 production TypeScript files
+    // from the gate. Linting them with the Deno globals declared is noisy about
+    // nothing and catches the same class of bug it catches everywhere else.
+    files: ['supabase/**/*.ts'],
+    languageOptions: {
+      globals: {
+        Deno: 'readonly',
+        // Edge functions run in a Worker-like environment.
+        ...globals.worker,
+      },
     },
   },
 

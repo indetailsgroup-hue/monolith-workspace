@@ -20,17 +20,32 @@ import type {
   GrainDirection,
 } from '../../nesting/types';
 import { DEFAULT_NESTING_CONFIG } from '../../nesting/types';
-import { runNesting } from '../../nesting/optimizer';
+import { runNesting, resolveSheetConfig } from '../../nesting/optimizer';
 
 // ============================================
 // TYPES
 // ============================================
 
+/**
+ * What a completed nesting run hands to its caller.
+ *
+ * `sheets` alone is NOT the result. It contains only the parts that were
+ * actually placed, so on its own it is indistinguishable from a complete
+ * layout even when parts were dropped. The two fields travel together, and a
+ * caller that stores or exports `sheets` must deal with `unplacedParts`.
+ */
+export interface NestingCompletion {
+  /** The layout — PARTIAL whenever `unplacedParts` is non-empty. */
+  sheets: NestingSheet[];
+  /** Every part that fit no sheet in any allowed orientation. */
+  unplacedParts: NestingPart[];
+}
+
 interface NestingPanelProps {
   /** Cut list rows from cabinet store or export context */
   cutListRows: CutListRow[];
   /** Callback when nesting completes (to feed into export pipeline) */
-  onNestingComplete?: (sheets: NestingSheet[]) => void;
+  onNestingComplete?: (result: NestingCompletion) => void;
   /** Component width in px */
   width?: number;
   /** Component height in px */
@@ -111,6 +126,48 @@ function getSheetGrainDirection(
 }
 
 // ============================================
+// UNPLACED-PART DIAGNOSIS
+// ============================================
+
+/**
+ * Explain WHY a part could not be placed, computed from geometry.
+ *
+ * This must not be inferred from `grainDirection` alone. A 2440x640 worktop
+ * against a 1230x2450 board (usable 1210x2430 at the default 10mm clearance)
+ * fails at 2440 > 2430 in BOTH orientations — rotating it would not have helped
+ * and clearing its grain flag would not have helped. Telling the operator
+ * "grain locks rotation" there sends them to strip grain off a worktop, which
+ * scraps grain consistency and still does not make the part fit. The real
+ * remedy is to split the run or source a longer board.
+ *
+ * So: only blame grain when the part would ACTUALLY have fitted rotated.
+ *
+ * @param part - the unplaced part
+ * @param usableW - sheet width minus 2x edge clearance, as used by ffdh.ts
+ * @param usableH - sheet height minus 2x edge clearance
+ */
+export function describeUnplacedReason(
+  part: NestingPart,
+  usableW: number,
+  usableH: number,
+): string {
+  const fitsAsIs = part.width <= usableW && part.height <= usableH;
+  const fitsRotated = part.height <= usableW && part.width <= usableH;
+
+  if (!fitsAsIs && !fitsRotated) {
+    return 'too large for the board in every orientation — split the run or source a larger board';
+  }
+  if (!fitsAsIs && fitsRotated) {
+    // Rotation is the only way this part fits, and grain is what forbids it.
+    return part.grainDirection !== 'NONE'
+      ? 'grain locks rotation — it would fit turned 90°, but turning a grained part breaks the grain match'
+      : 'fits only when rotated, but rotation was not permitted for this part';
+  }
+  // It fits an empty board in an allowed orientation, so it was not oversized.
+  return 'no sheet had room left — a packing shortfall, not a size problem';
+}
+
+// ============================================
 // MAIN COMPONENT
 // ============================================
 
@@ -148,18 +205,27 @@ export function NestingPanel({
       setResults(nestResults);
       setActiveSheetIdx(0);
       setComputing(false);
-      onNestingComplete?.(sheets);
+      // Both halves cross the boundary. Handing over `sheets` alone would strip
+      // the unplaced list one call after the optimizer went to the trouble of
+      // returning it, and the receiving store would persist a truncated layout
+      // that looks complete.
+      onNestingComplete?.({ sheets, unplacedParts: unplaced });
     });
   }, [cutListRows, kerfWidth, edgeClearance, onNestingComplete]);
 
   // CSV export
   const handleExportCsv = useCallback(() => {
     if (!nestingSheets) return;
-    const lines = ['SHEET_NO,PART_ID,X,Y,ROTATION,CUT_W,CUT_H,MATERIAL'];
+    // STATUS is a dedicated column rather than a sentinel value in SHEET_NO:
+    // every other row fills SHEET_NO with an integer, so writing the literal
+    // 'UNPLACED' there would parse as NaN downstream and could be coerced to 0
+    // or dropped — reintroducing the silent omission this exists to prevent.
+    // SHEET_NO stays empty for unplaced rows; STATUS carries the meaning.
+    const lines = ['STATUS,SHEET_NO,PART_ID,X,Y,ROTATION,CUT_W,CUT_H,MATERIAL'];
     for (const sheet of nestingSheets) {
       for (const p of sheet.placements) {
         lines.push(
-          `${sheet.index1},${p.partId},${p.x},${p.y},${p.rotation},${p.cutW},${p.cutH},${sheet.materialId}`,
+          `PLACED,${sheet.index1},${p.partId},${p.x},${p.y},${p.rotation},${p.cutW},${p.cutH},${sheet.materialId}`,
         );
       }
     }
@@ -167,7 +233,7 @@ export function NestingPanel({
     // the layout is a part nobody cuts and nobody quotes. Emit them explicitly.
     for (const p of unplacedParts) {
       lines.push(
-        `UNPLACED,${p.id},,,,${p.width},${p.height},${p.materialId}`,
+        `UNPLACED,,${p.id},,,,${p.width},${p.height},${p.materialId}`,
       );
     }
 
@@ -202,6 +268,17 @@ export function NestingPanel({
       grainDirection: grainMap.get(p.partId) ?? 'NONE',
     }));
   }, [activeSheet, results]);
+
+  // Diagnose each unplaced part against the SAME sheet config the layout was
+  // built from, so the reason shown to the operator is measured, not guessed.
+  const unplacedReasons = useMemo(() => {
+    return unplacedParts.map((part) => {
+      const cfg = resolveSheetConfig(part.materialId, { kerfWidth, edgeClearance });
+      const usableW = cfg.sheetWidth - 2 * cfg.edgeClearance;
+      const usableH = cfg.sheetHeight - 2 * cfg.edgeClearance;
+      return { part, reason: describeUnplacedReason(part, usableW, usableH) };
+    });
+  }, [unplacedParts, kerfWidth, edgeClearance]);
 
   // Aggregate stats
   const stats = useMemo(() => {
@@ -510,13 +587,10 @@ export function NestingPanel({
             nested — this layout is INCOMPLETE and must not be sent to the factory as-is.
           </div>
           <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
-            {unplacedParts.map((p) => (
-              <li key={p.id}>
-                <strong>{p.id}</strong> — {p.width} × {p.height} mm, {p.materialId},
-                grain {p.grainDirection}
-                {p.grainDirection !== 'NONE'
-                  ? ' (grain locks rotation — part cannot be turned to fit)'
-                  : ' (too large for the board in both orientations)'}
+            {unplacedReasons.map(({ part, reason }) => (
+              <li key={part.id}>
+                <strong>{part.id}</strong> — {part.width} × {part.height} mm,{' '}
+                {part.materialId}, grain {part.grainDirection} ({reason})
               </li>
             ))}
           </ul>

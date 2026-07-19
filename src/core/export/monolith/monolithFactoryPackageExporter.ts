@@ -270,8 +270,13 @@ export function createContextProviderFromStore(
             index1: 1,
             label: 'NEST_01',
             materialId: 'MAT_DEFAULT',
-            sheetW: 2440,
-            sheetH: 1220,
+            // W is the SHORT edge and H the LONG edge — the convention used by
+            // src/nesting (DEFAULT_NESTING_CONFIG, and every NestingSheet the
+            // optimizer emits). These were previously 2440 x 1220, which is
+            // that convention with the axes swapped and matches no board in
+            // CORE_MATERIALS_CATALOG.
+            sheetW: 1220,
+            sheetH: 2440,
             sheetThickness: 18,
             placements: cutListRows.map((row, idx) => ({
               partId: row.partId,

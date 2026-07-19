@@ -195,11 +195,8 @@ export function useCSGPanelGeometry({
       return null;
     }
     // NOTE(react-hooks/exhaustive-deps): intentionally not satisfied —
-
     // deps array indexes into panelPosition/panelRotation arrays, which the rule cannot analyse.
-
     // The rule is not installed yet; restore a real eslint-disable directive
-
     // when eslint-plugin-react-hooks is added.
   }, [enabled, sizeX, sizeY, sizeZ, panelPosition[0], panelPosition[1], panelPosition[2], panelRotation[0], panelRotation[1], panelRotation[2], drillPointsKey]);
 

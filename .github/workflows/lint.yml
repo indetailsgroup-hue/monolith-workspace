@@ -11,8 +11,14 @@ name: Lint
 #               Making them blocking today would red-line every open PR across
 #               the other worktrees for problems they did not introduce.
 #               Flip `continue-on-error` to false on the warning-budget job
-#               once the burn-down lands, and lower LINT_WARNING_BUDGET as it
-#               drops so the count can only ratchet down.
+#               once the burn-down lands.
+#
+# THE CEILING HAS ONE DEFINITION. It lives in package.json as
+# `lint:budget` ("eslint . --max-warnings <N>") and this workflow INVOKES that
+# script rather than restating the number. It was previously duplicated here as
+# LINT_WARNING_BUDGET, which meant lowering one and forgetting the other left
+# either a local/CI split or a stale ceiling that silently permitted regrowth.
+# A ratchet with two independent settings is not a ratchet.
 
 on:
   push:
@@ -23,11 +29,6 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
-env:
-  # Dated debt ceiling. Measured 2026-07-19 on chore/lint-and-nesting.
-  # This number must only ever go DOWN.
-  LINT_WARNING_BUDGET: "1187"
 
 jobs:
   eslint:
@@ -78,7 +79,40 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Single source of truth: the ceiling is the --max-warnings value inside
+      # the lint:budget script in package.json. Do not restate it here.
       - name: Enforce the warning ceiling
-        run: |
-          ./node_modules/.bin/eslint . --max-warnings "$LINT_WARNING_BUDGET"
-          echo "✓ at or below the ${LINT_WARNING_BUDGET}-warning ceiling"
+        run: npm run lint:budget
+
+  typecheck:
+    name: TypeScript (app + server)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # server/ is NOT a workspace in the root package.json, so the root
+      # `npm ci` above does not install its dependencies. Without this step
+      # `tsc -p server` reports ~28 spurious "Cannot find module 'express'"
+      # errors that look like real breakage and are not.
+      - name: Install server dependencies
+        run: npm run install:server
+
+      - name: Typecheck app
+        run: npm run typecheck:all
+
+      # Nothing typechecked server/ before this job existed: tsconfig.build.json
+      # includes only "src", server/package.json has no typecheck script, and
+      # Vitest transpiles without typechecking. A type error under server/ —
+      # including in the CNC post-processor — would have shipped unnoticed.
+      - name: Typecheck server
+        run: npm run typecheck:server
