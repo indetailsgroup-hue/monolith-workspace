@@ -32,6 +32,8 @@
     "test:all": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:budget": "eslint . --max-warnings 1187",
+    "lint:strict": "eslint . --max-warnings 0",
     "format:all": "npm run format --workspaces --if-present",
     "typecheck:all": "tsc -b tsconfig.build.json",
     "e2e": "playwright test",
