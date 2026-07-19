@@ -2330,8 +2330,9 @@ export const useCabinetStore = create<CabinetStore>()(
         defaultEdgeId,
         undefined,
         get().manufacturingParams,
-        // NOTE: DEFAULT_DIMENSIONS carries toeKickHeight 100 regardless of type,
-        // so the type must reach generatePanels or a WALL cabinet gets a plinth.
+        // NOTE: DEFAULT_DIMENSIONS carries DEFAULT_TOE_KICK_HEIGHT_MM (the derived
+        // plinth, 70mm on the Thai default) regardless of type, so the type must
+        // reach generatePanels or a WALL cabinet gets a plinth.
         type
       );
 

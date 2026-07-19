@@ -192,6 +192,29 @@ export interface WorktopConfig {
  * priced part, not a guess — but it is not yet a premium worktop. Swap
  * coreMaterialId and edgeMaterialId together the moment a sourced 38mm HMR core
  * and a sourced ~45mm tape land in the catalog.
+ *
+ * ── UPDATE: THE THAI TARGET IS 20mm, AND 18.6 IS 1.4mm SHORT OF IT ───────────
+ * The "38-40mm real worktop" premise above is EUROPEAN. The owner of the Thai
+ * kitchen business this system is built for specifies a 20mm worktop, which
+ * makes the 23mm edge tape a non-issue — the blocker recorded above does not
+ * apply at the real target thickness.
+ *
+ * The target now lives at CabinetTaxonomy.DEFAULT_WORKTOP_THICKNESS_MM (20) and
+ * the gap between it and this catalog is computed, not asserted, at
+ * DEFAULT_WORKTOP_THICKNESS_GAP. The finding: exactly 20.0mm is UNREACHABLE
+ * (no 20mm core exists; surfaces are only 0.3 and 0.8, so core + 2 x surface
+ * cannot land on 20.0). The closest BUILDABLE slab is 19.6mm — 18mm HMR + two
+ * 0.8mm HPL faces.
+ *
+ * This config is deliberately NOT switched to that combination: it would swap a
+ * 0.3mm melamine face for a 0.8mm HPL one, changing the finish and the quoted
+ * cost of every slab in the kitchen to chase 1.0mm. The 0.4mm residual against
+ * target is absorbed by the adjustable leg instead. Material choice is a human
+ * decision; see the WORKTOP_TARGET_NOT_IN_CATALOG warning.
+ *
+ * STILL OPEN, NOT ASSUMED: whether the Thai 20mm worktop is STONE (20mm is the
+ * standard 2cm granite/quartz thickness) or a wood-based panel. Unconfirmed by
+ * the owner. Nothing here branches on it.
  */
 export const DEFAULT_WORKTOP_CONFIG: WorktopConfig = {
   frontOverhang: 20,

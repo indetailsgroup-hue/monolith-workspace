@@ -132,8 +132,9 @@ export function computeKickboardZ(
  * off the wall with no floor void.
  *
  * Deliberately NOT {WALL, TALL}: TALL_PANTRY and TALL_BROOM both declare
- * hasToeKick: true with toeKickHeight 100 (CabinetTaxonomy.ts:509, 528) — a
- * pantry stands on the floor and does get a plinth. The worktop lane's
+ * hasToeKick: true with toeKickHeight = DEFAULT_TOE_KICK_HEIGHT_MM (70mm on the
+ * Thai default; formerly a hardcoded 100) — a pantry stands on the floor and
+ * does get a plinth. The worktop lane's
  * NON_WORKTOP_CABINET_TYPES excludes TALL because a pantry carries no counter;
  * that is a different question and the two sets are correctly different.
  *
@@ -160,11 +161,11 @@ export const NO_TOE_KICK_CABINET_TYPES: ReadonlySet<string> = (() => {
  * Two independent gates, because they fail independently:
  *   1. CABINET TYPE. createCabinet ignores `type` when it builds panels — it
  *      always passes DEFAULT_DIMENSIONS (useCabinetStore.ts:2302-2310), so a
- *      WALL cabinet is created carrying toeKickHeight 100 it has no business
+ *      WALL cabinet is created carrying a toe-kick height it has no business
  *      having. Gating on toeKickHeight alone therefore put a fully-costed
- *      600x100 plinth into the BOM and the cut list for a cabinet that hangs
- *      on a wall. Type is checked FIRST and does not depend on that bug ever
- *      being fixed.
+ *      600 x DEFAULT_TOE_KICK_HEIGHT_MM plinth into the BOM and the cut list
+ *      for a cabinet that hangs on a wall. Type is checked FIRST and does not
+ *      depend on that bug ever being fixed.
  *   2. TOE-KICK HEIGHT. No void, nothing to close.
  *
  * Otherwise the default is ON: the toe-kick void is real material in a real
