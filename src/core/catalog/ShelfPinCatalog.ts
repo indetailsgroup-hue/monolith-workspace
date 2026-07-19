@@ -12,6 +12,8 @@
  * @version 1.0.0
  */
 
+import { SYSTEM_32_GRID } from './System32';
+
 // ============================================
 // SHELF PIN TYPES
 // ============================================
@@ -286,15 +288,25 @@ export interface ShelfPinRowConfig {
   backSetback: number;      // Distance from back edge
 }
 
+/**
+ * SINGLE SOURCE OF TRUTH: spacing and setbacks derive from SYSTEM_32_GRID in
+ * ./System32.ts. Do not re-type these numbers here — a drilling grid that
+ * disagrees with the hardware it is drilled for fails silently, on the panel,
+ * after it has been cut.
+ *
+ * startOffset/endOffset are the same grid dimension applied to the vertical
+ * axis: the first and last holes in a row sit one front-setback in from each
+ * end of the panel. backSetback is the second-row position, also grid-derived.
+ */
 export const DEFAULT_SYSTEM_32_CONFIG: ShelfPinRowConfig = {
   system: 'SYSTEM_32',
-  spacing: 32,
+  spacing: SYSTEM_32_GRID.pitch,
   rowCount: 1,
   rowSpacing: 0,
-  startOffset: 37,          // 37mm from top
-  endOffset: 37,            // 37mm from bottom
-  frontSetback: 37,         // 37mm from front edge
-  backSetback: 37,          // 37mm from back edge (or second row position)
+  startOffset: SYSTEM_32_GRID.frontSetback,  // from top of panel
+  endOffset: SYSTEM_32_GRID.frontSetback,    // from bottom of panel
+  frontSetback: SYSTEM_32_GRID.frontSetback, // from front edge
+  backSetback: SYSTEM_32_GRID.frontSetback,  // from back edge (or second row position)
 };
 
 // ============================================
