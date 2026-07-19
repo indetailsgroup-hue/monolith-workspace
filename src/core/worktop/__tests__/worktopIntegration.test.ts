@@ -138,10 +138,11 @@ describe('cut list integration — the role-agnostic path really carries WORKTOP
     const host = cabinets.find(c => c.panels.some(isDerivedWorktopPanel))!;
     const slab = host.panels.find(isDerivedWorktopPanel)!;
     // 1800 long minus two 2.0mm end tapes = 1796.
-    // 598 deep (560 carcass + 18 door + 20 overhang, FRONT datum) minus the
-    // 2.0mm front tape and the 2.0mm back tape = 594.
+    // 603 deep (560 carcass + 18 door + 25 overhang, FRONT datum) minus the
+    // 2.0mm front tape and the 2.0mm back tape = 599. Was 594 at the previous
+    // 20mm overhang; the DATUM is unchanged, only the projection.
     expect(slab.computed.cutWidth).toBeCloseTo(1796, 6);
-    expect(slab.computed.cutHeight).toBeCloseTo(594, 6);
+    expect(slab.computed.cutHeight).toBeCloseTo(599, 6);
     expect(slab.computed.edgeLength).toBeGreaterThan(0);
   });
 });

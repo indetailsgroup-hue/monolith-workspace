@@ -15,6 +15,8 @@ import { useCabinetStore } from '../../../store/useCabinetStore';
 import { getPanelHalfExtents } from '../../../geometry/cabinetAabb';
 import { runPhase1Gate } from '../../../phase1/gate';
 import type { CabinetPanel, KickboardConfig } from '../../../types/Cabinet';
+import { DEFAULT_KICK_SETBACK } from '../kickboardGeometry';
+import { DEFAULT_ASSUMED_FRONT_PROUD_MM } from '../../../geometry/appliedPartDatum';
 
 const W = 600;
 const H = 720;
@@ -77,12 +79,29 @@ describe('KICKBOARD costing integration', () => {
       expect(kick.finishHeight).toBe(LEG);
     });
 
-    it('sits recessed behind the carcass front face, spanning Y 0..Leg', () => {
+    it('sits recessed behind the DOOR face by the declared setback, spanning Y 0..Leg', () => {
       const [x, y, z] = kick.position;
       const t = kick.computed.realThickness;
       expect(x).toBe(0);
-      expect(y).toBeCloseTo(LEG / 2, 6);            // centre => spans 0..Leg
-      expect(z).toBeCloseTo(D / 2 - 50 - t / 2, 6); // default 50mm setback
+      expect(y).toBeCloseTo(LEG / 2, 6); // centre => spans 0..Leg
+
+      // CHANGED, and the change is the point of this lane. This used to read
+      //     D / 2 - 50 - t / 2
+      // i.e. 50mm behind the CARCASS face — while the worktop above the same
+      // cabinet measured its overhang from the DOOR face, 18mm further out.
+      // Two applied parts bracketing one front, referenced to two planes, with
+      // nothing anywhere declaring it.
+      //
+      // Both are now on the FRONT datum. The setback is expressed here through
+      // the shared constants rather than a literal, so this assertion cannot go
+      // on passing if someone changes the datum without changing the geometry.
+      const doorFaceZ = D / 2 + DEFAULT_ASSUMED_FRONT_PROUD_MM;
+      expect(z).toBeCloseTo(doorFaceZ - DEFAULT_KICK_SETBACK - t / 2, 6);
+
+      // And the net effect on where the part actually sits is 3mm, not 18:
+      // 65 from the door face is 47 from the carcass, against the old 50.
+      expect(D / 2 - (z + t / 2)).toBeCloseTo(47, 6);
+
       expect(kick.rotation).toEqual([0, 0, 0]);
     });
 

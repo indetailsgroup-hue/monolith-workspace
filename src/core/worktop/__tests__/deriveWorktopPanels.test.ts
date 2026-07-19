@@ -28,13 +28,18 @@ describe('deriveWorktopPanels — the design worked example', () => {
     expect(result.panelsByHostId.get('c1')).toHaveLength(1);
   });
 
-  it('sizes the slab 1800 long x 598 deep — measured from the DOOR face', () => {
+  it('sizes the slab 1800 long x 603 deep — measured from the DOOR face', () => {
     const p = result.panelsByHostId.get('c1')![0];
     expect(p.finishWidth).toBeCloseTo(1800, 6);
-    // 560 carcass + 18 door proudness + 20 overhang. Under the old CARCASS
-    // datum this was 580, which projected only 2mm past an 18mm door while
-    // being presented as a 20mm overhang. See WorktopConfig.frontDatum.
-    expect(p.finishHeight).toBeCloseTo(598, 6);
+    // 560 carcass + 18 door proudness + 25 overhang = 603.
+    //
+    // CHANGED from 598 by the datum-unification lane. The DATUM did not move —
+    // it was already FRONT here; only the projection went 20 ->
+    // WORKTOP_FRONT_OVERHANG_FROM_FRONT_MM (25), so that both applied parts
+    // bracketing this cabinet front now quote from one declared face.
+    // Two revisions back this was 580 under the CARCASS datum, which projected
+    // only 2mm past an 18mm door while calling itself a 20mm overhang.
+    expect(p.finishHeight).toBeCloseTo(603, 6);
   });
 
   it('places the slab at host-local [600, 829.3, 19] with no rotation', () => {
@@ -42,8 +47,9 @@ describe('deriveWorktopPanels — the design worked example', () => {
     // carcassTopY 820 + half of the 18.6mm real thickness.
     expect(p.position[0]).toBeCloseTo(600, 6);
     expect(p.position[1]).toBeCloseTo(829.3, 6);
-    // Slab spans n -280..+318, so its centre sits 19mm forward of the host's.
-    expect(p.position[2]).toBeCloseTo(19, 6);
+    // Slab spans n -280..+323 (25mm past the 18mm door face), so its centre sits
+    // 21.5mm forward of the host's. Was 19 at the previous 20mm overhang.
+    expect(p.position[2]).toBeCloseTo(21.5, 6);
     expect(p.rotation).toEqual([0, 0, 0]);
   });
 
@@ -69,7 +75,7 @@ describe('deriveWorktopPanels — the design worked example', () => {
     const size = [p.finishWidth, p.computed.realThickness, p.finishHeight];
     expect(size[0]).toBeCloseTo(1800, 6);
     expect(size[1]).toBeCloseTo(18.6, 6);
-    expect(size[2]).toBeCloseTo(598, 6);
+    expect(size[2]).toBeCloseTo(603, 6);
     // The slab lies flat: thickness is the smallest axis.
     expect(size[1]).toBeLessThan(size[0]);
     expect(size[1]).toBeLessThan(size[2]);
@@ -93,18 +99,21 @@ describe('deriveWorktopPanels — edge banding', () => {
   it('charges tape for the back edge, so the BOM cannot silently omit it', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), DEFAULT_WORKTOP_CONFIG);
     const p = r.panelsByHostId.get('c1')![0];
-    // front 1800 + back 1800 + two 598 ends = 4.796 m
-    expect(p.computed.edgeLength).toBeCloseTo(4.796, 6);
+    // front 1800 + back 1800 + two 603 ends = 4.806 m (was 4.796 at 598 deep).
+    expect(p.computed.edgeLength).toBeCloseTo(4.806, 6);
   });
 
   it('the island config additionally OVERHANGS at the back — geometry, not banding', () => {
     const r = deriveWorktopPanels(makePlacements(STRAIGHT_RUN_OF_THREE), ISLAND_WORKTOP_CONFIG);
     const p = r.panelsByHostId.get('c1')![0];
     expect(p.edges.bottom).toBe(ISLAND_WORKTOP_CONFIG.edgeMaterialId);
-    // 598 as before, plus a 20mm back overhang.
-    expect(p.finishHeight).toBeCloseTo(618, 6);
-    // ...and a 20mm overhang at each end.
-    expect(p.finishWidth).toBeCloseTo(1840, 6);
+    // 603 as before, plus a 25mm back overhang. That back figure is a GEOMETRIC
+    // MIRROR of the front, and it is deliberately NOT knee space — a 25mm
+    // projection is a drip edge. See SEATED_ISLAND_WORKTOP_CONFIG and
+    // seatingOverhang.test.ts for the seated case, which projects 380mm.
+    expect(p.finishHeight).toBeCloseTo(628, 6);
+    // ...and a 25mm overhang at each end.
+    expect(p.finishWidth).toBeCloseTo(1850, 6);
   });
 
   it('leaves the butt-joint end untaped — that face is hidden inside the joint', () => {
@@ -130,8 +139,8 @@ describe('deriveWorktopPanels — L corner butt joint', () => {
     expect(through.finishWidth).toBeCloseTo(1800, 6);
     // Leg B: u-extent [280, 1480] -> 1200, trimmed back to leg A's slab face.
     // Under the FRONT datum leg A's slab reaches u = 318 (280 carcass front +
-    // 18 door + 20 overhang), so leg B keeps 1480 - 318 = 1162.
-    expect(butting.finishWidth).toBeCloseTo(1162, 6);
+    // 18 door + 25 overhang), so leg B keeps 1480 - 323 = 1157.
+    expect(butting.finishWidth).toBeCloseTo(1157, 6);
   });
 
   it('produces two slabs that do not overlap in plan', () => {
@@ -244,7 +253,7 @@ describe('deriveWorktopPanels — island and degenerate scenes', () => {
     );
     expect(r.notes.some(n => n.code === 'MIXED_DEPTH')).toBe(true);
     // Slab covers the deepest member. Extreme back = d2's at -20 - 300 = -320;
-    // extreme front = d2's at -20 + 300 = 280, plus 18 door + 20 overhang = 318.
-    expect(r.panelsByHostId.get('d1')![0].finishHeight).toBeCloseTo(638, 6);
+    // extreme front = d2's at -20 + 300 = 280, plus 18 door + 25 overhang = 323.
+    expect(r.panelsByHostId.get('d1')![0].finishHeight).toBeCloseTo(643, 6);
   });
 });

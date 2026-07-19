@@ -15,6 +15,7 @@ import {
   BASE_CABINET_STANDARDS,
   DEFAULT_TOE_KICK_HEIGHT_MM,
 } from '../catalog/CabinetTaxonomy';
+import type { AppliedPartDatum } from '../geometry/appliedPartDatum';
 
 // ============================================
 // ENUMS & CONSTANTS
@@ -332,12 +333,21 @@ export interface DoorConfig {
 
 /**
  * Datum the kickboard setback is measured from.
- * - 'CARCASS' (default): cabinet front face at Z = +D/2. Stable — toggling doors
- *   does not move the plinth.
- * - 'FRONT': door / drawer-front outer face. Matches the joinery convention
- *   (typ. 50-100mm from the door face) but couples the plinth to doorConfig.
+ *
+ * AN ALIAS, NOT A SEPARATE UNION. It resolves to AppliedPartDatum, the single
+ * vocabulary shared with the worktop above (WorktopConfig.frontDatum). They used
+ * to be two identical-looking string unions declared in two files that DEFAULTED
+ * DIFFERENTLY — plinth 'CARCASS', worktop 'FRONT' — so the plinth setback and
+ * the worktop overhang were measured from planes 18mm apart with nothing saying
+ * so. Both now default to 'FRONT'.
+ *
+ * - 'FRONT' (default): door / drawer-front outer face — the joinery convention.
+ * - 'CARCASS': cabinet front face at Z = +D/2. Still selectable per cabinet, and
+ *   still the right answer for a doorless carcass.
+ *
+ * See src/core/geometry/appliedPartDatum.ts.
  */
-export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
+export type KickboardSetbackDatum = AppliedPartDatum;
 
 /**
  * Kickboard (plinth / บังตีนตู้) configuration.
@@ -346,9 +356,13 @@ export type KickboardSetbackDatum = 'CARCASS' | 'FRONT';
 export interface KickboardConfig {
   /** Generate a KICKBOARD panel. Defaults to true when toeKickHeight > 0. */
   hasKickboard: boolean;
-  /** Recess of the kickboard front face. Default: MANUFACTURING_PARAMS.kickSetback (50mm). */
+  /**
+   * Recess of the kickboard front face, MEASURED FROM `setbackDatum`.
+   * Default: MANUFACTURING_PARAMS.kickSetback (65mm from the FRONT datum,
+   * = 47mm from the carcass under an 18mm door).
+   */
   setback?: number;
-  /** Datum the setback is measured from. Default: 'CARCASS'. */
+  /** Datum the setback is measured from. Default: 'FRONT'. */
   setbackDatum?: KickboardSetbackDatum;
   /** Optional core override (e.g. moisture-resistant). Falls back to cabinet defaults. */
   coreMaterialId?: string;

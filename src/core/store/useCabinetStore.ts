@@ -2324,7 +2324,7 @@ export const useCabinetStore = create<CabinetStore>()(
       backVoid: MANUFACTURING_PARAMS.backVoid,              // 20 mm
       backThickness: MANUFACTURING_PARAMS.backThickness,    // 6 mm
       safetyGap: MANUFACTURING_PARAMS.safetyGap,            // 2 mm
-      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 50 mm
+      kickSetback: MANUFACTURING_PARAMS.kickSetback,        // 65 mm FROM THE FRONT (door) datum
     },
 
     // Drilling parameters (editable from X-Ray mode labels)
