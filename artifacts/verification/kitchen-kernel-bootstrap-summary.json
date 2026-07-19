@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-19T15:18:58.243785+00:00",
+  "scope": "Governed reference-kernel bootstrap; no production or ratification claim",
+  "repository_root": ".",
+  "python_executable": "python",
+  "overall_passed": true,
+  "check_count": 12,
+  "passed_count": 12,
+  "failed_count": 0,
+  "checks": [
+    {
+      "name": "unittest_full_suite",
+      "passed": true,
+      "details": {
+        "command": [
+          "python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "exit_code": 0,
+        "output": "test_pinned_profile_generates_exact_32_mm_coordinates (component_master.test_boring_standard.BoringStandardTests.test_pinned_profile_generates_exact_32_mm_coordinates) ... ok\ntest_profile_declares_internal_non_safety_scope (component_master.test_boring_standard.BoringStandardTests.test_profile_declares_internal_non_safety_scope) ... ok\ntest_profile_version_mismatch_is_rejected (component_master.test_boring_standard.BoringStandardTests.test_profile_version_mismatch_is_rejected) ... ok\ntest_unknown_supplier_variant_is_rejected (component_master.test_boring_standard.BoringStandardTests.test_unknown_supplier_variant_is_rejected) ... ok\ntest_default_data_dir_is_independent_of_working_directory (component_master.test_catalog_baseline.ComponentMasterPackageBaselineTests.test_default_data_dir_is_independent_of_working_directory) ... ok\ntest_package_exports_reference_engine (component_master.test_catalog_baseline.ComponentMasterPackageBaselineTests.test_package_exports_reference_engine) ... ok\ntest_canonical_taxonomy_has_measurement_and_rights_contract (component_master.test_finish_taxonomy.FinishTaxonomySafetyTests.test_canonical_taxonomy_has_measurement_and_rights_contract) ... ok\ntest_complete_measurement_and_approval_evidence_can_pass (component_master.test_finish_taxonomy.FinishTaxonomySafetyTests.test_complete_measurement_and_approval_evidence_can_pass) ... ok\ntest_name_and_image_alone_cannot_prove_equivalence (component_master.test_finish_taxonomy.FinishTaxonomySafetyTests.test_name_and_image_alone_cannot_prove_equivalence) ... ok\ntest_supplier_native_mappings_remain_lossless_and_non_equivalent (component_master.test_finish_taxonomy.FinishTaxonomySafetyTests.test_supplier_native_mappings_remain_lossless_and_non_equivalent) ... ok\ntest_boring_lookup_matches_book_11_m6_nominal (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_boring_lookup_matches_book_11_m6_nominal) ... ok\ntest_boring_profile_seed_is_versioned_and_proposed (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_boring_profile_seed_is_versioned_and_proposed) ... ok\ntest_catalog_loads_and_preserves_foreign_keys (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_catalog_loads_and_preserves_foreign_keys) ... ok\ntest_cross_spec_substitution_is_rejected (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_cross_spec_substitution_is_rejected) ... ok\ntest_default_catalog_resolves_preferred_supplier (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_default_catalog_resolves_preferred_supplier) ... ok\ntest_project_validator_rejects_panel_below_spec_minimum (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_project_validator_rejects_panel_below_spec_minimum) ... ok\ntest_seed_contains_exact_approved_spec_set (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_seed_contains_exact_approved_spec_set) ... ok\ntest_skus_are_unique_sourced_and_reference_seed_specs (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_skus_are_unique_sourced_and_reference_seed_specs) ... ok\ntest_specs_are_proposed_versioned_and_sourced (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_specs_are_proposed_versioned_and_sourced) ... ok\ntest_unverified_skus_cannot_be_declared_substitutable (component_master.test_seed_integrity.ComponentMasterSeedIntegrityTests.test_unverified_skus_cannot_be_declared_substitutable) ... ok\ntest_authenticated_tenant_context_propagates_to_every_plane (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_authenticated_tenant_context_propagates_to_every_plane) ... ok\ntest_bilingual_readme_and_html_variants_exist (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_bilingual_readme_and_html_variants_exist) ... ok\ntest_break_glass_requires_complete_time_bounded_audit_metadata (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_break_glass_requires_complete_time_bounded_audit_metadata) ... ok\ntest_bridge_identity_and_authority_decisions_are_exact (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_bridge_identity_and_authority_decisions_are_exact) ... ok\ntest_database_keys_region_and_analytics_red_lines_are_declared (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_database_keys_region_and_analytics_red_lines_are_declared) ... ok\ntest_isolation_matrix_denies_cross_tenant_access_on_every_plane (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_isolation_matrix_denies_cross_tenant_access_on_every_plane) ... ok\ntest_offboarding_and_resilience_objectives_match_owner_decision (identity_tenancy.test_contracts.TenantBoundaryContractTests.test_offboarding_and_resilience_objectives_match_owner_decision) ... ok\n\n----------------------------------------------------------------------\nRan 27 tests in 0.111s\n\nOK\n",
+        "output_bytes": 4942,
+        "output_sha256": "1c61bb53105d5835ac0bd5ce04ad5288250ca072e137062e9d5d599d7b9d0769",
+        "test_count": 27
+      }
+    },
+    {
+      "name": "python_compile",
+      "passed": true,
+      "details": {
+        "command": [
+          "python",
+          "-m",
+          "compileall",
+          "-q",
+          "packages/component-master/src",
+          "tests",
+          "tools/verify_kitchen_kernel.py"
+        ],
+        "exit_code": 0,
+        "output": "",
+        "output_bytes": 0,
+        "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "component_master_json_parse",
+      "passed": true,
+      "details": {
+        "json_files": [
+          "data/component-master/boring-standards/MON-BS-001.json"
+        ],
+        "jsonl_files": [
+          "data/component-master/boring-profiles.jsonl",
+          "data/component-master/finish-mappings.jsonl",
+          "data/component-master/finish-taxonomy.jsonl",
+          "data/component-master/skus.jsonl",
+          "data/component-master/specs.jsonl"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "name": "component_master_seed_contract",
+      "passed": true,
+      "details": {
+        "spec_count": 19,
+        "sku_count": 20,
+        "categories": {
+          "connector": 15,
+          "hinge": 2,
+          "drawer-runner": 2
+        },
+        "expected_categories": {
+          "connector": 15,
+          "hinge": 2,
+          "drawer-runner": 2
+        },
+        "invalid_sku_foreign_keys": [],
+        "verified_sku_count": 2,
+        "proposed_spec_count": 19
+      }
+    },
+    {
+      "name": "tenant_contract_contract",
+      "passed": true,
+      "details": {
+        "parsed_files": [
+          "isolation-test-matrix.json",
+          "tenant-boundary.schema.json"
+        ],
+        "errors": [],
+        "policy_status": "Proposed",
+        "isolation_model": "Bridge",
+        "negative_case_planes": [
+          "analytics-ai",
+          "audit",
+          "cache",
+          "database",
+          "events",
+          "jobs",
+          "object-storage",
+          "webhooks"
+        ]
+      }
+    },
+    {
+      "name": "bounded_context_inventory",
+      "passed": true,
+      "details": {
+        "expected_count": 15,
+        "matched_count": 15,
+        "missing": [],
+        "observed_non_context_packages": [
+          "field-app"
+        ],
+        "canonical_registry": "CONTEXT-MAP.md"
+      }
+    },
+    {
+      "name": "bilingual_project_deliverables",
+      "passed": true,
+      "details": {
+        "group_count": 10,
+        "missing": [],
+        "implementation_report_topology": {
+          "en_h2": 10,
+          "en_h3": 7,
+          "en_tables": 3,
+          "th_h2": 10,
+          "th_h3": 7,
+          "th_tables": 3
+        }
+      }
+    },
+    {
+      "name": "standalone_html",
+      "passed": true,
+      "details": {
+        "checked_count": 20,
+        "errors": []
+      }
+    },
+    {
+      "name": "gap_report_parity",
+      "passed": true,
+      "details": {
+        "en_h2": 14,
+        "th_h2": 14,
+        "en_h3": 22,
+        "th_h3": 22,
+        "en_tables": 9,
+        "th_tables": 9,
+        "en_links": 33,
+        "th_links": 33
+      }
+    },
+    {
+      "name": "adr_decision_contract",
+      "passed": true,
+      "details": {
+        "checked_files": [
+          "ADR-001-tenant-boundary.en.md",
+          "ADR-002-component-master-schema.en.md",
+          "ADR-003-finish-library-ip.en.md",
+          "ADR-005-boring-standard.en.md"
+        ],
+        "missing_tokens": []
+      }
+    },
+    {
+      "name": "high_confidence_secret_scan",
+      "passed": true,
+      "details": {
+        "checked_file_count": 106,
+        "findings_without_values": []
+      }
+    },
+    {
+      "name": "git_bootstrap_state",
+      "passed": true,
+      "details": {
+        "mode": "publication-worktree",
+        "status_command": [
+          "git",
+          "status",
+          "--short",
+          "--branch"
+        ],
+        "status_exit_code": 0,
+        "branch_line": "## agent/kitchen-kernel-bootstrap...origin/main",
+        "branch_name": "agent/kitchen-kernel-bootstrap",
+        "status_line_count": 38,
+        "head_exists": true,
+        "staged_path_count": 0,
+        "remote_count": 1,
+        "note": "Publication worktree is based on origin/main, isolated on the approved branch, and has no staged paths at evidence capture."
+      }
+    }
+  ],
+  "residual_limitations": [
+    "ADRs and fixtures are Proposed and are not deployed runtime evidence.",
+    "All 19 component specs are Proposed; only 2 of 20 SKU records are primary-source Verified.",
+    "MON-BS-001 and all variants prohibit manufacturing release.",
+    "Finish mappings do not establish physical equivalence.",
+    "Supplier/product/model completeness remains unknown without contracted feeds."
+  ]
+}

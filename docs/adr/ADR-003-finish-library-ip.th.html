@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADR-003 — Canonical Finish Library และ Supplier-Native IP</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>ADR-003 — Canonical Finish Library และ Supplier-Native IP</h1>
+<ul><li><strong>สถานะ:</strong> Proposed</li><li><strong>วันที่:</strong> 2026-07-19</li><li><strong>อำนาจตัดสินใจ:</strong> MONOLITH Platform Governance</li><li><strong>เกี่ยวข้อง:</strong> ADR-002 Component Master; ADR-001 Tenant Boundary</li></ul>
+<h2>บริบท</h2>
+<p>รหัส finish ของ supplier ไม่เป็นมาตรฐานกลางและทดแทนกันอย่างปลอดภัยไม่ได้ รหัสหนึ่งอาจหมายถึง coating, colour, substrate, texture, sheen หรือภาษาการตลาด ภาพ digital เปลี่ยนตามกล้อง profile จอ แสง และ compression จึงพิสูจน์ physical equivalence ไม่ได้ MONOLITH ต้องค้นและ configure ข้าม supplier ได้โดยไม่ลบอัตลักษณ์ supplier หรือคัดลอก artwork ที่มีสิทธิ์คุ้มครอง</p>
+<h2>การตัดสินใจ</h2>
+<p>MONOLITH เป็นเจ้าของ <strong>canonical finish taxonomy</strong> และ map supplier-native finish โดยไม่แก้หรือลบรหัสดั้งเดิม</p>
+<ul><li>Canonical record แสดง semantics ของวัสดุและ appearance</li><li>Supplier record เก็บ supplier, collection, ชื่อ, code, SKU applicability, source, rights และ effective dates ตามทางการ</li><li>Tenant overlay เก็บชื่อภายใน ราคา availability approval และ substitution เฉพาะ project</li><li>Tenant/supplier เสนอ evidence ได้แต่แก้ canonical record โดยตรงไม่ได้</li></ul>
+<h2>Canonical appearance contract</h2>
+<p>Canonical finish อาจเก็บ:</p>
+<ul><li>substrate/material family และ composition</li><li>coating chemistry, layer build, cure และ repair class เมื่อทราบ</li><li>CIELAB/LCh พร้อม illuminant, observer, instrument geometry, วันที่วัด และ sample ID</li><li>colour-difference method และ tolerance ที่ประกาศชัด; ไม่รับค่า “Delta E” ที่ไม่บอกวิธี</li><li>gloss value/geometry ตาม ISO 2813 เมื่อใช้ได้ โดย ISO 2813 ครอบคลุม coating ผิวเรียบ ทึบ และไม่ textured จึงแทนผิว textured ทุกชนิดไม่ได้ (<a href="https://www.iso.org/standard/56807.html">ISO 2813:2014</a>)</li><li>texture/tactile descriptors และวิธีวัด</li><li>wood species, cut, veneer match, grain direction, stain, batch/lot และ natural-variation class</li><li>physical master-sample identity, custody, location, condition, calibration linkage และ revalidation</li><li>digital asset colour profile, capture conditions, licence, checksum และ permitted use</li><li>version, status, provenance, reviewer และ effective period</li></ul>
+<p>การคำนวณ CIELAB ต้องผูกกับบันทึก colourimetry ที่ใช้ รวม <a href="https://www.iso.org/standard/74166.html">ISO/CIE 11664-4:2019</a> ค่า coordinate ที่ไม่มี measurement conditions เป็นหลักฐานไม่ครบ</p>
+<h2>กติกา Mapping และ Substitution</h2>
+<ol><li>Supplier finish map ไป canonical concepts ผ่าน mapping ที่มี version, confidence และ evidence class</li><li>Mapping ไม่ได้แปลว่าทดแทนทางกายภาพได้</li><li>Physical substitution ต้องผ่าน substrate, coating/performance envelope, colour tolerance ภายใต้เงื่อนไขที่ประกาศ, gloss/texture/grain, application constraints, sample approval และ tenant/project approval</li><li>ชื่อคล้าย RGB/HEX ภาพ render หรือ marketing category อย่างเดียวไม่พอ</li><li>วัสดุธรรมชาติหรือ batch-sensitive อาจเป็น finish family เดียวกันแต่ยังต้องคุม lot ต่อ project</li></ol>
+<h2>IP และ Rights</h2>
+<p>Supplier codes, trademarks, collection names, photos, scans, textures และ catalog layouts ยังเป็น supplier-native assets MONOLITH เก็บ identifier และ factual mapping/provenance แต่ไม่อ้าง ownership ของ supplier IP Asset record ต้องระบุ licence, permitted channel, expiry, territory และ attribution ส่วน taxonomy, measurement record, mapping logic และ original icon ของ MONOLITH อยู่ภายใต้ governance แยก</p>
+<h2>Versioning</h2>
+<ul><li>Canonical finish ID เปลี่ยนไม่ได้</li><li>Semantic/acceptance change ที่ breaking เพิ่ม major version</li><li>Measurement/provenance ที่ไม่เปลี่ยนความหมายเพิ่ม minor version</li><li>Correction เป็น patch เฉพาะเมื่อผล project ไม่เปลี่ยน</li><li>Project pin taxonomy, mapping, supplier record, physical sample และ batch/lot version</li></ul>
+<h2>Migration และ Rollback</h2>
+<p>นำ supplier code เดิมเข้าเป็น native record ก่อน แล้ว map เมื่อมี evidence เท่านั้น Record ที่ยัง map ไม่ได้ใช้สถานะ <code>supplier_native_unmapped</code> และห้ามเดา Rollback ยกเลิกหรือ supersede mapping โดยรักษา supplier record และ project pin</p>
+<h2>Ratification Gate</h2>
+<p>ADR นี้ยังเป็น Proposed จนกว่า:</p>
+<ol><li>Schema/validator ปฏิเสธ equivalence จากชื่อหรือภาพอย่างเดียว</li><li>Map อย่างน้อยสาม supplier โดยเก็บ native code และ rights metadata ครบ</li><li>สาธิต physical sample workflow, custody, measurement, tolerance และ revalidation</li><li>ทดสอบ metamerism/lighting review และ batch/lot exception กับตัวอย่างจริง</li><li>Legal review ยืนยันสิทธิ์เก็บและแสดง supplier assets</li><li>MONOLITH governance ratify; pilot tenant อนุมัติอย่างเดียวไม่พอ</li></ol>
+</main>
+</body>
+</html>

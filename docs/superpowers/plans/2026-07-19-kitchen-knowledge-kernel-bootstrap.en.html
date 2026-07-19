@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Kitchen Knowledge Kernel Bootstrap Implementation Plan</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Kitchen Knowledge Kernel Bootstrap Implementation Plan</h1>
+<blockquote><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use <code>subagent-driven-development</code> only when the owner explicitly authorizes subagents; otherwise use <code>executing-plans</code> task-by-task. Steps use checkbox syntax for tracking.</p></blockquote>
+<p><strong>Goal:</strong> Bootstrap a governed MONOLITH monorepo, codify ADR-001/003/005 and corrected ADR-002, create an auditable 19-spec Component Master seed, and deliver an executive-grade bilingual gap report without overstating production readiness.</p>
+<p><strong>Estimated tasks:</strong> 8 | <strong>Estimated time:</strong> ~240–360 min | <strong>Touches:</strong> Git / governance docs / Python package / JSONL data / tests / research evidence</p>
+<h2>Current Problem / Current Solution</h2>
+<p>The workspace is not a Git repository. The kitchen corpus exists as loose HTML, Markdown, and Python files under <code>All aboute kitchen/</code>. ADR-002 is Proposed and relies on tenant policy before ADR-001 exists. It incorrectly grants Daph, a pilot tenant, platform-level decision authority. The current test harness expects <code>data/specs.jsonl</code> and <code>data/skus.jsonl</code>, but neither file exists: a fresh direct run produces 3 passes and 7 failures. Book 11 defines exactly 15 connector specs and explicitly defers hinges and drawer runners. The encyclopedia heading says “12 bounded contexts” while its table enumerates 14, and ADR-002 separately requires Component Master ownership.</p>
+<p>The corpus is broad but materially under-specified in tenancy, finish appearance measurement, current ISO hardware standards, data governance, field commissioning, traceability, interoperability, and operational evidence. Perplexity research is treated as discovery, not authority; material facts must be re-verified against primary sources.</p>
+<h2>Proposed Approach</h2>
+<p>Create a minimal monorepo with one folder per bounded context and a dedicated Component Master package. Preserve original source artifacts as evidence; copy rather than silently rewrite them. Record the approved tenant, finish, and boring decisions in bilingual ADR editions and standalone HTML. Seed 15 Book 11 connector specs plus two hinge and two drawer-runner specs (19 total), with supplier SKUs, provenance, boring profiles, and validation tests. Publish <code>MON-BS-001</code> as an internal, versioned interoperability profile—not an ISO/EN claim. Produce a decision-grade gap report that separates verified facts, owner decisions, proposals, unknowns, and contradictions.</p>
+<h2>Side by Side</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Scenario</th>
+<th>Before</th>
+<th>After</th>
+</tr></thead><tbody>
+<tr>
+<td>Repository authority</td>
+<td>Loose files; no Git revision</td>
+<td>Git repository with context map, ADRs, packages, tests, and traceable revisions</td>
+</tr>
+<tr>
+<td>Tenant policy</td>
+<td>Un-governed dictionaries in reference code</td>
+<td>ADR-001 Bridge boundary and tenant contract owned by MONOLITH governance</td>
+</tr>
+<tr>
+<td>Finish identity</td>
+<td>Supplier codes with no canonical appearance model</td>
+<td>MONOLITH canonical taxonomy plus lossless supplier-native mappings</td>
+</tr>
+<tr>
+<td>Boring geometry</td>
+<td>De facto constants presented without governing profile</td>
+<td>Versioned <code>MON-BS-001</code> core and named supplier/machine variants</td>
+</tr>
+<tr>
+<td>Component seed</td>
+<td>Missing JSONL; 7/10 tests fail</td>
+<td>19 valid specs with referentially valid SKUs and all tests green</td>
+</tr>
+<tr>
+<td>Standards</td>
+<td>EN-centric and partly stale</td>
+<td>Current ISO status recorded, including ISO 4769:2022, ISO 12808:2024, ISO 25131:2025, and withdrawn ISO 7171:2019</td>
+</tr>
+<tr>
+<td>Readiness claim</td>
+<td>Documentation can be mistaken for runtime</td>
+<td>Explicit evidence classes and no production/ratification claim without gates</td>
+</tr>
+</tbody></table></div>
+<h2>Assumptions &amp; Risks</h2>
+<ul><li><strong>Assumed:</strong> The workspace copy and Downloads copy of the encyclopedia are identical; SHA-256 was verified as <code>561C0F6E7D5A0486913F476B46587A3F1A92B9F677C8E9201F36681A23719728</code>.</li><li><strong>Assumed:</strong> The approved ADR-001 decisions in the grill are authoritative owner decisions but not yet runtime facts.</li><li><strong>Assumed:</strong> The canonical context map contains the 14 contexts enumerated by the encyclopedia plus Component Master as a separate fifteenth context required by ADR-002.</li><li><strong>Assumed:</strong> The first release remains a reference kernel; it does not implement a production database, authentication provider, KMS, billing, or hosted deployment.</li><li><strong>Risk:</strong> Supplier technical documents may change or restrict reuse; retain native codes and URLs but do not copy protected catalog artwork or claim licensing rights.</li><li><strong>Risk:</strong> Digital finish values cannot prove physical substitutability; physical master samples and measured tolerances remain mandatory.</li><li><strong>Risk:</strong> System 32 variants can share a 32 mm pitch but differ in exact fixing geometry; never collapse supplier variants into a false universal pattern.</li><li><strong>Risk:</strong> Git initialization captures existing user files as untracked; stage or commit only when separately requested.</li></ul>
+<h2>Impact</h2>
+<ul><li>Establishes platform authority independently of Daph or any other tenant.</li><li>Turns Book 11 and Book 12 statements into testable data contracts.</li><li>Creates a safe base for later database, CAD/CAM, procurement, and field-service implementation.</li><li>Gives executives a severity-ranked, source-backed investment and sequencing view.</li></ul>
+<hr>
+<h2>Task Overview</h2>
+<blockquote><p><strong>For implementation tasks:</strong> REQUIRED SUB-SKILL: Use <code>test-driven-development</code> before editing production code. Each behavior task is a RED → GREEN → REFACTOR slice.</p><p><strong>Parallel-first design:</strong> Independent lanes are identified, but this session executes sequentially unless the owner explicitly authorizes subagents. Never parallelize shared ADRs, seed fixtures, generated HTML, or Git initialization.</p></blockquote>
+<ol><li><strong>Repository and context bootstrap</strong> — Lane A | Can run together: none | Must wait for: none | TDD slice: docs/config-only verification → Git/context skeleton → inventory checks</li><li><strong>Governance ADR set</strong> — Lane B | Can run together: Task 7 after Task 1 | Must wait for: Task 1 | TDD slice: docs-only decision checklist → bilingual ADRs → rendered parity checks</li><li><strong>Component Master package baseline</strong> — Lane C | Can run together: none | Must wait for: Task 1 | TDD slice: failing import/path tests → copied package → targeted tests</li><li><strong>Nineteen-spec seed and supplier SKUs</strong> — Lane C | Can run together: none | Must wait for: Task 3 | TDD slice: missing/count/FK failures → JSONL seed → catalog tests</li><li><strong>Finish taxonomy and <code>MON-BS-001</code> profiles</strong> — Lane C | Can run together: Task 7 only | Must wait for: Tasks 2 and 4 | TDD slice: missing mapping/profile behavior → schemas and validators → conformance tests</li><li><strong>Tenant-boundary executable contracts</strong> — Lane D | Can run together: Task 7 | Must wait for: Tasks 1 and 2 | TDD slice: failing policy-contract tests → machine-readable contract fixtures → isolation matrix checks</li><li><strong>Executive multidimensional gap report</strong> — Lane B | Can run together: Tasks 3 or 6 | Must wait for: Task 1 | TDD slice: docs-only evidence ledger → TH/EN reports → citation/render checks</li><li><strong>Integrated verification and implementation report</strong> — Sequential | Can run together: none | Must wait for: Tasks 2–7 | TDD slice: full failing evidence inventory → repairs only → clean verification report</li></ol>
+<hr>
+<h3>Task 1: Repository and Context Bootstrap</h3>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>.gitignore</code></li><li>Create: <code>pyproject.toml</code></li><li>Create: <code>CONTEXT.md</code></li><li>Create: <code>CONTEXT-MAP.md</code></li><li>Create: <code>apps/.gitkeep</code></li><li>Create: 15 named bounded-context folders; use <code>.gitkeep</code> for placeholders and keep <code>CONTEXT-MAP.md</code> canonical until a context exposes a real contract</li><li>Create: <code>docs/adr/</code>, <code>docs/research/</code>, <code>docs/reports/</code>, <code>tests/</code>, and <code>data/component-master/</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: none</li><li>Must wait for: none</li><li>Race risk: Git initialization and shared root paths</li></ul>
+<ul><li>[x] <strong>Step 0: Docs/config-only exception</strong></li></ul>
+<p>No production behavior exists yet. Verify exact target paths and absence of <code>.git</code> before writing.</p>
+<ul><li>[x] <strong>Step 1: Capture the pre-bootstrap inventory</strong></li></ul>
+<p>Run <code>rg --files</code> and record the source artifacts that will be preserved. Confirm the working directory is not already a repository.</p>
+<ul><li>[x] <strong>Step 2: Create the minimal skeleton</strong></li></ul>
+<p>Initialize Git, add root metadata, and create the 15 context folders: identity-tenancy, product-configuration, component-master, cad-parametric-design, geometry-kernel, bom-costing, manufacturing, workflow, procurement, quality-field-service, finance, customer-partner, ai-governance, platform-api, and security-observability.</p>
+<ul><li>[x] <strong>Step 3: Verify without staging user files</strong></li></ul>
+<p>Run <code>git status --short --branch</code>, verify every context appears exactly once in <code>CONTEXT-MAP.md</code>, and confirm no commit or push occurred.</p>
+<h3>Task 2: Governance ADR Set</h3>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>docs/adr/ADR-001-tenant-boundary.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li><li>Create: <code>docs/adr/ADR-002-component-master-schema.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li><li>Create: <code>docs/adr/ADR-003-finish-library-ip.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li><li>Create: <code>docs/adr/ADR-005-boring-standard.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li><li>Preserve evidence source: <code>All aboute kitchen/adr-002-component-master-schema.md</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: Task 7 after the shared evidence ledger is stable</li><li>Must wait for: Task 1</li><li>Race risk: cross-ADR references and rendered HTML names</li></ul>
+<ul><li>[x] <strong>Step 0: Docs-only exception</strong></li></ul>
+<p>These files codify approved decisions; validation is structural and evidence-based rather than a runtime unit test.</p>
+<ul><li>[x] <strong>Step 1: Write a failing decision checklist</strong></li></ul>
+<p>Check that no current ADR set contains Bridge isolation, global identity with tenant memberships, tenant-local customer profiles, break-glass access, 7/30/90 offboarding, RPO/RTO, runtime-role RLS red lines, tenant-specific keys, home regions, or separation of duties. Expected: missing.</p>
+<ul><li>[x] <strong>Step 2: Author aligned TH/EN editions</strong></li></ul>
+<p>Label status <code>Proposed</code>, distinguish owner decisions from implementation evidence, remove Daph as a ratifying authority, and include migration, rollback, security, acceptance, and supersession sections.</p>
+<ul><li>[x] <strong>Step 3: Render standalone HTML</strong></li></ul>
+<p>Use the existing standalone Markdown renderer; verify title, language attribute, headings, tables, and links.</p>
+<ul><li>[x] <strong>Step 4: Verify parity and authority</strong></li></ul>
+<p>Run targeted <code>rg</code> checks for every approved decision and confirm Daph appears only as a consulted pilot. Confirm all four language/format variants exist per ADR.</p>
+<h3>Task 3: Component Master Package Baseline</h3>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>packages/component-master/pyproject.toml</code></li><li>Create: <code>packages/component-master/src/monolith_component_master/__init__.py</code></li><li>Create: <code>packages/component-master/src/monolith_component_master/catalog.py</code></li><li>Create: <code>packages/component-master/src/monolith_component_master/boring.py</code></li><li>Create: <code>packages/component-master/src/monolith_component_master/validators.py</code></li><li>Create: <code>tests/component_master/test_catalog_baseline.py</code></li><li>Copy from: <code>All aboute kitchen/hardware_catalog.py</code>, <code>boring_lookup.py</code>, and <code>validators.py</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: none</li><li>Must wait for: Task 1</li><li>Race risk: package imports and later shared fixtures</li></ul>
+<ul><li>[x] <strong>Step 0: Load the TDD discipline</strong></li></ul>
+<p>Use <code>test-driven-development</code> before editing package code.</p>
+<ul><li>[x] <strong>Step 1: Write failing import and data-path tests</strong></li></ul>
+<p>Assert the package imports from the monorepo root and resolves seed paths relative to the package/repository contract rather than the caller’s current directory.</p>
+<ul><li>[x] <strong>Step 2: Run and confirm RED</strong></li></ul>
+<p>Use the bundled Python executable with <code>unittest</code>; failure must be missing package behavior, not missing third-party test dependencies.</p>
+<ul><li>[x] <strong>Step 3: Copy and minimally adapt the reference engine</strong></li></ul>
+<p>Preserve semantics, add no database abstraction, and change only imports/path handling needed for the package contract.</p>
+<ul><li>[x] <strong>Step 4: Run and confirm GREEN</strong></li></ul>
+<p>Run the same targeted test module and compile all package modules.</p>
+<ul><li>[x] <strong>Step 5: Refactor only after green</strong></li></ul>
+<p>Remove duplicate script-only wiring created by the copy while retaining the original evidence files unchanged.</p>
+<h3>Task 4: Nineteen-Spec Seed and Supplier SKUs</h3>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>data/component-master/specs.jsonl</code></li><li>Create: <code>data/component-master/skus.jsonl</code></li><li>Create: <code>data/component-master/boring-profiles.jsonl</code></li><li>Create: <code>tests/component_master/test_seed_integrity.py</code></li><li>Modify: <code>packages/component-master/src/monolith_component_master/catalog.py</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: none</li><li>Must wait for: Task 3</li><li>Race risk: shared JSONL fixtures and catalog counts</li></ul>
+<ul><li>[x] <strong>Step 0: Load the TDD discipline</strong></li></ul>
+<p>Use <code>test-driven-development</code> before creating production seed data.</p>
+<ul><li>[x] <strong>Step 1: Write failing seed-contract tests</strong></li></ul>
+<p>Assert exactly 19 unique specs: the 15 Book 11 connector IDs, two hinge IDs, and two drawer-runner IDs. Assert category counts, valid semantic versions, non-empty provenance, unique SKU IDs, and valid spec foreign keys.</p>
+<ul><li>[x] <strong>Step 2: Run and confirm RED</strong></li></ul>
+<p>Expected failure: seed files absent or count/category assertions unmet.</p>
+<ul><li>[x] <strong>Step 3: Create the minimum valid seed</strong></li></ul>
+<p>Use functional generic IDs; retain supplier trademarks only in SKU/model fields. Mark every record Proposed and each source <code>Verified</code>, <code>Reported</code>, or <code>Unknown</code> without upgrading evidence.</p>
+<ul><li>[x] <strong>Step 4: Run and confirm GREEN</strong></li></ul>
+<p>Run seed integrity, catalog resolution, substitution rejection, and boring lookup tests.</p>
+<ul><li>[x] <strong>Step 5: Refactor only after green</strong></li></ul>
+<p>Deduplicate repeated provenance fields only if tests remain green and the JSONL contract remains line-oriented and reviewable.</p>
+<h3>Task 5: Finish Taxonomy and <code>MON-BS-001</code></h3>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>packages/component-master/src/monolith_component_master/finishes.py</code></li><li>Create: <code>data/component-master/finish-taxonomy.jsonl</code></li><li>Create: <code>data/component-master/finish-mappings.jsonl</code></li><li>Create: <code>data/component-master/boring-standards/MON-BS-001.json</code></li><li>Create: <code>tests/component_master/test_finish_taxonomy.py</code></li><li>Create: <code>tests/component_master/test_boring_standard.py</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: Task 7</li><li>Must wait for: Tasks 2 and 4</li><li>Race risk: shared Component Master schema and ADR identifiers</li></ul>
+<ul><li>[x] <strong>Step 0: Load the TDD discipline</strong></li></ul>
+<p>Use <code>test-driven-development</code> before implementing validators.</p>
+<ul><li>[x] <strong>Step 1: Write failing safety tests</strong></li></ul>
+<p>Reject finish equivalence based only on a name/image; require canonical attributes, supplier-native code, provenance, physical sample identity, measurement conditions, and approved tolerance. Reject boring programs with profile/version mismatches or unrecognized supplier variants.</p>
+<ul><li>[x] <strong>Step 2: Run and confirm RED</strong></li></ul>
+<p>Expected failure: validators and profile data do not yet exist.</p>
+<ul><li>[x] <strong>Step 3: Implement minimal taxonomy and profile behavior</strong></li></ul>
+<p>Store CIELAB/LCh values with illuminant/observer, ΔE method/tolerance, ISO 2813 gloss geometry, texture/grain/batch metadata, and rights/provenance. Define <code>MON-BS-001</code> core pitch/diameter/reference-line semantics plus named variants and explicit non-safety disclaimer.</p>
+<ul><li>[x] <strong>Step 4: Run and confirm GREEN</strong></li></ul>
+<p>Verify valid mappings pass, unsafe substitutions fail, 32 mm pitch is exact in generated coordinates, and project profile pinning prevents silent upgrades.</p>
+<ul><li>[x] <strong>Step 5: Refactor only after green</strong></li></ul>
+<p>Keep supplier mappings lossless and do not normalize away native finish codes.</p>
+<h3>Task 6: Tenant-Boundary Executable Contracts</h3>
+<p><strong>Status:</strong> Completed with contract-fixture evidence; no runtime-enforcement claim.</p>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>packages/identity-tenancy/contracts/tenant-boundary.schema.json</code></li><li>Create: <code>packages/identity-tenancy/contracts/isolation-test-matrix.json</code></li><li>Create: <code>packages/identity-tenancy/README.md</code></li><li>Create: <code>tests/identity_tenancy/test_contracts.py</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: Task 7</li><li>Must wait for: Tasks 1 and 2</li><li>Race risk: ADR terminology and context ownership</li></ul>
+<ul><li>[x] <strong>Step 0: Load the TDD discipline</strong></li></ul>
+<p>Use <code>test-driven-development</code>; this task validates contracts, not a fake production database.</p>
+<ul><li>[x] <strong>Step 1: Write failing contract tests</strong></li></ul>
+<p>Require Bridge mode, one active tenant per request, authenticated membership context, tenant-scoped storage/cache/job/event/webhook keys, break-glass metadata, home region, key identity, offboarding deadlines, RPO/RTO, and ratification roles.</p>
+<ul><li>[x] <strong>Step 2: Run and confirm RED</strong></li></ul>
+<p>Expected failure: contract fixtures absent.</p>
+<ul><li>[x] <strong>Step 3: Add machine-readable contracts and test matrix</strong></li></ul>
+<p>Represent the approved decisions without pretending RLS, KMS, or restore infrastructure exists. Include negative cases for tenant A attempting tenant B reads/writes/files/jobs.</p>
+<ul><li>[x] <strong>Step 4: Run and confirm GREEN</strong></li></ul>
+<p>Verify schema parsing and 100% coverage of the approved decision checklist.</p>
+<ul><li>[x] <strong>Step 5: Refactor only after green</strong></li></ul>
+<p>Keep runtime implementation explicitly out of scope and recorded as a later migration/application task.</p>
+<h3>Task 7: Executive Multidimensional Gap Report</h3>
+<p><strong>Status:</strong> Completed — aligned TH/EN reports rendered and structurally verified.</p>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>docs/research/2026-07-19-kitchen-master-gap-analysis.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: Tasks 3 or 6</li><li>Must wait for: Task 1</li><li>Race risk: shared citations and terminology with ADRs</li></ul>
+<ul><li>[x] <strong>Step 0: Docs-only exception</strong></li></ul>
+<p>The report is an evidence synthesis. Its verification is citation, classification, parity, and render quality.</p>
+<ul><li>[x] <strong>Step 1: Build the evidence ledger</strong></li></ul>
+<p>Classify each claim as <code>VERIFIED FACT</code>, <code>OWNER DECISION</code>, <code>INFERENCE</code>, <code>PROPOSAL</code>, <code>UNKNOWN</code>, or <code>CONTRADICTED</code>. Record local path/line and primary web source. Treat Perplexity outputs as discovery unless independently verified.</p>
+<ul><li>[x] <strong>Step 2: Cover all requested dimensions</strong></li></ul>
+<p>Include product/module/catalog coverage, cabinet sizes/heights, hardware, finishes, boring, manufacturing, installation, MEP, safety, accessibility, procurement, quality, traceability, sustainability, BIM/PIM interoperability, service design, ethical retention, AI governance, tenancy, economics, organization, and ecosystem participants.</p>
+<ul><li>[x] <strong>Step 3: Prioritize findings</strong></li></ul>
+<p>Order B0/B1/B2/B3 findings, identify decisions, owners, dependencies, evidence gaps, acceptance criteria, and sequencing. Replace manipulative “cannot stop using” language with trustworthy indispensability, portability, accumulated verified value, and excellent service.</p>
+<ul><li>[x] <strong>Step 4: Render and verify</strong></li></ul>
+<p>Render both HTML files and confirm TH/EN heading topology, decision tables, citations, and risk labels align.</p>
+<h3>Task 8: Integrated Verification and Implementation Report</h3>
+<p><strong>Status:</strong> Completed — outsider review findings repaired; final evidence and aligned handoff published.</p>
+<p><strong>Files:</strong></p>
+<ul><li>Create: <code>docs/reports/2026-07-19-kitchen-kernel-bootstrap.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code></li><li>Create: <code>artifacts/verification/kitchen-kernel-bootstrap-summary.json</code></li></ul>
+<p><strong>Parallelization:</strong></p>
+<ul><li>Can run with: none</li><li>Must wait for: Tasks 2–7</li><li>Race risk: final counts and generated evidence</li></ul>
+<ul><li>[x] <strong>Step 0: Load verification discipline</strong></li></ul>
+<p>Use <code>verification-before-completion</code> before any completion claim.</p>
+<ul><li>[x] <strong>Step 1: Run the full verification suite</strong></li></ul>
+<p>Run all <code>unittest</code> modules, package compilation, JSON/JSONL parsing, exact spec/category counts, ADR decision checks, bilingual file-pair checks, HTML standalone checks, <code>git status</code>, and secret scans.</p>
+<ul><li>[x] <strong>Step 2: Repair only demonstrated failures</strong></li></ul>
+<p>Do not broaden scope. Rerun the exact failed command after each repair.</p>
+<ul><li>[x] <strong>Step 3: Produce machine-readable evidence</strong></li></ul>
+<p>Write command identity, timestamp, exit code, pass/fail totals, examined paths, and residual limitations to the JSON summary.</p>
+<ul><li>[x] <strong>Step 4: Publish aligned implementation reports</strong></li></ul>
+<p>State what was created, what was merely proposed, which tests passed, what remains unimplemented, and why no production/ratification claim is made.</p>
+<ul><li>[x] <strong>Step 5: Final completion gate</strong></li></ul>
+<p>Confirm complete non-truncated output and cleanly distinguish repository initialization from commit/push status.</p>
+</main>
+</body>
+</html>

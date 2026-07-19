@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADR-001 — ขอบเขต Tenant และรูปแบบ Isolation</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>ADR-001 — ขอบเขต Tenant และรูปแบบ Isolation</h1>
+<ul><li><strong>สถานะ:</strong> Proposed</li><li><strong>วันที่:</strong> 2026-07-19</li><li><strong>อำนาจตัดสินใจ:</strong> MONOLITH Platform Owner, Architecture Authority และ Security/Privacy Authority</li><li><strong>Pilot ที่ให้คำปรึกษา:</strong> Daph และ tenant ในอนาคตให้หลักฐาน workflow แต่ไม่มีสิทธิ์ ratify นโยบายแพลตฟอร์ม</li><li><strong>Bounded contexts:</strong> Identity &amp; Tenancy; Security &amp; Observability; Platform API</li></ul>
+<h2>บริบท</h2>
+<p>MONOLITH ให้บริการองค์กรอิสระหลายราย ข้อมูล project, customer, ราคา, ไฟล์, manufacturing record และ service history ต้องไม่รั่วข้าม tenant บุคคลหรือ supplier หนึ่งรายอาจทำงานให้หลาย tenant ส่วน end customer อาจมี global login เดียวแต่ business profile ต้องแยกต่อ tenant ADR-002 เรียก tenant policy และ overlay แล้ว ดังนั้น ADR นี้เป็นกติกาหลักของการอ้างเหล่านั้น</p>
+<p>PostgreSQL RLS มีประโยชน์แต่ไม่เพียงพอด้วยตัวเอง เพราะ superuser, table owner และ role ที่มี <code>BYPASSRLS</code> ข้าม policy ได้ หากไม่ควบคุม role และ <code>FORCE ROW LEVEL SECURITY</code> โดยเจตนา ทุก API object reference ยังต้องตรวจ object-level authorization เพื่อป้องกัน BOLA ดู <a href="https://www.postgresql.org/docs/18/ddl-rowsecurity.html">PostgreSQL RLS</a> และ <a href="https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/">OWASP API1:2023</a></p>
+<h2>การตัดสินใจ</h2>
+<p>MONOLITH ใช้ <strong>Bridge isolation model</strong></p>
+<ol><li>Tenant มาตรฐานใช้ pooled PostgreSQL พร้อม <code>tenant_id</code>, RLS ระดับฐานข้อมูล และ <code>FORCE ROW LEVEL SECURITY</code> ทุก tenant-owned table</li><li>Routing layer ย้าย tenant ไป dedicated schema/database ได้เมื่อมีข้อกำหนดด้านสัญญา กฎหมาย home region, customer-managed key, SLA/load หรือ incident containment</li><li>Daph เป็น pilot tenant ปกติ ไม่มีสิทธิ์เขียนหรือ ratify ระดับแพลตฟอร์ม</li><li>Shared canonical data ไม่ขึ้นกับ tenant, tenant อ่านอย่างเดียว และแก้ผ่าน MONOLITH governance เท่านั้น ราคา ชื่อภายใน supplier preference สัญญา และ mapping เฉพาะรายอยู่ใน tenant overlay</li></ol>
+<h2>ขอบเขต Identity และ Authorization</h2>
+<ul><li>บุคคลหรือองค์กรมี global <code>actor_id</code> หนึ่งชุด</li><li>สิทธิ์มาจาก <code>tenant_membership(actor_id, tenant_id, roles, validity)</code> เท่านั้น</li><li>หนึ่ง request มี active tenant เดียว <code>tenant_id</code> ต้องมาจาก authenticated membership ไม่ใช่ request body, query parameter หรือ object ID ที่ยังไม่ verify</li><li>Supplier, contractor และ installer ที่ทำงานหลาย tenant ได้ membership/scope แยกในแต่ละ tenant และไม่กลายเป็น platform admin</li><li>End customer ใช้ global login ได้ แต่ profile, consent, project, budget, contract, files และ service history ต้อง tenant-local ระบบห้ามเปิดเผยว่าบุคคลเดียวกันเป็นลูกค้าของ tenant อื่น</li></ul>
+<h2>Propagation invariant</h2>
+<p>Active tenant context ที่ verify แล้วต้องติดไปกับ database transaction, object-storage path, cache key, queue job, event, webhook, search index, export และ audit record ทุกครั้ง งานข้าม tenant ทำได้เฉพาะ platform job ที่กำหนด scope, authorization, reason, expiry และ audit ชัดเจน</p>
+<h2>Runtime role red lines</h2>
+<ul><li>Application runtime ห้ามเป็น superuser, table owner หรือ <code>BYPASSRLS</code></li><li>Migration ownership ต้องแยกจาก runtime access</li><li>RLS ต้องควบคุมทั้งการมองเห็น (<code>USING</code>) และการเขียน (<code>WITH CHECK</code>) ตามกรณี</li><li>CI ต้องพิสูจน์ว่า tenant A อ่าน สร้าง แก้ ลบ export enqueue ดึงไฟล์ หรือรับ event ของ tenant B ไม่ได้</li><li>Shared canonical tables ต้องปฏิเสธ tenant write โดยไม่พึ่ง UI</li></ul>
+<h2>Support access</h2>
+<p>MONOLITH support ไม่มี standing access ต่อข้อมูล tenant การเข้าถึงใช้ break-glass record ที่มี ticket, purpose, tenant, actor, scope, approval, start, expiry และ immutable audit เหตุ security emergency เปิดได้ตาม incident policy แต่ต้องแจ้งและ review ย้อนหลังภายใน SLA</p>
+<h2>Analytics และ AI</h2>
+<p>ห้ามใช้ raw tenant data ทำ cross-tenant analytics หรือฝึก AI โดยค่าเริ่มต้น การวิเคราะห์รวมต้อง aggregate จนย้อนกลับไปหาบุคคลหรือ tenant ไม่ได้ การใช้งานกว้างกว่านั้นต้องมี contractual opt-in แยก พร้อม scope, purpose, retention, withdrawal และ auditability</p>
+<h2>Encryption และ Residency</h2>
+<ul><li>Tenant ทุกรายมี encryption-key identity และ tenant-specific DEK ภายใต้ KMS envelope encryption</li><li>Dedicated tenant ใช้ customer-managed key ได้</li><li>การทำลาย key เพื่อ cryptographic erasure ต้องมี two-person approval และ immutable audit</li><li>Tenant ทุกรายมี <code>home_region</code>; database, object storage, backup และ keys อยู่ใน region นั้น</li><li>การ copy/migrate/failover ข้าม region ต้องมีฐานกฎหมาย/สัญญา approval และ migration evidence ห้าม silent failover</li></ul>
+<h2>Offboarding และ Recovery</h2>
+<ul><li>ส่ง authorized tenant export ภายใน 7 วัน</li><li>เปิด recovery window 30 วัน</li><li>ลบ production/object-storage data หลัง 30 วัน เว้นแต่มี legal hold</li><li>ทำให้ backup ใช้งานไม่ได้ภายใน 90 วันด้วย expiry และ/หรือ governed key destruction</li><li>Legal hold ต้องมี reason, approver, scope และ expiry</li><li>Tenant มาตรฐานใช้ <code>RPO ≤ 15 นาที</code>, <code>RTO ≤ 4 ชั่วโมง</code></li><li>Tenant-scoped restore ห้ามย้อน tenant อื่น Dedicated tenant ใช้ SLA ที่เข้มกว่าและต้องผ่าน restore drill ก่อน production</li></ul>
+<h2>Migration และ Rollback</h2>
+<p>การย้าย pool ไป dedicated ต้องมี governed route, backfill, double-write ที่ verify หรือ write pause, reconciliation, read cutover, monitoring และ rollback copy ที่มีเวลาหมดอายุ ห้ามจบ migration จน row/file counts, checksums, events, access tests และ restore evidence ตรงกัน Rollback ต้องคืน route เดิมโดยไม่เกิด mixed-tenant writes</p>
+<h2>ผลตามมา</h2>
+<p>แนวทางนี้รักษาต้นทุน tenant มาตรฐานและรองรับ isolation ที่เข้มขึ้น แต่เพิ่มความซับซ้อนด้าน routing, migration, keys, restore และ tests Cross-tenant reporting กลายเป็นข้อยกเว้นที่มี governance ไม่ใช่สิทธิ์ฐานข้อมูลโดยปริยาย</p>
+<h2>Ratification และ Evidence Gate</h2>
+<p>ADR นี้ยังเป็น Proposed จนกว่าจะมีและผ่านใน revision เดียวกัน:</p>
+<ol><li>Database schema/RLS ครบทุก tenant-owned table</li><li>Tests ของ runtime/migration roles ที่พิสูจน์ว่า application ไม่ใช้ owner/bypass role</li><li>Cross-tenant negative matrix ครบ DB, files, cache, jobs, events, webhooks, exports, search และ support</li><li>Tenant export, deletion, backup expiry, key erasure, pool-to-dedicated migration, rollback และ restore drills</li><li>Legal/privacy review สำหรับ GDPR, Thailand PDPA, contracts, residency และ breach procedures</li><li>Approval แยกจาก Platform Owner, Architecture Authority และ Security/Privacy Authority โดย implementer ห้ามอนุมัติคนเดียว</li></ol>
+<p>ยังไม่มี artifact ใดพิสูจน์ production isolation ADR นี้คือ owner decision ที่อนุมัติแนวทางแล้วแต่ยังมี governance status เป็น Proposed</p>
+</main>
+</body>
+</html>

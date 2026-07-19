@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MONOLITH Kitchen Knowledge Kernel Bootstrap — Implementation Report</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>MONOLITH Kitchen Knowledge Kernel Bootstrap — Implementation Report</h1>
+<ul><li><strong>Edition:</strong> English</li><li><strong>Report date:</strong> 2026-07-19</li><li><strong>Delivery type:</strong> Governed reference-kernel bootstrap</li><li><strong>Authority boundary:</strong> No production, certification, ADR ratification, supplier-library completeness, or manufacturing-release claim</li><li><strong>Verification evidence:</strong> <code>artifacts/verification/kitchen-kernel-bootstrap-summary.json</code></li></ul>
+<h2>1. Executive outcome</h2>
+<p>The requested foundation now exists as an in-place Git repository with 15 bounded-context folders, a governed ADR set, a reference Component Master package, an exact 19-spec seed, finish and boring safety contracts, tenant-boundary policy fixtures, and an executive multidimensional gap analysis in Thai and English with standalone HTML editions.</p>
+<p>The result is suitable for governance, architectural review, data acquisition planning, and controlled reference-engine development. It is deliberately not represented as a deployed SaaS platform, production database, qualified manufacturing system, complete supplier catalog, or certified kitchen authority.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Executive question</th>
+<th>Evidence-backed answer</th>
+</tr></thead><tbody>
+<tr>
+<td>Was the repository bootstrapped?</td>
+<td>Yes: Git metadata and the agreed folder/data/test/doc structure exist in place.</td>
+</tr>
+<tr>
+<td>Was anything committed or pushed?</td>
+<td>The source bootstrap began uncommitted; publication now uses an isolated branch from <code>origin/main</code> and a Draft PR. No force-push or direct <code>main</code> mutation is permitted.</td>
+</tr>
+<tr>
+<td>Are tenant decisions recorded?</td>
+<td>Yes, as Proposed ADR-001 and machine-readable contract fixtures; no runtime enforcement claim.</td>
+</tr>
+<tr>
+<td>Is Component Master seeded?</td>
+<td>Yes: exactly 19 Proposed specs and 20 SKU records; only 2 SKU records are primary-source Verified.</td>
+</tr>
+<tr>
+<td>Can unverified SKUs be declared substitutes?</td>
+<td>No: the reference catalog now rejects substitution if either SKU is unverified and rejects non-Ratified specs.</td>
+</tr>
+<tr>
+<td>Is <code>MON-BS-001</code> production-ready?</td>
+<td>No: it is Proposed, internal, explicitly non-ISO/EN/DIN, and every current variant has <code>manufacturing_allowed=false</code>.</td>
+</tr>
+<tr>
+<td>Is finish equivalence proven?</td>
+<td>No: mappings preserve native identities and reject name/image-only equivalence; physical evidence remains required.</td>
+</tr>
+<tr>
+<td>Is the research decision-grade?</td>
+<td>It is decision-grade for prioritization and risk governance, with evidence classes and primary-source links; it is not product certification.</td>
+</tr>
+</tbody></table></div>
+<h2>2. Scope and authority</h2>
+<p>The implementation follows the approved owner decisions:</p>
+<ul><li>Bridge isolation with global actor identity and tenant-scoped membership;</li><li>tenant-local customer profiles and one active tenant per request;</li><li>MONOLITH-governance-only writes to the shared canonical kernel;</li><li>break-glass-only support access;</li><li>tenant-specific keys, immutable home region, tenant-scoped restore, and 7/30/30/90-day offboarding objectives;</li><li>MONOLITH canonical finish taxonomy with lossless supplier-native mappings;</li><li>internal <code>MON-BS-001</code> profile now, with no ISO/EN/DIN claim;</li><li>first seed of 15 Book 11 connectors, two hinges, and two drawer runners.</li></ul>
+<p>Daph is a consulted pilot tenant only. Ratification remains with MONOLITH Platform Owner, Architecture, and Security/Privacy as specified in ADR-001. All ADRs remain Proposed.</p>
+<h2>3. Delivered artifacts</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Area</th>
+<th>Delivered</th>
+<th>Status</th>
+</tr></thead><tbody>
+<tr>
+<td>Repository</td>
+<td><code>.gitignore</code>, root <code>pyproject.toml</code>, <code>CONTEXT*</code>, 15 context folders, docs/data/tests/tools structure</td>
+<td>Created and scoped to an isolated publication branch</td>
+</tr>
+<tr>
+<td>Governance</td>
+<td>ADR-001, ADR-002, ADR-003, ADR-005 in EN/TH Markdown and standalone HTML</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td>Component Master package</td>
+<td><code>catalog.py</code>, <code>boring.py</code>, <code>validators.py</code>, <code>finishes.py</code>, package exports/config</td>
+<td>Reference implementation</td>
+</tr>
+<tr>
+<td>Seed</td>
+<td><code>specs.jsonl</code>, <code>skus.jsonl</code>, <code>boring-profiles.jsonl</code></td>
+<td>19 Proposed specs; 20 SKU records</td>
+</tr>
+<tr>
+<td>Finish model</td>
+<td>Canonical taxonomy, supplier-native mappings, equivalence assessor</td>
+<td>Proposed; no physical equivalence claim</td>
+</tr>
+<tr>
+<td>Boring model</td>
+<td><code>MON-BS-001.json</code>, pin validation, exact grid coordinate generator</td>
+<td>Proposed; manufacturing disabled</td>
+</tr>
+<tr>
+<td>Tenant boundary</td>
+<td>JSON Schema policy extension, 8-plane negative matrix, bilingual README</td>
+<td>Contract fixtures only</td>
+</tr>
+<tr>
+<td>Research</td>
+<td>Executive multidimensional gap analysis in EN/TH Markdown and HTML</td>
+<td>Decision-support report</td>
+</tr>
+<tr>
+<td>Verification</td>
+<td>Repeatable standard-library verifier and machine-readable JSON evidence</td>
+<td>Repository/reference scope only</td>
+</tr>
+</tbody></table></div>
+<p>Placeholder contexts intentionally use <code>.gitkeep</code>; <code>CONTEXT-MAP.md</code> is the canonical registry until a context exposes a real interface or contract. This avoids 15 duplicated README files drifting away from the context map.</p>
+<h2>4. Decisions encoded</h2>
+<h3>ADR-001 — Tenant boundary</h3>
+<p>The policy records Bridge isolation, global <code>actor_id</code> plus tenant memberships, tenant-local customer data, governing-kernel write control, context propagation, RLS role red lines, key and region rules, cross-tenant analytics defaults, break-glass metadata, recovery objectives, migration/rollback, and ratification authority. The fixtures do not implement identity, RLS, KMS, queues, storage, restore, or deletion.</p>
+<h3>ADR-002 — Component Master</h3>
+<p>The corrected ADR separates functional Component Specs from supplier SKUs and removes Daph from platform authority. The first seed is auditable but below ratification thresholds and includes research-pending records rather than fabricated part numbers.</p>
+<h3>ADR-003 — Finish library IP</h3>
+<p>MONOLITH owns the canonical taxonomy while retaining supplier-native codes and rights metadata. The first mappings cover Italiana Ferramenta, Häfele, and Blum identities only. Equivalence requires sample custody, measurement conditions, tolerance, material compatibility, provenance, rights, and explicit approval.</p>
+<h3>ADR-005 — Boring standard</h3>
+<p><code>MON-BS-001</code> is an internal versioned interoperability profile. It separates core pitch semantics, variants, project pins, machine profiles, and post-processors. Generic and research-pending values cannot authorize manufacturing.</p>
+<h2>5. Verification evidence</h2>
+<p>The repeatable verifier executed with the bundled Python runtime and wrote the exact command outputs, exit codes, digests, counts, and residual limitations to the JSON evidence file.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Verified result</th>
+</tr></thead><tbody>
+<tr>
+<td>Full Python suite</td>
+<td>27 tests executed; 27 passed; 0 failures</td>
+</tr>
+<tr>
+<td>Python compile</td>
+<td>Package, tests, and verifier compiled successfully</td>
+</tr>
+<tr>
+<td>JSON/JSONL</td>
+<td>All governed Component Master and tenant contract files parsed</td>
+</tr>
+<tr>
+<td>Seed contract</td>
+<td>19 unique specs; connector 15, hinge 2, drawer-runner 2; 20 unique SKUs; valid foreign keys</td>
+</tr>
+<tr>
+<td>Evidence status</td>
+<td>19/19 specs Proposed; 2/20 SKU records Verified</td>
+</tr>
+<tr>
+<td>Tenant contract</td>
+<td>Bridge policy and all 8 negative isolation planes present</td>
+</tr>
+<tr>
+<td>Bounded contexts</td>
+<td>Exactly 15 expected folders; no missing or extra context</td>
+</tr>
+<tr>
+<td>Bilingual deliverables</td>
+<td>Required EN/TH Markdown and HTML groups present</td>
+</tr>
+<tr>
+<td>Gap-report parity</td>
+<td>EN/TH each have 14 H2, 22 H3, 9 tables, and 33 primary-source links</td>
+</tr>
+<tr>
+<td>Standalone HTML</td>
+<td>Required doctype, title, language, and UTF-8 checks passed</td>
+</tr>
+<tr>
+<td>ADR decision contract</td>
+<td>Required governance tokens found in the four English ADRs</td>
+</tr>
+<tr>
+<td>Secret scan</td>
+<td>No high-confidence Perplexity/OpenAI/GitHub/AWS credential pattern in scoped deliverables</td>
+</tr>
+<tr>
+<td>Git state</td>
+<td>Verifier supports <code>publication-worktree</code> mode: <code>HEAD</code> from <code>origin/main</code>, approved isolated branch plus <code>origin</code>, and no staged paths at evidence capture</td>
+</tr>
+</tbody></table></div>
+<p>The final numbers must be read from the latest JSON evidence because every verifier run refreshes its timestamp and command output.</p>
+<h2>6. Scrutinize findings and repairs</h2>
+<h3>Finding 1 — Unverified substitution was previously allowed</h3>
+<p><strong>Evidence path:</strong> <code>HardwareCatalog.substitutable()</code> checked shared <code>spec_id</code> and substitutability class but did not require primary-source verification or a Ratified spec. Two unverified research records could therefore return <code>True</code>.</p>
+<p><strong>Repair:</strong> a RED test proved the behavior; the function now rejects unverified SKU records and non-Ratified specs. The targeted suite then passed 10/10, and the integrated suite passed 27/27.</p>
+<h3>Finding 2 — Full test discovery previously executed zero tests</h3>
+<p><strong>Evidence path:</strong> targeted discovery worked, but <code>unittest discover -s tests -v</code> stopped at non-package subdirectories and reported <code>Ran 0 tests</code>.</p>
+<p><strong>Repair:</strong> minimal <code>__init__.py</code> markers were added to the test tree. The same full command now discovers and executes all 27 tests.</p>
+<h3>Finding 3 — The plan overstated placeholder READMEs</h3>
+<p><strong>Evidence path:</strong> the plan listed one README per context, but the implementation intentionally used <code>.gitkeep</code> plus a central context map.</p>
+<p><strong>Repair:</strong> the plan now states the actual design: placeholder folders use <code>.gitkeep</code>, and <code>CONTEXT-MAP.md</code> remains canonical until a real context contract requires its own bilingual documentation.</p>
+<p><strong>Outsider verdict:</strong> fix-then-ship as a governed reference baseline; the blocking reference-safety and verification-discovery findings were repaired. Production use remains a separate programme.</p>
+<h2>7. Known limitations and non-claims</h2>
+<ul><li>The repository has no deployed identity provider, database, API, UI, RLS policy, object storage, cache, queue, KMS, regional routing, backup, restore, or billing system.</li><li>JSON tenant fixtures prove policy consistency, not isolation in real services.</li><li>All 19 specs are Proposed; SKU coverage is not supplier-complete and only two SKU records are primary-source Verified.</li><li><code>resolve_spec_to_sku()</code> is a reference candidate selector; a production release gate must require ratified/verified evidence and market-effective commercial data.</li><li>Finish values do not prove interchangeability; the physical laboratory/sample workflow is absent.</li><li><code>generate_grid_coordinates()</code> proves pinned reference arithmetic, not machine qualification or safety.</li><li>Supplier asset rights, current model completeness, load ratings, market availability, and physical performance remain material unknowns.</li><li>The research report does not replace licensed standards, OEM instructions, professional engineering, legal interpretation, product testing, or jurisdictional approval.</li></ul>
+<h2>8. Working-tree state</h2>
+<p>The source workspace remains uncommitted, and unrelated existing user files there remain untouched. Publication is performed from a separate worktree based on <code>origin/main</code>; that worktree contains only the approved Kitchen Kernel scope and this branch becomes the first durable Git revision for these artifacts.</p>
+<p>No force-push, direct mutation of <code>main</code>, merge, deployment, or production-service connection is part of this publication step. Review and approval remain controlled through a Draft PR.</p>
+<h2>9. Recommended next gates</h2>
+<ol><li>Review and ratify—or explicitly retain Proposed status for—ADR-001/002/003/005.</li><li>Build the source/rights/standards register and claim firewall before publishing or AI retrieval.</li><li>Acquire licensed supplier technical data and define measurable catalog coverage.</li><li>Implement real tenant isolation in a test environment and bind every negative matrix case to deployed adapters.</li><li>Qualify one physical finish workflow and one machine cell before any equivalence or manufacturing release.</li><li>Prove one closed loop from configured design through installed asset and service record.</li><li>Establish per-tenant provider-cost metering, including Perplexity API charges against the Perplexity account tied to its API key.</li></ol>
+<h2>10. Handoff index</h2>
+<ul><li>Executive research: <code>docs/research/2026-07-19-kitchen-master-gap-analysis.en.html</code></li><li>Thai executive research: <code>docs/research/2026-07-19-kitchen-master-gap-analysis.th.html</code></li><li>Implementation plan: <code>docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.en.html</code></li><li>Thai implementation plan: <code>docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.th.html</code></li><li>ADR set: <code>docs/adr/</code></li><li>Component Master seed: <code>data/component-master/</code></li><li>Tenant contracts: <code>packages/identity-tenancy/contracts/</code></li><li>Verification evidence: <code>artifacts/verification/kitchen-kernel-bootstrap-summary.json</code></li></ul>
+</main>
+</body>
+</html>

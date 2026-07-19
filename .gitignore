@@ -28,3 +28,13 @@ daph-second-brain/**/*.zip
 *.patch
 ธุระกิจ/
 .env.local
+
+# Python reference-kernel artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+build/
+*.egg-info/
