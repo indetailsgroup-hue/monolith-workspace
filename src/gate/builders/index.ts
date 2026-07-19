@@ -15,3 +15,11 @@ export {
   createDefaultEdgeConfig,
   createNoEdgeConfig,
 } from './fromBreakdown';
+
+export type { BuildDrillOpsResult, FrameFailure } from './fromDrillMap';
+
+export {
+  buildDrillOpsFromDrillMap,
+  buildPartsFromDrillMap,
+  drillOpFromPoint,
+} from './fromDrillMap';

@@ -16,6 +16,8 @@ import type {
 } from './types';
 import type { SpecServices } from './services';
 import type { PartBreakdownRow, DrillOp, FittingIntent } from '../gate';
+import { buildDrillOpsFromDrillMap } from '../gate/builders';
+import { useDrillMapStore } from '../core/store/useDrillMapStore';
 
 // ============================================
 // UI STATE TYPES
@@ -290,10 +292,25 @@ export function createSpecStore(
       set({ async: { busy: true, error: undefined } });
 
       try {
-        // Capture immutable manufacturing payload from DRAFT state
+        // Capture immutable manufacturing payload from DRAFT state.
+        //
+        // The real holes live in useDrillMapStore (the generator's output),
+        // NOT in draftManufacturing.drillOps — nothing in production ever
+        // calls setDrillOps, so that field is always []. Before this wiring
+        // the UI gate (which reads useDrillMapStore) saw hundreds of holes
+        // while the PERSISTED gate report saw none, so the stored, audited
+        // artifact disagreed with what the operator was shown. Capture the
+        // same holes both paths use so the record matches the screen.
+        //
+        // draftManufacturing.drillOps still wins when non-empty so an
+        // explicit setDrillOps (e.g. from a test) is honoured.
+        const drillOps: DrillOp[] = draftManufacturing.drillOps.length
+          ? draftManufacturing.drillOps
+          : buildDrillOpsFromDrillMap(useDrillMapStore.getState().drillMap).ops;
+
         const payload = {
           breakdownRows: draftManufacturing.breakdownRows,
-          drillOps: draftManufacturing.drillOps,
+          drillOps,
           fittings: draftManufacturing.fittings,
           cabinet: draftManufacturing.cabinet,
         };

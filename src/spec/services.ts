@@ -461,6 +461,29 @@ export function createMockSpecServices(
         const warnings = gateOutput.issues.filter((i) => i.severity === 'WARNING');
         const info = gateOutput.issues.filter((i) => i.severity === 'INFO');
 
+        // Make an evidence-free run impossible to mistake for a clean pass.
+        //
+        // The drill-depth, edge-margin and edge-bore-centring rules all read
+        // gateInput.drillOps. If that array is empty, those rules examined ZERO
+        // holes — yet a report with no blockers and no warnings reads as "all
+        // clear". A stored, audited artifact that silently omits the fact it
+        // had no evidence is worse than one that says so. Emit the fact loudly
+        // (WARNING, not INFO) so the record states on its face that no holes
+        // were checked. This fires only when holes are genuinely absent (e.g.
+        // a Freeze taken before the drill map was generated); the normal path
+        // now captures the real holes at Freeze time (see store.ts freeze()).
+        if (gateInput.drillOps.length === 0) {
+          warnings.push(
+            createIssue(
+              'WARNING',
+              'W_DRILLOPS_NOT_SUPPLIED',
+              'NOT CHECKED — the frozen snapshot supplied no drill operations, so the drill-depth, edge-margin and edge-bore-centring safety rules examined zero holes. This is not a pass.',
+              undefined,
+              { drillOpsCount: 0 }
+            )
+          );
+        }
+
         // Add summary metrics as INFO
         info.push(
           createIssue(
