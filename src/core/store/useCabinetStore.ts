@@ -59,12 +59,19 @@ import {
   shouldGenerateKickboard,
   resolveKickboardSetback,
   resolveKickboardSetbackDatum,
+  DEFAULT_KICK_SETBACK,
 } from '../manufacturing/kickboard';
 import {
   computePanelComputed,
   type PanelCostMaterials,
 } from '../manufacturing/panelComputed';
-import { CABINET_TYPES, type ConstructionType } from '../catalog/CabinetTaxonomy';
+import {
+  CABINET_TYPES,
+  deriveWallCabinetPlacement,
+  assertPlaceableWallCabinet,
+  validateWallCabinetUnderside,
+  type ConstructionType,
+} from '../catalog/CabinetTaxonomy';
 import { checkMutationAllowed, type SpecState } from '../spec/specState';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
 import {
@@ -153,7 +160,11 @@ const MANUFACTURING_PARAMS = {
   safetyGap: 2,           // Gap_safety: ระยะเผื่อไม่ให้ชน (1-2 mm)
 
   // === Kickboard / Plinth ===
-  kickSetback: 50,        // K_setback: ระยะร่นบังตีนตู้จากหน้าตู้ (typ. 50 mm)
+  // K_setback: ระยะร่นบังตีนตู้ วัดจาก "หน้าบาน" (FRONT datum) ไม่ใช่หน้าตู้
+  // 65mm from the FRONT datum = 47mm from the carcass under an 18mm door.
+  // Was 50 measured from the CARCASS with the datum undeclared; the datum now
+  // matches the worktop overhang above. See geometry/appliedPartDatum.ts.
+  kickSetback: DEFAULT_KICK_SETBACK,
 };
 
 // ============================================
@@ -1798,9 +1809,18 @@ function generatePanels(
     const kickSize = computeKickboardSize(dimensions);
     const kickSetback = resolveKickboardSetback(structure, MFG.kickSetback);
     const kickDatum = resolveKickboardSetbackDatum(structure);
-    // Door thickness only matters under the 'FRONT' datum, and only if doors exist
-    const kickDoorT = structure.doorConfig?.hasDoors
-      ? structure.doorConfig.doorThickness
+    // Front proudness under the 'FRONT' datum. THREE STATES, NOT TWO:
+    //   doors present      -> the real door thickness
+    //   doorConfig present, hasDoors false -> 0, KNOWN to have no proud front
+    //   doorConfig absent  -> undefined, UNKNOWN (saveProject drops `structure`
+    //                         for non-active cabinets), assumed downstream
+    // Collapsing the last two into `undefined`, as this did, made an open
+    // carcass and a reloaded project indistinguishable — and once the default
+    // datum became 'FRONT' that difference is 18mm of plinth position.
+    const kickDoorT = structure.doorConfig
+      ? structure.doorConfig.hasDoors
+        ? structure.doorConfig.doorThickness
+        : 0
       : undefined;
     // NOTE: no carcassZ term — the plinth is referenced to the FRONT face, so the
     // back-panel construction must not move it (see kickboardGeometry.ts).
@@ -2371,13 +2391,48 @@ export const useCabinetStore = create<CabinetStore>()(
     },
 
     // ========== MULTI-CABINET ACTIONS ==========
-    addCabinet: (type, name, dimensions, position = [0, 0, 0]) => {
+    addCabinet: (type, name, dimensions, position) => {
       const defaultCoreId = 'core-hmr-18';
       const defaultSurfaceId = 'surf-hpl-grey-oak';
       const defaultEdgeId = 'edge-pvc-grey-10';
 
       // Get cabinet type standards from imported CABINET_TYPES
       const typeConfig = CABINET_TYPES[type] || CABINET_TYPES['BASE_STANDARD'];
+
+      // ===== WALL CABINET MOUNTING HEIGHT =====
+      // Until this was wired, `position` defaulted to [0, 0, 0] and a WALL unit was
+      // placed ON THE FLOOR, colliding with the worktop and with every base cabinet.
+      // ERGONOMIC_STANDARDS.wallCabinetBottom existed but had ZERO consumers, so nothing
+      // caught it.
+      //
+      // `position` is now genuinely optional rather than defaulted at the signature: an
+      // omitted position and an explicit [0, 0, 0] mean different things for a wall unit,
+      // and a default parameter cannot tell them apart.
+      const isWallCabinet =
+        typeConfig?.category === 'WALL' || String(type).includes('WALL');
+
+      let scenePosition: [number, number, number];
+      if (position !== undefined) {
+        // Caller stated a position. Respect it — dragging a unit is legitimate — but
+        // VALIDATE it, so an out-of-envelope height is visible rather than silent.
+        scenePosition = position;
+        if (isWallCabinet) {
+          const check = validateWallCabinetUnderside(position[1]);
+          for (const e of check.errors) {
+            console.error(`[addCabinet] wall unit "${name}": ${e.message}`);
+          }
+          for (const w of check.warnings) {
+            console.warn(`[addCabinet] wall unit "${name}": ${w.message}`);
+          }
+        }
+      } else if (isWallCabinet) {
+        // DERIVED, not a literal: counter height + wall gap, snapped, JIS floor enforced.
+        const placement = deriveWallCabinetPlacement();
+        assertPlaceableWallCabinet(placement);
+        scenePosition = [0, placement.undersideHeight, 0];
+      } else {
+        scenePosition = [0, 0, 0];
+      }
 
       const cabinetDimensions: CabinetDimensions = {
         width: dimensions?.width ?? typeConfig?.standards?.width?.default ?? DEFAULT_DIMENSIONS.width,
@@ -2427,7 +2482,7 @@ export const useCabinetStore = create<CabinetStore>()(
         computed: calculateTotals(panels),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        scenePosition: position,
+        scenePosition,
         sceneRotation: [0, 0, 0],
         // Auto-apply Minifix S200 hardware config based on wood thickness
         hardware: {

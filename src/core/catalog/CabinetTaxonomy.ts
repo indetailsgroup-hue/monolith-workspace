@@ -30,6 +30,7 @@ import type {
   LevellingTolerance,
   LegProvenance,
 } from './PlinthLegCatalog';
+import { SYSTEM_32_GRID } from './System32';
 
 // IMPORT-CYCLE NOTE: all three modules above are runtime leaves as seen from here.
 // PanelMaterialSystem imports nothing; panelFormulas imports nothing; worktop/types'
@@ -204,14 +205,63 @@ export interface ConstructionTypeSpec {
   // Structural requirements
   minSidePanelThickness: number;   // mm
   requiresFrontFrame: boolean;
-  holePatternSpacing?: number;     // mm (32mm for frameless)
+  /** Drilling grid pitch (mm). Frameless derives this from SYSTEM_32_GRID.pitch. */
+  holePatternSpacing?: number;
 
   // Door mounting
   hingeType: 'frame-mount' | 'side-mount';
   typicalOverlay: 'full' | 'half' | 'inset';
 
-  // Space efficiency
-  interiorWidthReduction: number;  // mm lost to frame (per side)
+  /**
+   * STOCK WIDTH of a face-frame stile — the width of the timber you buy and
+   * machine (mm). 38mm is nominal 1-1/2 in.
+   *
+   * THIS IS NOT AN OPENING REDUCTION. See faceFrameOpeningReductionPerSide.
+   * It is carried here because it is what you order from the timber merchant
+   * and what the cut list must show, but it must never be subtracted from a
+   * cabinet opening.
+   */
+  faceFrameStockWidth: number;
+
+  /**
+   * How much a face frame actually removes from the cabinet OPENING, per side (mm).
+   *
+   * ── THE CATEGORY ERROR THIS FIELD EXISTS TO FIX ──────────────────────────
+   * This value was previously conflated with the stile's stock width (38mm).
+   * A stile does not remove its full stock width from the opening: it sits on
+   * the front edge of the carcass side panel and OVERHANGS it. Most of the
+   * stile's width is spent covering the panel edge, which was never opening in
+   * the first place. Only the portion proud of the panel's inner face reduces
+   * the opening. Subtracting the full stock width therefore over-narrows every
+   * face-frame interior, and that error propagates straight into shelf cut
+   * sizes, drawer box widths and appliance fit checks.
+   *
+   * ── HONESTY NOTE ON THE 9.5mm VALUE — READ BEFORE SHIPPING US SUPPORT ────
+   * The CATEGORY argument above (stock width is not opening reduction) holds
+   * regardless of which number is ultimately correct, and is why this field is
+   * separate from faceFrameStockWidth.
+   *
+   * The specific 9.5mm (3/8 in) figure is WEAKLY SOURCED. The source document
+   * flags the 38-vs-9.5 conflict itself rather than resolving it, and 9.5 rests
+   * on a single retailer article — not a standards body. It has NOT been
+   * verified against an AWI (Architectural Woodwork Institute) or KCMA
+   * (Kitchen Cabinet Manufacturers Association) face-frame detail.
+   *
+   * REQUIRED BEFORE MONOLITH SHIPS US FACE-FRAME SUPPORT: verify this value
+   * against an AWI or KCMA published face-frame detail and update the
+   * provenance below. Do not treat the current number as production-grade.
+   *
+   * Thailand — MONOLITH's primary market — builds frameless, where this value
+   * is 0 and no such uncertainty exists.
+   */
+  faceFrameOpeningReductionPerSide: number;
+
+  /** Provenance of faceFrameOpeningReductionPerSide, so consumers can gate on it. */
+  faceFrameOpeningReductionProvenance:
+    | 'NOT_APPLICABLE'
+    /** Single retailer article; NOT verified against AWI/KCMA. Not production-grade. */
+    | 'SINGLE_SOURCE_UNVERIFIED'
+    | 'STANDARDS_VERIFIED';
 }
 
 export const CONSTRUCTION_TYPES: Record<ConstructionType, ConstructionTypeSpec> = {
@@ -224,7 +274,13 @@ export const CONSTRUCTION_TYPES: Record<ConstructionType, ConstructionTypeSpec> 
     requiresFrontFrame: true,
     hingeType: 'frame-mount',
     typicalOverlay: 'half',
-    interiorWidthReduction: 38,  // ~1.5" frame stile per side
+    // 38mm = nominal 1-1/2 in stile stock. What you BUY, not what you LOSE.
+    faceFrameStockWidth: 38,
+    // 9.5mm = nominal 3/8 in proud of the panel's inner face, per side.
+    // WEAKLY SOURCED — see the field doc. Verify against AWI/KCMA before
+    // shipping US face-frame support.
+    faceFrameOpeningReductionPerSide: 9.5,
+    faceFrameOpeningReductionProvenance: 'SINGLE_SOURCE_UNVERIFIED',
   },
   FRAMELESS: {
     type: 'FRAMELESS',
@@ -233,10 +289,14 @@ export const CONSTRUCTION_TYPES: Record<ConstructionType, ConstructionTypeSpec> 
     description: 'Modern construction with doors mounted directly to sides, 32mm system',
     minSidePanelThickness: 18,
     requiresFrontFrame: false,
-    holePatternSpacing: 32,
+    // SINGLE SOURCE OF TRUTH — see ./System32.ts. Not a local 32 literal.
+    holePatternSpacing: SYSTEM_32_GRID.pitch,
     hingeType: 'side-mount',
     typicalOverlay: 'full',
-    interiorWidthReduction: 0,
+    // No face frame: nothing to buy, nothing removed from the opening.
+    faceFrameStockWidth: 0,
+    faceFrameOpeningReductionPerSide: 0,
+    faceFrameOpeningReductionProvenance: 'NOT_APPLICABLE',
   },
 };
 
@@ -253,9 +313,18 @@ export function calculateInteriorWidth(
   // Subtract panel thickness from both sides
   let interiorWidth = exteriorWidth - (panelThickness * 2);
 
-  // Subtract frame if face frame construction
+  // Subtract the face frame's OPENING reduction — once per side.
+  //
+  // TWO BUGS WERE FIXED HERE, and they partly masked each other:
+  //   1. The value used was the stile's 38mm STOCK WIDTH, not an opening
+  //      reduction (see ConstructionTypeSpec.faceFrameOpeningReductionPerSide).
+  //   2. The old field was documented "per side" but subtracted ONCE, so the
+  //      code and its own comment disagreed about what the number meant.
+  // Old behaviour: 38mm removed in total. New: 9.5 x 2 = 19mm in total.
+  // Had the documented per-side semantics been honoured with the wrong 38mm
+  // value, the total would have been 76mm — 57mm narrower than reality.
   if (spec.requiresFrontFrame) {
-    interiorWidth -= spec.interiorWidthReduction;
+    interiorWidth -= spec.faceFrameOpeningReductionPerSide * 2;
   }
 
   return interiorWidth;
@@ -272,15 +341,17 @@ export function calculateInteriorWidth(
  */
 export function get32mmHolePositions(
   panelHeight: number,
-  startFromTop: number = 37,
-  startFromBottom: number = 37
+  startFromTop: number = SYSTEM_32_GRID.frontSetback,
+  startFromBottom: number = SYSTEM_32_GRID.frontSetback
 ): number[] {
+  // SINGLE SOURCE OF TRUTH — pitch and setback come from SYSTEM_32_GRID.
+  // This was a fifth site carrying bare 32/37 literals.
   const positions: number[] = [];
   const usableHeight = panelHeight - startFromTop - startFromBottom;
-  const holeCount = Math.floor(usableHeight / 32) + 1;
+  const holeCount = Math.floor(usableHeight / SYSTEM_32_GRID.pitch) + 1;
 
   for (let i = 0; i < holeCount; i++) {
-    positions.push(startFromTop + (i * 32));
+    positions.push(startFromTop + i * SYSTEM_32_GRID.pitch);
   }
 
   return positions;
@@ -1528,17 +1599,255 @@ export interface ErgonomicGuidelines {
  * counterHeight is now the height stack's INPUT (Thai default 850) and everything that
  * used to be asserted about it is derived. See DEFAULT_HEIGHT_STACK.
  */
+// --------------------------------------------
+// WALL CABINET PLACEMENT (floor to underside)
+// --------------------------------------------
+
+/**
+ * Worktop-to-wall-unit-underside clearance, mm. THAI PRACTICE DEFAULT.
+ *
+ * This is the gap a cook works in: the backsplash zone between the finished worktop and
+ * the bottom of the wall unit. It is the ONE term that turns a counter height into a
+ * wall-unit mounting height, so it lives here as a single named constant rather than as
+ * a literal at each call site.
+ *
+ * PRIOR VALUE 450, CHANGED TO 500. `backsplashHeight` previously read 450 with no cited
+ * source anywhere in the file, and its own comment defined it as exactly this
+ * measurement ("Worktop to wall-unit underside"). 500 is the Thai practice figure
+ * supplied for this market. 850 + 500 = 1350, which is 50mm of headroom ABOVE the JIS
+ * A0017:2018 1300mm floor rather than sitting exactly on it — a minimum is a bound to
+ * clear, not a target to land on.
+ *
+ * OPEN QUESTION, NOT SETTLED HERE: 450 vs 500 is a one-line change with real ergonomic
+ * consequences and neither figure is owner-confirmed in the way the height stack's
+ * 70/760/20 are. Flagged for confirmation. Whichever wins, it is now a single constant
+ * with real consumers, so confirming it is a one-line change and not an archaeology
+ * exercise across ten call sites.
+ */
+export const DEFAULT_WALL_CABINET_GAP_MM = 500;
+
+/**
+ * Max comfortable reach without a stool, mm. Declared HERE, ahead of the placement
+ * functions, because DEFAULT_WALL_CABINET_PLACEMENT calls deriveWallCabinetPlacement at
+ * module-evaluation time; a `const` declared after that call would still be in its
+ * temporal dead zone and throw.
+ */
+export const ERGONOMIC_REACH_MAX_MM = 1900;
+
+/**
+ * Wall units are hung off a levelling rail set in 50mm increments on site. Deriving
+ * 1414.0mm and asking an installer to hit it is not a buildable instruction.
+ */
+export const WALL_CABINET_UNDERSIDE_SNAP_MM = 50;
+
+export type WallPlacementErrorCode =
+  | 'GAP_NOT_POSITIVE'
+  | 'UNDERSIDE_BELOW_JIS_MINIMUM'
+  | 'UNDERSIDE_BELOW_WORKTOP';
+
+export interface WallPlacementError {
+  readonly code: WallPlacementErrorCode;
+  readonly message: string;
+}
+
+export type WallPlacementWarningCode = 'UNDERSIDE_ABOVE_COMFORTABLE_REACH';
+
+export interface WallPlacementWarning {
+  readonly code: WallPlacementWarningCode;
+  readonly message: string;
+}
+
+export interface WallCabinetPlacementInput {
+  /** Finished floor-to-worktop-top, mm. Defaults to the Thai target. */
+  readonly counterHeight?: number;
+  /** Worktop-to-underside clearance, mm. Defaults to Thai practice. */
+  readonly wallGap?: number;
+}
+
+export interface WallCabinetPlacement {
+  readonly counterHeight: number;
+  readonly wallGap: number;
+  /** counterHeight + wallGap, before snapping. */
+  readonly rawUndersideHeight: number;
+  /** THE ANSWER: floor-to-underside mounting height, snapped, mm. */
+  readonly undersideHeight: number;
+  readonly snapStep: number;
+  /** undersideHeight - rawUndersideHeight. Always >= 0; see the ceil rationale below. */
+  readonly snapAdjustmentMm: number;
+  /** The clearance actually delivered after snapping: undersideHeight - counterHeight. */
+  readonly effectiveGapMm: number;
+  readonly jisMinimumMm: number;
+  readonly meetsJisMinimum: boolean;
+  /** False when `errors` is non-empty. Nothing may be placed or cut from a false. */
+  readonly placeable: boolean;
+  readonly errors: WallPlacementError[];
+  readonly warnings: WallPlacementWarning[];
+}
+
+/**
+ * Derive where a wall unit's underside sits above the floor.
+ *
+ *     undersideHeight = ceilTo50(counterHeight + wallGap)
+ *
+ * SNAPPING IS CEIL, NOT ROUND, AND THAT IS DELIBERATE. Rounding to nearest can only
+ * ever move the unit DOWN, which eats the cook's working clearance — the exact
+ * collision this derivation exists to prevent. Ceil can only ever add clearance.
+ * Both market defaults are already 50mm multiples, so the choice is a no-op on them
+ * (TH 850 + 500 = 1350; EU 900 + 500 = 1400) and only bites on odd targets such as
+ * US 914 + 500 = 1414 -> 1450.
+ *
+ * The JIS A0017:2018 1300mm minimum underside is a HARD BOUND, not advice. A
+ * configuration below it is rejected via `errors`/`placeable`, mirroring the height
+ * stack's error/warning severity split.
+ */
+export function deriveWallCabinetPlacement(
+  input: WallCabinetPlacementInput = {}
+): WallCabinetPlacement {
+  const counterHeight = input.counterHeight ?? DEFAULT_COUNTER_HEIGHT_MM;
+  const wallGap = input.wallGap ?? DEFAULT_WALL_CABINET_GAP_MM;
+
+  const rawUndersideHeight = counterHeight + wallGap;
+  const snapStep = WALL_CABINET_UNDERSIDE_SNAP_MM;
+  const undersideHeight = Math.ceil(rawUndersideHeight / snapStep) * snapStep;
+
+  const errors: WallPlacementError[] = [];
+  const warnings: WallPlacementWarning[] = [];
+
+  if (!(wallGap > 0)) {
+    errors.push({
+      code: 'GAP_NOT_POSITIVE',
+      message:
+        `Worktop-to-wall-unit gap is ${wallGap.toFixed(1)}mm. A wall unit must sit ABOVE ` +
+        `the worktop; a gap of zero or less places its underside on or inside the slab.`,
+    });
+  }
+
+  if (undersideHeight <= counterHeight) {
+    errors.push({
+      code: 'UNDERSIDE_BELOW_WORKTOP',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is at or below the finished ` +
+        `counter height ${counterHeight.toFixed(1)}mm. The unit would collide with the ` +
+        `worktop.`,
+    });
+  }
+
+  const jisMinimumMm = JIS_A0017_2018.wallUnitMinUndersideMm;
+  const meetsJisMinimum = undersideHeight >= jisMinimumMm;
+  if (!meetsJisMinimum) {
+    errors.push({
+      code: 'UNDERSIDE_BELOW_JIS_MINIMUM',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is below the JIS A0017:2018 ` +
+        `minimum of ${jisMinimumMm}mm above finished floor. Raise the unit or lower the ` +
+        `counter height — do NOT reduce the ${jisMinimumMm}mm floor, which exists so a ` +
+        `cook standing at the worktop does not strike the cabinet.`,
+    });
+  }
+
+  if (undersideHeight >= ERGONOMIC_REACH_MAX_MM) {
+    warnings.push({
+      code: 'UNDERSIDE_ABOVE_COMFORTABLE_REACH',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is at or above the ` +
+        `${ERGONOMIC_REACH_MAX_MM}mm comfortable-reach ceiling, so even its lowest shelf ` +
+        `needs a stool. Buildable, but not reachable without one.`,
+    });
+  }
+
+  return {
+    counterHeight,
+    wallGap,
+    rawUndersideHeight,
+    undersideHeight,
+    snapStep,
+    snapAdjustmentMm: undersideHeight - rawUndersideHeight,
+    effectiveGapMm: undersideHeight - counterHeight,
+    jisMinimumMm,
+    meetsJisMinimum,
+    placeable: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * Validate an underside height that came from somewhere OTHER than the derivation —
+ * a dragged cabinet, an imported plan, a hand-typed number. Same bounds, same severity
+ * split. This is the half that makes the constant enforced rather than decorative.
+ */
+export function validateWallCabinetUnderside(
+  undersideHeight: number,
+  input: WallCabinetPlacementInput = {}
+): { valid: boolean; errors: WallPlacementError[]; warnings: WallPlacementWarning[] } {
+  const counterHeight = input.counterHeight ?? DEFAULT_COUNTER_HEIGHT_MM;
+  const errors: WallPlacementError[] = [];
+  const warnings: WallPlacementWarning[] = [];
+
+  if (undersideHeight <= counterHeight) {
+    errors.push({
+      code: 'UNDERSIDE_BELOW_WORKTOP',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is at or below the finished ` +
+        `counter height ${counterHeight.toFixed(1)}mm. The unit would collide with the ` +
+        `worktop.`,
+    });
+  }
+
+  const jisMinimumMm = JIS_A0017_2018.wallUnitMinUndersideMm;
+  if (undersideHeight < jisMinimumMm) {
+    errors.push({
+      code: 'UNDERSIDE_BELOW_JIS_MINIMUM',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is below the JIS A0017:2018 ` +
+        `minimum of ${jisMinimumMm}mm above finished floor.`,
+    });
+  }
+
+  if (undersideHeight >= ERGONOMIC_REACH_MAX_MM) {
+    warnings.push({
+      code: 'UNDERSIDE_ABOVE_COMFORTABLE_REACH',
+      message:
+        `Wall unit underside ${undersideHeight.toFixed(1)}mm is at or above the ` +
+        `${ERGONOMIC_REACH_MAX_MM}mm comfortable-reach ceiling.`,
+    });
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+/** Throw rather than place. For any path that commits to a fixing position on a wall. */
+export function assertPlaceableWallCabinet(placement: WallCabinetPlacement): void {
+  if (placement.placeable) return;
+  throw new Error(
+    'Wall cabinet placement is not buildable:\n' +
+      placement.errors.map((e) => `  [${e.code}] ${e.message}`).join('\n')
+  );
+}
+
+/**
+ * THE default wall-unit mounting height. Thai: 850 + 500 = 1350mm.
+ *
+ * Every consumer reads this (or calls deriveWallCabinetPlacement for a non-default
+ * market) rather than repeating a literal.
+ */
+export const DEFAULT_WALL_CABINET_PLACEMENT: WallCabinetPlacement =
+  deriveWallCabinetPlacement();
+
 export const ERGONOMIC_STANDARDS: ErgonomicGuidelines = {
   // Finished floor-to-worktop-top. Thai default; a tenant targeting the EU passes 900.
   counterHeight: DEFAULT_COUNTER_HEIGHT_MM,
-  // Worktop to wall-unit underside (backsplash zone).
-  backsplashHeight: 450,
-  // DERIVED, not asserted: 850 + 450 = 1300, which lands exactly on the JIS A0017:2018
-  // wall-unit minimum underside. The previous hardcoded 1350 was inconsistent with its
-  // own neighbours (900 + 450 = 1350 only held against the counter height this file
-  // declared but never built).
-  wallCabinetBottom: DEFAULT_COUNTER_HEIGHT_MM + 450,
-  reachableShelfMax: 1900,         // Max comfortable reach without stool
+  // DERIVED from the single gap constant. This field's own comment always defined it as
+  // the worktop-to-underside distance, i.e. the same measurement as the wall gap, so the
+  // two can no longer disagree by construction.
+  backsplashHeight: DEFAULT_WALL_CABINET_GAP_MM,
+  // DERIVED, not asserted, and now actually ENFORCED — see deriveWallCabinetPlacement,
+  // validateWallCabinetUnderside and their store wiring. Until this lane, this field had
+  // ZERO consumers: nothing read it, so nothing stopped a wall unit being placed on the
+  // floor. A declared-but-unread constant is worse than no constant, because a reader
+  // believes it is enforced.
+  wallCabinetBottom: DEFAULT_WALL_CABINET_PLACEMENT.undersideHeight,
+  reachableShelfMax: ERGONOMIC_REACH_MAX_MM, // Max comfortable reach without stool
   kneeSpace: 600,                  // For wheelchair accessibility (ADA)
 };
 

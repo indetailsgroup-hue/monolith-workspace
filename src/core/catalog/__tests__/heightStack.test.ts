@@ -546,11 +546,24 @@ describe('height stack — single source of truth for toe kick', () => {
 });
 
 describe('height stack — ergonomics derive from it', () => {
-  it('wall cabinet underside is derived and lands on the JIS minimum', () => {
+  it('wall cabinet underside is derived and clears the JIS minimum', () => {
+    // RETAINED UNCHANGED: the structural invariant. Underside is still counter + gap,
+    // and it is still DERIVED rather than a literal. That is what this test protects
+    // and it never stopped holding.
     expect(ERGONOMIC_STANDARDS.wallCabinetBottom).toBe(
       ERGONOMIC_STANDARDS.counterHeight + ERGONOMIC_STANDARDS.backsplashHeight
     );
-    expect(ERGONOMIC_STANDARDS.wallCabinetBottom).toBe(JIS_A0017_2018.wallUnitMinUndersideMm);
+
+    // CHANGED, deliberately: was toBe(wallUnitMinUndersideMm), i.e. 850 + 450 = 1300
+    // exactly. The gap is now 500 (Thai practice), so the underside is 1350 and CLEARS
+    // the JIS floor by 50mm. Asserting equality with a MINIMUM was the weaker test: it
+    // encoded a coincidence of one gap value as if it were the requirement, and it would
+    // have failed for any market whose counter height is not 850. A minimum is a bound
+    // to clear, not a target to land on.
+    expect(ERGONOMIC_STANDARDS.wallCabinetBottom).toBeGreaterThanOrEqual(
+      JIS_A0017_2018.wallUnitMinUndersideMm
+    );
+    expect(ERGONOMIC_STANDARDS.wallCabinetBottom).toBe(1350);
   });
 
   it('published rung tables match their sources', () => {

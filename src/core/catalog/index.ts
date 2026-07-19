@@ -39,6 +39,12 @@ export {
   type HeightStackErrorCode,
   type MarketHeightProfile,
   type WorktopThicknessGap,
+  type WallCabinetPlacement,
+  type WallCabinetPlacementInput,
+  type WallPlacementError,
+  type WallPlacementErrorCode,
+  type WallPlacementWarning,
+  type WallPlacementWarningCode,
 
   // Constants
   BASE_CABINET_STANDARDS,
@@ -66,6 +72,12 @@ export {
   DEFAULT_TOE_KICK_HEIGHT_MM,
   MARKET_HEIGHT_PROFILES,
 
+  // Wall cabinet placement (counter height in, mounting height out)
+  DEFAULT_WALL_CABINET_GAP_MM,
+  WALL_CABINET_UNDERSIDE_SNAP_MM,
+  ERGONOMIC_REACH_MAX_MM,
+  DEFAULT_WALL_CABINET_PLACEMENT,
+
   // Discrete dimensional sets
   CABINET_WIDTH_SET_MM,
   BASE_DEPTH_SET_MM,
@@ -78,6 +90,9 @@ export {
   deriveMarketHeightStack,
   assertBuildableHeightStack,
   findClosestBuildableWorktop,
+  deriveWallCabinetPlacement,
+  validateWallCabinetUnderside,
+  assertPlaceableWallCabinet,
   resolveWorktopThickness,
   reportHeightStackWarnings,
   getCabinetType,
@@ -92,6 +107,18 @@ export {
   calculateInteriorWidth,
   get32mmHolePositions,
 } from './CabinetTaxonomy';
+
+// ============================================
+// SYSTEM 32 — SINGLE SOURCE OF TRUTH
+// ============================================
+
+export {
+  type System32Grid,
+  type System32Provenance,
+  SYSTEM_32_GRID,
+  nearestSystem32Position,
+  isOnSystem32Grid,
+} from './System32';
 
 // ============================================
 // PLINTH LEG HARDWARE
