@@ -252,24 +252,52 @@ describe('CHARACTERISATION: a part that fits no sheet in any orientation', () =>
     expect(res.unplacedParts.map((p) => p.id)).toEqual(['WORKTOP_SLAB']);
   });
 
-  it('DEFECT PINNED: an unplaceable part is absent from the export-facing NestingSheet[] while the placeable ones look fine', () => {
-    const { sheets, results } = runNesting([
+  // DEFECT FIXED (was: unplaced parts existed only inside results.get(mat),
+  // so a caller destructuring { sheets } got a silently truncated layout).
+  it('an unplaceable part is still absent from NestingSheet[] — but is now returned at the same level as sheets', () => {
+    const { sheets, unplacedParts, results } = runNesting([
       row('WORKTOP_SLAB', 2440, 640, { grain: 'NONE' }),
       row('DOOR_OK', 400, 700, { grain: 'NONE' }),
     ]);
 
-    // The layout looks healthy...
+    // The layout itself still only contains placed parts — that is correct;
+    // there is no legitimate coordinate for a part that does not fit.
     expect(sheets).toHaveLength(1);
     expect(placedIds(sheets)).toEqual(['DOOR_OK']);
-
-    // ...but the most expensive part in the batch is simply not in it.
     expect(placedIds(sheets)).not.toContain('WORKTOP_SLAB');
 
-    // The only place it survives is the detailed results map, which the
-    // export-facing artifact does not carry.
+    // What changed: the caller cannot read `sheets` without the missing part
+    // sitting right next to it.
+    expect(unplacedParts.map((p) => p.id)).toEqual(['WORKTOP_SLAB']);
+    expect(unplacedParts[0]).toMatchObject({
+      width: 2440,
+      height: 640,
+      materialId: 'core-pb-18',
+    });
+
+    // Per-material detail is unchanged and still available.
     expect(results.get('core-pb-18')!.unplacedParts.map((p) => p.id)).toEqual([
       'WORKTOP_SLAB',
     ]);
+  });
+
+  it('top-level unplacedParts aggregates across material groups', () => {
+    const { sheets, unplacedParts } = runNesting([
+      row('SLAB_PB', 2440, 640, { grain: 'NONE', materialId: 'core-pb-18' }),
+      row('SLAB_PLY', 2440, 640, { grain: 'NONE', materialId: 'core-ply-18' }),
+      row('DOOR_OK', 400, 700, { grain: 'NONE' }),
+    ]);
+
+    expect(placedIds(sheets)).toEqual(['DOOR_OK']);
+    expect(unplacedParts.map((p) => p.id).sort()).toEqual([
+      'SLAB_PB',
+      'SLAB_PLY',
+    ]);
+  });
+
+  it('unplacedParts is empty — not undefined — on a clean run and on empty input', () => {
+    expect(runNesting([]).unplacedParts).toEqual([]);
+    expect(runNesting([row('OK', 400, 700, { grain: 'VERTICAL' })]).unplacedParts).toEqual([]);
   });
 
   it('a batch where NOTHING fits returns an empty sheet array rather than an error', () => {

@@ -13,7 +13,12 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import type { CutListRow, NestingSheet } from '../../core/export/monolith/monolithExportContext';
-import type { NestingConfig, NestingResult, GrainDirection } from '../../nesting/types';
+import type {
+  NestingConfig,
+  NestingResult,
+  NestingPart,
+  GrainDirection,
+} from '../../nesting/types';
 import { DEFAULT_NESTING_CONFIG } from '../../nesting/types';
 import { runNesting } from '../../nesting/optimizer';
 
@@ -120,6 +125,7 @@ export function NestingPanel({
   const [edgeClearance, setEdgeClearance] = useState(DEFAULT_NESTING_CONFIG.edgeClearance);
   const [nestingSheets, setNestingSheets] = useState<NestingSheet[] | null>(null);
   const [results, setResults] = useState<Map<string, NestingResult> | null>(null);
+  const [unplacedParts, setUnplacedParts] = useState<NestingPart[]>([]);
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
   const [computing, setComputing] = useState(false);
   const [showGrain, setShowGrain] = useState(true);
@@ -132,8 +138,13 @@ export function NestingPanel({
     // Use requestAnimationFrame so UI can show "computing..." before blocking
     requestAnimationFrame(() => {
       const config: Partial<NestingConfig> = { kerfWidth, edgeClearance };
-      const { sheets, results: nestResults } = runNesting(cutListRows, config);
+      const {
+        sheets,
+        unplacedParts: unplaced,
+        results: nestResults,
+      } = runNesting(cutListRows, config);
       setNestingSheets(sheets);
+      setUnplacedParts(unplaced);
       setResults(nestResults);
       setActiveSheetIdx(0);
       setComputing(false);
@@ -152,6 +163,14 @@ export function NestingPanel({
         );
       }
     }
+    // Unplaced parts must not vanish from the CSV: a part that is absent from
+    // the layout is a part nobody cuts and nobody quotes. Emit them explicitly.
+    for (const p of unplacedParts) {
+      lines.push(
+        `UNPLACED,${p.id},,,,${p.width},${p.height},${p.materialId}`,
+      );
+    }
+
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -159,7 +178,7 @@ export function NestingPanel({
     a.download = 'nesting-layout.csv';
     a.click();
     URL.revokeObjectURL(url);
-  }, [nestingSheets]);
+  }, [nestingSheets, unplacedParts]);
 
   // Active sheet for visualization
   const activeSheet = nestingSheets?.[activeSheetIdx] ?? null;
@@ -472,6 +491,37 @@ export function NestingPanel({
           </svg>
         )}
       </div>
+
+      {/* Unplaced parts — a bare count is not enough: name them. The layout
+          above and the CSV below are INCOMPLETE while this list is non-empty. */}
+      {unplacedParts.length > 0 && (
+        <div
+          role="alert"
+          style={{
+            padding: '10px 16px',
+            borderTop: `1px solid ${COLORS.border}`,
+            background: 'rgba(239, 68, 68, 0.10)',
+            color: '#ef4444',
+            fontSize: 12,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            {unplacedParts.length} part{unplacedParts.length === 1 ? '' : 's'} could not be
+            nested — this layout is INCOMPLETE and must not be sent to the factory as-is.
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+            {unplacedParts.map((p) => (
+              <li key={p.id}>
+                <strong>{p.id}</strong> — {p.width} × {p.height} mm, {p.materialId},
+                grain {p.grainDirection}
+                {p.grainDirection !== 'NONE'
+                  ? ' (grain locks rotation — part cannot be turned to fit)'
+                  : ' (too large for the board in both orientations)'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Results summary */}
       {stats && (
