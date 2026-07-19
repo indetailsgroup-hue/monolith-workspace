@@ -530,7 +530,7 @@ export function emitGcode(
 ): PostResult {
   const lines: string[] = [];
   const report: PostReportItem[] = [];
-  let valid = true;
+  const valid = true;
 
   // Current position tracking
   let cur: XYZ = { x: 0, y: 0, z: ctx.safeZ };

@@ -453,7 +453,13 @@ export function useHotkey(
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // NOTE(react-hooks/exhaustive-deps): intentionally not satisfied —
+
+    // deps array spreads caller-supplied ...deps, which the rule cannot analyse.
+
+    // The rule is not installed yet; restore a real eslint-disable directive
+
+    // when eslint-plugin-react-hooks is added.
   }, [hotkey, ...deps]);
 }
 

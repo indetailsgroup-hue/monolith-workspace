@@ -124,6 +124,9 @@ function normalizeName(nameRaw: string | undefined): string | undefined {
   let name = String(nameRaw).trim().slice(0, 64);
 
   // Strip control characters (keep printable ASCII and common unicode)
+  // INTENTIONAL: stripping C0 controls and DEL is exactly what this
+  // sanitiser is for.
+  // eslint-disable-next-line no-control-regex -- see comment above
   name = name.replace(/[\x00-\x1F\x7F]/g, "");
 
   return name || undefined;

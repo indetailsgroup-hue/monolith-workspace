@@ -237,7 +237,7 @@ function isExcepted(file: string, pattern: Pattern, exceptions: Exception[]): bo
 
     // Check if file matches glob
     // Convert glob pattern to regex: ** = any path, * = any file segment
-    let globRegex = exc.fileGlob
+    const globRegex = exc.fileGlob
       .replace(/\\/g, '/')      // Normalize slashes
       .replace(/\./g, '\\.')    // Escape dots
       .replace(/\*\*/g, '___DOUBLESTAR___')  // Placeholder

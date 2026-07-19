@@ -210,7 +210,7 @@ export function exportSheetsDxfV2(
   // 6. Calculate statistics
   const rotatedParts = packResult.placed.filter(p => p.rot === 90).length;
   let totalPartArea = 0;
-  let totalSheetArea = packResult.sheetsUsed * sheetW * sheetH;
+  const totalSheetArea = packResult.sheetsUsed * sheetW * sheetH;
 
   for (const p of packResult.placed) {
     totalPartArea += p.w * p.h;

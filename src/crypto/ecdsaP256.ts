@@ -111,7 +111,7 @@ export async function exportPublicKeyJwk(keyId: string): Promise<JsonWebKey | nu
  * WebCrypto ECDSA P-256 Signer implementation.
  */
 export class WebCryptoEcdsaSigner implements Signer {
-  alg: 'ECDSA_P256_SHA256' = 'ECDSA_P256_SHA256';
+  alg = 'ECDSA_P256_SHA256' as const;
 
   /**
    * Sign payload with ECDSA P-256.

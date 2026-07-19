@@ -25,9 +25,10 @@ export interface ObstaclePayload {
   kind: ObstacleKind;
 }
 
-export interface CabinetPayload {
-  // Can add cabinet-specific data here
-}
+// Extension point: cabinet-specific data can be added here later. Declared as
+// an empty record rather than an empty interface — an empty interface would
+// accept any non-nullish value, including 0 and "".
+export type CabinetPayload = Record<string, never>;
 
 // ============================================
 // WORLD COLLISION REGISTRY CLASS

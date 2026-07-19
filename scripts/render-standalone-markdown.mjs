@@ -27,6 +27,9 @@ function inline(value) {
 
     const links = [];
     let rendered = escapeHtml(segment).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
+      // INTENTIONAL: unsafe Markdown link targets containing control chars
+      // must be rejected, not allowed.
+      // eslint-disable-next-line no-control-regex -- see comment above
       if (/[\x00-\x20\x7f]/.test(href) || href.startsWith('//')) {
         throw new Error(`Unsafe Markdown link target: ${href}`);
       }

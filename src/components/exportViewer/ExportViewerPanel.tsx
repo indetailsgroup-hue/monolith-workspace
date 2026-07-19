@@ -147,7 +147,13 @@ export function ExportViewerPanel(props: ExportViewerPanelProps) {
   // Load latest export on mount
   useEffect(() => {
     st.loadLatest();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // NOTE(react-hooks/exhaustive-deps): intentionally not satisfied —
+
+    // mount-only effect: loadLatest() must run exactly once, not on every st change.
+
+    // The rule is not installed yet; restore a real eslint-disable directive
+
+    // when eslint-plugin-react-hooks is added.
   }, []);
 
   const exp = st.exportRec;

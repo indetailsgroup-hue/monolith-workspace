@@ -265,6 +265,10 @@ export function calculateSnap(
   const guides: SnapGuide[] = [];
   const snappedAxes = { x: false, y: false, z: false };
 
+  // snapX and snapZ ARE reassigned below; only snapY happens not to be on this path. Splitting the
+  // destructuring to satisfy the rule would obscure that these are one
+  // position triple.
+  // eslint-disable-next-line prefer-const -- see comment above
   let [snapX, snapY, snapZ] = moving.position;
 
   // Filter out the moving cabinet from targets (moved up for vertex snap)

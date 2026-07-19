@@ -654,7 +654,7 @@ export function cutClosedPathIntoOpenSubpaths(
     // Next is either TAB_START or wrap-around
 
     // Calculate arc-length range
-    let startArcLen = cut.arcLen;
+    const startArcLen = cut.arcLen;
     let endArcLen = nextCut.arcLen;
 
     // Handle wrap-around
@@ -830,7 +830,7 @@ export function buildDirectionAwareTabs(
 ): TabsResult {
   const { spec, loopId, skipFiltering } = config;
   const report: TabReportItem[] = [];
-  let valid = true;
+  const valid = true;
 
   // Step 1: Build arc-length index
   const arcLenIndex = buildArcLenIndex(path);

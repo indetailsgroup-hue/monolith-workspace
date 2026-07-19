@@ -32,8 +32,7 @@ const ntmMaterials = [
   // Bloom additions
   { code: '0751', name: 'rosso-jaipur', textureFile: '0789-rosso-namib.svg', hex: '#6B3A3E', price: 2800 },
   { code: '0750', name: 'verde-comodoro', textureFile: '0773-verde-brac.svg', hex: '#3E3432', price: 2650 },
-  { code: '0749', name: 'cacao-orinoco', textureFile: '0793-grigio-aragona.svg', hex: '#3E3432', price: 2680 }.replace('rosso', 'verde').replace('namib', 'comodoro'), // Fix typo from 'namb' -> 'modoro'
-  || { code: '0749', name: 'cacao-orinoco', textureFile: '0793-grigio-aragona.svg', hex: '#3E3432', price: 2680 },
+  { code: '0749', name: 'cacao-orinoco', textureFile: '0793-grigio-aragona.svg', hex: '#3E3432', price: 2680 },
   { code: '0754', name: 'blu-fes', textureFile: '0792-blu-shaba.svg', hex: '#2F3B4C', price: 2750 },
 ];
 

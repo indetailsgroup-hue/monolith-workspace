@@ -204,7 +204,7 @@ function stripComment(line: string): { code: string; comment?: string } {
  */
 function parseWords(s: string): Record<string, number> {
   const out: Record<string, number> = {};
-  const re = /([A-Z])\s*([+\-]?\d+(\.\d+)?)/gi;
+  const re = /([A-Z])\s*([+-]?\d+(\.\d+)?)/gi;
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(s))) {

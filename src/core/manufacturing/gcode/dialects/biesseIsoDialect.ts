@@ -86,10 +86,11 @@ export const BiesseIsoDialect: Dialect = {
     const p = this.caps.decimal.maxPlaces;
 
     switch (m.kind) {
-      case "COMMENT":
+      case "COMMENT": {
         // Semicolon comment style
         const text = m.text.replace(/[\r\n]/g, " ");
         return [`;${text}`];
+      }
 
       case "SET_UNITS":
         return ["G21"];

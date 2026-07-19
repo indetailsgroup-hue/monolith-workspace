@@ -293,7 +293,7 @@ export function updateOnDragV4(args: UpdateV4Args): SnapSessionV4 {
   // 3. GENERATE CANDIDATES (Predicted State)
   // ============================================
   // Use predicted B for engagement/selection decisions
-  let candidatesPred = generator.generateCandidates(cabinetA, predictedB, constants);
+  const candidatesPred = generator.generateCandidates(cabinetA, predictedB, constants);
 
   // Apply intent bias
   const scoredPred = applyIntentBiasToCandidates(candidatesPred, intent, intentWeights);
@@ -319,7 +319,7 @@ export function updateOnDragV4(args: UpdateV4Args): SnapSessionV4 {
   // 6. GENERATE CANDIDATES (Real State)
   // ============================================
   // Use real B for actual snap calculation
-  let candidatesReal = generator.generateCandidates(cabinetA, cabinetB, constants);
+  const candidatesReal = generator.generateCandidates(cabinetA, cabinetB, constants);
 
   // Apply intent bias to real candidates too
   const scoredReal = applyIntentBiasToCandidates(candidatesReal, intent, intentWeights);

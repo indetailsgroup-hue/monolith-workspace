@@ -94,7 +94,7 @@ function sanitizeLabel(s: string): string {
   return String(s)
     .trim()
     .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_\-]/g, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
     .slice(0, 24);
 }
 

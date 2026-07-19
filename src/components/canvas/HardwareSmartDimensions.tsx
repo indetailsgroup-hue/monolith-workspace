@@ -202,7 +202,7 @@ function GroupedDimensionRenderer({
           worldDrillDir = localDrillDir.clone().applyQuaternion(quat).normalize();
 
           // FIX: Smart Offset (Check Top vs Bottom)
-          let smartOffsetDir = new THREE.Vector3(0, 1, 0);
+          const smartOffsetDir = new THREE.Vector3(0, 1, 0);
           if (Math.abs(worldDrillDir.y) > 0.8) {
             smartOffsetDir.set(-1, 0, 0); // Vertical -> Left
           } else {

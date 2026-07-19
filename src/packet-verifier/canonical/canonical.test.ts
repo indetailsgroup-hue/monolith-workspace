@@ -54,6 +54,12 @@ describe('parseStrictJson — rejections JSON.parse would allow', () => {
 
 describe('jcsSerialize — RFC 8785 behaviour', () => {
   it('serializes the RFC number vectors via ES ToString', () => {
+    // INTENTIONAL. This is the
+    // RFC 8785 (JCS) number test vector verbatim. The precision loss IS the
+    // thing under test: the nearest double to 333333333.33333329 must serialize
+    // via ES ToString as "333333333.3333333". Rewriting the literal to a
+    // representable value would delete the vector.
+    // eslint-disable-next-line no-loss-of-precision -- see comment above
     expect(jcsSerialize(333333333.33333329)).toBe('333333333.3333333');
     expect(jcsSerialize(1e30)).toBe('1e+30');
     expect(jcsSerialize(4.5)).toBe('4.5');

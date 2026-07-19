@@ -105,6 +105,19 @@ export default [
   },
 
   {
+    // CommonJS scripts. require() is the correct module syntax in a .cjs file,
+    // so @typescript-eslint/no-require-imports does not apply to them.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
+  {
     // Report eslint-disable comments that suppress nothing. The codebase
     // accumulated several of these while the linter was not running.
     linterOptions: {

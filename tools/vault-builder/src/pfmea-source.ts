@@ -33,7 +33,7 @@ export function resolvePfmeaRows(extractDir: string): PfmeaSourceResult {
   const flags = new Map<string, { sourceFile: string; canonicalStep: string; note: string }>();
   const filesRead: string[] = [];
   const filesMissing: string[] = [];
-  let ignoredCount = 0;
+  const ignoredCount = 0;
 
   for (const file of CANONICAL_PFMEA_FILES) {
     const path = join(extractDir, file);

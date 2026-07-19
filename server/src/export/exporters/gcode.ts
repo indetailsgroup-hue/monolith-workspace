@@ -222,8 +222,8 @@ function generatePocketOp(op: Operation, config: GCodeConfig): string[] {
     lines.push(`G1 Z${z.toFixed(3)} F${config.plungeRate}`);
 
     // Spiral outward pocket
-    let currentX = x + offset;
-    let currentY = y + offset;
+    const currentX = x + offset;
+    const currentY = y + offset;
     let pocketWidth = config.stepover;
     let pocketHeight = config.stepover;
 

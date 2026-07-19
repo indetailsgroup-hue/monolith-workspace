@@ -5,6 +5,9 @@
 
 // Built via RegExp constructor so the source stays pure ASCII — the class is
 // exactly the schema's forbidden set: < > : " | ? * plus C0 controls and DEL.
+// INTENTIONAL. Matching C0 controls and DEL is the entire point: this is the packet-path sanitiser that
+// rejects them. Removing the control range would remove the security check.
+// eslint-disable-next-line no-control-regex -- see comment above
 const CONTROL_OR_FORBIDDEN = new RegExp('[<>:"|?*\\u0000-\\u001F\\u007F]');
 // Windows reserved device names — reserved with or without an extension,
 // case-insensitive (CON, PRN, AUX, NUL, COM1..9, LPT1..9).

@@ -292,7 +292,6 @@ export function createCabinetTopologyApi(cabinet: Cabinet): MinifixTopologyApi {
 
       const isLeftSide = panel.role === "LEFT_SIDE";
 
-      let normal: Vec3;
       let center: Vec3;
       let depthStart: Vec3;
       let depthEnd: Vec3;
@@ -301,7 +300,7 @@ export function createCabinetTopologyApi(cabinet: Cabinet): MinifixTopologyApi {
       const innerX = isLeftSide ? bounds.max[0] : bounds.min[0];
 
       // Normal points INWARD toward cabinet center
-      normal = isLeftSide ? [1, 0, 0] : [-1, 0, 0];
+      const normal: Vec3 = isLeftSide ? [1, 0, 0] : [-1, 0, 0];
 
       if (edge === "TOP") {
         // TOP edge-face of side panel

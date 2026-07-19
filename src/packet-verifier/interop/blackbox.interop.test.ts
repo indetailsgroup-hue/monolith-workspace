@@ -144,7 +144,7 @@ describe('S17 Track B black-box interop — frozen S17-4 artifact → S17-5 veri
     expect(lines).toHaveLength(2);
     const seen = new Map<string, string>();
     for (const line of lines) {
-      const m = /^([0-9a-f]{64})  (\S+)$/.exec(line);
+      const m = /^([0-9a-f]{64}) {2}(\S+)$/.exec(line);
       expect(m, line).not.toBeNull();
       const [, hash, filename] = m as RegExpExecArray;
       const actual = createHash('sha256').update(readFileSync(join(FIXTURES, filename))).digest('hex');

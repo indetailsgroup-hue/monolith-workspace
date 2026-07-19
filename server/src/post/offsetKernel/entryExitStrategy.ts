@@ -657,7 +657,7 @@ export function applyEntryExitStrategy(
   const decoratedSubpaths: DecoratedSubpath[] = [];
   const audits: EntryExitAudit[] = [];
   const report: EntryExitReportItem[] = [];
-  let valid = true;
+  const valid = true;
 
   for (const sp of subpaths) {
     const decorated = decorateSubpathWithEntryExit(sp, ctx);
