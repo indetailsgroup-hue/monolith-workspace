@@ -1,0 +1,673 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith.local/schemas/factory-packet-v3.json",
+  "title": "MONOLITH FactoryPacket V3 Protocol Contracts",
+  "description": "NOT_FOR_PRODUCTION. Mirrors server/src/trust-kernel/contracts/protocolV3.ts. additionalProperties is false at every signed boundary and on every protocol object.",
+  "$defs": {
+    "Sha256Hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Sha256HexOrNull": {
+      "anyOf": [{ "$ref": "#/$defs/Sha256Hex" }, { "type": "null" }]
+    },
+    "Iso8601": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "TrustRole": {
+      "enum": ["DESIGNER", "RELEASE_APPROVER", "FACTORY", "SAFETY_REVOKER", "ADMIN", "QA_EVIDENCE"]
+    },
+    "PermittedAction": {
+      "enum": ["FREEZE", "RELEASE", "REVOKE", "GRANT_WARNING_EXCEPTION"]
+    },
+    "ArtifactClass": {
+      "enum": ["P0_PREVIEW", "P1_REVIEW", "P2_MANUFACTURING", "P3_DISTRIBUTION"]
+    },
+    "SignatureAlgorithm": {
+      "enum": ["ed25519"]
+    },
+    "KeyPurpose": {
+      "enum": ["RELEASE", "PROFILE_ATTESTATION", "WARNING_EXCEPTION"]
+    },
+    "RevocationMode": {
+      "enum": ["ALL_SIGNATURES", "SIGNED_AT_OR_AFTER", "ISSUANCE_DISABLED"]
+    },
+    "WorkingRevisionStatus": {
+      "enum": ["DRAFT", "FROZEN"]
+    },
+    "ReleaseAttemptStatus": {
+      "enum": ["PENDING", "FAILED", "PUBLISHED", "VOID"]
+    },
+    "ArtifactStatus": {
+      "enum": ["QUARANTINED", "MATERIALIZING", "AVAILABLE", "VOID"]
+    },
+    "ReleaseRevisionStatus": {
+      "enum": ["ACTIVE", "REVOKED"]
+    },
+    "SignatureEnvelopeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "keyId", "sig"],
+      "properties": {
+        "alg": { "$ref": "#/$defs/SignatureAlgorithm" },
+        "keyId": { "type": "string" },
+        "sig": { "type": "string" }
+      }
+    },
+    "TenantScopeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenantId", "orgId", "siteId", "policyVersion"],
+      "properties": {
+        "tenantId": { "type": "string" },
+        "orgId": { "type": "string" },
+        "siteId": { "type": "string" },
+        "policyVersion": { "type": "string" }
+      }
+    },
+    "ActorContextV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenantScope", "userId", "roles", "aal", "membershipVersion"],
+      "properties": {
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "userId": { "type": "string" },
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/TrustRole" } },
+        "aal": { "type": "string" },
+        "membershipVersion": { "type": "integer" }
+      }
+    },
+    "VerifiedActionContextV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionContextId",
+        "tenantScope",
+        "actorUserId",
+        "roles",
+        "aal",
+        "membershipVersion",
+        "permittedAction",
+        "candidateHash",
+        "releaseAuthorizationHash",
+        "requestHash",
+        "issuedAt",
+        "expiresAt",
+        "nonce"
+      ],
+      "properties": {
+        "actionContextId": { "type": "string" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "actorUserId": { "type": "string" },
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/TrustRole" } },
+        "aal": { "type": "string" },
+        "membershipVersion": { "type": "integer" },
+        "permittedAction": { "$ref": "#/$defs/PermittedAction" },
+        "candidateHash": { "$ref": "#/$defs/Sha256HexOrNull" },
+        "releaseAuthorizationHash": { "$ref": "#/$defs/Sha256HexOrNull" },
+        "requestHash": { "$ref": "#/$defs/Sha256Hex" },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "expiresAt": { "$ref": "#/$defs/Iso8601" },
+        "nonce": { "type": "string" }
+      }
+    },
+    "WorkingRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workingRevisionId",
+        "parentRevisionId",
+        "tenantScope",
+        "status",
+        "contentRefs",
+        "creatorUserId",
+        "freezerUserId",
+        "frozenAt",
+        "candidateHash",
+        "policyVersion",
+        "profileVersion"
+      ],
+      "properties": {
+        "workingRevisionId": { "type": "string" },
+        "parentRevisionId": { "type": ["string", "null"] },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "status": { "$ref": "#/$defs/WorkingRevisionStatus" },
+        "contentRefs": { "type": "array", "items": { "type": "string" } },
+        "creatorUserId": { "type": "string" },
+        "freezerUserId": { "type": ["string", "null"] },
+        "frozenAt": { "anyOf": [{ "$ref": "#/$defs/Iso8601" }, { "type": "null" }] },
+        "candidateHash": { "$ref": "#/$defs/Sha256HexOrNull" },
+        "policyVersion": { "type": "string" },
+        "profileVersion": { "type": "string" }
+      }
+    },
+    "ReleaseCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateHash",
+        "tenantScope",
+        "workingRevisionId",
+        "snapshotHash",
+        "gateInputsHash",
+        "machineProfileHash",
+        "attestationId",
+        "attestationHash",
+        "policyVersion",
+        "requiredArtifactClasses",
+        "sortedGrantHashes",
+        "releaseAuthorizationHash"
+      ],
+      "properties": {
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "workingRevisionId": { "type": "string" },
+        "snapshotHash": { "$ref": "#/$defs/Sha256Hex" },
+        "gateInputsHash": { "$ref": "#/$defs/Sha256Hex" },
+        "machineProfileHash": { "$ref": "#/$defs/Sha256Hex" },
+        "attestationId": { "type": "string" },
+        "attestationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "policyVersion": { "type": "string" },
+        "requiredArtifactClasses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArtifactClass" }
+        },
+        "sortedGrantHashes": { "type": "array", "items": { "$ref": "#/$defs/Sha256Hex" } },
+        "releaseAuthorizationHash": { "$ref": "#/$defs/Sha256HexOrNull" }
+      }
+    },
+    "ReleaseAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseAttemptId",
+        "tenantScope",
+        "actorUserId",
+        "candidateHash",
+        "releaseAuthorizationHash",
+        "idempotencyKey",
+        "requestHash",
+        "status",
+        "releaseRevisionId",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "releaseAttemptId": { "type": "string" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "actorUserId": { "type": "string" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "releaseAuthorizationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "idempotencyKey": { "type": "string" },
+        "requestHash": { "$ref": "#/$defs/Sha256Hex" },
+        "status": { "$ref": "#/$defs/ReleaseAttemptStatus" },
+        "releaseRevisionId": { "type": ["string", "null"] },
+        "createdAt": { "$ref": "#/$defs/Iso8601" },
+        "updatedAt": { "$ref": "#/$defs/Iso8601" }
+      }
+    },
+    "ReleaseSnapshotV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshotHash",
+        "tenantScope",
+        "workingRevisionId",
+        "candidateHash",
+        "contentRefs",
+        "machineProfileHash",
+        "policyVersion",
+        "profileVersion"
+      ],
+      "properties": {
+        "snapshotHash": { "$ref": "#/$defs/Sha256Hex" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "workingRevisionId": { "type": "string" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "contentRefs": { "type": "array", "items": { "type": "string" } },
+        "machineProfileHash": { "$ref": "#/$defs/Sha256Hex" },
+        "policyVersion": { "type": "string" },
+        "profileVersion": { "type": "string" }
+      }
+    },
+    "CapabilityToolV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toolId"],
+      "properties": {
+        "toolId": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "CapabilityRangeV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameter", "min", "max", "unit"],
+      "properties": {
+        "parameter": { "type": "string" },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "unit": { "type": "string" }
+      }
+    },
+    "MachineCapabilityProfileV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "machineId",
+        "dialectVersion",
+        "supportedOperationTypes",
+        "tools",
+        "ranges",
+        "faces",
+        "units",
+        "coordinateConventions",
+        "postprocessorVersion"
+      ],
+      "properties": {
+        "machineId": { "type": "string" },
+        "dialectVersion": { "type": "string" },
+        "supportedOperationTypes": { "type": "array", "items": { "type": "string" } },
+        "tools": { "type": "array", "items": { "$ref": "#/$defs/CapabilityToolV1" } },
+        "ranges": { "type": "array", "items": { "$ref": "#/$defs/CapabilityRangeV1" } },
+        "faces": { "type": "array", "items": { "type": "string" } },
+        "units": { "type": "string" },
+        "coordinateConventions": { "type": "string" },
+        "postprocessorVersion": { "type": "string" }
+      }
+    },
+    "MachineProfileAttestationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attestationId",
+        "tenantId",
+        "siteId",
+        "machineId",
+        "profileHash",
+        "toolLibraryHash",
+        "postprocessorId",
+        "postprocessorVersion",
+        "postprocessorBinaryHash",
+        "approverUserId",
+        "issuedAt",
+        "validFrom",
+        "validUntil",
+        "status",
+        "attestationSequence",
+        "signature"
+      ],
+      "properties": {
+        "attestationId": { "type": "string" },
+        "tenantId": { "type": "string" },
+        "siteId": { "type": "string" },
+        "machineId": { "type": "string" },
+        "profileHash": { "$ref": "#/$defs/Sha256Hex" },
+        "toolLibraryHash": { "$ref": "#/$defs/Sha256Hex" },
+        "postprocessorId": { "type": "string" },
+        "postprocessorVersion": { "type": "string" },
+        "postprocessorBinaryHash": { "$ref": "#/$defs/Sha256Hex" },
+        "approverUserId": { "type": "string" },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "validFrom": { "$ref": "#/$defs/Iso8601" },
+        "validUntil": { "$ref": "#/$defs/Iso8601" },
+        "status": { "type": "string" },
+        "attestationSequence": { "type": "integer" },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    },
+    "WarningExceptionGrantV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grantId",
+        "warningCode",
+        "entityIds",
+        "tenantId",
+        "siteId",
+        "candidateHash",
+        "reason",
+        "policyVersion",
+        "approverUserIds",
+        "issuedAt",
+        "expiresAt",
+        "signature"
+      ],
+      "properties": {
+        "grantId": { "type": "string" },
+        "warningCode": { "type": "string" },
+        "entityIds": { "type": "array", "items": { "type": "string" } },
+        "tenantId": { "type": "string" },
+        "siteId": { "type": "string" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "reason": { "type": "string" },
+        "policyVersion": { "type": "string" },
+        "approverUserIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "expiresAt": { "$ref": "#/$defs/Iso8601" },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    },
+    "CapabilityBlockerV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "operationRef"],
+      "properties": {
+        "reasonCode": { "type": "string" },
+        "operationRef": { "type": "string" },
+        "detail": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "CapabilityReportV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reportHash", "machineProfileHash", "supported", "evaluatedOperationCount", "blockers"],
+      "properties": {
+        "reportHash": { "$ref": "#/$defs/Sha256Hex" },
+        "machineProfileHash": { "$ref": "#/$defs/Sha256Hex" },
+        "supported": { "type": "boolean" },
+        "evaluatedOperationCount": { "type": "integer" },
+        "blockers": { "type": "array", "items": { "$ref": "#/$defs/CapabilityBlockerV1" } }
+      }
+    },
+    "PacketFileEntryV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "$ref": "#/$defs/Sha256Hex" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "FactoryPacketManifestV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "tenantScope", "releaseRevisionId", "candidateHash", "files", "contentHash"],
+      "properties": {
+        "schemaVersion": { "const": "V3" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "releaseRevisionId": { "type": "string" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/PacketFileEntryV3" } },
+        "contentHash": { "$ref": "#/$defs/Sha256Hex" }
+      }
+    },
+    "ReleaseCertificateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseRevisionId",
+        "tenantScope",
+        "candidateHash",
+        "releaseAuthorizationHash",
+        "sortedGrantHashes",
+        "attestationId",
+        "attestationHash",
+        "contentHash",
+        "expectedPacketHash",
+        "signerKeyId",
+        "algorithm",
+        "releaseSequence",
+        "releasedAt",
+        "signature"
+      ],
+      "properties": {
+        "releaseRevisionId": { "type": "string" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "releaseAuthorizationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "sortedGrantHashes": { "type": "array", "items": { "$ref": "#/$defs/Sha256Hex" } },
+        "attestationId": { "type": "string" },
+        "attestationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "contentHash": { "$ref": "#/$defs/Sha256Hex" },
+        "expectedPacketHash": { "$ref": "#/$defs/Sha256Hex" },
+        "signerKeyId": { "type": "string" },
+        "algorithm": { "$ref": "#/$defs/SignatureAlgorithm" },
+        "releaseSequence": { "type": "integer" },
+        "releasedAt": { "$ref": "#/$defs/Iso8601" },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    },
+    "ArtifactRecordV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "tenantScope",
+        "artifactClass",
+        "releaseAttemptId",
+        "releaseRevisionId",
+        "status",
+        "contentHash",
+        "expectedPacketHash",
+        "objectLocator",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "artifactId": { "type": "string" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "artifactClass": { "$ref": "#/$defs/ArtifactClass" },
+        "releaseAttemptId": { "type": "string" },
+        "releaseRevisionId": { "type": ["string", "null"] },
+        "status": { "$ref": "#/$defs/ArtifactStatus" },
+        "contentHash": { "$ref": "#/$defs/Sha256Hex" },
+        "expectedPacketHash": { "$ref": "#/$defs/Sha256Hex" },
+        "objectLocator": { "type": "string" },
+        "createdAt": { "$ref": "#/$defs/Iso8601" },
+        "updatedAt": { "$ref": "#/$defs/Iso8601" }
+      }
+    },
+    "ApprovalEvidenceV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approverUserId", "membershipVersion", "aal", "decisionAt", "reason"],
+      "properties": {
+        "approverUserId": { "type": "string" },
+        "membershipVersion": { "type": "integer" },
+        "aal": { "type": "string" },
+        "decisionAt": { "$ref": "#/$defs/Iso8601" },
+        "reason": { "type": "string" }
+      }
+    },
+    "ReleaseRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseRevisionId",
+        "tenantScope",
+        "candidateHash",
+        "releaseAuthorizationHash",
+        "sortedGrantHashes",
+        "contentHash",
+        "expectedPacketHash",
+        "releaseCertificate",
+        "approverUserId",
+        "approvalEvidence",
+        "attestationId",
+        "attestationHash",
+        "parentReleaseRevisionId",
+        "status",
+        "releaseSequence",
+        "releasedAt"
+      ],
+      "properties": {
+        "releaseRevisionId": { "type": "string" },
+        "tenantScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "candidateHash": { "$ref": "#/$defs/Sha256Hex" },
+        "releaseAuthorizationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "sortedGrantHashes": { "type": "array", "items": { "$ref": "#/$defs/Sha256Hex" } },
+        "contentHash": { "$ref": "#/$defs/Sha256Hex" },
+        "expectedPacketHash": { "$ref": "#/$defs/Sha256Hex" },
+        "releaseCertificate": { "$ref": "#/$defs/ReleaseCertificateV1" },
+        "approverUserId": { "type": "string" },
+        "approvalEvidence": { "$ref": "#/$defs/ApprovalEvidenceV1" },
+        "attestationId": { "type": "string" },
+        "attestationHash": { "$ref": "#/$defs/Sha256Hex" },
+        "parentReleaseRevisionId": { "type": ["string", "null"] },
+        "status": { "$ref": "#/$defs/ReleaseRevisionStatus" },
+        "releaseSequence": { "type": "integer" },
+        "releasedAt": { "$ref": "#/$defs/Iso8601" }
+      }
+    },
+    "TrustedKeyV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "purpose", "algorithm", "validFrom", "validUntil"],
+      "properties": {
+        "keyId": { "type": "string" },
+        "purpose": { "$ref": "#/$defs/KeyPurpose" },
+        "algorithm": { "$ref": "#/$defs/SignatureAlgorithm" },
+        "validFrom": { "$ref": "#/$defs/Iso8601" },
+        "validUntil": { "$ref": "#/$defs/Iso8601" }
+      }
+    },
+    "KeyRevocationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "revocationMode", "effectiveAt", "reason"],
+      "properties": {
+        "keyId": { "type": "string" },
+        "revocationMode": { "$ref": "#/$defs/RevocationMode" },
+        "effectiveAt": { "$ref": "#/$defs/Iso8601" },
+        "reason": { "type": "string" }
+      }
+    },
+    "RevocationEntryV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "hash", "effectiveAt", "reason"],
+      "properties": {
+        "id": { "type": "string" },
+        "hash": { "$ref": "#/$defs/Sha256Hex" },
+        "effectiveAt": { "$ref": "#/$defs/Iso8601" },
+        "reason": { "type": "string" }
+      }
+    },
+    "TrustBundleV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleType",
+        "trustScope",
+        "sequence",
+        "issuedAt",
+        "expiresAt",
+        "trustedKeys",
+        "keyRevocations",
+        "profileAttestationRevocations",
+        "warningExceptionGrantRevocations",
+        "signature"
+      ],
+      "properties": {
+        "bundleType": { "const": "TRUST" },
+        "trustScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "sequence": { "type": "integer" },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "expiresAt": { "$ref": "#/$defs/Iso8601" },
+        "trustedKeys": { "type": "array", "items": { "$ref": "#/$defs/TrustedKeyV1" } },
+        "keyRevocations": { "type": "array", "items": { "$ref": "#/$defs/KeyRevocationV1" } },
+        "profileAttestationRevocations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RevocationEntryV1" }
+        },
+        "warningExceptionGrantRevocations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/RevocationEntryV1" }
+        },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    },
+    "ReleaseStatusBundleV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundleType", "trustScope", "sequence", "issuedAt", "expiresAt", "revokedReleaseRevisionIds", "signature"],
+      "properties": {
+        "bundleType": { "const": "RELEASE_STATUS" },
+        "trustScope": { "$ref": "#/$defs/TenantScopeV1" },
+        "sequence": { "type": "integer" },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "expiresAt": { "$ref": "#/$defs/Iso8601" },
+        "revokedReleaseRevisionIds": { "type": "array", "items": { "type": "string" } },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    },
+    "VerificationReportV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "reasonCodes",
+        "checkedHashes",
+        "bundleSequences",
+        "verifierBuildHash",
+        "validAsOf",
+        "freshnessAgeSeconds",
+        "checkpoint",
+        "summary"
+      ],
+      "properties": {
+        "verdict": { "enum": ["PASS", "FAIL"] },
+        "reasonCodes": { "type": "array", "items": { "type": "string" } },
+        "checkedHashes": { "type": "object", "additionalProperties": { "$ref": "#/$defs/Sha256Hex" } },
+        "bundleSequences": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "verifierBuildHash": { "$ref": "#/$defs/Sha256Hex" },
+        "validAsOf": { "$ref": "#/$defs/Iso8601" },
+        "freshnessAgeSeconds": { "type": "number" },
+        "checkpoint": { "type": ["string", "null"] },
+        "summary": { "type": "string" }
+      }
+    },
+    "GitRootStateV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "commit", "branch", "dirtyFiles"],
+      "properties": {
+        "root": { "type": "string" },
+        "commit": { "type": "string" },
+        "branch": { "type": "string" },
+        "dirtyFiles": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "EvidenceAttestationV1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gitState",
+        "commandDigests",
+        "reportDigests",
+        "ciRunId",
+        "workflowIdentity",
+        "builderBinaryHash",
+        "verifierBinaryHash",
+        "issuedAt",
+        "retentionPolicy",
+        "evidenceRootHash",
+        "signerKeyId",
+        "signature"
+      ],
+      "properties": {
+        "gitState": { "type": "array", "items": { "$ref": "#/$defs/GitRootStateV1" } },
+        "commandDigests": { "type": "array", "items": { "$ref": "#/$defs/Sha256Hex" } },
+        "reportDigests": { "type": "array", "items": { "$ref": "#/$defs/Sha256Hex" } },
+        "ciRunId": { "type": "string" },
+        "workflowIdentity": { "type": "string" },
+        "builderBinaryHash": { "$ref": "#/$defs/Sha256Hex" },
+        "verifierBinaryHash": { "$ref": "#/$defs/Sha256Hex" },
+        "issuedAt": { "$ref": "#/$defs/Iso8601" },
+        "retentionPolicy": { "type": "string" },
+        "evidenceRootHash": { "$ref": "#/$defs/Sha256Hex" },
+        "signerKeyId": { "type": "string" },
+        "signature": { "$ref": "#/$defs/SignatureEnvelopeV1" }
+      }
+    }
+  }
+}
