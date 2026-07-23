@@ -47,28 +47,50 @@ jobs:
             "select count(*) from supabase_migrations.schema_migrations" > migrations_applied.txt || true
           echo "migrations applied: $(cat migrations_applied.txt)"
 
-      - name: Run pgTAP DB-invariant suite
+      # Each suite runs SEPARATELY into its own named .tap so a failure is attributable
+      # to one file. Every suite must (a) emit at least one `ok` (no empty/skipped suite)
+      # and (b) emit zero `not ok`. -tA = tuples-only, unaligned -> clean TAP lines.
+      - name: Run pgTAP workflow invariants suite
         run: |
           set -o pipefail
-          # -tA = tuples-only, unaligned -> clean TAP lines ("ok N - ...") without psql table padding
           psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
-            -f supabase/tests/workflow_db_invariants.sql | tee db-invariants.tap
-          if grep -qE '^not ok' db-invariants.tap; then
-            echo "::error::pgTAP invariant failure"; exit 1
+            -f supabase/tests/workflow_db_invariants.sql | tee workflow-db.tap
+          if grep -qE '^not ok' workflow-db.tap; then
+            echo "::error::pgTAP failure in workflow_db_invariants.sql"; exit 1
           fi
-          if ! grep -qE '^ok ' db-invariants.tap; then
-            echo "::error::no pgTAP assertions ran (empty suite)"; exit 1
+          if ! grep -qE '^ok ' workflow-db.tap; then
+            echo "::error::no pgTAP assertions ran in workflow_db_invariants.sql (empty suite)"; exit 1
           fi
-          echo "pgTAP invariants: all ok ($(grep -cE '^ok ' db-invariants.tap) assertions)"
+          echo "workflow_db_invariants: all ok ($(grep -cE '^ok ' workflow-db.tap) assertions)"
+
+      - name: Run pgTAP Trust Kernel tenancy suite
+        run: |
+          set -o pipefail
+          psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
+            -f supabase/tests/trust_kernel_tenancy.sql | tee trust-kernel-tenancy.tap
+          if grep -qE '^not ok' trust-kernel-tenancy.tap; then
+            echo "::error::pgTAP failure in trust_kernel_tenancy.sql"; exit 1
+          fi
+          if ! grep -qE '^ok ' trust-kernel-tenancy.tap; then
+            echo "::error::no pgTAP assertions ran in trust_kernel_tenancy.sql (empty suite)"; exit 1
+          fi
+          echo "trust_kernel_tenancy: all ok ($(grep -cE '^ok ' trust-kernel-tenancy.tap) assertions)"
 
       - name: Assemble evidence
         if: always()
         run: |
           node -e "
           const fs = require('fs');
-          const tap = fs.existsSync('db-invariants.tap') ? fs.readFileSync('db-invariants.tap','utf8') : '';
-          const ok = (tap.match(/^ok /gm)||[]).length;
-          const notok = (tap.match(/^not ok /gm)||[]).length;
+          function countSuite(file, suite) {
+            const tap = fs.existsSync(file) ? fs.readFileSync(file,'utf8') : '';
+            const ok = (tap.match(/^ok /gm)||[]).length;
+            const notOk = (tap.match(/^not ok /gm)||[]).length;
+            return { suite, tap: file, ok, notOk, pass: notOk === 0 && ok > 0 };
+          }
+          const suites = [
+            countSuite('workflow-db.tap', 'workflow_db_invariants.sql'),
+            countSuite('trust-kernel-tenancy.tap', 'trust_kernel_tenancy.sql'),
+          ];
           const mig = fs.existsSync('migrations_applied.txt') ? fs.readFileSync('migrations_applied.txt','utf8').trim() : 'unknown';
           const ev = {
             evidenceTier: 'E0', workflow: 'db-verify',
@@ -77,7 +99,7 @@ jobs:
             environment: 'ubuntu-latest / supabase local (ephemeral)',
             timestamp: new Date().toISOString(),
             migrationsApplied: Number(mig) || mig,
-            pgtap: { suite: 'workflow_db_invariants.sql', ok, notOk: notok, pass: notok === 0 && ok > 0 },
+            pgtap: { suites, pass: suites.every(s => s.pass) },
           };
           fs.writeFileSync('db-verify-evidence.json', JSON.stringify(ev, null, 2));
           console.log(JSON.stringify(ev, null, 2));
@@ -90,7 +112,8 @@ jobs:
           name: db-verify-evidence-${{ github.sha }}
           path: |
             db-verify-evidence.json
-            db-invariants.tap
+            workflow-db.tap
+            trust-kernel-tenancy.tap
           retention-days: 90
 
       - name: Stop Supabase
