@@ -371,6 +371,11 @@ begin
   if not found then
     raise exception 'STATE_CONFLICT' using detail = 'unknown working revision';
   end if;
+  -- Site-authority binding (§7.5, PGA-1): a context authorized for one site can
+  -- never act on a resource that belongs to a different site of the same tenant.
+  if v_wr.site_id is distinct from v_ctx.site_id then
+    raise exception 'AUTH_SCOPE_DENIED' using detail = 'working revision belongs to a different site than the authorized context';
+  end if;
   if v_wr.status <> 'DRAFT' then
     raise exception 'STATE_CONFLICT' using detail = 'working revision is not DRAFT';
   end if;
@@ -387,7 +392,7 @@ begin
     id, tenant_id, site_id, working_revision_id, candidate_hash, snapshot_hash, gate_inputs_hash,
     machine_profile_hash, attestation_id, attestation_hash, policy_version, freezer_user_id, frozen_at
   ) values (
-    v_candidate_id, v_ctx.tenant_id, v_ctx.site_id, p_working_revision_id, p_candidate_hash, p_snapshot_hash,
+    v_candidate_id, v_ctx.tenant_id, v_wr.site_id, p_working_revision_id, p_candidate_hash, p_snapshot_hash,
     p_gate_inputs_hash, p_machine_profile_hash, p_attestation_id, p_attestation_hash, p_policy_version,
     v_ctx.actor_user_id, v_now
   );
@@ -433,6 +438,12 @@ begin
     where tenant_id = v_ctx.tenant_id and candidate_hash = p_candidate_hash for update;
   if not found then
     raise exception 'STATE_CANDIDATE_STALE' using detail = 'unknown release candidate';
+  end if;
+
+  -- Site-authority binding (§7.5, PGA-1): the candidate must belong to the site
+  -- the action context was authorized for.
+  if v_cand.site_id is distinct from v_ctx.site_id then
+    raise exception 'AUTH_SCOPE_DENIED' using detail = 'candidate belongs to a different site than the authorized context';
   end if;
 
   -- Four-eyes: the freeze actor can NEVER approve their own release (§7.4).
@@ -688,6 +699,7 @@ declare
   v_ctx public.verified_action_context%rowtype;
   v_now timestamptz := clock_timestamp();
   v_seq bigint;
+  v_rev_site uuid;
 begin
   -- Consume a FRESH REVOKE action context (role SAFETY_REVOKER, §7.3).
   v_ctx := public.consume_verified_action_context(p_context_id, 'REVOKE');
@@ -695,10 +707,15 @@ begin
     raise exception 'AUTH_ACTION_CONTEXT_INVALID' using detail = 'context resource does not match the release revision';
   end if;
 
-  perform 1 from public.release_revision
+  select site_id into v_rev_site from public.release_revision
     where tenant_id = v_ctx.tenant_id and id = p_release_revision_id for update;
   if not found then
     raise exception 'STATE_CONFLICT' using detail = 'unknown release revision';
+  end if;
+  -- Site-authority binding (§7.5, PGA-1): the revision must belong to the site
+  -- the REVOKE context was authorized for.
+  if v_rev_site is distinct from v_ctx.site_id then
+    raise exception 'AUTH_SCOPE_DENIED' using detail = 'release revision belongs to a different site than the authorized context';
   end if;
 
   perform pg_advisory_xact_lock(hashtext('monolith_release_sequence:' || v_ctx.tenant_id::text));

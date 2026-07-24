@@ -83,9 +83,24 @@
 \set content_e    9999999999999999999999999999999999999999999999999999999999999999
 \set packet_e     0000000000000000000000000000000000000000000000000000000000000000
 
+-- FIX PGA-1 (site-authority binding) + VOID-window fixtures (Groups K, L below).
+-- A SECOND site inside tenant 001 and site-B resources; the crossing actors keep
+-- their membership_site grant limited to site A only (they are never granted B).
+\set site_001b    1b111111-1111-1111-1111-1111111111b1
+\set wr_freeze_b  f0000000-0000-0000-0000-0000000000b1
+\set cand_begin_b c0000000-0000-0000-0000-0000000000b2
+\set cand_revoke_b c0000000-0000-0000-0000-0000000000b3
+\set att_revoke_b ab000000-0000-0000-0000-0000000000b3
+\set rev_revoke_b 4b000000-0000-0000-0000-0000000000b3
+\set wr_vw        f0000000-0000-0000-0000-0000000000c1
+\set h_freeze_b   b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1
+\set h_begin_b    b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2
+\set h_revoke_b   b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3
+\set h_vw         c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
+
 begin;
 create extension if not exists pgtap;
-select plan(49);
+select plan(55);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -373,6 +388,116 @@ select is(
 select is(
   (select count(*) from public.release_revision where tenant_id=:'tenant_002'::uuid),
   0::bigint, 'tenant 002 holds no tenant-001 release rows');
+
+-- ===========================================================================
+-- Group K — FIX: void is denied the INSTANT a release revision exists, even
+--   while the attempt is still PENDING (the commit -> mark-available window).
+--   This pins 0182 void's revision-exists guard INDEPENDENTLY of the later
+--   status<>'PENDING' check: here the attempt IS still PENDING, so ONLY the
+--   revision-exists guard can raise STATE_CONFLICT (design §10.3, §6.6). The
+--   existing PUBLISHED-attempt void test (Group I) cannot distinguish the two
+--   guards; this one survives a mutation that deletes the revision-exists check.
+-- ===========================================================================
+insert into public.release_working_revision
+  (id, tenant_id, site_id, parent_revision_id, status, content_refs, creator_user_id, policy_version, profile_version)
+values
+  (:'wr_vw', :'tenant_001', :'site_001', null, 'DRAFT', array['ref-vw'], :'u_designer', 'policy-2026-07', '1.2.3');
+
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('FREEZE', :'tenant_001', :'site_001', 'WORKING_REVISION', :'wr_vw', :'req_void') as freeze_ctx_vw \gset
+select public.rpc_trust_freeze(:'freeze_ctx_vw'::uuid, :'wr_vw'::uuid, :'h_vw', :'any_sub', :'any_sub', :'any_sub', :'att_001'::uuid, :'any_sub', 'policy-2026-07') as cand_vw \gset
+
+select set_config('request.jwt.claims', json_build_object('sub', :'u_approver_2','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('RELEASE', :'tenant_001', :'site_001', 'RELEASE_CANDIDATE', 'RC-VW', :'req_void', :'h_vw', :'auth_void') as release_ctx_vw \gset
+select attempt_id as attempt_vw from public.rpc_trust_begin_release(:'release_ctx_vw'::uuid, :'h_vw', :'auth_void', 'idem-vw', :'req_void') \gset
+select id as artifact_vw from public.release_artifact where release_attempt_id=:'attempt_vw'::uuid \gset
+
+-- Commit (pgTAP runs as owner, standing in for the worker) but DO NOT mark the
+-- artifact available: this is the window where a revision exists yet the attempt
+-- has not been published.
+select public.rpc_trust_commit_release(:'attempt_vw'::uuid, :'content_e', :'packet_e', '{"cert":"vw"}'::jsonb, 'dev-release-key') as rev_vw \gset
+
+select is((select status from public.release_attempt where id=:'attempt_vw'::uuid), 'PENDING', 'commit leaves the attempt PENDING until the artifact is marked available');
+select is((select status from public.release_artifact where id=:'artifact_vw'::uuid), 'MATERIALIZING', 'commit leaves the artifact MATERIALIZING before mark-available');
+select throws_ok(
+  $$select public.rpc_trust_void_artifact('$$||:'attempt_vw'||$$'::uuid, 'too late: a release revision already exists')$$,
+  'P0001', 'STATE_CONFLICT', 'voiding an attempt whose release revision already exists is denied even while the attempt is still PENDING');
+
+-- ===========================================================================
+-- Group L — FIX PGA-1: site-authority binding. An action context authorized for
+--   site A must NOT drive freeze/begin/revoke against a resource that belongs to
+--   a DIFFERENT site (B) of the SAME tenant (design §7.5). create_verified_action_context
+--   (0180) happily mints a site-A context here because it never learns the
+--   resource's true site; the release RPCs are the binding guard. The actors keep
+--   a membership_site grant limited to site A only, so this proves the RPC-level
+--   site binding, not the context-creation site grant.
+-- ===========================================================================
+insert into public.monolith_site (id, tenant_id, code, display_name, status) values
+  (:'site_001b', :'tenant_001', 'BKK-HQ-02', 'Daph second site (B)', 'ACTIVE');
+
+-- site-B DRAFT working revision (freeze crossing) + FK anchor for the site-B rows.
+insert into public.release_working_revision
+  (id, tenant_id, site_id, parent_revision_id, status, content_refs, creator_user_id, policy_version, profile_version)
+values
+  (:'wr_freeze_b', :'tenant_001', :'site_001b', null, 'DRAFT', array['ref-b1'], :'u_designer', 'policy-2026-07', '1.2.3');
+
+-- site-B candidate for the begin crossing (no ACTIVE revision references its hash).
+insert into public.release_candidate
+  (id, tenant_id, site_id, working_revision_id, candidate_hash, snapshot_hash, gate_inputs_hash,
+   machine_profile_hash, attestation_id, attestation_hash, policy_version, freezer_user_id, frozen_at)
+values
+  (:'cand_begin_b', :'tenant_001', :'site_001b', :'wr_freeze_b', :'h_begin_b', :'any_sub', :'any_sub',
+   :'any_sub', :'att_001', :'any_sub', 'policy-2026-07', :'u_designer', clock_timestamp());
+
+-- site-B candidate + attempt + ACTIVE revision for the revoke crossing.
+insert into public.release_candidate
+  (id, tenant_id, site_id, working_revision_id, candidate_hash, snapshot_hash, gate_inputs_hash,
+   machine_profile_hash, attestation_id, attestation_hash, policy_version, freezer_user_id, frozen_at)
+values
+  (:'cand_revoke_b', :'tenant_001', :'site_001b', :'wr_freeze_b', :'h_revoke_b', :'any_sub', :'any_sub',
+   :'any_sub', :'att_001', :'any_sub', 'policy-2026-07', :'u_designer', clock_timestamp());
+
+insert into public.release_attempt
+  (id, tenant_id, site_id, candidate_id, actor_user_id, candidate_hash, release_authorization_hash,
+   idempotency_key, request_hash, status, allocated_revision_id, release_sequence, membership_version,
+   aal, action_context_id, authorized_at)
+values
+  (:'att_revoke_b', :'tenant_001', :'site_001b', :'cand_revoke_b', :'u_approver_1', :'h_revoke_b', :'auth_void',
+   'seed-revoke-b', :'req_void', 'PUBLISHED', :'rev_revoke_b', 9001, 1,
+   'aal1', gen_random_uuid(), clock_timestamp());
+
+insert into public.release_revision
+  (id, tenant_id, site_id, release_attempt_id, candidate_id, candidate_hash, release_authorization_hash,
+   content_hash, expected_packet_hash, release_certificate, attestation_id, attestation_hash,
+   approver_user_id, approver_membership_version, approver_aal, status, release_sequence, authorized_at, released_at)
+values
+  (:'rev_revoke_b', :'tenant_001', :'site_001b', :'att_revoke_b', :'cand_revoke_b', :'h_revoke_b', :'auth_void',
+   :'content_e', :'packet_e', '{"cert":"site-b"}'::jsonb, :'att_001', :'any_sub',
+   :'u_approver_1', 1, 'aal1', 'ACTIVE', 9001, clock_timestamp(), clock_timestamp());
+
+-- Freeze crossing: a FREEZE context minted for site A cannot freeze a working
+-- revision that belongs to site B.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('FREEZE', :'tenant_001', :'site_001', 'WORKING_REVISION', :'wr_freeze_b', :'req_void') as freeze_cross_ctx \gset
+select throws_ok(
+  $$select public.rpc_trust_freeze('$$||:'freeze_cross_ctx'||$$'::uuid, '$$||:'wr_freeze_b'||$$'::uuid, '$$||:'h_freeze_b'||$$', '$$||:'any_sub'||$$', '$$||:'any_sub'||$$', '$$||:'any_sub'||$$', '$$||:'att_001'||$$'::uuid, '$$||:'any_sub'||$$', 'policy-2026-07')$$,
+  'P0001', 'AUTH_SCOPE_DENIED', 'freeze: a site-A context cannot freeze a working revision that belongs to site B');
+
+-- Begin crossing: a RELEASE context for site A cannot begin a release for a
+-- candidate that belongs to site B.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_approver_1','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('RELEASE', :'tenant_001', :'site_001', 'RELEASE_CANDIDATE', 'RC-CROSS-B', :'req_void', :'h_begin_b', :'auth_void') as begin_cross_ctx \gset
+select throws_ok(
+  $$select public.rpc_trust_begin_release('$$||:'begin_cross_ctx'||$$'::uuid, '$$||:'h_begin_b'||$$', '$$||:'auth_void'||$$', 'idem-cross-b', '$$||:'req_void'||$$')$$,
+  'P0001', 'AUTH_SCOPE_DENIED', 'begin: a site-A context cannot begin a release for a candidate that belongs to site B');
+
+-- Revoke crossing: a REVOKE context for site A cannot revoke a release revision
+-- that belongs to site B.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_revoker','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001', 'RELEASE_REVISION', :'rev_revoke_b', :'req_void') as revoke_cross_ctx \gset
+select throws_ok(
+  $$select public.rpc_trust_revoke('$$||:'revoke_cross_ctx'||$$'::uuid, '$$||:'rev_revoke_b'||$$'::uuid, 'cross-site revoke attempt')$$,
+  'P0001', 'AUTH_SCOPE_DENIED', 'revoke: a site-A context cannot revoke a release revision that belongs to site B');
 
 select * from finish();
 rollback;
