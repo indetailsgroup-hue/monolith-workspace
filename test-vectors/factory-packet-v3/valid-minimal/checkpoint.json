@@ -1,0 +1,15 @@
+{
+  "schema": "monolith.trust.bootstrap-checkpoint.v1",
+  "trustScope": {
+    "tenantId": "tenant-001",
+    "orgId": "org-monolith",
+    "siteId": "site-001",
+    "policyVersion": "policy-2026.07"
+  },
+  "minimumSequences": {
+    "TRUST": 1,
+    "RELEASE_STATUS": 1
+  },
+  "issuedAt": "2026-07-24T00:00:00.000Z",
+  "note": "first-use bootstrap floor; the verifier rejects any bundle sequence below these per (bundleType, trustScope)"
+}

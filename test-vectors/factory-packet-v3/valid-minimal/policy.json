@@ -1,0 +1,23 @@
+{
+  "schema": "monolith.trust.verifier-policy.v1",
+  "permittedTrustScope": {
+    "tenantId": "tenant-001",
+    "orgId": "org-monolith",
+    "siteId": "site-001",
+    "policyVersion": "policy-2026.07"
+  },
+  "pinnedTrustBundleKey": {
+    "keyId": "monolith-trust-bundle-ed25519-0001",
+    "algorithm": "ed25519",
+    "purpose": "TRUST_BUNDLE",
+    "note": "pinned OUTSIDE any bundle; a TrustBundleV1 can never introduce or authorize this key"
+  },
+  "freshness": {
+    "maxOfflineStalenessSeconds": 86400,
+    "maxBundleAgeSeconds": 2592000
+  },
+  "archive": {
+    "maxArchiveAgeSeconds": 31536000,
+    "requireBootstrapCheckpoint": true
+  }
+}

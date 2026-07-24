@@ -1,0 +1,64 @@
+{
+  "bundleType": "TRUST",
+  "trustScope": {
+    "tenantId": "tenant-001",
+    "orgId": "org-monolith",
+    "siteId": "site-001",
+    "policyVersion": "policy-2026.07"
+  },
+  "sequence": 1,
+  "issuedAt": "2026-07-24T00:00:00.000Z",
+  "expiresAt": "2026-08-23T00:00:00.000Z",
+  "trustedKeys": [
+    {
+      "keyId": "monolith-profile-attestation-ed25519-0001",
+      "purpose": "PROFILE_ATTESTATION",
+      "algorithm": "ed25519",
+      "validFrom": "2026-01-01T00:00:00.000Z",
+      "validUntil": "2027-01-01T00:00:00.000Z"
+    },
+    {
+      "keyId": "monolith-release-ed25519-0001",
+      "purpose": "RELEASE",
+      "algorithm": "ed25519",
+      "validFrom": "2026-01-01T00:00:00.000Z",
+      "validUntil": "2027-01-01T00:00:00.000Z"
+    },
+    {
+      "keyId": "monolith-warning-exception-ed25519-0001",
+      "purpose": "WARNING_EXCEPTION",
+      "algorithm": "ed25519",
+      "validFrom": "2026-01-01T00:00:00.000Z",
+      "validUntil": "2027-01-01T00:00:00.000Z"
+    }
+  ],
+  "keyRevocations": [
+    {
+      "keyId": "monolith-release-ed25519-0000",
+      "revocationMode": "SIGNED_AT_OR_AFTER",
+      "effectiveAt": "2026-06-01T00:00:00.000Z",
+      "reason": "COMPROMISE"
+    }
+  ],
+  "profileAttestationRevocations": [
+    {
+      "id": "att-9000",
+      "hash": "1ce5869ed4d96a68c7358e2585122a8e2d8b6e35eaffc32bb27af839e7886bf3",
+      "effectiveAt": "2026-07-01T00:00:00.000Z",
+      "reason": "PROFILE_SUPERSEDED"
+    }
+  ],
+  "warningExceptionGrantRevocations": [
+    {
+      "id": "grant-9000",
+      "hash": "03c510a9a7de61b3b750055bc48bdc506aa36900dbe18444d27e43fc17a0772e",
+      "effectiveAt": "2026-07-10T00:00:00.000Z",
+      "reason": "GRANT_WITHDRAWN"
+    }
+  ],
+  "signature": {
+    "alg": "ed25519",
+    "keyId": "monolith-trust-bundle-ed25519-0001",
+    "sig": "CeVc+Vh6TVpxJtHLPoYaw1n9huLO/0SsSSHWN2PQ+ho="
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "bundleType": "RELEASE_STATUS",
+  "trustScope": {
+    "tenantId": "tenant-001",
+    "orgId": "org-monolith",
+    "siteId": "site-001",
+    "policyVersion": "policy-2026.07"
+  },
+  "sequence": 1,
+  "issuedAt": "2026-07-24T00:00:00.000Z",
+  "expiresAt": "2026-08-23T00:00:00.000Z",
+  "revokedReleaseRevisionIds": [
+    "rr-000000000000000000000002"
+  ],
+  "signature": {
+    "alg": "ed25519",
+    "keyId": "monolith-trust-bundle-ed25519-0001",
+    "sig": "cf1QvuVgm0BuimEfMnuMw1brk5F0x7qNSO8NeD6o7dc="
+  }
+}
