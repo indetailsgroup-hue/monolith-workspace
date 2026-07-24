@@ -82,7 +82,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(28);
+select plan(36);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -338,6 +338,118 @@ insert into public.release_content_revocation (tenant_id, site_id, content_hash,
   (:'tenant_a', :'site_a', :'h_seq', 'UNBLOCK', 901, :'u_revoker');
 select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_seq'), false,
   'latest-event-wins: a higher-sequence UNBLOCK after a BLOCK leaves the content NOT blocked (not naive exists-BLOCK)');
+
+-- ===========================================================================
+-- Group K (Task 4) — enforcement at commit_release: a BLOCKED content_hash can
+--   never become an ACTIVE release (design §10.4; plan 2026-07-24 Task 4).
+--
+-- The commit RPC is worker-only and consumes no action context: it derives
+-- tenant/site from the release_attempt row. We build committable PENDING attempts
+-- by DIRECT INSERT (mirroring this suite's fixture style), matching every
+-- precondition rpc_trust_commit_release checks (0182:525-560): a PENDING attempt
+-- whose allocated_revision_id does not yet exist, an ACTIVE membership at the
+-- pinned version, a release_candidate the commit reads (sorted_grant_hashes /
+-- attestation / freezer), a QUARANTINED artifact, no prior ACTIVE revision for the
+-- candidate_hash, and a freezer distinct from the actor (four-eyes). We then call
+-- rpc_trust_commit_release directly (pgTAP runs as owner, standing in for the
+-- worker; grants do not block — as trust_kernel_release.sql Group E does).
+--
+-- Three attempts:
+--   * attm_cblk (tenant_a/site_a): commit its content as h_blk — which Group E
+--     BLOCKED — must raise SAFETY_CONTENT_REVOKED and create NO revision.
+--   * attm_cok  (tenant_a/site_a): commit a clean, never-blocked hash h_ok —
+--     the SAME flow SUCCEEDS to ACTIVE (proves the guard does not over-block).
+--   * attm_cxb  (tenant_b/site_b): commit h_blk — the SAME content_hash blocked
+--     in tenant_a — must SUCCEED, proving the block is tenant/site-scoped and
+--     does not leak across tenants at the commit gate (prior Gate finding).
+-- ===========================================================================
+
+-- Task-4 fixture identifiers.
+\set u_worker_b   b5000000-0000-0000-0000-00000000c004
+\set m_worker_b   b5000000-0000-0000-0000-00000000d004
+
+\set cand_cblk    a5000000-0000-0000-0000-000000010004
+\set cand_cok     a5000000-0000-0000-0000-000000010005
+\set cand_cxb     b5000000-0000-0000-0000-000000010002
+
+\set attm_cblk    a5000000-0000-0000-0000-000000020004
+\set attm_cok     a5000000-0000-0000-0000-000000020005
+\set attm_cxb     b5000000-0000-0000-0000-000000020002
+
+-- allocated_revision_id values — MUST NOT pre-exist in release_revision.
+\set rev_cblk     a5000000-0000-0000-0000-000000030004
+\set rev_cok      a5000000-0000-0000-0000-000000030005
+\set rev_cxb      b5000000-0000-0000-0000-000000030002
+
+-- Fresh candidate hashes (unique per tenant) + a clean, never-blocked content hash.
+\set cand_h_cblk  6666666666666666666666666666666666666666666666666666666666666666
+\set cand_h_cok   7777777777777777777777777777777777777777777777777777777777777777
+\set cand_h_cxb   8888888888888888888888888888888888888888888888888888888888888888
+\set h_ok         abababababababababababababababababababababababababababababababab
+
+-- A second tenant_b user so the tenant_b attempt satisfies four-eyes (actor !=
+-- freezer). Commit checks membership ACTIVE + version only; no role/site grant.
+insert into auth.users (id) values (:'u_worker_b');
+insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
+  (:'m_worker_b', :'tenant_b', :'u_worker_b', 1, 'ACTIVE');
+
+-- Candidates the commit RPC reads (freezer distinct from each attempt's actor).
+insert into public.release_candidate
+  (id, tenant_id, site_id, working_revision_id, candidate_hash, snapshot_hash, gate_inputs_hash,
+   machine_profile_hash, attestation_id, attestation_hash, policy_version, freezer_user_id, frozen_at)
+values
+  (:'cand_cblk', :'tenant_a', :'site_a', :'wr_a', :'cand_h_cblk', :'sub', :'sub', :'sub', :'att_a', :'sub', 'policy-2026-07', :'u_designer',  clock_timestamp()),
+  (:'cand_cok',  :'tenant_a', :'site_a', :'wr_a', :'cand_h_cok',  :'sub', :'sub', :'sub', :'att_a', :'sub', 'policy-2026-07', :'u_designer',  clock_timestamp()),
+  (:'cand_cxb',  :'tenant_b', :'site_b', :'wr_b', :'cand_h_cxb',  :'sub', :'sub', :'sub', :'att_b', :'sub', 'policy-2026-07', :'u_revoker_b', clock_timestamp());
+
+-- Committable PENDING attempts (actor has an ACTIVE membership at version 1;
+-- allocated_revision_id is fresh; release_sequence unique per tenant).
+insert into public.release_attempt
+  (id, tenant_id, site_id, candidate_id, actor_user_id, candidate_hash, release_authorization_hash,
+   idempotency_key, request_hash, status, allocated_revision_id, release_sequence, membership_version,
+   aal, action_context_id, authorized_at)
+values
+  (:'attm_cblk', :'tenant_a', :'site_a', :'cand_cblk', :'u_revoker',  :'cand_h_cblk', :'sub', 'idem-cblk', :'sub', 'PENDING', :'rev_cblk', 301, 1, 'aal1', gen_random_uuid(), clock_timestamp()),
+  (:'attm_cok',  :'tenant_a', :'site_a', :'cand_cok',  :'u_revoker',  :'cand_h_cok',  :'sub', 'idem-cok',  :'sub', 'PENDING', :'rev_cok',  302, 1, 'aal1', gen_random_uuid(), clock_timestamp()),
+  (:'attm_cxb',  :'tenant_b', :'site_b', :'cand_cxb',  :'u_worker_b', :'cand_h_cxb',  :'sub', 'idem-cxb',  :'sub', 'PENDING', :'rev_cxb',  202, 1, 'aal1', gen_random_uuid(), clock_timestamp());
+
+-- QUARANTINED artifacts (the shape begin_release leaves; commit flips them).
+insert into public.release_artifact
+  (id, tenant_id, site_id, release_attempt_id, artifact_class, status)
+values
+  (gen_random_uuid(), :'tenant_a', :'site_a', :'attm_cblk', 'P2_MANUFACTURING', 'QUARANTINED'),
+  (gen_random_uuid(), :'tenant_a', :'site_a', :'attm_cok',  'P2_MANUFACTURING', 'QUARANTINED'),
+  (gen_random_uuid(), :'tenant_b', :'site_b', :'attm_cxb',  'P2_MANUFACTURING', 'QUARANTINED');
+
+-- Precondition: h_blk is BLOCKED in (tenant_a, site_a) from Group E's real block.
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk'), true,
+  'precondition: h_blk is BLOCKED in (tenant_a, site_a) before the commit-gate tests');
+
+-- The core enforcement: committing the BLOCKED content_hash is rejected...
+select throws_ok(
+  $$select public.rpc_trust_commit_release('$$||:'attm_cblk'||$$'::uuid, '$$||:'h_blk'||$$', '$$||:'sub'||$$', '{"cert":"cblk"}'::jsonb, 'dev-release-key')$$,
+  'P0001', 'SAFETY_CONTENT_REVOKED',
+  'commit_release raises SAFETY_CONTENT_REVOKED for a BLOCKED content_hash');
+-- ...and creates NO release_revision (the deny fires before any INSERT/side effect).
+select is((select count(*) from public.release_revision where release_attempt_id=:'attm_cblk'::uuid), 0::bigint,
+  'a denied commit creates NO release_revision for the attempt (no ACTIVE release)');
+select is((select count(*) from public.release_revision where id=:'rev_cblk'::uuid), 0::bigint,
+  'a denied commit does not materialize the allocated revision id');
+
+-- Positive control: the SAME flow with a clean, never-blocked content_hash SUCCEEDS.
+select public.rpc_trust_commit_release(:'attm_cok'::uuid, :'h_ok', :'sub', '{"cert":"cok"}'::jsonb, 'dev-release-key') as rev_cok_committed \gset
+select is(:'rev_cok_committed'::uuid, :'rev_cok'::uuid,
+  'a clean (never-blocked) content_hash commits and returns the allocated revision id');
+select is((select status from public.release_revision where id=:'rev_cok'::uuid), 'ACTIVE',
+  'the clean commit records an ACTIVE release_revision (guard does not over-block)');
+
+-- Tenant/site scope: h_blk is blocked in tenant_a only — a tenant_b commit of the
+-- identical content_hash must SUCCEED (no cross-tenant leak at the commit gate).
+select public.rpc_trust_commit_release(:'attm_cxb'::uuid, :'h_blk', :'sub', '{"cert":"cxb"}'::jsonb, 'dev-release-key') as rev_cxb_committed \gset
+select is(:'rev_cxb_committed'::uuid, :'rev_cxb'::uuid,
+  'cross-tenant: a BLOCK in (tenant_a, site_a) does NOT reject a commit of the same content_hash in tenant_b');
+select is((select status from public.release_revision where id=:'rev_cxb'::uuid), 'ACTIVE',
+  'cross-tenant: the tenant_b commit of h_blk records an ACTIVE release_revision (block is tenant/site-scoped)');
 
 select * from finish();
 rollback;
