@@ -39,7 +39,14 @@
     "e2e:debug": "playwright test --debug",
     "e2e:report": "playwright show-report",
     "verify": "npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e:smoke",
-    "verify:full": "npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e"
+    "verify:full": "npm run test:run && npm run test:node && npm run typecheck:all && npm run e2e",
+    "tk:server": "npm --prefix server test -- --run",
+    "tk:server:build": "npm --prefix server run build",
+    "tk:verifier": "npm test -w tools/factory-packet-verifier -- --run",
+    "tk:verifier:build": "npm run build -w tools/factory-packet-verifier",
+    "tk:route-ledger": "node scripts/trust-kernel/verify-route-ledger.mjs",
+    "tk:containment": "vitest run src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts",
+    "tk:e2e": "playwright test e2e/trust-kernel"
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",

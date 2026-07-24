@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trust Kernel — Shadow Trust-Ready Runbook (EN)</title>
+<style>:root{color-scheme:light dark}body{max-width:52rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.6}
+code{background:rgba(127,127,127,.15);padding:.1em .3em;border-radius:3px;font-family:ui-monospace,Consolas,monospace}
+pre{background:rgba(127,127,127,.12);padding:1rem;border-radius:6px;overflow-x:auto}pre code{background:none;padding:0}
+blockquote{border-left:4px solid #b58900;margin:1rem 0;padding:.5rem 1rem;background:rgba(181,137,0,.08)}
+table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid rgba(127,127,127,.4);padding:.4rem .6rem;text-align:left}
+h1,h2,h3{line-height:1.25}</style>
+</head>
+<body>
+<h1>Trust Kernel — Shadow Trust-Ready Runbook (EN)</h1>
+<blockquote><strong>STATUS: <code>NOT_FOR_PRODUCTION</code>.</strong> This runbook operates the <strong>Shadow Trust-Ready</strong> Production Trust Kernel. P3 distribution and real Factory/machine delivery remain <strong>DISABLED</strong>. Passing every step here is <strong>not</strong> Production/GA approval — GA remains NO-GO pending a production key ceremony, AAL2 policy, operations drills, an authorized factory pilot, machine acceptance, and separate P3 authorization.</blockquote>
+<h2>1. Purpose</h2>
+<p>Operate and verify the Trust Kernel locally: run the deterministic builder, the independent verifier, the DB authority (Supabase/pgTAP), the edge transport, the shadow E2E flow, the route disposition ledger, and the signed evidence bundle. Every production-shaped artifact stays tenant-bound, two-person authorized, capability-safe, externally verifiable, revocable, and sealed away from humans as P2 plaintext.</p>
+<h2>2. Local prerequisites</h2>
+<ul><li>Node.js 20 or 22 (measured lane: v22.21.1) and npm 11+.</li><li>Docker daemon running (required by <code>supabase start</code>).</li><li>Supabase CLI via <code>npx -y supabase &lt;cmd&gt;</code> (pinned lane: 2.109.1).</li><li><code>psql</code> 18.x on PATH for direct pgTAP execution.</li><li>Playwright 1.58+ with the Chromium browser installed (<code>npx playwright install chromium</code>).</li><li>Python 3.12 only if you run the guardrails claim linters (cross-repo, see §10).</li></ul>
+<h2>3. Environment variables (key IDs / endpoints ONLY — never a private key)</h2>
+<p>The application stores <strong>signer key IDs only</strong>. Private keys live behind managed signer ports; never place key material in the environment or in a file.</p>
+<table><thead><tr><th>Variable</th><th>Meaning</th></tr></thead><tbody><tr><td><code>EVIDENCE_SIGNER_URL</code></td><td>Managed <strong>evidence</strong> signer endpoint (purpose <code>EVIDENCE</code>).</td></tr><tr><td><code>EVIDENCE_SIGNER_KEY_ID</code></td><td>Evidence key ID — must be <strong>separate</strong> from any release key.</td></tr><tr><td><code>E2E_BASE_URL</code></td><td>App origin for the shadow E2E run.</td></tr><tr><td><code>E2E_SUPABASE_ANON_KEY</code></td><td>Anon apikey for the <code>/v3/factory</code> edge.</td></tr><tr><td><code>E2E_DESIGNER_A_JWT</code></td><td>Bearer for the freeze actor (tenant 001, Site A).</td></tr><tr><td><code>E2E_APPROVER_B_JWT</code></td><td>Bearer for the release approver (a <strong>distinct</strong> human).</td></tr><tr><td><code>E2E_TENANT_002_JWT</code></td><td>Bearer for a tenant-002 member (coexistence + isolation).</td></tr></tbody></table>
+<p>If <code>EVIDENCE_SIGNER_URL</code>/<code>EVIDENCE_SIGNER_KEY_ID</code> are unset, evidence issuance and the CI evidence job <strong>fail closed</strong> — this is correct, not a bug.</p>
+<h2>4. Provision tenant fixtures (Daph 001 + tenant 002)</h2>
+<p>Daph is <strong>fixture/onboarding data for tenant 001</strong>, never a runtime constant. Every coexistence check also provisions <strong>tenant 002</strong>.</p>
+<ol><li>Start the DB: <code>npx -y supabase start</code> (applies the migration chain incl. 0180–0184).</li><li>Seed tenant 001 (Daph) and tenant 002 memberships, a Site A working revision, and a</li></ol>
+<p>frozen candidate through the user-scoped action-context RPC — <strong>under the caller bearer</strong>, never the service role. The freeze actor and the release approver must be <strong>two distinct authenticated users</strong>.</p>
+<ol><li>Confirm the fixture: <code>releaseStatus</code> for the working revision returns a projection</li></ol>
+<p>(status + references only — no locator, no URL, no plaintext).</p>
+<blockquote>A service role cannot mint human authority or accept a client-supplied role, name, tenant, site, or object path.</blockquote>
+<h2>5. Run the local acceptance sequence</h2>
+<p>Run in order; every command must exit 0, every suite must have non-zero assertions, and skips must be zero:</p>
+<pre><code>npm --prefix server test -- --run src/trust-kernel
+npm --prefix server run build
+npm test -w tools/factory-packet-verifier -- --run
+npm run build -w tools/factory-packet-verifier
+npx vitest run supabase/functions/factory-api/index.test.ts
+npm run test:run -- src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts
+node scripts/trust-kernel/verify-route-ledger.mjs
+npm run typecheck:all
+npm run build
+npm run e2e -- e2e/trust-kernel</code></pre>
+<p>Then run the five Trust Kernel pgTAP suites plus the invariants against a freshly started stack (see §6). Expected: valid vectors pass, P2 human access is denied, and every hostile vector rejects with its assigned reason code.</p>
+<h2>6. Run the pgTAP suites</h2>
+<pre><code>psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
+  -f supabase/tests/trust_kernel_tenancy.sql</code></pre>
+<p>Repeat for <code>trust_kernel_governance</code>, <code>trust_kernel_release</code>, <code>trust_kernel_bundles</code>, <code>trust_kernel_containment</code>, and <code>workflow_db_invariants</code>. A suite passes when it emits at least one <code>ok</code> and zero <code>not ok</code>.</p>
+<blockquote>On the SHARED local stack, do <strong>not</strong> run <code>supabase db reset</code> or <code>supabase stop</code> (other lanes share it). Apply via <code>psql -1 -f</code>; tests roll back.</blockquote>
+<h2>7. Inspect reason codes</h2>
+<p>Every denial returns a stable machine-readable reason code (registry: <code>server/src/trust-kernel/reasonCodes.ts</code>). Common shadow codes:</p>
+<ul><li><code>AUTH_SOD_VIOLATION</code> — the same human tried to freeze and release.</li><li><code>AUTH_MEMBERSHIP_REVOKED</code> — membership revoked mid-flow.</li><li><code>STATE_CANDIDATE_STALE</code> / <code>STATE_RELEASE_AUTHORIZATION_STALE</code> — candidate mutated after approval.</li><li><code>STATE_CONFLICT</code> — two approvers raced; exactly one wins.</li><li><code>STATE_RELEASE_REVOKED</code> — a revoked release cannot be read or streamed.</li><li><code>STORE_PLAINTEXT_ACCESS_DENIED</code> — a human/client tried to read P2 plaintext or a raw locator.</li><li><code>TRUST_FRESHNESS_UNPROVEN</code> — an offline replay cannot claim current authority.</li></ul>
+<h2>8. Revoke a release</h2>
+<p>Revoke through the <code>/v3/factory/.../revoke</code> authority as the <code>SAFETY_REVOKER</code>. Revocation is <strong>revision-scoped</strong>: the revoked revision stays blocked forever; a correction starts as a <strong>new draft</strong> and needs fresh four-eyes. After revocation, both human and isolated P2 reads are denied (recheck at request start).</p>
+<h2>9. Refresh the verifier checkpoint + evidence retention</h2>
+<ul><li><strong>Verifier checkpoint:</strong> the independent verifier (<code>tools/factory-packet-verifier</code>)</li></ul>
+<p>rejects first use without a trusted checkpoint (<code>TRUST_CHECKPOINT_REQUIRED</code>), a sequence rollback (<code>TRUST_SEQUENCE_ROLLBACK</code>), and a bundle beyond <code>maxOfflineStaleness</code> (<code>TRUST_BUNDLE_EXPIRED</code>). Refresh by pinning the current trusted bootstrap checkpoint and the online-current high-water mark before an offline run.</p>
+<ul><li><strong>Evidence retention:</strong> <code>EvidenceAttestationV1</code> records <code>retentionDays</code>; the evidence</li></ul>
+<p>bundle self-verifies (§16.4) under the <strong>separate</strong> <code>EVIDENCE</code> key and binds both Git roots, exact command/report digests, CI run/workflow identity, and builder/verifier binary hashes. A truncated log or a skipped test cannot support a passing claim.</p>
+<h2>10. Guardrails claim linters (cross-repo-pending)</h2>
+<p>The claim/certification linters (<code>tools/lint_claims.py</code>, <code>tools/lint_certifications.py</code>) live in the <strong>MONOLITH governance root</strong>, not this product repo. The CI <code>claim-linters</code> job references the expected path and runs them when a governance checkout is provided via <code>MONOLITH_GOVERNANCE_ROOT</code>; otherwise it reports <strong>cross-repo-pending</strong> rather than silently passing.</p>
+<h2>11. CI status — UNVERIFIED</h2>
+<p><code>.github/workflows/trust-kernel-verify.yml</code> has <strong>never run</strong> (this worktree is not pushed). The first pusher must push a deliberate violation (a skip, a failure, a deleted report, a one-OS packet perturbation) and confirm the final gate <strong>fails</strong> before trusting it. There is no <code>--allowlist</code>/override escape hatch.</p>
+</body>
+</html>

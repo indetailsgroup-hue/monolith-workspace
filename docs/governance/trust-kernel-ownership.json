@@ -1,0 +1,101 @@
+{
+  "$schema": "internal://monolith/trust-kernel/ownership/v1",
+  "version": "1",
+  "phase": "NOT_FOR_PRODUCTION",
+  "policy": "Every trust-kernel domain maps to exactly one of five accountable owners (design §19). An owner may evolve implementation inside its boundary, but cannot change a protocol or invariant without a versioned decision and a migration (design §20). Validated by server/src/trust-kernel/observability/ownership.ts and the observability contract test.",
+  "accountableOwners": [
+    "Security/IAM",
+    "Release Governance",
+    "Manufacturing Engineering",
+    "Platform Engineering",
+    "Independent QA/Safety"
+  ],
+  "domains": [
+    {
+      "domain": "identity-tenancy-rls",
+      "owner": "Security/IAM",
+      "summary": "Actor resolution, verified action context, JWT/membership, RLS, tenant/site scoping (migrations 0180)."
+    },
+    {
+      "domain": "signer-custody",
+      "owner": "Security/IAM",
+      "summary": "Managed signer ports and key-id custody; the application stores key ids only, never private keys (design §11.2)."
+    },
+    {
+      "domain": "trust-bundles",
+      "owner": "Security/IAM",
+      "summary": "Trust bundle issuance, trust-root pinning, freshness/checkpoint policy (migration 0183)."
+    },
+    {
+      "domain": "release-lifecycle-sod",
+      "owner": "Release Governance",
+      "summary": "Working/release lifecycle, four-eyes separation of duties, freeze/approve/release authority (migration 0182)."
+    },
+    {
+      "domain": "exceptions-revocation",
+      "owner": "Release Governance",
+      "summary": "Warning-exception grants, safety revocation, VOID handling (migrations 0181, 0182)."
+    },
+    {
+      "domain": "operation-semantics",
+      "owner": "Manufacturing Engineering",
+      "summary": "Operation vocabulary, dialect defense-in-depth, machine parameter ranges."
+    },
+    {
+      "domain": "capability-profiles",
+      "owner": "Manufacturing Engineering",
+      "summary": "Signed machine-profile attestation, tool/postprocessor binding, capability compiler."
+    },
+    {
+      "domain": "deterministic-builder",
+      "owner": "Platform Engineering",
+      "summary": "Deterministic FactoryPacket V3 bytes, canonical JSON, fixed ZIP profile, golden vectors."
+    },
+    {
+      "domain": "artifact-storage-workers",
+      "owner": "Platform Engineering",
+      "summary": "Private artifact quarantine store, outbox/worker materialization, P2 containment."
+    },
+    {
+      "domain": "independent-verifier",
+      "owner": "Independent QA/Safety",
+      "summary": "tools/factory-packet-verifier: independent offline packet/trust verification, no builder imports."
+    },
+    {
+      "domain": "hostile-corpus",
+      "owner": "Independent QA/Safety",
+      "summary": "Mutation/hostile packet corpus and the negative-vector conformance suite."
+    },
+    {
+      "domain": "evidence-bundle",
+      "owner": "Independent QA/Safety",
+      "summary": "Signed evidence manifest + EvidenceAttestationV1 with a separate evidence key (design §16.4)."
+    }
+  ],
+  "changeControl": {
+    "policy": "A protocol or invariant change requires a versioned decision (ADR/design section) AND a migration/route-ledger reference. Implementation-only changes stay inside the owner boundary.",
+    "records": [
+      {
+        "id": "CTL-0001",
+        "kind": "protocol",
+        "summary": "KeyPurpose widened locally with TRUST_BUNDLE (Task 9) and EVIDENCE (Task 12) via documented casts; Task-1 contract untouched.",
+        "versionedDecision": "design §11.2 KeyPurpose delta; SDD ledger Phase-B/C deltas",
+        "migrationRef": "0183_trust_kernel_bundles.sql"
+      },
+      {
+        "id": "CTL-0002",
+        "kind": "invariant",
+        "summary": "Single mutable release authority (0182 release_revision via the V3 edge); legacy V1/V2 authority contained.",
+        "versionedDecision": "design §15.2 route disposition; plan Task 11",
+        "migrationRef": "0184_trust_kernel_legacy_containment.sql"
+      },
+      {
+        "id": "CTL-0003",
+        "kind": "invariant",
+        "summary": "P2 plaintext readable only by the isolated workload identity; humans receive hashes/reports/evidence.",
+        "versionedDecision": "design §9 Artifact Class Matrix",
+        "migrationRef": "0184_trust_kernel_legacy_containment.sql; docs/governance/trust-kernel-route-disposition.json"
+      }
+    ]
+  }
+}

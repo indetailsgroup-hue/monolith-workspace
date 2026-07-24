@@ -1,0 +1,371 @@
+# =============================================================================
+# trust-kernel-verify.yml — Shadow Trust-Ready complete-output CI gate (plan Task 12
+# Step 4; design §16, §17.1).
+#
+#  ##  UNVERIFIED  ##
+#  THIS WORKFLOW HAS NEVER RUN. The trust-kernel worktree is NOT pushed to any
+#  remote, so GitHub Actions has never executed a single line of this file. It is
+#  authored from the local command contracts (plan Step 6) but is UNPROVEN on CI
+#  infrastructure. Do NOT claim it "works" or "passes".
+#
+#  FIRST PUSHER MUST, before trusting this gate:
+#    1. Push the branch and open the Actions run; confirm every job is discovered
+#       and the toolchain (Node 22, Supabase CLI, Playwright, Python) resolves.
+#    2. Push a DELIBERATE violation of each guarantee and watch the final gate FAIL:
+#         - add a `it.skip(...)` to a trust-kernel test        -> gate rejects a SKIP
+#         - make one trust-kernel test fail                    -> gate rejects a FAILURE
+#         - delete a required report before the final job      -> gate rejects MISSING REPORT
+#         - perturb the deterministic packet on one OS         -> gate rejects HASH MISMATCH
+#       Only after each intentional break is caught should this gate be trusted.
+#    3. There is NO `--allowlist`/override escape hatch anywhere here by design; do
+#       not add one.
+# =============================================================================
+name: Trust Kernel Verify (Shadow Trust-Ready)
+
+on:
+  push:
+    branches: [main, "trust-kernel/**"]
+    paths:
+      - "server/src/trust-kernel/**"
+      - "tools/factory-packet-verifier/**"
+      - "src/factory/**"
+      - "src/core/**"
+      - "supabase/**"
+      - "e2e/trust-kernel/**"
+      - "docs/governance/**"
+      - "scripts/trust-kernel/**"
+      - ".github/workflows/trust-kernel-verify.yml"
+  pull_request:
+    paths:
+      - "server/src/trust-kernel/**"
+      - "tools/factory-packet-verifier/**"
+      - "supabase/**"
+      - "e2e/trust-kernel/**"
+      - "docs/governance/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # (1) Cross-platform deterministic + server + verifier tests. Windows AND Ubuntu
+  # both run; the golden packet sha from each OS is captured for the byte-identity
+  # check in the final gate. Every noisy command writes a machine-readable report.
+  # ---------------------------------------------------------------------------
+  matrix-tests:
+    name: tests-${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install (root workspaces + server)
+        run: |
+          npm ci
+          npm ci --prefix server
+
+      - name: Server trust-kernel + full suite (JSON report)
+        run: npm --prefix server test -- --run --reporter=json --outputFile=../reports/server-${{ matrix.os }}.json
+        env:
+          CI: "true"
+
+      - name: Deterministic packet suite (JSON report)
+        run: npm --prefix server test -- --run src/trust-kernel/test/packetV3.determinism.test.ts --reporter=json --outputFile=../reports/determinism-${{ matrix.os }}.json
+
+      - name: Build independent verifier
+        run: npm run build -w tools/factory-packet-verifier
+
+      - name: Verifier + hostile-corpus suite (JSON report)
+        run: npm test -w tools/factory-packet-verifier -- --run --reporter=json --outputFile=reports/verifier-${{ matrix.os }}.json
+
+      - name: Frontend containment suite (Task 11 + Task 12 export, JSON report)
+        run: npx vitest run src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts --reporter=json --outputFile=reports/containment-${{ matrix.os }}.json
+
+      - name: Root typecheck + build
+        run: |
+          npm run typecheck:all
+          npm run build
+
+      - name: Route disposition ledger (single authority, no P2/actor breach, no deferrals)
+        run: node scripts/trust-kernel/verify-route-ledger.mjs
+
+      - name: Capture golden packet sha (byte-identity input)
+        shell: bash
+        run: |
+          mkdir -p reports
+          node -e "const c=require('crypto'),fs=require('fs');const b=fs.readFileSync('test-vectors/factory-packet-v3/valid-minimal/packet.zip');const h=c.createHash('sha256').update(b).digest('hex');fs.writeFileSync('reports/golden-${{ matrix.os }}.sha', h);console.log('golden', '${{ matrix.os }}', h);"
+          # The committed expected sha must match the recomputed one on THIS OS.
+          EXPECT=$(cat test-vectors/factory-packet-v3/valid-minimal/expected-packet.sha256 | tr -d '[:space:]')
+          GOT=$(cat reports/golden-${{ matrix.os }}.sha)
+          if [ "$EXPECT" != "$GOT" ]; then echo "::error::golden packet sha drift on ${{ matrix.os }}: expected $EXPECT got $GOT"; exit 1; fi
+
+      - name: Upload reports (${{ matrix.os }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.os }}
+          path: reports/
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # (2) Edge transport tests + local Supabase pgTAP (5 trust-kernel suites + the
+  # workflow invariants). TAP output per suite; a failure or an empty suite fails.
+  # ---------------------------------------------------------------------------
+  edge-db:
+    name: edge + pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install root workspaces
+        run: npm ci
+
+      - name: Start local Supabase (applies migration chain incl. 0180-0184)
+        run: supabase start
+
+      - name: Edge factory-api tests (JSON report)
+        run: npx vitest run supabase/functions/factory-api/index.test.ts --reporter=json --outputFile=reports/edge.json
+
+      - name: pgTAP trust-kernel suites (per-suite TAP)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports
+          DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          for suite in trust_kernel_tenancy trust_kernel_governance trust_kernel_release trust_kernel_bundles trust_kernel_containment workflow_db_invariants; do
+            psql "$DB" -tA -v ON_ERROR_STOP=1 -f "supabase/tests/${suite}.sql" | tee "reports/pgtap-${suite}.tap"
+            if grep -qE '^not ok' "reports/pgtap-${suite}.tap"; then echo "::error::pgTAP failure in ${suite}"; exit 1; fi
+            if ! grep -qE '^ok ' "reports/pgtap-${suite}.tap"; then echo "::error::empty pgTAP suite ${suite}"; exit 1; fi
+          done
+
+      - name: Upload edge + pgTAP reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-edge-db
+          path: reports/
+          retention-days: 90
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
+  # ---------------------------------------------------------------------------
+  # (3) Playwright shadow E2E — two-person release + revocation-race chaos. The app
+  # + Supabase stack and two authenticated user JWTs are provided by CI secrets.
+  # ---------------------------------------------------------------------------
+  e2e:
+    name: shadow E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install root workspaces
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Run trust-kernel shadow E2E (JSON report)
+        run: npx playwright test e2e/trust-kernel --reporter=json > reports/e2e.json
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+          E2E_DESIGNER_A_JWT: ${{ secrets.E2E_DESIGNER_A_JWT }}
+          E2E_APPROVER_B_JWT: ${{ secrets.E2E_APPROVER_B_JWT }}
+          E2E_TENANT_002_JWT: ${{ secrets.E2E_TENANT_002_JWT }}
+      - name: Upload E2E report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-e2e
+          path: reports/
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # (4) Claim / certification linters (guardrails). CROSS-REPO-PENDING: the linters
+  # live in the MONOLITH governance root (tools/lint_claims.py, lint_certifications.py),
+  # NOT in this product repo. This step references the expected path and runs them
+  # only when the governance repo is checked out alongside; otherwise it reports the
+  # cross-repo-pending status explicitly (it does not silently pass a real lint).
+  # ---------------------------------------------------------------------------
+  claim-linters:
+    name: claim linters (cross-repo-pending)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run claim/certification linters over docs/ (if governance tools present)
+        shell: bash
+        run: |
+          GOV_CLAIMS="${MONOLITH_GOVERNANCE_ROOT:-..}/tools/lint_claims.py"
+          GOV_CERTS="${MONOLITH_GOVERNANCE_ROOT:-..}/tools/lint_certifications.py"
+          if [ -f "$GOV_CLAIMS" ] && [ -f "$GOV_CERTS" ]; then
+            python "$GOV_CLAIMS" docs/
+            python "$GOV_CERTS" docs/
+          else
+            echo "::warning::CROSS-REPO-PENDING: guardrails linters expected at $GOV_CLAIMS / $GOV_CERTS (MONOLITH governance root) are not present in the product-repo checkout."
+            echo "Wire MONOLITH_GOVERNANCE_ROOT (a governance-repo checkout) or vendor copies into this repo, then remove this branch."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # (5) Evidence self-verification. Builds the evidence manifest + signs the
+  # EvidenceAttestationV1 through the managed EVIDENCE signer and self-verifies. With
+  # no signer/verifier configured this FAILS CLOSED — that is the correct behavior; a
+  # green here requires a real, separate evidence key + verify endpoint.
+  # ---------------------------------------------------------------------------
+  evidence-self-verify:
+    name: evidence self-verify (fail-closed)
+    runs-on: ubuntu-latest
+    needs: [matrix-tests, edge-db, e2e]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build server (compiles evidence modules)
+        run: |
+          npm ci --prefix server
+          npm --prefix server run build
+      - name: Assert evidence signer configuration is present (fail closed otherwise)
+        env:
+          EVIDENCE_SIGNER_URL: ${{ secrets.EVIDENCE_SIGNER_URL }}
+          EVIDENCE_SIGNER_KEY_ID: ${{ secrets.EVIDENCE_SIGNER_KEY_ID }}
+        run: |
+          if [ -z "$EVIDENCE_SIGNER_URL" ] || [ -z "$EVIDENCE_SIGNER_KEY_ID" ]; then
+            echo "::error::evidence self-verification FAILED CLOSED: EVIDENCE_SIGNER_URL / EVIDENCE_SIGNER_KEY_ID are not configured. A Shadow-Trust-Ready pass requires a real, SEPARATE evidence key and verify endpoint (design §16.4)."
+            exit 1
+          fi
+          echo "evidence signer configured; issueEvidenceAttestation will sign + self-verify with the separate EVIDENCE key."
+
+  # ---------------------------------------------------------------------------
+  # (6) FINAL GATE. Reads the COMPLETE machine-readable reports and rejects any
+  # failure, cancellation, skip, missing report, empty suite, or cross-platform hash
+  # mismatch. There is no override.
+  # ---------------------------------------------------------------------------
+  final-gate:
+    name: final acceptance gate
+    runs-on: ubuntu-latest
+    needs: [matrix-tests, edge-db, e2e, claim-linters, evidence-self-verify]
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+      - name: Enforce complete-output acceptance
+        env:
+          R_MATRIX: ${{ needs.matrix-tests.result }}
+          R_EDGE: ${{ needs.edge-db.result }}
+          R_E2E: ${{ needs.e2e.result }}
+          R_EVIDENCE: ${{ needs.evidence-self-verify.result }}
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const violations = [];
+
+          // (a) Job-level results: any non-success (failure/cancelled/skipped) is rejected.
+          //     claim-linters is intentionally advisory (cross-repo-pending) and excluded here.
+          for (const [name, res] of Object.entries({
+            'matrix-tests': process.env.R_MATRIX,
+            'edge-db': process.env.R_EDGE,
+            'e2e': process.env.R_E2E,
+            'evidence-self-verify': process.env.R_EVIDENCE,
+          })) {
+            if (res !== 'success') violations.push(`job "${name}" did not succeed (result=${res})`);
+          }
+
+          const root = 'all-reports';
+          const walk = (d) => fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap(e => {
+            const p = path.join(d, e.name); return e.isDirectory() ? walk(p) : [p];
+          }) : [];
+          const files = walk(root);
+
+          const req = (pred, msg) => { if (!files.some(pred)) violations.push(`missing required report: ${msg}`); };
+          req(f => /server-ubuntu-latest\.json$/.test(f), 'server-ubuntu-latest.json');
+          req(f => /server-windows-latest\.json$/.test(f), 'server-windows-latest.json');
+          req(f => /verifier-ubuntu-latest\.json$/.test(f), 'verifier-ubuntu-latest.json');
+          req(f => /edge\.json$/.test(f), 'edge.json');
+          req(f => /pgtap-trust_kernel_release\.tap$/.test(f), 'pgtap-trust_kernel_release.tap');
+          req(f => /e2e\.json$/.test(f), 'e2e.json');
+
+          // (b) vitest JSON reports: >0 tests, 0 failed, 0 skipped (pending), success true.
+          for (const f of files.filter(f => f.endsWith('.json') && !/e2e\.json$/.test(f))) {
+            let r; try { r = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { violations.push(`unparseable report ${f}`); continue; }
+            if (typeof r.numTotalTests !== 'number') continue; // not a vitest report
+            if (r.numTotalTests <= 0) violations.push(`empty suite in ${f} (numTotalTests=0)`);
+            if (r.numFailedTests > 0) violations.push(`${r.numFailedTests} failed test(s) in ${f}`);
+            if (r.numPendingTests > 0) violations.push(`${r.numPendingTests} skipped test(s) in ${f}`);
+            if (r.success !== true) violations.push(`report ${f} is not success`);
+          }
+
+          // (c) Playwright e2e JSON: no unexpected, no skipped, >0 expected.
+          const e2e = files.find(f => /e2e\.json$/.test(f));
+          if (e2e) {
+            try {
+              const r = JSON.parse(fs.readFileSync(e2e, 'utf8'));
+              const s = r.stats || {};
+              if ((s.expected || 0) <= 0) violations.push('e2e ran zero tests');
+              if ((s.unexpected || 0) > 0) violations.push(`e2e has ${s.unexpected} unexpected failure(s)`);
+              if ((s.skipped || 0) > 0) violations.push(`e2e has ${s.skipped} skipped test(s)`);
+              if ((s.flaky || 0) > 0) violations.push(`e2e has ${s.flaky} flaky test(s)`);
+            } catch { violations.push('unparseable e2e report'); }
+          }
+
+          // (d) pgTAP: each suite has at least one `ok` and zero `not ok`.
+          for (const f of files.filter(f => f.endsWith('.tap'))) {
+            const tap = fs.readFileSync(f, 'utf8');
+            const ok = (tap.match(/^ok /gm) || []).length;
+            const notOk = (tap.match(/^not ok /gm) || []).length;
+            if (ok === 0) violations.push(`empty pgTAP suite ${f}`);
+            if (notOk > 0) violations.push(`${notOk} pgTAP failure(s) in ${f}`);
+          }
+
+          // (e) Cross-platform golden packet byte-identity: ubuntu sha == windows sha.
+          const shaU = files.find(f => /golden-ubuntu-latest\.sha$/.test(f));
+          const shaW = files.find(f => /golden-windows-latest\.sha$/.test(f));
+          if (!shaU || !shaW) violations.push('missing golden packet sha from one OS');
+          else {
+            const u = fs.readFileSync(shaU, 'utf8').trim();
+            const w = fs.readFileSync(shaW, 'utf8').trim();
+            if (u !== w) violations.push(`cross-platform golden packet sha MISMATCH: ubuntu=${u} windows=${w}`);
+          }
+
+          if (violations.length > 0) {
+            console.error('TRUST KERNEL FINAL GATE: FAIL');
+            for (const v of violations) console.error('  - ' + v);
+            process.exit(1);
+          }
+          console.log('TRUST KERNEL FINAL GATE: PASS — complete reports, no failure/skip/empty/missing, cross-platform bytes identical.');
+          NODE

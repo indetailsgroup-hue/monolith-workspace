@@ -1,7 +1,7 @@
 {
   "$schema": "internal://monolith/trust-kernel/route-disposition/v1",
-  "version": "1",
-  "task": "Task 11 — P2 quarantine, client projection, legacy-route containment",
+  "version": "2",
+  "task": "Task 11 — P2 quarantine, client projection, legacy-route containment; extended by Task 12 to ENFORCE the src/core/api export subsystem (CUTLIST_CSV/DXF_R12/GCODE/STEP zipBase64), closing the Task 11 carry-forward. No deferred BLOCK surfaces remain.",
   "phase": "NOT_FOR_PRODUCTION",
   "policy": "Every reachable build/export/download surface plus profile/tool/policy/JWT/storage-signing authority input is inventoried. A human or client can never reach P2 plaintext, a raw storage locator, or a reusable signed URL, and only one mutable release authority (0182 release_revision, reached via the V3 edge) exists. Dispositions: REUSE non-authoritative primitive | ADAPT reused under V3 contract | READ_ONLY history/inspection with no production-shaped output | BLOCK client download / FROZEN manufacturing export / duplicate authority / any bypass.",
   "enforcedGlobs": [
@@ -12,6 +12,7 @@
     "src/components/ui/ExportPanel.tsx",
     "src/export/cutList/download.ts",
     "src/core/export/downloadArtifacts.ts",
+    "src/core/api/exportApi.ts",
     "supabase/functions/factory-api/index.ts",
     "supabase/functions/factory-api/trustKernel.ts"
   ],
@@ -182,6 +183,19 @@
       "negativeTestId": "containment:download-guard-artifacts"
     },
     {
+      "id": "client.exportApi.p2Zip",
+      "owner": "factory-api",
+      "class": "P2_MANUFACTURING",
+      "file": "src/core/api/exportApi.ts",
+      "presenceMarker": "NOT_FOR_PRODUCTION",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "The gated export-ZIP client (CUTLIST_CSV/DXF_R12/GCODE/STEP zipBase64) refuses a human/client P2 egress with NOT_FOR_PRODUCTION before any byte decode or browser download; P1 review formats (BOM_JSON, PDF) pass.",
+      "target": "BLOCK — P2 export subsystem contained (Task 12 closure of the Task 11 carry-forward).",
+      "disposition": "BLOCK",
+      "negativeTestId": "containment:exportApi-p2-refused"
+    },
+    {
       "id": "edge.v3.authority",
       "owner": "trust-kernel",
       "class": "AUTHORITY",
@@ -289,22 +303,12 @@
   "requiredMarkers": [
     { "id": "guard-cutlist", "file": "src/export/cutList/download.ts", "pattern": "assertNotProductionShaped" },
     { "id": "guard-artifacts", "file": "src/core/export/downloadArtifacts.ts", "pattern": "assertNotProductionShaped" },
+    { "id": "guard-exportApi", "file": "src/core/api/exportApi.ts", "pattern": "assertExportFormatNotProductionShaped" },
     { "id": "projection-denial", "file": "src/factory/packet/trustKernelProjection.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
     { "id": "edge-p2-denial", "file": "supabase/functions/factory-api/index.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
     { "id": "v3-relay", "file": "src/core/api/trustKernelApi.ts", "pattern": "/v3/factory" }
   ],
   "inventoryOnly": [
-    {
-      "id": "authorityInput.exportApi",
-      "owner": "factory-api",
-      "class": "P2_MANUFACTURING",
-      "file": "src/core/api/exportApi.ts",
-      "enforced": false,
-      "currentBehavior": "Export-API client (CUTLIST_CSV/DXF_R12/GCODE/STEP zipBase64) — a separate P2 export subsystem outside Task 11's file scope.",
-      "target": "BLOCK — full containment of the factory/api export subsystem is owned by Task 12.",
-      "disposition": "BLOCK",
-      "negativeTestId": "deferred:task12-exportApi-containment"
-    },
     {
       "id": "authorityInput.storageSigning",
       "owner": "factory-api",

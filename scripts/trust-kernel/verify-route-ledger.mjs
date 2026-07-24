@@ -120,6 +120,18 @@ function main() {
     violations.push('no route holds the mutable release authority (RELEASE_MUTABLE) — the single authority must be declared');
   }
 
+  // (6) No deferred containment may remain (Task 12 closure). An inventoryOnly BLOCK
+  // surface whose negativeTestId is still "deferred:*" is a carried-forward P2 surface
+  // that was never actively contained. Task 12 closed the src/core/api export
+  // subsystem deferral, so any remaining deferral is a coverage gap and fails closed.
+  for (const io of ledger.inventoryOnly ?? []) {
+    if (typeof io.negativeTestId === 'string' && io.negativeTestId.startsWith('deferred:')) {
+      violations.push(
+        `unclosed deferred containment: inventoryOnly "${io.id}" (${io.file}) is still deferred (${io.negativeTestId}); it must be promoted to an enforced route`,
+      );
+    }
+  }
+
   const summary = {
     enforcedFiles: enforcedGlobs.length,
     enforcedRoutes: enforcedRoutes.length,

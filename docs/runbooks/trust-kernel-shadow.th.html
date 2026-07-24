@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trust Kernel — คู่มือปฏิบัติการ Shadow Trust-Ready (TH)</title>
+<style>:root{color-scheme:light dark}body{max-width:52rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.6}
+code{background:rgba(127,127,127,.15);padding:.1em .3em;border-radius:3px;font-family:ui-monospace,Consolas,monospace}
+pre{background:rgba(127,127,127,.12);padding:1rem;border-radius:6px;overflow-x:auto}pre code{background:none;padding:0}
+blockquote{border-left:4px solid #b58900;margin:1rem 0;padding:.5rem 1rem;background:rgba(181,137,0,.08)}
+table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid rgba(127,127,127,.4);padding:.4rem .6rem;text-align:left}
+h1,h2,h3{line-height:1.25}</style>
+</head>
+<body>
+<h1>Trust Kernel — คู่มือปฏิบัติการ Shadow Trust-Ready (TH)</h1>
+<blockquote><strong>สถานะ: <code>NOT_FOR_PRODUCTION</code>.</strong> คู่มือนี้ใช้ปฏิบัติการ Production Trust Kernel ระดับ <strong>Shadow Trust-Ready</strong> เท่านั้น การกระจาย P3 และการส่งงานเข้าโรงงาน/เครื่องจักรจริง ยัง <strong>ปิดอยู่</strong> การผ่านทุกขั้นตอนในคู่มือนี้ <strong>ไม่ใช่</strong> การอนุมัติ Production/GA — GA ยัง เป็น NO-GO จนกว่าจะมีพิธีจัดการกุญแจ production, นโยบาย AAL2, การซ้อมปฏิบัติการ, การนำร่องโรงงานที่ได้รับอนุญาต, การยอมรับระดับเครื่องจักร และการอนุมัติ P3 แยกต่างหาก</blockquote>
+<h2>1. วัตถุประสงค์</h2>
+<p>ใช้ปฏิบัติการและตรวจสอบ Trust Kernel ในเครื่อง: รัน deterministic builder, verifier อิสระ, ตัวมีอำนาจฝั่ง DB (Supabase/pgTAP), ชั้น edge, ขั้นตอน shadow E2E, บัญชี route disposition และชุดหลักฐานที่เซ็นกำกับ ทุก artifact รูปทรงการผลิตต้องผูกกับ tenant, อนุมัติสองคน, ปลอดภัยเชิงความสามารถ, ตรวจสอบจากภายนอกได้, เพิกถอนได้ และถูกผนึกไม่ให้มนุษย์เห็น เป็น P2 plaintext</p>
+<h2>2. สิ่งที่ต้องมีในเครื่อง</h2>
+<ul><li>Node.js 20 หรือ 22 (เลนที่วัดจริง: v22.21.1) และ npm 11+</li><li>Docker daemon ทำงานอยู่ (จำเป็นสำหรับ <code>supabase start</code>)</li><li>Supabase CLI ผ่าน <code>npx -y supabase &lt;cmd&gt;</code> (เลนที่ตรึงไว้: 2.109.1)</li><li><code>psql</code> 18.x บน PATH เพื่อรัน pgTAP โดยตรง</li><li>Playwright 1.58+ พร้อมเบราว์เซอร์ Chromium (<code>npx playwright install chromium</code>)</li><li>Python 3.12 เฉพาะกรณีรัน guardrails claim linters (ข้ามรีโป ดู §10)</li></ul>
+<h2>3. ตัวแปรสภาพแวดล้อม (เฉพาะ key ID / endpoint — ห้ามใส่ private key)</h2>
+<p>แอปพลิเคชันเก็บ <strong>เฉพาะ signer key ID</strong> เท่านั้น private key อยู่หลัง managed signer port ห้ามวางวัตถุกุญแจไว้ในสภาพแวดล้อมหรือในไฟล์</p>
+<table><thead><tr><th>ตัวแปร</th><th>ความหมาย</th></tr></thead><tbody><tr><td><code>EVIDENCE_SIGNER_URL</code></td><td>endpoint ของ managed <strong>evidence</strong> signer (purpose <code>EVIDENCE</code>)</td></tr><tr><td><code>EVIDENCE_SIGNER_KEY_ID</code></td><td>key ID ของหลักฐาน — ต้อง <strong>แยก</strong> จากกุญแจ release ทุกดอก</td></tr><tr><td><code>E2E_BASE_URL</code></td><td>origin ของแอปสำหรับรัน shadow E2E</td></tr><tr><td><code>E2E_SUPABASE_ANON_KEY</code></td><td>anon apikey ของ edge <code>/v3/factory</code></td></tr><tr><td><code>E2E_DESIGNER_A_JWT</code></td><td>bearer ของผู้ freeze (tenant 001, Site A)</td></tr><tr><td><code>E2E_APPROVER_B_JWT</code></td><td>bearer ของผู้อนุมัติ release (คนละคน <strong>แยกจากกัน</strong>)</td></tr><tr><td><code>E2E_TENANT_002_JWT</code></td><td>bearer ของสมาชิก tenant 002 (การอยู่ร่วม + การแยกส่วน)</td></tr></tbody></table>
+<p>หากไม่ได้ตั้ง <code>EVIDENCE_SIGNER_URL</code>/<code>EVIDENCE_SIGNER_KEY_ID</code> การออกหลักฐานและงาน evidence ของ CI จะ <strong>fail closed</strong> — นี่คือพฤติกรรมที่ถูกต้อง ไม่ใช่ข้อผิดพลาด</p>
+<h2>4. เตรียม fixture ของ tenant (Daph 001 + tenant 002)</h2>
+<p>Daph คือ <strong>ข้อมูล fixture/onboarding ของ tenant 001</strong> ไม่ใช่ค่าคงที่ runtime ทุกการตรวจ การอยู่ร่วมต้องเตรียม <strong>tenant 002</strong> ด้วย</p>
+<ol><li>เริ่ม DB: <code>npx -y supabase start</code> (จะ apply สายการย้ายรวมถึง 0180–0184)</li><li>Seed สมาชิกของ tenant 001 (Daph) และ tenant 002, working revision ของ Site A และ</li></ol>
+<p>candidate ที่ freeze แล้ว ผ่าน action-context RPC ที่ผูกกับผู้ใช้ — <strong>ภายใต้ bearer ของ ผู้เรียก</strong> ไม่ใช่ service role ผู้ freeze และผู้อนุมัติ release ต้องเป็น <strong>ผู้ใช้ที่ยืนยันตัวตน สองคนแยกกัน</strong></p>
+<ol><li>ยืนยัน fixture: <code>releaseStatus</code> ของ working revision คืน projection (สถานะ + การอ้างอิง</li></ol>
+<p>เท่านั้น — ไม่มี locator ไม่มี URL ไม่มี plaintext)</p>
+<blockquote>service role สร้างอำนาจของมนุษย์ไม่ได้ และรับ role/name/tenant/site/object path ที่ ไคลเอนต์ส่งมาไม่ได้</blockquote>
+<h2>5. รันลำดับการยอมรับในเครื่อง</h2>
+<p>รันตามลำดับ ทุกคำสั่งต้อง exit 0 ทุกชุดต้องมี assertion ไม่เป็นศูนย์ และ skip ต้องเป็นศูนย์:</p>
+<pre><code>npm --prefix server test -- --run src/trust-kernel
+npm --prefix server run build
+npm test -w tools/factory-packet-verifier -- --run
+npm run build -w tools/factory-packet-verifier
+npx vitest run supabase/functions/factory-api/index.test.ts
+npm run test:run -- src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts
+node scripts/trust-kernel/verify-route-ledger.mjs
+npm run typecheck:all
+npm run build
+npm run e2e -- e2e/trust-kernel</code></pre>
+<p>จากนั้นรัน pgTAP ทั้งห้าชุดของ Trust Kernel พร้อมชุด invariants บน stack ที่เพิ่งเริ่มใหม่ (ดู §6) ผลที่คาดหวัง: vector ที่ถูกต้องผ่าน, การเข้าถึง P2 โดยมนุษย์ถูกปฏิเสธ และ vector ประสงค์ร้ายทุกตัวถูกปฏิเสธด้วยรหัสเหตุผลที่กำหนด</p>
+<h2>6. รันชุด pgTAP</h2>
+<pre><code>psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA -v ON_ERROR_STOP=1 \
+  -f supabase/tests/trust_kernel_tenancy.sql</code></pre>
+<p>ทำซ้ำกับ <code>trust_kernel_governance</code>, <code>trust_kernel_release</code>, <code>trust_kernel_bundles</code>, <code>trust_kernel_containment</code> และ <code>workflow_db_invariants</code> ชุดจะผ่านเมื่อมี <code>ok</code> อย่างน้อยหนึ่ง และ <code>not ok</code> เป็นศูนย์</p>
+<blockquote>บน stack ในเครื่องที่ <strong>ใช้ร่วมกัน</strong> ห้ามรัน <code>supabase db reset</code> หรือ <code>supabase stop</code> (เลนอื่นใช้ร่วม) ให้ apply ด้วย <code>psql -1 -f</code> แล้วเทสต์จะ roll back</blockquote>
+<h2>7. ตรวจสอบรหัสเหตุผล</h2>
+<p>ทุกการปฏิเสธคืนรหัสเหตุผลที่คงที่และอ่านด้วยเครื่องได้ (ทะเบียน: <code>server/src/trust-kernel/reasonCodes.ts</code>) รหัสที่พบบ่อยในโหมด shadow:</p>
+<ul><li><code>AUTH_SOD_VIOLATION</code> — คนเดียวพยายามทั้ง freeze และ release</li><li><code>AUTH_MEMBERSHIP_REVOKED</code> — membership ถูกเพิกถอนกลางคัน</li><li><code>STATE_CANDIDATE_STALE</code> / <code>STATE_RELEASE_AUTHORIZATION_STALE</code> — candidate ถูกแก้หลังอนุมัติ</li><li><code>STATE_CONFLICT</code> — ผู้อนุมัติสองคนแข่งกัน ชนะได้เพียงหนึ่ง</li><li><code>STATE_RELEASE_REVOKED</code> — release ที่ถูกเพิกถอนอ่านหรือสตรีมไม่ได้</li><li><code>STORE_PLAINTEXT_ACCESS_DENIED</code> — มนุษย์/ไคลเอนต์พยายามอ่าน P2 plaintext หรือ locator ดิบ</li><li><code>TRUST_FRESHNESS_UNPROVEN</code> — การเล่นซ้ำแบบออฟไลน์อ้างอำนาจปัจจุบันไม่ได้</li></ul>
+<h2>8. เพิกถอน release</h2>
+<p>เพิกถอนผ่านอำนาจ <code>/v3/factory/.../revoke</code> ในบทบาท <code>SAFETY_REVOKER</code> การเพิกถอนมี <strong>ขอบเขตระดับ revision</strong>: revision ที่ถูกเพิกถอนถูกบล็อกตลอดไป การแก้ไขเริ่มเป็น <strong>draft ใหม่</strong> และต้องผ่านสี่ตาใหม่ หลังการเพิกถอน การอ่าน P2 ทั้งโดยมนุษย์และโดย isolated จะถูกปฏิเสธ (ตรวจซ้ำ ณ ตอนเริ่มคำขอ)</p>
+<h2>9. รีเฟรช checkpoint ของ verifier + การเก็บรักษาหลักฐาน</h2>
+<ul><li><strong>Checkpoint ของ verifier:</strong> verifier อิสระ (<code>tools/factory-packet-verifier</code>) ปฏิเสธการใช้</li></ul>
+<p>ครั้งแรกที่ไม่มี checkpoint ที่เชื่อถือได้ (<code>TRUST_CHECKPOINT_REQUIRED</code>), การถอยลำดับ (<code>TRUST_SEQUENCE_ROLLBACK</code>) และ bundle ที่เกิน <code>maxOfflineStaleness</code> (<code>TRUST_BUNDLE_EXPIRED</code>) รีเฟรชโดยตรึง bootstrap checkpoint ที่เชื่อถือได้ปัจจุบัน และ high-water mark ที่เป็นปัจจุบัน ออนไลน์ก่อนรันออฟไลน์</p>
+<ul><li><strong>การเก็บรักษาหลักฐาน:</strong> <code>EvidenceAttestationV1</code> บันทึก <code>retentionDays</code> ชุดหลักฐาน</li></ul>
+<p>self-verify (§16.4) ภายใต้กุญแจ <code>EVIDENCE</code> ที่ <strong>แยกต่างหาก</strong> และผูกทั้งสอง Git root, digest ของคำสั่ง/รายงานที่แน่นอน, ตัวตนของ CI run/workflow และแฮชไบนารีของ builder/ verifier บันทึกที่ถูกตัดทอนหรือเทสต์ที่ถูก skip ไม่สามารถรองรับการอ้างว่าผ่านได้</p>
+<h2>10. Guardrails claim linters (รอข้ามรีโป)</h2>
+<p>Linters ของ claim/certification (<code>tools/lint_claims.py</code>, <code>tools/lint_certifications.py</code>) อยู่ใน <strong>governance root ของ MONOLITH</strong> ไม่ใช่รีโปผลิตภัณฑ์นี้ งาน CI <code>claim-linters</code> อ้างถึง path ที่คาดไว้และจะรันเมื่อมี checkout ของ governance ผ่าน <code>MONOLITH_GOVERNANCE_ROOT</code>; มิฉะนั้นจะรายงานสถานะ <strong>รอข้ามรีโป (cross-repo-pending)</strong> แทนที่จะผ่านแบบเงียบ ๆ</p>
+<h2>11. สถานะ CI — ยังไม่ได้พิสูจน์ (UNVERIFIED)</h2>
+<p><code>.github/workflows/trust-kernel-verify.yml</code> <strong>ยังไม่เคยรัน</strong> (worktree นี้ยังไม่ถูก push) ผู้ push คนแรกต้อง push การละเมิดโดยเจตนา (เพิ่ม skip, ทำให้เทสต์ล้ม, ลบรายงาน, รบกวน packet บน OS เดียว) และยืนยันว่า final gate <strong>ล้มเหลว</strong> ก่อนจะเชื่อถือมัน ไม่มีช่องทางลัด <code>--allowlist</code>/override ใด ๆ</p>
+</body>
+</html>

@@ -11,6 +11,49 @@
  */
 
 import { apiGet, apiPost, USE_MOCK } from './client';
+import { isProductionShapedArtifact } from '../../factory/packet/trustKernelProjection';
+
+// ============================================================================
+// Trust Kernel containment (Task 12 carry-forward, design §9)
+// ============================================================================
+//
+// This gated-export-ZIP subsystem emits production-shaped P2 manufacturing bytes
+// (cut list / DXF / CNC G-code / STEP as zipBase64) and would decode + trigger a
+// browser download to a human. Under the Trust Kernel a human/client NEVER receives
+// P2 plaintext, a raw locator, or a reusable signed URL — P2 artifacts are sealed in
+// the private store and a human receives only hashes, reports, and evidence. The
+// egress is refused with NOT_FOR_PRODUCTION before any byte reaches the browser,
+// reusing Task 11's single classifier (isProductionShapedArtifact). P1 review formats
+// (BOM_JSON, PDF) are unaffected. This surface is now enforced in the route
+// disposition ledger (client.exportApi.p2Zip).
+
+/** Representative artifact name per export format, fed to the Task 11 classifier. */
+const EXPORT_FORMAT_ARTIFACT: Record<string, string> = {
+  CUTLIST_CSV: 'cutlist_export.csv',
+  DXF_R12: 'export.dxf',
+  GCODE: 'export.gcode',
+  STEP: 'export.step',
+  BOM_JSON: 'bom.json',
+  PDF: 'report.pdf',
+};
+
+/** True when an export format produces production-shaped (P2 manufacturing) output. */
+export function isProductionShapedExportFormat(format: string): boolean {
+  return isProductionShapedArtifact(EXPORT_FORMAT_ARTIFACT[format] ?? String(format));
+}
+
+/**
+ * Guard: throw NOT_FOR_PRODUCTION before a human/client egress of a production-shaped
+ * export format. Mirrors trustKernelProjection.assertNotProductionShaped.
+ */
+export function assertExportFormatNotProductionShaped(format: string): void {
+  if (isProductionShapedExportFormat(format)) {
+    throw new Error(
+      `NOT_FOR_PRODUCTION: refused to export/download production-shaped (P2 manufacturing) format "${format}". ` +
+        'P2 artifacts are sealed in the private store; a human never receives plaintext, a raw locator, or a signed URL (design §9).',
+    );
+  }
+}
 
 // ============================================================================
 // Types
@@ -214,6 +257,9 @@ export async function createExportZip(
 export async function downloadExportZip(
   request: ExportZipRequest
 ): Promise<Blob> {
+  // Trust Kernel containment: refuse a production-shaped P2 egress before any
+  // network call or byte decode reaches a human (design §9).
+  assertExportFormatNotProductionShaped(request.format);
   const response = await createExportZip(request);
 
   if (!response.ok || !response.zipBase64) {
@@ -296,6 +342,8 @@ export async function exportAndDownload(
   jobName: string,
   options?: Record<string, unknown>
 ): Promise<void> {
+  // Trust Kernel containment: refuse a production-shaped P2 egress up front (§9).
+  assertExportFormatNotProductionShaped(format);
   const blob = await downloadExportZip({
     bundleId,
     format,
