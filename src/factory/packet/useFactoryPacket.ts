@@ -16,9 +16,20 @@ import { useDrillMapStore } from '../../core/store/useDrillMapStore';
 import { useGateStore } from '../../gate/ui/gateStore';
 import { useProjectStore } from '../../core/store/useProjectStore';
 import { buildFactoryPacket } from './buildFactoryPacket';
-import { createAndDownloadZipBundle } from './zipBundle';
 import type { FactoryPacketContext } from './buildFactoryPacket';
 import type { ZipBundleResult } from './zipBundle';
+
+/**
+ * Trust Kernel containment (Task 11, design §9, §15): the client can never
+ * materialize a production-shaped (P2) packet to a human via a browser download.
+ * The in-memory preview (P0) is retained for the Export Viewer; the direct ZIP
+ * download is contained. P2 bytes are compiled, signed, and sealed server-side by
+ * the deterministic V3 worker and read only by the isolated automated verifier.
+ */
+const P2_DOWNLOAD_CONTAINED =
+  'NOT_FOR_PRODUCTION: client-side P2 packet download is disabled (Task 11). ' +
+  'A production packet is built and sealed server-side (V3 release authority); ' +
+  'a human never receives P2 plaintext, a raw locator, or a signed URL.';
 import type {
   BuildFactoryPacketInput,
   PacketDrillMap,
@@ -238,73 +249,20 @@ export function useFactoryPacket(): UseFactoryPacketReturn {
    * Uses the cached packet output to avoid regenerating.
    */
   const downloadPreview = useCallback(async (): Promise<ZipBundleResult | null> => {
-    if (!cachedPacketOutput) {
-      setError('No preview to download. Generate a preview first.');
-      return null;
-    }
-
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const result = await createAndDownloadZipBundle(cachedPacketOutput);
-      setLastResult(result);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download packet';
-      setError(message);
-      console.error('[useFactoryPacket] Download error:', err);
-      return null;
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [cachedPacketOutput]);
+    // Contained: a client browser download of P2 bytes is denied (Task 11).
+    setError(P2_DOWNLOAD_CONTAINED);
+    return null;
+  }, []);
 
   /**
    * Generate and download factory packet in one step
    */
   const generateAndDownload = useCallback(async (): Promise<ZipBundleResult | null> => {
-    // Validate preconditions
-    if (cabinets.length === 0) {
-      setError('No cabinets to export');
-      return null;
-    }
-
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      // Build input
-      const input: BuildFactoryPacketInput = {
-        jobId: `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        projectId: projectId || 'default-project',
-        toolVersion: 'MONOLITH Designer 1.0.0',
-      };
-
-      // Build context
-      const context: FactoryPacketContext = {
-        cabinets,
-        drillMap,
-        gateResult,
-      };
-
-      // Build packet
-      const packetOutput = await buildFactoryPacket(input, context);
-
-      // Create and download ZIP
-      const result = await createAndDownloadZipBundle(packetOutput);
-
-      setLastResult(result);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate packet';
-      setError(message);
-      console.error('[useFactoryPacket] Error:', err);
-      return null;
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [cabinets, drillMap, gateResult, projectId]);
+    // Contained: the client never materializes a production-shaped packet to a
+    // human. Use `generatePreview` (P0, in-memory) for inspection instead.
+    setError(P2_DOWNLOAD_CONTAINED);
+    return null;
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -339,29 +297,9 @@ export function useFactoryPacket(): UseFactoryPacketReturn {
  * For use in non-component code (e.g., services, workers).
  */
 export async function generateFactoryPacketFromStores(): Promise<ZipBundleResult> {
-  const cabinets = useCabinetStore.getState().cabinets;
-  const drillMap = useDrillMapStore.getState().drillMap;
-  const gateResult = useGateStore.getState().lastResult;
-  const projectId = useProjectStore.getState().metadata?.id;
-
-  if (cabinets.length === 0) {
-    throw new Error('No cabinets to export');
-  }
-
-  const input: BuildFactoryPacketInput = {
-    jobId: `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    projectId: projectId || 'default-project',
-    toolVersion: 'MONOLITH Designer 1.0.0',
-  };
-
-  const context: FactoryPacketContext = {
-    cabinets,
-    drillMap,
-    gateResult,
-  };
-
-  const packetOutput = await buildFactoryPacket(input, context);
-  return createAndDownloadZipBundle(packetOutput);
+  // Contained (Task 11): a non-React client browser download of P2 bytes is denied.
+  // Use `generateFactoryPacketPreviewFromStores` for an in-memory (P0) preview.
+  throw new Error(P2_DOWNLOAD_CONTAINED);
 }
 
 /**

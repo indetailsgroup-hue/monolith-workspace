@@ -6,6 +6,7 @@
  */
 
 import type { ExportArtifact } from './exportPipeline';
+import { assertNotProductionShaped } from '../../factory/packet/trustKernelProjection';
 
 // ============================================
 // TYPES
@@ -28,6 +29,9 @@ export function downloadFile(
   content: string | Uint8Array,
   mimeType?: string
 ): void {
+  // Trust Kernel containment (Task 11, design §9): refuse a production-shaped
+  // (P2 manufacturing) artifact before any browser egress.
+  assertNotProductionShaped(filename);
   let blob: Blob;
 
   if (typeof content === 'string') {

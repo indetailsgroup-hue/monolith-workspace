@@ -87,8 +87,8 @@ function harness(
       if (fn === "rpc_factory_job_proof") return { ok: true, canExport: true };
       return { ok: true };
     },
-    storagePut: async () => { storage.put += 1; },
-    storageSign: async () => { storage.sign += 1; return "https://signed.example/packet.zip"; },
+    // storagePut/storageSign no longer exist on FactoryApiDeps (Task 11 §9/§15);
+    // the put/sign counters remain to prove no legacy path can increment them.
     storageGet: async () => { storage.get += 1; return new Uint8Array([1, 2, 3]); },
     ...over,
   };
@@ -238,15 +238,9 @@ describe("S17-1 fail-closed authentication", () => {
   it.each([
     ["list", "", "GET", undefined],
     ["state", "/JOB-1/state", "GET", undefined],
-    ["freeze", "/JOB-1/freeze", "POST", {}],
-    ["release", "/JOB-1/release", "POST", {}],
-    ["revoke", "/JOB-1/revoke", "POST", {}],
-    ["unfreeze", "/JOB-1/unfreeze", "POST", {}],
     ["can-export", "/JOB-1/can-export", "GET", undefined],
     ["proof", "/JOB-1/proof", "GET", undefined],
     ["activity", "/JOB-1/activity", "GET", undefined],
-    ["packet", "/JOB-1/packet", "POST", { zipBase64: btoa("zip") }],
-    ["export", "/JOB-1/export", "GET", undefined],
     ["verify", "/JOB-1/verify", "POST", {}],
   ])("authenticates the %s route before use", async (_name, path, method, body) => {
     let authCalls = 0;
@@ -256,33 +250,51 @@ describe("S17-1 fail-closed authentication", () => {
     await handleFactoryApi(request(path as string, method as string, body), h.deps);
     expect(authCalls).toBe(1);
   });
+
+  it.each([
+    ["freeze", "/JOB-1/freeze", "POST", {}],
+    ["release", "/JOB-1/release", "POST", {}],
+    ["revoke", "/JOB-1/revoke", "POST", {}],
+    ["unfreeze", "/JOB-1/unfreeze", "POST", {}],
+    ["packet", "/JOB-1/packet", "POST", { zipBase64: btoa("zip") }],
+    ["export", "/JOB-1/export", "GET", undefined],
+  ])("denies the legacy %s route before authentication (Task 11 containment)", async (_name, path, method, body) => {
+    let authCalls = 0;
+    const h = harness(ADMIN, {
+      authenticate: async () => { authCalls += 1; return ADMIN; },
+    });
+    const response = await handleFactoryApi(request(path as string, method as string, body), h.deps);
+    expect([403, 409]).toContain(response.status);
+    expect(authCalls).toBe(0);
+    expect(h.calls).toHaveLength(0);
+  });
 });
 
 describe("S17-1 spoof resistance and server-owned audit context", () => {
-  it("ignores forged actor headers/body and writes only the verified server actor", async () => {
-    const h = harness(DESIGNER);
+  it("ignores forged actor headers/body on /verify and writes only the verified server actor", async () => {
+    const h = harness(FACTORY);
     const response = await handleFactoryApi(request(
-      "/JOB-1/freeze",
+      "/JOB-1/verify",
       "POST",
-      { note: "ok", actorRole: "ADMIN", actorName: "body-forged" },
+      { actorRole: "ADMIN", actorName: "body-forged" },
       { "x-actor-role": "ADMIN", "x-actor-name": "header-forged" },
     ), h.deps);
     expect(response.status).toBe(200);
 
-    const transition = h.calls.find((call) => call.fn === "rpc_factory_job_transition");
-    expect(transition?.body).toMatchObject({
-      p_actor_subject_id: DESIGNER.subjectId,
-      p_actor_roles: DESIGNER.roles,
-      p_actor_site_codes: DESIGNER.siteCodes,
-      p_authorization_context_id: DESIGNER.authorizationContextId,
-      p_actor_role: "DESIGNER",
-      p_actor_name: DESIGNER.name,
+    const verify = h.calls.find((call) => call.fn === "rpc_factory_job_verify_result");
+    expect(verify?.body).toMatchObject({
+      p_actor_subject_id: FACTORY.subjectId,
+      p_actor_roles: FACTORY.roles,
+      p_actor_site_codes: FACTORY.siteCodes,
+      p_authorization_context_id: FACTORY.authorizationContextId,
+      p_actor_role: "FACTORY",
+      p_actor_name: FACTORY.name,
     });
-    expect(JSON.stringify(transition?.body)).not.toContain("header-forged");
-    expect(JSON.stringify(transition?.body)).not.toContain("body-forged");
+    expect(JSON.stringify(verify?.body)).not.toContain("header-forged");
+    expect(JSON.stringify(verify?.body)).not.toContain("body-forged");
   });
 
-  it("a forged DESIGNER header cannot give a FACTORY principal transition rights", async () => {
+  it("a forged DESIGNER header cannot resurrect the removed legacy transition authority", async () => {
     const h = harness(FACTORY);
     const response = await handleFactoryApi(request(
       "/JOB-1/release",
@@ -290,11 +302,12 @@ describe("S17-1 spoof resistance and server-owned audit context", () => {
       {},
       { "x-actor-role": "DESIGNER" },
     ), h.deps);
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(409);
+    expect((await response.json()).reason).toBe("LEGACY_AUTHORITY_REMOVED");
     expect(h.calls.find((call) => call.fn === "rpc_factory_job_transition")).toBeUndefined();
   });
 
-  it("a forged FACTORY header cannot give a DESIGNER principal export rights", async () => {
+  it("a forged FACTORY header cannot resurrect the removed signed-URL export", async () => {
     const h = harness(DESIGNER);
     const response = await handleFactoryApi(request(
       "/JOB-1/export",
@@ -303,24 +316,11 @@ describe("S17-1 spoof resistance and server-owned audit context", () => {
       { "x-actor-role": "FACTORY" },
     ), h.deps);
     expect(response.status).toBe(403);
+    expect((await response.json()).reason).toBe("STORE_PLAINTEXT_ACCESS_DENIED");
     expect(h.storage.sign).toBe(0);
   });
 
-  it("packet and verify audit RPCs receive the verified JWT context", async () => {
-    const packetHarness = harness(ADMIN);
-    expect((await handleFactoryApi(request(
-      "/JOB-1/packet", "POST", { zipBase64: btoa("packet") },
-    ), packetHarness.deps)).status).toBe(200);
-    const packet = packetHarness.calls.find((call) => call.fn === "rpc_factory_job_record_packet");
-    expect(packet?.body).toMatchObject({
-      p_actor_subject_id: ADMIN.subjectId,
-      p_actor_roles: ADMIN.roles,
-      p_actor_site_codes: ADMIN.siteCodes,
-      p_authorization_context_id: ADMIN.authorizationContextId,
-      p_actor_role: "ADMIN",
-      p_actor_name: ADMIN.name,
-    });
-
+  it("verify audit RPC receives the verified JWT context", async () => {
     const verifyHarness = harness(FACTORY);
     expect((await handleFactoryApi(request("/JOB-1/verify", "POST", {}), verifyHarness.deps)).status).toBe(200);
     const verify = verifyHarness.calls.find((call) => call.fn === "rpc_factory_job_verify_result");
@@ -349,7 +349,7 @@ describe("S17-2 RELEASED-only invariant", () => {
     });
   });
 
-  it("blocks packet upload for FROZEN before any storage side effect", async () => {
+  it("denies packet upload outright before any storage or RPC side effect (Task 11)", async () => {
     const h = harness(DESIGNER, {
       callRpc: async (fn, body) => {
         h.calls.push({ fn, body });
@@ -359,12 +359,13 @@ describe("S17-2 RELEASED-only invariant", () => {
     const response = await handleFactoryApi(request(
       "/JOB-1/packet", "POST", { zipBase64: btoa("packet") },
     ), h.deps);
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(403);
+    expect((await response.json()).reason).toBe("STORE_PLAINTEXT_ACCESS_DENIED");
     expect(h.storage.put).toBe(0);
-    expect(h.calls.find((call) => call.fn === "rpc_factory_job_record_packet")).toBeUndefined();
+    expect(h.calls).toHaveLength(0);
   });
 
-  it("blocks export even if a stale/malicious canExport flag says true for FROZEN", async () => {
+  it("denies export even if a stale/malicious canExport flag says true", async () => {
     const h = harness(FACTORY, {
       callRpc: async () => ({
         ok: true,
@@ -374,7 +375,7 @@ describe("S17-2 RELEASED-only invariant", () => {
       }),
     });
     const response = await handleFactoryApi(request("/JOB-1/export"), h.deps);
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(403);
     expect(h.storage.sign).toBe(0);
   });
 
@@ -392,11 +393,13 @@ describe("S17-2 RELEASED-only invariant", () => {
     expect(h.storage.get).toBe(0);
   });
 
-  it("permits export only for a RELEASED packet and an authorized factory actor", async () => {
+  it("denies export even for a RELEASED packet and an authorized factory actor (no signed URL exists)", async () => {
     const h = harness(FACTORY);
     const response = await handleFactoryApi(request("/JOB-1/export"), h.deps);
-    expect(response.status).toBe(200);
-    expect(h.storage.sign).toBe(1);
+    expect(response.status).toBe(403);
+    const body = await response.json();
+    expect(body).not.toHaveProperty("url");
+    expect(h.storage.sign).toBe(0);
   });
 
   it("SQL migration removes legacy actor overloads and re-checks RELEASED under lock", () => {
@@ -444,6 +447,7 @@ import {
   type AuthorityRequest,
   type AuthorityResponse,
 } from "./trustKernel";
+import { handleFactoryApi } from "./index";
 
 const userBearer = "Bearer user-jwt-abc";
 const serviceBearer = "Bearer service-role-key";
@@ -664,6 +668,55 @@ describe("trust-kernel edge transport — service-role containment (§7.2)", () 
     for (const op of ["DRAIN_OUTBOX", "MATERIALIZE_ARTIFACT", "MARK_ARTIFACT_AVAILABLE", "VOID_ARTIFACT"]) {
       expect(assertWorkerServiceOperation(op).ok).toBe(true);
     }
+  });
+});
+
+describe("legacy-route containment (Task 11 §9/§15) — no P2 leak, no dual authority", () => {
+  const legacy = (method: string, path: string, body?: unknown) => {
+    const init: RequestInit = { method, headers: { authorization: userBearer } };
+    if (body !== undefined) {
+      (init.headers as Record<string, string>)["content-type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
+    return new Request(`https://edge.example/functions/v1/factory-api${path}`, init);
+  };
+
+  it("GET /export returns no reusable signed URL and no raw locator (STORE_PLAINTEXT_ACCESS_DENIED)", async () => {
+    const res = await handleFactoryApi(legacy("GET", "/api/factory/jobs/JOB-1/export"));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.reason).toBe("STORE_PLAINTEXT_ACCESS_DENIED");
+    expect(body).not.toHaveProperty("url");
+    expect(JSON.stringify(body).toLowerCase()).not.toContain("signedurl");
+    expect(JSON.stringify(body).toLowerCase()).not.toContain("token=");
+  });
+
+  it("POST /packet (client-built P2 upload / dual write) is denied", async () => {
+    const res = await handleFactoryApi(legacy("POST", "/api/factory/jobs/JOB-1/packet", { zipBase64: "UEsDBBQ" }));
+    expect(res.status).toBe(403);
+    expect((await res.json()).reason).toBe("STORE_PLAINTEXT_ACCESS_DENIED");
+  });
+
+  it("legacy POST freeze/release/revoke/unfreeze (client actor mutable authority) is denied — no dual write", async () => {
+    for (const action of ["freeze", "release", "revoke", "unfreeze"]) {
+      const res = await handleFactoryApi(legacy("POST", `/api/factory/jobs/JOB-1/${action}`, { note: "x" }));
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body.reason).toBe("LEGACY_AUTHORITY_REMOVED");
+      expect(String(body.useV3 ?? "")).toContain("/v3/factory");
+    }
+  });
+
+  it("a legacy denial never reads a client actor role/name header as authority", async () => {
+    const res = await handleFactoryApi(
+      new Request("https://edge.example/functions/v1/factory-api/api/factory/jobs/JOB-1/freeze", {
+        method: "POST",
+        headers: { authorization: userBearer, "content-type": "application/json", "x-actor-role": "ADMIN", "x-actor-name": "mallory" },
+        body: JSON.stringify({}),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(JSON.stringify(await res.json())).not.toContain("ADMIN");
   });
 });
 

@@ -50,6 +50,13 @@ export interface TransitionRequest {
 // ============================================
 // CONFIGURATION
 // ============================================
+//
+// Trust Kernel containment (Task 11, design §7.1): the client NEVER sends an actor
+// role/name. A client-supplied role can never be authority or authoritative audit
+// identity — the server resolves the actor from the verified bearer alone. The
+// legacy freeze/release/revoke POSTs below no longer carry `X-Actor-*` headers, and
+// the edge denies the legacy mutation authority (no dual write; use trustKernelApi
+// V3). These reads remain server-authoritative projections.
 
 // ADR-060: ชี้ factory-api (Supabase Edge Function) — ตั้งผ่าน env; ว่าง = vite proxy เดิม
 const API_BASE = (import.meta.env?.VITE_FACTORY_API_BASE as string | undefined) ?? '';
@@ -253,28 +260,20 @@ export async function checkCanExport(jobId: string): Promise<CanExportResponse> 
  * server (edge) คำนวณ sha256 เอง — client ไม่ต้องแนบ hash
  */
 export async function uploadPacket(
-  jobId: string,
-  zipBlob: Blob,
-): Promise<{ ok: boolean; packetSha256?: string; storagePath?: string; error?: string }> {
-  try {
-    const buf = new Uint8Array(await zipBlob.arrayBuffer());
-    let bin = '';
-    const CHUNK = 0x8000;
-    for (let i = 0; i < buf.length; i += CHUNK) {
-      bin += String.fromCharCode(...buf.subarray(i, i + CHUNK));
-    }
-    const zipBase64 = btoa(bin);
-
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/packet`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ zipBase64 }),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error('[StateAPI] uploadPacket failed:', error);
-    return { ok: false, error: error instanceof Error ? error.message : 'Network error' };
-  }
+  _jobId: string,
+  _zipBlob: Blob,
+): Promise<{ ok: boolean; packetSha256?: string; storagePath?: string; error?: string; notForProduction?: boolean }> {
+  // Trust Kernel containment (Task 11, design §9, §15, no dual write): the client
+  // can never publish a production-shaped (P2) packet. A packet is compiled,
+  // signed, and sealed server-side by the deterministic V3 worker only. This path
+  // is denied client-side (and the legacy edge /packet route is denied server-side),
+  // so no client-built artifact can reach the store or a factory.
+  return {
+    ok: false,
+    notForProduction: true,
+    error:
+      'STORE_PLAINTEXT_ACCESS_DENIED: client packet upload is removed. P2 packets are built and sealed server-side (V3); the client never publishes a production-shaped artifact.',
+  };
 }
 
 // ============================================

@@ -2,7 +2,14 @@
  * Browser Download Utility
  *
  * Downloads text content as a file in the browser.
+ *
+ * Trust Kernel containment (Task 11, design §9): production-shaped (P2
+ * manufacturing) content — cut lists, CNC/DXF, packets — can never be written to a
+ * human through a browser download. `assertNotProductionShaped` throws before any
+ * egress; P1 review artifacts (JSON manifests, evidence, PDF) pass unchanged.
  */
+
+import { assertNotProductionShaped } from '../../factory/packet/trustKernelProjection';
 
 /**
  * Download text content as a file
@@ -16,6 +23,7 @@ export function downloadTextFile(
   content: string,
   mime = 'text/csv;charset=utf-8'
 ) {
+  assertNotProductionShaped(filename);
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
 

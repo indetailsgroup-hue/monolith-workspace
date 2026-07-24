@@ -58,6 +58,20 @@ const EXPORT_OPTIONS: ExportOption[] = [
   { id: 'pdf', name: 'Production PDF', description: 'Print-ready documentation', icon: '📄', requiresGate: 'FROZEN' },
 ];
 
+/**
+ * Trust Kernel containment (Task 11, design §9 Artifact Class Matrix, §15): P2
+ * manufacturing artifacts (Cut List CSV, DXF, CNC/G-code, full packet) are NEVER
+ * built to or downloaded by a human in this phase. The P0 preview and eligible P1
+ * review stay; the P2 build/download controls are disabled with this explanation.
+ */
+const NOT_FOR_PRODUCTION_EXPORT =
+  'NOT_FOR_PRODUCTION: P2 manufacturing export (Cut List / DXF / CNC / packet) is disabled. ' +
+  'A production artifact is built and sealed server-side by the V3 release authority; ' +
+  'a human never receives P2 plaintext, a raw locator, or a signed URL (design §9).';
+
+/** Client-side P2 manufacturing formats — download is contained (Task 11). */
+const P2_EXPORT_FORMATS: ReadonlySet<ExportFormat> = new Set<ExportFormat>(['cutlist', 'dxf', 'cnc']);
+
 // Validation rules
 function runValidation(cabinet: any): ValidationResult[] {
   const results: ValidationResult[] = [];
@@ -829,6 +843,14 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
   const handleExport = useCallback(async (format: ExportFormat) => {
     if (!cabinet) return;
 
+    // Trust Kernel containment (Task 11): refuse every P2 manufacturing egress
+    // before any bytes are built or downloaded.
+    if (P2_EXPORT_FORMATS.has(format)) {
+      setExportProgress(NOT_FOR_PRODUCTION_EXPORT);
+      setTimeout(() => setExportProgress(null), 4000);
+      return;
+    }
+
     setIsExporting(true);
     setExportProgress(`Generating ${format.toUpperCase()}...`);
 
@@ -1146,25 +1168,21 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
             />
           )}
 
-          {/* DXF Export Button */}
+          {/* DXF Export Button — contained (P2 manufacturing, Task 11) */}
           <button
             onClick={() => handleExport('dxf')}
-            disabled={isDxfExporting || gateStatus === 'DRAFT'}
-            className={`w-full py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
-              ${gateStatus !== 'DRAFT' && !isDxfExporting
-                ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer'
-                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-              }`}
+            disabled
+            title={NOT_FOR_PRODUCTION_EXPORT}
+            className="w-full py-3 rounded-lg text-sm font-medium bg-zinc-700 text-zinc-500 cursor-not-allowed flex items-center justify-center gap-2"
           >
             <span className="text-lg">📐</span>
-            {isDxfExporting ? 'Exporting...' : 'Generate DXF Files'}
+            Generate DXF Files
           </button>
 
-          {gateStatus === 'DRAFT' && (
-            <p className="text-xs text-amber-400 text-center">
-              ⚠️ Freeze spec to enable DXF export
-            </p>
-          )}
+          <p className="text-xs text-amber-400 text-center">
+            🔒 NOT_FOR_PRODUCTION — P2 DXF export is disabled; the packet is built and
+            sealed server-side (V3). Use “Preview Factory Packet” to inspect.
+          </p>
         </div>
       </Section>
 
@@ -1239,28 +1257,19 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
             )}
           </button>
 
-          {/* Direct Download Button */}
+          {/* Direct Download Button — contained (P2 manufacturing packet, Task 11) */}
           <button
-            onClick={() => factoryPacket.generateAndDownload()}
-            disabled={factoryPacket.isGenerating || !cabinet?.panels?.length}
-            className={`w-full py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2
-              ${!factoryPacket.isGenerating && cabinet?.panels?.length
-                ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300 cursor-pointer border border-zinc-600'
-                : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
-              }`}
+            disabled
+            title={NOT_FOR_PRODUCTION_EXPORT}
+            className="w-full py-2 rounded-lg text-sm flex items-center justify-center gap-2 bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700"
           >
-            {factoryPacket.isGenerating ? (
-              <>
-                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-                Downloading...
-              </>
-            ) : (
-              <>
-                <span>⬇</span>
-                Download ZIP Directly
-              </>
-            )}
+            <span>🔒</span>
+            Download ZIP Directly — NOT_FOR_PRODUCTION
           </button>
+          <p className="text-[10px] text-zinc-500 text-center">
+            The P2 packet is built and sealed server-side; only the isolated automated
+            verifier reads its bytes. Humans receive hashes, reports, and evidence.
+          </p>
 
           {/* Error Display */}
           {factoryPacket.error && (
@@ -1279,10 +1288,12 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
         </div>
       </Section>
 
-      {/* Export Options */}
+      {/* Export Options — P2 manufacturing formats (Cut List / DXF / CNC) are
+          removed here; they are contained server-side (Task 11). Only P1 review
+          artifacts (BOM, Production PDF) remain. */}
       <Section title="Other Exports">
         <div className="space-y-2">
-          {EXPORT_OPTIONS.filter(o => o.id !== 'dxf').map((option) => (
+          {EXPORT_OPTIONS.filter((o) => !P2_EXPORT_FORMATS.has(o.id)).map((option) => (
             <ExportButton
               key={option.id}
               option={option}
@@ -1291,6 +1302,10 @@ export function ExportPanel({ gateStatus: _gateStatus, onGateChange: _onGateChan
             />
           ))}
         </div>
+        <p className="mt-2 text-[10px] text-zinc-500">
+          Cut List / DXF / CNC are P2 manufacturing artifacts — built and sealed
+          server-side (NOT_FOR_PRODUCTION for client download).
+        </p>
       </Section>
 
       {/* Export Progress */}

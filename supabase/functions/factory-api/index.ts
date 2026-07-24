@@ -18,8 +18,8 @@ export interface ServerActor {
 export interface FactoryApiDeps {
   authenticate: (authorization: string) => Promise<ServerActor>;
   callRpc: (fn: string, body: Record<string, unknown>) => Promise<unknown>;
-  storagePut: (path: string, bytes: Uint8Array) => Promise<void>;
-  storageSign: (path: string, expiresInSec: number) => Promise<string>;
+  // storagePut/storageSign are REMOVED (Task 11 §9/§15): no client packet upload
+  // and no reusable signed URL. Only the internal hash-verify read remains.
   storageGet: (path: string) => Promise<Uint8Array>;
 }
 
@@ -205,42 +205,27 @@ async function callRpc(fn: string, body: Record<string, unknown>): Promise<unkno
 
 const PACKET_BUCKET = "factory-packets";
 
-function b64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const output = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) output[i] = binary.charCodeAt(i);
-  return output;
-}
+// Trust Kernel legacy containment (Task 11, design §9/§15): the client-built packet
+// upload (storagePut) and the reusable signed-URL egress (storageSign) are REMOVED.
+// A production packet is compiled, signed, and sealed server-side by the V3 worker;
+// a human never receives P2 plaintext, a raw storage locator, or a reusable signed
+// URL. Only `storageGet` (an internal hash-verify read, verdict only) remains.
+const LEGACY_P2_DENIAL = {
+  ok: false as const,
+  reason: "STORE_PLAINTEXT_ACCESS_DENIED",
+  notForProduction: true,
+  detail:
+    "Client P2 packet upload/download is removed. Packets are built and sealed server-side (V3); the isolated automated verifier is the only P2 reader (design §9).",
+};
 
-async function storagePut(path: string, bytes: Uint8Array): Promise<void> {
-  const url = getEnv("SUPABASE_URL");
-  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const response = await fetch(`${url}/storage/v1/object/${PACKET_BUCKET}/${path}`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${key}`,
-      apikey: key,
-      "content-type": "application/zip",
-      "x-upsert": "true",
-    },
-    body: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
-  });
-  if (!response.ok) throw new Error(`storage put failed (${response.status})`);
-}
-
-async function storageSign(path: string, expiresInSec: number): Promise<string> {
-  const url = getEnv("SUPABASE_URL");
-  const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const response = await fetch(`${url}/storage/v1/object/sign/${PACKET_BUCKET}/${path}`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${key}`, apikey: key, "content-type": "application/json" },
-    body: JSON.stringify({ expiresIn: expiresInSec }),
-  });
-  if (!response.ok) throw new Error(`storage sign failed (${response.status})`);
-  const result = (await response.json()) as { signedURL?: string };
-  if (!result.signedURL) throw new Error("no signedURL");
-  return `${url}/storage/v1${result.signedURL}`;
-}
+const LEGACY_AUTHORITY_DENIAL = {
+  ok: false as const,
+  reason: "LEGACY_AUTHORITY_REMOVED",
+  notForProduction: true,
+  useV3: "/v3/factory/jobs/:id/{freeze|release|revoke}",
+  detail:
+    "The legacy state-transition authority is removed (no dual write). The sole mutable release authority is the V3 release_revision path (design §15, no dual write).",
+};
 
 async function storageGet(path: string): Promise<Uint8Array> {
   const url = getEnv("SUPABASE_URL");
@@ -253,7 +238,7 @@ async function storageGet(path: string): Promise<Uint8Array> {
 }
 
 export function defaultFactoryApiDeps(): FactoryApiDeps {
-  return { authenticate: authenticateFactoryRequest, callRpc, storagePut, storageSign, storageGet };
+  return { authenticate: authenticateFactoryRequest, callRpc, storageGet };
 }
 
 function effectiveRole(
@@ -295,11 +280,13 @@ type PacketInfo = StateResult & {
 // V3 Trust Kernel environment adapters (plan Task 5, design §7.2 / §10)
 // ---------------------------------------------------------------------------
 // Both adapters run on the CALLER's bearer + SUPABASE_ANON_KEY (user-scoped);
-// SUPABASE_SERVICE_ROLE_KEY is never touched here. The existing service-role
-// helpers (callRpc/storagePut/storageSign/storageGet) remain reserved for the
-// V1/V2 routes and the post-commit worker; per design §7.2 a service-role client
-// performs downstream outbox/storage work only — Task 8's worker must gate every
-// such call through assertWorkerServiceOperation (imported, exercised in tests).
+// SUPABASE_SERVICE_ROLE_KEY is never touched here. The remaining service-role
+// helpers (callRpc for read projections, storageGet for the internal /verify hash
+// check) are reserved for the V1/V2 read routes and the post-commit worker; per
+// design §7.2 a service-role client performs downstream outbox/storage work only —
+// Task 8's worker must gate every such call through assertWorkerServiceOperation.
+// The client packet-upload (storagePut) and reusable signed-URL (storageSign)
+// helpers were REMOVED for P2 containment (Task 11 §9/§15).
 //
 // SPEC DELTAS (reported, not resolved — see final report):
 //  - create_verified_action_context(0180) needs tenant_id/site_id/resource_type/
@@ -502,6 +489,24 @@ export async function handleFactoryApi(
     return json(401, { ok: false, error: "missing or malformed authorization" });
   }
 
+  // Trust Kernel containment (Task 11, §9/§15): legacy production-shaped surfaces
+  // are denied BEFORE authentication and before any storage/RPC call:
+  //  - the client packet upload (dual write) and the reusable signed-URL export
+  //    return no raw locator and no signed URL (design §9);
+  //  - the legacy state-transition authority is removed (no dual write, §15).
+  {
+    const deniedAction = segments[jobsIndex + 2] ?? "state";
+    if (req.method === "POST" && deniedAction === "packet") {
+      return json(403, LEGACY_P2_DENIAL);
+    }
+    if (req.method === "GET" && deniedAction === "export") {
+      return json(403, LEGACY_P2_DENIAL);
+    }
+    if (req.method === "POST" && ["freeze", "release", "revoke", "unfreeze"].includes(deniedAction)) {
+      return json(409, LEGACY_AUTHORITY_DENIAL);
+    }
+  }
+
   let actor: ServerActor;
   try {
     actor = await deps.authenticate(authorization);
@@ -552,65 +557,12 @@ export async function handleFactoryApi(
       if (effectiveRole(actor, EVIDENCE_READ_CAPABILITIES) === null) return forbidden();
       return json(200, await deps.callRpc("rpc_factory_job_proof", { p_job_id: jobId }) as Record<string, unknown>);
     }
-
-    if (req.method === "POST" && action === "packet") {
-      const role = effectiveRole(actor, DESIGN_CAPABILITIES);
-      if (role === null) return forbidden();
-
-      // Check before any storage side effect; SQL record_packet re-checks under row lock.
-      const state = await deps.callRpc("rpc_factory_job_state", { p_job_id: jobId }) as StateResult;
-      if (!state.ok) return json(404, state as Record<string, unknown>);
-      if (state.specState !== "RELEASED") {
-        return json(409, { ok: false, error: "packet requires RELEASED spec", specState: state.specState });
-      }
-
-      const body = (await req.json().catch(() => null)) as
-        { zipBase64?: string; manifestSha256?: string } | null;
-      if (!body?.zipBase64) return json(400, { ok: false, error: "missing zipBase64" });
-      let bytes: Uint8Array;
-      try {
-        bytes = b64ToBytes(body.zipBase64);
-      } catch {
-        return json(400, { ok: false, error: "invalid zipBase64" });
-      }
-      if (bytes.length === 0 || bytes.length > 20 * 1024 * 1024) {
-        return json(400, { ok: false, error: "invalid packet size" });
-      }
-      const sha256 = await sha256Hex(bytes);
-      const path = `${encodeURIComponent(jobId)}/${sha256}.zip`;
-      await deps.storagePut(path, bytes);
-      const recorded = await deps.callRpc("rpc_factory_job_record_packet", {
-        p_job_id: jobId,
-        p_packet_sha256: sha256,
-        p_manifest_sha256: body.manifestSha256 ?? null,
-        p_storage_path: path,
-        ...actorRpcParams(actor, role),
-      }) as Record<string, unknown>;
-      return json(recorded.ok === false ? 409 : 200, recorded);
-    }
-
-    if (req.method === "GET" && action === "export") {
-      const role = effectiveRole(actor, FACTORY_CAPABILITIES);
-      if (role === null) return forbidden();
-      const info = await deps.callRpc("rpc_factory_job_packet_info", { p_job_id: jobId }) as PacketInfo;
-      if (!info.ok) return json(404, info as Record<string, unknown>);
-      // Defense in depth: never trust canExport alone; state must independently be RELEASED.
-      if (info.specState !== "RELEASED" || !info.canExport || !info.storagePath) {
-        return json(409, {
-          ok: false,
-          error: "packet export requires RELEASED spec and recorded packet",
-          specState: info.specState,
-        });
-      }
-      const signedUrl = await deps.storageSign(info.storagePath, 60 * 60);
-      return json(200, {
-        ok: true,
-        url: signedUrl,
-        sha256: info.packetSha256,
-        revisionId: info.revisionId,
-      });
-    }
-
+    // Legacy /packet (client upload) and /export (signed URL) are denied above,
+    // before this block — no storagePut/storageSign path remains (Task 11 §9/§15).
+    // POST /verify stays as a READ_ONLY integrity check: it reads the sealed bytes
+    // into the edge (service role) and returns only a verdict + hashes + byte count
+    // — no raw locator, no URL, no plaintext. Its audit event carries the S17
+    // server-verified actor context (migration 0162), never a client-supplied one.
     if (req.method === "POST" && action === "verify") {
       const role = effectiveRole(actor, FACTORY_CAPABILITIES);
       if (role === null) return forbidden();
@@ -640,20 +592,6 @@ export async function handleFactoryApi(
         computed,
         bytes: bytes.length,
       });
-    }
-
-    if (req.method === "POST" && ["freeze", "release", "revoke", "unfreeze"].includes(action)) {
-      const role = effectiveRole(actor, DESIGN_CAPABILITIES);
-      if (role === null) return forbidden();
-      const body = (await req.json().catch(() => ({}))) as { note?: string; changeClass?: string };
-      const result = await deps.callRpc("rpc_factory_job_transition", {
-        p_job_id: jobId,
-        p_action: action,
-        ...actorRpcParams(actor, role),
-        p_note: body.note ?? null,
-        p_change_class: body.changeClass ?? null,
-      });
-      return json(200, result as Record<string, unknown>);
     }
 
     return json(404, { ok: false, error: "unknown route" });

@@ -28,3 +28,12 @@ daph-second-brain/**/*.zip
 *.patch
 ธุระกิจ/
 .env.local
+.env.*
+!.env.example
+!**/.env.example
+
+# Supabase Studio scratch queries ("Untitled query NNN.sql")
+supabase/snippets/
+
+# built verifier CLI — regenerable, not committed (spawned at runtime from build)
+tools/*/dist/
