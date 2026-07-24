@@ -24,6 +24,7 @@
 import type { MaterialKind, ToolKind } from './offsetKernel/directionPolicy.js';
 import type { ZProfile } from './offsetKernel/zAwarePlanning.js';
 import type { DialectId, PostContext, PostHooks } from './gcodeDialects.js';
+import { ok, err, type TrustResult } from '../trust-kernel/result.js';
 
 // ============================================================================
 // Types: Parameter Sets
@@ -469,6 +470,9 @@ export function makePostContext(
     safeZ: res.clearance.safeZ,
     rapidZ: res.clearance.rapidZ,
 
+    // LEGACY PATH ONLY. Historical reading defaults an unknown tool to number 1.
+    // The V3 trust-kernel path MUST NOT use this: it fails closed via
+    // `resolveToolNumberV3` before any dialect emission (design §12).
     toolNumberOf: (toolId: string) => mp.toolNumberMap[toolId] ?? 1,
     spindleRpmOf: (toolId: string) => {
       // Use resolved speed for the active tool, or material default for others
@@ -495,6 +499,31 @@ export function makePostContextForTool(
 ): PostContext {
   const res = resolveParams(mp, material, toolId);
   return makePostContext(mp, res);
+}
+
+// ============================================================================
+// V3 fail-closed tool-number resolution (Production Trust Kernel, design §12)
+// ============================================================================
+
+/**
+ * Resolve a tool's machine number for the V3 trust-kernel path, FAILING CLOSED.
+ *
+ * Unlike the legacy `PostContext.toolNumberOf` (which defaults an unknown tool to
+ * `1` for historical G-code/CIX emission), any unknown tool here returns a
+ * `TrustResult` failure with the stable `CAP_UNKNOWN_TOOL` reason code and never
+ * a synthesized default. This removes the `unknown tool -> 1` behaviour from the
+ * V3 path: an unknown tool is rejected BEFORE any dialect output (design §12).
+ * The legacy resolver is retained only for the legacy path.
+ */
+export function resolveToolNumberV3(
+  mp: MachineProfile,
+  toolId: string
+): TrustResult<number> {
+  const machineNumber = mp.toolNumberMap[toolId];
+  if (typeof machineNumber !== 'number') {
+    return err('CAP_UNKNOWN_TOOL', { toolId, profileId: mp.id });
+  }
+  return ok(machineNumber);
 }
 
 // ============================================================================
