@@ -158,7 +158,7 @@ jobs:
           set -o pipefail
           mkdir -p reports
           DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          for suite in trust_kernel_tenancy trust_kernel_governance trust_kernel_release trust_kernel_bundles trust_kernel_containment workflow_db_invariants; do
+          for suite in trust_kernel_tenancy trust_kernel_governance trust_kernel_release trust_kernel_bundles trust_kernel_containment workflow_db_invariants trust_kernel_safety; do
             psql "$DB" -tA -v ON_ERROR_STOP=1 -f "supabase/tests/${suite}.sql" | tee "reports/pgtap-${suite}.tap"
             if grep -qE '^not ok' "reports/pgtap-${suite}.tap"; then echo "::error::pgTAP failure in ${suite}"; exit 1; fi
             if ! grep -qE '^ok ' "reports/pgtap-${suite}.tap"; then echo "::error::empty pgTAP suite ${suite}"; exit 1; fi

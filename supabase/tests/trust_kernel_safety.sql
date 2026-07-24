@@ -1,0 +1,270 @@
+-- pgTAP DB-level invariants — MONOLITH Production Trust Kernel (plan Task 3)
+-- Feature: deny-only content-revocation registry + SAFETY block authority
+--   (design 2026-07-22 §10.4 revocation semantics; plan
+--   2026-07-24-trust-kernel-safety-content-revocation-registry.en.md Task 3).
+--   Stable reason codes come from server/src/trust-kernel/reasonCodes.ts (§13);
+--   SQL error strings MUST be those exact codes.
+--
+-- Run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tA \
+--        -v ON_ERROR_STOP=1 -f supabase/tests/trust_kernel_safety.sql
+--
+-- The suite provisions TWO tenants (A = fixture, B = coexistence/cross-tenant
+-- proof), each with a site, auth users, memberships/roles/site grants, a machine-
+-- profile attestation, and directly-inserted SAFETY-revoked release revisions
+-- (the provenance the block requires). It exercises the SAFETY_BLOCK action set
+-- through create_verified_action_context (0180) and rpc_trust_safety_block_content
+-- (0186), and asserts:
+--   * the registry table has RLS on, no client write policy, no INSERT to
+--     authenticated (writes flow only through the SECURITY DEFINER RPC)   (§7.5)
+--   * fn_content_is_blocked is authoritative-but-unprobeable: service_role
+--     may execute it, authenticated may NOT (no cross-tenant probing)      (§7.5)
+--   * minting a SAFETY_BLOCK context without SAFETY_REVOKER -> AUTH_SCOPE_DENIED
+--   * a block SUCCEEDS only when a SAFETY-revoked release_revision with that
+--     content_hash exists in the SAME tenant+site; a non-SAFETY-class (or
+--     absent) provenance row -> STATE_CONFLICT                             (§10.4)
+--   * the BLOCK event row is append-only, carries a monotonic per-tenant
+--     sequence, the actor, and the reason detail
+--   * fn_content_is_blocked is TRUE after a matching BLOCK, FALSE otherwise
+--   * tenant/site scope: a BLOCK in tenant A leaves an identical content_hash
+--     UNBLOCKED in tenant B (the prior Gate cross-tenant-leak finding)     (§7.5)
+-- inside one transaction, then ROLLS BACK. No private key material anywhere;
+-- certificates/signatures are opaque fixture values; crypto is the TS layer.
+
+\set ON_ERROR_STOP on
+
+-- Fixture identifiers.
+\set tenant_a   aa000000-0000-0000-0000-0000000000a1
+\set tenant_b   bb000000-0000-0000-0000-0000000000b1
+\set site_a     a5000000-0000-0000-0000-0000000000a5
+\set site_b     b5000000-0000-0000-0000-0000000000b5
+
+\set u_revoker    a5000000-0000-0000-0000-00000000c001
+\set u_designer   a5000000-0000-0000-0000-00000000c002
+\set u_revoker_b  b5000000-0000-0000-0000-00000000c003
+
+\set m_revoker    a5000000-0000-0000-0000-00000000d001
+\set m_designer   a5000000-0000-0000-0000-00000000d002
+\set m_revoker_b  b5000000-0000-0000-0000-00000000d003
+
+\set att_a   a5000000-0000-0000-0000-00000000e001
+\set att_b   b5000000-0000-0000-0000-00000000e001
+
+\set wr_a    a5000000-0000-0000-0000-00000000f001
+\set wr_b    b5000000-0000-0000-0000-00000000f001
+
+\set cand_a1 a5000000-0000-0000-0000-000000010001
+\set cand_a2 a5000000-0000-0000-0000-000000010002
+\set cand_ap a5000000-0000-0000-0000-000000010003
+\set cand_b1 b5000000-0000-0000-0000-000000010001
+
+\set attm_a1 a5000000-0000-0000-0000-000000020001
+\set attm_a2 a5000000-0000-0000-0000-000000020002
+\set attm_ap a5000000-0000-0000-0000-000000020003
+\set attm_b1 b5000000-0000-0000-0000-000000020001
+
+\set rev_a1  a5000000-0000-0000-0000-000000030001
+\set rev_a2  a5000000-0000-0000-0000-000000030002
+\set rev_ap  a5000000-0000-0000-0000-000000030003
+\set rev_b1  b5000000-0000-0000-0000-000000030001
+
+-- 64-char lowercase-hex fixtures (valid sha256 hex; pairwise distinct where it matters).
+\set h_blk     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+\set h_blk2    bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\set h_noprov  cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+\set cand_h_a1 dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+\set cand_h_a2 1111111111111111111111111111111111111111111111111111111111111111
+\set cand_h_ap 2222222222222222222222222222222222222222222222222222222222222222
+\set cand_h_b1 3333333333333333333333333333333333333333333333333333333333333333
+\set sub       4444444444444444444444444444444444444444444444444444444444444444
+\set req_h     9999999999999999999999999999999999999999999999999999999999999999
+
+begin;
+create extension if not exists pgtap;
+select plan(19);
+
+-- ---------------------------------------------------------------------------
+-- Fixture (superuser; RLS bypassed for setup only)
+-- ---------------------------------------------------------------------------
+insert into auth.users (id) values
+  (:'u_revoker'), (:'u_designer'), (:'u_revoker_b');
+
+insert into public.monolith_tenant (id, slug, display_name, status) values
+  (:'tenant_a', 'safety-a', 'Safety tenant A (fixture)', 'ACTIVE'),
+  (:'tenant_b', 'safety-b', 'Safety tenant B (coexistence)', 'ACTIVE');
+
+insert into public.monolith_site (id, tenant_id, code, display_name, status) values
+  (:'site_a', :'tenant_a', 'A-SITE-01', 'Tenant A site', 'ACTIVE'),
+  (:'site_b', :'tenant_b', 'B-SITE-01', 'Tenant B site', 'ACTIVE');
+
+insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
+  (:'m_revoker',   :'tenant_a', :'u_revoker',   1, 'ACTIVE'),
+  (:'m_designer',  :'tenant_a', :'u_designer',  1, 'ACTIVE'),
+  (:'m_revoker_b', :'tenant_b', :'u_revoker_b', 1, 'ACTIVE');
+
+insert into public.monolith_membership_role (tenant_id, membership_id, role) values
+  (:'tenant_a', :'m_revoker',   'SAFETY_REVOKER'),
+  (:'tenant_a', :'m_designer',  'DESIGNER'),
+  (:'tenant_b', :'m_revoker_b', 'SAFETY_REVOKER');
+
+insert into public.monolith_membership_site (tenant_id, membership_id, site_id) values
+  (:'tenant_a', :'m_revoker',   :'site_a'),
+  (:'tenant_a', :'m_designer',  :'site_a'),
+  (:'tenant_b', :'m_revoker_b', :'site_b');
+
+insert into public.machine_profile_attestation
+  (id, tenant_id, site_id, machine_id, profile_hash, tool_library_hash, postprocessor_id,
+   postprocessor_version, postprocessor_binary_hash, approver_user_id, key_id, signature,
+   issued_at, valid_from, valid_until, status, attestation_sequence)
+values
+  (:'att_a', :'tenant_a', :'site_a', 'CNC-A', :'sub', :'sub', 'pp-a', '1.0.0', :'sub',
+   :'u_revoker', 'dev-key-a', 'sig-a', clock_timestamp() - interval '1 day',
+   clock_timestamp() - interval '1 day', clock_timestamp() + interval '30 days', 'ACTIVE', 1),
+  (:'att_b', :'tenant_b', :'site_b', 'CNC-B', :'sub', :'sub', 'pp-b', '1.0.0', :'sub',
+   :'u_revoker_b', 'dev-key-b', 'sig-b', clock_timestamp() - interval '1 day',
+   clock_timestamp() - interval '1 day', clock_timestamp() + interval '30 days', 'ACTIVE', 1);
+
+insert into public.release_working_revision
+  (id, tenant_id, site_id, parent_revision_id, status, content_refs, creator_user_id, policy_version, profile_version)
+values
+  (:'wr_a', :'tenant_a', :'site_a', null, 'DRAFT', array['ref-a'], :'u_revoker',   'policy-2026-07', '1.0.0'),
+  (:'wr_b', :'tenant_b', :'site_b', null, 'DRAFT', array['ref-b'], :'u_revoker_b', 'policy-2026-07', '1.0.0');
+
+-- Candidates (one per revision; candidate_hash unique per tenant).
+insert into public.release_candidate
+  (id, tenant_id, site_id, working_revision_id, candidate_hash, snapshot_hash, gate_inputs_hash,
+   machine_profile_hash, attestation_id, attestation_hash, policy_version, freezer_user_id, frozen_at)
+values
+  (:'cand_a1', :'tenant_a', :'site_a', :'wr_a', :'cand_h_a1', :'sub', :'sub', :'sub', :'att_a', :'sub', 'policy-2026-07', :'u_revoker', clock_timestamp()),
+  (:'cand_a2', :'tenant_a', :'site_a', :'wr_a', :'cand_h_a2', :'sub', :'sub', :'sub', :'att_a', :'sub', 'policy-2026-07', :'u_revoker', clock_timestamp()),
+  (:'cand_ap', :'tenant_a', :'site_a', :'wr_a', :'cand_h_ap', :'sub', :'sub', :'sub', :'att_a', :'sub', 'policy-2026-07', :'u_revoker', clock_timestamp()),
+  (:'cand_b1', :'tenant_b', :'site_b', :'wr_b', :'cand_h_b1', :'sub', :'sub', :'sub', :'att_b', :'sub', 'policy-2026-07', :'u_revoker_b', clock_timestamp());
+
+-- Attempts (each revision's parent attempt; release_sequence unique per tenant).
+insert into public.release_attempt
+  (id, tenant_id, site_id, candidate_id, actor_user_id, candidate_hash, release_authorization_hash,
+   idempotency_key, request_hash, status, allocated_revision_id, release_sequence, membership_version,
+   aal, action_context_id, authorized_at)
+values
+  (:'attm_a1', :'tenant_a', :'site_a', :'cand_a1', :'u_revoker', :'cand_h_a1', :'sub', 'idem-a1', :'sub', 'PUBLISHED', :'rev_a1', 101, 1, 'aal1', gen_random_uuid(), clock_timestamp()),
+  (:'attm_a2', :'tenant_a', :'site_a', :'cand_a2', :'u_revoker', :'cand_h_a2', :'sub', 'idem-a2', :'sub', 'PUBLISHED', :'rev_a2', 102, 1, 'aal1', gen_random_uuid(), clock_timestamp()),
+  (:'attm_ap', :'tenant_a', :'site_a', :'cand_ap', :'u_revoker', :'cand_h_ap', :'sub', 'idem-ap', :'sub', 'PUBLISHED', :'rev_ap', 103, 1, 'aal1', gen_random_uuid(), clock_timestamp()),
+  (:'attm_b1', :'tenant_b', :'site_b', :'cand_b1', :'u_revoker_b', :'cand_h_b1', :'sub', 'idem-b1', :'sub', 'PUBLISHED', :'rev_b1', 201, 1, 'aal1', gen_random_uuid(), clock_timestamp());
+
+-- Revisions. rev_a1/rev_a2 are SAFETY-revoked (valid block provenance); rev_ap is
+-- OPERATIONAL-revoked (present but NOT safety -> must fail the provenance rule);
+-- rev_b1 is a SAFETY-revoked twin of h_blk in tenant B (cross-tenant scope proof).
+insert into public.release_revision
+  (id, tenant_id, site_id, release_attempt_id, candidate_id, candidate_hash, release_authorization_hash,
+   content_hash, expected_packet_hash, release_certificate, attestation_id, attestation_hash,
+   approver_user_id, approver_membership_version, approver_aal, status, release_sequence, authorized_at, released_at,
+   revoked_at, revoked_by_user_id, revoke_reason, revoke_sequence, revoke_reason_class)
+values
+  (:'rev_a1', :'tenant_a', :'site_a', :'attm_a1', :'cand_a1', :'cand_h_a1', :'sub', :'h_blk', :'sub', '{"cert":"a1"}'::jsonb, :'att_a', :'sub',
+   :'u_revoker', 1, 'aal1', 'REVOKED', 101, clock_timestamp(), clock_timestamp(),
+   clock_timestamp(), :'u_revoker', 'safety recall', 1, 'SAFETY'),
+  (:'rev_a2', :'tenant_a', :'site_a', :'attm_a2', :'cand_a2', :'cand_h_a2', :'sub', :'h_blk2', :'sub', '{"cert":"a2"}'::jsonb, :'att_a', :'sub',
+   :'u_revoker', 1, 'aal1', 'REVOKED', 102, clock_timestamp(), clock_timestamp(),
+   clock_timestamp(), :'u_revoker', 'safety recall 2', 2, 'SAFETY'),
+  (:'rev_ap', :'tenant_a', :'site_a', :'attm_ap', :'cand_ap', :'cand_h_ap', :'sub', :'h_noprov', :'sub', '{"cert":"ap"}'::jsonb, :'att_a', :'sub',
+   :'u_revoker', 1, 'aal1', 'REVOKED', 103, clock_timestamp(), clock_timestamp(),
+   clock_timestamp(), :'u_revoker', 'superseded', 3, 'OPERATIONAL'),
+  (:'rev_b1', :'tenant_b', :'site_b', :'attm_b1', :'cand_b1', :'cand_h_b1', :'sub', :'h_blk', :'sub', '{"cert":"b1"}'::jsonb, :'att_b', :'sub',
+   :'u_revoker_b', 1, 'aal1', 'REVOKED', 201, clock_timestamp(), clock_timestamp(),
+   clock_timestamp(), :'u_revoker_b', 'safety recall b', 1, 'SAFETY');
+
+-- ===========================================================================
+-- Group A — registry posture (design §7.5): RLS on, no client write, RPC-only
+-- ===========================================================================
+select ok(
+  (select relrowsecurity from pg_class where relname='release_content_revocation' and relnamespace='public'::regnamespace),
+  'release_content_revocation RLS enabled');
+select is(
+  (select count(*) from pg_policies where schemaname='public' and tablename='release_content_revocation' and cmd<>'SELECT'),
+  0::bigint, 'release_content_revocation exposes no client write policy');
+select ok(
+  not has_table_privilege('authenticated', 'public.release_content_revocation', 'INSERT'),
+  'authenticated cannot INSERT into release_content_revocation (writes go through the RPC only)');
+select ok(
+  has_table_privilege('authenticated', 'public.release_content_revocation', 'SELECT'),
+  'authenticated may SELECT release_content_revocation (RLS still filters rows)');
+
+-- fn_content_is_blocked is the authoritative deny predicate: the worker/RPCs
+-- reach it, but authenticated may NOT probe it directly (no cross-tenant probe).
+select ok(
+  has_function_privilege('service_role', 'public.fn_content_is_blocked(uuid,uuid,text)', 'EXECUTE'),
+  'service_role can execute fn_content_is_blocked');
+select ok(
+  not has_function_privilege('authenticated', 'public.fn_content_is_blocked(uuid,uuid,text)', 'EXECUTE'),
+  'authenticated cannot execute fn_content_is_blocked directly');
+
+-- The block RPC is user-authorized (mirror rpc_trust_revoke grants).
+select ok(
+  has_function_privilege('authenticated', 'public.rpc_trust_safety_block_content(uuid,text,text)', 'EXECUTE'),
+  'authenticated can execute rpc_trust_safety_block_content');
+select ok(
+  not has_function_privilege('anon', 'public.rpc_trust_safety_block_content(uuid,text,text)', 'EXECUTE'),
+  'anon cannot execute rpc_trust_safety_block_content');
+
+-- ===========================================================================
+-- Group B — mint authority: SAFETY_BLOCK requires SAFETY_REVOKER (design §7.3)
+-- ===========================================================================
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer','role','authenticated','aal','aal1')::text, true) as _c \gset
+select throws_ok(
+  $$select public.create_verified_action_context('SAFETY_BLOCK', '$$||:'tenant_a'||$$'::uuid, '$$||:'site_a'||$$'::uuid, 'RELEASE_REVISION', '$$||:'rev_a1'||$$', '$$||:'req_h'||$$')$$,
+  'P0001', 'AUTH_SCOPE_DENIED', 'minting a SAFETY_BLOCK context without SAFETY_REVOKER is denied at mint time');
+
+-- ===========================================================================
+-- Group C — baseline: nothing is blocked before any BLOCK event
+-- ===========================================================================
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk'), false,
+  'fn_content_is_blocked is FALSE before any block');
+
+-- ===========================================================================
+-- Group D — provenance rule: block requires a SAFETY-revoked twin (design §10.4)
+-- ===========================================================================
+select set_config('request.jwt.claims', json_build_object('sub', :'u_revoker','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_ap', :'req_h') as ctx_noprov \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_block_content('$$||:'ctx_noprov'||$$'::uuid, '$$||:'h_noprov'||$$', 'no safety provenance')$$,
+  'P0001', 'STATE_CONFLICT', 'blocking content that was only OPERATIONAL-revoked (never SAFETY) is rejected');
+
+-- ===========================================================================
+-- Group E — a SAFETY-revoked content blocks; the BLOCK event is well-formed
+-- ===========================================================================
+select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_blk \gset
+select public.rpc_trust_safety_block_content(:'ctx_blk'::uuid, :'h_blk', 'safety recall XYZ') as blk_id \gset
+
+select is((select action from public.release_content_revocation where id=:'blk_id'::uuid), 'BLOCK',
+  'the appended event is a BLOCK');
+select is((select sequence from public.release_content_revocation where id=:'blk_id'::uuid), 1::bigint,
+  'the first block in the tenant carries sequence 1');
+select is((select actor_user_id from public.release_content_revocation where id=:'blk_id'::uuid), :'u_revoker'::uuid,
+  'the block records the acting SAFETY_REVOKER as actor');
+select is((select detail from public.release_content_revocation where id=:'blk_id'::uuid), 'safety recall XYZ',
+  'the block records the reason detail');
+
+-- ===========================================================================
+-- Group F — the deny predicate after a block
+-- ===========================================================================
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk'), true,
+  'fn_content_is_blocked is TRUE for the blocked (tenant, site, content_hash)');
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk2'), false,
+  'fn_content_is_blocked stays FALSE for a different, unblocked content_hash');
+
+-- ===========================================================================
+-- Group G — tenant/site scope: an identical content_hash in tenant B is NOT
+--   blocked by tenant A's block (prior Gate cross-tenant-leak finding, §7.5)
+-- ===========================================================================
+select is(public.fn_content_is_blocked(:'tenant_b'::uuid, :'site_b'::uuid, :'h_blk'), false,
+  'a BLOCK in tenant A leaves the identical content_hash UNBLOCKED in tenant B');
+
+-- ===========================================================================
+-- Group H — the per-tenant sequence is monotonic across appends
+-- ===========================================================================
+select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a2', :'req_h') as ctx_blk2 \gset
+select public.rpc_trust_safety_block_content(:'ctx_blk2'::uuid, :'h_blk2', 'safety recall 2') as blk2_id \gset
+select is((select sequence from public.release_content_revocation where id=:'blk2_id'::uuid), 2::bigint,
+  'the second block in the tenant carries the next monotonic sequence (2)');
+
+select * from finish();
+rollback;
