@@ -37,7 +37,7 @@ import * as ed from '@noble/ed25519';
 
 import { canonicalJson, sha256Hex } from './canonical.js';
 import { readFactoryPacket } from './packetReader.js';
-import { stateKey, bootstrapStateFromCheckpoint } from './freshnessStore.js';
+import { stateKey, bootstrapStateFromCheckpoint, checkSequence } from './freshnessStore.js';
 import { verify, verifyEd25519Detached } from './verify.js';
 import { DEFAULT_RESOURCE_LIMITS } from './types.js';
 import type {
@@ -608,5 +608,212 @@ describe('real Ed25519 verification (ephemeral keypair, never committed)', () =>
     good.signature.sig = badBytes.toString('base64');
     const { report: badReport } = await run({ trustBundle: good, policy: badPolicy });
     expect(badReport.codes).toEqual(['CRYPTO_SIGNATURE_INVALID']);
+  });
+});
+
+// ===========================================================================
+// 6. HARDENING MUTATIONS (Phase-Gate-C findings C5–C8) — bind the cert to the
+//    resolved RELEASE authority, never crash on a hostile payload, bind the
+//    packet-hash sentinel, and cross-check the snapshot's embedded identity.
+// ===========================================================================
+
+const CONTENT_DOMAIN = 'MONOLITH/FactoryPacketContent/V3';
+const EXPECTED_PACKET_HASH_SENTINEL = sha256Hex(
+  'MONOLITH/NOT_FOR_PRODUCTION/expectedPacketHash-set-by-task8-worker',
+);
+
+interface ManifestShape {
+  tenantScope: TenantScopeV1;
+  candidateHash: string;
+  contentHash: string;
+  files: Array<{ path: string; sha256: string; bytes: number }>;
+  [k: string]: unknown;
+}
+
+function manifestOf(entries: { path: string; bytes: Uint8Array }[]): ManifestShape {
+  return JSON.parse(Buffer.from(entryBytes(entries, 'manifest.json')).toString('utf-8'));
+}
+function bytesOfJson(obj: unknown): Uint8Array {
+  return new Uint8Array(Buffer.from(canonicalJson(obj), 'utf-8'));
+}
+function rebindFileEntry(manifest: ManifestShape, filePath: string, bytes: Uint8Array): void {
+  const entry = manifest.files.find((f) => f.path === filePath);
+  if (!entry) throw new Error(`manifest has no file ${filePath}`);
+  entry.sha256 = sha256Hex(bytes);
+  entry.bytes = bytes.length;
+}
+function computeContentHash(
+  manifest: ManifestShape,
+  snapshot: { snapshotHash: string; machineProfileHash: string },
+  capability: { reportHash: string },
+): string {
+  return sha256Hex(
+    canonicalJson({
+      domain: CONTENT_DOMAIN,
+      schemaVersion: 'V3',
+      notForProduction: true,
+      tenantScope: manifest.tenantScope,
+      candidateHash: manifest.candidateHash,
+      snapshotHash: snapshot.snapshotHash,
+      machineProfileHash: snapshot.machineProfileHash,
+      capabilityReportHash: capability.reportHash,
+      files: manifest.files
+        .map((f) => ({ path: f.path, sha256: f.sha256, bytes: f.bytes }))
+        .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0)),
+    }),
+  );
+}
+
+/**
+ * Reseal a packet after mutating the snapshot and/or certificate: reserialize the
+ * mutated snapshot, rebind its manifest file digest, recompute the manifest+cert
+ * contentHash so the ONLY remaining discrepancy is the injected one, and repack. A
+ * real vector generator holding the test private key would do exactly this.
+ */
+async function reseal(
+  entries: { path: string; bytes: Uint8Array }[],
+  opts: {
+    mutateSnapshot?: (s: Record<string, unknown>) => void;
+    mutateCert?: (c: ReleaseCertificateV1) => void;
+  } = {},
+): Promise<Uint8Array> {
+  let next = entries.map((e) => ({ path: e.path, bytes: e.bytes }));
+  const manifest = manifestOf(next);
+  const snapshot = JSON.parse(Buffer.from(entryBytes(next, 'payload/snapshot.json')).toString('utf-8'));
+  const capability = JSON.parse(Buffer.from(entryBytes(next, 'payload/capability-report.json')).toString('utf-8'));
+  const cert = certOf(next);
+
+  if (opts.mutateSnapshot) opts.mutateSnapshot(snapshot);
+  const snapBytes = bytesOfJson(snapshot);
+  next = replaceEntry(next, 'payload/snapshot.json', snapBytes);
+  rebindFileEntry(manifest, 'payload/snapshot.json', snapBytes);
+
+  manifest.contentHash = computeContentHash(manifest, snapshot, capability);
+  cert.contentHash = manifest.contentHash;
+  if (opts.mutateCert) opts.mutateCert(cert);
+
+  next = replaceEntry(next, 'manifest.json', bytesOfJson(manifest));
+  next = replaceEntry(next, 'release-certificate.json', certBytes(cert));
+  return packetFrom(next);
+}
+
+describe('C5 — the certificate is bound to the resolved RELEASE authority', () => {
+  it('reseal harness sanity: an identity reseal still PASSes', async () => {
+    const { report } = await run({ packetBytes: await reseal(await goldenEntries()) });
+    expect(report.verdict).toBe('PASS');
+  });
+
+  it('a cert signed by an unrelated dev-* keyId FAILs (not just any dev- marker)', async () => {
+    const entries = await goldenEntries();
+    const packet = await reseal(entries, {
+      mutateCert: (c) => {
+        c.signerKeyId = 'dev-attacker-9999';
+        c.signature.keyId = 'dev-attacker-9999';
+        // keep the zero-byte dev marker signature (the shadow scheme)
+      },
+    });
+    const { report } = await run({ packetBytes: packet });
+    expect(report.verdict).toBe('FAIL');
+    expect(report.codes).toEqual(['CRYPTO_SIGNATURE_INVALID']);
+  });
+});
+
+describe('C6 — a hostile payload yields a stable FAIL, never an uncaught crash', () => {
+  it('a {} capability-report (with a rebound manifest digest) FAILs with a code', async () => {
+    const entries = await goldenEntries();
+    const manifest = manifestOf(entries);
+    const emptyCap = new Uint8Array(Buffer.from('{}', 'utf-8'));
+    rebindFileEntry(manifest, 'payload/capability-report.json', emptyCap);
+    let next = replaceEntry(entries, 'payload/capability-report.json', emptyCap);
+    next = replaceEntry(next, 'manifest.json', bytesOfJson(manifest));
+    // verify() must RESOLVE to a FAIL verdict, not reject with an uncaught throw.
+    const outcome = await run({ packetBytes: await packetFrom(next) });
+    expect(outcome.report.verdict).toBe('FAIL');
+    expect(['PACKET_SCHEMA_UNSUPPORTED', 'PACKET_HASH_MISMATCH']).toContain(outcome.report.codes[0]);
+  });
+
+  it('a snapshot missing snapshotHash FAILs with a code (no crash)', async () => {
+    const entries = await goldenEntries();
+    const manifest = manifestOf(entries);
+    const snapshot = JSON.parse(Buffer.from(entryBytes(entries, 'payload/snapshot.json')).toString('utf-8'));
+    delete snapshot.snapshotHash;
+    const snapBytes = bytesOfJson(snapshot);
+    rebindFileEntry(manifest, 'payload/snapshot.json', snapBytes);
+    let next = replaceEntry(entries, 'payload/snapshot.json', snapBytes);
+    next = replaceEntry(next, 'manifest.json', bytesOfJson(manifest));
+    const outcome = await run({ packetBytes: await packetFrom(next) });
+    expect(outcome.report.verdict).toBe('FAIL');
+    expect(['PACKET_SCHEMA_UNSUPPORTED', 'PACKET_HASH_MISMATCH']).toContain(outcome.report.codes[0]);
+  });
+});
+
+describe('C7 — expectedPacketHash is bound to the documented sentinel, not ignored', () => {
+  it('a cert whose expectedPacketHash is not the sentinel FAILs', async () => {
+    const packet = await reseal(await goldenEntries(), {
+      mutateCert: (c) => {
+        c.expectedPacketHash = 'd'.repeat(64); // valid hex, wrong value
+      },
+    });
+    const { report } = await run({ packetBytes: packet });
+    expect(report.verdict).toBe('FAIL');
+    expect(report.codes).toEqual(['PACKET_HASH_MISMATCH']);
+  });
+
+  it('the golden cert carries exactly the documented sentinel', async () => {
+    const cert = certOf(await goldenEntries());
+    expect(cert.expectedPacketHash).toBe(EXPECTED_PACKET_HASH_SENTINEL);
+  });
+});
+
+describe('C8 — the snapshot embedded identity is cross-checked against the manifest', () => {
+  it('a snapshot.candidateHash that disagrees with the manifest FAILs', async () => {
+    const packet = await reseal(await goldenEntries(), {
+      mutateSnapshot: (s) => {
+        s.candidateHash = 'a'.repeat(64); // differs from manifest.candidateHash
+      },
+    });
+    const { report } = await run({ packetBytes: packet });
+    expect(report.verdict).toBe('FAIL');
+    expect(report.codes).toEqual(['PACKET_HASH_MISMATCH']);
+  });
+
+  it('a snapshot.tenantScope that disagrees with the manifest FAILs', async () => {
+    const packet = await reseal(await goldenEntries(), {
+      mutateSnapshot: (s) => {
+        (s.tenantScope as TenantScopeV1).siteId = 'site-evil';
+      },
+    });
+    const { report } = await run({ packetBytes: packet });
+    expect(report.verdict).toBe('FAIL');
+    expect(report.codes).toEqual(['TRUST_SCOPE_MISMATCH']);
+  });
+});
+
+// ===========================================================================
+// 7. C17 — an anomalous-high sequence cannot poison the freshness high-water store.
+// ===========================================================================
+
+describe('C17 — bounded sequence forward-jump', () => {
+  it('a forward jump far beyond the current high-water is rejected', () => {
+    const state = stateAtSequence(1); // high-water = 1
+    const res = checkSequence({ bundleType: 'TRUST', scope: SCOPE, sequence: 5_000_000, policy: POLICY, state });
+    expect(res.ok).toBe(false);
+    expect((res as { code?: string }).code).toBe('TRUST_SEQUENCE_ROLLBACK');
+  });
+
+  it('a normal forward step is still accepted', () => {
+    const state = stateAtSequence(1);
+    const res = checkSequence({ bundleType: 'TRUST', scope: SCOPE, sequence: 2, policy: POLICY, state });
+    expect(res.ok).toBe(true);
+  });
+
+  it('a huge first-use sequence beyond the checkpoint floor is rejected', () => {
+    const state: VerifierStateV1 = {
+      bootstrapCheckpoint: { [stateKey('TRUST', SCOPE)]: 1 },
+      highWaterMarks: {},
+    };
+    const res = checkSequence({ bundleType: 'TRUST', scope: SCOPE, sequence: 9_000_000, policy: POLICY, state });
+    expect(res.ok).toBe(false);
+    expect((res as { code?: string }).code).toBe('TRUST_SEQUENCE_ROLLBACK');
   });
 });

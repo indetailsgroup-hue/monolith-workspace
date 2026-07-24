@@ -5,6 +5,7 @@
  */
 
 import { apiFetch } from "./client";
+import { assertNotProductionShaped } from "../packet/trustKernelProjection";
 import type {
   ExportOptionsResponse,
   ExportRequest,
@@ -76,6 +77,9 @@ export async function downloadExportApi(
 // ============================================================================
 
 export function triggerBrowserDownload(blob: Blob, filename: string): void {
+  // Trust Kernel containment (Task 11/12, design §9): refuse a production-shaped
+  // (P2 manufacturing) egress before any browser download reaches a human (C16).
+  assertNotProductionShaped(filename);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

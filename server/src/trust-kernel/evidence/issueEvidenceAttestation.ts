@@ -46,6 +46,24 @@ import {
 export const EVIDENCE_KEY_PURPOSE = 'EVIDENCE' as const;
 export type EvidenceAuthorityKeyPurpose = KeyPurpose | typeof EVIDENCE_KEY_PURPOSE;
 
+/** An evidence signing key MUST carry this marker so it can never be a release key (C10). */
+export const EVIDENCE_KEY_MARKER = /evidence/i;
+
+/** Default freshness window for evidence self-verification (C9): reject a stale attestation. */
+export const DEFAULT_EVIDENCE_MAX_AGE_SECONDS = 3600;
+/** Tolerated clock skew for a future-dated attestation (C9). */
+export const DEFAULT_EVIDENCE_MAX_SKEW_SECONDS = 300;
+
+/** Explicit freshness window for {@link verifyEvidenceAttestation} (C9). */
+export interface EvidenceFreshness {
+  /** The trusted clock as an ISO-8601 instant. */
+  nowIso: string;
+  /** Maximum age (seconds) of `issuedAt` before the attestation is rejected as stale. */
+  maxAgeSeconds?: number;
+  /** Tolerated future skew (seconds) for `issuedAt` ahead of the clock. */
+  maxClockSkewSeconds?: number;
+}
+
 /** The signed evidence attestation (plan Task 12 Step 2; design §16.4). */
 export interface EvidenceAttestationV1 {
   schema: 'EvidenceAttestationV1';
@@ -133,12 +151,25 @@ export async function issueEvidenceAttestation(
     };
   }
 
-  // (3) The evidence key must be separate from every release key (§16.4, §20).
+  // (3) The evidence key must be separate from every release key (§16.4, §20). This is
+  // fail-closed REGARDLESS of caller input (C10): the previous check only fired when the
+  // caller happened to pass a matching releaseKeyIds entry, so an empty list let one key
+  // sign both purposes. Now the evidence key must ALSO carry an explicit EVIDENCE marker,
+  // so a release-shaped key can never sign evidence even when releaseKeyIds is empty.
   if (opts.releaseKeyIds.includes(keyId)) {
     return {
       ok: false,
       code: 'CRYPTO_ALGORITHM_DENIED',
       detail: 'the evidence signing key must be separate from the release key',
+    };
+  }
+  if (!EVIDENCE_KEY_MARKER.test(keyId)) {
+    return {
+      ok: false,
+      code: 'CRYPTO_ALGORITHM_DENIED',
+      detail:
+        `the evidence signing key "${keyId}" lacks the required EVIDENCE marker; a dedicated EVIDENCE-purpose key ` +
+        'is mandatory so it can never collide with a release/signing key (design §16.4, §20)',
     };
   }
 
@@ -199,9 +230,40 @@ export async function issueEvidenceAttestation(
 export async function verifyEvidenceAttestation(
   attestation: EvidenceAttestationV1,
   verifier: EvidenceSignatureVerifier | undefined,
+  freshness?: EvidenceFreshness,
 ): Promise<TrustResult<boolean>> {
   if (!verifier) {
     return err('CRYPTO_SIGNER_UNAVAILABLE', { reason: 'evidence signature verification is unavailable (fail-closed)' });
+  }
+  // C9 replay resistance: when a trusted clock + window is supplied, a stale (or
+  // future-dated beyond skew) attestation is rejected — a previously-valid attestation
+  // must NOT self-verify forever. The window binds `issuedAt`, which is part of the
+  // signed body, so it cannot be moved without breaking the signature.
+  if (freshness) {
+    const nowMs = Date.parse(freshness.nowIso);
+    const issuedMs = Date.parse(attestation.issuedAt);
+    if (!Number.isFinite(nowMs)) {
+      return err('TRUST_FRESHNESS_UNPROVEN', { reason: 'no valid trusted clock supplied to evidence verify' });
+    }
+    if (!Number.isFinite(issuedMs)) {
+      return err('TRUST_FRESHNESS_UNPROVEN', { reason: 'attestation issuedAt is not a valid instant' });
+    }
+    const maxAgeSeconds = freshness.maxAgeSeconds ?? DEFAULT_EVIDENCE_MAX_AGE_SECONDS;
+    const maxSkewSeconds = freshness.maxClockSkewSeconds ?? DEFAULT_EVIDENCE_MAX_SKEW_SECONDS;
+    const ageSeconds = (nowMs - issuedMs) / 1000;
+    if (ageSeconds > maxAgeSeconds) {
+      return err('TRUST_FRESHNESS_UNPROVEN', {
+        reason: 'evidence attestation is stale (outside freshness window)',
+        ageSeconds: String(ageSeconds),
+        maxAgeSeconds: String(maxAgeSeconds),
+      });
+    }
+    if (ageSeconds < -maxSkewSeconds) {
+      return err('TRUST_FRESHNESS_UNPROVEN', {
+        reason: 'evidence attestation is future-dated beyond tolerated clock skew',
+        ageSeconds: String(ageSeconds),
+      });
+    }
   }
   const { signatureBase64, ...unsigned } = attestation;
   const digest = digestOf(unsigned);

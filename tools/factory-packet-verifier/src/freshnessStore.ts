@@ -88,7 +88,15 @@ export function checkExpiryAndStaleness(params: {
   return vok(undefined);
 }
 
-/** First-use checkpoint requirement + rollback protection. */
+/**
+ * The maximum forward jump a single verification may advance a sequence past the current
+ * floor (C17). Bundle sequences are monotonic counters; a jump beyond this is anomalous
+ * and, if accepted, would poison the high-water store so every subsequent (legitimate)
+ * bundle is rejected as a rollback. Bounding it fails closed against that DoS.
+ */
+export const MAX_SEQUENCE_FORWARD_JUMP = 1_000_000;
+
+/** First-use checkpoint requirement + rollback protection + forward-jump bound (C17). */
 export function checkSequence(params: {
   bundleType: TrustBundleType;
   scope: TenantScopeV1;
@@ -101,6 +109,11 @@ export function checkSequence(params: {
   const hw = state.highWaterMarks[key];
   const cp = state.bootstrapCheckpoint[key];
 
+  // A non-integer / non-finite sequence is never acceptable.
+  if (!Number.isSafeInteger(sequence) || sequence < 0) {
+    return verr('TRUST_SEQUENCE_ROLLBACK', { key, sequence: String(sequence), reason: 'sequence is not a valid non-negative integer' });
+  }
+
   if (hw === undefined) {
     // First use of this (bundleType, scope): a pinned checkpoint floor is required.
     if (cp === undefined) {
@@ -112,12 +125,28 @@ export function checkSequence(params: {
     if (sequence < cp) {
       return verr('TRUST_SEQUENCE_ROLLBACK', { key, sequence: String(sequence), floor: String(cp) });
     }
+    if (sequence > cp + MAX_SEQUENCE_FORWARD_JUMP) {
+      return verr('TRUST_SEQUENCE_ROLLBACK', {
+        key,
+        sequence: String(sequence),
+        floor: String(cp),
+        reason: 'sequence forward-jump beyond the sane bound (anomalous-high; refused to poison the high-water store)',
+      });
+    }
     return vok(undefined);
   }
 
   const floor = cp === undefined ? hw : Math.max(cp, hw);
   if (sequence < floor) {
     return verr('TRUST_SEQUENCE_ROLLBACK', { key, sequence: String(sequence), floor: String(floor) });
+  }
+  if (sequence > floor + MAX_SEQUENCE_FORWARD_JUMP) {
+    return verr('TRUST_SEQUENCE_ROLLBACK', {
+      key,
+      sequence: String(sequence),
+      floor: String(floor),
+      reason: 'sequence forward-jump beyond the sane bound (anomalous-high; refused to poison the high-water store)',
+    });
   }
   return vok(undefined);
 }

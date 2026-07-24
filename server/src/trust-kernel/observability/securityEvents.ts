@@ -63,7 +63,9 @@ export type RecordSecurityEventResult =
   | { ok: false; field: string; detail: string };
 
 function nonEmptyString(v: unknown): v is string {
-  return typeof v === 'string' && v.length > 0;
+  // C15: fail closed on a whitespace-only value — a blank-after-trim identity/scope
+  // field is not a real identity and must be rejected, not stored.
+  return typeof v === 'string' && v.trim().length > 0;
 }
 
 /**

@@ -13,6 +13,8 @@
     "src/export/cutList/download.ts",
     "src/core/export/downloadArtifacts.ts",
     "src/core/api/exportApi.ts",
+    "src/factory/api/exportApi.ts",
+    "src/components/exportViewer/exportViewerStore.ts",
     "supabase/functions/factory-api/index.ts",
     "supabase/functions/factory-api/trustKernel.ts"
   ],
@@ -37,6 +39,32 @@
     "projectFactoryPacketStatus",
     "assertNotProductionShaped",
     "NOT_FOR_PRODUCTION"
+  ],
+  "knownEgressNote": "Reviewed baseline of files that carry a browser file-download signature (blob object URL + anchor download + click) as of this ledger version. The trust-kernel-scoped egress surfaces are ENFORCED (see routes + requiredMarkers, guarded by assertNotProductionShaped / assertExportFormatNotProductionShaped). The files below are pre-existing MONOLITH design/manufacturing export surfaces outside the Task 11/12 trust-kernel file scope; they are recorded here so the open-world egress sweep (verify-route-ledger.mjs §7) FAILS on any NEW, unreviewed egress file. Adding a new egress surface requires either enforcing it or consciously adding it here.",
+  "knownEgressFiles": [
+    "src/cnc/bundle/buildCncBundleZip.ts",
+    "src/components/exportViewer/downloadBytesAsFile.ts",
+    "src/components/nesting/NestingPanel.tsx",
+    "src/components/ui/DesignerLogicContent.tsx",
+    "src/components/ui/KeyManagementPanel.tsx",
+    "src/components/ui/ReleasePanel.tsx",
+    "src/core/adapter/downloadZipBundle.ts",
+    "src/core/bundle/buildExportBundle.ts",
+    "src/core/export/cabinetToDxf.ts",
+    "src/core/export/dxfExportFromOperationGraph.ts",
+    "src/core/export/DXFGenerator.ts",
+    "src/core/export/exportPipeline.ts",
+    "src/core/export/saveClient.ts",
+    "src/core/factoryPackage/factoryPackageStore.ts",
+    "src/core/manufacturing/export/buildFactoryPacketZip.ts",
+    "src/core/manufacturing/release/buildBundle.ts",
+    "src/core/store/useProjectStore.ts",
+    "src/export/ui/ExportPanel.tsx",
+    "src/factory/components/cnc/CncGeneratePanel.tsx",
+    "src/factory/components/cnc/GcodePreviewPanel.tsx",
+    "src/factory/components/packet/PacketJsonViewer.tsx",
+    "src/factory/packet/cutListCsv.ts",
+    "src/factory/packet/zipBundle.ts"
   ],
   "routes": [
     {
@@ -196,6 +224,32 @@
       "negativeTestId": "containment:exportApi-p2-refused"
     },
     {
+      "id": "client.factoryExportApi.signedUrlDownload",
+      "owner": "factory-api",
+      "class": "P2_MANUFACTURING",
+      "file": "src/factory/api/exportApi.ts",
+      "presenceMarker": "assertNotProductionShaped",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "The second signed-URL export client (GET signed URL -> fetch bytes -> triggerBrowserDownload) refuses a production-shaped (P2 manufacturing) filename with NOT_FOR_PRODUCTION before any browser egress; P1 review artifacts pass.",
+      "target": "BLOCK — P2 signed-URL browser download contained (Phase-Gate-C C16).",
+      "disposition": "BLOCK",
+      "negativeTestId": "containment:factoryExportApi-p2-refused"
+    },
+    {
+      "id": "client.exportViewer.download",
+      "owner": "export",
+      "class": "P2_MANUFACTURING",
+      "file": "src/components/exportViewer/exportViewerStore.ts",
+      "presenceMarker": "assertNotProductionShaped",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "The Export Viewer's downloadOne / downloadAllSequential refuse a production-shaped artifact (via assertNotProductionShaped) before writing bytes to the browser with downloadBytesAsFile; P1 review artifacts (PDF/JSON) download.",
+      "target": "BLOCK — third client egress primitive contained (Phase-Gate-C C12).",
+      "disposition": "BLOCK",
+      "negativeTestId": "containment:exportViewer-download-p2-refused"
+    },
+    {
       "id": "edge.v3.authority",
       "owner": "trust-kernel",
       "class": "AUTHORITY",
@@ -304,6 +358,8 @@
     { "id": "guard-cutlist", "file": "src/export/cutList/download.ts", "pattern": "assertNotProductionShaped" },
     { "id": "guard-artifacts", "file": "src/core/export/downloadArtifacts.ts", "pattern": "assertNotProductionShaped" },
     { "id": "guard-exportApi", "file": "src/core/api/exportApi.ts", "pattern": "assertExportFormatNotProductionShaped" },
+    { "id": "guard-factoryExportApi", "file": "src/factory/api/exportApi.ts", "pattern": "assertNotProductionShaped" },
+    { "id": "guard-exportViewer", "file": "src/components/exportViewer/exportViewerStore.ts", "pattern": "assertNotProductionShaped" },
     { "id": "projection-denial", "file": "src/factory/packet/trustKernelProjection.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
     { "id": "edge-p2-denial", "file": "supabase/functions/factory-api/index.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
     { "id": "v3-relay", "file": "src/core/api/trustKernelApi.ts", "pattern": "/v3/factory" }

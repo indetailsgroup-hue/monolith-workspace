@@ -17,8 +17,8 @@
  * Exit:   0 on a complete, contained ledger; 1 on any violation; 2 on a load error.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { dirname, join, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -132,10 +132,61 @@ function main() {
     }
   }
 
+  // (7) OPEN-WORLD egress sweep (C13). The checks above are CLOSED-WORLD — they only see
+  // files declared in enforcedGlobs, so a NEW reachable browser-download egress file is
+  // invisible. Scan the WHOLE src tree for the byte-to-human download signature (a blob
+  // object URL + an anchor `download` + a `.click()`) and FAIL if any such file is not
+  // accounted for: enforced, inventoried, or recorded in the reviewed knownEgressFiles
+  // baseline. A brand-new egress file appears in none of those and is caught.
+  const srcRoot = join(repoRoot, 'src');
+  const accountedEgress = new Set([
+    ...enforcedGlobs,
+    ...(ledger.knownEgressFiles ?? []),
+    ...(ledger.inventoryOnly ?? []).map((io) => io.file),
+  ]);
+  const isEgressSource = (text) =>
+    /URL\.createObjectURL\s*\(/.test(text) && /\.download\s*=/.test(text) && /\.click\s*\(\s*\)/.test(text);
+  const collectSources = (dir) => {
+    let out = [];
+    let entries = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return out;
+    }
+    for (const e of entries) {
+      const abs = join(dir, e.name);
+      if (e.isDirectory()) {
+        if (e.name === 'node_modules' || e.name === 'dist' || e.name === '__tests__') continue;
+        out = out.concat(collectSources(abs));
+      } else if (/\.[tj]sx?$/.test(e.name) && !/\.(test|spec)\.[tj]sx?$/.test(e.name)) {
+        out.push(abs);
+      }
+    }
+    return out;
+  };
+  for (const abs of collectSources(srcRoot)) {
+    const rel = relative(repoRoot, abs).split(sep).join('/');
+    let text;
+    try {
+      text = readFileSync(abs, 'utf-8');
+    } catch {
+      continue;
+    }
+    if (!isEgressSource(text)) continue;
+    if (!accountedEgress.has(rel)) {
+      violations.push(
+        `open-world egress: reachable browser-download egress in ${rel} is not in the route ledger ` +
+          '(enforce it with a containment guard, or record it in knownEgressFiles after review)',
+      );
+    }
+  }
+
   const summary = {
     enforcedFiles: enforcedGlobs.length,
     enforcedRoutes: enforcedRoutes.length,
     inventoryOnly: (ledger.inventoryOnly ?? []).length,
+    knownEgressFiles: (ledger.knownEgressFiles ?? []).length,
     discoveredFiles: discoveredFiles.size,
     mutableAuthorityHolders: mutable,
   };

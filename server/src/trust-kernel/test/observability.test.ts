@@ -73,6 +73,17 @@ describe('SecurityEventV1 — identity fields cannot be satisfied by a display n
     }
   });
 
+  it('C15 rejects a whitespace-only actorUserId (blank-after-trim, fail-closed)', () => {
+    const res = recordSecurityEvent(eventInput({ actorUserId: '   ' }));
+    expect(res).toMatchObject({ ok: false });
+    expect((res as { field?: string }).field).toBe('actorUserId');
+  });
+
+  it('C15 rejects a whitespace-only tenant scope / correlation id (blank-after-trim)', () => {
+    expect(recordSecurityEvent(eventInput({ tenantScope: { tenantId: '  ', siteId: 'S-1' } } as Partial<SecurityEventInput>)).ok).toBe(false);
+    expect(recordSecurityEvent(eventInput({ correlationId: '  ' })).ok).toBe(false);
+  });
+
   it('rejects a missing tenant scope, membership version, artifact hash, reason code, correlation id, or timestamp', () => {
     expect(recordSecurityEvent(eventInput({ tenantScope: undefined } as Partial<SecurityEventInput>)).ok).toBe(false);
     expect(recordSecurityEvent(eventInput({ membershipVersion: undefined } as Partial<SecurityEventInput>)).ok).toBe(false);
@@ -187,5 +198,26 @@ describe('ownership — every domain owned; protocol/invariant changes need deci
     const doc = ownershipDoc();
     doc.changeControl.records.push({ id: 'x', kind: 'invariant', summary: 'y', versionedDecision: 'ADR-1', migrationRef: '' });
     expect(validateOwnership(doc).ok).toBe(false);
+  });
+
+  it('C14 fail-closed: a typo kind still touching protocol/invariant needs a decision + migration', () => {
+    const doc = ownershipDoc();
+    // "Protocol " (trailing space / wrong case) previously slipped through fail-open.
+    doc.changeControl.records.push({ id: 'sneaky', kind: 'Protocol ', summary: 'silent protocol change', versionedDecision: '', migrationRef: '' });
+    expect(validateOwnership(doc).ok).toBe(false);
+  });
+
+  it('C14 fail-closed: an entirely unrecognized kind is rejected without a decision + migration', () => {
+    const doc = ownershipDoc();
+    doc.changeControl.records.push({ id: 'schema-change', kind: 'schema', summary: 'x', versionedDecision: '', migrationRef: '' });
+    const res = validateOwnership(doc);
+    expect(res.ok).toBe(false);
+    expect(res.violations.join(' ')).toMatch(/schema-change/);
+  });
+
+  it('C14 an implementation change remains free of the decision + migration requirement', () => {
+    const doc = ownershipDoc();
+    doc.changeControl.records.push({ id: 'impl-1', kind: 'implementation', summary: 'inside the boundary' });
+    expect(validateOwnership(doc)).toEqual({ ok: true, violations: [] });
   });
 });

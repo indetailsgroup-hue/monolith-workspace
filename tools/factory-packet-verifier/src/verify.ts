@@ -112,6 +112,27 @@ const NOT_FOR_PRODUCTION_PATH = 'NOT_FOR_PRODUCTION.txt';
 const DEV_MARKER_SIG = Buffer.alloc(64, 0).toString('base64');
 const DEV_KEY_PREFIX = 'dev-';
 
+// The documented NOT_FOR_PRODUCTION sentinel for `expectedPacketHash` (Task-8 worker
+// §10.2 step 6). It is DELIBERATELY not the packet's own sha256 — a certificate embedded
+// inside the packet cannot bind the packet's own bytes without being self-referential.
+// Recomputed here from the same pre-image string the builder uses (kept as DATA for
+// independence), so the verifier binds it instead of silently ignoring it (C7).
+const NOT_FOR_PRODUCTION_EXPECTED_PACKET_HASH_SENTINEL = sha256Hex(
+  'MONOLITH/NOT_FOR_PRODUCTION/expectedPacketHash-set-by-task8-worker',
+);
+
+/**
+ * The functional suffix of a key id: everything after the leading namespace token. The
+ * shadow dev-marker cert key `dev-release-ed25519-0001` and the resolved RELEASE
+ * authority `monolith-release-ed25519-0001` share the suffix `release-ed25519-0001`;
+ * the dev marker is the release authority re-scoped under the NOT_FOR_PRODUCTION `dev-`
+ * namespace. Binding on this suffix rejects an unrelated `dev-*` key (C5).
+ */
+function functionalKeySuffix(keyId: string): string {
+  const i = keyId.indexOf('-');
+  return i < 0 ? keyId : keyId.slice(i + 1);
+}
+
 function scopeEqual(a: TenantScopeV1, b: TenantScopeV1): boolean {
   return (
     a.tenantId === b.tenantId &&
@@ -189,18 +210,56 @@ function resolveReleaseAuthority(bundle: TrustBundleV1, nowMs: number): VResult<
   return verr('CRYPTO_ALGORITHM_DENIED', { reason: 'no valid, unrevoked RELEASE key in window' });
 }
 
-/** Verify the release certificate's own signature (shadow dev marker for committed vectors). */
-function verifyCertificateSignature(cert: ReleaseCertificateV1): VResult<void> {
+/**
+ * Verify the release certificate's own signature AND bind it to the resolved RELEASE
+ * authority (C5). Before this fix any `dev-*` keyId with the zero-byte marker passed
+ * (e.g. `dev-attacker-9999`); now the cert must be tied to `releaseKey`:
+ *   - production path (a real public key is pinned on the RELEASE key): the cert
+ *     signerKeyId must equal the release keyId and the signature is verified with the
+ *     same Ed25519 primitive the bundle path uses;
+ *   - shadow NOT_FOR_PRODUCTION path: the 64-zero dev marker on a `dev-` key WHOSE
+ *     functional suffix matches the resolved RELEASE authority key.
+ */
+async function verifyCertificateSignature(
+  cert: ReleaseCertificateV1,
+  releaseKey: TrustedKeyV1,
+): Promise<VResult<void>> {
   if (cert.algorithm !== ED25519 || cert.signature.alg !== ED25519) {
     return verr('CRYPTO_ALGORITHM_DENIED', { reason: 'certificate algorithm is not ed25519' });
   }
   if (cert.signature.keyId !== cert.signerKeyId) {
     return verr('CRYPTO_SIGNATURE_INVALID', { reason: 'certificate signature keyId does not match signerKeyId' });
   }
-  // NOT_FOR_PRODUCTION development-marker signature (design §11.2 "development key
-  // with an explicit marker"): the 64-zero-byte signature bound to a `dev-` key.
+
+  // Production path: verify the certificate signature cryptographically with the pinned
+  // real public key of the resolved RELEASE authority.
+  if (releaseKey.publicKeyHex !== undefined) {
+    if (cert.signerKeyId !== releaseKey.keyId) {
+      return verr('CRYPTO_SIGNATURE_INVALID', {
+        reason: 'certificate is not signed by the resolved RELEASE authority',
+        keyId: cert.signerKeyId,
+        releaseKeyId: releaseKey.keyId,
+      });
+    }
+    const { signature: _s, ...unsigned } = cert as unknown as Record<string, unknown> & { signature: unknown };
+    const message = new TextEncoder().encode(canonicalJson(unsigned));
+    const okReal = await verifyEd25519Detached(releaseKey.publicKeyHex, message, cert.signature.sig);
+    return okReal ? vok(undefined) : verr('CRYPTO_SIGNATURE_INVALID', { keyId: cert.signerKeyId });
+  }
+
+  // NOT_FOR_PRODUCTION development-marker signature (design §11.2 "development key with
+  // an explicit marker"): the 64-zero-byte signature bound to a `dev-` key.
   if (!cert.signerKeyId.startsWith(DEV_KEY_PREFIX) || cert.signature.sig !== DEV_MARKER_SIG) {
     return verr('CRYPTO_SIGNATURE_INVALID', { reason: 'certificate signature is not a recognized NOT_FOR_PRODUCTION dev marker' });
+  }
+  // C5: the dev marker MUST be bound to the resolved RELEASE authority; an unrelated
+  // `dev-*` key (e.g. dev-attacker-9999) does not share the release key's suffix.
+  if (functionalKeySuffix(cert.signerKeyId) !== functionalKeySuffix(releaseKey.keyId)) {
+    return verr('CRYPTO_SIGNATURE_INVALID', {
+      reason: 'certificate dev-marker key is not bound to the resolved RELEASE authority',
+      keyId: cert.signerKeyId,
+      releaseKeyId: releaseKey.keyId,
+    });
   }
   return vok(undefined);
 }
@@ -329,6 +388,28 @@ export async function verify(input: VerifyInput): Promise<VerifyOutcome> {
   } catch {
     return fail('PACKET_SCHEMA_UNSUPPORTED', 'payload JSON is not parseable');
   }
+  // C6: presence-check the payload hash fields BEFORE canonicalization. A hostile
+  // packet that is valid JSON but omits snapshotHash/machineProfileHash/reportHash must
+  // produce a stable FAIL, never an uncaught canonicalization crash (exit-3 with no code).
+  if (
+    typeof snapshot.snapshotHash !== 'string' ||
+    typeof snapshot.machineProfileHash !== 'string' ||
+    typeof capability.reportHash !== 'string'
+  ) {
+    return fail('PACKET_SCHEMA_UNSUPPORTED', 'payload snapshot/capability-report is missing a required hash field');
+  }
+  // C8: cross-check the snapshot's embedded identity against the manifest. A snapshot
+  // whose candidateHash/tenantScope disagrees with (or omits) the manifest binding is
+  // rejected — the payload cannot claim a different candidate/tenant than the manifest.
+  if (typeof snapshot.candidateHash !== 'string' || snapshot.tenantScope === undefined || snapshot.tenantScope === null) {
+    return fail('PACKET_SCHEMA_UNSUPPORTED', 'payload snapshot is missing candidateHash/tenantScope');
+  }
+  if (!scopeEqual(snapshot.tenantScope, manifest.tenantScope)) {
+    return fail('TRUST_SCOPE_MISMATCH', 'payload snapshot tenantScope disagrees with the manifest');
+  }
+  if (snapshot.candidateHash !== manifest.candidateHash) {
+    return fail('PACKET_HASH_MISMATCH', 'payload snapshot candidateHash disagrees with the manifest');
+  }
   const recomputedContentHash = sha256Hex(
     canonicalJson({
       domain: CONTENT_DOMAIN,
@@ -355,6 +436,13 @@ export async function verify(input: VerifyInput): Promise<VerifyOutcome> {
   }
   if (cert.releaseRevisionId !== manifest.releaseRevisionId) {
     return fail('PACKET_HASH_MISMATCH', 'certificate releaseRevisionId does not bind the manifest');
+  }
+  // C7: bind the certificate's expectedPacketHash. In this NOT_FOR_PRODUCTION shadow it
+  // is the documented sentinel (a cert inside the packet cannot bind the packet's own
+  // hash); assert it equals the sentinel rather than silently ignoring it. Real
+  // packet-hash binding is DEFERRED to the real-crypto phase (recorded in the summary).
+  if (cert.expectedPacketHash !== NOT_FOR_PRODUCTION_EXPECTED_PACKET_HASH_SENTINEL) {
+    return fail('PACKET_HASH_MISMATCH', 'certificate expectedPacketHash is not the documented NOT_FOR_PRODUCTION sentinel');
   }
 
   // 7. Trust bundle: signature -> expiry/staleness -> sequence.
@@ -404,7 +492,7 @@ export async function verify(input: VerifyInput): Promise<VerifyOutcome> {
   const releaseAuthority = resolveReleaseAuthority(trustBundle, nowMs);
   if (!releaseAuthority.ok) return fail(releaseAuthority.code, releaseAuthority.detail?.reason);
 
-  const certSig = verifyCertificateSignature(cert);
+  const certSig = await verifyCertificateSignature(cert, releaseAuthority.value);
   if (!certSig.ok) return fail(certSig.code, certSig.detail?.reason);
 
   if (revocationApplies(trustBundle.profileAttestationRevocations, { id: cert.attestationId, hash: cert.attestationHash }, nowMs)) {
@@ -435,7 +523,7 @@ export async function verify(input: VerifyInput): Promise<VerifyOutcome> {
       validAsOf,
       freshnessAgeSeconds,
       checkpoint: checkpointLabel,
-      summary: `PASS: release ${cert.releaseRevisionId} valid as of ${validAsOf} (age ${freshnessAgeSeconds}s); NOT_FOR_PRODUCTION.`,
+      summary: `PASS: release ${cert.releaseRevisionId} valid as of ${validAsOf} (age ${freshnessAgeSeconds}s); NOT_FOR_PRODUCTION (expectedPacketHash bound to the documented sentinel; real packet-hash binding deferred to real crypto).`,
     },
     nextState,
   };

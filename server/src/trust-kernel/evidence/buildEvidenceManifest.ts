@@ -165,6 +165,7 @@ export function verifyEvidenceRootHash(manifest: EvidenceManifestV1): boolean {
 
 /** Why an evidence manifest cannot support a passing claim (design §16.4). */
 export type EvidenceCompletenessReason =
+  | 'NO_LAYERS'
   | 'FAILURE_PRESENT'
   | 'SKIP_PRESENT'
   | 'EMPTY_SUITE'
@@ -183,6 +184,13 @@ export type EvidenceCompletenessResult =
  * and issueEvidenceAttestation both run this before signing/attesting.
  */
 export function checkEvidenceComplete(manifest: EvidenceManifestV1): EvidenceCompletenessResult {
+  // C11: a zero-layer manifest is vacuously "complete" — reject it in the CHECK itself,
+  // not only in the construction helper. A pass claim must rest on at least one layer of
+  // machine-readable evidence. This is checked FIRST so an empty manifest cannot slip
+  // through on a coincidentally-matching root hash.
+  if (!Array.isArray(manifest.layers) || manifest.layers.length === 0) {
+    return { ok: false, reason: 'NO_LAYERS', detail: 'evidence manifest has zero CI layers; a pass claim requires at least one' };
+  }
   if (!verifyEvidenceRootHash(manifest)) {
     return { ok: false, reason: 'ROOT_HASH_MISMATCH', detail: 'manifest root hash does not match its body' };
   }

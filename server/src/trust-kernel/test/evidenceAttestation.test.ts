@@ -141,6 +141,12 @@ describe('checkEvidenceComplete — a truncated/skipped/failed suite cannot supp
     const m = buildEvidenceManifest(manifestInput({ layers: [digestRef({ passed: 0 })] }));
     expect(checkEvidenceComplete(m)).toMatchObject({ ok: false, reason: 'EMPTY_SUITE' });
   });
+  it('C11 a zero-layer manifest is INCOMPLETE in the CHECK itself (not vacuously ok)', () => {
+    const m = buildEvidenceManifest(manifestInput());
+    const zeroLayer = { ...m, layers: [] };
+    const r = checkEvidenceComplete(zeroLayer);
+    expect(r).toMatchObject({ ok: false, reason: 'NO_LAYERS' });
+  });
   it('a non-zero exit code is incomplete', () => {
     const m = buildEvidenceManifest(manifestInput({ layers: [digestRef({ exitCode: 1 })] }));
     expect(checkEvidenceComplete(m)).toMatchObject({ ok: false, reason: 'NONZERO_EXIT' });
@@ -240,6 +246,19 @@ describe('issueEvidenceAttestation — signs complete evidence with a SEPARATE e
     expect(res).toMatchObject({ ok: false, code: 'EVIDENCE_INCOMPLETE' });
   });
 
+  it('C10 SEPARATION fail-closed: an evidence keyId lacking the EVIDENCE marker is refused even with empty releaseKeyIds', async () => {
+    const m = buildEvidenceManifest(manifestInput({ evidenceKeyId: 'monolith-release-key-0007' }));
+    const res = await issueEvidenceAttestation(m, {
+      signer: makeSigner({}),
+      verifier: shadowVerifier,
+      // a release-shaped keyId with NO 'evidence' marker, and the caller supplies no
+      // releaseKeyIds — the old collision check would let this sign both purposes.
+      config: { signerUrl: 'https://s', keyId: 'monolith-release-key-0007' },
+      releaseKeyIds: [],
+    });
+    expect(res).toMatchObject({ ok: false, code: 'CRYPTO_ALGORITHM_DENIED' });
+  });
+
   it('self-verification fails on a tampered signature', async () => {
     const m = buildEvidenceManifest(manifestInput());
     const res = await issueEvidenceAttestation(m, {
@@ -253,5 +272,37 @@ describe('issueEvidenceAttestation — signs complete evidence with a SEPARATE e
     const tampered = { ...res.attestation, signatureBase64: 'AAAA' };
     const v = await verifyEvidenceAttestation(tampered, shadowVerifier);
     expect(v).toMatchObject({ ok: true, value: false });
+  });
+
+  it('C9 REPLAY: a stale attestation is rejected outside its freshness window', async () => {
+    const m = buildEvidenceManifest(manifestInput({ issuedAt: '2026-07-24T00:00:00.000Z' }));
+    const res = await issueEvidenceAttestation(m, {
+      signer: makeSigner({}),
+      verifier: shadowVerifier,
+      config: { signerUrl: 'https://s', keyId: 'monolith-evidence-key-0001' },
+      releaseKeyIds: [],
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const att = res.attestation;
+    // Within the freshness window the same attestation still verifies.
+    const fresh = await verifyEvidenceAttestation(att, shadowVerifier, {
+      nowIso: '2026-07-24T00:10:00.000Z',
+      maxAgeSeconds: 3600,
+    });
+    expect(fresh).toMatchObject({ ok: true, value: true });
+    // A week later — far outside the 1h window — the SAME (previously valid) attestation
+    // must be rejected: a stale attestation cannot self-verify forever (replay resistance).
+    const stale = await verifyEvidenceAttestation(att, shadowVerifier, {
+      nowIso: '2026-07-31T00:00:00.000Z',
+      maxAgeSeconds: 3600,
+    });
+    expect(stale.ok).toBe(false);
+    // A future-dated attestation (clock behind issuance beyond skew) is also rejected.
+    const future = await verifyEvidenceAttestation(att, shadowVerifier, {
+      nowIso: '2026-07-23T00:00:00.000Z',
+      maxAgeSeconds: 3600,
+    });
+    expect(future.ok).toBe(false);
   });
 });

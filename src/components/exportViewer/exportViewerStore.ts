@@ -13,6 +13,7 @@ import type { StoreApi, UseBoundStore } from 'zustand';
 import type { TrustChainService } from '../../core/trustChain/trustChainService';
 import type { ExportRecord } from '../../core/export/exportBundleTypes';
 import { downloadBytesAsFile } from './downloadBytesAsFile';
+import { assertNotProductionShaped } from '../../factory/packet/trustKernelProjection';
 
 // ============================================
 // STORE STATE
@@ -153,6 +154,9 @@ export function createExportViewerStore(
         }
 
         const filename = r.filename || fallbackName || artifactId;
+        // Trust Kernel containment (Task 11, design §9): refuse a production-shaped
+        // (P2 manufacturing) artifact before any browser egress (C12).
+        assertNotProductionShaped(filename);
         downloadBytesAsFile({ bytes: r.bytes, mime: r.mime, filename });
         set({ loading: false });
       } catch (e) {
@@ -182,10 +186,14 @@ export function createExportViewerStore(
           }
 
           const fallbackName = a.path.split('/').pop() || a.artifactId;
+          const filename = r.filename || fallbackName;
+          // Trust Kernel containment (Task 11, design §9): refuse a production-shaped
+          // artifact before any browser egress (C12).
+          assertNotProductionShaped(filename);
           downloadBytesAsFile({
             bytes: r.bytes,
             mime: r.mime,
-            filename: r.filename || fallbackName,
+            filename,
           });
 
           // Small delay between downloads to avoid browser issues

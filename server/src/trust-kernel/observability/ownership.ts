@@ -81,15 +81,28 @@ export function validateOwnership(doc: OwnershipDoc): ValidateOwnershipResult {
   }
 
   // Protocol/invariant changes require a versioned decision AND a migration reference.
+  // C14: FAIL CLOSED. The only kind exempt from that requirement is a clean
+  // `implementation` change. Anything else — `protocol`, `invariant`, a typo like
+  // "Protocol ", or an entirely unrecognized kind (e.g. "schema") — must carry a
+  // versioned decision + migration reference; an unrecognized kind is additionally
+  // flagged. This closes the old fail-open hole where a mislabelled protocol/invariant
+  // change slipped through unrecorded.
   const records = doc.changeControl?.records ?? [];
   for (const r of records) {
-    if (r.kind === 'protocol' || r.kind === 'invariant') {
-      if (!nonEmpty(r.versionedDecision)) {
-        violations.push(`change record "${r.id}" (${r.kind}) lacks a versioned decision`);
-      }
-      if (!nonEmpty(r.migrationRef)) {
-        violations.push(`change record "${r.id}" (${r.kind}) lacks a migration reference`);
-      }
+    const kind = typeof r.kind === 'string' ? r.kind.trim().toLowerCase() : '';
+    if (kind === 'implementation') continue; // may evolve inside the boundary freely
+    const recognized = kind === 'protocol' || kind === 'invariant';
+    if (!nonEmpty(r.versionedDecision)) {
+      violations.push(`change record "${r.id}" (${r.kind ?? ''}) lacks a versioned decision`);
+    }
+    if (!nonEmpty(r.migrationRef)) {
+      violations.push(`change record "${r.id}" (${r.kind ?? ''}) lacks a migration reference`);
+    }
+    if (!recognized) {
+      violations.push(
+        `change record "${r.id}" has an unrecognized kind "${r.kind ?? ''}"; must be one of protocol|invariant|implementation ` +
+          '(treated as a protocol/invariant change and required to carry a decision + migration)',
+      );
     }
   }
 

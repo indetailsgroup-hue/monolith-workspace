@@ -72,10 +72,12 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install (root workspaces + server)
-        run: |
-          npm ci
-          npm ci --prefix server
+      # Split for the same reason as C4: a failure of `npm ci` (root) must not be
+      # swallowed by a following command on windows-latest's pwsh shell.
+      - name: Install root workspaces
+        run: npm ci
+      - name: Install server workspace
+        run: npm ci --prefix server
 
       - name: Server trust-kernel + full suite (JSON report)
         run: npm --prefix server test -- --run --reporter=json --outputFile=../reports/server-${{ matrix.os }}.json
@@ -94,10 +96,14 @@ jobs:
       - name: Frontend containment suite (Task 11 + Task 12 export, JSON report)
         run: npx vitest run src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts --reporter=json --outputFile=reports/containment-${{ matrix.os }}.json
 
-      - name: Root typecheck + build
-        run: |
-          npm run typecheck:all
-          npm run build
+      # C4: SEPARATE steps. A non-last command in a single pwsh multi-line `run:`
+      # block on windows-latest has its failure SWALLOWED (GitHub appends the
+      # $LASTEXITCODE check only after the LAST line). Splitting makes each command
+      # its own step so a typecheck failure fails the job on every OS.
+      - name: Root typecheck
+        run: npm run typecheck:all
+      - name: Root build
+        run: npm run build
 
       - name: Route disposition ledger (single authority, no P2/actor breach, no deferrals)
         run: node scripts/trust-kernel/verify-route-ledger.mjs
@@ -248,20 +254,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install server workspace
+        run: npm ci --prefix server
       - name: Build server (compiles evidence modules)
-        run: |
-          npm ci --prefix server
-          npm --prefix server run build
-      - name: Assert evidence signer configuration is present (fail closed otherwise)
+        run: npm --prefix server run build
+      # C3: presence-of-env is NOT a passed gate. This step ISSUES + SELF-VERIFIES a
+      # real EvidenceAttestation through the SEPARATE evidence signer/verifier and
+      # writes reports/evidence-attestation.json with `verified: true|false`. The
+      # FINAL gate demands verified===true (never the mere success of this job). With
+      # no real signer/verify endpoint wired it writes verified:false and fails closed;
+      # a Shadow-Trust-Ready pass requires a real, separate evidence key + verify
+      # endpoint (design §16.4). The report is uploaded even on failure.
+      - name: Issue + self-verify evidence attestation (fail closed; writes proof report)
+        id: evidence
         env:
           EVIDENCE_SIGNER_URL: ${{ secrets.EVIDENCE_SIGNER_URL }}
           EVIDENCE_SIGNER_KEY_ID: ${{ secrets.EVIDENCE_SIGNER_KEY_ID }}
+          EVIDENCE_VERIFY_URL: ${{ secrets.EVIDENCE_VERIFY_URL }}
+        shell: bash
         run: |
-          if [ -z "$EVIDENCE_SIGNER_URL" ] || [ -z "$EVIDENCE_SIGNER_KEY_ID" ]; then
-            echo "::error::evidence self-verification FAILED CLOSED: EVIDENCE_SIGNER_URL / EVIDENCE_SIGNER_KEY_ID are not configured. A Shadow-Trust-Ready pass requires a real, SEPARATE evidence key and verify endpoint (design §16.4)."
-            exit 1
-          fi
-          echo "evidence signer configured; issueEvidenceAttestation will sign + self-verify with the separate EVIDENCE key."
+          mkdir -p reports
+          node scripts/trust-kernel/issue-evidence-attestation.mjs reports/evidence-attestation.json
+      - name: Upload evidence attestation proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-evidence
+          path: reports/
+          retention-days: 90
 
   # ---------------------------------------------------------------------------
   # (6) FINAL GATE. Reads the COMPLETE machine-readable reports and rejects any
@@ -275,6 +295,11 @@ jobs:
     if: always()
     timeout-minutes: 10
     steps:
+      # checkout so the SELF-TESTED gate checker (scripts/trust-kernel/final-gate-check.mjs)
+      # is present. The inline heredoc could never be exercised off-CI, which is exactly
+      # how the skip/todo/evidence-presence gate bugs (C1-C3) survived. That module is
+      # proven by scripts/trust-kernel/final-gate-check.selftest.mjs.
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -287,85 +312,8 @@ jobs:
           R_MATRIX: ${{ needs.matrix-tests.result }}
           R_EDGE: ${{ needs.edge-db.result }}
           R_E2E: ${{ needs.e2e.result }}
-          R_EVIDENCE: ${{ needs.evidence-self-verify.result }}
+          # NOTE: evidence-self-verify's RESULT is intentionally NOT passed as a gate.
+          # The gate demands a verified EvidenceAttestation proof report (C3); a job
+          # that merely succeeded on env-presence can never satisfy it.
         shell: bash
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const violations = [];
-
-          // (a) Job-level results: any non-success (failure/cancelled/skipped) is rejected.
-          //     claim-linters is intentionally advisory (cross-repo-pending) and excluded here.
-          for (const [name, res] of Object.entries({
-            'matrix-tests': process.env.R_MATRIX,
-            'edge-db': process.env.R_EDGE,
-            'e2e': process.env.R_E2E,
-            'evidence-self-verify': process.env.R_EVIDENCE,
-          })) {
-            if (res !== 'success') violations.push(`job "${name}" did not succeed (result=${res})`);
-          }
-
-          const root = 'all-reports';
-          const walk = (d) => fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap(e => {
-            const p = path.join(d, e.name); return e.isDirectory() ? walk(p) : [p];
-          }) : [];
-          const files = walk(root);
-
-          const req = (pred, msg) => { if (!files.some(pred)) violations.push(`missing required report: ${msg}`); };
-          req(f => /server-ubuntu-latest\.json$/.test(f), 'server-ubuntu-latest.json');
-          req(f => /server-windows-latest\.json$/.test(f), 'server-windows-latest.json');
-          req(f => /verifier-ubuntu-latest\.json$/.test(f), 'verifier-ubuntu-latest.json');
-          req(f => /edge\.json$/.test(f), 'edge.json');
-          req(f => /pgtap-trust_kernel_release\.tap$/.test(f), 'pgtap-trust_kernel_release.tap');
-          req(f => /e2e\.json$/.test(f), 'e2e.json');
-
-          // (b) vitest JSON reports: >0 tests, 0 failed, 0 skipped (pending), success true.
-          for (const f of files.filter(f => f.endsWith('.json') && !/e2e\.json$/.test(f))) {
-            let r; try { r = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { violations.push(`unparseable report ${f}`); continue; }
-            if (typeof r.numTotalTests !== 'number') continue; // not a vitest report
-            if (r.numTotalTests <= 0) violations.push(`empty suite in ${f} (numTotalTests=0)`);
-            if (r.numFailedTests > 0) violations.push(`${r.numFailedTests} failed test(s) in ${f}`);
-            if (r.numPendingTests > 0) violations.push(`${r.numPendingTests} skipped test(s) in ${f}`);
-            if (r.success !== true) violations.push(`report ${f} is not success`);
-          }
-
-          // (c) Playwright e2e JSON: no unexpected, no skipped, >0 expected.
-          const e2e = files.find(f => /e2e\.json$/.test(f));
-          if (e2e) {
-            try {
-              const r = JSON.parse(fs.readFileSync(e2e, 'utf8'));
-              const s = r.stats || {};
-              if ((s.expected || 0) <= 0) violations.push('e2e ran zero tests');
-              if ((s.unexpected || 0) > 0) violations.push(`e2e has ${s.unexpected} unexpected failure(s)`);
-              if ((s.skipped || 0) > 0) violations.push(`e2e has ${s.skipped} skipped test(s)`);
-              if ((s.flaky || 0) > 0) violations.push(`e2e has ${s.flaky} flaky test(s)`);
-            } catch { violations.push('unparseable e2e report'); }
-          }
-
-          // (d) pgTAP: each suite has at least one `ok` and zero `not ok`.
-          for (const f of files.filter(f => f.endsWith('.tap'))) {
-            const tap = fs.readFileSync(f, 'utf8');
-            const ok = (tap.match(/^ok /gm) || []).length;
-            const notOk = (tap.match(/^not ok /gm) || []).length;
-            if (ok === 0) violations.push(`empty pgTAP suite ${f}`);
-            if (notOk > 0) violations.push(`${notOk} pgTAP failure(s) in ${f}`);
-          }
-
-          // (e) Cross-platform golden packet byte-identity: ubuntu sha == windows sha.
-          const shaU = files.find(f => /golden-ubuntu-latest\.sha$/.test(f));
-          const shaW = files.find(f => /golden-windows-latest\.sha$/.test(f));
-          if (!shaU || !shaW) violations.push('missing golden packet sha from one OS');
-          else {
-            const u = fs.readFileSync(shaU, 'utf8').trim();
-            const w = fs.readFileSync(shaW, 'utf8').trim();
-            if (u !== w) violations.push(`cross-platform golden packet sha MISMATCH: ubuntu=${u} windows=${w}`);
-          }
-
-          if (violations.length > 0) {
-            console.error('TRUST KERNEL FINAL GATE: FAIL');
-            for (const v of violations) console.error('  - ' + v);
-            process.exit(1);
-          }
-          console.log('TRUST KERNEL FINAL GATE: PASS — complete reports, no failure/skip/empty/missing, cross-platform bytes identical.');
-          NODE
+        run: node scripts/trust-kernel/final-gate-check.mjs all-reports
