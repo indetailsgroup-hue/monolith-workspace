@@ -65,6 +65,39 @@ export interface UnsignedPacketV3 {
   contentHash: Sha256Hex;
 }
 
+/**
+ * Normalize a capability report's SET-LIKE arrays so the canonical bytes are
+ * independent of the caller's array order (PGB-1). The builder is the determinism
+ * authority (design §11.1); it must not let input order leak into the packet even
+ * when an upstream compiler happens to pre-sort.
+ *
+ * Sorted (set-like — order is not semantically significant):
+ *   - `blockers`: a SET of capability findings, each identified by its content;
+ *     sorted by the finding's own canonical JSON so a permutation cannot change bytes.
+ *   - `checkedOperationIds`: the exhaustive SET of checked operation ids
+ *     (present on a `CompiledCapabilityReportV1`); sorted by UTF-16 code unit.
+ *
+ * Returns a COPY; the input report is never mutated. `reportHash` is embedded as an
+ * opaque field and is NOT recomputed here, so normalization only reorders the
+ * declared set members, never their membership.
+ */
+export function normalizeCapabilityReportV1<T extends CapabilityReportV1>(report: T): T {
+  const copy: Record<string, unknown> = { ...(report as Record<string, unknown>) };
+  if (Array.isArray(copy.blockers)) {
+    copy.blockers = [...(copy.blockers as unknown[])].sort((a, b) => {
+      const ka = canonicalJson(a);
+      const kb = canonicalJson(b);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+  }
+  if (Array.isArray(copy.checkedOperationIds)) {
+    copy.checkedOperationIds = [...(copy.checkedOperationIds as string[])].sort((a, b) =>
+      a < b ? -1 : a > b ? 1 : 0,
+    );
+  }
+  return copy as T;
+}
+
 function utf8File(
   path: string,
   mediaType: string,
@@ -102,6 +135,23 @@ export function buildUnsignedPayloadV3(
     });
   }
 
+  // PGB-3: fail closed. Only a PASS report may become a packet. A report carrying
+  // any hard blocker is gated (GATE_HARD_BLOCKER); a report flagged unsupported
+  // with no listed blockers still fails closed (CAP_UNSUPPORTED_OPERATION). The
+  // wired worker path never reaches here with a non-PASS report (the compiler
+  // fails closed upstream), but the exported builder must re-enforce the invariant.
+  if (Array.isArray(capabilityReport.blockers) && capabilityReport.blockers.length > 0) {
+    return err('GATE_HARD_BLOCKER', {
+      reason: 'capability report carries hard blockers; not a PASS',
+      blockerCount: String(capabilityReport.blockers.length),
+    });
+  }
+  if (capabilityReport.supported !== true) {
+    return err('CAP_UNSUPPORTED_OPERATION', {
+      reason: 'capability report is not a PASS (supported !== true)',
+    });
+  }
+
   const files = [
     utf8File(
       'NOT_FOR_PRODUCTION.txt',
@@ -114,7 +164,12 @@ export function buildUnsignedPayloadV3(
       'payload/capability-report.json',
       'application/json',
       'P1_REVIEW',
-      canonicalJson(capabilityReport),
+      // PGB-1: normalize set-like arrays on a COPY before canonicalizing so the
+      // embedded bytes are independent of the caller's array order. The snapshot is
+      // intentionally NOT re-normalized here: its `contentRefs` are bound by
+      // `snapshotHash` (verified above) and sorted by the snapshot builder;
+      // re-sorting the embedded copy would desync snapshot.json from its own hash.
+      canonicalJson(normalizeCapabilityReportV1(capabilityReport)),
     ),
   ].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 

@@ -30,6 +30,7 @@ import type {
   ReleaseCertificateV1,
   TenantScopeV1,
 } from '../contracts/protocolV3.js';
+import type { CompiledCapabilityReportV1 } from '../contracts/capability.js';
 import {
   buildReleaseSnapshot,
   type ReleaseSnapshotInputV3,
@@ -397,6 +398,53 @@ describe('buildUnsignedPayloadV3', () => {
     const r = buildUnsignedPayloadV3(snapshot, wrong);
     expect(r.ok).toBe(false);
     expect((r as { code: string }).code).toBe('CAP_PROFILE_MISMATCH');
+  });
+
+  // PGB-1: the builder is the determinism authority. A PASS report's set-like id
+  // array (`checkedOperationIds`, embedded via canonicalJson which PRESERVES array
+  // order) must be normalized so the packet bytes are independent of input order.
+  it('normalizes set-like report id arrays so the packet sha256 is order-independent (PGB-1)', async () => {
+    const snapshot = unwrap(buildReleaseSnapshot(SNAPSHOT_INPUT));
+    const sortedIds: CompiledCapabilityReportV1 = {
+      ...CAPABILITY_REPORT,
+      checkedOperationIds: ['op-a', 'op-b', 'op-c'],
+    };
+    const shuffledIds: CompiledCapabilityReportV1 = {
+      ...CAPABILITY_REPORT,
+      checkedOperationIds: ['op-c', 'op-a', 'op-b'],
+    };
+
+    const ua = unwrap(buildUnsignedPayloadV3(snapshot, sortedIds));
+    const ub = unwrap(buildUnsignedPayloadV3(snapshot, shuffledIds));
+    const pa = await packageFactoryPacketV3(ua, { ...CERTIFICATE_BASE, contentHash: ua.contentHash });
+    const pb = await packageFactoryPacketV3(ub, { ...CERTIFICATE_BASE, contentHash: ub.contentHash });
+
+    expect(sha256Hex(pa)).toBe(sha256Hex(pb));
+    // The builder must not mutate its inputs.
+    expect(shuffledIds.checkedOperationIds).toEqual(['op-c', 'op-a', 'op-b']);
+  });
+
+  // PGB-3: fail closed. A report that is not a PASS must NEVER yield a packet, even
+  // when its machineProfileHash matches the snapshot. Blockers -> GATE_HARD_BLOCKER.
+  it('fails closed: a report carrying a hard blocker never yields a packet (PGB-3)', () => {
+    const snapshot = unwrap(buildReleaseSnapshot(SNAPSHOT_INPUT));
+    const gated: CapabilityReportV1 = {
+      ...CAPABILITY_REPORT,
+      supported: false,
+      blockers: [{ reasonCode: 'CAP_UNSUPPORTED_OPERATION', operationRef: 'operation/drill/OP-010' }],
+    };
+    const r = buildUnsignedPayloadV3(snapshot, gated);
+    expect(r.ok).toBe(false);
+    expect((r as { code: string }).code).toBe('GATE_HARD_BLOCKER');
+  });
+
+  // PGB-3: a report flagged unsupported (no blockers listed) still fails closed.
+  it('fails closed: an unsupported report never yields a packet (PGB-3)', () => {
+    const snapshot = unwrap(buildReleaseSnapshot(SNAPSHOT_INPUT));
+    const unsupported: CapabilityReportV1 = { ...CAPABILITY_REPORT, supported: false };
+    const r = buildUnsignedPayloadV3(snapshot, unsupported);
+    expect(r.ok).toBe(false);
+    expect((r as { code: string }).code).toBe('CAP_UNSUPPORTED_OPERATION');
   });
 });
 

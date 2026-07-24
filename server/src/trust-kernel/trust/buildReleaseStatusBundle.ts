@@ -19,16 +19,23 @@
  */
 
 import type { TenantScopeV1, ReleaseStatusBundleV1, Iso8601 } from '../contracts/protocolV3.js';
-import { assertTrustScope, assertSequence, assertWindow } from './buildTrustBundle.js';
+import { assertTrustScope, assertSequence, assertWindow, TrustBundleError } from './buildTrustBundle.js';
 
 /**
  * One release-lifecycle row projected from the authority. Only `status ==='REVOKED'`
  * rows enter the bundle; a VOID attempt/artifact row is deliberately accepted here
  * so the exclusion is explicit and testable.
+ *
+ * PGB-4: each row carries the trust scope of the release revision it projects, so
+ * the builder can verify every row belongs to `meta.trustScope` instead of trusting
+ * the caller to have pre-filtered. `tenantId` is required; `siteId` is present when
+ * the release revision carries one.
  */
 export interface ReleaseRevocationRow {
   releaseRevisionId: string;
   status: string;
+  tenantId: string;
+  siteId?: string;
 }
 
 /** A `ReleaseStatusBundleV1` before the trust authority binds its signature. */
@@ -51,6 +58,15 @@ export function buildReleaseStatusBundle(
 
   const revoked = new Set<string>();
   for (const row of rows) {
+    // PGB-4: bundle scope enforcement. Every row MUST belong to this bundle's trust
+    // scope. A cross-tenant row is a projection error and is REJECTED (never silently
+    // dropped), matching the file's throw-based error style (assert* above).
+    if (row.tenantId !== meta.trustScope.tenantId) {
+      throw new TrustBundleError(
+        'TRUST_SCOPE_MISMATCH',
+        `release-status row ${row.releaseRevisionId} tenant ${String(row.tenantId)} is outside the bundle trust scope ${meta.trustScope.tenantId}`,
+      );
+    }
     // The recall unit is the release-revision id, and ONLY a REVOKED revision
     // qualifies. VOID / ACTIVE never enter the bundle.
     if (row.status === 'REVOKED' && typeof row.releaseRevisionId === 'string' && row.releaseRevisionId.length > 0) {

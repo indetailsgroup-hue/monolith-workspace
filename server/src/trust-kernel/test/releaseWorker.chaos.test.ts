@@ -268,6 +268,9 @@ function makeFakeStore(opts: FakeStoreOptions = {}) {
   const markVoid = vi.fn(async (locator: string): Promise<TrustResult<void>> => {
     voided.add(locator);
     quarantine.delete(locator);
+    // Voiding drops any materialized bytes too, so a post-write abort leaves no
+    // orphan under the internal locator (PGB-2).
+    materialized.delete(locator);
     return ok(undefined);
   });
   // The publication method that belongs to Task 11. Task 8 must NEVER call it.
@@ -624,6 +627,27 @@ describe('release worker: stored-hash mismatch (design §10.2 step 9)', () => {
     expect(r).toMatchObject({ ok: false, code: 'STORE_HASH_MISMATCH' });
     expect(db.markArtifactAvailable).not.toHaveBeenCalled();
     expect(db.artifactStatus.get(allocation.artifactId)).not.toBe('AVAILABLE');
+    expect(store.exposeUrl).not.toHaveBeenCalled();
+  });
+
+  // PGB-2 cleanup: on a post-write hash mismatch the just-written bytes must be
+  // voided so no orphan remains under the internal locator.
+  it('voids the just-written bytes on a stored-hash mismatch (no orphan under the locator)', async () => {
+    const allocation = buildAllocation();
+    const signer = makeFakeSigner();
+    const store = makeFakeStore({ corruptMaterialize: true });
+    const db = makeFakeDb(allocation);
+    const ports: ReleaseWorkerPorts = { db: db.db, signer: signer.port, store: store.port };
+    expect((await executeReleaseAttempt(allocation.attemptId, ports)).ok).toBe(true);
+    const event = db.outbox[0];
+
+    const r = await materializeArtifact(event, { db: db.db, store: store.port });
+    expect(r).toMatchObject({ ok: false, code: 'STORE_HASH_MISMATCH' });
+    // The orphaned bytes are cleaned up: markVoid was called for the locator and
+    // the store no longer holds any materialized bytes for it.
+    expect(store.markVoid).toHaveBeenCalledWith(event.objectLocator);
+    expect(store.voided.has(event.objectLocator)).toBe(true);
+    expect(store.materialized.has(event.objectLocator)).toBe(false);
     expect(store.exposeUrl).not.toHaveBeenCalled();
   });
 });

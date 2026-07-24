@@ -146,9 +146,9 @@ function trustInput() {
 // never surface in the status bundle.
 const REVOKED_ID = 'rr-000000000000000000000002';
 const RELEASE_ROWS: ReleaseRevocationRow[] = [
-  { releaseRevisionId: 'rr-000000000000000000000001', status: 'ACTIVE' },
-  { releaseRevisionId: REVOKED_ID, status: 'REVOKED' },
-  { releaseRevisionId: 'attempt-void-0003', status: 'VOID' },
+  { releaseRevisionId: 'rr-000000000000000000000001', status: 'ACTIVE', tenantId: 'tenant-001', siteId: 'site-001' },
+  { releaseRevisionId: REVOKED_ID, status: 'REVOKED', tenantId: 'tenant-001', siteId: 'site-001' },
+  { releaseRevisionId: 'attempt-void-0003', status: 'VOID', tenantId: 'tenant-001', siteId: 'site-001' },
 ];
 
 function statusMeta() {
@@ -252,19 +252,37 @@ describe('buildReleaseStatusBundle', () => {
 
   it('sorts and de-duplicates the revoked set deterministically', () => {
     const rows: ReleaseRevocationRow[] = [
-      { releaseRevisionId: 'rr-c', status: 'REVOKED' },
-      { releaseRevisionId: 'rr-a', status: 'REVOKED' },
-      { releaseRevisionId: 'rr-a', status: 'REVOKED' },
-      { releaseRevisionId: 'rr-b', status: 'ACTIVE' },
+      { releaseRevisionId: 'rr-c', status: 'REVOKED', tenantId: 'tenant-001' },
+      { releaseRevisionId: 'rr-a', status: 'REVOKED', tenantId: 'tenant-001' },
+      { releaseRevisionId: 'rr-a', status: 'REVOKED', tenantId: 'tenant-001' },
+      { releaseRevisionId: 'rr-b', status: 'ACTIVE', tenantId: 'tenant-001' },
     ];
     const bundle = buildReleaseStatusBundle(rows, statusMeta());
     expect(bundle.revokedReleaseRevisionIds).toEqual(['rr-a', 'rr-c']);
   });
 
   it('produces an empty revoked set when nothing is revoked', () => {
-    const rows: ReleaseRevocationRow[] = [{ releaseRevisionId: 'rr-a', status: 'ACTIVE' }];
+    const rows: ReleaseRevocationRow[] = [
+      { releaseRevisionId: 'rr-a', status: 'ACTIVE', tenantId: 'tenant-001' },
+    ];
     const bundle = buildReleaseStatusBundle(rows, statusMeta());
     expect(bundle.revokedReleaseRevisionIds).toEqual([]);
+  });
+
+  // PGB-4: bundle scope enforcement. A cross-tenant REVOKED row must be REJECTED,
+  // never silently dropped into (or excluded from) the tenant-scoped bundle.
+  it('rejects a cross-tenant revoked row instead of trusting the caller', () => {
+    const rows: ReleaseRevocationRow[] = [
+      { releaseRevisionId: REVOKED_ID, status: 'REVOKED', tenantId: 'tenant-001', siteId: 'site-001' },
+      { releaseRevisionId: 'rr-foreign', status: 'REVOKED', tenantId: 'tenant-999', siteId: 'site-001' },
+    ];
+    let code = '';
+    try {
+      buildReleaseStatusBundle(rows, statusMeta());
+    } catch (e) {
+      code = (e as TrustBundleError).code;
+    }
+    expect(code).toBe('TRUST_SCOPE_MISMATCH');
   });
 });
 

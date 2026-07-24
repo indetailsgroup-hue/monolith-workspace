@@ -137,10 +137,19 @@ export async function materializeArtifact(
   });
   if (!writeResult.ok) return propagateFailure(writeResult);
 
+  // PGB-2 cleanup: from here bytes exist under the internal locator. ANY failure
+  // before the artifact is marked AVAILABLE must void those bytes so no orphan
+  // remains under the locator. `markVoid` is the store's existing void semantics
+  // (no new URL-exposing method is introduced).
+
   // Verify what was ACTUALLY stored - a corrupt write is caught here.
   const storedHashResult = await ports.store.readStoredHash(event.objectLocator);
-  if (!storedHashResult.ok) return propagateFailure(storedHashResult);
+  if (!storedHashResult.ok) {
+    await ports.store.markVoid(event.objectLocator);
+    return propagateFailure(storedHashResult);
+  }
   if (storedHashResult.value !== event.expectedPacketHash) {
+    await ports.store.markVoid(event.objectLocator);
     return err('STORE_HASH_MISMATCH', {
       reason: 'stored bytes do not match the expected packet hash',
       expected: event.expectedPacketHash,
@@ -153,7 +162,10 @@ export async function materializeArtifact(
     artifactId: event.artifactId,
     contentHash: event.contentHash,
   });
-  if (!availableResult.ok) return propagateFailure(availableResult);
+  if (!availableResult.ok) {
+    await ports.store.markVoid(event.objectLocator);
+    return propagateFailure(availableResult);
+  }
 
   return ok(buildRecord(event, 'AVAILABLE'));
 }
