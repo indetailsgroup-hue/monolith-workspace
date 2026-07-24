@@ -36,6 +36,7 @@
 \set tenant_a   aa000000-0000-0000-0000-0000000000a1
 \set tenant_b   bb000000-0000-0000-0000-0000000000b1
 \set site_a     a5000000-0000-0000-0000-0000000000a5
+\set site_a2    a5000000-0000-0000-0000-0000000000a6
 \set site_b     b5000000-0000-0000-0000-0000000000b5
 
 \set u_revoker    a5000000-0000-0000-0000-00000000c001
@@ -77,10 +78,11 @@
 \set cand_h_b1 3333333333333333333333333333333333333333333333333333333333333333
 \set sub       4444444444444444444444444444444444444444444444444444444444444444
 \set req_h     9999999999999999999999999999999999999999999999999999999999999999
+\set h_seq     5555555555555555555555555555555555555555555555555555555555555555
 
 begin;
 create extension if not exists pgtap;
-select plan(19);
+select plan(28);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -93,8 +95,9 @@ insert into public.monolith_tenant (id, slug, display_name, status) values
   (:'tenant_b', 'safety-b', 'Safety tenant B (coexistence)', 'ACTIVE');
 
 insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_a', :'tenant_a', 'A-SITE-01', 'Tenant A site', 'ACTIVE'),
-  (:'site_b', :'tenant_b', 'B-SITE-01', 'Tenant B site', 'ACTIVE');
+  (:'site_a',  :'tenant_a', 'A-SITE-01', 'Tenant A site',        'ACTIVE'),
+  (:'site_a2', :'tenant_a', 'A-SITE-02', 'Tenant A second site', 'ACTIVE'),
+  (:'site_b',  :'tenant_b', 'B-SITE-01', 'Tenant B site',        'ACTIVE');
 
 insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
   (:'m_revoker',   :'tenant_a', :'u_revoker',   1, 'ACTIVE'),
@@ -108,6 +111,7 @@ insert into public.monolith_membership_role (tenant_id, membership_id, role) val
 
 insert into public.monolith_membership_site (tenant_id, membership_id, site_id) values
   (:'tenant_a', :'m_revoker',   :'site_a'),
+  (:'tenant_a', :'m_revoker',   :'site_a2'),
   (:'tenant_a', :'m_designer',  :'site_a'),
   (:'tenant_b', :'m_revoker_b', :'site_b');
 
@@ -188,6 +192,19 @@ select ok(
   has_table_privilege('authenticated', 'public.release_content_revocation', 'SELECT'),
   'authenticated may SELECT release_content_revocation (RLS still filters rows)');
 
+-- FIX-A: the deny log must be tamper-resistant. Supabase default privileges hand
+-- `authenticated` TRUNCATE/REFERENCES/TRIGGER on every new table; 0186 strips them
+-- so only SELECT survives — no client may erase or rewrite the append-only log.
+select ok(
+  not has_table_privilege('authenticated', 'public.release_content_revocation', 'TRUNCATE'),
+  'authenticated cannot TRUNCATE the deny log (inherited default privilege stripped)');
+select ok(
+  not has_table_privilege('authenticated', 'public.release_content_revocation', 'UPDATE'),
+  'authenticated cannot UPDATE the deny log');
+select ok(
+  not has_table_privilege('authenticated', 'public.release_content_revocation', 'DELETE'),
+  'authenticated cannot DELETE the deny log');
+
 -- fn_content_is_blocked is the authoritative deny predicate: the worker/RPCs
 -- reach it, but authenticated may NOT probe it directly (no cross-tenant probe).
 select ok(
@@ -231,8 +248,20 @@ select throws_ok(
 -- ===========================================================================
 -- Group E — a SAFETY-revoked content blocks; the BLOCK event is well-formed
 -- ===========================================================================
+-- FIX-D3 (deny-only): capture positive-authority state BEFORE the successful block
+-- so we can prove the block writes no release_revision and mutates no revision.
+select (select count(*) from public.release_revision)                       as rr_count_before,
+       (select status from public.release_revision where id=:'rev_a1'::uuid) as rev_a1_status_before \gset
+
 select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_blk \gset
 select public.rpc_trust_safety_block_content(:'ctx_blk'::uuid, :'h_blk', 'safety recall XYZ') as blk_id \gset
+
+-- FIX-D3 (deny-only): release_revision is the sole positive authority — the block
+-- must add no row and must not touch the target revision's status.
+select is((select count(*) from public.release_revision), :rr_count_before::bigint,
+  'deny-only: a successful block adds NO release_revision row (positive-authority count unchanged)');
+select is((select status from public.release_revision where id=:'rev_a1'::uuid), :'rev_a1_status_before',
+  'deny-only: a successful block does NOT mutate the target release_revision status');
 
 select is((select action from public.release_content_revocation where id=:'blk_id'::uuid), 'BLOCK',
   'the appended event is a BLOCK');
@@ -259,12 +288,56 @@ select is(public.fn_content_is_blocked(:'tenant_b'::uuid, :'site_b'::uuid, :'h_b
   'a BLOCK in tenant A leaves the identical content_hash UNBLOCKED in tenant B');
 
 -- ===========================================================================
+-- Group G2 (FIX-D1) — the SAME-tenant SITE predicate is load-bearing, not just
+--   the tenant predicate. site_a2 is a second ACTIVE site of tenant_a.
+-- ===========================================================================
+-- fn_content_is_blocked site predicate: a BLOCK in (tenant_a, site_a) must NOT
+-- leak to a different site of the SAME tenant.
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a2'::uuid, :'h_blk'), false,
+  'a BLOCK in (tenant_a, site_a) leaves the identical content_hash UNBLOCKED in the same tenant''s site_a2');
+
+-- Provenance site predicate: a SAFETY_BLOCK context authorized for site_a2, aimed
+-- at rev_a1 (SAFETY-revoked only in site_a), must fail — the RPC loads the revision
+-- bound to the context's site, and rev_a1 is not in site_a2 -> STATE_CONFLICT.
+select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a2', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_wrongsite \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_block_content('$$||:'ctx_wrongsite'||$$'::uuid, '$$||:'h_blk'||$$', 'authorized site does not own the revision')$$,
+  'P0001', 'STATE_CONFLICT', 'a SAFETY_BLOCK authorized for site_a2 cannot block a revision SAFETY-revoked only in site_a (provenance site predicate is load-bearing)');
+
+-- ===========================================================================
 -- Group H — the per-tenant sequence is monotonic across appends
 -- ===========================================================================
 select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a2', :'req_h') as ctx_blk2 \gset
 select public.rpc_trust_safety_block_content(:'ctx_blk2'::uuid, :'h_blk2', 'safety recall 2') as blk2_id \gset
 select is((select sequence from public.release_content_revocation where id=:'blk2_id'::uuid), 2::bigint,
   'the second block in the tenant carries the next monotonic sequence (2)');
+
+-- ===========================================================================
+-- Group I (FIX-D5) — the block is BOUND to the context-authorized revision
+-- ===========================================================================
+-- Mint a SAFETY_BLOCK context for rev_a1 (whose content_hash is h_blk) but call the
+-- RPC with h_blk2 — the content_hash of a DIFFERENT revision (rev_a2). The free
+-- p_content_hash parameter must match the context-authorized revision's hash, so a
+-- mismatch is rejected AUTH_ACTION_CONTEXT_INVALID (mirrors rpc_trust_revoke's
+-- resource_id binding). Without FIX-B this call would have silently succeeded.
+select public.create_verified_action_context('SAFETY_BLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_bind \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_block_content('$$||:'ctx_bind'||$$'::uuid, '$$||:'h_blk2'||$$', 'hash of a different revision')$$,
+  'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'a content_hash that does not match the context-authorized revision is rejected (resource_id binding)');
+
+-- ===========================================================================
+-- Group J (FIX-D2) — latest-event-wins: a higher-sequence UNBLOCK reverses a BLOCK
+-- ===========================================================================
+-- As the superuser test session, directly append a BLOCK then a higher-sequence
+-- UNBLOCK for a fresh content_hash (Task 5's UNBLOCK path does not exist yet). The
+-- deny predicate must read the MAX-sequence event, not merely "exists a BLOCK".
+-- Sequences 900/901 sit above the RPC-allocated 1/2 and keep (tenant_id, sequence)
+-- unique; release_revision_id stays null (Task-5 UNBLOCK shape; FK is MATCH SIMPLE).
+insert into public.release_content_revocation (tenant_id, site_id, content_hash, action, sequence, actor_user_id) values
+  (:'tenant_a', :'site_a', :'h_seq', 'BLOCK',   900, :'u_revoker'),
+  (:'tenant_a', :'site_a', :'h_seq', 'UNBLOCK', 901, :'u_revoker');
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_seq'), false,
+  'latest-event-wins: a higher-sequence UNBLOCK after a BLOCK leaves the content NOT blocked (not naive exists-BLOCK)');
 
 select * from finish();
 rollback;

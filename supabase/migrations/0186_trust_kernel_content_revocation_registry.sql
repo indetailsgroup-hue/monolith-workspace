@@ -224,6 +224,12 @@ create table public.release_content_revocation (
   tenant_id uuid not null references public.monolith_tenant(id),
   site_id uuid not null,
   content_hash text not null,
+  -- The specific SAFETY-revoked release_revision this event was bound to. BLOCK
+  -- events (Task 3) always carry it — it is v_ctx.resource_id, the exact revision
+  -- the SAFETY_REVOKER authorized; Task-5 UNBLOCK events do NOT (they reverse by
+  -- content_hash under a harder gate), hence nullable. The composite FK ties it to
+  -- a revision IN THE SAME TENANT (MATCH SIMPLE: skipped when the column is null).
+  release_revision_id uuid,
   action text not null check (action in ('BLOCK','UNBLOCK')),
   sequence bigint not null,
   actor_user_id uuid not null references auth.users(id),
@@ -231,6 +237,7 @@ create table public.release_content_revocation (
   detail text,
   unique (tenant_id, sequence),
   foreign key (tenant_id, site_id) references public.monolith_site(tenant_id, id),
+  foreign key (tenant_id, release_revision_id) references public.release_revision(tenant_id, id),
   constraint rcr_content_hash_fmt check (public.fn_is_sha256_hex(content_hash)),
   constraint rcr_sequence_pos check (sequence > 0)
 );
@@ -251,6 +258,12 @@ create policy release_content_revocation_sel on public.release_content_revocatio
   using (tenant_id in (select public.fn_monolith_member_tenant_ids()));
 
 revoke all on public.release_content_revocation from public, anon;
+-- A deny log must be tamper-resistant: Supabase's default privileges grant
+-- `authenticated` TRUNCATE/REFERENCES/TRIGGER on every new table, so a plain
+-- `revoke ... from public, anon` leaves those inherited on authenticated. Strip
+-- them explicitly, then re-grant only SELECT (RLS still filters rows). Writes flow
+-- solely through the SECURITY DEFINER RPC; no client may TRUNCATE/INSERT/UPDATE/DELETE.
+revoke all on public.release_content_revocation from authenticated;
 grant select on public.release_content_revocation to authenticated;
 
 comment on table public.release_content_revocation is
@@ -274,12 +287,19 @@ create function public.fn_content_is_blocked(
   p_site_id uuid,
   p_content_hash text
 ) returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select coalesce(
+begin
+  -- Fail-closed: a deny predicate must NEVER silently allow on a null key. A null
+  -- tenant/site/content_hash is a malformed request, not "nothing is blocked".
+  if p_tenant_id is null or p_site_id is null or p_content_hash is null then
+    raise exception 'AUTH_ACTION_CONTEXT_INVALID'
+      using detail = 'fn_content_is_blocked requires non-null tenant/site/content_hash';
+  end if;
+  return coalesce(
     (select r.action = 'BLOCK'
        from public.release_content_revocation r
       where r.tenant_id = p_tenant_id
@@ -288,6 +308,7 @@ as $$
       order by r.sequence desc
       limit 1),
     false);
+end;
 $$;
 
 revoke all on function public.fn_content_is_blocked(uuid, uuid, text) from public, anon, authenticated;
@@ -312,6 +333,7 @@ set search_path = public
 as $$
 declare
   v_ctx public.verified_action_context%rowtype;
+  v_authorized_hash text;
   v_seq bigint;
   v_new_id uuid;
 begin
@@ -320,9 +342,9 @@ begin
   --     action/expiry/membership-version and one-time use.
   v_ctx := public.consume_verified_action_context(p_context_id, 'SAFETY_BLOCK');
 
-  -- (2) Site-authority: the block is scoped to the context's tenant+site; there
-  --     is nothing extra to bind beyond v_ctx.site_id (unlike REVOKE, the block
-  --     targets a content_hash, not a specific revision id).
+  -- (2) Site-authority: the block is scoped to the context's tenant+site. Beyond
+  --     that, step (4) binds the block to v_ctx.resource_id — the specific
+  --     release_revision the SAFETY_BLOCK context was authorized for (like REVOKE).
 
   -- (3) Content-hash format. A malformed hash is a malformed request (same stable
   --     code the sibling RPCs use for a malformed request parameter, e.g. 0185's
@@ -331,22 +353,30 @@ begin
     raise exception 'AUTH_ACTION_CONTEXT_INVALID' using detail = 'content_hash must be sha256 hex';
   end if;
 
-  -- (4) PROVENANCE (design §10.4): you may only content-block something that was
-  --     SAFETY-revoked in THIS tenant+site. A release_revision with this
-  --     content_hash must exist, be REVOKED, and carry revoke_reason_class
-  --     'SAFETY' (0185). Any other state (ACTIVE, or REVOKED for a non-SAFETY
-  --     class, or a different tenant/site) is a STATE_CONFLICT — the registry
-  --     never manufactures a deny for content the safety process never condemned.
-  if not exists (
-    select 1 from public.release_revision rr
+  -- (4) PROVENANCE + BINDING (design §10.4): you may only content-block the
+  --     specific release_revision the SAFETY_REVOKER authorized. v_ctx.resource_id
+  --     names that revision; load IT (bound to this tenant+site) and require it to
+  --     be SAFETY-revoked. Any other state (unknown id, ACTIVE, REVOKED for a
+  --     non-SAFETY class, or a different tenant/site) is a STATE_CONFLICT — the
+  --     registry never manufactures a deny for content the safety process never
+  --     condemned. Then bind the free p_content_hash parameter to that revision's
+  --     content_hash, mirroring rpc_trust_revoke's `v_ctx.resource_id is distinct
+  --     from <target>` check (0182/0185): the caller cannot block an arbitrary
+  --     in-scope SAFETY hash, only the one the context was authorized for.
+  select rr.content_hash into v_authorized_hash
+    from public.release_revision rr
     where rr.tenant_id = v_ctx.tenant_id
-      and rr.site_id = v_ctx.site_id
-      and rr.content_hash = p_content_hash
-      and rr.status = 'REVOKED'
-      and rr.revoke_reason_class = 'SAFETY'
-  ) then
+      and rr.site_id   = v_ctx.site_id
+      and rr.id        = v_ctx.resource_id::uuid
+      and rr.status    = 'REVOKED'
+      and rr.revoke_reason_class = 'SAFETY';
+  if not found then
     raise exception 'STATE_CONFLICT'
-      using detail = 'content block requires a SAFETY-revoked release revision with this content_hash in the tenant/site';
+      using detail = 'content block requires the context-authorized release revision to be SAFETY-revoked in this tenant/site';
+  end if;
+  if p_content_hash is distinct from v_authorized_hash then
+    raise exception 'AUTH_ACTION_CONTEXT_INVALID'
+      using detail = 'p_content_hash does not match the content_hash of the context-authorized release revision';
   end if;
 
   -- (5) Advisory-lock + monotonic per-tenant sequence (same discipline as
@@ -356,10 +386,13 @@ begin
     from public.release_content_revocation where tenant_id = v_ctx.tenant_id;
 
   v_new_id := gen_random_uuid();
+  -- Record content_hash = v_authorized_hash (the revision's own hash, identical to
+  -- the now-validated p_content_hash) and release_revision_id = the authorized
+  -- revision, so every BLOCK row is traceable to the exact revision it condemned.
   insert into public.release_content_revocation
-    (id, tenant_id, site_id, content_hash, action, sequence, actor_user_id, detail)
+    (id, tenant_id, site_id, content_hash, release_revision_id, action, sequence, actor_user_id, detail)
   values
-    (v_new_id, v_ctx.tenant_id, v_ctx.site_id, p_content_hash, 'BLOCK', v_seq, v_ctx.actor_user_id, p_reason_detail);
+    (v_new_id, v_ctx.tenant_id, v_ctx.site_id, v_authorized_hash, v_ctx.resource_id::uuid, 'BLOCK', v_seq, v_ctx.actor_user_id, p_reason_detail);
 
   -- (6) Deny-only: NO write to release_revision or any positive-authority row.
   return v_new_id;
@@ -373,4 +406,4 @@ revoke all on function public.rpc_trust_safety_block_content(uuid, text, text) f
 grant execute on function public.rpc_trust_safety_block_content(uuid, text, text) to authenticated, service_role;
 
 comment on function public.rpc_trust_safety_block_content(uuid, text, text) is
-  'Trust Kernel §10.4 (plan Task 3): consumes a SAFETY_BLOCK action context (role SAFETY_REVOKER), requires SAFETY-class revocation provenance for the content_hash in the same tenant+site (else STATE_CONFLICT), and appends a monotonic BLOCK event to release_content_revocation. Deny-only: writes no release_revision. Stable errors AUTH_ACTION_CONTEXT_INVALID / AUTH_MEMBERSHIP_REVOKED / STATE_CONFLICT.';
+  'Trust Kernel §10.4 (plan Task 3): consumes a SAFETY_BLOCK action context (role SAFETY_REVOKER), loads the context-authorized release revision (v_ctx.resource_id) and requires it to be SAFETY-revoked in the same tenant+site (else STATE_CONFLICT), binds p_content_hash to that revision''s content_hash (else AUTH_ACTION_CONTEXT_INVALID), then appends a monotonic BLOCK event (content_hash + release_revision_id) to release_content_revocation. Deny-only: writes no release_revision. Stable errors AUTH_ACTION_CONTEXT_INVALID / AUTH_MEMBERSHIP_REVOKED / STATE_CONFLICT.';
