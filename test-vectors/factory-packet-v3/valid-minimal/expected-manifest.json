@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "V3",
+  "tenantScope": {
+    "tenantId": "tenant-001",
+    "orgId": "org-monolith",
+    "siteId": "site-001",
+    "policyVersion": "policy-2026.07"
+  },
+  "releaseRevisionId": "rr-000000000000000000000001",
+  "candidateHash": "80323e6c5f2a6df89b862a57634f11891716541bf598b89a5188ad781951ca86",
+  "files": [
+    {
+      "path": "NOT_FOR_PRODUCTION.txt",
+      "sha256": "ea7328f0f5824659fb43bb057c571b4cf469e28c6acd25131fd137581d826c47",
+      "bytes": 133
+    },
+    {
+      "path": "payload/capability-report.json",
+      "sha256": "09a84cb2a5be4c053e3f7fb8e28f70d6d5e08c5decd02b457a5a23a068e41f83",
+      "bytes": 228
+    },
+    {
+      "path": "payload/snapshot.json",
+      "sha256": "c330245e4def8a6bc0a6ffcebaa81c8e4f57b14693d69046dcbfc7621888fc92",
+      "bytes": 608
+    }
+  ],
+  "contentHash": "7a60792f14813333b06370c8a6b8c1af7f1b01d80d4e5eef148c87de19d6d6d8"
+}

@@ -1,0 +1,36 @@
+{
+  "vectorId": "factory-packet-v3/valid-minimal",
+  "description": "Negative and permutation cases proving the builder is a pure function of declared bytes + constants and that a normal run rejects any golden drift.",
+  "cases": [
+    {
+      "id": "permute-contentRefs",
+      "kind": "input-permutation",
+      "expect": "identical-bytes",
+      "detail": "Reversing snapshotInput.contentRefs must not change any output byte."
+    },
+    {
+      "id": "permute-object-keys",
+      "kind": "input-permutation",
+      "expect": "identical-bytes",
+      "detail": "Reordering object keys in the tenant scope must not change output."
+    },
+    {
+      "id": "windows-path-separators",
+      "kind": "path-normalization",
+      "expect": "identical-bytes",
+      "detail": "Backslash zip entry paths normalize to POSIX before packaging."
+    },
+    {
+      "id": "flip-one-packet-byte",
+      "kind": "packet-byte-drift",
+      "expect": "sha256-differs",
+      "detail": "Flipping a single committed packet byte must change the sha256."
+    },
+    {
+      "id": "extra-non-allowlisted-file",
+      "kind": "allowlist-rejection",
+      "expect": "PACKET_EXTRA_FILE",
+      "detail": "A file outside the exact allowlist is rejected, never packaged."
+    }
+  ]
+}

@@ -25,3 +25,9 @@ docs/evidence/**/*.sha256 text eol=lf
 # S17-4 generator (eeed1ce6) — any byte change must fail the pinned hashes.
 src/packet-verifier/interop/fixtures/*.zip binary
 src/packet-verifier/interop/fixtures/*.json -text
+
+# factory-packet-v3 golden vectors are byte-exact (content-addressed by sha256).
+# The packet is binary; the text vectors are LF-pinned so autocrlf can't alter them.
+test-vectors/factory-packet-v3/**/*.zip binary
+test-vectors/factory-packet-v3/**/*.json text eol=lf
+test-vectors/factory-packet-v3/**/*.sha256 text eol=lf
