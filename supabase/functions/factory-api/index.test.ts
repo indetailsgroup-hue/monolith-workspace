@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   deriveServerActor,
   FactoryAuthenticationError,
@@ -418,5 +418,288 @@ describe("S17-2 RELEASED-only invariant", () => {
     expect(sql.match(/v\.spec_state <> 'RELEASED'/g)?.length).toBeGreaterThanOrEqual(2);
     expect(sql).toContain("'canExport', v.spec_state = 'RELEASED'");
     expect(sql).not.toContain("v.spec_state in ('FROZEN', 'RELEASED')");
+  });
+});
+
+// Feature: production-trust-kernel — Task 5 transport tests for the user-token
+// V3 Edge boundary (handleTrustKernelRequest). Pure transport: environment
+// adapters (Supabase clients) are injected as fakes, so no DB/network is touched.
+//
+// Invariants under test (plan Task 5 / design §7.2, §10):
+//   - Missing/invalid bearer → 401; a valid user action → 202 (async worker).
+//   - The handler NEVER accepts client-supplied actor role/name/tenant/site and
+//     the spoof string never reaches createActionContext.
+//   - createActionContext is called with the INCOMING bearer, never a service one.
+//   - Stable HTTP↔reason-code mapping for invalid JSON, wrong method, candidate
+//     mismatch, offline-replay header, expired context, and service-role spoof.
+//   - Service-role helpers are reserved for worker ops and reject user authority.
+import {
+  handleTrustKernelRequest,
+  assertWorkerServiceOperation,
+  httpStatusForReason,
+  filterActionBody,
+  type TrustKernelDeps,
+  type TrustResult,
+  type UserActionInput,
+  type AuthorityRequest,
+  type AuthorityResponse,
+} from "./trustKernel";
+
+const userBearer = "Bearer user-jwt-abc";
+const serviceBearer = "Bearer service-role-key";
+const HASH = "a".repeat(64);
+const AUTHZ = "b".repeat(64);
+const REQH = "c".repeat(64);
+
+type CtxResult = TrustResult<{ contextId: string }>;
+type AuthResult = TrustResult<AuthorityResponse>;
+
+function deps(over: { ctx?: CtxResult; auth?: AuthResult } = {}) {
+  const createActionContext = vi.fn(
+    async (_i: UserActionInput): Promise<CtxResult> => over.ctx ?? { ok: true, value: { contextId: "ctx-1" } },
+  );
+  const invokeAuthority = vi.fn(
+    async (_i: AuthorityRequest): Promise<AuthResult> =>
+      over.auth ?? { ok: true, value: { status: "ACCEPTED", releaseAttemptId: "att-1" } },
+  );
+  const d = { createActionContext, invokeAuthority };
+  return d as typeof d & TrustKernelDeps;
+}
+
+function req(method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Request {
+  const h: Record<string, string> = { ...headers };
+  const init: RequestInit = { method, headers: h };
+  if (body !== undefined) {
+    h["content-type"] = "application/json";
+    init.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+  return new Request(`https://edge.example/functions/v1/factory-api${path}`, init);
+}
+const post = (path: string, body?: unknown, headers: Record<string, string> = {}) => req("POST", path, body, headers);
+const get = (path: string, headers: Record<string, string> = {}) => req("GET", path, undefined, headers);
+
+describe("trust-kernel edge transport — authentication", () => {
+  it("401 when Authorization is missing (never creates a context)", async () => {
+    const d = deps();
+    const res = await handleTrustKernelRequest(post("/v3/factory/jobs/JOB-1/release", {}), d);
+    expect(res.status).toBe(401);
+    expect(d.createActionContext).not.toHaveBeenCalled();
+  });
+
+  it("401 when Authorization is present but not a bearer token", async () => {
+    const d = deps();
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", {}, { authorization: "Basic abc" }),
+      d,
+    );
+    expect(res.status).toBe(401);
+    expect(d.createActionContext).not.toHaveBeenCalled();
+  });
+});
+
+describe("trust-kernel edge transport — actor spoof containment (§7.2)", () => {
+  it("202 on a valid user action; spoofed role/name/body never reach createActionContext", async () => {
+    const d = deps();
+    const body = {
+      candidateHash: HASH,
+      releaseAuthorizationHash: AUTHZ,
+      idempotencyKey: "idem-1",
+      requestHash: REQH,
+      "x-actor-role": "ADMIN",
+      role: "ADMIN",
+      spoof: "spoof",
+    };
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", body, {
+        authorization: userBearer,
+        "x-actor-role": "ADMIN",
+        "x-actor-name": "spoof",
+      }),
+      d,
+    );
+    expect(res.status).toBe(202);
+    expect(d.createActionContext).toHaveBeenCalledWith(
+      expect.objectContaining({ bearer: userBearer, action: "RELEASE" }),
+    );
+    expect(d.createActionContext).not.toHaveBeenCalledWith(expect.objectContaining({ bearer: serviceBearer }));
+    expect(JSON.stringify(d.createActionContext.mock.calls)).not.toContain("spoof");
+    expect(JSON.stringify(d.createActionContext.mock.calls)).not.toContain("ADMIN");
+  });
+
+  it("forwards ONLY candidate/authorization/idempotency/request hashes to the authority", async () => {
+    const d = deps();
+    const body = {
+      candidateHash: HASH,
+      releaseAuthorizationHash: AUTHZ,
+      idempotencyKey: "idem-1",
+      requestHash: REQH,
+      tenantId: "T-EVIL",
+      siteId: "S-EVIL",
+      role: "ADMIN",
+      name: "mallory",
+    };
+    await handleTrustKernelRequest(post("/v3/factory/jobs/JOB-1/release", body, { authorization: userBearer }), d);
+    const input = d.createActionContext.mock.calls[0][0] as UserActionInput;
+    expect(input.candidateHash).toBe(HASH);
+    expect(input.releaseAuthorizationHash).toBe(AUTHZ);
+    expect(input).not.toHaveProperty("tenantId");
+    expect(input).not.toHaveProperty("siteId");
+    expect(input).not.toHaveProperty("role");
+    expect(input).not.toHaveProperty("name");
+  });
+
+  it("the bearer forwarded is exactly the incoming one, never a service-role key", async () => {
+    const d = deps();
+    await handleTrustKernelRequest(post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, { authorization: userBearer }), d);
+    const input = d.createActionContext.mock.calls[0][0] as UserActionInput;
+    expect(input.bearer).toBe(userBearer);
+    expect(input.bearer).not.toBe(serviceBearer);
+  });
+});
+
+describe("trust-kernel edge transport — stable HTTP/reason mapping", () => {
+  it("400 on invalid JSON body", async () => {
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", "{not json", { authorization: userBearer }),
+      deps(),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("405 on wrong method (GET on mutation, POST on status)", async () => {
+    expect((await handleTrustKernelRequest(get("/v3/factory/jobs/JOB-1/release", { authorization: userBearer }), deps())).status).toBe(405);
+    expect((await handleTrustKernelRequest(post("/v3/factory/releases/REL-1/status", {}, { authorization: userBearer }), deps())).status).toBe(405);
+  });
+
+  it("409 when the authority reports a candidate mismatch (STATE_CANDIDATE_STALE)", async () => {
+    const d = deps({ auth: { ok: false, code: "STATE_CANDIDATE_STALE" } });
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, { authorization: userBearer }),
+      d,
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe("STATE_CANDIDATE_STALE");
+  });
+
+  it("409 and NO context when an offline-replay marker header is present (TRUST_FRESHNESS_UNPROVEN)", async () => {
+    const d = deps();
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, {
+        authorization: userBearer,
+        "x-trust-offline-replay": "1",
+      }),
+      d,
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe("TRUST_FRESHNESS_UNPROVEN");
+    expect(d.createActionContext).not.toHaveBeenCalled();
+  });
+
+  it("401 when the action context is expired; never proceeds to the authority", async () => {
+    const d = deps({ ctx: { ok: false, code: "AUTH_ACTION_CONTEXT_EXPIRED" } });
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, { authorization: userBearer }),
+      d,
+    );
+    expect(res.status).toBe(401);
+    expect((await res.json()).reason).toBe("AUTH_ACTION_CONTEXT_EXPIRED");
+    expect(d.invokeAuthority).not.toHaveBeenCalled();
+  });
+
+  it("401 when the authority rejects a service/anon identity (service-role spoof)", async () => {
+    const d = deps({ ctx: { ok: false, code: "AUTH_ANON_NOT_ALLOWED" } });
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, { authorization: userBearer }),
+      d,
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("403 when scope is denied (AUTH_SCOPE_DENIED)", async () => {
+    const d = deps({ ctx: { ok: false, code: "AUTH_SCOPE_DENIED" } });
+    const res = await handleTrustKernelRequest(
+      post("/v3/factory/jobs/JOB-1/release", { candidateHash: HASH }, { authorization: userBearer }),
+      d,
+    );
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("trust-kernel edge transport — routing", () => {
+  it("routes freeze and revoke to the authority with the correct action", async () => {
+    const d = deps();
+    expect(
+      (await handleTrustKernelRequest(post("/v3/factory/jobs/WR-1/freeze", { candidateHash: HASH, snapshotHash: HASH }, { authorization: userBearer }), d)).status,
+    ).toBe(202);
+    expect(d.createActionContext).toHaveBeenLastCalledWith(expect.objectContaining({ action: "FREEZE" }));
+
+    await handleTrustKernelRequest(post("/v3/factory/jobs/RR-1/revoke", { reason: "safety" }, { authorization: userBearer }), d);
+    expect(d.createActionContext).toHaveBeenLastCalledWith(expect.objectContaining({ action: "REVOKE" }));
+  });
+
+  it("GET status returns 200 with the authority projection (user-scoped read)", async () => {
+    const d = deps({ auth: { ok: true, value: { status: "ACTIVE", releaseRevisionId: "RR-1" } } });
+    const res = await handleTrustKernelRequest(get("/v3/factory/releases/RR-1/status", { authorization: userBearer }), d);
+    expect(res.status).toBe(200);
+    expect((await res.json()).status).toBe("ACTIVE");
+    expect(d.invokeAuthority).toHaveBeenCalledWith(expect.objectContaining({ kind: "STATUS", resourceId: "RR-1" }));
+  });
+
+  it("404 on an unknown V3 route", async () => {
+    const res = await handleTrustKernelRequest(post("/v3/factory/jobs/JOB-1/detonate", {}, { authorization: userBearer }), deps());
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("trust-kernel edge transport — service-role containment (§7.2)", () => {
+  it("assertWorkerServiceOperation rejects user-authority operations", () => {
+    for (const op of ["FREEZE", "RELEASE", "REVOKE", "GRANT_WARNING_EXCEPTION"]) {
+      const r = assertWorkerServiceOperation(op);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.code).toBe("AUTH_SCOPE_DENIED");
+    }
+  });
+
+  it("assertWorkerServiceOperation allows downstream worker/outbox operations", () => {
+    for (const op of ["DRAIN_OUTBOX", "MATERIALIZE_ARTIFACT", "MARK_ARTIFACT_AVAILABLE", "VOID_ARTIFACT"]) {
+      expect(assertWorkerServiceOperation(op).ok).toBe(true);
+    }
+  });
+});
+
+describe("trust-kernel edge transport — pure helpers", () => {
+  it("httpStatusForReason maps by namespace deterministically", () => {
+    expect(httpStatusForReason("AUTH_REQUIRED")).toBe(401);
+    expect(httpStatusForReason("AUTH_ACTION_CONTEXT_EXPIRED")).toBe(401);
+    expect(httpStatusForReason("AUTH_ANON_NOT_ALLOWED")).toBe(401);
+    expect(httpStatusForReason("AUTH_SCOPE_DENIED")).toBe(403);
+    expect(httpStatusForReason("AUTH_SOD_VIOLATION")).toBe(403);
+    expect(httpStatusForReason("STATE_CANDIDATE_STALE")).toBe(409);
+    expect(httpStatusForReason("STATE_CONFLICT")).toBe(409);
+    expect(httpStatusForReason("TRUST_FRESHNESS_UNPROVEN")).toBe(409);
+    expect(httpStatusForReason("CAP_UNKNOWN_TOOL")).toBe(422);
+  });
+
+  it("filterActionBody keeps only allow-listed fields per action and drops authority fields", () => {
+    const dirty = {
+      candidateHash: HASH,
+      releaseAuthorizationHash: AUTHZ,
+      idempotencyKey: "k",
+      requestHash: REQH,
+      role: "ADMIN",
+      tenantId: "T",
+      siteId: "S",
+      name: "x",
+      spoof: "spoof",
+    };
+    const clean = filterActionBody("RELEASE", dirty);
+    expect(clean).toEqual({
+      candidateHash: HASH,
+      releaseAuthorizationHash: AUTHZ,
+      idempotencyKey: "k",
+      requestHash: REQH,
+    });
+    expect(filterActionBody("REVOKE", dirty)).toEqual({});
+    expect(filterActionBody("REVOKE", { reason: "safety", role: "ADMIN" })).toEqual({ reason: "safety" });
   });
 });

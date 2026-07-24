@@ -6,14 +6,16 @@
 #
 # Highlighted surface: the 3 MCP edge functions (mcp-approval-callback,
 # mcp-pending-cleanup, mcp-server) are the server-side complement to the
-# src/mcp governance kernel covered by mcp-smoke.yml.
+# src/mcp governance kernel covered by mcp-smoke.yml; and (plan Task 5) the
+# factory-api V3 user-token Trust Kernel transport (handleTrustKernelRequest)
+# — user-authorized freeze/release/revoke with service-role containment.
 #
 # Pure vitest unit smoke — no backend/Supabase/hosted infra (ADR-066 N/A).
 name: MONOLITH Edge Function Verify
 
 on:
   push:
-    branches: [main, "fix/**", "s17/**"]
+    branches: [main, "fix/**", "s17/**", "trust-kernel/**"]
     paths:
       - "supabase/functions/**"
       - ".github/workflows/edge-fn-verify.yml"
@@ -55,6 +57,9 @@ jobs:
           try { report = JSON.parse(fs.readFileSync('edge-fn-report.json', 'utf8')); } catch {}
           const functions = {};
           const mcpSurface = { functions: [], passed: 0, failed: 0 };
+          // plan Task 5: the user-token Trust Kernel V3 transport lives in
+          // factory-api; track it as its own highlighted E0 surface.
+          const trustKernelSurface = { functions: [], passed: 0, failed: 0 };
           if (report && Array.isArray(report.testResults)) {
             for (const tr of report.testResults) {
               const parts = String(tr.name).split(/[\\\\/]/);
@@ -66,6 +71,11 @@ jobs:
                 mcpSurface.functions.push(fn);
                 mcpSurface.passed += passed;
                 mcpSurface.failed += failed;
+              }
+              if (fn === 'factory-api') {
+                trustKernelSurface.functions.push(fn);
+                trustKernelSurface.passed += passed;
+                trustKernelSurface.failed += failed;
               }
             }
           }
@@ -85,6 +95,7 @@ jobs:
               functionsCovered: Object.keys(functions).length,
               functions,
               mcpSurface,
+              trustKernelSurface,
               totals: { total, passed, failed, pass },
             },
           };
