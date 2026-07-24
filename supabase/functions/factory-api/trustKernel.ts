@@ -105,6 +105,8 @@ export interface UserActionInput {
   attestationHash?: string;
   policyVersion?: string;
   reason?: string;
+  /** Required revocation reason class for REVOKE (migration 0185; design §10.4). */
+  reasonClass?: string;
 }
 
 export interface AuthorityRequest extends Omit<UserActionInput, "action"> {
@@ -201,8 +203,9 @@ const ALLOWED_BODY_FIELDS: Readonly<Record<PermittedAction, readonly string[]>> 
   // §10.2: release carries exactly candidate / release-authorization / idempotency
   // / request hashes (plan Task 5 binding).
   RELEASE: ["candidateHash", "releaseAuthorizationHash", "idempotencyKey", "requestHash"],
-  // §10.4: revoke carries only a reason; its request hash is derived server-side.
-  REVOKE: ["reason"],
+  // §10.4: revoke carries a reason and its required reason class (migration 0185);
+  // its request hash is derived server-side.
+  REVOKE: ["reason", "reasonClass"],
 };
 
 /** Keep only the allow-listed string fields for `action`; drop everything else. */

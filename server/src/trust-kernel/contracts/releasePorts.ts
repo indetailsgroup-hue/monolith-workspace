@@ -174,11 +174,22 @@ export interface VoidArtifactResult {
   status: ReleaseAttemptStatus;
 }
 
+/**
+ * The four machine-readable revocation reason classes (migration 0185 CHECK,
+ * design §10.4). Only `SAFETY` may later seed a deny-only content block (plan
+ * Task 3 provenance rule). CHECK-extensible: adding a member is a versioned
+ * change and must widen the SQL CHECK and this union together.
+ */
+export const REVOKE_REASON_CLASSES = ['SAFETY', 'OPERATIONAL', 'SUPERSEDED', 'ATTESTATION_STALE'] as const;
+export type RevokeReasonClass = (typeof REVOKE_REASON_CLASSES)[number];
+
 /** `rpc_trust_revoke`: consume context; ACTIVE -> REVOKED, append-only (design §10.4). */
 export interface RevokeReleaseRequest {
   actionContextId: string;
   releaseRevisionId: string;
   reason: string;
+  /** Required machine-readable classification of the revocation (migration 0185). */
+  reasonClass: RevokeReasonClass;
 }
 export interface RevokeReleaseResult {
   releaseRevisionId: string;

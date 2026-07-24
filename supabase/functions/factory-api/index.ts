@@ -443,6 +443,9 @@ function buildTrustKernelDeps(): TrustKernelDeps {
         p_context_id: contextId,
         p_release_revision_id: input.resourceId,
         p_reason: input.reason ?? null,
+        // Required by migration 0185; an unknown/absent class is rejected by the
+        // RPC as AUTH_ACTION_CONTEXT_INVALID (never seeds a content block).
+        p_reason_class: input.reasonClass ?? null,
       });
     }
     if (!res.ok) return { ok: false, code: await reasonFromResponse(res) };

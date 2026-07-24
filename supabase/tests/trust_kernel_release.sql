@@ -100,7 +100,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(55);
+select plan(58);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -357,16 +357,29 @@ select throws_ok(
 select set_config('request.jwt.claims', json_build_object('sub', :'u_revoker','role','authenticated','aal','aal1')::text, true) as _c \gset
 select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001', 'RELEASE_REVISION', :'rev_a', :'req_sod') as revoke_ctx \gset
 select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001', 'RELEASE_REVISION', :'rev_a', :'req_sod') as revoke_ctx_2 \gset
+select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001', 'RELEASE_REVISION', :'rev_a', :'req_sod') as revoke_ctx_bogus \gset
+
+-- Task 2: the reason class is a REQUIRED classification of the revocation
+-- (design 2026-07-22 §10.4; plan 2026-07-24). An unrecognized class is a
+-- malformed revoke request and is rejected before rev_a leaves ACTIVE.
+select throws_ok(
+  $$select public.rpc_trust_revoke('$$||:'revoke_ctx_bogus'||$$'::uuid, '$$||:'rev_a'||$$'::uuid, 'bad class', 'BOGUS')$$,
+  'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'revoke rejects an unknown reason class');
 
 select lives_ok(
-  $$select public.rpc_trust_revoke('$$||:'revoke_ctx'||$$'::uuid, '$$||:'rev_a'||$$'::uuid, 'safety recall')$$,
-  'a safety revoker revokes an ACTIVE release');
+  $$select public.rpc_trust_revoke('$$||:'revoke_ctx'||$$'::uuid, '$$||:'rev_a'||$$'::uuid, 'safety recall', 'SAFETY')$$,
+  'a safety revoker revokes an ACTIVE release with a valid reason class');
 select is((select status from public.release_revision where id=:'rev_a'::uuid), 'REVOKED', 'the release revision is REVOKED');
+select is((select revoke_reason_class from public.release_revision where id=:'rev_a'::uuid), 'SAFETY', 'revoke stores the reason class on the REVOKED row');
+select is(
+  (select payload->>'reasonClass' from public.release_event
+     where release_revision_id=:'rev_a'::uuid and event_type='RELEASE_REVOKED'),
+  'SAFETY', 'the RELEASE_REVOKED event payload carries the reason class');
 select throws_ok(
   $$select public.assert_release_consumable('$$||:'tenant_001'||$$'::uuid, '$$||:'rev_a'||$$'::uuid)$$,
   'P0001', 'STATE_RELEASE_REVOKED', 'a revoked release revision is not consumable');
 select throws_ok(
-  $$select public.rpc_trust_revoke('$$||:'revoke_ctx_2'||$$'::uuid, '$$||:'rev_a'||$$'::uuid, 'again')$$,
+  $$select public.rpc_trust_revoke('$$||:'revoke_ctx_2'||$$'::uuid, '$$||:'rev_a'||$$'::uuid, 'again', 'OPERATIONAL')$$,
   'P0001', 'STATE_CONFLICT', 'revocation is append-only; a second revoke loses the CAS');
 
 -- ===========================================================================
@@ -496,7 +509,7 @@ select throws_ok(
 select set_config('request.jwt.claims', json_build_object('sub', :'u_revoker','role','authenticated','aal','aal1')::text, true) as _c \gset
 select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001', 'RELEASE_REVISION', :'rev_revoke_b', :'req_void') as revoke_cross_ctx \gset
 select throws_ok(
-  $$select public.rpc_trust_revoke('$$||:'revoke_cross_ctx'||$$'::uuid, '$$||:'rev_revoke_b'||$$'::uuid, 'cross-site revoke attempt')$$,
+  $$select public.rpc_trust_revoke('$$||:'revoke_cross_ctx'||$$'::uuid, '$$||:'rev_revoke_b'||$$'::uuid, 'cross-site revoke attempt', 'SAFETY')$$,
   'P0001', 'AUTH_SCOPE_DENIED', 'revoke: a site-A context cannot revoke a release revision that belongs to site B');
 
 select * from finish();
