@@ -95,6 +95,13 @@
         "summary": "P2 plaintext readable only by the isolated workload identity; humans receive hashes/reports/evidence.",
         "versionedDecision": "design §9 Artifact Class Matrix",
         "migrationRef": "0184_trust_kernel_legacy_containment.sql; docs/governance/trust-kernel-route-disposition.json"
+      },
+      {
+        "id": "CTL-0004",
+        "kind": "protocol",
+        "summary": "Added the SAFETY namespace to the §13 reason-code registry — SAFETY_CONTENT_REVOKED / SAFETY_CONTENT_BLOCKED / SAFETY_CONTENT_UNBLOCKED — for the deny-only content-revocation registry, mirrored into the factory-api edge transport with explicit 409 HTTP status (no 500 fallthrough). Additive vocabulary change; the existing 8 namespaces are intact. SQL raises these as bare string literals (no SQL enum).",
+        "versionedDecision": "SAFETY content-revocation registry plan, Task 1 (SAFETY reason vocabulary); design §10.4 revocation-semantics upgrade — docs/superpowers/plans/2026-07-24-trust-kernel-safety-content-revocation-registry.en.md",
+        "migrationRef": "0186-0188 trust-kernel content-revocation registry (provisional numbers — raise these codes at block/commit/unblock per the plan design note); docs/superpowers/plans/2026-07-24-trust-kernel-safety-content-revocation-registry.en.md"
       }
     ]
   }

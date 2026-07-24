@@ -69,7 +69,11 @@ export type TrustReasonCode =
   | "STORE_QUARANTINE_FAILED"
   | "STORE_HASH_MISMATCH"
   | "STORE_ARTIFACT_UNAVAILABLE"
-  | "STORE_PLAINTEXT_ACCESS_DENIED";
+  | "STORE_PLAINTEXT_ACCESS_DENIED"
+  // SAFETY (versioned addition — deny-only content-revocation registry)
+  | "SAFETY_CONTENT_REVOKED"
+  | "SAFETY_CONTENT_BLOCKED"
+  | "SAFETY_CONTENT_UNBLOCKED";
 
 /** Typed Trust Kernel result mirroring server/src/trust-kernel/result.ts. */
 export type TrustResult<T> =
@@ -163,6 +167,13 @@ const HTTP_STATUS_BY_REASON: Readonly<Record<TrustReasonCode, number>> = {
   STORE_HASH_MISMATCH: 500,
   STORE_ARTIFACT_UNAVAILABLE: 409,
   STORE_PLAINTEXT_ACCESS_DENIED: 403,
+  // SAFETY — content-revocation registry (design §10.4 upgrade). REVOKED is the
+  // client-visible outcome when a BLOCKED content_hash is refused at commit_release
+  // → 409 Conflict. BLOCKED/UNBLOCKED are internal audit/event codes; they receive an
+  // explicit 409 too so httpStatusForReason never falls through to the 500 default.
+  SAFETY_CONTENT_REVOKED: 409,
+  SAFETY_CONTENT_BLOCKED: 409,
+  SAFETY_CONTENT_UNBLOCKED: 409,
 };
 
 /** Map a stable reason code to its HTTP status; unknown codes fail closed to 500. */

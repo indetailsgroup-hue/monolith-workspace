@@ -12,7 +12,7 @@
  */
 
 // ============================================================================
-// Registry (design §13 - 8 namespaces)
+// Registry (design §13 - 8 namespaces + SAFETY, a versioned addition = 9)
 // ============================================================================
 
 /**
@@ -73,6 +73,14 @@ export const TRUST_REASON_CODES = [
   'STORE_HASH_MISMATCH',
   'STORE_ARTIFACT_UNAVAILABLE',
   'STORE_PLAINTEXT_ACCESS_DENIED',
+
+  // SAFETY - deny-only content-revocation registry: byte-identical dangerous content
+  // is blocked from re-release and reversed only under a harder gate (versioned
+  // addition beyond the original design §13; see the CTL change record in
+  // docs/governance/trust-kernel-ownership.json).
+  'SAFETY_CONTENT_REVOKED',
+  'SAFETY_CONTENT_BLOCKED',
+  'SAFETY_CONTENT_UNBLOCKED',
 ] as const;
 
 /** A stable machine-readable reason code from the design §13 registry. */
