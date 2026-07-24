@@ -126,14 +126,14 @@ insert into public.release_revision
   (id, tenant_id, site_id, release_attempt_id, candidate_id, candidate_hash, release_authorization_hash,
    content_hash, expected_packet_hash, release_certificate, attestation_id, attestation_hash,
    approver_user_id, approver_membership_version, approver_aal, status, release_sequence, authorized_at, released_at,
-   revoked_at, revoked_by_user_id, revoke_reason, revoke_sequence)
+   revoked_at, revoked_by_user_id, revoke_reason, revoke_reason_class, revoke_sequence)
 values
   (:'rev_revok', :'tenant_001', :'site_001', :'att_r1', :'cand_001', :'h_c1', :'h_auth',
    :'h_content', :'h_packet', '{"cert":"revoked"}'::jsonb, :'att_001', :'any_sub', :'u_app', 1, 'aal1', 'REVOKED', 2, :'issued'::timestamptz, :'issued'::timestamptz,
-   :'issued'::timestamptz, :'u_app', 'SAFETY', 1),
+   :'issued'::timestamptz, :'u_app', 'safety recall', 'SAFETY', 1),
   (:'rev_t2', :'tenant_002', :'site_002', :'att_r2', :'cand_002', :'h_c2', :'h_auth',
    :'h_content', :'h_packet', '{"cert":"t2"}'::jsonb, :'att_002', :'any_sub', :'u_app', 1, 'aal1', 'REVOKED', 1, :'issued'::timestamptz, :'issued'::timestamptz,
-   :'issued'::timestamptz, :'u_app', 'SAFETY', 1);
+   :'issued'::timestamptz, :'u_app', 'safety recall', 'SAFETY', 1);
 
 -- Trusted downstream keys + revocation registries for the TRUST snapshot.
 insert into public.trust_authority_key (id, tenant_id, key_id, purpose, algorithm, valid_from, valid_until, status) values
