@@ -575,6 +575,14 @@ describe("trust-kernel edge transport — stable HTTP/reason mapping", () => {
     expect((await handleTrustKernelRequest(post("/v3/factory/releases/REL-1/status", {}, { authorization: userBearer }), deps())).status).toBe(405);
   });
 
+  it("maps every SAFETY_* content-revocation code to 409, never the 500 fallthrough (Task 1)", () => {
+    // Passing the literals directly also type-checks the edge TrustReasonCode union:
+    // dropping a code from the union would fail compilation here.
+    for (const code of ["SAFETY_CONTENT_REVOKED", "SAFETY_CONTENT_BLOCKED", "SAFETY_CONTENT_UNBLOCKED"] as const) {
+      expect(httpStatusForReason(code)).toBe(409);
+    }
+  });
+
   it("409 when the authority reports a candidate mismatch (STATE_CANDIDATE_STALE)", async () => {
     const d = deps({ auth: { ok: false, code: "STATE_CANDIDATE_STALE" } });
     const res = await handleTrustKernelRequest(
