@@ -14,7 +14,7 @@ Immutable infrastructure: NOT CLAIMED
 | Canonical product `main` | `dd1119af6d0bcba0e38d38516ed1b11125bcf19f` |
 | Governance baseline (pinned linters) | `55557d7f178dcbe00fec15cffb3061df668eaff8` |
 | Trust Kernel series head | `8dfe0cc02e6cbbe8f4cefb3893d80a758fc8d49b` |
-| Execution branch head | `92adb6abe7184517f536417d552ea1e00eaa49eb` |
+| Execution branch head | `2aaa5023eb801e73594f452c4d11587575e48af8` |
 
 ## 2. Evidence table (machine reports)
 
@@ -27,9 +27,9 @@ Immutable infrastructure: NOT CLAIMED
 | `trust_kernel_bundles.tap` | OK | 27 assertions ok | `42324c8116810601…` |
 | `trust_kernel_containment.tap` | OK | 16 assertions ok | `8701bf80a344d32c…` |
 | `trust_kernel_safety.tap` | OK | 68 assertions ok | `69c63f1b7818ecaa…` |
-| `repair_phase0_organization.tap` | OK | 14 assertions ok | `dda6f29f8a896b21…` |
-| `repair_phase0_containment.tap` | OK | 5 assertions ok | `052bdbaad4dc6589…` |
-| `repair-phase0-ledger.json` | OK | 18 surfaces | `03bb9ba946357c9a…` |
+| `repair_phase0_organization.tap` | OK | 17 assertions ok | `c250ad289af3b417…` |
+| `repair_phase0_containment.tap` | OK | 8 assertions ok | `8b1636bcdf91b3d9…` |
+| `repair-phase0-ledger.json` | OK | 24 surfaces | `ebcee977b4496a98…` |
 | `e2e.json` | INCOMPLETE | PENDING_CI_RUN — produced only by the CI workflow | `-…` |
 | `evidence-attestation.json` | INCOMPLETE | PENDING_CI_RUN — produced only by the CI workflow | `-…` |
 
