@@ -49,7 +49,8 @@
     "tk:e2e": "playwright test e2e/trust-kernel",
     "tk:repair-ledger": "node scripts/trust-kernel/verify-repair-phase0-ledger.mjs --report reports/phase0/repair-phase0-ledger.json",
     "tk:repair-docs": "node scripts/trust-kernel/verify-repair-phase0-docs.mjs",
-    "tk:phase0-local": "npm run tk:server && npm run tk:verifier && npm run tk:containment && npm run tk:route-ledger && npm run tk:repair-ledger && npm run tk:repair-docs"
+    "tk:phase0-local": "npm run tk:server && npm run tk:verifier && npm run tk:containment && npm run tk:route-ledger && npm run tk:repair-ledger && npm run tk:repair-docs",
+    "gate:negative-control": "node scripts/trust-kernel/gate-negative-control.mjs"
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",
