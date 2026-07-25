@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(17);
+select plan(18);
 
 -- ---------------------------------------------------------------------------
 -- 1-5: schema shape — organization table, normalized parent, pinned context
@@ -217,6 +217,19 @@ select ok(
    from pg_policies
    where schemaname = 'public' and tablename = 'content_unblock_grant' and policyname = 'content_unblock_grant_sel'),
   'content_unblock_grant SELECT policy is scoped by the organization/site helper'
+);
+
+-- ---------------------------------------------------------------------------
+-- 18: organization status is load-bearing — an INACTIVE organization
+--     authorizes no new action context, even for a fully-granted member.
+-- ---------------------------------------------------------------------------
+update public.monolith_organization set status = 'INACTIVE'
+  where tenant_id = :'tenant_001' and id = :'org_b';
+select set_config('request.jwt.claims', json_build_object('sub', :'u_member_b', 'role', 'authenticated', 'aal', 'aal1')::text, true) as _claims \gset
+select throws_ok(
+  $$select public.create_verified_action_context('FREEZE', '11111111-1111-1111-1111-111111111111', '1b111111-1111-1111-1111-1111111111b1', 'WORKING_REVISION', 'WR-ORG-B-INACTIVE', repeat('c', 64))$$,
+  'P0001', 'AUTH_SCOPE_DENIED',
+  'an INACTIVE organization authorizes no new action context'
 );
 
 select * from finish();

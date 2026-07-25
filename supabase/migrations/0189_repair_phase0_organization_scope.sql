@@ -102,14 +102,20 @@ as $$
 declare
   v_organization_id uuid;
 begin
+  -- The site must be ACTIVE and its organization must also be ACTIVE — an
+  -- INACTIVE organization authorizes nothing (organization status is
+  -- load-bearing, not decorative).
   select s.organization_id into v_organization_id
   from public.monolith_site s
+  join public.monolith_organization o
+    on o.tenant_id = s.tenant_id and o.id = s.organization_id
   where s.tenant_id = new.tenant_id
     and s.id = new.site_id
-    and s.status = 'ACTIVE';
+    and s.status = 'ACTIVE'
+    and o.status = 'ACTIVE';
   if not found then
     raise exception 'AUTH_SCOPE_DENIED'
-      using detail = 'site is not active in the tenant scope';
+      using detail = 'site or its organization is not active in the tenant scope';
   end if;
   if not exists (
     select 1 from public.monolith_membership_site ms
@@ -150,8 +156,11 @@ as $$
   from public.monolith_membership m
   join public.monolith_membership_organization mo
     on mo.tenant_id = m.tenant_id and mo.membership_id = m.id
+  join public.monolith_organization o
+    on o.tenant_id = mo.tenant_id and o.id = mo.organization_id
   where m.user_id = auth.uid()
-    and m.status = 'ACTIVE';
+    and m.status = 'ACTIVE'
+    and o.status = 'ACTIVE';
 $$;
 
 -- Site scope requires BOTH the site grant and the organization grant of the
@@ -174,8 +183,11 @@ as $$
     on mo.tenant_id = m.tenant_id
    and mo.membership_id = m.id
    and mo.organization_id = s.organization_id
+  join public.monolith_organization o
+    on o.tenant_id = s.tenant_id and o.id = s.organization_id
   where m.user_id = auth.uid()
-    and m.status = 'ACTIVE';
+    and m.status = 'ACTIVE'
+    and o.status = 'ACTIVE';
 $$;
 
 revoke all on function public.fn_monolith_member_org_grants() from public, anon;
