@@ -21,6 +21,10 @@
 \set tenant_002   22222222-2222-2222-2222-222222222222
 \set site_001     1a111111-1111-1111-1111-1111111111a1
 \set site_002     2a222222-2222-2222-2222-2222222222a2
+\set site_x1      1c111111-1111-1111-1111-1111111111c1
+\set org_001      0a111111-1111-1111-1111-11111111110a
+\set org_002      0b222222-2222-2222-2222-22222222220b
+\set org_x        0c111111-1111-1111-1111-11111111110c
 \set u_designer_1 d1111111-1111-1111-1111-1111111111d1
 \set u_approver_1 a1111111-1111-1111-1111-1111111111a1
 \set u_designer_2 d2222222-2222-2222-2222-2222222222d2
@@ -33,7 +37,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(28);
+select plan(29);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -45,9 +49,15 @@ insert into public.monolith_tenant (id, slug, display_name, status) values
   (:'tenant_001', 'daph', 'Daph (fixture tenant 001)', 'ACTIVE'),
   (:'tenant_002', 'tenant-002', 'Coexistence tenant 002', 'ACTIVE');
 
-insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_001', :'tenant_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
-  (:'site_002', :'tenant_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE');
+insert into public.monolith_organization (id, tenant_id, slug, display_name, legal_name, status) values
+  (:'org_001', :'tenant_001', 'default', 'Daph default org', 'Daph default org', 'ACTIVE'),
+  (:'org_002', :'tenant_002', 'default', 'Tenant 002 default org', 'Tenant 002 default org', 'ACTIVE'),
+  (:'org_x',   :'tenant_001', 'org-x', 'Org X (no grants)', 'Org X (no grants)', 'ACTIVE');
+
+insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status) values
+  (:'site_001', :'tenant_001', :'org_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
+  (:'site_002', :'tenant_002', :'org_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE'),
+  (:'site_x1',  :'tenant_001', :'org_x',  'BKK-X-01', 'Org X site', 'ACTIVE');
 
 insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
   (:'m_designer_1', :'tenant_001', :'u_designer_1', 1, 'ACTIVE'),
@@ -66,6 +76,15 @@ insert into public.monolith_membership_site (tenant_id, membership_id, site_id) 
   (:'tenant_001', :'m_approver_1', :'site_001'),
   (:'tenant_002', :'m_designer_2', :'site_002'),
   (:'tenant_002', :'m_approver_2', :'site_002');
+
+-- Organization grants mirror the site grants (idempotent backfill). No
+-- membership is granted org_x or site_x1 — that pair proves the same-tenant
+-- cross-organization denial below.
+insert into public.monolith_membership_organization (tenant_id, membership_id, organization_id)
+select distinct ms.tenant_id, ms.membership_id, s.organization_id
+from public.monolith_membership_site ms
+join public.monolith_site s on s.tenant_id = ms.tenant_id and s.id = ms.site_id
+on conflict do nothing;
 
 -- ===========================================================================
 -- Group A — coexistence and tenant scoping (design §7.5)
@@ -172,6 +191,13 @@ set local role authenticated;
 select count(*)::int as x_site_002 from public.monolith_site where tenant_id = :'tenant_002' \gset
 reset role;
 select is(:x_site_002::bigint, 0::bigint, 'RLS: a tenant-001 member cannot read tenant-002 sites');
+
+-- Same-tenant, cross-organization: designer_1 holds no grant for org_x/site_x1.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer_1', 'role','authenticated','aal','aal1')::text, true) as _claims \gset
+set local role authenticated;
+select count(*)::int as x_site_orgx from public.monolith_site where id = :'site_x1' \gset
+reset role;
+select is(:x_site_orgx::bigint, 0::bigint, 'RLS: same-tenant membership without the organization grant cannot read an org-X site');
 
 -- ===========================================================================
 -- Group G — action shape rules (design §7 / plan Task 2)

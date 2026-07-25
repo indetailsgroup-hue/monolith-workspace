@@ -37,7 +37,12 @@
 \set tenant_002 22222222-2222-2222-2222-222222222222
 \set site_001   1a111111-1111-1111-1111-1111111111a1
 \set site_002   2a222222-2222-2222-2222-2222222222a2
+\set site_x1    1c111111-1111-1111-1111-1111111111c1
+\set org_001    0a111111-1111-1111-1111-11111111110a
+\set org_002    0b222222-2222-2222-2222-22222222220b
+\set org_x      0c111111-1111-1111-1111-11111111110c
 \set u_app      d1111111-1111-1111-1111-1111111111d1
+\set m_app      e1111111-1111-1111-1111-1111111111e1
 
 \set att_001    c1111111-1111-1111-1111-11111111c001
 \set att_002    c2222222-2222-2222-2222-22222222c001
@@ -64,7 +69,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(26);
+select plan(27);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -75,9 +80,30 @@ insert into public.monolith_tenant (id, slug, display_name, status) values
   (:'tenant_001', 'daph', 'Daph (fixture tenant 001)', 'ACTIVE'),
   (:'tenant_002', 'tenant-002', 'Coexistence tenant 002', 'ACTIVE');
 
-insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_001', :'tenant_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
-  (:'site_002', :'tenant_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE');
+insert into public.monolith_organization (id, tenant_id, slug, display_name, legal_name, status) values
+  (:'org_001', :'tenant_001', 'default', 'Daph default org', 'Daph default org', 'ACTIVE'),
+  (:'org_002', :'tenant_002', 'default', 'Tenant 002 default org', 'Tenant 002 default org', 'ACTIVE'),
+  (:'org_x',   :'tenant_001', 'org-x', 'Org X (no grants)', 'Org X (no grants)', 'ACTIVE');
+
+insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status) values
+  (:'site_001', :'tenant_001', :'org_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
+  (:'site_002', :'tenant_002', :'org_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE'),
+  (:'site_x1',  :'tenant_001', :'org_x',  'BKK-X-01', 'Org X site', 'ACTIVE');
+
+insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
+  (:'m_app', :'tenant_001', :'u_app', 1, 'ACTIVE');
+
+insert into public.monolith_membership_site (tenant_id, membership_id, site_id) values
+  (:'tenant_001', :'m_app', :'site_001');
+
+-- Organization grants mirror the site grants (idempotent backfill). No
+-- membership is granted org_x or site_x1 — that pair proves the same-tenant
+-- cross-organization denial below.
+insert into public.monolith_membership_organization (tenant_id, membership_id, organization_id)
+select distinct ms.tenant_id, ms.membership_id, s.organization_id
+from public.monolith_membership_site ms
+join public.monolith_site s on s.tenant_id = ms.tenant_id and s.id = ms.site_id
+on conflict do nothing;
 
 insert into public.machine_profile_attestation
   (id, tenant_id, site_id, machine_id, profile_hash, tool_library_hash, postprocessor_id,
@@ -258,6 +284,17 @@ select ok(
 select sequence as t2_seq
   from public.rpc_trust_bundle_allocate('RELEASE_STATUS', :'tenant_002', :'site_002', 'policy-2026.07', :'issued'::timestamptz, :'expires'::timestamptz) \gset
 select is(:'t2_seq'::bigint, 1::bigint, 'tenant 002 RELEASE_STATUS sequence is independent and starts at 1');
+
+-- ===========================================================================
+-- Group K — same-tenant cross-organization RLS denial (migration 0189):
+--   m_app holds the site_001/org_001 grants but NO grant for org_x, so the
+--   org-X site is invisible even inside the member's own tenant.
+-- ===========================================================================
+select set_config('request.jwt.claims', json_build_object('sub', :'u_app', 'role','authenticated','aal','aal1')::text, true) as _claims \gset
+set local role authenticated;
+select count(*)::int as x_site_orgx from public.monolith_site where id = :'site_x1' \gset
+reset role;
+select is(:x_site_orgx::bigint, 0::bigint, 'RLS: same-tenant membership without the organization grant cannot read an org-X site');
 
 select * from finish();
 rollback;

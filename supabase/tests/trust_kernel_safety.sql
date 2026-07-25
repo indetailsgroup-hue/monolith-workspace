@@ -39,6 +39,14 @@
 \set site_a2    a5000000-0000-0000-0000-0000000000a6
 \set site_b     b5000000-0000-0000-0000-0000000000b5
 
+-- Organizations (0189: organization is the parent of site). One 'default' org
+-- per tenant, plus org_x — a second tenant_a organization whose site no
+-- membership holds grants for (organization-scope RLS proof).
+\set org_001    0a111111-1111-1111-1111-11111111110a
+\set org_002    0b222222-2222-2222-2222-22222222220b
+\set org_x      0c111111-1111-1111-1111-11111111110c
+\set site_x1    a5000000-0000-0000-0000-0000000000a7
+
 \set u_revoker    a5000000-0000-0000-0000-00000000c001
 \set u_designer   a5000000-0000-0000-0000-00000000c002
 \set u_revoker_b  b5000000-0000-0000-0000-00000000c003
@@ -82,7 +90,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(67);
+select plan(68);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -94,10 +102,16 @@ insert into public.monolith_tenant (id, slug, display_name, status) values
   (:'tenant_a', 'safety-a', 'Safety tenant A (fixture)', 'ACTIVE'),
   (:'tenant_b', 'safety-b', 'Safety tenant B (coexistence)', 'ACTIVE');
 
-insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_a',  :'tenant_a', 'A-SITE-01', 'Tenant A site',        'ACTIVE'),
-  (:'site_a2', :'tenant_a', 'A-SITE-02', 'Tenant A second site', 'ACTIVE'),
-  (:'site_b',  :'tenant_b', 'B-SITE-01', 'Tenant B site',        'ACTIVE');
+insert into public.monolith_organization (id, tenant_id, slug, display_name, legal_name, status) values
+  (:'org_001', :'tenant_a', 'default', 'Safety org A (default)', 'Safety org A (default)', 'ACTIVE'),
+  (:'org_002', :'tenant_b', 'default', 'Safety org B (default)', 'Safety org B (default)', 'ACTIVE'),
+  (:'org_x',   :'tenant_a', 'org-x',   'Safety org X (no grants)', 'Safety org X (no grants)', 'ACTIVE');
+
+insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status) values
+  (:'site_a',  :'tenant_a', :'org_001', 'A-SITE-01', 'Tenant A site',        'ACTIVE'),
+  (:'site_a2', :'tenant_a', :'org_001', 'A-SITE-02', 'Tenant A second site', 'ACTIVE'),
+  (:'site_b',  :'tenant_b', :'org_002', 'B-SITE-01', 'Tenant B site',        'ACTIVE'),
+  (:'site_x1', :'tenant_a', :'org_x',   'BKK-X-01',  'Tenant A org-X site (no grants)', 'ACTIVE');
 
 insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
   (:'m_revoker',   :'tenant_a', :'u_revoker',   1, 'ACTIVE'),
@@ -114,6 +128,14 @@ insert into public.monolith_membership_site (tenant_id, membership_id, site_id) 
   (:'tenant_a', :'m_revoker',   :'site_a2'),
   (:'tenant_a', :'m_designer',  :'site_a'),
   (:'tenant_b', :'m_revoker_b', :'site_b');
+
+-- 0189: each site-granted membership also needs the organization grant of the
+-- site's organization (verified_action_context trigger + scope-site RLS).
+insert into public.monolith_membership_organization (tenant_id, membership_id, organization_id)
+select distinct ms.tenant_id, ms.membership_id, s.organization_id
+from public.monolith_membership_site ms
+join public.monolith_site s on s.tenant_id = ms.tenant_id and s.id = ms.site_id
+on conflict do nothing;
 
 insert into public.machine_profile_attestation
   (id, tenant_id, site_id, machine_id, profile_hash, tool_library_hash, postprocessor_id,
@@ -500,6 +522,14 @@ insert into public.monolith_membership_site (tenant_id, membership_id, site_id) 
   (:'tenant_a', :'m_admin', :'site_a'),
   (:'tenant_a', :'m_multi', :'site_a');
 
+-- 0189: mirror the fixture rule — every site grant needs the matching
+-- organization grant for the site's organization.
+insert into public.monolith_membership_organization (tenant_id, membership_id, organization_id)
+select distinct ms.tenant_id, ms.membership_id, s.organization_id
+from public.monolith_membership_site ms
+join public.monolith_site s on s.tenant_id = ms.tenant_id and s.id = ms.site_id
+on conflict do nothing;
+
 -- ---------------------------------------------------------------------------
 -- Group L — content_unblock_grant posture (mirror Group A): RLS on, no client
 --   write policy, SELECT-only to authenticated, deny-log tamper-resistance, and
@@ -684,6 +714,16 @@ select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'si
 select throws_ok(
   $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p7a'||$$'::uuid, '$$||:'ctx_p7b'||$$'::uuid, '$$||:'h_blk'||$$', 'contexts co-sign different revisions')$$,
   'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'un-block where the two contexts reference different revisions is rejected');
+
+-- ---------------------------------------------------------------------------
+-- Group Q (0189) — organization-scope RLS: a same-tenant member holding site
+--   grants only in org_001 cannot read site_x1 (org_x; no grants anywhere).
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer','role','authenticated','aal','aal1')::text, true) as _c \gset
+set local role authenticated;
+select count(*)::int as x_site_orgx from public.monolith_site where id = :'site_x1' \gset
+reset role;
+select is(:x_site_orgx::bigint, 0::bigint, 'RLS: same-tenant membership without the organization grant cannot read an org-X site');
 
 select * from finish();
 rollback;

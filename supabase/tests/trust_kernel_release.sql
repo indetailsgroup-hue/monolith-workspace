@@ -39,6 +39,14 @@
 \set site_001     1a111111-1111-1111-1111-1111111111a1
 \set site_002     2a222222-2222-2222-2222-2222222222a2
 
+-- Organization scope (0189): one 'default' organization per tenant, plus an
+-- org-X (and its site) inside tenant 001 that NO membership is granted — the
+-- same-tenant cross-organization RLS denial fixture.
+\set org_001      0a111111-1111-1111-1111-11111111110a
+\set org_002      0b222222-2222-2222-2222-22222222220b
+\set org_x        0c111111-1111-1111-1111-11111111110c
+\set site_x1      1c111111-1111-1111-1111-1111111111c1
+
 \set u_designer   d1111111-1111-1111-1111-1111111111d1
 \set u_dual       da222222-2222-2222-2222-2222222222da
 \set u_approver_1 a1111111-1111-1111-1111-1111111111a1
@@ -100,7 +108,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(58);
+select plan(59);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -113,9 +121,15 @@ insert into public.monolith_tenant (id, slug, display_name, status) values
   (:'tenant_001', 'daph', 'Daph (fixture tenant 001)', 'ACTIVE'),
   (:'tenant_002', 'tenant-002', 'Coexistence tenant 002', 'ACTIVE');
 
-insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_001', :'tenant_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
-  (:'site_002', :'tenant_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE');
+insert into public.monolith_organization (id, tenant_id, slug, display_name, legal_name, status) values
+  (:'org_001', :'tenant_001', 'default', 'Daph default organization', 'Daph default organization', 'ACTIVE'),
+  (:'org_002', :'tenant_002', 'default', 'Tenant 002 default organization', 'Tenant 002 default organization', 'ACTIVE'),
+  (:'org_x',   :'tenant_001', 'org-x',   'Daph org X (no grants)', 'Daph org X (no grants)', 'ACTIVE');
+
+insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status) values
+  (:'site_001', :'tenant_001', :'org_001', 'BKK-HQ-01', 'Daph HQ', 'ACTIVE'),
+  (:'site_002', :'tenant_002', :'org_002', 'T2-SITE-01', 'Tenant 002 site', 'ACTIVE'),
+  (:'site_x1',  :'tenant_001', :'org_x',   'BKK-X-01',  'Daph org-X site (no grants)', 'ACTIVE');
 
 insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
   (:'m_designer',   :'tenant_001', :'u_designer',   1, 'ACTIVE'),
@@ -144,6 +158,14 @@ insert into public.monolith_membership_site (tenant_id, membership_id, site_id) 
   (:'tenant_001', :'m_approver_3', :'site_001'),
   (:'tenant_001', :'m_revoker',    :'site_001'),
   (:'tenant_002', :'m_designer_2', :'site_002');
+
+-- Organization grants (0189): every site grant carries the matching grant for
+-- the site's organization. NOTHING is granted for org_x / site_x1.
+insert into public.monolith_membership_organization (tenant_id, membership_id, organization_id)
+select distinct ms.tenant_id, ms.membership_id, s.organization_id
+from public.monolith_membership_site ms
+join public.monolith_site s on s.tenant_id = ms.tenant_id and s.id = ms.site_id
+on conflict do nothing;
 
 -- Attested machine profiles: a current one for each tenant.
 insert into public.machine_profile_attestation
@@ -445,8 +467,8 @@ select throws_ok(
 --   a membership_site grant limited to site A only, so this proves the RPC-level
 --   site binding, not the context-creation site grant.
 -- ===========================================================================
-insert into public.monolith_site (id, tenant_id, code, display_name, status) values
-  (:'site_001b', :'tenant_001', 'BKK-HQ-02', 'Daph second site (B)', 'ACTIVE');
+insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status) values
+  (:'site_001b', :'tenant_001', :'org_001', 'BKK-HQ-02', 'Daph second site (B)', 'ACTIVE');
 
 -- site-B DRAFT working revision (freeze crossing) + FK anchor for the site-B rows.
 insert into public.release_working_revision
@@ -511,6 +533,17 @@ select public.create_verified_action_context('REVOKE', :'tenant_001', :'site_001
 select throws_ok(
   $$select public.rpc_trust_revoke('$$||:'revoke_cross_ctx'||$$'::uuid, '$$||:'rev_revoke_b'||$$'::uuid, 'cross-site revoke attempt', 'SAFETY')$$,
   'P0001', 'AUTH_SCOPE_DENIED', 'revoke: a site-A context cannot revoke a release revision that belongs to site B');
+
+-- ===========================================================================
+-- Group M — organization scope (0189): the organization boundary is load-
+--   bearing INSIDE a tenant. u_designer holds site/org grants for org_001 only;
+--   site_x1 belongs to org_x, for which no membership holds any grant.
+-- ===========================================================================
+select set_config('request.jwt.claims', json_build_object('sub', :'u_designer','role','authenticated','aal','aal1')::text, true) as _c \gset
+set local role authenticated;
+select count(*)::int as x_site_orgx from public.monolith_site where id = :'site_x1' \gset
+reset role;
+select is(:x_site_orgx::bigint, 0::bigint, 'RLS: same-tenant membership without the organization grant cannot read an org-X site');
 
 select * from finish();
 rollback;
