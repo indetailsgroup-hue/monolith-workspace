@@ -12,9 +12,13 @@
 import { Router, Request, Response } from 'express';
 import { CAS } from '../../storage/cas.js';
 import { enqueueExportJob, getJobById, getQueueStats, ExportJobData } from '../../queue/queue.js';
+import { phase0LegacyBlocked, type LegacyAccessMode } from './phase0LegacyGuard.js';
 
 export interface ExportsRouterDeps {
   cas: CAS;
+  /** Repair Phase 0 containment (review #2): the signed-URL result route fails
+   *  closed unless a test explicitly injects SHADOW_LEGACY. */
+  legacyAccessMode?: LegacyAccessMode;
 }
 
 export function exportsRouter(deps: ExportsRouterDeps): Router {
@@ -150,6 +154,7 @@ export function exportsRouter(deps: ExportsRouterDeps): Router {
    * GET /exports/:jobId/result - Get export result with signed URLs
    */
   router.get('/:jobId/result', async (req: Request, res: Response) => {
+    if (phase0LegacyBlocked(deps.legacyAccessMode, res)) return;
     try {
       const { jobId } = req.params;
 

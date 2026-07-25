@@ -254,6 +254,45 @@
       "authority": "GOVERNANCE_LINTER",
       "enforcement": "Claim and certification linters are pinned to governance commit 55557d7f178dcbe00fec15cffb3061df668eaff8 in CI; missing tools fail the job.",
       "negativeTestId": ".github/workflows/trust-kernel-verify.yml: pinned claim and certification linters"
+    },
+    {
+      "id": "server.legacyExport.factoryDownload",
+      "category": "EXPORT_DOWNLOAD",
+      "root": "PRODUCT",
+      "path": "server/src/api/routes/factory.ts",
+      "disposition": "BLOCK",
+      "owner": "Security/IAM",
+      "targetPhase": "PHASE_0",
+      "authority": "NONE_BLOCKED",
+      "requiredMarker": "phase0LegacyBlocked",
+      "enforcement": "GET /factory/jobs/:jobId/export/:exportId/download returns 423 REPAIR_PHASE_NOT_ENABLED before CAS access; default bootstrap never passes SHADOW_LEGACY.",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: factory export-download is blocked by default"
+    },
+    {
+      "id": "server.legacyExport.signedResult",
+      "category": "EXPORT_DOWNLOAD",
+      "root": "PRODUCT",
+      "path": "server/src/api/routes/exports.ts",
+      "disposition": "BLOCK",
+      "owner": "Security/IAM",
+      "targetPhase": "PHASE_1A",
+      "authority": "NONE_BLOCKED",
+      "requiredMarker": "phase0LegacyBlocked",
+      "enforcement": "GET /exports/:jobId/result (public index carrying signed URLs) returns 423 before any locator is read; default bootstrap never passes SHADOW_LEGACY.",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: exports /:jobId/result signed-URL route is blocked by default"
+    },
+    {
+      "id": "server.legacyExport.standaloneDownload",
+      "category": "EXPORT_DOWNLOAD",
+      "root": "PRODUCT",
+      "path": "server/src/index.ts",
+      "disposition": "BLOCK",
+      "owner": "Security/IAM",
+      "targetPhase": "PHASE_0",
+      "authority": "NONE_BLOCKED",
+      "requiredMarker": "phase0LegacyBlocked",
+      "enforcement": "Standalone dev/export server GET /api/export/download/:jobId returns 423 by default; LEGACY_BYTE_ROUTE_MODE is a source constant, never an env override.",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: the standalone server never passes SHADOW_LEGACY"
     }
   ]
 }

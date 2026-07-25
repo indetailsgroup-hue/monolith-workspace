@@ -11,6 +11,7 @@
 import { Router, Request, Response } from 'express';
 import { CAS } from '../../storage/cas.js';
 import { verifySignedDownloadQuery, isHashRevoked } from '../../download/signedUrl.js';
+import { phase0LegacyBlocked, type LegacyAccessMode } from './phase0LegacyGuard.js';
 
 export interface ArtifactsRouterDeps {
   cas: CAS;
@@ -19,7 +20,7 @@ export interface ArtifactsRouterDeps {
    *  'SHADOW_LEGACY' (tests/shadow only). The default server bootstrap never
    *  passes it, so no client can receive a raw locator, unsigned hash route,
    *  or reusable signed URL in Phase 0. */
-  legacyAccessMode?: 'PHASE0_BLOCKED' | 'SHADOW_LEGACY';
+  legacyAccessMode?: LegacyAccessMode;
 }
 
 export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
@@ -28,15 +29,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
 
   /** First line of every byte route: deny before verification or CAS access. */
   function phase0Blocked(res: Response): boolean {
-    if ((deps.legacyAccessMode ?? 'PHASE0_BLOCKED') !== 'SHADOW_LEGACY') {
-      res.status(423).json({
-        ok: false,
-        code: 'REPAIR_PHASE_NOT_ENABLED',
-        error: 'LEGACY_ARTIFACT_ACCESS_BLOCKED',
-      });
-      return true;
-    }
-    return false;
+    return phase0LegacyBlocked(deps.legacyAccessMode, res);
   }
 
   /**

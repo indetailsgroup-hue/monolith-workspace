@@ -19,7 +19,11 @@
     "supabase/functions/factory-api/trustKernel.ts",
     "server/src/api/routes/artifacts.ts",
     "supabase/functions/capture-ocr-extract/index.ts",
-    "supabase/migrations/0190_repair_phase0_legacy_containment.sql"
+    "supabase/migrations/0190_repair_phase0_legacy_containment.sql",
+    "server/src/api/routes/factory.ts",
+    "server/src/api/routes/exports.ts",
+    "server/src/index.ts",
+    "server/src/api/routes/phase0LegacyGuard.ts"
   ],
   "surfaceSignatures": [
     "/v3/factory",
@@ -44,7 +48,9 @@
     "NOT_FOR_PRODUCTION",
     "legacyAccessMode",
     "raw_uri",
-    "rpc_field_submit_photo"
+    "rpc_field_submit_photo",
+    "phase0LegacyBlocked",
+    "LEGACY_BYTE_ROUTE_BLOCKED"
   ],
   "knownEgressNote": "Reviewed baseline of files that carry a browser file-download signature (blob object URL + anchor download + click) as of this ledger version. The trust-kernel-scoped egress surfaces are ENFORCED (see routes + requiredMarkers, guarded by assertNotProductionShaped / assertExportFormatNotProductionShaped). The files below are pre-existing MONOLITH design/manufacturing export surfaces outside the Task 11/12 trust-kernel file scope; they are recorded here so the open-world egress sweep (verify-route-ledger.mjs §7) FAILS on any NEW, unreviewed egress file. Adding a new egress surface requires either enforcing it or consciously adding it here.",
   "knownEgressFiles": [
@@ -410,6 +416,58 @@
       "target": "BLOCK — neither a client nor the service role can substitute for a human evidence action.",
       "disposition": "BLOCK",
       "negativeTestId": "supabase/tests/repair_phase0_containment.sql: authenticated cannot invoke legacy field photo submission"
+    },
+    {
+      "id": "server.legacyExport.factoryDownload",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/api/routes/factory.ts",
+      "presenceMarker": "'/jobs/:jobId/export/:exportId/download'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "GET factory export-download returns 423 REPAIR_PHASE_NOT_ENABLED before CAS access; default bootstrap never passes SHADOW_LEGACY.",
+      "target": "BLOCK — no client byte egress in Phase 0.",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: factory export-download is blocked by default"
+    },
+    {
+      "id": "server.legacyExport.signedResult",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/api/routes/exports.ts",
+      "presenceMarker": "'/:jobId/result'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "GET /exports/:jobId/result (public index of signed URLs) returns 423 before any locator is read.",
+      "target": "BLOCK — no reusable signed URL reaches a client in Phase 0.",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: exports /:jobId/result signed-URL route is blocked by default"
+    },
+    {
+      "id": "server.legacyExport.standaloneDownload",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/index.ts",
+      "presenceMarker": "'/api/export/download/:jobId'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Standalone server GET /api/export/download/:jobId returns 423 by default; LEGACY_BYTE_ROUTE_MODE is a source constant, never env.",
+      "target": "BLOCK — no client byte egress from the standalone server in Phase 0.",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: the standalone server never passes SHADOW_LEGACY"
+    },
+    {
+      "id": "server.phase0.sharedGuard",
+      "owner": "repair-phase0",
+      "class": "CONTAINMENT_PRIMITIVE",
+      "file": "server/src/api/routes/phase0LegacyGuard.ts",
+      "presenceMarker": "phase0LegacyBlocked",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Single fail-closed guard: returns 423 REPAIR_PHASE_NOT_ENABLED unless SHADOW_LEGACY is explicitly injected.",
+      "target": "REUSE — one source of truth for every legacy byte-route denial.",
+      "disposition": "REUSE",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts"
     }
   ],
   "forbidden": [
@@ -496,7 +554,7 @@
     {
       "id": "repair-phase0-artifacts-default",
       "file": "server/src/api/routes/artifacts.ts",
-      "pattern": "PHASE0_BLOCKED"
+      "pattern": "phase0LegacyBlocked"
     },
     {
       "id": "repair-phase0-ocr-block",
@@ -507,6 +565,26 @@
       "id": "repair-phase0-ocr-default",
       "file": "supabase/functions/capture-ocr-extract/index.ts",
       "pattern": "PHASE0_BLOCKED"
+    },
+    {
+      "id": "repair-phase0-factory-export-guard",
+      "file": "server/src/api/routes/factory.ts",
+      "pattern": "phase0LegacyBlocked"
+    },
+    {
+      "id": "repair-phase0-exports-result-guard",
+      "file": "server/src/api/routes/exports.ts",
+      "pattern": "phase0LegacyBlocked"
+    },
+    {
+      "id": "repair-phase0-standalone-guard",
+      "file": "server/src/index.ts",
+      "pattern": "phase0LegacyBlocked"
+    },
+    {
+      "id": "repair-phase0-shared-guard",
+      "file": "server/src/api/routes/phase0LegacyGuard.ts",
+      "pattern": "REPAIR_PHASE_NOT_ENABLED"
     }
   ],
   "inventoryOnly": [

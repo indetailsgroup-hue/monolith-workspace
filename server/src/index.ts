@@ -64,6 +64,13 @@ import { activityRoute, appendActivity, extractActorFromHeaders } from './activi
 import { lineageRouter } from './lineage/lineageRoute.js';
 import { stateRoute, canExport } from './state/index.js';
 import { proofRoute } from './proof/index.js';
+import { phase0LegacyBlocked, type LegacyAccessMode } from './api/routes/phase0LegacyGuard.js';
+
+// Repair Phase 0 containment (review #2): the standalone dev/export server's
+// byte-download route is blocked by default. No production override exists in
+// Phase 0; the legacy path is reachable only by editing this constant to
+// SHADOW_LEGACY for a shadow run, never via env.
+const LEGACY_BYTE_ROUTE_MODE: LegacyAccessMode = 'PHASE0_BLOCKED';
 
 // ============================================================================
 // Express App Setup
@@ -310,6 +317,9 @@ app.get('/api/export/status/:jobId', (req, res) => {
 
 // Download export result
 app.get('/api/export/download/:jobId', (req, res) => {
+  // Repair Phase 0 containment (review #2): this legacy byte route fails closed
+  // by default. There is no production override in Phase 0.
+  if (phase0LegacyBlocked(LEGACY_BYTE_ROUTE_MODE, res)) return;
   const { jobId } = req.params;
   const job = getJob(jobId);
 

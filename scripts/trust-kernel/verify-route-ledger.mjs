@@ -192,6 +192,14 @@ function main() {
     { id: 'raw-uri', re: /raw_uri/ },
     { id: 'artifact-hash-route', re: /\/artifacts\/:sha256/ },
   ];
+  // A server-side Express byte route is any non-test source that both defines an
+  // HTTP route (router.get/app.get/…) AND writes raw bytes back (res.send with a
+  // non-JSON payload). Such a file must be either phase0-guarded (contains the
+  // shared guard marker) or consciously recorded in the reviewed baseline —
+  // otherwise it is a reachable, un-dispositioned client byte egress (review #2).
+  const definesHttpRoute = (t) => /\b(?:router|app)\.(?:get|post|put|patch|delete|head)\s*\(/.test(t);
+  const sendsRawBytes = (t) => /\bres\.send\s*\(/.test(t);
+  const hasPhase0Guard = (t) => /phase0LegacyBlocked|phase0Blocked|REPAIR_PHASE_NOT_ENABLED/.test(t);
   const accountedRepair = new Set([
     ...enforcedGlobs,
     ...(ledger.reviewedRepairSurfaceFiles ?? []),
@@ -215,6 +223,15 @@ function main() {
               '(enforce it with a containment guard, or record it in reviewedRepairSurfaceFiles after review)',
           );
         }
+      }
+      // Server byte-route sweep: an HTTP route that sends raw bytes must carry
+      // the Phase 0 guard or be recorded, unless it is already an enforced route.
+      if (rel.startsWith('server/src/') && definesHttpRoute(text) && sendsRawBytes(text)
+        && !hasPhase0Guard(text) && !accountedRepair.has(rel)) {
+        violations.push(
+          `open-world server byte route: ${rel} defines an HTTP route that returns raw bytes (res.send) ` +
+            'without the Phase 0 containment guard and without a ledger disposition',
+        );
       }
     }
   }

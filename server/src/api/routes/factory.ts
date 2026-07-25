@@ -16,9 +16,13 @@ import { Router, Request, Response } from 'express';
 import { CAS } from '../../storage/cas.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'crypto';
+import { phase0LegacyBlocked, type LegacyAccessMode } from './phase0LegacyGuard.js';
 
 export interface FactoryRouterDeps {
   cas: CAS;
+  /** Repair Phase 0 containment (review #2): the export-download byte route
+   *  fails closed unless a test explicitly injects SHADOW_LEGACY. */
+  legacyAccessMode?: LegacyAccessMode;
 }
 
 // ============================================================================
@@ -311,6 +315,7 @@ export function factoryRouter(deps: FactoryRouterDeps): Router {
    * GET /factory/jobs/:jobId/export/:exportId/download - Download export file
    */
   router.get('/jobs/:jobId/export/:exportId/download', async (req: Request, res: Response) => {
+    if (phase0LegacyBlocked(deps.legacyAccessMode, res)) return;
     try {
       const { jobId, exportId } = req.params;
 

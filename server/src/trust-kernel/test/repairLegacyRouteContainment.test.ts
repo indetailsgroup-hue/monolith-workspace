@@ -7,6 +7,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { artifactsRouter, type ArtifactsRouterDeps } from '../../api/routes/artifacts.js';
+import { factoryRouter } from '../../api/routes/factory.js';
+import { exportsRouter } from '../../api/routes/exports.js';
 import type { CAS } from '../../storage/cas.js';
 
 const SHA = 'a'.repeat(64);
@@ -23,13 +25,16 @@ function casSpy(): { cas: CAS; calls: { getBytes: number; hasHash: number } } {
 type Handler = (req: unknown, res: unknown) => Promise<unknown> | unknown;
 
 /** Extract a concrete route handler from the Express router (no HTTP server). */
-function routeHandler(deps: ArtifactsRouterDeps, method: 'get' | 'head', path: string): Handler {
-  const router = artifactsRouter(deps) as unknown as {
-    stack: Array<{ route?: { path: string; methods: Record<string, boolean>; stack: Array<{ handle: Handler }> } }>;
-  };
-  const layer = router.stack.find((l) => l.route?.path === path && l.route.methods[method] === true);
+type ExpressRouter = { stack: Array<{ route?: { path: string; methods: Record<string, boolean>; stack: Array<{ handle: Handler }> } }> };
+
+function handlerOf(router: unknown, method: 'get' | 'head', path: string): Handler {
+  const layer = (router as ExpressRouter).stack.find((l) => l.route?.path === path && l.route.methods[method] === true);
   if (!layer?.route) throw new Error(`route ${method.toUpperCase()} ${path} not found`);
   return layer.route.stack[0].handle;
+}
+
+function routeHandler(deps: ArtifactsRouterDeps, method: 'get' | 'head', path: string): Handler {
+  return handlerOf(artifactsRouter(deps), method, path);
 }
 
 interface CapturedResponse {
@@ -102,5 +107,48 @@ describe('Repair Phase 0 legacy byte-route containment', () => {
     const bootstrap = readFileSync(new URL('../../api/index.ts', import.meta.url), 'utf8');
     expect(bootstrap).toContain('artifactsRouter({ cas })');
     expect(bootstrap.includes('SHADOW_LEGACY')).toBe(false);
+  });
+});
+
+describe('Repair Phase 0 sibling export byte-route containment (review #2)', () => {
+  it('factory export-download is blocked by default before CAS access', async () => {
+    const { cas, calls } = casSpy();
+    const handler = handlerOf(factoryRouter({ cas }), 'get', '/jobs/:jobId/export/:exportId/download');
+    const { res, captured } = fakeRes();
+    await handler({ params: { jobId: 'JOB-1', exportId: 'E1' } }, res);
+    expect(captured.statusCode).toBe(423);
+    expect(captured.body?.code).toBe('REPAIR_PHASE_NOT_ENABLED');
+    expect(calls.getBytes).toBe(0);
+  });
+
+  it('factory export-download reaches legacy behavior only under explicit SHADOW_LEGACY', async () => {
+    const { cas } = casSpy();
+    const handler = handlerOf(factoryRouter({ cas, legacyAccessMode: 'SHADOW_LEGACY' }), 'get', '/jobs/:jobId/export/:exportId/download');
+    const { res, captured } = fakeRes();
+    await handler({ params: { jobId: 'not a valid id!!', exportId: 'E1' } }, res);
+    // Past the guard: it now runs real validation and rejects the bad id (400), not 423.
+    expect(captured.statusCode).toBe(400);
+  });
+
+  it('exports /:jobId/result signed-URL route is blocked by default', async () => {
+    const { cas } = casSpy();
+    const handler = handlerOf(exportsRouter({ cas }), 'get', '/:jobId/result');
+    const { res, captured } = fakeRes();
+    await handler({ params: { jobId: 'JOB-1' } }, res);
+    expect(captured.statusCode).toBe(423);
+    expect(captured.body?.code).toBe('REPAIR_PHASE_NOT_ENABLED');
+  });
+
+  it('the API bootstrap mounts factory and exports routers without SHADOW_LEGACY', () => {
+    const bootstrap = readFileSync(new URL('../../api/index.ts', import.meta.url), 'utf8');
+    expect(bootstrap).toContain('factoryRouter({ cas })');
+    expect(bootstrap).toContain('exportsRouter({ cas })');
+    expect(bootstrap.includes('SHADOW_LEGACY')).toBe(false);
+  });
+
+  it('the standalone server never passes SHADOW_LEGACY to its byte route', () => {
+    const standalone = readFileSync(new URL('../../index.ts', import.meta.url), 'utf8');
+    expect(standalone).toContain("LEGACY_BYTE_ROUTE_MODE: LegacyAccessMode = 'PHASE0_BLOCKED'");
+    expect(standalone).toContain('phase0LegacyBlocked(LEGACY_BYTE_ROUTE_MODE, res)');
   });
 });
