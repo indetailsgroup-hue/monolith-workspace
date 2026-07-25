@@ -1,7 +1,7 @@
 {
   "$schema": "internal://monolith/trust-kernel/route-disposition/v1",
-  "version": "2",
-  "task": "Task 11 — P2 quarantine, client projection, legacy-route containment; extended by Task 12 to ENFORCE the src/core/api export subsystem (CUTLIST_CSV/DXF_R12/GCODE/STEP zipBase64), closing the Task 11 carry-forward. No deferred BLOCK surfaces remain.",
+  "version": "3",
+  "task": "Task 11 — P2 quarantine, client projection, legacy-route containment; extended by Task 12 to ENFORCE the src/core/api export subsystem (CUTLIST_CSV/DXF_R12/GCODE/STEP zipBase64), closing the Task 11 carry-forward. No deferred BLOCK surfaces remain. Extended by Repair Phase 0 Task 6: legacy signed-URL download, direct artifact byte routes, client-selected OCR raw_uri, and broad installation-media DB policies are BLOCK with REPAIR_PHASE_NOT_ENABLED / migration-0190 enforcement.",
   "phase": "NOT_FOR_PRODUCTION",
   "policy": "Every reachable build/export/download surface plus profile/tool/policy/JWT/storage-signing authority input is inventoried. A human or client can never reach P2 plaintext, a raw storage locator, or a reusable signed URL, and only one mutable release authority (0182 release_revision, reached via the V3 edge) exists. Dispositions: REUSE non-authoritative primitive | ADAPT reused under V3 contract | READ_ONLY history/inspection with no production-shaped output | BLOCK client download / FROZEN manufacturing export / duplicate authority / any bypass.",
   "enforcedGlobs": [
@@ -16,7 +16,10 @@
     "src/factory/api/exportApi.ts",
     "src/components/exportViewer/exportViewerStore.ts",
     "supabase/functions/factory-api/index.ts",
-    "supabase/functions/factory-api/trustKernel.ts"
+    "supabase/functions/factory-api/trustKernel.ts",
+    "server/src/api/routes/artifacts.ts",
+    "supabase/functions/capture-ocr-extract/index.ts",
+    "supabase/migrations/0190_repair_phase0_legacy_containment.sql"
   ],
   "surfaceSignatures": [
     "/v3/factory",
@@ -38,7 +41,10 @@
     "generatePreview",
     "projectFactoryPacketStatus",
     "assertNotProductionShaped",
-    "NOT_FOR_PRODUCTION"
+    "NOT_FOR_PRODUCTION",
+    "legacyAccessMode",
+    "raw_uri",
+    "rpc_field_submit_photo"
   ],
   "knownEgressNote": "Reviewed baseline of files that carry a browser file-download signature (blob object URL + anchor download + click) as of this ledger version. The trust-kernel-scoped egress surfaces are ENFORCED (see routes + requiredMarkers, guarded by assertNotProductionShaped / assertExportFormatNotProductionShaped). The files below are pre-existing MONOLITH design/manufacturing export surfaces outside the Task 11/12 trust-kernel file scope; they are recorded here so the open-world egress sweep (verify-route-ledger.mjs §7) FAILS on any NEW, unreviewed egress file. Adding a new egress surface requires either enforcing it or consciously adding it here.",
   "knownEgressFiles": [
@@ -326,43 +332,182 @@
       "target": "REUSE — actor-spoof containment at the transport seam.",
       "disposition": "REUSE",
       "negativeTestId": "edge:v3-actor-spoof-contained"
+    },
+    {
+      "id": "server.legacyDownload.signed",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/api/routes/artifacts.ts",
+      "presenceMarker": "'/download'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Legacy signed-URL download returns 423 REPAIR_PHASE_NOT_ENABLED before signature verification or CAS access; default bootstrap never passes SHADOW_LEGACY.",
+      "target": "BLOCK — a reusable legacy signed URL is never Repair evidence access (Phase 1A redesigns access).",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: blocks GET /download"
+    },
+    {
+      "id": "server.legacyArtifact.get",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/api/routes/artifacts.ts",
+      "presenceMarker": "router.get('/artifacts/:sha256'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Direct GET artifact bytes by hash returns 423 REPAIR_PHASE_NOT_ENABLED before CAS access.",
+      "target": "BLOCK — no unsigned hash byte route in Phase 0.",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: blocks GET /artifacts/:sha256"
+    },
+    {
+      "id": "server.legacyArtifact.head",
+      "owner": "repair-phase0",
+      "class": "CLIENT_DOWNLOAD",
+      "file": "server/src/api/routes/artifacts.ts",
+      "presenceMarker": "router.head('/artifacts/:sha256'",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "HEAD artifact existence probe returns 423 before CAS access (no hash-oracle).",
+      "target": "BLOCK — existence probing of the CAS is not a Phase 0 client capability.",
+      "disposition": "BLOCK",
+      "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: blocks HEAD /artifacts/:sha256"
+    },
+    {
+      "id": "edge.captureOcr.rawUri",
+      "owner": "repair-phase0",
+      "class": "AI_INGEST",
+      "file": "supabase/functions/capture-ocr-extract/index.ts",
+      "presenceMarker": "REPAIR_PHASE_NOT_ENABLED",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Default handler rejects client-selected raw_uri with 423 REPAIR_PHASE_NOT_ENABLED before any OCR or provider egress; SHADOW_LEGACY exists only via explicit test/shadow dependency injection.",
+      "target": "BLOCK — no client-selected OCR/AI locator in Phase 0.",
+      "disposition": "BLOCK",
+      "negativeTestId": "supabase/functions/capture-ocr-extract/index.test.ts: Phase 0 default blocks raw_uri"
+    },
+    {
+      "id": "db.installationMedia.broadPolicies",
+      "owner": "repair-phase0",
+      "class": "STORAGE_POLICY",
+      "file": "supabase/migrations/0190_repair_phase0_legacy_containment.sql",
+      "presenceMarker": "field_media_insert",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Migration 0190 drops the broad authenticated field_media_insert/field_media_select storage policies; no replacement evidence policy exists in Phase 0.",
+      "target": "BLOCK — Phase 1A introduces upload intent, quarantine, scan, and exact-object access in its own approved plan.",
+      "disposition": "BLOCK",
+      "negativeTestId": "supabase/tests/repair_phase0_containment.sql: broad installation-media policies are removed"
+    },
+    {
+      "id": "db.fieldPhoto.legacySubmit",
+      "owner": "repair-phase0",
+      "class": "DB_RPC",
+      "file": "supabase/migrations/0190_repair_phase0_legacy_containment.sql",
+      "presenceMarker": "rpc_field_submit_photo",
+      "enforced": true,
+      "authority": "NONE",
+      "currentBehavior": "Migration 0190 revokes all execution on rpc_field_submit_photo and rpc_capture_ingest from public/anon/authenticated/service_role.",
+      "target": "BLOCK — neither a client nor the service role can substitute for a human evidence action.",
+      "disposition": "BLOCK",
+      "negativeTestId": "supabase/tests/repair_phase0_containment.sql: authenticated cannot invoke legacy field photo submission"
     }
   ],
   "forbidden": [
     {
       "id": "no-client-actor-header",
       "description": "The client never sends an actor role/name header (client role cannot be authority — design §7.1).",
-      "files": ["src/core/api/stateApi.ts", "src/core/api/trustKernelApi.ts"],
+      "files": [
+        "src/core/api/stateApi.ts",
+        "src/core/api/trustKernelApi.ts"
+      ],
       "pattern": "[Xx]-[Aa]ctor-(?:[Rr]ole|[Nn]ame)"
     },
     {
       "id": "no-reusable-signed-url",
       "description": "The edge never returns a reusable signed URL for P2 (design §9).",
-      "files": ["supabase/functions/factory-api/index.ts"],
+      "files": [
+        "supabase/functions/factory-api/index.ts"
+      ],
       "pattern": "signedURL"
     },
     {
       "id": "no-client-packet-upload",
       "description": "The edge never accepts a client-built P2 packet upload (no dual write).",
-      "files": ["supabase/functions/factory-api/index.ts"],
+      "files": [
+        "supabase/functions/factory-api/index.ts"
+      ],
       "pattern": "storagePut\\s*\\("
     },
     {
       "id": "no-client-p2-browser-download",
       "description": "The packet hook never triggers a client-side P2 ZIP download.",
-      "files": ["src/factory/packet/useFactoryPacket.ts"],
+      "files": [
+        "src/factory/packet/useFactoryPacket.ts"
+      ],
       "pattern": "createAndDownloadZipBundle\\s*\\("
     }
   ],
   "requiredMarkers": [
-    { "id": "guard-cutlist", "file": "src/export/cutList/download.ts", "pattern": "assertNotProductionShaped" },
-    { "id": "guard-artifacts", "file": "src/core/export/downloadArtifacts.ts", "pattern": "assertNotProductionShaped" },
-    { "id": "guard-exportApi", "file": "src/core/api/exportApi.ts", "pattern": "assertExportFormatNotProductionShaped" },
-    { "id": "guard-factoryExportApi", "file": "src/factory/api/exportApi.ts", "pattern": "assertNotProductionShaped" },
-    { "id": "guard-exportViewer", "file": "src/components/exportViewer/exportViewerStore.ts", "pattern": "assertNotProductionShaped" },
-    { "id": "projection-denial", "file": "src/factory/packet/trustKernelProjection.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
-    { "id": "edge-p2-denial", "file": "supabase/functions/factory-api/index.ts", "pattern": "STORE_PLAINTEXT_ACCESS_DENIED" },
-    { "id": "v3-relay", "file": "src/core/api/trustKernelApi.ts", "pattern": "/v3/factory" }
+    {
+      "id": "guard-cutlist",
+      "file": "src/export/cutList/download.ts",
+      "pattern": "assertNotProductionShaped"
+    },
+    {
+      "id": "guard-artifacts",
+      "file": "src/core/export/downloadArtifacts.ts",
+      "pattern": "assertNotProductionShaped"
+    },
+    {
+      "id": "guard-exportApi",
+      "file": "src/core/api/exportApi.ts",
+      "pattern": "assertExportFormatNotProductionShaped"
+    },
+    {
+      "id": "guard-factoryExportApi",
+      "file": "src/factory/api/exportApi.ts",
+      "pattern": "assertNotProductionShaped"
+    },
+    {
+      "id": "guard-exportViewer",
+      "file": "src/components/exportViewer/exportViewerStore.ts",
+      "pattern": "assertNotProductionShaped"
+    },
+    {
+      "id": "projection-denial",
+      "file": "src/factory/packet/trustKernelProjection.ts",
+      "pattern": "STORE_PLAINTEXT_ACCESS_DENIED"
+    },
+    {
+      "id": "edge-p2-denial",
+      "file": "supabase/functions/factory-api/index.ts",
+      "pattern": "STORE_PLAINTEXT_ACCESS_DENIED"
+    },
+    {
+      "id": "v3-relay",
+      "file": "src/core/api/trustKernelApi.ts",
+      "pattern": "/v3/factory"
+    },
+    {
+      "id": "repair-phase0-artifacts-block",
+      "file": "server/src/api/routes/artifacts.ts",
+      "pattern": "REPAIR_PHASE_NOT_ENABLED"
+    },
+    {
+      "id": "repair-phase0-artifacts-default",
+      "file": "server/src/api/routes/artifacts.ts",
+      "pattern": "PHASE0_BLOCKED"
+    },
+    {
+      "id": "repair-phase0-ocr-block",
+      "file": "supabase/functions/capture-ocr-extract/index.ts",
+      "pattern": "REPAIR_PHASE_NOT_ENABLED"
+    },
+    {
+      "id": "repair-phase0-ocr-default",
+      "file": "supabase/functions/capture-ocr-extract/index.ts",
+      "pattern": "PHASE0_BLOCKED"
+    }
   ],
   "inventoryOnly": [
     {
@@ -398,5 +543,10 @@
       "negativeTestId": "containment:isolated-runner-spawn-not-import",
       "disposition": "BLOCK"
     }
+  ],
+  "reviewedRepairSurfaceNote": "Reviewed baseline for the Repair Phase 0 open-world sweep (verify-route-ledger.mjs §8). Files matching a Repair-adjacent surface pattern (raw_uri, /artifacts/:sha256, a /repair route) must be enforced, inventoried, or consciously recorded here after review. capture-ingest and capture-media-worker are legacy capture-spine edges whose direct DB authority is revoked by migration 0190 (rpc_capture_ingest) and whose Repair adoption is deny-only until the approved Phase 1A plan.",
+  "reviewedRepairSurfaceFiles": [
+    "supabase/functions/capture-ingest/index.ts",
+    "supabase/functions/capture-media-worker/index.ts"
   ]
 }

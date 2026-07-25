@@ -31,6 +31,11 @@ export interface CaptureOcrDeps {
     authHeader: string,
   ) => Promise<{ error: RpcError | null }>;
   logFailure: (args: { artifactId: string; captureType: string; reason: string }) => Promise<void>;
+  /** Repair Phase 0 containment (Task 6): the default runtime rejects every
+   *  client-selected raw_uri with 423 REPAIR_PHASE_NOT_ENABLED before any OCR
+   *  or provider egress. There is no production environment override; the
+   *  legacy path is reachable only through explicit test/shadow injection. */
+  runtimeMode?: 'PHASE0_BLOCKED' | 'SHADOW_LEGACY';
   /** ADR-033: engine ที่ใช้ ('typhoon' default) — engine อื่นบังคับตรวจ cloudAllowed ก่อนส่งงานออก */
   engine?: string;
   /** ADR-033: ตรวจกับ DB ว่า capture_type นี้ส่งขึ้น cloud ได้ (rpc_capture_cloud_allowed) — fail-safe: ไม่มี = false */
@@ -61,6 +66,14 @@ export async function handleCaptureOcrExtract(req: Request, deps: CaptureOcrDeps
   const authHeader = req.headers.get("authorization") ?? "";
   if (authHeader.length === 0) return json(401, { error: "missing_authorization" });
   if (req.method !== "POST") return json(405, { error: "method_not_allowed" });
+
+  // Repair Phase 0 (Task 6): fail closed BEFORE reading or using raw_uri.
+  if ((deps.runtimeMode ?? 'PHASE0_BLOCKED') !== 'SHADOW_LEGACY') {
+    return json(423, {
+      error: 'repair_phase_not_enabled',
+      code: 'REPAIR_PHASE_NOT_ENABLED',
+    });
+  }
 
   let body: OcrExtractBody;
   try { body = (await req.json()) as OcrExtractBody; } catch { return json(400, { error: "invalid_json" }); }
@@ -206,6 +219,10 @@ export function defaultDeps(): CaptureOcrDeps {
   }
 
   return {
+    // Repair Phase 0 (Task 6): the default runtime is always blocked — there is
+    // no production environment override. SHADOW_LEGACY exists only for
+    // explicit test/shadow dependency injection.
+    runtimeMode: 'PHASE0_BLOCKED',
     engine,
     ...stages,
     // ADR-033: ตรวจ cloud_allowed กับ DB (user-scoped) ก่อน egress — fail-safe: error = false

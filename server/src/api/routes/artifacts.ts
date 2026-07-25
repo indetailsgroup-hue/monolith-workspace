@@ -14,11 +14,30 @@ import { verifySignedDownloadQuery, isHashRevoked } from '../../download/signedU
 
 export interface ArtifactsRouterDeps {
   cas: CAS;
+  /** Repair Phase 0 containment (Task 6): every legacy byte route fails closed
+   *  with 423 REPAIR_PHASE_NOT_ENABLED unless a caller explicitly injects
+   *  'SHADOW_LEGACY' (tests/shadow only). The default server bootstrap never
+   *  passes it, so no client can receive a raw locator, unsigned hash route,
+   *  or reusable signed URL in Phase 0. */
+  legacyAccessMode?: 'PHASE0_BLOCKED' | 'SHADOW_LEGACY';
 }
 
 export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
   const router = Router();
   const { cas } = deps;
+
+  /** First line of every byte route: deny before verification or CAS access. */
+  function phase0Blocked(res: Response): boolean {
+    if ((deps.legacyAccessMode ?? 'PHASE0_BLOCKED') !== 'SHADOW_LEGACY') {
+      res.status(423).json({
+        ok: false,
+        code: 'REPAIR_PHASE_NOT_ENABLED',
+        error: 'LEGACY_ARTIFACT_ACCESS_BLOCKED',
+      });
+      return true;
+    }
+    return false;
+  }
 
   /**
    * GET /download - Download via signed URL
@@ -31,6 +50,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
    * - sig: HMAC signature
    */
   router.get('/download', async (req: Request, res: Response) => {
+    if (phase0Blocked(res)) return;
     try {
       // Verify signed URL
       const verification = verifySignedDownloadQuery(req.query as Record<string, unknown>);
@@ -96,6 +116,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
    * In production, you might want to restrict this to internal networks.
    */
   router.get('/artifacts/:sha256', async (req: Request, res: Response) => {
+    if (phase0Blocked(res)) return;
     try {
       const { sha256 } = req.params;
 
@@ -140,6 +161,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
    * HEAD /artifacts/:sha256 - Check if artifact exists
    */
   router.head('/artifacts/:sha256', async (req: Request, res: Response) => {
+    if (phase0Blocked(res)) return;
     try {
       const { sha256 } = req.params;
 

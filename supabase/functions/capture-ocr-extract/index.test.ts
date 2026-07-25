@@ -36,17 +36,43 @@ describe("capture-ocr-extract — Property 8 (on-prem boundary)", () => {
   });
 });
 
-describe("capture-ocr-extract transport", () => {
+describe("capture-ocr-extract — Repair Phase 0 containment (default fail-closed)", () => {
+  it("Phase 0 default blocks raw_uri before OCR or provider egress", async () => {
+    let calls = 0;
+    const res = await handleCaptureOcrExtract(
+      post({ artifact_id: "a1", raw_uri: "http://10.0.0.5/a.jpg", capture_type: "repair_evidence" }),
+      deps({
+        ocrStage1: async () => { calls += 1; return "never"; },
+        extractStage2: async () => { calls += 1; return EXT; },
+      }),
+    );
+    expect(res.status).toBe(423);
+    expect(await res.json()).toMatchObject({ code: "REPAIR_PHASE_NOT_ENABLED" });
+    expect(calls).toBe(0);
+  });
+
+  it("Phase 0 block never parses or stores the client body", async () => {
+    let stored = 0;
+    const res = await handleCaptureOcrExtract(
+      post({ artifact_id: "a1", raw_uri: "https://attacker.example/x", capture_type: "x" }),
+      deps({ setExtraction: async () => { stored += 1; return { error: null }; } }),
+    );
+    expect(res.status).toBe(423);
+    expect(stored).toBe(0);
+  });
+});
+
+describe("capture-ocr-extract transport (SHADOW_LEGACY dependency injection only)", () => {
   it("401 missing auth; 405 non-POST; 400 invalid", async () => {
     expect((await handleCaptureOcrExtract(post({ artifact_id: "a", raw_uri: "f", capture_type: "x" }, ""), deps())).status).toBe(401);
     expect((await handleCaptureOcrExtract(new Request("https://x", { method: "GET", headers: { authorization: AUTH } }), deps())).status).toBe(405);
-    expect((await handleCaptureOcrExtract(post({ artifact_id: "a" }), deps())).status).toBe(400);
+    expect((await handleCaptureOcrExtract(post({ artifact_id: "a" }), deps({ runtimeMode: "SHADOW_LEGACY" }))).status).toBe(400);
   });
 
   it("Stage1→Stage2→setExtraction → 200", async () => {
     let setArgs: unknown = null;
     const res = await handleCaptureOcrExtract(post({ artifact_id: "a1", raw_uri: "f", capture_type: "expense_document" }),
-      deps({ setExtraction: async (a) => { setArgs = a; return { error: null }; } }));
+      deps({ runtimeMode: "SHADOW_LEGACY", setExtraction: async (a) => { setArgs = a; return { error: null }; } }));
     expect(res.status).toBe(200);
     expect((setArgs as { id: string }).id).toBe("a1");
   });
@@ -54,14 +80,14 @@ describe("capture-ocr-extract transport", () => {
   it("extraction throw → logFailure (best-effort) + 502 (fail-safe no-guess)", async () => {
     let logged = false;
     const res = await handleCaptureOcrExtract(post({ artifact_id: "a2", raw_uri: "f", capture_type: "x" }),
-      deps({ extractStage2: async () => { throw new Error("ocr down"); }, logFailure: async () => { logged = true; } }));
+      deps({ runtimeMode: "SHADOW_LEGACY", extractStage2: async () => { throw new Error("ocr down"); }, logFailure: async () => { logged = true; } }));
     expect(res.status).toBe(502);
     expect(logged).toBe(true);
   });
 
   it("set_extraction authz error → 403", async () => {
     const res = await handleCaptureOcrExtract(post({ artifact_id: "a", raw_uri: "f", capture_type: "x" }),
-      deps({ setExtraction: async () => ({ error: { code: "insufficient_privilege" } }) }));
+      deps({ runtimeMode: "SHADOW_LEGACY", setExtraction: async () => ({ error: { code: "insufficient_privilege" } }) }));
     expect(res.status).toBe(403);
   });
 });

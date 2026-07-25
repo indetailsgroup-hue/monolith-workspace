@@ -182,6 +182,43 @@ function main() {
     }
   }
 
+  // (8) OPEN-WORLD Repair Phase 0 sweep. A NEW /repair route, a client-selected
+  // raw_uri, or a direct /artifacts/:sha256 byte surface must never appear
+  // without a disposition: every matching non-test source file must be
+  // enforced, inventoried, or consciously recorded in the reviewed
+  // reviewedRepairSurfaceFiles baseline (fail closed otherwise).
+  const repairPatterns = [
+    { id: 'repair-route', re: /['"`]\/repair\b/ },
+    { id: 'raw-uri', re: /raw_uri/ },
+    { id: 'artifact-hash-route', re: /\/artifacts\/:sha256/ },
+  ];
+  const accountedRepair = new Set([
+    ...enforcedGlobs,
+    ...(ledger.reviewedRepairSurfaceFiles ?? []),
+    ...(ledger.inventoryOnly ?? []).map((io) => io.file),
+    ...(ledger.knownEgressFiles ?? []),
+  ]);
+  const repairRoots = [join(repoRoot, 'src'), join(repoRoot, 'server', 'src'), join(repoRoot, 'supabase', 'functions')];
+  for (const root of repairRoots) {
+    for (const abs of collectSources(root)) {
+      const rel = relative(repoRoot, abs).split(sep).join('/');
+      let text;
+      try {
+        text = readFileSync(abs, 'utf-8');
+      } catch {
+        continue;
+      }
+      for (const p of repairPatterns) {
+        if (p.re.test(text) && !accountedRepair.has(rel)) {
+          violations.push(
+            `open-world repair surface: ${rel} matches "${p.id}" but has no route disposition ` +
+              '(enforce it with a containment guard, or record it in reviewedRepairSurfaceFiles after review)',
+          );
+        }
+      }
+    }
+  }
+
   const summary = {
     enforcedFiles: enforcedGlobs.length,
     enforcedRoutes: enforcedRoutes.length,
