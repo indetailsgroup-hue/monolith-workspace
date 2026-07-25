@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH Repair Intelligence — Phase 0 Exit Review (EN)</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH Repair Intelligence — Phase 0 Exit Review (EN)</h1>
+<p>Phase 0 implementation evidence: EVIDENCE_INCOMPLETE Phase 0 exit decision: PENDING_OWNER_APPROVAL Phase 1A authority: DISABLED Expert Label Protocol: PROPOSED / NOT RUN Gate B: NOT PASSED Immutable infrastructure: NOT CLAIMED</p>
+<h2>1. Baseline commits</h2>
+<div class="tablewrap"><table><thead><tr><th>Reference</th><th>Commit</th></tr></thead><tbody>
+<tr><td>Canonical product <code>main</code></td><td><code>dd1119af6d0bcba0e38d38516ed1b11125bcf19f</code></td></tr>
+<tr><td>Governance baseline (pinned linters)</td><td><code>55557d7f178dcbe00fec15cffb3061df668eaff8</code></td></tr>
+<tr><td>Trust Kernel series head</td><td><code>8dfe0cc02e6cbbe8f4cefb3893d80a758fc8d49b</code></td></tr>
+<tr><td>Execution branch head</td><td><code>92adb6abe7184517f536417d552ea1e00eaa49eb</code></td></tr>
+</tbody></table></div>
+<h2>2. Evidence table (machine reports)</h2>
+<div class="tablewrap"><table><thead><tr><th>Report</th><th>Status</th><th>Detail</th><th>SHA-256</th></tr></thead><tbody>
+<tr><td><code>workflow_db_invariants.tap</code></td><td>OK</td><td>11 assertions ok</td><td><code>cbbfd0df7232161a…</code></td></tr>
+<tr><td><code>trust_kernel_tenancy.tap</code></td><td>OK</td><td>29 assertions ok</td><td><code>6c90256ecb5ea6e6…</code></td></tr>
+<tr><td><code>trust_kernel_governance.tap</code></td><td>OK</td><td>27 assertions ok</td><td><code>2d34898410151553…</code></td></tr>
+<tr><td><code>trust_kernel_release.tap</code></td><td>OK</td><td>59 assertions ok</td><td><code>0f8bcc507043ad6e…</code></td></tr>
+<tr><td><code>trust_kernel_bundles.tap</code></td><td>OK</td><td>27 assertions ok</td><td><code>42324c8116810601…</code></td></tr>
+<tr><td><code>trust_kernel_containment.tap</code></td><td>OK</td><td>16 assertions ok</td><td><code>8701bf80a344d32c…</code></td></tr>
+<tr><td><code>trust_kernel_safety.tap</code></td><td>OK</td><td>68 assertions ok</td><td><code>69c63f1b7818ecaa…</code></td></tr>
+<tr><td><code>repair_phase0_organization.tap</code></td><td>OK</td><td>14 assertions ok</td><td><code>dda6f29f8a896b21…</code></td></tr>
+<tr><td><code>repair_phase0_containment.tap</code></td><td>OK</td><td>5 assertions ok</td><td><code>052bdbaad4dc6589…</code></td></tr>
+<tr><td><code>repair-phase0-ledger.json</code></td><td>OK</td><td>18 surfaces</td><td><code>03bb9ba946357c9a…</code></td></tr>
+<tr><td><code>e2e.json</code></td><td>INCOMPLETE</td><td>PENDING_CI_RUN — produced only by the CI workflow</td><td><code>-…</code></td></tr>
+<tr><td><code>evidence-attestation.json</code></td><td>INCOMPLETE</td><td>PENDING_CI_RUN — produced only by the CI workflow</td><td><code>-…</code></td></tr>
+</tbody></table></div>
+<h2>3. Verification commands</h2>
+<p>The evidence above is produced by: the nine pgTAP suites under <code>supabase/tests/</code> (via <code>psql -tA -v ON_ERROR_STOP=1</code>), <code>npm run tk:repair-ledger</code>, <code>npm run tk:repair-docs</code>, <code>npm run tk:route-ledger</code>, <code>npm run tk:containment</code>, <code>npm run tk:server</code>, <code>npm run tk:verifier</code>, <code>npm run test:node</code>, <code>npm run test:run</code>, <code>npm run typecheck:all</code>, and <code>npm run build</code>.</p>
+<h2>4. Residual risks</h2>
+<ul>
+<li>The GitHub Actions workflows are authored but have not executed on CI infrastructure; the CI evidence legs remain to be produced on a real run.</li>
+<li>Shadow E2E and the signed evidence attestation require CI secrets (user JWTs, evidence signer/verify endpoints); absent secrets keep the gate at EVIDENCE_INCOMPLETE.</li>
+<li>The shared local Supabase stack was never reset; migration-chain verification relies on the ephemeral CI database.</li>
+</ul>
+<h2>5. Rollback status</h2>
+<p>Rollback plan: documented in <code>repair-intelligence-phase0-migration-rollback.en.md</code> / <code>.th.md</code>. Recovery test: NOT RUN. Rollback execution: NOT REQUIRED so far.</p>
+<h2>6. Owner gate</h2>
+<p>Phase 0 implementation evidence: EVIDENCE_INCOMPLETE Phase 0 exit decision: PENDING_OWNER_APPROVAL Phase 1A authority: DISABLED Expert Label Protocol: PROPOSED / NOT RUN Gate B: NOT PASSED Immutable infrastructure: NOT CLAIMED</p>
+<p>The owner reviews the commit list, report hashes, CI run, residual risks, and the rollback pack before deciding. No automated step may change the exit decision.</p>
+</main></body>
+</html>
