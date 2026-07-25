@@ -70,6 +70,11 @@
       "domain": "evidence-bundle",
       "owner": "Independent QA/Safety",
       "summary": "Signed evidence manifest + EvidenceAttestationV1 with a separate evidence key (design §16.4)."
+    },
+    {
+      "domain": "repair-phase0-boundary",
+      "owner": "Security/IAM",
+      "summary": "Repair Intelligence Phase 0 deny-only boundary: the capability disposition ledger (repair-intelligence-phase0-capability-disposition.json), the deny-only capability contract (REPAIR_PHASE_NOT_ENABLED), and legacy evidence/OCR/byte-route containment. Domain steward: Repair Intelligence Governance; Security/IAM retains platform enforcement ownership."
     }
   ],
   "changeControl": {
