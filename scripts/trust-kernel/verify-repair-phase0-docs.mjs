@@ -22,11 +22,45 @@ const REQUIRED_STATUS_LINES = [
   'Immutable infrastructure: NOT CLAIMED',
 ];
 
-// A Gate B sentence claiming completion without negation is forbidden anywhere.
+// A Gate B / release sentence claiming completion without negation is forbidden
+// anywhere (Markdown OR the rendered HTML). The verb list is broadened beyond
+// PASSED to the ways an approval is actually phrased (review #4).
+const COMPLETION_VERBS = 'PASSED|PASSES|COMPLETE|COMPLETED|APPROVED|CLEARED|SIGNED[ -]?OFF|SATISFIED|ACHIEVED';
+// The claim window is bounded (no greedy cross-clause span) so a negation
+// elsewhere on the line cannot excuse a positive claim (htmlToText also keeps
+// block boundaries as newlines so a match never crosses HTML elements).
 const FORBIDDEN_CLAIMS = [
-  { id: 'Gate B completion claim', re: /Gate B[^\n]*\b(PASSED|PASSES|COMPLETE|COMPLETED|APPROVED)\b/gi, negation: /\bNOT\b|ไม่/i },
-  { id: 'production/GA claim', re: /Phase 0[^\n]*\b(PRODUCTION|GA)\b/g, negation: /\bNOT\b|ไม่/i },
+  { id: 'Gate B completion claim', re: new RegExp(String.raw`Gate B[^\n]{0,30}?\b(${COMPLETION_VERBS})\b`, 'gi'), negation: /\b(NOT|NO|NEVER)\b|without|ไม่/i },
+  { id: 'production/GA claim', re: /Phase 0[^\n]{0,30}?\b(PRODUCTION|GA(?:\s+release)?)\b/gi, negation: /\b(NOT|NO|NEVER)\b|without|ไม่/i },
+  { id: 'exit-approval claim', re: /Phase 0 exit[^\n]{0,30}?\bAPPROVED\b/gi, negation: /\b(NOT|NO|NEVER)\b|PENDING|ไม่/i },
 ];
+
+// Strip HTML tags/entities to plain text so a claim hidden in markup is caught.
+// Block-level element boundaries become newlines so a per-line forbidden-claim
+// scan cannot leak a negation across two separate blocks.
+function htmlToText(html) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<\/(p|li|td|tr|div|h[1-6]|section|article|main)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/[ \t]+/g, ' ');
+}
+
+function scanForbidden(errors, label, text) {
+  for (const claim of FORBIDDEN_CLAIMS) {
+    for (const match of text.matchAll(claim.re)) {
+      if (!(claim.negation && claim.negation.test(match[0]))) {
+        errors.push(`${label}: forbidden ${claim.id}: "${match[0].slice(0, 80)}"`);
+      }
+    }
+  }
+}
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -38,9 +72,6 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
       const mdPath = join(dir, `${base}.${lang}.md`);
       const htmlPath = join(dir, `${base}.${lang}.html`);
 
-      if (!existsSync(htmlPath)) {
-        errors.push(`missing standalone HTML: ${base}.${lang}.html`);
-      }
       if (!existsSync(mdPath)) {
         errors.push(`missing Markdown edition: ${base}.${lang}.md`);
         continue;
@@ -61,12 +92,25 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
         errors.push(`${base}.${lang}.md: missing threat table`);
       }
 
-      for (const claim of FORBIDDEN_CLAIMS) {
-        for (const match of text.matchAll(claim.re)) {
-          if (!(claim.negation && claim.negation.test(match[0]))) {
-            errors.push(`${base}.${lang}.md: forbidden ${claim.id}: "${match[0].slice(0, 80)}"`);
+      scanForbidden(errors, `${base}.${lang}.md`, text);
+
+      // The rendered HTML edition must exist, be non-trivial, carry the same
+      // status lines as the Markdown, and contain no forbidden claim hidden in
+      // markup — checking existence alone let an empty or hostile HTML pass.
+      if (!existsSync(htmlPath)) {
+        errors.push(`missing standalone HTML: ${base}.${lang}.html`);
+      } else {
+        const rawHtml = readFileSync(htmlPath, 'utf8');
+        const htmlText = htmlToText(rawHtml);
+        if (rawHtml.trim().length < 200) {
+          errors.push(`${base}.${lang}.html: HTML edition is empty or too small to be a rendered document`);
+        }
+        for (const line of REQUIRED_STATUS_LINES) {
+          if (!htmlText.includes(line)) {
+            errors.push(`${base}.${lang}.html: rendered HTML is missing required status "${line}"`);
           }
         }
+        scanForbidden(errors, `${base}.${lang}.html`, htmlText);
       }
     }
   }

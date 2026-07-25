@@ -6,7 +6,7 @@ name: MONOLITH DB Verify
 
 on:
   push:
-    branches: [main, "fix/**", "s17/**"]
+    branches: [main, "fix/**", "s17/**", "codex/**", "repair-intelligence/**"]
     paths:
       - "supabase/migrations/**"
       - "supabase/tests/**"

@@ -24,9 +24,12 @@ name: Trust Kernel Verify (Shadow Trust-Ready)
 
 on:
   push:
-    branches: [main, "trust-kernel/**"]
+    branches: [main, "trust-kernel/**", "codex/**", "repair-intelligence/**"]
     paths:
-      - "server/src/trust-kernel/**"
+      # Whole server tree, not just server/src/trust-kernel — the Phase 0
+      # containment guards live in server/src/api/routes and server/src/index.ts
+      # (review #4: a change to artifacts.ts/exports.ts alone must trigger CI).
+      - "server/src/**"
       - "tools/factory-packet-verifier/**"
       - "src/factory/**"
       - "src/core/**"
@@ -37,11 +40,12 @@ on:
       - ".github/workflows/trust-kernel-verify.yml"
   pull_request:
     paths:
-      - "server/src/trust-kernel/**"
+      - "server/src/**"
       - "tools/factory-packet-verifier/**"
       - "supabase/**"
       - "e2e/trust-kernel/**"
       - "docs/governance/**"
+      - "scripts/trust-kernel/**"
   workflow_dispatch:
 
 concurrency:

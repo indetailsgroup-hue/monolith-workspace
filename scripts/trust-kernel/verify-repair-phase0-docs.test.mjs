@@ -29,12 +29,19 @@ function goodDoc(extra = '') {
   ].join('\n');
 }
 
+// A non-trivial HTML edition: the verifier requires the HTML to carry the same
+// status lines as the Markdown (a rendered edition, not an empty placeholder).
+function goodHtml() {
+  return `<!doctype html><html><body><main>${goodDoc()
+    .split('\n').map((l) => `<p>${l}</p>`).join('')}</main></body></html>`;
+}
+
 function writeCompleteSet(dir, mutate = () => {}) {
   const files = {};
   for (const base of REQUIRED_DOC_BASES) {
     for (const lang of ['en', 'th']) {
       files[`${base}.${lang}.md`] = goodDoc();
-      files[`${base}.${lang}.html`] = '<!doctype html><html><body>rendered</body></html>';
+      files[`${base}.${lang}.html`] = goodHtml();
     }
   }
   mutate(files);
@@ -91,4 +98,34 @@ test('rejects any positive Gate B completion claim', () => {
     files[`${REQUIRED_DOC_BASES[0]}.en.md`] = goodDoc('Gate B: PASSED');
   });
   assert.ok(errors.some((e) => e.includes('Gate B')));
+});
+
+test('rejects an empty HTML edition (not a rendered document)', () => {
+  const errors = inTemp((files) => {
+    files[`${REQUIRED_DOC_BASES[0]}.en.html`] = '';
+  });
+  assert.ok(errors.some((e) => e.toLowerCase().includes('html')));
+});
+
+test('rejects an HTML edition missing the Markdown status lines', () => {
+  const errors = inTemp((files) => {
+    files[`${REQUIRED_DOC_BASES[0]}.en.html`] = '<!doctype html><html><body>unrelated content</body></html>';
+  });
+  assert.ok(errors.some((e) => e.toLowerCase().includes('html')));
+});
+
+test('rejects a hostile Gate B claim hidden only in the HTML edition', () => {
+  const errors = inTemp((files) => {
+    files[`${REQUIRED_DOC_BASES[0]}.en.html`] = goodHtml().replace('</main>', '<p>Gate B: PASSED</p></main>');
+  });
+  assert.ok(errors.some((e) => e.includes('Gate B')));
+});
+
+test('rejects widened forbidden verbs (cleared / GA release / signed off)', () => {
+  for (const phrase of ['Gate B cleared', 'Phase 0 GA release', 'Gate B signed off']) {
+    const errors = inTemp((files) => {
+      files[`${REQUIRED_DOC_BASES[0]}.en.md`] = goodDoc(phrase);
+    });
+    assert.ok(errors.length > 0, `expected rejection for "${phrase}"`);
+  }
 });
