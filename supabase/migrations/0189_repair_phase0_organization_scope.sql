@@ -286,3 +286,29 @@ create policy release_outbox_sel on public.release_outbox
       and rr.id = release_outbox.release_revision_id
       and (rr.tenant_id, rr.site_id) in (select g.tenant_id, g.site_id from public.fn_monolith_member_scope_sites() g)
   ));
+
+-- ---------------------------------------------------------------------------
+-- 7) Site-scoped SAFETY tables from the transplanted content-revocation series
+--    (migrations 0186/0188). Both carry site_id and site-scoped safety data
+--    (actor ids, content hashes, unblock justifications), but were created with
+--    tenant-only SELECT policies — a same-tenant cross-organization leak. Move
+--    them to the same site-grant scope as the release_* tables so an
+--    organization-A member cannot read organization-B safety rows.
+--
+--    The trust-root registry tables (0183: trust_authority_key,
+--    trust_key_revocation, trust_profile_attestation_revocation,
+--    trust_warning_grant_revocation) are DELIBERATELY left tenant-scoped: a
+--    signing key and its revocation are tenant-level trust roots with no site
+--    dimension (no site_id column exists), and a key/attestation revocation is a
+--    tenant-wide safety broadcast every site must observe — narrowing it per
+--    organization would hide a safety signal, not protect data.
+-- ---------------------------------------------------------------------------
+drop policy if exists release_content_revocation_sel on public.release_content_revocation;
+create policy release_content_revocation_sel on public.release_content_revocation
+  for select to authenticated
+  using ((tenant_id, site_id) in (select g.tenant_id, g.site_id from public.fn_monolith_member_scope_sites() g));
+
+drop policy if exists content_unblock_grant_sel on public.content_unblock_grant;
+create policy content_unblock_grant_sel on public.content_unblock_grant
+  for select to authenticated
+  using ((tenant_id, site_id) in (select g.tenant_id, g.site_id from public.fn_monolith_member_scope_sites() g));

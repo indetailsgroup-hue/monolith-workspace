@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(14);
+select plan(17);
 
 -- ---------------------------------------------------------------------------
 -- 1-5: schema shape — organization table, normalized parent, pinned context
@@ -175,6 +175,48 @@ select throws_ok(
     values ('3c333333-3333-3333-3333-3333333333c3', '11111111-1111-1111-1111-111111111111', '0c222222-2222-2222-2222-22222222220c', 'X-BAD-01', 'Cross-tenant org site', 'ACTIVE')$$,
   '23503', null,
   'a site row with a tenant-mismatched organization foreign key is rejected'
+);
+
+-- ---------------------------------------------------------------------------
+-- 15-16: site-scoped SAFETY table (release_content_revocation, migration 0186)
+--        obeys organization scope after 0189 — cross-org read denied, own-org
+--        read allowed (a deny-all helper would fail assertion 16).
+-- ---------------------------------------------------------------------------
+-- A BLOCK deny-log row bound to site_b1 (organization B). release_revision_id is
+-- nullable, so no full release chain is needed.
+insert into public.release_content_revocation
+  (id, tenant_id, site_id, content_hash, release_revision_id, action, sequence, actor_user_id, occurred_at)
+values
+  ('c0000000-0000-0000-0000-0000000000c1', :'tenant_001', :'site_b1',
+   repeat('a', 64), null, 'BLOCK', 1, :'u_member_b', timezone('utc', now()));
+
+-- member_a holds a site grant to site_b1 but NO organization-B grant, so the
+-- organization boundary must hide organization-B's safety row.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_member_a', 'role', 'authenticated', 'aal', 'aal1')::text, true) as _claims \gset
+set local role authenticated;
+select count(*)::int as x_rcr_a from public.release_content_revocation where site_id = :'site_b1' \gset
+reset role;
+select is(:x_rcr_a::bigint, 0::bigint,
+  'RLS: organization-A membership cannot read an organization-B content-revocation row');
+
+-- member_b holds the organization-B grant and must still see its own row —
+-- proves the policy is genuinely site-scoped, not a deny-all.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_member_b', 'role', 'authenticated', 'aal', 'aal1')::text, true) as _claims \gset
+set local role authenticated;
+select count(*)::int as x_rcr_b from public.release_content_revocation where site_id = :'site_b1' \gset
+reset role;
+select is(:x_rcr_b::bigint, 1::bigint,
+  'RLS: organization-B membership still reads its own content-revocation row (not deny-all)');
+
+-- ---------------------------------------------------------------------------
+-- 17: content_unblock_grant (migration 0188) SELECT policy is site-scoped via
+--     the same organization/site helper, not tenant-only.
+-- ---------------------------------------------------------------------------
+select ok(
+  (select position('fn_monolith_member_scope_sites' in coalesce(qual, '')) > 0
+   from pg_policies
+   where schemaname = 'public' and tablename = 'content_unblock_grant' and policyname = 'content_unblock_grant_sel'),
+  'content_unblock_grant SELECT policy is scoped by the organization/site helper'
 );
 
 select * from finish();
