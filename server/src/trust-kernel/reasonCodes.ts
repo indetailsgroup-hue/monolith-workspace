@@ -81,6 +81,13 @@ export const TRUST_REASON_CODES = [
   'SAFETY_CONTENT_REVOKED',
   'SAFETY_CONTENT_BLOCKED',
   'SAFETY_CONTENT_UNBLOCKED',
+
+  // REPAIR - Repair Intelligence Phase 0 deny-only boundary (versioned addition;
+  // see the repair-phase0-boundary domain in trust-kernel-ownership.json).
+  // Later-phase Repair capabilities and unproven professional authority fail
+  // closed with these stable codes until an approved phase plan enables them.
+  'REPAIR_PHASE_NOT_ENABLED',
+  'REPAIR_PROFESSIONAL_AUTHORITY_UNPROVEN',
 ] as const;
 
 /** A stable machine-readable reason code from the design §13 registry. */

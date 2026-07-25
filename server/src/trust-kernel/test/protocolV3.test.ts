@@ -162,8 +162,8 @@ describe('TrustReasonCode registry (design §13)', () => {
     }
   });
 
-  it('carries the design §13 registry + SAFETY versioned additions (9 namespaces, 41 codes)', () => {
-    expect(TRUST_REASON_CODES.length).toBe(41);
+  it('carries the design §13 registry + SAFETY + REPAIR versioned additions (10 namespaces, 43 codes)', () => {
+    expect(TRUST_REASON_CODES.length).toBe(43);
     const namespaces = new Set(TRUST_REASON_CODES.map((c) => c.split('_')[0]));
     expect([...namespaces].sort()).toEqual([
       'AUTH',
@@ -171,6 +171,7 @@ describe('TrustReasonCode registry (design §13)', () => {
       'CRYPTO',
       'GATE',
       'PACKET',
+      'REPAIR',
       'SAFETY',
       'STATE',
       'STORE',
