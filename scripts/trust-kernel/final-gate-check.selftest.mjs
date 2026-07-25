@@ -86,7 +86,13 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('determinism-ubuntu-latest.json', CLEAN_REPORT);
   w('containment-ubuntu-latest.json', CLEAN_REPORT);
   w('edge.json', CLEAN_REPORT);
-  w('pgtap-trust_kernel_release.tap', 'ok 1 - release\nok 2 - more\n1..2\n');
+  for (const suite of [
+    'trust_kernel_tenancy', 'trust_kernel_governance', 'trust_kernel_release',
+    'trust_kernel_bundles', 'trust_kernel_containment', 'trust_kernel_safety',
+    'workflow_db_invariants',
+  ]) {
+    w(`pgtap-${suite}.tap`, 'ok 1 - a\nok 2 - b\n1..2\n');
+  }
   w('e2e.json', { stats: { expected: 3, unexpected: 0, skipped: 0, flaky: 0 } });
   w('golden-ubuntu-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
   w('golden-windows-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
@@ -194,6 +200,45 @@ console.log('evaluateReports end-to-end checks:');
   fs.unlinkSync(path.join(dir, 'claim-linters.txt'));
   const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
   check('a missing pinned claim-linter report is flagged', v.some((s) => /claim-linters/i.test(s)), JSON.stringify(v));
+}
+
+// 14. A required named pgTAP suite missing -> gate FAILS.
+{
+  const dir = writeCleanTree(path.join(base, 'named-pgtap-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'pgtap-trust_kernel_safety.tap'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing named pgTAP suite (trust_kernel_safety) is flagged', v.some((s) => /trust_kernel_safety/i.test(s)), JSON.stringify(v));
+}
+
+// 15. A required vitest report that is malformed/empty (shape drift) -> gate FAILS.
+{
+  const dir = writeCleanTree(path.join(base, 'shape-drift'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'server-ubuntu-latest.json'), JSON.stringify({ note: 'not a vitest report' }));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a required report that is not a valid vitest report is flagged', v.some((s) => /server-ubuntu-latest|not a valid|shape/i.test(s)), JSON.stringify(v));
+}
+
+// 16. Two EMPTY golden sha files must NOT compare equal -> gate FAILS.
+{
+  const dir = writeCleanTree(path.join(base, 'empty-golden'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'golden-ubuntu-latest.sha'), '');
+  fs.writeFileSync(path.join(dir, 'golden-windows-latest.sha'), '');
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('two empty golden sha files are rejected (not treated as a match)', v.some((s) => /golden|empty/i.test(s)), JSON.stringify(v));
+}
+
+// 17. A pgTAP report carrying a Bail out! / SKIP directive -> gate FAILS.
+{
+  const dir = writeCleanTree(path.join(base, 'tap-bailout'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'pgtap-trust_kernel_release.tap'), 'ok 1 - a\nBail out! db gone\n');
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a pgTAP Bail out! is flagged', v.some((s) => /bail/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'tap-skip'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'pgtap-trust_kernel_release.tap'), 'ok 1 - a # SKIP not today\nok 2 - b\n1..2\n');
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a pgTAP # SKIP directive is flagged', v.some((s) => /skip/i.test(s)), JSON.stringify(v));
 }
 
 fs.rmSync(base, { recursive: true, force: true });

@@ -33,9 +33,15 @@ const NON_RUN_STATUSES = new Set(['skipped', 'pending', 'todo', 'disabled']);
  * status and reject skipped/pending/todo/disabled, in ADDITION to the aggregates.
  * Do NOT trust numPending/numTodo/numTotal under v1 (C1/C2).
  */
-export function checkVitestReport(r, f) {
+export function checkVitestReport(r, f, { required = false } = {}) {
   const violations = [];
-  if (typeof r.numTotalTests !== 'number') return violations; // not a vitest report
+  if (typeof r.numTotalTests !== 'number') {
+    // A report the gate REQUIRES must be a valid vitest report; shape drift
+    // (an empty object, a truncated write, wrong schema) is a failure, not a
+    // no-op pass. Non-required reports in the tree may be other shapes.
+    if (required) violations.push(`required report ${f} is not a valid vitest report (numTotalTests missing)`);
+    return violations;
+  }
   if (r.numTotalTests <= 0) violations.push(`empty suite in ${f} (numTotalTests=0)`);
   if (r.numFailedTests > 0) violations.push(`${r.numFailedTests} failed test(s) in ${f}`);
   if (r.numPendingTests > 0) violations.push(`${r.numPendingTests} skipped test(s) in ${f}`);
@@ -104,8 +110,17 @@ export function evaluateReports({ root, jobResults }) {
   // suites, the bilingual document verifier, the route ledger, and the PINNED
   // claim/certification linter result are load-bearing. A missing report is a
   // failed gate — never a warning.
-  req((f) => /pgtap-repair_phase0_organization\.tap$/.test(f), 'pgtap-repair_phase0_organization.tap');
-  req((f) => /pgtap-repair_phase0_containment\.tap$/.test(f), 'pgtap-repair_phase0_containment.tap');
+  // Every plan-mandated pgTAP suite must be present BY NAME — a dropped suite
+  // is a failed gate, not a silent omission (review #3 / exit condition 8).
+  const REQUIRED_PGTAP = [
+    'workflow_db_invariants',
+    'trust_kernel_tenancy', 'trust_kernel_governance', 'trust_kernel_release',
+    'trust_kernel_bundles', 'trust_kernel_containment', 'trust_kernel_safety',
+    'repair_phase0_organization', 'repair_phase0_containment',
+  ];
+  for (const suite of REQUIRED_PGTAP) {
+    req((f) => new RegExp(`pgtap-${suite}\\.tap$`).test(f), `pgtap-${suite}.tap`);
+  }
 
   const repairLedger = files.find((f) => /repair-phase0-ledger\.json$/.test(f));
   if (!repairLedger) {
@@ -137,7 +152,10 @@ export function evaluateReports({ root, jobResults }) {
   reqText(/claim-linters\.txt$/, 'CLAIM LINTERS: PASS', 'claim-linters.txt (pinned claim/certification linters)');
 
   // (b) vitest JSON reports: >0 tests, 0 failed, 0 skipped/pending/todo, success true.
-  for (const f of files.filter((f) => f.endsWith('.json') && !/e2e\.json$/.test(f) && !/evidence-attestation.*\.json$/.test(f))) {
+  // A report matching a REQUIRED name (server/verifier/determinism/containment/
+  // edge/repair) must be a valid vitest report — shape drift on those fails.
+  const REQUIRED_VITEST = /(server|verifier|determinism|containment|edge|repair)-?.*\.json$/;
+  for (const f of files.filter((f) => f.endsWith('.json') && !/e2e\.json$/.test(f) && !/evidence-attestation.*\.json$/.test(f) && !/repair-phase0-ledger\.json$/.test(f))) {
     let r;
     try {
       r = JSON.parse(fs.readFileSync(f, 'utf8'));
@@ -145,7 +163,7 @@ export function evaluateReports({ root, jobResults }) {
       violations.push(`unparseable report ${f}`);
       continue;
     }
-    violations.push(...checkVitestReport(r, f));
+    violations.push(...checkVitestReport(r, f, { required: REQUIRED_VITEST.test(f) }));
   }
 
   // (c) Playwright e2e JSON: no unexpected, no skipped, >0 expected.
@@ -163,13 +181,17 @@ export function evaluateReports({ root, jobResults }) {
     }
   }
 
-  // (d) pgTAP: each suite has at least one `ok` and zero `not ok`.
+  // (d) pgTAP: each suite has at least one `ok`, zero `not ok`, no Bail out!,
+  //     and no SKIP/TODO directive (a skipped assertion is not a passed one).
   for (const f of files.filter((f) => f.endsWith('.tap'))) {
     const tap = fs.readFileSync(f, 'utf8');
     const ok = (tap.match(/^ok /gm) || []).length;
     const notOk = (tap.match(/^not ok /gm) || []).length;
     if (ok === 0) violations.push(`empty pgTAP suite ${f}`);
     if (notOk > 0) violations.push(`${notOk} pgTAP failure(s) in ${f}`);
+    if (/^Bail out!/mi.test(tap)) violations.push(`pgTAP Bail out! in ${f}`);
+    const directives = (tap.match(/#\s*(SKIP|TODO)\b/gi) || []).length;
+    if (directives > 0) violations.push(`${directives} pgTAP SKIP/TODO directive(s) in ${f}`);
   }
 
   // (f) Evidence gate (C3): a verified EvidenceAttestation proof is REQUIRED. The
@@ -205,7 +227,13 @@ export function evaluateReports({ root, jobResults }) {
   else {
     const u = fs.readFileSync(shaU, 'utf8').trim();
     const w = fs.readFileSync(shaW, 'utf8').trim();
-    if (u !== w) violations.push(`cross-platform golden packet sha MISMATCH: ubuntu=${u} windows=${w}`);
+    // Two empty (or non-sha) files must never count as a match — a byte-identity
+    // proof requires an actual 64-hex digest on both sides.
+    if (!/^[0-9a-f]{64}$/i.test(u) || !/^[0-9a-f]{64}$/i.test(w)) {
+      violations.push(`golden packet sha is empty or malformed (ubuntu="${u}" windows="${w}")`);
+    } else if (u !== w) {
+      violations.push(`cross-platform golden packet sha MISMATCH: ubuntu=${u} windows=${w}`);
+    }
   }
 
   return violations;

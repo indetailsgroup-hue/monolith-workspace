@@ -24,6 +24,31 @@ const REQUIRED_FIELDS = [
   'id', 'category', 'root', 'path', 'disposition', 'owner', 'targetPhase', 'authority', 'negativeTestId',
 ];
 
+// Security-critical PRODUCT surfaces the ledger MUST cover. Dropping any one of
+// these from the ledger (the "omitting factory-api still passes" gap the review
+// flagged) is a coverage failure, not a silent pass. Matched as a substring of a
+// surface's declared path.
+export const REQUIRED_SURFACE_PATHS = [
+  'supabase/functions/factory-api/index.ts',
+  'server/src/api/routes/artifacts.ts',
+  'server/src/api/routes/exports.ts',
+  'server/src/api/routes/factory.ts',
+  'supabase/functions/capture-ocr-extract/index.ts',
+  'supabase/migrations/0190_repair_phase0_legacy_containment.sql',
+  'supabase/migrations/0189_repair_phase0_organization_scope.sql',
+];
+
+// A negativeTestId carries a file reference optionally followed by ": description"
+// or "#anchor". Extract the leading path so it can be resolved on disk.
+function negativeTestPath(negativeTestId) {
+  if (typeof negativeTestId !== 'string') return null;
+  const head = negativeTestId.split(/[:#]/)[0].trim();
+  // Only treat it as a path if it looks like one (has a slash and an extension,
+  // or is a known governance artifact). A pure sentence is not resolvable.
+  if (/[\\/].+\.[a-z0-9]+$/i.test(head)) return head;
+  return null;
+}
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /**
@@ -78,13 +103,30 @@ export function validateRepairPhase0Ledger(ledger, options = {}) {
       }
     }
 
-    if (surface.disposition === 'ADAPT' && surface.targetPhase && !APPROVED_PHASES.has(surface.targetPhase)) {
-      errors.push(`surface ${id}: ADAPT must target an approved phase`);
-    }
-
     // Phase 0 can only deny later-phase capabilities; it can never enable one.
+    // A surface bound to a later phase must be ADAPT or BLOCK — a RETAIN entry
+    // (a live, retained authority) may only target PHASE_0. This is the real,
+    // firing form of the "Phase 0 cannot enable a later capability" invariant
+    // (the previous enabledInPhase0 flag was self-declared and never set).
+    if (surface.targetPhase && surface.targetPhase !== 'PHASE_0'
+      && !['ADAPT', 'BLOCK'].includes(surface.disposition)) {
+      errors.push(
+        `surface ${id}: disposition ${surface.disposition} targets ${surface.targetPhase} — a later-phase ` +
+        `capability may only be ADAPT or BLOCK in Phase 0, never RETAIN/RETIRE (would enable it)`,
+      );
+    }
     if (surface.enabledInPhase0 === true && surface.targetPhase && surface.targetPhase !== 'PHASE_0') {
       errors.push(`surface ${id}: Phase 0 cannot enable a ${surface.targetPhase} capability`);
+    }
+
+    // negativeTestId must resolve to a real file when it names one — a
+    // non-empty sentence that points nowhere is not a load-bearing test.
+    const ntPath = negativeTestPath(surface.negativeTestId);
+    if (ntPath && !fileExists(ntPath)) {
+      errors.push(`surface ${id}: negativeTestId references a missing file: ${ntPath}`);
+    }
+    if (surface.disposition === 'BLOCK' && surface.root === 'PRODUCT' && !ntPath) {
+      errors.push(`surface ${id}: a PRODUCT BLOCK must name a resolvable negative-test file, got "${surface.negativeTestId}"`);
     }
 
     // Only PRODUCT paths are runtime-scanned; GOVERNANCE and SPECIFICATION
@@ -111,6 +153,13 @@ export function validateRepairPhase0Ledger(ledger, options = {}) {
   for (const category of REQUIRED_CATEGORIES) {
     if (!seenCategories.has(category)) {
       errors.push(`ledger missing category ${category}`);
+    }
+  }
+
+  const declaredPaths = ledger.surfaces.map((s) => (typeof s.path === 'string' ? s.path : ''));
+  for (const required of REQUIRED_SURFACE_PATHS) {
+    if (!declaredPaths.some((p) => p.includes(required))) {
+      errors.push(`ledger omits a required security-critical surface: ${required}`);
     }
   }
 

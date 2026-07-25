@@ -293,6 +293,32 @@
       "requiredMarker": "phase0LegacyBlocked",
       "enforcement": "Standalone dev/export server GET /api/export/download/:jobId returns 423 by default; LEGACY_BYTE_ROUTE_MODE is a source constant, never an env override.",
       "negativeTestId": "server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts: the standalone server never passes SHADOW_LEGACY"
+    },
+    {
+      "id": "export.v3-release-authority",
+      "category": "EXPORT_DOWNLOAD",
+      "root": "PRODUCT",
+      "path": "supabase/functions/factory-api/index.ts",
+      "disposition": "RETAIN",
+      "owner": "Release Governance",
+      "targetPhase": "PHASE_0",
+      "authority": "CANONICAL_SERVER",
+      "requiredMarker": "handleTrustKernelRequest",
+      "enforcement": "The /v3/factory transport is the single USER-AUTHORIZED mutable release authority (bearer + anon key, never service role); legacy packet/export/transition routes are denied before authentication and client actor/tenant/site fields are filtered.",
+      "negativeTestId": "supabase/functions/factory-api/index.test.ts: legacy-route containment"
+    },
+    {
+      "id": "storage.legacy-field-photo-revoke",
+      "category": "STORAGE",
+      "root": "PRODUCT",
+      "path": "supabase/migrations/0190_repair_phase0_legacy_containment.sql",
+      "disposition": "BLOCK",
+      "owner": "Security/IAM",
+      "targetPhase": "PHASE_0",
+      "authority": "NONE_BLOCKED",
+      "requiredMarker": "rpc_field_submit_photo",
+      "enforcement": "Migration 0190 revokes all execution on rpc_field_submit_photo and rpc_capture_ingest from public/anon/authenticated/service_role; neither a client nor the service role can substitute for a human evidence action.",
+      "negativeTestId": "supabase/tests/repair_phase0_containment.sql: authenticated cannot invoke legacy field photo submission"
     }
   ]
 }
