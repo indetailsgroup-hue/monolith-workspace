@@ -319,6 +319,19 @@
       "requiredMarker": "rpc_field_submit_photo",
       "enforcement": "Migration 0190 revokes all execution on rpc_field_submit_photo and rpc_capture_ingest from public/anon/authenticated/service_role; neither a client nor the service role can substitute for a human evidence action.",
       "negativeTestId": "supabase/tests/repair_phase0_containment.sql: authenticated cannot invoke legacy field photo submission"
+    },
+    {
+      "id": "workflow.legacy-factory-mutation",
+      "category": "WORKFLOW",
+      "root": "PRODUCT",
+      "path": "supabase/migrations/0191_repair_phase0_revoke_legacy_mutation_authority.sql",
+      "disposition": "BLOCK",
+      "owner": "Release Governance",
+      "targetPhase": "PHASE_0",
+      "authority": "NONE_BLOCKED",
+      "requiredMarker": "rpc_factory_job_transition",
+      "enforcement": "Migration 0191 revokes EXECUTE on rpc_factory_job_transition and rpc_factory_job_record_packet from service_role, removing the parallel mutable authority; the single canonical action authority is the V3 verified-action-context path. The read-only /verify integrity RPC is retained.",
+      "negativeTestId": "supabase/tests/repair_phase0_containment.sql: service role cannot invoke the legacy factory state-transition authority"
     }
   ]
 }

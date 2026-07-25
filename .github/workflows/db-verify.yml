@@ -71,11 +71,14 @@ jobs:
             echo "${suite}: all ok ($(grep -cE '^ok ' "tap/${suite}.tap") assertions)"
           done
 
-      - name: Confirm migration chain reaches 0190
+      - name: Confirm migration chain reaches 0191
         run: |
           test -f supabase/migrations/0189_repair_phase0_organization_scope.sql
           test -f supabase/migrations/0190_repair_phase0_legacy_containment.sql
+          test -f supabase/migrations/0191_repair_phase0_revoke_legacy_mutation_authority.sql
           psql "${{ steps.db.outputs.DB_URL }}" -tAc "select 1 from pg_tables where schemaname='public' and tablename='monolith_organization'" | grep -q 1
+          # The legacy state-transition authority must not be executable by service_role.
+          psql "${{ steps.db.outputs.DB_URL }}" -tAc "select has_function_privilege('service_role','public.rpc_factory_job_transition(text,text,text,text[],text[],text,text,text,text,text)','EXECUTE')" | grep -qx f
 
       - name: Assemble evidence
         if: always()
