@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH Repair Intelligence — ชุดเอกสารควบคุม Phase 0 (ฉบับภาษาไทย)</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH Repair Intelligence — ชุดเอกสารควบคุม Phase 0 (ฉบับภาษาไทย)</h1>
+<p>ฉบับคู่กัน: <code>docs/governance/repair-intelligence-phase0-control-pack.en.md</code> (ภาษาอังกฤษ, หัวข้อตรงกันทุกหมายเลข)</p>
+<h2>1. สถานะและขอบเขตของ Phase 0</h2>
+<p>บล็อกสถานะของเอกสาร (บรรทัดสถานะตามตัวอักษร — คงเป็นภาษาอังกฤษ):</p>
+<ul>
+<li><code>Phase 0 exit: PENDING_OWNER_REVIEW</code></li>
+<li><code>Expert Label Protocol: PROPOSED / NOT RUN</code></li>
+<li><code>Gate B: NOT PASSED</code></li>
+<li><code>Immutable infrastructure: NOT CLAIMED</code></li>
+<li><code>Phase 1A–3 capabilities: DISABLED</code></li>
+</ul>
+<p>ขอบเขต Phase 0 — สิ่งที่ "อยู่ในขอบเขต":</p>
+<ul>
+<li>ผนวก Trust Kernel ที่มีอยู่เดิมเข้าสู่ canonical product main</li>
+<li>โมเดลขอบเขต tenant → organization → site (migration <code>0189</code>)</li>
+<li>สัญญา capability ของ Repair แบบ deny-only ใน <code>server/src/trust-kernel/repair/phase0Policy.ts</code> ซึ่งตอบกลับด้วย reason code คงที่ <code>REPAIR_PHASE_NOT_ENABLED</code> สำหรับทุกคำขอ capability ของ Repair</li>
+<li>การกักเก็บระบบเดิมแบบ fail-closed (migration <code>0190</code>): ถอด storage policy แบบกว้างของ <code>field_media</code> ออก; เพิกถอนสิทธิ์เรียกใช้ <code>rpc_field_submit_photo</code> และ <code>rpc_capture_ingest</code>; เส้นทางดาวน์โหลด signed-URL แบบเดิม และเส้นทาง byte <code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> ตอบกลับ HTTP <code>423 (Locked)</code>; <code>capture-ocr-extract</code> ปฏิเสธ <code>raw_uri</code> ที่ส่งมาจาก client โดยค่าเริ่มต้น</li>
+</ul>
+<p>ขอบเขต Phase 0 — สิ่งที่ "อยู่นอกขอบเขต" (capability ของ Phase 1A–3 ทั้งหมดอยู่ในสถานะ DISABLED):</p>
+<p>evidence upload/quarantine/scan, OCR, live AI, human review queue, work order, procurement, payment, professional sign-off, R8–R12 execution, native mobile, BIM authoring</p>
+<p>คำขอใด ๆ ต่อ capability ที่อยู่นอกขอบเขตจะถูกปฏิเสธโดย <code>phase0Policy.ts</code> ด้วย reason code <code>REPAIR_PHASE_NOT_ENABLED</code></p>
+<h2>2. ความเป็นเจ้าของที่รับผิดชอบได้และ RACI</h2>
+<p>เจ้าของ (Owners):</p>
+<ul>
+<li><strong>Security/IAM</strong> — การบังคับใช้ระดับแพลตฟอร์ม (RLS, สิทธิ์ grant, ความหมายของ token)</li>
+<li><strong>Release Governance</strong> — การตัดสินใจผ่านเกต, การดูแลบรรทัดสถานะ, การอนุมัติปล่อยรุ่น</li>
+<li><strong>Manufacturing Engineering</strong> — ข้อกำหนดเชิงโดเมนและความถูกต้องของ workflow หน้างาน</li>
+<li><strong>Platform Engineering</strong> — migrations, routes, edge functions, ระบบ CI</li>
+<li><strong>Independent QA/Safety</strong> — ตรวจสอบ negative test และตรวจสอบหลักฐาน</li>
+<li><strong>Repair Intelligence Governance</strong> — ผู้ดูแลโดเมน Repair; เป็นเจ้าของชุดเอกสารควบคุมนี้และนิยามขอบเขต Phase 0</li>
+</ul>
+<p>RACI (R = Responsible, A = Accountable, C = Consulted, I = Informed):</p>
+<div class="tablewrap"><table><thead><tr><th>กิจกรรม</th><th>Security/IAM</th><th>Release Governance</th><th>Manufacturing Eng.</th><th>Platform Eng.</th><th>Independent QA/Safety</th><th>Repair Intelligence Governance</th></tr></thead><tbody>
+<tr><td>โมเดลขอบเขต (migration 0189)</td><td>A</td><td>I</td><td>C</td><td>R</td><td>C</td><td>C</td></tr>
+<tr><td>สัญญา capability แบบ deny-only (phase0Policy.ts)</td><td>C</td><td>I</td><td>I</td><td>R</td><td>C</td><td>A</td></tr>
+<tr><td>การกักเก็บระบบเดิม (migration 0190, เส้นทาง 423)</td><td>A</td><td>I</td><td>I</td><td>R</td><td>C</td><td>C</td></tr>
+<tr><td>ชุด negative test และหลักฐาน</td><td>C</td><td>I</td><td>I</td><td>C</td><td>R</td><td>A</td></tr>
+<tr><td>การตัดสินใจ Phase 0 exit</td><td>C</td><td>A</td><td>C</td><td>I</td><td>R</td><td>R</td></tr>
+<tr><td>ชุดเอกสารควบคุมนี้</td><td>C</td><td>C</td><td>C</td><td>I</td><td>C</td><td>R/A</td></tr>
+</tbody></table></div>
+<h2>3. การจัดชั้นข้อมูลและการจัดชั้นอำนาจ</h2>
+<p>ชั้นข้อมูล:</p>
+<div class="tablewrap"><table><thead><tr><th>ชั้น</th><th>ชื่อ</th><th>นิยาม</th><th>การจัดการใน Phase 0</th></tr></thead><tbody>
+<tr><td>P0</td><td>Public projection</td><td>ข้อมูลที่ปลอดภัยสำหรับการแสดงผลสาธารณะ/ไม่ต้องยืนยันตัวตน</td><td>อนุญาตผ่าน display-only browser role</td></tr>
+<tr><td>P1</td><td>Internal review</td><td>ข้อมูลปฏิบัติการสำหรับสมาชิกที่ยืนยันตัวตนแล้วภายในขอบเขต</td><td>ตรวจขอบเขต (tenant → organization → site)</td></tr>
+<tr><td>P2</td><td>Sealed plaintext (workload-only)</td><td>plaintext อ่อนไหวที่อ่านได้เฉพาะ workload ที่กำหนด</td><td>เฉพาะ workload; เส้นทางของมนุษย์และเบราว์เซอร์ถูกปฏิเสธ</td></tr>
+</tbody></table></div>
+<p>ชั้นอำนาจ:</p>
+<div class="tablewrap"><table><thead><tr><th>ชั้น</th><th>นิยาม</th><th>ข้อจำกัด</th></tr></thead><tbody>
+<tr><td>Verified human authority</td><td>Bearer token + membership ปัจจุบัน + action context แบบใช้ครั้งเดียว</td><td>ต้องครบทั้งสาม; membership ที่ล้าสมัยทำให้อำนาจเป็นโมฆะ</td></tr>
+<tr><td>Service-role worker</td><td>อัตลักษณ์ workload ฝั่ง backend ใช้ downstream เท่านั้น</td><td>ไม่ถือเป็นอำนาจของมนุษย์โดยเด็ดขาด; ไม่สามารถริเริ่มการกระทำของมนุษย์ได้</td></tr>
+<tr><td>Display-only browser role</td><td>บทบาทเบราว์เซอร์/นิรนามสำหรับการแสดงผล</td><td>อ่านได้เฉพาะ P0 projection; ห้ามเขียน, ห้ามอ่าน P1/P2</td></tr>
+</tbody></table></div>
+<h2>4. โมเดลภัยคุกคาม (Threat model)</h2>
+<div class="tablewrap"><table><thead><tr><th>Threat</th><th>Control</th><th>Negative test/evidence</th></tr></thead><tbody>
+<tr><td>Identity spoofing</td><td>Verified human authority ต้องมี bearer token + membership ปัจจุบัน + action context แบบใช้ครั้งเดียว</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertion กรณีเข้าถึงโดยไม่ยืนยันตัวตน/ปลอมอัตลักษณ์</td></tr>
+<tr><td>Stale membership</td><td>ตรวจ membership ณ เวลาที่ร้องขอ; membership ที่ถูกเพิกถอนทำให้อำนาจถูกปฏิเสธ</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertion การปฏิเสธ stale membership</td></tr>
+<tr><td>Cross-tenant access</td><td>ขอบเขต tenant ในโมเดล scope (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertion การปฏิเสธข้าม tenant</td></tr>
+<tr><td>Cross-organization access</td><td>ขอบเขต organization ภายใน tenant (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertion การปฏิเสธข้าม organization</td></tr>
+<tr><td>Cross-site access</td><td>ขอบเขต site ภายใน organization (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertion การปฏิเสธข้าม site</td></tr>
+<tr><td>Service-role impersonation</td><td>Service-role worker ใช้ downstream เท่านั้น ไม่ถูก map เป็นอำนาจของมนุษย์</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> กรณีปฏิเสธ service-role</td></tr>
+<tr><td>Actor-header spoofing</td><td>อัตลักษณ์ของ actor มาจาก token ที่ตรวจสอบแล้วเท่านั้น ไม่มาจาก header ที่ client ส่ง</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> กรณีปฏิเสธการปลอม header</td></tr>
+<tr><td>Raw locator/SSRF via client raw_uri</td><td><code>capture-ocr-extract</code> ปฏิเสธ <code>raw_uri</code> ที่ client ส่งมาโดยค่าเริ่มต้น</td><td><code>supabase/functions/capture-ocr-extract/index.test.ts</code> กรณีปฏิเสธ raw_uri</td></tr>
+<tr><td>Unsigned hash byte access</td><td>เส้นทาง byte <code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> ตอบกลับ 423</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code> assertion 423</td></tr>
+<tr><td>Signed-token replay</td><td>เส้นทางดาวน์โหลด signed-URL แบบเดิมตอบกลับ 423; action context แบบใช้ครั้งเดียวจำกัดหน้าต่าง replay</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code> assertion 423 ของ signed-URL</td></tr>
+<tr><td>Broad bucket policy</td><td>Migration 0190 ถอด storage policy แบบกว้างของ <code>field_media</code> ออก</td><td><code>supabase/tests/repair_phase0_containment.sql</code> assertion การปฏิเสธของ storage policy</td></tr>
+<tr><td>Duplicate authority</td><td>Action context แบบใช้ครั้งเดียว; การใช้ action context ซ้ำถูกปฏิเสธ</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> กรณีปฏิเสธ context ซ้ำ</td></tr>
+<tr><td>R8–R12 bypass</td><td>R8–R12 execution อยู่ในชุด DISABLED; <code>phase0Policy.ts</code> ปฏิเสธด้วย <code>REPAIR_PHASE_NOT_ENABLED</code></td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> กรณีปฏิเสธตาม capability matrix</td></tr>
+<tr><td>Evidence tampering</td><td>การตรวจสอบ ledger ของหลักฐาน Phase 0 และบัญชีรายการ route</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code> ล้มเหลวเมื่อไม่ตรงกัน</td></tr>
+<tr><td>CI-report omission</td><td>ตัวตรวจ ledger บังคับให้รายงานและรายการ route ที่จำเป็นต้องครบถ้วน มิฉะนั้น CI ล้มเหลวแบบ fail-closed</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code> และ <code>scripts/trust-kernel/verify-route-ledger.mjs</code> ตรวจความครบถ้วนแบบ fail-closed</td></tr>
+<tr><td>Break-glass misuse</td><td>เส้นทาง break-glass: BLOCKED ใน Phase 0; การเปลี่ยนแปลงฉุกเฉินใด ๆ ต้องผ่านการทบทวนโดยเจ้าของที่ระบุชื่อและถูกบันทึก</td><td>ต้องมีบันทึกการทบทวนการเปลี่ยนแปลง; <code>supabase/tests/repair_phase0_containment.sql</code> ยืนยันว่าสิทธิ์ที่ถูกเพิกถอนยังคงถูกเพิกถอน</td></tr>
+</tbody></table></div>
+<h2>5. ตารางจับคู่ control กับ negative test</h2>
+<div class="tablewrap"><table><thead><tr><th>Phase 0 control</th><th>Negative test / verifier</th><th>ความครอบคลุม</th></tr></thead><tbody>
+<tr><td>ขอบเขต tenant → organization → site (migration 0189)</td><td><code>supabase/tests/repair_phase0_organization.sql</code></td><td>14 assertions: ข้าม tenant, ข้าม organization, ข้าม site, stale membership, ปลอมอัตลักษณ์</td></tr>
+<tr><td>การกักเก็บระบบเดิม (migration 0190)</td><td><code>supabase/tests/repair_phase0_containment.sql</code></td><td>5 assertions: ถอด storage policy, เพิกถอน <code>rpc_field_submit_photo</code>, เพิกถอน <code>rpc_capture_ingest</code></td></tr>
+<tr><td>สัญญา capability แบบ deny-only</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code></td><td>ทุก capability ของ Phase 1A–3 ถูกปฏิเสธด้วย <code>REPAIR_PHASE_NOT_ENABLED</code>; กรณี service-role, ปลอม header, context ซ้ำ</td></tr>
+<tr><td>การกักเก็บ route เดิม (423)</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code></td><td>ดาวน์โหลด signed-URL และ <code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> ตอบกลับ 423</td></tr>
+<tr><td>การปฏิเสธ raw_uri</td><td><code>supabase/functions/capture-ocr-extract/index.test.ts</code></td><td><code>raw_uri</code> ที่ client ส่งมาถูกปฏิเสธโดยค่าเริ่มต้น</td></tr>
+<tr><td>Ledger หลักฐาน Phase 0</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code></td><td>ตรวจความครบถ้วนของ ledger และ hash แบบ fail-closed ทุกกรณีที่ตรวจไม่ผ่าน</td></tr>
+<tr><td>Route ledger</td><td><code>scripts/trust-kernel/verify-route-ledger.mjs</code></td><td>บัญชีรายการ route ตรงกับสถานะการกักเก็บที่ประกาศไว้; ล้มเหลวเมื่อมี drift</td></tr>
+</tbody></table></div>
+<h2>6. ความเป็นส่วนตัว การเก็บรักษา การลบ legal hold และการปกปิดข้อมูลใน log</h2>
+<ul>
+<li>การจัดเก็บหลักฐานลูกค้าของ Repair ใน Phase 0: BLOCKED การนำเข้าถูกปฏิเสธโดย control การกักเก็บในหัวข้อ 1 (migration 0190, เส้นทาง 423, การปฏิเสธ <code>raw_uri</code>, RPC ที่ถูกเพิกถอน) ดังนั้นภาระการเก็บรักษา ส่งออก และลบข้อมูลโดเมน Repair ใน Phase 0 จึงลดเหลือเพียงการตรวจสอบว่าการกักเก็บยังคงทำงาน</li>
+<li>ห้ามบันทึก raw locator (<code>raw_uri</code>, signed URL, storage path) หรือ PII ลงใน log; การตอบกลับแบบปฏิเสธจะบันทึกเฉพาะ reason code (<code>REPAIR_PHASE_NOT_ENABLED</code>) และตัวระบุขอบเขตเท่านั้น</li>
+<li>การเก็บรักษา: หลักฐาน Phase 0 (รายงานทดสอบ, ledger ภายใต้ <code>reports/phase0</code>) เก็บรักษาตามนโยบายของ Release Governance</li>
+<li>ความรับผิดชอบการลบ: Platform Engineering ดำเนินการลบเชิงกลไก; Security/IAM ตรวจสอบขอบเขต; Release Governance อนุมัติ</li>
+<li>Legal hold: Release Governance เป็นผู้ประกาศ hold; Independent QA/Safety ตรวจสอบว่ามีการปฏิบัติตาม; Repair Intelligence Governance ได้รับแจ้ง</li>
+<li>การปกปิดข้อมูลใน log: Platform Engineering เป็นเจ้าของ redaction filter; Independent QA/Safety สุ่มตรวจตัวอย่างเพื่อหา raw locator และ PII</li>
+</ul>
+<h2>7. ขอบเขตการวัด SLO และ error budget ของ Phase 0</h2>
+<p>Phase 0 กำหนดไว้เพื่อ "การวัดผลเท่านั้น" ไม่มีการอ้างความพร้อมสำหรับ production และ Phase 0 is NOT production and NOT GA</p>
+<p>สัญญาณที่วัด:</p>
+<div class="tablewrap"><table><thead><tr><th>สัญญาณ</th><th>นิยาม</th><th>ขอบเขต</th></tr></thead><tbody>
+<tr><td>Deny-response availability</td><td>สัดส่วนคำขอ capability ของ Repair ที่ได้รับการปฏิเสธอย่างถูกต้อง (<code>REPAIR_PHASE_NOT_ENABLED</code> หรือ 423)</td><td>เป็นการวัดผลภายในเท่านั้น; ข้อผูกพัน SLO ต่อลูกค้า: NOT CLAIMED</td></tr>
+<tr><td>CI green rate</td><td>สัดส่วนการรัน CI ที่ verifier ทั้งหมดในหัวข้อ 5 ผ่าน</td><td>วัดผลเท่านั้น; ใช้ประกอบการทบทวน Phase 0 exit</td></tr>
+</tbody></table></div>
+<p>Error budget ใน Phase 0 มีไว้เพื่อสอบเทียบ SLO ในอนาคต; การละเมิดขอบเขตการวัดจะกระตุ้นการทบทวน ไม่ใช่การดำเนินการปล่อยรุ่น</p>
+<h2>8. ระดับความรุนแรงของเหตุการณ์ การยกระดับ kill switch และการรักษาหลักฐาน</h2>
+<p>เกณฑ์ความรุนแรง:</p>
+<div class="tablewrap"><table><thead><tr><th>ระดับ</th><th>นิยาม</th><th>ตัวอย่าง</th><th>การยกระดับ</th></tr></thead><tbody>
+<tr><td>SEV1</td><td>การกักเก็บถูกเจาะ: capability ที่ถูกปิดถูกเรียกใช้สำเร็จ หรือ byte ของหลักฐานถูกส่งออก</td><td>ได้ 200 จาก route ที่ควรตอบ 423; RPC ทำงานหลังถูกเพิกถอน</td><td>ทันที: Security/IAM + Release Governance + Repair Intelligence Governance</td></tr>
+<tr><td>SEV2</td><td>Control เสื่อมประสิทธิภาพโดยยังไม่ยืนยันว่าถูกเจาะ</td><td>Ledger verifier ล้มเหลวบน main; ตรวจพบ RLS policy drift</td><td>ภายในวันทำการเดียวกัน: ทีมเจ้าของ + Independent QA/Safety</td></tr>
+<tr><td>SEV3</td><td>ข้อบกพร่องของการวัดหรือเครื่องมือ</td><td>CI flake ใน negative test; ข้อผิดพลาดการสร้างรายงาน</td><td>คัดแยกตามปกติ: Platform Engineering</td></tr>
+</tbody></table></div>
+<ul>
+<li>การยกระดับ: ทุกเหตุการณ์จะถูกยกระดับไปยังเจ้าของที่ระบุในหัวข้อ 2 ของ control ที่ได้รับผลกระทบ; SEV1 ต้องแจ้ง Release Governance เพิ่มเติมเพราะกระทบบรรทัดสถานะ</li>
+<li>Kill switch: kill switch ของ Phase 0 คือ deny-by-default ซึ่งบังคับใช้อยู่แล้ว — <code>phase0Policy.ts</code> ปฏิเสธ capability ของ Repair ทั้งหมด และการกักเก็บตอบกลับ 423 เส้นทางการเปิดใช้ capability เองก็ถูกปฏิเสธโดย <code>phase0Policy.ts</code> ใน Phase 0; การตอบสนองเหตุการณ์จึงมุ่งที่การตรวจสอบพฤติกรรม deny ไม่ใช่การปิด feature</li>
+<li>การรักษาหลักฐาน: รักษาหลักฐาน <code>reports/phase0</code>, ผลลัพธ์ ledger และ log ที่เกี่ยวข้องก่อนการแก้ไข; Independent QA/Safety เป็นผู้ถือครอง snapshot ของหลักฐาน</li>
+</ul>
+<h2>9. ความรับผิดชอบด้าน backup/restore และ disaster recovery</h2>
+<div class="tablewrap"><table><thead><tr><th>ความรับผิดชอบ</th><th>เจ้าของ</th><th>หมายเหตุ</th></tr></thead><tbody>
+<tr><td>การสำรองฐานข้อมูลและซ้อม restore</td><td>Platform Engineering</td><td>รวมสถานะ migrations 0189/0190; การ restore ต้องกลับสู่ posture กักเก็บ (deny)</td></tr>
+<tr><td>การตรวจสอบการกักเก็บหลัง restore</td><td>Independent QA/Safety</td><td>รัน <code>supabase/tests/repair_phase0_containment.sql</code> และ <code>repair_phase0_organization.sql</code> ซ้ำหลังทุกการ restore</td></tr>
+<tr><td>การสำรอง ledger และหลักฐาน (<code>reports/phase0</code>)</td><td>Release Governance</td><td>ตรวจสอบความสมบูรณ์ของ ledger ซ้ำด้วย <code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code></td></tr>
+<tr><td>การดูแล DR runbook</td><td>Platform Engineering, ทบทวนโดย Security/IAM</td><td>Fail-closed: หากสถานะ restore ไม่แน่ชัด route ยังคงตอบ 423 และสิทธิ์ RPC ยังคงถูกเพิกถอน</td></tr>
+<tr><td>อำนาจตัดสินใจ DR</td><td>Release Governance</td><td>ปรึกษา Repair Intelligence Governance สำหรับผลกระทบต่อโดเมน Repair</td></tr>
+</tbody></table></div>
+<p>การ restore ที่ไม่สามารถแสดง posture การปฏิเสธได้ ให้ถือเป็น SEV1 ตามหัวข้อ 8 จนกว่าการตรวจสอบจะผ่าน</p>
+<h2>10. เกตการปล่อยรุ่นและข้อไม่อ้างสิทธิ์อย่างชัดแจ้ง</h2>
+<p>บรรทัดสถานะ (เหมือนหัวข้อ 1 ทุกประการ):</p>
+<ul>
+<li><code>Phase 0 exit: PENDING_OWNER_REVIEW</code></li>
+<li><code>Expert Label Protocol: PROPOSED / NOT RUN</code></li>
+<li><code>Gate B: NOT PASSED</code></li>
+<li><code>Immutable infrastructure: NOT CLAIMED</code></li>
+<li><code>Phase 1A–3 capabilities: DISABLED</code></li>
+</ul>
+<p>กติกาของเกต:</p>
+<ul>
+<li>Phase 0 exit ต้องผ่านการทบทวนโดยเจ้าของที่ระบุชื่อจาก Release Governance พร้อมการลงนามของ Independent QA/Safety และ Repair Intelligence Governance ห้ามขั้นตอนอัตโนมัติใด ๆ — CI job, script, การ merge, ledger verifier หรือ scheduled task — เปลี่ยน <code>PENDING_OWNER_REVIEW</code> เป็น approved ระบบอัตโนมัติมีหน้าที่รายงานเท่านั้น มนุษย์เป็นผู้ตัดสิน</li>
+<li>Gate B ยังคงสถานะ <code>NOT PASSED</code> จนกว่าการทบทวนของ Gate B เองจะเสร็จสิ้น; เอกสารนี้ไม่อ้างสิ่งใดเกี่ยวกับ Gate B นอกเหนือจากบรรทัดสถานะดังกล่าว</li>
+<li>ข้อไม่อ้างสิทธิ์อย่างชัดแจ้ง: ชุดเอกสารนี้ไม่อ้างความพร้อม production, ไม่อ้าง GA, ไม่อ้าง immutable infrastructure, ไม่อ้างว่า Expert Label Protocol ได้ถูกรันแล้ว และไม่อ้างว่า capability ใดของ Phase 1A–3 ถูกเปิดใช้งาน</li>
+</ul>
+</main></body>
+</html>

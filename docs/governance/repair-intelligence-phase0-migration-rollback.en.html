@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH Repair Intelligence — Phase 0 Migration and Rollback Pack</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH Repair Intelligence — Phase 0 Migration and Rollback Pack</h1>
+<p>Document ID: repair-intelligence-phase0-migration-rollback Edition: English (aligned Thai edition: <code>docs/governance/repair-intelligence-phase0-migration-rollback.th.md</code>) Date: 2026-07-25 Execution branch: <code>codex/repair-intelligence-phase0-trust</code></p>
+<hr>
+<h2>1. Status</h2>
+<p>Phase 0 exit: PENDING_OWNER_REVIEW Expert Label Protocol: PROPOSED / NOT RUN Gate B: NOT PASSED Immutable infrastructure: NOT CLAIMED Phase 1A–3 capabilities: DISABLED</p>
+<p>All statuses above are literal governance states. No status in this document may be read as a completion claim; each transitions only by explicit owner decision recorded in a successor governance document.</p>
+<h2>2. Source and Target Commits — 24-Commit Transplant</h2>
+<p>The execution branch <code>codex/repair-intelligence-phase0-trust</code> starts from canonical product <code>main</code> at commit <code>dd1119af6d0bcba0e38d38516ed1b11125bcf19f</code>. The Trust Kernel series is transplanted onto that base by <code>git cherry-pick</code> (24 commits). There is no generated <code>dist</code> commit in the transplant; commit <code>59f61e57</code> (generated dist) and the unrelated 409 fix <code>f87c089f</code> are excluded by design.</p>
+<div class="tablewrap"><table><thead><tr><th>Role</th><th>Commit / Range</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Product baseline (target base)</td><td><code>dd1119af6d0bcba0e38d38516ed1b11125bcf19f</code></td><td>Canonical product <code>main</code>; branch point for <code>codex/repair-intelligence-phase0-trust</code></td></tr>
+<tr><td>Trust Kernel series — first commit</td><td><code>43301f96042bc48242de59fc02f42c725a0b6a73</code></td><td>Start of the 24-commit cherry-pick series</td></tr>
+<tr><td>Trust Kernel series — last commit</td><td><code>8dfe0cc02e6cbbe8f4cefb3893d80a758fc8d49b</code></td><td>End of the 24-commit cherry-pick series</td></tr>
+<tr><td>Excluded: generated dist commit</td><td><code>59f61e57</code></td><td>Not transplanted; dist output is regenerated in CI, never cherry-picked</td></tr>
+<tr><td>Excluded: unrelated 409 fix</td><td><code>f87c089f</code></td><td>Out of Phase 0 scope; tracked separately</td></tr>
+<tr><td>Governance root pin</td><td><code>55557d7f178dcbe00fec15cffb3061df668eaff8</code></td><td>Governance repository baseline for this pack</td></tr>
+</tbody></table></div>
+<p>Transplant method: <code>git cherry-pick 43301f96^..8dfe0cc0</code> on the execution branch, minus the two exclusions above. Any cherry-pick conflict stops the transplant; conflicts are resolved by revising the series plan, never by ad-hoc merge resolution on the execution branch.</p>
+<h2>3. Preflight Status Checks (Both Git Roots)</h2>
+<p>Before any migration step, both Git roots MUST be verified clean and pinned. Any drift = stop and revise the baseline; do not proceed on a drifted root.</p>
+<div class="tablewrap"><table><thead><tr><th>Root</th><th>Check</th><th>Expected result</th></tr></thead><tbody>
+<tr><td>Governance root</td><td><code>git status --short</code></td><td>Empty output (no uncommitted changes)</td></tr>
+<tr><td>Governance root</td><td><code>git rev-parse HEAD</code></td><td><code>55557d7f178dcbe00fec15cffb3061df668eaff8</code></td></tr>
+<tr><td>Product root</td><td><code>git status --short</code></td><td>Empty output (no uncommitted changes)</td></tr>
+<tr><td>Product root (<code>main</code>)</td><td><code>git rev-parse main</code></td><td><code>dd1119af6d0bcba0e38d38516ed1b11125bcf19f</code></td></tr>
+<tr><td>Product root (execution branch)</td><td><code>git merge-base main codex/repair-intelligence-phase0-trust</code></td><td><code>dd1119af6d0bcba0e38d38516ed1b11125bcf19f</code></td></tr>
+</tbody></table></div>
+<p>Drift handling: if any check returns an unexpected value, the operator stops, records the observed value in the run log under <code>reports/phase0/</code>, and the baseline is revised by owner decision before any retry. Preflight re-verification: NOT RUN until execution day.</p>
+<h2>4. Organization Backfill Strategy and Verification</h2>
+<p>Migration <code>0189_repair_phase0_organization_scope.sql</code> introduces <code>organization</code> as the parent of <code>site</code> and backfills scope in this order:</p>
+<ol>
+<li>Create a default organization per tenant (default-org backfill), so every existing tenant has exactly one organization before any site is re-parented.</li>
+<li>Re-parent every <code>site</code> to its tenant's default organization (<code>site.organization_id</code>).</li>
+<li>Backfill <code>membership_organization</code> grants from existing <code>membership_site</code> rows, so no member loses access at cutover.</li>
+<li>Backfill <code>verified_action_context.organization_id</code> from the row's site, then set the column <code>NOT NULL</code>.</li>
+<li>Install trigger <code>fn_bind_verified_action_context_organization</code>, which enforces that every new verified action context is bound to an organization the actor holds both org and site grants for.</li>
+<li>Replace tenant-only SELECT policies with site-grant RLS policies.</li>
+</ol>
+<p>Row-count and hash verification (all three counts MUST be 0 before the migration is declared applied):</p>
+<div class="tablewrap"><table><thead><tr><th>Check</th><th>SQL (count comparison)</th><th>Required result</th></tr></thead><tbody>
+<tr><td>Sites without organization</td><td><code>SELECT count(*) FROM site WHERE organization_id IS NULL;</code></td><td>0</td></tr>
+<tr><td>Site grants without matching org grant</td><td><code>SELECT count(*) FROM membership_site ms WHERE NOT EXISTS (SELECT 1 FROM membership_organization mo JOIN site s ON s.organization_id = mo.organization_id WHERE s.id = ms.site_id AND mo.member_id = ms.member_id);</code></td><td>0</td></tr>
+<tr><td>Verified action contexts without organization</td><td><code>SELECT count(*) FROM verified_action_context WHERE organization_id IS NULL;</code></td><td>0</td></tr>
+</tbody></table></div>
+<p>Hash verification: before and after backfill, a deterministic digest of the pre-existing scope data (ordered <code>md5</code> aggregate over <code>membership_site</code> and <code>verified_action_context</code> business columns, excluding the new <code>organization_id</code>) MUST be equal, proving the backfill added scope without mutating existing rows. Digest capture: NOT RUN until execution day; the captured values are filed under <code>reports/phase0/</code>.</p>
+<h2>5. Rollout Order</h2>
+<p><code>ledger → trust transplant → organization → deny policy → legacy containment → CI</code></p>
+<ol>
+<li><strong>Ledger</strong> — the progress ledger and run log under <code>reports/phase0/</code> are created first, so every subsequent step writes evidence to a location that already exists and is under version control.</li>
+<li><strong>Trust transplant</strong> — the 24-commit Trust Kernel series is cherry-picked onto the execution branch per Section 2, and the preflight checks of Section 3 are re-run after the transplant.</li>
+<li><strong>Organization</strong> — migration <code>0189_repair_phase0_organization_scope.sql</code> is applied and verified per Section 4 before any policy work begins.</li>
+<li><strong>Deny policy</strong> — deny-by-default policy flags for Phase 1A–3 capabilities are asserted (capabilities remain DISABLED), so containment lands on a surface that is already denied.</li>
+<li><strong>Legacy containment</strong> — migration <code>0190_repair_phase0_legacy_containment.sql</code> drops the broad <code>field_media_insert</code> / <code>field_media_select</code> storage policies and revokes <code>rpc_field_submit_photo</code> and <code>rpc_capture_ingest</code> from <code>public</code>, <code>anon</code>, <code>authenticated</code>, and <code>service_role</code>.</li>
+<li><strong>CI</strong> — the CI evidence jobs run last and archive their outputs under <code>reports/phase0/</code>, closing the loop on every prior step.</li>
+</ol>
+<h2>6. Compatibility Window and Read-Only Behavior</h2>
+<p>During the rollout window, the affected repair-intelligence surfaces operate in a declared compatibility window:</p>
+<ul>
+<li>Read paths continue to work throughout the window under the pre-existing grants until step 5 (legacy containment) lands; after step 5, reads flow only through site-grant RLS policies installed in step 3.</li>
+<li>Write paths on legacy routes (<code>rpc_field_submit_photo</code>, <code>rpc_capture_ingest</code>) are treated as read-only-equivalent from the start of the window: operators are instructed not to rely on them, and any writes they accept before revocation are captured by the ledger for reconciliation.</li>
+<li>No schema element is dropped during the window; <code>0189</code> is additive plus constraint-tightening, and <code>0190</code> removes only grants and policies, not data.</li>
+<li>The compatibility window closes when the Section 4 counts read 0 and the CI step has archived its evidence. Window closure: PENDING_OWNER_REVIEW.</li>
+</ul>
+<h2>7. Rollback Triggers</h2>
+<p>A rollback is initiated when any of the following is observed:</p>
+<ol>
+<li>Failed pgTAP suite — any pgTAP failure in the Phase 0 policy/trigger suites after a rollout step.</li>
+<li>Cross-org read reproduced — any demonstration that a member of one organization can read another organization's rows through the new policies.</li>
+<li>Denial bypass discovered — any path that reaches <code>rpc_field_submit_photo</code>, <code>rpc_capture_ingest</code>, or the dropped storage policies' object surface after step 5.</li>
+<li>CI evidence incomplete — the CI step cannot produce or archive its required evidence under <code>reports/phase0/</code>.</li>
+<li>Owner order — the owner directs a rollback for any reason; no justification threshold applies.</li>
+</ol>
+<h2>8. Rollback Order and Non-Regression Constraint</h2>
+<p>Rollback proceeds strictly in this order:</p>
+<ol>
+<li><strong>Application routes first</strong> — application-level routes onto the new surfaces are disabled, returning traffic to a known-safe idle state.</li>
+<li><strong>Policy flags</strong> — the deny-policy flags from rollout step 4 are restored to their pre-rollout configuration.</li>
+<li><strong>Database grants/policies</strong> — grants and policies changed by <code>0190_repair_phase0_legacy_containment.sql</code> are reviewed for rollback under the constraint below.</li>
+<li><strong>Organization migration</strong> — <code>0189_repair_phase0_organization_scope.sql</code> structures are rolled back last, and only if steps 1–3 completed and the constraint below permits.</li>
+</ol>
+<p><strong>Binding constraint:</strong> NO rollback step may re-enable an unsafe raw URI, a broad bucket read, an unsigned artifact byte route, or client actor authority. A rollback that would do so is forbidden; the correct move is a forward-fix on the execution branch instead. In particular, re-creating the broad <code>field_media_insert</code> / <code>field_media_select</code> policies or re-granting <code>rpc_field_submit_photo</code> / <code>rpc_capture_ingest</code> to <code>public</code>, <code>anon</code>, <code>authenticated</code>, or <code>service_role</code> is forbidden in every rollback path.</p>
+<p>Rollback threat/risk table:</p>
+<div class="tablewrap"><table><thead><tr><th>Rollback threat</th><th>Guard</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Rollback re-enables broad bucket read (<code>field_media_select</code>)</td><td>Binding constraint above; rollback scripts contain no <code>CREATE POLICY</code> for the dropped broad policies</td><td>Rollback script review record under <code>reports/phase0/</code></td></tr>
+<tr><td>Rollback re-grants legacy RPCs to <code>public</code>/<code>anon</code>/<code>authenticated</code>/<code>service_role</code></td><td>Binding constraint above; grants may only be restored to named service principals via forward-fix</td><td><code>\dp</code> / grant snapshot before and after, filed under <code>reports/phase0/</code></td></tr>
+<tr><td>Rollback of <code>0189</code> orphans <code>verified_action_context.organization_id</code> data</td><td><code>0189</code> rollback runs last and only after steps 1–3; data columns are preserved, only constraints/trigger are relaxed</td><td>pgTAP rollback suite output under <code>reports/phase0/</code></td></tr>
+<tr><td>Partial rollback leaves policy flags and DB grants inconsistent</td><td>Strict rollback order (routes → flags → grants → migration) with a ledger entry per step</td><td>Rollback ledger under <code>reports/phase0/</code></td></tr>
+<tr><td>Rollback executed under time pressure skips verification</td><td>Owner order required to initiate; Section 4 counts re-run after every rollback step</td><td>Signed rollback run log under <code>reports/phase0/</code></td></tr>
+</tbody></table></div>
+<h2>9. Backup and Restore Evidence</h2>
+<ul>
+<li><strong>What is backed up:</strong> full logical dump of the affected schemas (scope tables <code>organization</code>, <code>site</code>, <code>membership_site</code>, <code>membership_organization</code>, <code>verified_action_context</code>; storage policy catalog; RPC grant catalog) taken immediately before rollout step 3 and again before step 5.</li>
+<li><strong>Where restore is rehearsed:</strong> restores are rehearsed on a disposable staging database provisioned from the pre-step-3 dump; the rehearsal replays Section 4 verification counts against the restored copy.</li>
+<li><strong>Evidence file references (under <code>reports/phase0/</code>):</strong></li>
+<li><code>reports/phase0/backup-pre-0189-manifest.txt</code> — dump manifest and checksums: NOT RUN</li>
+<li><code>reports/phase0/backup-pre-0190-manifest.txt</code> — dump manifest and checksums: NOT RUN</li>
+<li><code>reports/phase0/restore-rehearsal-log.txt</code> — staging restore rehearsal log: NOT RUN</li>
+<li><code>reports/phase0/verification-counts.txt</code> — Section 4 count outputs: NOT RUN</li>
+</ul>
+<p>Each evidence file status above transitions from NOT RUN only when the artifact is produced and filed; statuses are updated in a successor revision of this pack.</p>
+<h2>10. Forward-Fix Versus Rollback Decision Authority</h2>
+<ul>
+<li>The <strong>owner decides</strong> whether a trigger from Section 7 is answered with a forward-fix or a rollback. No other role holds this decision.</li>
+<li><strong>Security/IAM recommends:</strong> the Security/IAM reviewer prepares a written recommendation (forward-fix or rollback, with the Section 8 constraint check attached) for the owner.</li>
+<li><strong>No automated rollback:</strong> no CI job, script, trigger, or agent may initiate rollback automatically. Automation may only halt forward progress and page the owner.</li>
+<li>Where the Section 8 binding constraint forbids a rollback path, the decision space collapses to forward-fix, and the owner's decision is limited to scheduling and scope of that forward-fix.</li>
+</ul>
+<h2>11. Recovery Test and Owner Approval</h2>
+<p>Recovery test: NOT RUN Recovery test evidence file: <code>reports/phase0/recovery-test-log.txt</code> — status: NOT RUN Owner approval: PENDING_OWNER_REVIEW Owner approval record: <code>reports/phase0/owner-approval-record.md</code> — status: PENDING_OWNER_REVIEW Security/IAM recommendation: PENDING (recommendation memo to be filed under <code>reports/phase0/</code> before owner review)</p>
+<p>No field in this section may be left blank; each field carries an explicit status and transitions only by recorded owner or reviewer action.</p>
+<hr>
+<p>End of English edition. Thai aligned edition: <code>docs/governance/repair-intelligence-phase0-migration-rollback.th.md</code>.</p>
+</main></body>
+</html>

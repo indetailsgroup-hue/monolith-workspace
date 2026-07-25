@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH Repair Intelligence — Phase 0 Control Pack (English)</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH Repair Intelligence — Phase 0 Control Pack (English)</h1>
+<p>Companion edition: <code>docs/governance/repair-intelligence-phase0-control-pack.th.md</code> (Thai, section-aligned).</p>
+<h2>1. Status and Phase 0 boundary</h2>
+<p>Document status block (authoritative literal lines):</p>
+<ul>
+<li><code>Phase 0 exit: PENDING_OWNER_REVIEW</code></li>
+<li><code>Expert Label Protocol: PROPOSED / NOT RUN</code></li>
+<li><code>Gate B: NOT PASSED</code></li>
+<li><code>Immutable infrastructure: NOT CLAIMED</code></li>
+<li><code>Phase 1A–3 capabilities: DISABLED</code></li>
+</ul>
+<p>Phase 0 scope — what is IN:</p>
+<ul>
+<li>Integration of the existing Trust Kernel into canonical product main.</li>
+<li>Tenant → organization → site scope model (migration <code>0189</code>).</li>
+<li>A deny-only Repair capability contract in <code>server/src/trust-kernel/repair/phase0Policy.ts</code>, returning the stable reason code <code>REPAIR_PHASE_NOT_ENABLED</code> for every Repair capability request.</li>
+<li>Fail-closed legacy containment (migration <code>0190</code>): broad <code>field_media</code> storage policies are removed; <code>rpc_field_submit_photo</code> and <code>rpc_capture_ingest</code> execution grants are revoked; legacy signed-URL download and <code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> byte routes return HTTP <code>423 (Locked)</code>; <code>capture-ocr-extract</code> rejects client-supplied <code>raw_uri</code> by default.</li>
+</ul>
+<p>Phase 0 scope — what is OUT (all Phase 1A–3 capabilities are DISABLED):</p>
+<p>evidence upload/quarantine/scan, OCR, live AI, human review queue, work order, procurement, payment, professional sign-off, R8–R12 execution, native mobile, BIM authoring.</p>
+<p>Any request for an OUT capability is denied by <code>phase0Policy.ts</code> with reason code <code>REPAIR_PHASE_NOT_ENABLED</code>.</p>
+<h2>2. Accountable ownership and RACI</h2>
+<p>Owners:</p>
+<ul>
+<li><strong>Security/IAM</strong> — platform enforcement (RLS, grants, token semantics).</li>
+<li><strong>Release Governance</strong> — gate decisions, status-line custody, release approval.</li>
+<li><strong>Manufacturing Engineering</strong> — domain requirements and field-workflow correctness.</li>
+<li><strong>Platform Engineering</strong> — migrations, routes, edge functions, CI plumbing.</li>
+<li><strong>Independent QA/Safety</strong> — negative-test verification, evidence audit.</li>
+<li><strong>Repair Intelligence Governance</strong> — Repair domain steward; owns this control pack and the Phase 0 boundary definition.</li>
+</ul>
+<p>RACI (R = Responsible, A = Accountable, C = Consulted, I = Informed):</p>
+<div class="tablewrap"><table><thead><tr><th>Activity</th><th>Security/IAM</th><th>Release Governance</th><th>Manufacturing Eng.</th><th>Platform Eng.</th><th>Independent QA/Safety</th><th>Repair Intelligence Governance</th></tr></thead><tbody>
+<tr><td>Scope model (migration 0189)</td><td>A</td><td>I</td><td>C</td><td>R</td><td>C</td><td>C</td></tr>
+<tr><td>Deny-only capability contract (phase0Policy.ts)</td><td>C</td><td>I</td><td>I</td><td>R</td><td>C</td><td>A</td></tr>
+<tr><td>Legacy containment (migration 0190, 423 routes)</td><td>A</td><td>I</td><td>I</td><td>R</td><td>C</td><td>C</td></tr>
+<tr><td>Negative-test suite and evidence</td><td>C</td><td>I</td><td>I</td><td>C</td><td>R</td><td>A</td></tr>
+<tr><td>Phase 0 exit decision</td><td>C</td><td>A</td><td>C</td><td>I</td><td>R</td><td>R</td></tr>
+<tr><td>This control pack</td><td>C</td><td>C</td><td>C</td><td>I</td><td>C</td><td>R/A</td></tr>
+</tbody></table></div>
+<h2>3. Data classification and authority classification</h2>
+<p>Data classes:</p>
+<div class="tablewrap"><table><thead><tr><th>Class</th><th>Name</th><th>Definition</th><th>Phase 0 handling</th></tr></thead><tbody>
+<tr><td>P0</td><td>Public projection</td><td>Data safe for public/unauthenticated display</td><td>Allowed via display-only browser role</td></tr>
+<tr><td>P1</td><td>Internal review</td><td>Operational data for authenticated members within scope</td><td>Scope-checked (tenant → organization → site)</td></tr>
+<tr><td>P2</td><td>Sealed plaintext (workload-only)</td><td>Sensitive plaintext readable only by designated workloads</td><td>Workload-only; human and browser paths are denied</td></tr>
+</tbody></table></div>
+<p>Authority classes:</p>
+<div class="tablewrap"><table><thead><tr><th>Class</th><th>Definition</th><th>Constraints</th></tr></thead><tbody>
+<tr><td>Verified human authority</td><td>Bearer token + current membership + one-time action context</td><td>All three required; stale membership invalidates authority</td></tr>
+<tr><td>Service-role worker</td><td>Backend workload identity, downstream only</td><td>Never treated as human authority; cannot originate human actions</td></tr>
+<tr><td>Display-only browser role</td><td>Anonymous/browser projection role</td><td>Read P0 projections only; no write, no P1/P2 read</td></tr>
+</tbody></table></div>
+<h2>4. Threat model</h2>
+<div class="tablewrap"><table><thead><tr><th>Threat</th><th>Control</th><th>Negative test/evidence</th></tr></thead><tbody>
+<tr><td>Identity spoofing</td><td>Verified human authority requires bearer token + current membership + one-time action context</td><td><code>supabase/tests/repair_phase0_organization.sql</code> assertions on unauthenticated/forged-identity access</td></tr>
+<tr><td>Stale membership</td><td>Membership is checked at request time; revoked membership denies authority</td><td><code>supabase/tests/repair_phase0_organization.sql</code> stale-membership denial assertion</td></tr>
+<tr><td>Cross-tenant access</td><td>Tenant boundary in scope model (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> cross-tenant denial assertions</td></tr>
+<tr><td>Cross-organization access</td><td>Organization boundary within tenant (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> cross-organization denial assertions</td></tr>
+<tr><td>Cross-site access</td><td>Site boundary within organization (migration 0189) + RLS</td><td><code>supabase/tests/repair_phase0_organization.sql</code> cross-site denial assertions</td></tr>
+<tr><td>Service-role impersonation</td><td>Service-role worker is downstream only, never mapped to human authority</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> service-role denial cases</td></tr>
+<tr><td>Actor-header spoofing</td><td>Actor identity derives from verified token, never from client-supplied headers</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> header-spoof denial cases</td></tr>
+<tr><td>Raw locator/SSRF via client raw_uri</td><td><code>capture-ocr-extract</code> rejects client-supplied <code>raw_uri</code> by default</td><td><code>supabase/functions/capture-ocr-extract/index.test.ts</code> raw_uri rejection cases</td></tr>
+<tr><td>Unsigned hash byte access</td><td><code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> byte routes return 423</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code> 423 assertions</td></tr>
+<tr><td>Signed-token replay</td><td>Legacy signed-URL download path returns 423; one-time action context bounds replay windows</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code> signed-URL 423 assertions</td></tr>
+<tr><td>Broad bucket policy</td><td>Migration 0190 removes broad <code>field_media</code> storage policies</td><td><code>supabase/tests/repair_phase0_containment.sql</code> storage-policy denial assertions</td></tr>
+<tr><td>Duplicate authority</td><td>One-time action context; reuse of an action context is denied</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> duplicate-context denial cases</td></tr>
+<tr><td>R8–R12 bypass</td><td>R8–R12 execution is in the DISABLED set; <code>phase0Policy.ts</code> denies with <code>REPAIR_PHASE_NOT_ENABLED</code></td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code> capability-matrix denial cases</td></tr>
+<tr><td>Evidence tampering</td><td>Ledger verification of Phase 0 evidence and route inventory</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code> mismatch failure</td></tr>
+<tr><td>CI-report omission</td><td>Ledger verifiers require every report and route entry to be present and fail CI otherwise (fail closed)</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code> and <code>scripts/trust-kernel/verify-route-ledger.mjs</code> fail-closed completeness checks</td></tr>
+<tr><td>Break-glass misuse</td><td>Break-glass path: BLOCKED in Phase 0; any emergency change requires named-owner review and is logged</td><td>Change-review record required; <code>supabase/tests/repair_phase0_containment.sql</code> confirms revoked grants stay revoked</td></tr>
+</tbody></table></div>
+<h2>5. Control-to-negative-test matrix</h2>
+<div class="tablewrap"><table><thead><tr><th>Phase 0 control</th><th>Negative test / verifier</th><th>Coverage</th></tr></thead><tbody>
+<tr><td>Tenant → organization → site scope (migration 0189)</td><td><code>supabase/tests/repair_phase0_organization.sql</code></td><td>14 assertions: cross-tenant, cross-organization, cross-site, stale membership, forged identity</td></tr>
+<tr><td>Legacy containment (migration 0190)</td><td><code>supabase/tests/repair_phase0_containment.sql</code></td><td>5 assertions: storage policies removed, <code>rpc_field_submit_photo</code> revoked, <code>rpc_capture_ingest</code> revoked</td></tr>
+<tr><td>Deny-only capability contract</td><td><code>server/src/trust-kernel/test/repairPhase0Policy.test.ts</code></td><td>Every Phase 1A–3 capability denied with <code>REPAIR_PHASE_NOT_ENABLED</code>; service-role, header-spoof, duplicate-context cases</td></tr>
+<tr><td>Legacy route containment (423)</td><td><code>server/src/trust-kernel/test/repairLegacyRouteContainment.test.ts</code></td><td>Signed-URL download and <code>GET</code>/<code>HEAD</code> <code>/artifacts/:sha256</code> return 423</td></tr>
+<tr><td>raw_uri rejection</td><td><code>supabase/functions/capture-ocr-extract/index.test.ts</code></td><td>Client-supplied <code>raw_uri</code> rejected by default</td></tr>
+<tr><td>Phase 0 evidence ledger</td><td><code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code></td><td>Ledger completeness and hash verification; fails on omission or mismatch</td></tr>
+<tr><td>Route ledger</td><td><code>scripts/trust-kernel/verify-route-ledger.mjs</code></td><td>Route inventory matches declared containment state; fails on drift</td></tr>
+</tbody></table></div>
+<h2>6. Privacy, retention, deletion, legal hold, and log redaction</h2>
+<ul>
+<li>Repair customer evidence storage in Phase 0: BLOCKED. Ingestion is denied by the containment controls in Section 1 (migration 0190, 423 routes, <code>raw_uri</code> rejection, revoked RPCs), so Repair-domain retention, export, and deletion obligations in Phase 0 reduce to verifying that containment holds.</li>
+<li>Logs must not carry raw locators (<code>raw_uri</code>, signed URLs, storage paths) or PII. Deny responses log the reason code (<code>REPAIR_PHASE_NOT_ENABLED</code>) and scope identifiers only.</li>
+<li>Retention: Phase 0 evidence (test reports, ledgers under <code>reports/phase0</code>) is retained per Release Governance policy.</li>
+<li>Deletion responsibilities: Platform Engineering executes deletion mechanics; Security/IAM verifies scope; Release Governance approves.</li>
+<li>Legal hold: Release Governance declares holds; Independent QA/Safety verifies the hold is honored; Repair Intelligence Governance is informed.</li>
+<li>Log redaction: Platform Engineering owns redaction filters; Independent QA/Safety audits samples for raw locators and PII.</li>
+</ul>
+<h2>7. Phase 0 SLO and error-budget measurement boundaries</h2>
+<p>Phase 0 defines measurement only. No production readiness is claimed, and Phase 0 is NOT production and NOT GA.</p>
+<p>Measured signals:</p>
+<div class="tablewrap"><table><thead><tr><th>Signal</th><th>Definition</th><th>Boundary</th></tr></thead><tbody>
+<tr><td>Deny-response availability</td><td>Fraction of Repair capability requests answered with the correct deny (<code>REPAIR_PHASE_NOT_ENABLED</code> or 423)</td><td>Measurement only; no customer-facing SLO commitment</td></tr>
+<tr><td>CI green rate</td><td>Fraction of CI runs where all Section 5 verifiers pass</td><td>Measurement only; informs Phase 0 exit review</td></tr>
+</tbody></table></div>
+<p>Error budgets in Phase 0 exist to calibrate future SLOs; breaching a measurement boundary triggers review, not a release action.</p>
+<h2>8. Incident severity, escalation, kill switch, and evidence preservation</h2>
+<p>Severity rubric:</p>
+<div class="tablewrap"><table><thead><tr><th>Severity</th><th>Definition</th><th>Example</th><th>Escalation</th></tr></thead><tbody>
+<tr><td>SEV1</td><td>Containment breach: a disabled capability executed, or evidence bytes served</td><td>200 response from a 423 route; RPC executed after revoke</td><td>Immediate: Security/IAM + Release Governance + Repair Intelligence Governance</td></tr>
+<tr><td>SEV2</td><td>Control degradation without confirmed breach</td><td>Ledger verifier failing on main; RLS policy drift detected</td><td>Same business day: owning team + Independent QA/Safety</td></tr>
+<tr><td>SEV3</td><td>Measurement or tooling defect</td><td>CI flake in a negative test; report generation error</td><td>Normal triage: Platform Engineering</td></tr>
+</tbody></table></div>
+<ul>
+<li>Escalation: every incident is escalated to the owner named in Section 2 for the affected control; SEV1 also notifies Release Governance for status-line impact.</li>
+<li>Kill switch: the Phase 0 kill switch is deny-by-default, which is already in place — <code>phase0Policy.ts</code> denies all Repair capabilities and containment returns 423. The capability enable path is itself denied by <code>phase0Policy.ts</code> in Phase 0; incident response therefore focuses on verifying deny behavior, not disabling features.</li>
+<li>Evidence preservation: preserve <code>reports/phase0</code> evidence, ledger outputs, and relevant logs before remediation; Independent QA/Safety takes custody of the evidence snapshot.</li>
+</ul>
+<h2>9. Backup/restore and disaster-recovery responsibilities</h2>
+<div class="tablewrap"><table><thead><tr><th>Responsibility</th><th>Owner</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Database backup and restore drills</td><td>Platform Engineering</td><td>Includes migrations 0189/0190 state; restore must land in the contained (deny) posture</td></tr>
+<tr><td>Post-restore containment verification</td><td>Independent QA/Safety</td><td>Re-run <code>supabase/tests/repair_phase0_containment.sql</code> and <code>repair_phase0_organization.sql</code> after every restore</td></tr>
+<tr><td>Ledger and evidence backup (<code>reports/phase0</code>)</td><td>Release Governance</td><td>Ledger integrity re-verified via <code>scripts/trust-kernel/verify-repair-phase0-ledger.mjs</code></td></tr>
+<tr><td>DR runbook custody</td><td>Platform Engineering, reviewed by Security/IAM</td><td>Fail-closed: if restore state is uncertain, routes remain 423 and RPC grants remain revoked</td></tr>
+<tr><td>DR decision authority</td><td>Release Governance</td><td>Repair Intelligence Governance consulted for Repair-domain impact</td></tr>
+</tbody></table></div>
+<p>A restore that cannot demonstrate the deny posture is treated as SEV1 under Section 8 until verification passes.</p>
+<h2>10. Release gates and explicit non-claims</h2>
+<p>Restated status lines (identical to Section 1):</p>
+<ul>
+<li><code>Phase 0 exit: PENDING_OWNER_REVIEW</code></li>
+<li><code>Expert Label Protocol: PROPOSED / NOT RUN</code></li>
+<li><code>Gate B: NOT PASSED</code></li>
+<li><code>Immutable infrastructure: NOT CLAIMED</code></li>
+<li><code>Phase 1A–3 capabilities: DISABLED</code></li>
+</ul>
+<p>Gate rules:</p>
+<ul>
+<li>Phase 0 exit requires named-owner review by Release Governance with Independent QA/Safety and Repair Intelligence Governance sign-off. No automated step — CI job, script, merge, ledger verifier, or scheduled task — may flip <code>PENDING_OWNER_REVIEW</code> to approved. Automation may only report; humans decide.</li>
+<li>Gate B remains <code>NOT PASSED</code> until its own review completes; this document makes no claim about Gate B beyond that status line.</li>
+<li>Explicit non-claims: this pack does NOT claim production readiness, does NOT claim GA, does NOT claim immutable infrastructure, does NOT claim the Expert Label Protocol has run, and does NOT claim any Phase 1A–3 capability is enabled.</li>
+</ul>
+</main></body>
+</html>

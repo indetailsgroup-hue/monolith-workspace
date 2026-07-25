@@ -1,0 +1,26 @@
+# .lint_allowlist — shrinking-only grandfather ledger for the claim guardrails.
+#
+# Format: linter<TAB>path<TAB>accepted_hit_count  (path is repo-relative posix).
+# A listed file passes at or below its count and FAILS if the count rises;
+# an unlisted file must be clean. Counts may only shrink over time.
+#
+# Regenerate (adoption, or to tighten after fixing claims):
+#     python tools/lint_claims.py docs/ --write-allowlist
+#     python tools/lint_certifications.py docs/ --write-allowlist
+# Raising a count or grandfathering a new file needs --accept-regression.
+#
+# Every linter run prints: 'allowlisted debt: N hits across M files'.
+# adopted: lint_certifications
+lint_certifications	docs/governance/adr-070-machine-onboarding.en.md	1
+# adopted: lint_claims
+lint_claims	docs/governance/adr-070-machine-onboarding.th.md	1
+lint_claims	docs/governance/ct-dec-001-s17-baseline-governance.th.md	1
+lint_claims	docs/governance/ct-dec-002-signoff-checklist.en.md	1
+lint_claims	docs/governance/ct-dec-002-signoff-checklist.th.md	2
+lint_claims	docs/governance/ct-dec-002-v041-signoff-review-pack.th.md	2
+lint_claims	docs/governance/ct-dec-003-a1-current-governance-tool-bytes.en.md	1
+lint_claims	docs/governance/ct-dec-003-a1-current-governance-tool-bytes.th.md	1
+lint_claims	docs/governance/ct-dec-003-a1-independent-review.th.md	2
+lint_claims	docs/governance/ct-dec-003-a2-s17-status.th.md	1
+lint_claims	docs/governance/s17-4-frozen-handoff-2026-07-18.th.md	1
+lint_claims	docs/governance/s17-track-a-open-gates-v1.th.md	2
