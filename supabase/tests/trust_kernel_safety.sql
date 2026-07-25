@@ -82,7 +82,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(36);
+select plan(67);
 
 -- ---------------------------------------------------------------------------
 -- Fixture (superuser; RLS bypassed for setup only)
@@ -450,6 +450,240 @@ select is(:'rev_cxb_committed'::uuid, :'rev_cxb'::uuid,
   'cross-tenant: a BLOCK in (tenant_a, site_a) does NOT reject a commit of the same content_hash in tenant_b');
 select is((select status from public.release_revision where id=:'rev_cxb'::uuid), 'ACTIVE',
   'cross-tenant: the tenant_b commit of h_blk records an ACTIVE release_revision (block is tenant/site-scoped)');
+
+-- ===========================================================================
+-- Group L..P (Task 5) — two-person, two-role content UN-BLOCK
+--   (design 2026-07-22 §10.4; plan 2026-07-24 Task 5). Reverses a SAFETY content
+--   block under a gate DELIBERATELY HARDER than the single-SAFETY_REVOKER block:
+--   two DISTINCT people holding two DISTINCT non-SAFETY governance roles
+--   ({RELEASE_APPROVER, QA_EVIDENCE, ADMIN}, never SAFETY_REVOKER) + justification.
+--   Exercises rpc_trust_safety_unblock_content (0188), the SAFETY_UNBLOCK action
+--   set, and the content_unblock_grant audit table.
+-- ===========================================================================
+
+-- Task-5 fixture identifiers: eligible-role approvers in tenant_a/site_a.
+\set u_ra     a5000000-0000-0000-0000-00000000c010
+\set u_ra2    a5000000-0000-0000-0000-00000000c011
+\set u_qa     a5000000-0000-0000-0000-00000000c012
+\set u_admin  a5000000-0000-0000-0000-00000000c013
+\set u_multi  a5000000-0000-0000-0000-00000000c014
+\set m_ra     a5000000-0000-0000-0000-00000000d010
+\set m_ra2    a5000000-0000-0000-0000-00000000d011
+\set m_qa     a5000000-0000-0000-0000-00000000d012
+\set m_admin  a5000000-0000-0000-0000-00000000d013
+\set m_multi  a5000000-0000-0000-0000-00000000d014
+
+insert into auth.users (id) values
+  (:'u_ra'), (:'u_ra2'), (:'u_qa'), (:'u_admin'), (:'u_multi');
+
+insert into public.monolith_membership (id, tenant_id, user_id, version, status) values
+  (:'m_ra',    :'tenant_a', :'u_ra',    1, 'ACTIVE'),
+  (:'m_ra2',   :'tenant_a', :'u_ra2',   1, 'ACTIVE'),
+  (:'m_qa',    :'tenant_a', :'u_qa',    1, 'ACTIVE'),
+  (:'m_admin', :'tenant_a', :'u_admin', 1, 'ACTIVE'),
+  (:'m_multi', :'tenant_a', :'u_multi', 1, 'ACTIVE');
+
+-- u_ra/u_ra2 -> RELEASE_APPROVER only; u_qa -> QA_EVIDENCE; u_admin -> ADMIN;
+-- u_multi -> {ADMIN, QA_EVIDENCE} (exercises the distinct-role reassignment branch).
+insert into public.monolith_membership_role (tenant_id, membership_id, role) values
+  (:'tenant_a', :'m_ra',    'RELEASE_APPROVER'),
+  (:'tenant_a', :'m_ra2',   'RELEASE_APPROVER'),
+  (:'tenant_a', :'m_qa',    'QA_EVIDENCE'),
+  (:'tenant_a', :'m_admin', 'ADMIN'),
+  (:'tenant_a', :'m_multi', 'ADMIN'),
+  (:'tenant_a', :'m_multi', 'QA_EVIDENCE');
+
+insert into public.monolith_membership_site (tenant_id, membership_id, site_id) values
+  (:'tenant_a', :'m_ra',    :'site_a'),
+  (:'tenant_a', :'m_ra2',   :'site_a'),
+  (:'tenant_a', :'m_qa',    :'site_a'),
+  (:'tenant_a', :'m_admin', :'site_a'),
+  (:'tenant_a', :'m_multi', :'site_a');
+
+-- ---------------------------------------------------------------------------
+-- Group L — content_unblock_grant posture (mirror Group A): RLS on, no client
+--   write policy, SELECT-only to authenticated, deny-log tamper-resistance, and
+--   the RPC is user-authorized (authenticated yes, anon no).
+-- ---------------------------------------------------------------------------
+select ok(
+  (select relrowsecurity from pg_class where relname='content_unblock_grant' and relnamespace='public'::regnamespace),
+  'content_unblock_grant RLS enabled');
+select is(
+  (select count(*) from pg_policies where schemaname='public' and tablename='content_unblock_grant' and cmd<>'SELECT'),
+  0::bigint, 'content_unblock_grant exposes no client write policy');
+select ok(
+  not has_table_privilege('authenticated', 'public.content_unblock_grant', 'INSERT'),
+  'authenticated cannot INSERT into content_unblock_grant (writes go through the RPC only)');
+select ok(
+  has_table_privilege('authenticated', 'public.content_unblock_grant', 'SELECT'),
+  'authenticated may SELECT content_unblock_grant (RLS still filters rows)');
+select ok(
+  not has_table_privilege('authenticated', 'public.content_unblock_grant', 'TRUNCATE'),
+  'authenticated cannot TRUNCATE content_unblock_grant (inherited default privilege stripped)');
+select ok(
+  not has_table_privilege('authenticated', 'public.content_unblock_grant', 'UPDATE'),
+  'authenticated cannot UPDATE content_unblock_grant');
+select ok(
+  not has_table_privilege('authenticated', 'public.content_unblock_grant', 'DELETE'),
+  'authenticated cannot DELETE content_unblock_grant');
+select ok(
+  has_function_privilege('authenticated', 'public.rpc_trust_safety_unblock_content(uuid,uuid,text,text)', 'EXECUTE'),
+  'authenticated can execute rpc_trust_safety_unblock_content');
+select ok(
+  not has_function_privilege('anon', 'public.rpc_trust_safety_unblock_content(uuid,uuid,text,text)', 'EXECUTE'),
+  'anon cannot execute rpc_trust_safety_unblock_content');
+
+-- ---------------------------------------------------------------------------
+-- Group M — mint authority: SAFETY_UNBLOCK requires an eligible non-SAFETY role.
+--   u_revoker holds SAFETY_REVOKER ONLY -> not eligible -> denied at MINT time
+--   (the blocker's role can never itself un-block).  [negative (iv)]
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', json_build_object('sub', :'u_revoker','role','authenticated','aal','aal1')::text, true) as _c \gset
+select throws_ok(
+  $$select public.create_verified_action_context('SAFETY_UNBLOCK', '$$||:'tenant_a'||$$'::uuid, '$$||:'site_a'||$$'::uuid, 'RELEASE_REVISION', '$$||:'rev_a1'||$$', '$$||:'req_h'||$$')$$,
+  'P0001', 'AUTH_SCOPE_DENIED', 'minting a SAFETY_UNBLOCK context with only SAFETY_REVOKER (no eligible role) is denied at mint time');
+
+-- ---------------------------------------------------------------------------
+-- Group N — the positive ROUND-TRIP: h_blk (rev_a1) was BLOCKED (Group E) and
+--   its commit was REJECTED (Group K). Two DISTINCT users (u_ra RELEASE_APPROVER,
+--   u_qa QA_EVIDENCE) in two DISTINCT roles + justification un-block it, and the
+--   previously-rejected commit (attm_cblk) now SUCCEEDS -> block -> commit
+--   rejected -> unblock -> commit allowed.
+-- ---------------------------------------------------------------------------
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk'), true,
+  'round-trip precondition: h_blk is BLOCKED in (tenant_a, site_a) before the un-block');
+
+-- Mint two co-signing SAFETY_UNBLOCK contexts for rev_a1 (one per approver).
+select set_config('request.jwt.claims', json_build_object('sub', :'u_ra','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_n_a \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_qa','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_n_b \gset
+
+-- Deny-only baseline: positive-authority row count immediately before the un-block.
+select count(*)::bigint as ug_rr_before from public.release_revision \gset
+
+select public.rpc_trust_safety_unblock_content(:'ctx_n_a'::uuid, :'ctx_n_b'::uuid, :'h_blk', 'false-positive recall cleared by QA and release approver') as ug_id \gset
+
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk'), false,
+  'after the two-person un-block, fn_content_is_blocked is FALSE for h_blk');
+select ok(
+  (select (approver_a_user_id = :'u_ra'::uuid and approver_b_user_id = :'u_qa'::uuid)
+       or (approver_a_user_id = :'u_qa'::uuid and approver_b_user_id = :'u_ra'::uuid)
+     from public.content_unblock_grant where id = :'ug_id'::uuid),
+  'the grant records both distinct approvers (u_ra + u_qa)');
+select ok(
+  (select approver_a_role <> approver_b_role
+       and approver_a_role in ('RELEASE_APPROVER','QA_EVIDENCE','ADMIN')
+       and approver_b_role in ('RELEASE_APPROVER','QA_EVIDENCE','ADMIN')
+     from public.content_unblock_grant where id = :'ug_id'::uuid),
+  'the grant records two DISTINCT eligible non-SAFETY roles');
+select is(
+  (select justification from public.content_unblock_grant where id = :'ug_id'::uuid),
+  'false-positive recall cleared by QA and release approver',
+  'the grant records the justification');
+select is(
+  (select unblock_sequence from public.content_unblock_grant where id = :'ug_id'::uuid),
+  (select sequence from public.release_content_revocation
+     where tenant_id=:'tenant_a'::uuid and site_id=:'site_a'::uuid and content_hash=:'h_blk' and action='UNBLOCK'
+     order by sequence desc limit 1),
+  'the grant unblock_sequence equals the appended UNBLOCK event sequence');
+select is(
+  (select action from public.release_content_revocation
+     where tenant_id=:'tenant_a'::uuid and site_id=:'site_a'::uuid and content_hash=:'h_blk'
+     order by sequence desc limit 1),
+  'UNBLOCK', 'the latest content-revocation event for h_blk is now UNBLOCK');
+select is(
+  (select actor_user_id from public.release_content_revocation
+     where tenant_id=:'tenant_a'::uuid and site_id=:'site_a'::uuid and content_hash=:'h_blk' and action='UNBLOCK'
+     order by sequence desc limit 1),
+  (select approver_a_user_id from public.content_unblock_grant where id = :'ug_id'::uuid),
+  'the UNBLOCK event records the initiating approver (actor_a) also recorded on the grant');
+
+-- Deny-only: the un-block writes NO release_revision and does not touch the source.
+select is((select count(*) from public.release_revision), :ug_rr_before::bigint,
+  'deny-only: the un-block adds NO release_revision row (positive-authority count unchanged)');
+select is((select status from public.release_revision where id=:'rev_a1'::uuid), 'REVOKED',
+  'deny-only: the un-block does not mutate the SAFETY-revoked source revision');
+
+-- Round-trip: the commit REJECTED in Group K now SUCCEEDS for the same content_hash.
+select public.rpc_trust_commit_release(:'attm_cblk'::uuid, :'h_blk', :'sub', '{"cert":"cblk-recommit"}'::jsonb, 'dev-release-key') as rev_cblk_recommit \gset
+select is(:'rev_cblk_recommit'::uuid, :'rev_cblk'::uuid,
+  'round-trip: after un-block, committing h_blk succeeds and returns the allocated revision id');
+select is((select status from public.release_revision where id=:'rev_cblk'::uuid), 'ACTIVE',
+  'round-trip: the post-unblock commit records an ACTIVE release_revision (block -> reject -> unblock -> allow)');
+
+-- ---------------------------------------------------------------------------
+-- Group O — the DISTINCT-ROLE reassignment branch. u_multi holds {ADMIN,
+--   QA_EVIDENCE}; u_admin holds {ADMIN}. eligible(b)={ADMIN} shares ADMIN with
+--   eligible(a)[1]=ADMIN, so the RPC must reassign A to QA_EVIDENCE and keep ADMIN
+--   for B -> a valid distinct pair. Un-blocks h_blk2 (BLOCKED in Group H).
+-- ---------------------------------------------------------------------------
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk2'), true,
+  'reassignment precondition: h_blk2 is BLOCKED in (tenant_a, site_a)');
+select set_config('request.jwt.claims', json_build_object('sub', :'u_multi','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a2', :'req_h') as ctx_o_a \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_admin','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a2', :'req_h') as ctx_o_b \gset
+select public.rpc_trust_safety_unblock_content(:'ctx_o_a'::uuid, :'ctx_o_b'::uuid, :'h_blk2', 'reassignment-branch un-block by ADMIN/QA co-signers') as ug2_id \gset
+select is(public.fn_content_is_blocked(:'tenant_a'::uuid, :'site_a'::uuid, :'h_blk2'), false,
+  'reassignment: the two-person un-block clears h_blk2');
+select ok(
+  (select (approver_a_role = 'ADMIN' and approver_b_role = 'QA_EVIDENCE')
+       or (approver_a_role = 'QA_EVIDENCE' and approver_b_role = 'ADMIN')
+     from public.content_unblock_grant where id = :'ug2_id'::uuid),
+  'reassignment: eligible {ADMIN,QA_EVIDENCE} + {ADMIN} yields the distinct pair {ADMIN, QA_EVIDENCE}');
+
+-- ---------------------------------------------------------------------------
+-- Group P — negatives. Each must RAISE the exact stable code.
+-- ---------------------------------------------------------------------------
+-- (i) only one approver context: the SAME context supplied for both a and b — the
+--     second consume sees the first's consumed_at -> AUTH_ACTION_CONTEXT_INVALID.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_ra','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p1 \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p1'||$$'::uuid, '$$||:'ctx_p1'||$$'::uuid, '$$||:'h_blk'||$$', 'one approver only')$$,
+  'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'un-block with only one approver context (same context twice) is rejected');
+
+-- (ii) two contexts from the SAME user -> AUTH_SOD_VIOLATION.
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p2a \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p2b \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p2a'||$$'::uuid, '$$||:'ctx_p2b'||$$'::uuid, '$$||:'h_blk'||$$', 'same user both contexts')$$,
+  'P0001', 'AUTH_SOD_VIOLATION', 'un-block by two contexts from the SAME user is rejected (two distinct people required)');
+
+-- (iii) two DISTINCT users but the SAME single eligible role (both RELEASE_APPROVER)
+--       -> no distinct-role pair -> AUTH_SOD_VIOLATION.
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p3a \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_ra2','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p3b \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p3a'||$$'::uuid, '$$||:'ctx_p3b'||$$'::uuid, '$$||:'h_blk'||$$', 'two users same single role')$$,
+  'P0001', 'AUTH_SOD_VIOLATION', 'un-block by two distinct users sharing only ONE eligible role is rejected (two distinct roles required)');
+
+-- (v) empty justification -> AUTH_ACTION_CONTEXT_INVALID.
+select set_config('request.jwt.claims', json_build_object('sub', :'u_ra','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p5a \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_qa','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p5b \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p5a'||$$'::uuid, '$$||:'ctx_p5b'||$$'::uuid, '$$||:'h_blk'||$$', '   ')$$,
+  'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'un-block with an empty/whitespace justification is rejected');
+
+-- (vi) content NOT currently blocked -> STATE_CONFLICT (h_blk was un-blocked in Group N).
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p6b \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_ra','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p6a \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p6a'||$$'::uuid, '$$||:'ctx_p6b'||$$'::uuid, '$$||:'h_blk'||$$', 're-unblock already-cleared content')$$,
+  'P0001', 'STATE_CONFLICT', 'un-blocking content that is not currently blocked is rejected');
+
+-- (vii) the two contexts reference DIFFERENT revisions -> AUTH_ACTION_CONTEXT_INVALID.
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a1', :'req_h') as ctx_p7a \gset
+select set_config('request.jwt.claims', json_build_object('sub', :'u_qa','role','authenticated','aal','aal1')::text, true) as _c \gset
+select public.create_verified_action_context('SAFETY_UNBLOCK', :'tenant_a', :'site_a', 'RELEASE_REVISION', :'rev_a2', :'req_h') as ctx_p7b \gset
+select throws_ok(
+  $$select public.rpc_trust_safety_unblock_content('$$||:'ctx_p7a'||$$'::uuid, '$$||:'ctx_p7b'||$$'::uuid, '$$||:'h_blk'||$$', 'contexts co-sign different revisions')$$,
+  'P0001', 'AUTH_ACTION_CONTEXT_INVALID', 'un-block where the two contexts reference different revisions is rejected');
 
 select * from finish();
 rollback;
