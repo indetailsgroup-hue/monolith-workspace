@@ -113,8 +113,10 @@ function evidenceTable(rows, lang) {
     : '| Report | Status | Detail | SHA-256 |\n|---|---|---|---|';
   const okWord = lang === 'th' ? 'ผ่าน' : 'OK';
   const badWord = 'INCOMPLETE';
+  // Full sha256 — a report hash in an evidence document must be independently
+  // verifiable, not a truncated prefix. Owner re-checks with `sha256sum`.
   return [header, ...rows.map((r) =>
-    `| \`${r.name}\` | ${r.ok ? okWord : badWord} | ${r.detail} | \`${r.hash === '-' ? '-' : r.hash.slice(0, 16)}…\` |`,
+    `| \`${r.name}\` | ${r.ok ? okWord : badWord} | ${r.detail} | \`${r.hash}\` |`,
   )].join('\n');
 }
 
