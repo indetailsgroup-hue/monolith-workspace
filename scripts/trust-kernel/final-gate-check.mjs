@@ -100,6 +100,42 @@ export function evaluateReports({ root, jobResults }) {
   req((f) => /pgtap-trust_kernel_release\.tap$/.test(f), 'pgtap-trust_kernel_release.tap');
   req((f) => /e2e\.json$/.test(f), 'e2e.json');
 
+  // Repair Phase 0 evidence (Task 8): the disposition ledger, both Repair pgTAP
+  // suites, the bilingual document verifier, the route ledger, and the PINNED
+  // claim/certification linter result are load-bearing. A missing report is a
+  // failed gate — never a warning.
+  req((f) => /pgtap-repair_phase0_organization\.tap$/.test(f), 'pgtap-repair_phase0_organization.tap');
+  req((f) => /pgtap-repair_phase0_containment\.tap$/.test(f), 'pgtap-repair_phase0_containment.tap');
+
+  const repairLedger = files.find((f) => /repair-phase0-ledger\.json$/.test(f));
+  if (!repairLedger) {
+    violations.push('missing required report: repair-phase0-ledger.json (Repair disposition ledger)');
+  } else {
+    try {
+      const rl = JSON.parse(fs.readFileSync(repairLedger, 'utf8'));
+      if (rl.pass !== true) violations.push(`repair-phase0-ledger.json did not pass: ${JSON.stringify(rl.errors ?? [])}`);
+      if (!(typeof rl.surfaceCount === 'number' && rl.surfaceCount > 0)) {
+        violations.push('repair-phase0-ledger.json reports zero surfaces (empty ledger)');
+      }
+    } catch {
+      violations.push('unparseable repair-phase0-ledger.json');
+    }
+  }
+
+  const reqText = (re, marker, msg) => {
+    const f = files.find((x) => re.test(x));
+    if (!f) {
+      violations.push(`missing required report: ${msg}`);
+      return;
+    }
+    if (!fs.readFileSync(f, 'utf8').includes(marker)) {
+      violations.push(`${msg} does not contain "${marker}" (gate requires the verifier's PASS output, not job status)`);
+    }
+  };
+  reqText(/repair-docs\.txt$/, 'REPAIR PHASE 0 DOCS: PASS', 'repair-docs.txt (bilingual document verifier)');
+  reqText(/route-ledger\.txt$/, 'ROUTE LEDGER: PASS', 'route-ledger.txt (route disposition ledger)');
+  reqText(/claim-linters\.txt$/, 'CLAIM LINTERS: PASS', 'claim-linters.txt (pinned claim/certification linters)');
+
   // (b) vitest JSON reports: >0 tests, 0 failed, 0 skipped/pending/todo, success true.
   for (const f of files.filter((f) => f.endsWith('.json') && !/e2e\.json$/.test(f) && !/evidence-attestation.*\.json$/.test(f))) {
     let r;
@@ -183,6 +219,9 @@ if (isMain) {
     'matrix-tests': process.env.R_MATRIX,
     'edge-db': process.env.R_EDGE,
     'e2e': process.env.R_E2E,
+    // Repair Phase 0 Task 8: the pinned claim/certification linters are load-
+    // bearing; their job result gates alongside their PASS report.
+    'claim-linters': process.env.R_CLAIM,
   };
   const violations = evaluateReports({ root, jobResults });
   if (violations.length > 0) {

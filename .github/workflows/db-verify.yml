@@ -50,31 +50,32 @@ jobs:
       # Each suite runs SEPARATELY into its own named .tap so a failure is attributable
       # to one file. Every suite must (a) emit at least one `ok` (no empty/skipped suite)
       # and (b) emit zero `not ok`. -tA = tuples-only, unaligned -> clean TAP lines.
-      - name: Run pgTAP workflow invariants suite
+      # Repair Phase 0 Task 8: the complete migration chain through 0190 is applied
+      # by `supabase start`, and BOTH Repair Phase 0 suites run alongside every
+      # workflow and Trust Kernel suite. Each TAP file is uploaded separately.
+      - name: Run pgTAP suites (workflow + trust-kernel + Repair Phase 0)
         run: |
           set -o pipefail
-          psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
-            -f supabase/tests/workflow_db_invariants.sql | tee workflow-db.tap
-          if grep -qE '^not ok' workflow-db.tap; then
-            echo "::error::pgTAP failure in workflow_db_invariants.sql"; exit 1
-          fi
-          if ! grep -qE '^ok ' workflow-db.tap; then
-            echo "::error::no pgTAP assertions ran in workflow_db_invariants.sql (empty suite)"; exit 1
-          fi
-          echo "workflow_db_invariants: all ok ($(grep -cE '^ok ' workflow-db.tap) assertions)"
+          mkdir -p tap
+          for suite in workflow_db_invariants trust_kernel_tenancy trust_kernel_governance \
+                       trust_kernel_release trust_kernel_bundles trust_kernel_containment \
+                       trust_kernel_safety repair_phase0_organization repair_phase0_containment; do
+            psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
+              -f "supabase/tests/${suite}.sql" | tee "tap/${suite}.tap"
+            if grep -qE '^not ok' "tap/${suite}.tap"; then
+              echo "::error::pgTAP failure in ${suite}.sql"; exit 1
+            fi
+            if ! grep -qE '^ok ' "tap/${suite}.tap"; then
+              echo "::error::no pgTAP assertions ran in ${suite}.sql (empty suite)"; exit 1
+            fi
+            echo "${suite}: all ok ($(grep -cE '^ok ' "tap/${suite}.tap") assertions)"
+          done
 
-      - name: Run pgTAP Trust Kernel tenancy suite
+      - name: Confirm migration chain reaches 0190
         run: |
-          set -o pipefail
-          psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
-            -f supabase/tests/trust_kernel_tenancy.sql | tee trust-kernel-tenancy.tap
-          if grep -qE '^not ok' trust-kernel-tenancy.tap; then
-            echo "::error::pgTAP failure in trust_kernel_tenancy.sql"; exit 1
-          fi
-          if ! grep -qE '^ok ' trust-kernel-tenancy.tap; then
-            echo "::error::no pgTAP assertions ran in trust_kernel_tenancy.sql (empty suite)"; exit 1
-          fi
-          echo "trust_kernel_tenancy: all ok ($(grep -cE '^ok ' trust-kernel-tenancy.tap) assertions)"
+          test -f supabase/migrations/0189_repair_phase0_organization_scope.sql
+          test -f supabase/migrations/0190_repair_phase0_legacy_containment.sql
+          psql "${{ steps.db.outputs.DB_URL }}" -tAc "select 1 from pg_tables where schemaname='public' and tablename='monolith_organization'" | grep -q 1
 
       - name: Assemble evidence
         if: always()
@@ -88,9 +89,10 @@ jobs:
             return { suite, tap: file, ok, notOk, pass: notOk === 0 && ok > 0 };
           }
           const suites = [
-            countSuite('workflow-db.tap', 'workflow_db_invariants.sql'),
-            countSuite('trust-kernel-tenancy.tap', 'trust_kernel_tenancy.sql'),
-          ];
+            'workflow_db_invariants', 'trust_kernel_tenancy', 'trust_kernel_governance',
+            'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
+            'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
+          ].map((s) => countSuite('tap/' + s + '.tap', s + '.sql'));
           const mig = fs.existsSync('migrations_applied.txt') ? fs.readFileSync('migrations_applied.txt','utf8').trim() : 'unknown';
           const ev = {
             evidenceTier: 'E0', workflow: 'db-verify',
@@ -112,8 +114,7 @@ jobs:
           name: db-verify-evidence-${{ github.sha }}
           path: |
             db-verify-evidence.json
-            workflow-db.tap
-            trust-kernel-tenancy.tap
+            tap/*.tap
           retention-days: 90
 
       - name: Stop Supabase

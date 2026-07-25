@@ -96,6 +96,9 @@ jobs:
       - name: Frontend containment suite (Task 11 + Task 12 export, JSON report)
         run: npx vitest run src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts --reporter=json --outputFile=reports/containment-${{ matrix.os }}.json
 
+      - name: Repair Phase 0 policy + legacy-route containment (JSON report)
+        run: npm --prefix server test -- --run src/trust-kernel/test/repairPhase0Policy.test.ts src/trust-kernel/test/repairLegacyRouteContainment.test.ts --reporter=json --outputFile=../reports/repair-${{ matrix.os }}.json
+
       # C4: SEPARATE steps. A non-last command in a single pwsh multi-line `run:`
       # block on windows-latest has its failure SWALLOWED (GitHub appends the
       # $LASTEXITCODE check only after the LAST line). Splitting makes each command
@@ -106,7 +109,29 @@ jobs:
         run: npm run build
 
       - name: Route disposition ledger (single authority, no P2/actor breach, no deferrals)
-        run: node scripts/trust-kernel/verify-route-ledger.mjs
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports
+          node scripts/trust-kernel/verify-route-ledger.mjs | tee reports/route-ledger.txt
+
+      - name: Repair Phase 0 disposition ledger (report is gate evidence)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports
+          node scripts/trust-kernel/verify-repair-phase0-ledger.mjs --report reports/phase0/repair-phase0-ledger.json
+          cp reports/phase0/repair-phase0-ledger.json reports/repair-phase0-ledger.json
+
+      - name: Repair Phase 0 bilingual document verifier
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports
+          node scripts/trust-kernel/verify-repair-phase0-docs.mjs | tee reports/repair-docs.txt
+
+      - name: Final-gate self-test (the gate itself is proven before it judges)
+        run: node scripts/trust-kernel/final-gate-check.selftest.mjs
 
       - name: Capture golden packet sha (byte-identity input)
         shell: bash
@@ -149,16 +174,16 @@ jobs:
       - name: Start local Supabase (applies migration chain incl. 0180-0184)
         run: supabase start
 
-      - name: Edge factory-api tests (JSON report)
-        run: npx vitest run supabase/functions/factory-api/index.test.ts --reporter=json --outputFile=reports/edge.json
+      - name: Edge factory-api + capture-ocr default-block tests (JSON report)
+        run: npx vitest run supabase/functions/factory-api/index.test.ts supabase/functions/capture-ocr-extract/index.test.ts --reporter=json --outputFile=reports/edge.json
 
-      - name: pgTAP trust-kernel suites (per-suite TAP)
+      - name: pgTAP trust-kernel + Repair Phase 0 suites (per-suite TAP)
         shell: bash
         run: |
           set -o pipefail
           mkdir -p reports
           DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          for suite in trust_kernel_tenancy trust_kernel_governance trust_kernel_release trust_kernel_bundles trust_kernel_containment workflow_db_invariants trust_kernel_safety; do
+          for suite in trust_kernel_tenancy trust_kernel_governance trust_kernel_release trust_kernel_bundles trust_kernel_containment workflow_db_invariants trust_kernel_safety repair_phase0_organization repair_phase0_containment; do
             psql "$DB" -tA -v ON_ERROR_STOP=1 -f "supabase/tests/${suite}.sql" | tee "reports/pgtap-${suite}.tap"
             if grep -qE '^not ok' "reports/pgtap-${suite}.tap"; then echo "::error::pgTAP failure in ${suite}"; exit 1; fi
             if ! grep -qE '^ok ' "reports/pgtap-${suite}.tap"; then echo "::error::empty pgTAP suite ${suite}"; exit 1; fi
@@ -210,33 +235,49 @@ jobs:
           retention-days: 90
 
   # ---------------------------------------------------------------------------
-  # (4) Claim / certification linters (guardrails). CROSS-REPO-PENDING: the linters
-  # live in the MONOLITH governance root (tools/lint_claims.py, lint_certifications.py),
-  # NOT in this product repo. This step references the expected path and runs them
-  # only when the governance repo is checked out alongside; otherwise it reports the
-  # cross-repo-pending status explicitly (it does not silently pass a real lint).
+  # (4) Claim / certification linters (guardrails), PINNED to the governance
+  # baseline commit 55557d7f178dcbe00fec15cffb3061df668eaff8 (Repair Phase 0
+  # Task 8 Step 4). Missing tools FAIL the job — this is load-bearing evidence,
+  # never a warning, and the final gate demands the CLAIM LINTERS: PASS report.
   # ---------------------------------------------------------------------------
   claim-linters:
-    name: claim linters (cross-repo-pending)
+    name: claim linters (pinned governance baseline)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 55557d7f178dcbe00fec15cffb3061df668eaff8
+          path: .governance-tools
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run claim/certification linters over docs/ (if governance tools present)
+      - name: Run pinned claim and certification linters
         shell: bash
         run: |
-          GOV_CLAIMS="${MONOLITH_GOVERNANCE_ROOT:-..}/tools/lint_claims.py"
-          GOV_CERTS="${MONOLITH_GOVERNANCE_ROOT:-..}/tools/lint_certifications.py"
-          if [ -f "$GOV_CLAIMS" ] && [ -f "$GOV_CERTS" ]; then
-            python "$GOV_CLAIMS" docs/
-            python "$GOV_CERTS" docs/
-          else
-            echo "::warning::CROSS-REPO-PENDING: guardrails linters expected at $GOV_CLAIMS / $GOV_CERTS (MONOLITH governance root) are not present in the product-repo checkout."
-            echo "Wire MONOLITH_GOVERNANCE_ROOT (a governance-repo checkout) or vendor copies into this repo, then remove this branch."
-          fi
+          set -o pipefail
+          mkdir -p reports
+          # Copy the PINNED linters beside the product tree so the shared
+          # shrinking allowlist (tools/.lint_allowlist, keys relative to this
+          # repo root) resolves identically here and in local runs. The tools
+          # come only from the pinned governance checkout — a missing tool
+          # fails this job.
+          cp .governance-tools/tools/lint_claims.py \
+             .governance-tools/tools/lint_certifications.py \
+             .governance-tools/tools/lint_allowlist.py \
+             .governance-tools/tools/claim_detect.py \
+             .governance-tools/tools/verify_absence.py tools/
+          python tools/lint_claims.py docs/governance --allowlist tools/.lint_allowlist
+          python tools/lint_certifications.py docs/governance --allowlist tools/.lint_allowlist
+          echo "CLAIM LINTERS: PASS" | tee reports/claim-linters.txt
+      - name: Upload claim-linter report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-claim-linters
+          path: reports/
+          retention-days: 90
 
   # ---------------------------------------------------------------------------
   # (5) Evidence self-verification. Builds the evidence manifest + signs the
@@ -312,6 +353,7 @@ jobs:
           R_MATRIX: ${{ needs.matrix-tests.result }}
           R_EDGE: ${{ needs.edge-db.result }}
           R_E2E: ${{ needs.e2e.result }}
+          R_CLAIM: ${{ needs.claim-linters.result }}
           # NOTE: evidence-self-verify's RESULT is intentionally NOT passed as a gate.
           # The gate demands a verified EvidenceAttestation proof report (C3); a job
           # that merely succeeded on env-presence can never satisfy it.

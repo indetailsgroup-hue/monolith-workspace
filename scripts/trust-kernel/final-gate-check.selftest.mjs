@@ -91,6 +91,14 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('golden-ubuntu-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
   w('golden-windows-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
   w('evidence-attestation.json', { schema: 'EvidenceAttestationV1', verified: evidenceVerified });
+  // Repair Phase 0 evidence (Task 8): disposition ledger, bilingual docs, route
+  // ledger, pinned claim linters, and the two Repair pgTAP suites.
+  w('repair-phase0-ledger.json', { pass: true, errors: [], surfaceCount: 18, categories: ['AUTH'], roots: ['PRODUCT'] });
+  w('pgtap-repair_phase0_organization.tap', 'ok 1 - org table\nok 2 - scope\n1..2\n');
+  w('pgtap-repair_phase0_containment.tap', 'ok 1 - policies removed\n1..1\n');
+  w('repair-docs.txt', 'REPAIR PHASE 0 DOCS: PASS\n');
+  w('route-ledger.txt', 'ROUTE LEDGER: PASS\n');
+  w('claim-linters.txt', 'CLAIM LINTERS: PASS\n');
   return dir;
 }
 
@@ -135,6 +143,57 @@ console.log('evaluateReports end-to-end checks:');
   fs.unlinkSync(path.join(dir, 'evidence-attestation.json'));
   const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
   check('a missing evidence attestation proof is flagged UNVERIFIED', v.some((s) => /evidence/i.test(s)), JSON.stringify(v));
+}
+
+// 6. Repair Phase 0 evidence (Task 8): each required artifact, when MISSING or
+//    failed, must fail the gate even though every other report is green.
+{
+  const dir = writeCleanTree(path.join(base, 'repair-ledger-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'repair-phase0-ledger.json'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing repair-phase0-ledger.json is flagged', v.some((s) => /repair-phase0-ledger/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'repair-ledger-failed'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'repair-phase0-ledger.json'), JSON.stringify({ pass: false, errors: ['x'], surfaceCount: 0 }));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a failed repair-phase0-ledger.json is flagged', v.some((s) => /repair-phase0-ledger/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'repair-org-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'pgtap-repair_phase0_organization.tap'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing repair_phase0_organization.tap is flagged', v.some((s) => /repair_phase0_organization/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'repair-contain-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'pgtap-repair_phase0_containment.tap'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing repair_phase0_containment.tap is flagged', v.some((s) => /repair_phase0_containment/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'repair-tap-empty'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'pgtap-repair_phase0_containment.tap'), '1..0\n');
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a zero-assertion repair pgTAP report is rejected', v.some((s) => /empty pgTAP/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'repair-docs-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'repair-docs.txt'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing bilingual docs verifier report is flagged', v.some((s) => /repair-docs/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'route-ledger-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'route-ledger.txt'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing route-ledger report is flagged', v.some((s) => /route-ledger/i.test(s)), JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'claim-linters-missing'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'claim-linters.txt'));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check('a missing pinned claim-linter report is flagged', v.some((s) => /claim-linters/i.test(s)), JSON.stringify(v));
 }
 
 fs.rmSync(base, { recursive: true, force: true });

@@ -46,7 +46,10 @@
     "tk:verifier:build": "npm run build -w tools/factory-packet-verifier",
     "tk:route-ledger": "node scripts/trust-kernel/verify-route-ledger.mjs",
     "tk:containment": "vitest run src/factory/packet/__tests__/trustKernelContainment.test.ts src/core/api/__tests__/exportApi.containment.test.ts",
-    "tk:e2e": "playwright test e2e/trust-kernel"
+    "tk:e2e": "playwright test e2e/trust-kernel",
+    "tk:repair-ledger": "node scripts/trust-kernel/verify-repair-phase0-ledger.mjs --report reports/phase0/repair-phase0-ledger.json",
+    "tk:repair-docs": "node scripts/trust-kernel/verify-repair-phase0-docs.mjs",
+    "tk:phase0-local": "npm run tk:server && npm run tk:verifier && npm run tk:containment && npm run tk:route-ledger && npm run tk:repair-ledger && npm run tk:repair-docs"
   },
   "dependencies": {
     "@noble/ed25519": "^3.0.0",
