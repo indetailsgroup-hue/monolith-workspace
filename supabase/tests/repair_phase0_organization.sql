@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap;
-select plan(18);
+select plan(21);
 
 -- ---------------------------------------------------------------------------
 -- 1-5: schema shape — organization table, normalized parent, pinned context
@@ -168,7 +168,35 @@ select throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 14: a site row with a tenant-mismatched organization foreign key is rejected
+-- 14: an ACTIVE organization/site context still consumes successfully
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', json_build_object('sub', :'u_member_b', 'role', 'authenticated', 'aal', 'aal1')::text, true) as _claims \gset
+select public.create_verified_action_context('FREEZE', :'tenant_001', :'site_b1', 'WORKING_REVISION', 'WR-ORG-B-ACTIVE-CONSUME', repeat('c', 64)) as ctx_active_consume_id \gset
+select lives_ok(
+  $$select public.consume_verified_action_context('$$ || :'ctx_active_consume_id' || $$'::uuid, 'FREEZE')$$,
+  'an action context still consumes while its organization and site remain ACTIVE'
+);
+
+-- ---------------------------------------------------------------------------
+-- 15: site deactivation revokes an already-minted context at consume time
+-- ---------------------------------------------------------------------------
+select public.create_verified_action_context('FREEZE', :'tenant_001', :'site_b1', 'WORKING_REVISION', 'WR-ORG-B-SITE-RECHECK', repeat('c', 64)) as ctx_site_recheck_id \gset
+update public.monolith_site set status = 'INACTIVE'
+  where tenant_id = :'tenant_001' and id = :'site_b1';
+select throws_ok(
+  $$select public.consume_verified_action_context('$$ || :'ctx_site_recheck_id' || $$'::uuid, 'FREEZE')$$,
+  'P0001', 'AUTH_SCOPE_DENIED',
+  'site deactivation revokes an already-minted action context at consume time'
+);
+update public.monolith_site set status = 'ACTIVE'
+  where tenant_id = :'tenant_001' and id = :'site_b1';
+
+-- Mint while both scopes are active; assertion 21 consumes only after the
+-- organization is deactivated by assertion 20's setup.
+select public.create_verified_action_context('FREEZE', :'tenant_001', :'site_b1', 'WORKING_REVISION', 'WR-ORG-B-ORG-RECHECK', repeat('c', 64)) as ctx_org_recheck_id \gset
+
+-- ---------------------------------------------------------------------------
+-- 16: a site row with a tenant-mismatched organization foreign key is rejected
 -- ---------------------------------------------------------------------------
 select throws_ok(
   $$insert into public.monolith_site (id, tenant_id, organization_id, code, display_name, status)
@@ -178,9 +206,9 @@ select throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 15-16: site-scoped SAFETY table (release_content_revocation, migration 0186)
+-- 17-18: site-scoped SAFETY table (release_content_revocation, migration 0186)
 --        obeys organization scope after 0189 — cross-org read denied, own-org
---        read allowed (a deny-all helper would fail assertion 16).
+--        read allowed (a deny-all helper would fail assertion 18).
 -- ---------------------------------------------------------------------------
 -- A BLOCK deny-log row bound to site_b1 (organization B). release_revision_id is
 -- nullable, so no full release chain is needed.
@@ -209,7 +237,7 @@ select is(:x_rcr_b::bigint, 1::bigint,
   'RLS: organization-B membership still reads its own content-revocation row (not deny-all)');
 
 -- ---------------------------------------------------------------------------
--- 17: content_unblock_grant (migration 0188) SELECT policy is site-scoped via
+-- 19: content_unblock_grant (migration 0188) SELECT policy is site-scoped via
 --     the same organization/site helper, not tenant-only.
 -- ---------------------------------------------------------------------------
 select ok(
@@ -220,7 +248,7 @@ select ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 18: organization status is load-bearing — an INACTIVE organization
+-- 20: organization status is load-bearing — an INACTIVE organization
 --     authorizes no new action context, even for a fully-granted member.
 -- ---------------------------------------------------------------------------
 update public.monolith_organization set status = 'INACTIVE'
@@ -230,6 +258,16 @@ select throws_ok(
   $$select public.create_verified_action_context('FREEZE', '11111111-1111-1111-1111-111111111111', '1b111111-1111-1111-1111-1111111111b1', 'WORKING_REVISION', 'WR-ORG-B-INACTIVE', repeat('c', 64))$$,
   'P0001', 'AUTH_SCOPE_DENIED',
   'an INACTIVE organization authorizes no new action context'
+);
+
+-- ---------------------------------------------------------------------------
+-- 21: organization deactivation revokes an already-minted context at consume
+--     time; creation-time enforcement alone is insufficient.
+-- ---------------------------------------------------------------------------
+select throws_ok(
+  $$select public.consume_verified_action_context('$$ || :'ctx_org_recheck_id' || $$'::uuid, 'FREEZE')$$,
+  'P0001', 'AUTH_SCOPE_DENIED',
+  'organization deactivation revokes an already-minted action context at consume time'
 );
 
 select * from finish();
