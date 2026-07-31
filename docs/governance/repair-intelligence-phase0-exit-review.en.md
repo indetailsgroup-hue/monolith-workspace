@@ -14,7 +14,7 @@ Immutable infrastructure: NOT CLAIMED
 | Canonical product `main` | `dd1119af6d0bcba0e38d38516ed1b11125bcf19f` |
 | Governance baseline (pinned linters) | `55557d7f178dcbe00fec15cffb3061df668eaff8` |
 | Trust Kernel series head | `8dfe0cc02e6cbbe8f4cefb3893d80a758fc8d49b` |
-| Execution branch head | `84a7d13c463066e4f3d5e7f895750045df2f3666` |
+| Execution branch head | `e6debfe657fed7b15d87ec4c691780bdb1e47fee` |
 
 ## 2. Evidence table (machine reports)
 
