@@ -9,6 +9,14 @@
 -- function forward-only so scope status is checked under the same row lock
 -- immediately before the one-time consume update.
 
+do $$
+begin
+  if to_regprocedure('public.consume_verified_action_context(uuid,text,boolean)') is not null then
+    raise exception 'divergent schema: reconcile 3-arg consume overload before applying 0192 — this branch owns only the 2-arg form';
+  end if;
+end;
+$$;
+
 create or replace function public.consume_verified_action_context(
   p_context_id uuid,
   p_expected_action text
