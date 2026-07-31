@@ -55,7 +55,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <body><main>
 <h1>MONOLITH Repair Intelligence — ความเสี่ยงที่ยอมรับของ Phase 0 (TH)</h1>
 <p>Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED</p>
-<p>เอกสารนี้บันทึกผลตรวจระดับ LOW จากการรีวิว phase-gate สองเวนเดอร์ ที่ปิดด้วย <strong>การตัดสินใจอย่างจงใจและผ่านการทบทวน</strong> แทนการแก้โค้ด แต่ละข้อเป็นความเสี่ยงที่ ยอมรับอย่างมีเหตุผล ไม่ใช่การมองข้าม ผลตรวจระดับ HIGH และ MEDIUM แก้ด้วยโค้ด ครบแล้ว ส่วนผลตรวจ LOW อีกสองข้อ (organization status ทำให้ load-bearing แล้ว; hash ของรายงานใน exit review แสดงเต็มแล้ว) แก้ด้วยโค้ดและไม่อยู่ในรายการนี้</p>
+<p>เอกสารนี้บันทึกผลตรวจระดับ LOW จากการรีวิว phase-gate สองเวนเดอร์ ที่ปิดด้วย <strong>การตัดสินใจอย่างจงใจและผ่านการทบทวน</strong> แทนการแก้โค้ด แต่ละข้อเป็นความเสี่ยงที่ ยอมรับอย่างมีเหตุผล ไม่ใช่การมองข้าม ผลตรวจระดับ HIGH และ MEDIUM แก้ด้วยโค้ดแล้ว ส่วนผลตรวจ LOW อีกสองข้อมีสถานะแยกกัน: <strong>LOW-1 fix implemented in 0192, pending cross-vendor re-review</strong>; ส่วน LOW-4 แก้การแสดง hash ของรายงานใน exit review ให้ครบและผ่านการทบทวนแล้ว ทั้งสองข้อไม่ใช่รายการ accepted risk ในเอกสารนี้</p>
 <h2>1. ตาราง trust-root registry คงขอบเขตระดับ tenant</h2>
 <p><strong>ผลตรวจ</strong> migration 0189 ย้ายตารางที่เป็น site-scoped ไปใช้ RLS แบบ organization/site-grant แต่ตาราง trust-root registry จาก migration 0183 — <code>trust_authority_key</code>, <code>trust_key_revocation</code>, <code>trust_profile_attestation_revocation</code>, <code>trust_warning_grant_revocation</code> — ยังเป็น tenant-scoped สมาชิกใดในเทแนนต์จึงอ่านได้</p>
 <p><strong>การตัดสินใจ: ยอมรับ — ขอบเขตระดับ tenant ถูกต้องแล้ว</strong></p>
@@ -68,10 +68,10 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 </ul>
 <p>กระจายให้ทุก site** ในเทแนนต์รับรู้ การจำกัดการเพิกถอนไว้แค่องค์กรเดียวจะซ่อน สัญญาณความปลอดภัยจาก site ที่ต้องการ ซึ่งแย่กว่าการเปิดเผย metadata ตามที่ผลตรวจ ระบุ</p>
 <ul>
-<li>สิ่งที่เปิดเผยคือ <strong>metadata ของการเพิกถอน</strong> (id, เวลาที่มีผล, เหตุผล) ภายใน</li>
+<li>id และเวลาที่มีผลเป็น metadata ของการเพิกถอนภายในเทแนนต์เดียว ไม่ใช่ locator</li>
 </ul>
-<p>เทแนนต์เดียว ไม่ใช่ P2 plaintext, locator, หรือข้อมูลข้ามเทแนนต์</p>
-<p><strong>เงื่อนไขทบทวนใหม่</strong> หากเฟสถัดไปมีคีย์ลงนามระดับองค์กร (เพิ่ม <code>site_id</code>/<code>organization_id</code> บนตารางคีย์) ให้ re-scope ตารางการเพิกถอนให้ตรงกัน ตอนนั้น</p>
+<p>หรือข้อมูลข้ามเทแนนต์ อย่างไรก็ตาม <code>reason</code> เป็น free text ที่ไม่มี constraint และถูกคัดลอกลง trust bundle ของทุก site จึงรับรองไม่ได้ว่าไม่มี P2; การเปิดเผย P2 ขึ้นกับวินัยของ operator ข้อนี้ยังเป็น <strong>ความเสี่ยงเปิด</strong></p>
+<p><strong>เงื่อนไขทบทวนใหม่</strong> หากเฟสถัดไปมีคีย์ลงนามระดับองค์กร (เพิ่ม <code>site_id</code>/<code>organization_id</code> บนตารางคีย์) ให้ re-scope ตารางการเพิกถอนให้ตรงกัน ตอนนั้น และให้ทบทวนอีกครั้งเมื่อสามารถแทนหรือจำกัด free-text <code>reason</code> ด้วยเหตุผลแบบรหัส การตรวจสอบ และการ redact</p>
 <h2>2. หมายเลข migration 0189–0191 อาจชนกับสาย Trust Kernel donor</h2>
 <p><strong>ผลตรวจ</strong> branch นี้กำหนด <code>0189</code>–<code>0191</code> ให้ migration ของ Repair Phase 0 ส่วน branch donor ของ Trust Kernel (<code>trust-kernel/shadow-e0</code>) อาจมีเนื้อหาต่างกันที่ หมายเลขใกล้เคียง การ reconcile ในอนาคตจึงอาจชนกัน</p>
 <p><strong>การตัดสินใจ: ยอมรับ — การ reconcile เป็นขั้นตอน manual อย่างจงใจ</strong></p>

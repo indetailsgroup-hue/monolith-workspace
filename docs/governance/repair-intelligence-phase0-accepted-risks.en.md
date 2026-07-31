@@ -5,9 +5,10 @@ Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED
 This register records the LOW-severity findings from the two-vendor phase-gate
 review that are resolved by a **reviewed, deliberate decision** rather than a
 code change. Each is a conscious accepted risk with a rationale, not an
-oversight. The HIGH and MEDIUM findings were all fixed in code; the other two
-LOW findings (organization status made load-bearing; exit-review report hashes
-shown in full) were fixed in code and are not listed here.
+oversight. The HIGH and MEDIUM findings were fixed in code. The two other LOW
+findings are tracked separately: **LOW-1 fix implemented in 0192, pending cross-vendor re-review**;
+LOW-4 exit-review report hashes were corrected and
+reviewed. Neither is an accepted-risk entry here.
 
 ## 1. Trust-root registry tables stay tenant-scoped
 
@@ -27,12 +28,15 @@ remain tenant-scoped, so any member of a tenant can read them.
   every site in the tenant must observe. Narrowing a revocation to one
   organization would hide a safety signal from the sites that need it, which is
   a worse posture than the metadata exposure the finding describes.
-- The exposure is revocation **metadata** (ids, effective time, reason) within
-  one tenant, not P2 plaintext, a locator, or cross-tenant data.
+- The ids and effective times are revocation metadata within one tenant, not a
+  locator or cross-tenant data. However, `reason` is unconstrained free text
+  copied into every site's trust bundle. It is not intrinsically P2-safe: P2
+  exposure depends on operator discipline. This remains an **open risk**.
 
 **Revisit trigger.** If a future phase introduces per-organization signing keys
 (a `site_id`/`organization_id` on the key tables), re-scope the revocation
-tables to match at that time.
+tables to match at that time. Also revisit when the free-text `reason` can be
+replaced or constrained by coded reasons, validation, and redaction.
 
 ## 2. Migration numbers 0189–0191 may diverge from the Trust Kernel donor line
 

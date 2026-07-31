@@ -55,7 +55,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <body><main>
 <h1>MONOLITH Repair Intelligence — Phase 0 Accepted Risks (EN)</h1>
 <p>Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED</p>
-<p>This register records the LOW-severity findings from the two-vendor phase-gate review that are resolved by a <strong>reviewed, deliberate decision</strong> rather than a code change. Each is a conscious accepted risk with a rationale, not an oversight. The HIGH and MEDIUM findings were all fixed in code; the other two LOW findings (organization status made load-bearing; exit-review report hashes shown in full) were fixed in code and are not listed here.</p>
+<p>This register records the LOW-severity findings from the two-vendor phase-gate review that are resolved by a <strong>reviewed, deliberate decision</strong> rather than a code change. Each is a conscious accepted risk with a rationale, not an oversight. The HIGH and MEDIUM findings were fixed in code. The two other LOW findings are tracked separately: <strong>LOW-1 fix implemented in 0192, pending cross-vendor re-review</strong>; LOW-4 exit-review report hashes were corrected and reviewed. Neither is an accepted-risk entry here.</p>
 <h2>1. Trust-root registry tables stay tenant-scoped</h2>
 <p><strong>Finding.</strong> Migration 0189 moved site-scoped tables to organization/site-grant RLS, but the trust-root registry tables from migration 0183 — <code>trust_authority_key</code>, <code>trust_key_revocation</code>, <code>trust_profile_attestation_revocation</code>, <code>trust_warning_grant_revocation</code> — remain tenant-scoped, so any member of a tenant can read them.</p>
 <p><strong>Decision: accepted, tenant scope is correct.</strong></p>
@@ -68,10 +68,10 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 </ul>
 <p>every site in the tenant must observe. Narrowing a revocation to one organization would hide a safety signal from the sites that need it, which is a worse posture than the metadata exposure the finding describes.</p>
 <ul>
-<li>The exposure is revocation <strong>metadata</strong> (ids, effective time, reason) within</li>
+<li>The ids and effective times are revocation metadata within one tenant, not a</li>
 </ul>
-<p>one tenant, not P2 plaintext, a locator, or cross-tenant data.</p>
-<p><strong>Revisit trigger.</strong> If a future phase introduces per-organization signing keys (a <code>site_id</code>/<code>organization_id</code> on the key tables), re-scope the revocation tables to match at that time.</p>
+<p>locator or cross-tenant data. However, <code>reason</code> is unconstrained free text copied into every site's trust bundle. It is not intrinsically P2-safe: P2 exposure depends on operator discipline. This remains an <strong>open risk</strong>.</p>
+<p><strong>Revisit trigger.</strong> If a future phase introduces per-organization signing keys (a <code>site_id</code>/<code>organization_id</code> on the key tables), re-scope the revocation tables to match at that time. Also revisit when the free-text <code>reason</code> can be replaced or constrained by coded reasons, validation, and redaction.</p>
 <h2>2. Migration numbers 0189–0191 may diverge from the Trust Kernel donor line</h2>
 <p><strong>Finding.</strong> This branch assigned <code>0189</code>–<code>0191</code> to Repair Phase 0 migrations. The Trust Kernel donor branch (<code>trust-kernel/shadow-e0</code>) may carry different content at nearby numbers, so a future reconciliation could collide.</p>
 <p><strong>Decision: accepted, reconciliation is a deliberate manual step.</strong></p>
