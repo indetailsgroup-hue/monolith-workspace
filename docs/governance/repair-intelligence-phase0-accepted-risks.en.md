@@ -38,9 +38,9 @@ remain tenant-scoped, so any member of a tenant can read them.
 tables to match at that time. Also revisit when the free-text `reason` can be
 replaced or constrained by coded reasons, validation, and redaction.
 
-## 2. Migration numbers 0189–0191 may diverge from the Trust Kernel donor line
+## 2. Migration numbers 0189–0192 may diverge from the Trust Kernel donor line
 
-**Finding.** This branch assigned `0189`–`0191` to Repair Phase 0 migrations.
+**Finding.** This branch assigned `0189`–`0192` to Repair Phase 0 migrations.
 The Trust Kernel donor branch (`trust-kernel/shadow-e0`) may carry different
 content at nearby numbers, so a future reconciliation could collide.
 

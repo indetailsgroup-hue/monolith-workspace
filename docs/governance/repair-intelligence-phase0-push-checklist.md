@@ -56,7 +56,7 @@ Confirm both workflows are discovered and every job is green:
   shadow E2E, pinned claim linters, evidence self-verify, and the **final
   acceptance gate**.
 - **`db-verify.yml`** — a from-zero `supabase start` applying the full
-  186-migration chain through `0191`, then all 9 pgTAP suites. This is the
+  187-migration chain through `0192`, then all 9 pgTAP suites. This is the
   canonical clean-DB apply that a local run cannot reproduce.
 
 ## 3. CI negative control — prove the gate FAILS before trusting it green

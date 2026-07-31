@@ -72,8 +72,8 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 </ul>
 <p>หรือข้อมูลข้ามเทแนนต์ อย่างไรก็ตาม <code>reason</code> เป็น free text ที่ไม่มี constraint และถูกคัดลอกลง trust bundle ของทุก site จึงรับรองไม่ได้ว่าไม่มี P2; การเปิดเผย P2 ขึ้นกับวินัยของ operator ข้อนี้ยังเป็น <strong>ความเสี่ยงเปิด</strong></p>
 <p><strong>เงื่อนไขทบทวนใหม่</strong> หากเฟสถัดไปมีคีย์ลงนามระดับองค์กร (เพิ่ม <code>site_id</code>/<code>organization_id</code> บนตารางคีย์) ให้ re-scope ตารางการเพิกถอนให้ตรงกัน ตอนนั้น และให้ทบทวนอีกครั้งเมื่อสามารถแทนหรือจำกัด free-text <code>reason</code> ด้วยเหตุผลแบบรหัส การตรวจสอบ และการ redact</p>
-<h2>2. หมายเลข migration 0189–0191 อาจชนกับสาย Trust Kernel donor</h2>
-<p><strong>ผลตรวจ</strong> branch นี้กำหนด <code>0189</code>–<code>0191</code> ให้ migration ของ Repair Phase 0 ส่วน branch donor ของ Trust Kernel (<code>trust-kernel/shadow-e0</code>) อาจมีเนื้อหาต่างกันที่ หมายเลขใกล้เคียง การ reconcile ในอนาคตจึงอาจชนกัน</p>
+<h2>2. หมายเลข migration 0189–0192 อาจชนกับสาย Trust Kernel donor</h2>
+<p><strong>ผลตรวจ</strong> branch นี้กำหนด <code>0189</code>–<code>0192</code> ให้ migration ของ Repair Phase 0 ส่วน branch donor ของ Trust Kernel (<code>trust-kernel/shadow-e0</code>) อาจมีเนื้อหาต่างกันที่ หมายเลขใกล้เคียง การ reconcile ในอนาคตจึงอาจชนกัน</p>
 <p><strong>การตัดสินใจ: ยอมรับ — การ reconcile เป็นขั้นตอน manual อย่างจงใจ</strong></p>
 <ul>
 <li>Phase 0 <strong>transplant เฉพาะ Trust Kernel series 24 commit</strong> (<code>43301f96</code>..</li>

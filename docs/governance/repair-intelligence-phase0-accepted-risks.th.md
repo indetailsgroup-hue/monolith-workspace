@@ -37,9 +37,9 @@ organization/site-grant แต่ตาราง trust-root registry จาก m
 ตอนนั้น และให้ทบทวนอีกครั้งเมื่อสามารถแทนหรือจำกัด free-text `reason` ด้วยเหตุผล
 แบบรหัส การตรวจสอบ และการ redact
 
-## 2. หมายเลข migration 0189–0191 อาจชนกับสาย Trust Kernel donor
+## 2. หมายเลข migration 0189–0192 อาจชนกับสาย Trust Kernel donor
 
-**ผลตรวจ** branch นี้กำหนด `0189`–`0191` ให้ migration ของ Repair Phase 0 ส่วน
+**ผลตรวจ** branch นี้กำหนด `0189`–`0192` ให้ migration ของ Repair Phase 0 ส่วน
 branch donor ของ Trust Kernel (`trust-kernel/shadow-e0`) อาจมีเนื้อหาต่างกันที่
 หมายเลขใกล้เคียง การ reconcile ในอนาคตจึงอาจชนกัน
 

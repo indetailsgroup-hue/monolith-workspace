@@ -72,8 +72,8 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 </ul>
 <p>locator or cross-tenant data. However, <code>reason</code> is unconstrained free text copied into every site's trust bundle. It is not intrinsically P2-safe: P2 exposure depends on operator discipline. This remains an <strong>open risk</strong>.</p>
 <p><strong>Revisit trigger.</strong> If a future phase introduces per-organization signing keys (a <code>site_id</code>/<code>organization_id</code> on the key tables), re-scope the revocation tables to match at that time. Also revisit when the free-text <code>reason</code> can be replaced or constrained by coded reasons, validation, and redaction.</p>
-<h2>2. Migration numbers 0189–0191 may diverge from the Trust Kernel donor line</h2>
-<p><strong>Finding.</strong> This branch assigned <code>0189</code>–<code>0191</code> to Repair Phase 0 migrations. The Trust Kernel donor branch (<code>trust-kernel/shadow-e0</code>) may carry different content at nearby numbers, so a future reconciliation could collide.</p>
+<h2>2. Migration numbers 0189–0192 may diverge from the Trust Kernel donor line</h2>
+<p><strong>Finding.</strong> This branch assigned <code>0189</code>–<code>0192</code> to Repair Phase 0 migrations. The Trust Kernel donor branch (<code>trust-kernel/shadow-e0</code>) may carry different content at nearby numbers, so a future reconciliation could collide.</p>
 <p><strong>Decision: accepted, reconciliation is a deliberate manual step.</strong></p>
 <ul>
 <li>Phase 0 <strong>deliberately transplanted only the 24-commit Trust Kernel series</strong></li>
