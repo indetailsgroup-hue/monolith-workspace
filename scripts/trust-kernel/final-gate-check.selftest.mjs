@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { checkVitestReport, evaluateReports } from './final-gate-check.mjs';
+import { checkVitestReport, evaluateReports, REQUIRED_REPORT_MANIFEST } from './final-gate-check.mjs';
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -84,7 +84,11 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('verifier-ubuntu-latest.json', CLEAN_REPORT);
   w('verifier-windows-latest.json', CLEAN_REPORT);
   w('determinism-ubuntu-latest.json', CLEAN_REPORT);
+  w('determinism-windows-latest.json', CLEAN_REPORT);
   w('containment-ubuntu-latest.json', CLEAN_REPORT);
+  w('containment-windows-latest.json', CLEAN_REPORT);
+  w('repair-ubuntu-latest.json', CLEAN_REPORT);
+  w('repair-windows-latest.json', CLEAN_REPORT);
   w('edge.json', CLEAN_REPORT);
   for (const suite of [
     'trust_kernel_tenancy', 'trust_kernel_governance', 'trust_kernel_release',
@@ -105,6 +109,9 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('repair-docs.txt', 'REPAIR PHASE 0 DOCS: PASS\n');
   w('route-ledger.txt', 'ROUTE LEDGER: PASS\n');
   w('claim-linters.txt', 'CLAIM LINTERS: PASS\n');
+  for (const report of REQUIRED_REPORT_MANIFEST) {
+    if (!fs.existsSync(path.join(dir, report))) throw new Error(`clean fixture omitted required report: ${report}`);
+  }
   return dir;
 }
 
@@ -118,6 +125,14 @@ console.log('evaluateReports end-to-end checks:');
   const dir = writeCleanTree(path.join(base, 'clean'), { evidenceVerified: true });
   const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
   check('clean+verified tree yields zero violations', v.length === 0, JSON.stringify(v));
+}
+
+// Every named workflow output is load-bearing, not merely validated if present.
+for (const report of REQUIRED_REPORT_MANIFEST) {
+  const dir = writeCleanTree(path.join(base, `missing-${report}`), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, report));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  check(`a missing workflow report ${report} is flagged`, v.some((s) => s.includes(report)), JSON.stringify(v));
 }
 
 // 2. Inject a hidden it.skip into ONE server report -> gate FAILS.

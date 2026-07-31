@@ -21,6 +21,40 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Exact basenames emitted by trust-kernel-verify.yml. This is the single source
+// of truth for report completeness; semantic checks below validate each report
+// after this manifest has established that every workflow output is present.
+export const REQUIRED_REPORT_MANIFEST = Object.freeze([
+  'server-ubuntu-latest.json',
+  'server-windows-latest.json',
+  'determinism-ubuntu-latest.json',
+  'determinism-windows-latest.json',
+  'verifier-ubuntu-latest.json',
+  'verifier-windows-latest.json',
+  'containment-ubuntu-latest.json',
+  'containment-windows-latest.json',
+  'repair-ubuntu-latest.json',
+  'repair-windows-latest.json',
+  'route-ledger.txt',
+  'repair-phase0-ledger.json',
+  'repair-docs.txt',
+  'golden-ubuntu-latest.sha',
+  'golden-windows-latest.sha',
+  'edge.json',
+  'pgtap-trust_kernel_tenancy.tap',
+  'pgtap-trust_kernel_governance.tap',
+  'pgtap-trust_kernel_release.tap',
+  'pgtap-trust_kernel_bundles.tap',
+  'pgtap-trust_kernel_containment.tap',
+  'pgtap-workflow_db_invariants.tap',
+  'pgtap-trust_kernel_safety.tap',
+  'pgtap-repair_phase0_organization.tap',
+  'pgtap-repair_phase0_containment.tap',
+  'e2e.json',
+  'claim-linters.txt',
+  'evidence-attestation.json',
+]);
+
 // A per-assertion status that means the assertion did NOT actually run to a pass.
 // vitest/jest emit these across v1 and v3. ANY of them fails the gate.
 const NON_RUN_STATUSES = new Set(['skipped', 'pending', 'todo', 'disabled']);
@@ -96,36 +130,17 @@ export function evaluateReports({ root, jobResults }) {
 
   const files = walk(root);
 
-  const req = (pred, msg) => {
-    if (!files.some(pred)) violations.push(`missing required report: ${msg}`);
-  };
-  req((f) => /server-ubuntu-latest\.json$/.test(f), 'server-ubuntu-latest.json');
-  req((f) => /server-windows-latest\.json$/.test(f), 'server-windows-latest.json');
-  req((f) => /verifier-ubuntu-latest\.json$/.test(f), 'verifier-ubuntu-latest.json');
-  req((f) => /edge\.json$/.test(f), 'edge.json');
-  req((f) => /pgtap-trust_kernel_release\.tap$/.test(f), 'pgtap-trust_kernel_release.tap');
-  req((f) => /e2e\.json$/.test(f), 'e2e.json');
+  const presentReportNames = new Set(files.map((f) => path.basename(f)));
+  for (const report of REQUIRED_REPORT_MANIFEST) {
+    if (!presentReportNames.has(report)) violations.push(`missing required report: ${report}`);
+  }
 
   // Repair Phase 0 evidence (Task 8): the disposition ledger, both Repair pgTAP
   // suites, the bilingual document verifier, the route ledger, and the PINNED
   // claim/certification linter result are load-bearing. A missing report is a
   // failed gate — never a warning.
-  // Every plan-mandated pgTAP suite must be present BY NAME — a dropped suite
-  // is a failed gate, not a silent omission (review #3 / exit condition 8).
-  const REQUIRED_PGTAP = [
-    'workflow_db_invariants',
-    'trust_kernel_tenancy', 'trust_kernel_governance', 'trust_kernel_release',
-    'trust_kernel_bundles', 'trust_kernel_containment', 'trust_kernel_safety',
-    'repair_phase0_organization', 'repair_phase0_containment',
-  ];
-  for (const suite of REQUIRED_PGTAP) {
-    req((f) => new RegExp(`pgtap-${suite}\\.tap$`).test(f), `pgtap-${suite}.tap`);
-  }
-
   const repairLedger = files.find((f) => /repair-phase0-ledger\.json$/.test(f));
-  if (!repairLedger) {
-    violations.push('missing required report: repair-phase0-ledger.json (Repair disposition ledger)');
-  } else {
+  if (repairLedger) {
     try {
       const rl = JSON.parse(fs.readFileSync(repairLedger, 'utf8'));
       if (rl.pass !== true) violations.push(`repair-phase0-ledger.json did not pass: ${JSON.stringify(rl.errors ?? [])}`);
@@ -139,10 +154,7 @@ export function evaluateReports({ root, jobResults }) {
 
   const reqText = (re, marker, msg) => {
     const f = files.find((x) => re.test(x));
-    if (!f) {
-      violations.push(`missing required report: ${msg}`);
-      return;
-    }
+    if (!f) return;
     if (!fs.readFileSync(f, 'utf8').includes(marker)) {
       violations.push(`${msg} does not contain "${marker}" (gate requires the verifier's PASS output, not job status)`);
     }
