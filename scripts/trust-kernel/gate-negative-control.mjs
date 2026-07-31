@@ -10,15 +10,32 @@
 //
 // Run:  node scripts/trust-kernel/gate-negative-control.mjs
 //       (or: npm run gate:negative-control)
-// Exit: 0 only if EVERY gate passed clean AND failed on its deliberate violation.
+// Exit: 0 only if all four covered gate families passed clean and rejected
+// their deliberate violation.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  assertInjectionTargetAbsent,
+  suiteHasMinimumPasses,
+} from './gate-negative-control-lib.mjs';
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 let failures = 0;
+const LEDGER_SUITE_PASS_FLOOR = 7;
+const DOCS_SUITE_PASS_FLOOR = 10;
+const COVERED_GATE_FAMILIES = [
+  'final-gate deliberate-violation verifier',
+  'capability-ledger validator',
+  'bilingual governance-docs verifier',
+  'route-ledger open-world byte-route sweep',
+];
+
+console.log(`covered gate families (${COVERED_GATE_FAMILIES.length}):`);
+for (const family of COVERED_GATE_FAMILIES) console.log(`  - ${family}`);
 
 function ok(name) { console.log(`  ok   - ${name}`); }
 function bad(name, extra = '') { failures += 1; console.error(`  FAIL - ${name} ${extra}`); }
@@ -26,7 +43,7 @@ function bad(name, extra = '') { failures += 1; console.error(`  FAIL - ${name} 
 // Run a node command; return { code, out }. Never throws on non-zero exit.
 function run(args) {
   try {
-    const out = execFileSync('node', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const out = execFileSync(process.execPath, args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     return { code: 0, out };
   } catch (e) {
     return { code: e.status ?? 1, out: `${e.stdout ?? ''}${e.stderr ?? ''}` };
@@ -48,18 +65,18 @@ console.log('final gate — deliberate-violation self-test:');
 //     rejection fires.
 console.log('capability ledger — RED-case suite:');
 {
-  const r = run(['--test', 'scripts/trust-kernel/verify-repair-phase0-ledger.test.mjs']);
-  if (r.code === 0 && /# fail 0/.test(r.out)) ok('ledger validator rejects malformed / incomplete ledgers');
-  else bad('ledger validator RED-case suite did not pass', `(exit ${r.code})`);
+  const r = run(['--test', '--test-reporter=tap', 'scripts/trust-kernel/verify-repair-phase0-ledger.test.mjs']);
+  if (suiteHasMinimumPasses(r, LEDGER_SUITE_PASS_FLOOR)) ok('ledger validator rejects malformed / incomplete ledgers');
+  else bad('ledger validator RED-case suite did not pass', `(exit ${r.code}; require # pass >= ${LEDGER_SUITE_PASS_FLOOR} and # fail 0)`);
 }
 
 // (3) The bilingual-docs verifier RED cases (empty HTML, hostile Gate B claim,
 //     missing status line, widened forbidden verbs).
 console.log('bilingual docs verifier — RED-case suite:');
 {
-  const r = run(['--test', 'scripts/trust-kernel/verify-repair-phase0-docs.test.mjs']);
-  if (r.code === 0 && /# fail 0/.test(r.out)) ok('docs verifier rejects empty / hostile HTML and claims');
-  else bad('docs verifier RED-case suite did not pass', `(exit ${r.code})`);
+  const r = run(['--test', '--test-reporter=tap', 'scripts/trust-kernel/verify-repair-phase0-docs.test.mjs']);
+  if (suiteHasMinimumPasses(r, DOCS_SUITE_PASS_FLOOR)) ok('docs verifier rejects empty / hostile HTML and claims');
+  else bad('docs verifier RED-case suite did not pass', `(exit ${r.code}; require # pass >= ${DOCS_SUITE_PASS_FLOOR} and # fail 0)`);
 }
 
 // (4) LIVE control for the route-ledger open-world byte-route sweep: plant a
@@ -71,11 +88,14 @@ console.log('route ledger — live unguarded-byte-route injection:');
   const leakFile = join(leakDir, 'leak.ts');
   let planted = false;
   try {
+    assertInjectionTargetAbsent(leakDir);
+
     // Baseline: the verifier must PASS on the clean tree first.
     const base = run(['scripts/trust-kernel/verify-route-ledger.mjs']);
     if (base.code !== 0) { bad('route ledger did not pass on the clean tree', `(exit ${base.code})`); }
 
     mkdirSync(leakDir, { recursive: true });
+    planted = true;
     writeFileSync(leakFile,
       'import { Router } from "express";\n' +
       'export function leakRouter() {\n' +
@@ -83,8 +103,6 @@ console.log('route ledger — live unguarded-byte-route injection:');
       '  router.get("/leak/:id", (req, res) => { res.send(Buffer.from("bytes")); });\n' +
       '  return router;\n' +
       '}\n', 'utf8');
-    planted = true;
-
     const broken = run(['scripts/trust-kernel/verify-route-ledger.mjs']);
     if (broken.code !== 0 && /open-world server byte route/.test(broken.out)) {
       ok('route ledger rejects a new unguarded byte route');
@@ -92,7 +110,7 @@ console.log('route ledger — live unguarded-byte-route injection:');
       bad('route ledger did NOT reject the planted unguarded byte route', `(exit ${broken.code})`);
     }
   } finally {
-    if (existsSync(leakDir)) rmSync(leakDir, { recursive: true, force: true });
+    if (planted && existsSync(leakDir)) rmSync(leakDir, { recursive: true, force: true });
   }
   // Safety: the injected path must be gone and untracked by git.
   if (existsSync(leakFile)) bad('cleanup failed — negative-control leak file still present');
@@ -107,4 +125,4 @@ if (failures > 0) {
   console.error(`\nGATE NEGATIVE CONTROL: FAIL (${failures} control(s) did not bite)`);
   process.exit(1);
 }
-console.log('\nGATE NEGATIVE CONTROL: PASS — every gate rejected its deliberate violation.');
+console.log('\nGATE NEGATIVE CONTROL: PASS — 4 named gate families rejected their deliberate violations.');
