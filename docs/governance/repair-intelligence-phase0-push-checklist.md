@@ -44,6 +44,11 @@ secret store:
 | `EVIDENCE_SIGNER_KEY_ID` | signed evidence attestation — key id (never a private key) |
 | `EVIDENCE_VERIFY_URL` | signed evidence attestation — verify endpoint |
 
+The evidence job downloads every upstream machine report, runs the same semantic
+checks as the final gate except for the not-yet-issued attestation, and builds a
+run-specific `EvidenceManifestV1` before signing. Signer configuration alone can
+never produce `verified:true`.
+
 ## 2. Push and watch the workflows
 
 ```bash
