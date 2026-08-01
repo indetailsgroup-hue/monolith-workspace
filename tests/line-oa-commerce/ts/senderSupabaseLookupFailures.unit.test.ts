@@ -13,12 +13,22 @@ type QueryResult = {
   error: { message: string } | null;
 };
 
-function query(result: QueryResult) {
+function query(
+  result: QueryResult,
+  onEq: (column: string, value: unknown) => void = () => {},
+  onOr: (filters: string) => void = () => {},
+) {
   const builder = {
     select: () => builder,
-    eq: () => builder,
+    eq: (column: string, value: unknown) => {
+      onEq(column, value);
+      return builder;
+    },
     limit: () => builder,
-    or: () => builder,
+    or: (filters: string) => {
+      onOr(filters);
+      return builder;
+    },
     maybeSingle: async () => result,
     then: <TResult1 = QueryResult, TResult2 = never>(
       onfulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
@@ -33,6 +43,12 @@ function fakeClient(
   resultOverrides: Record<string, QueryResult> = {},
 ) {
   const recordCalls: Array<Record<string, unknown>> = [];
+  const vaultLookupFields: string[] = [];
+  const lookupFilters: Array<{
+    table: string;
+    column: string;
+    value: unknown;
+  }> = [];
   const results: Record<string, QueryResult> = {
     line_oa_conversations: {
       data: { line_user_id: "U-lookup", vertical_context: "monolith" },
@@ -66,9 +82,17 @@ function fakeClient(
 
   const client = {
     recordCalls,
+    vaultLookupFields,
+    lookupFilters,
     async rpc(name: string, args: Record<string, unknown>) {
       if (name === "rpc_claim_line_outbound_batch") {
-        const isGroup = failingTable === "line_groups";
+        const isGroup = failingTable === "line_groups" ||
+          Object.prototype.hasOwnProperty.call(resultOverrides, "line_groups");
+        const templateRows = results.line_oa_message_templates.data;
+        const claimedTemplateKey = Array.isArray(templateRows) && templateRows[0] &&
+            typeof templateRows[0] === "object" && "template_key" in templateRows[0]
+          ? String(templateRows[0].template_key)
+          : "tpl-lookup";
         return {
           data: [{
             id: "ob-lookup",
@@ -77,7 +101,7 @@ function fakeClient(
             target_id: isGroup ? "C-group" : "U-lookup",
             conversation_id: isGroup ? null : "conv-lookup",
             send_type: "push",
-            template_key: "tpl-lookup",
+            template_key: claimedTemplateKey,
             slot_values: {},
           }],
           error: null,
@@ -87,20 +111,40 @@ function fakeClient(
       return { data: [{ recorded: true }], error: null };
     },
     from(table: string) {
-      return query(results[table]);
+      return query(
+        results[table],
+        (column, value) => lookupFilters.push({ table, column, value }),
+        (filters) => lookupFilters.push({ table, column: "or", value: filters }),
+      );
     },
     schema() {
       return {
         from: () => {
           let resultKey = "vault_by_name";
+          let lookupValue: unknown;
           const builder = {
             select: () => builder,
-            eq(field: string) {
+            eq(field: string, value: unknown) {
+              vaultLookupFields.push(field);
               resultKey = field === "name" ? "vault_by_name" : "vault_by_id";
+              lookupValue = value;
               return builder;
             },
             limit: () => builder,
-            maybeSingle: async () => results[resultKey],
+            maybeSingle: async () => {
+              if (
+                resultKey === "vault_by_id" &&
+                (typeof lookupValue !== "string" ||
+                  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+                    .test(lookupValue))
+              ) {
+                return {
+                  data: null,
+                  error: { message: "invalid input syntax for type uuid" },
+                };
+              }
+              return results[resultKey];
+            },
           };
           return builder;
         },
@@ -124,6 +168,71 @@ const factories = senderModule as unknown as SenderFactories;
 const successfulLine: LineMessagingClient = { send: async () => ({ ok: true }) };
 
 describe("line-outbound-sender Supabase lookup failures", () => {
+  it("sends an unbound-group bind prompt with the monolith fallback", async () => {
+    expect(factories.createSupabaseSenderDataAccess).toBeTypeOf("function");
+    const client = fakeClient(undefined, {
+      line_groups: { data: null, error: null },
+      line_oa_message_templates: {
+        data: [{
+          template_key: "tpl_inst_bind_prompt",
+          vertical_context: null,
+          body: "bind this group",
+          is_active: true,
+          message_kind: "text",
+        }],
+        error: null,
+      },
+    });
+    const data = factories.createSupabaseSenderDataAccess!(client);
+    const lineCalls: Array<Parameters<LineMessagingClient["send"]>[0]> = [];
+
+    const summary = await processOutboundBatch(
+      {
+        data,
+        vault: { resolveAccessToken: async () => "resolved-token" },
+        line: {
+          async send(request) {
+            lineCalls.push(request);
+            return { ok: true };
+          },
+        },
+        logger: createScrubbingLogger({ info: () => {}, error: () => {} }),
+      },
+      { batchSize: 1 },
+    );
+
+    expect(summary.results[0]).toEqual({
+      outboundId: "ob-lookup",
+      status: "sent",
+    });
+    expect(lineCalls).toHaveLength(1);
+    expect(lineCalls[0]).toMatchObject({
+      endpoint: "push",
+      to: "C-group",
+      messages: [{ type: "text", text: "bind this group" }],
+    });
+    expect(client.lookupFilters).toContainEqual({
+      table: "line_oa_channels",
+      column: "vertical_context",
+      value: "monolith",
+    });
+    expect(client.lookupFilters).toContainEqual({
+      table: "line_oa_message_templates",
+      column: "template_key",
+      value: "tpl_inst_bind_prompt",
+    });
+    expect(client.lookupFilters).toContainEqual({
+      table: "line_oa_message_templates",
+      column: "or",
+      value: "vertical_context.eq.monolith,vertical_context.is.null",
+    });
+    expect(client.recordCalls).toHaveLength(1);
+    expect(client.recordCalls[0]).toMatchObject({
+      p_status: "sent",
+      p_claim_token: "claim-token",
+    });
+  });
+
   it.each([
     "line_oa_conversations",
     "line_groups",
@@ -156,23 +265,49 @@ describe("line-outbound-sender Supabase lookup failures", () => {
     });
   });
 
-  it.each(["vault_by_name", "vault_by_id"])(
-    "throws on an operational %s lookup error instead of returning absent configuration",
-    async (lookup) => {
+  it.each([
+    { lookup: "vault_by_name", ref: "token-ref" },
+    { lookup: "vault_by_id", ref: "a4000000-0000-4000-8000-000000000001" },
+  ])(
+    "throws on an operational $lookup lookup error instead of returning absent configuration",
+    async ({ lookup, ref }) => {
       expect(factories.createSupabaseVaultTokenResolver).toBeTypeOf("function");
       const vault = factories.createSupabaseVaultTokenResolver!(fakeClient(lookup));
 
-      await expect(vault.resolveAccessToken("token-ref")).rejects.toThrow(
+      await expect(vault.resolveAccessToken(ref)).rejects.toThrow(
         "database temporarily unavailable",
       );
     },
   );
 
-  it("returns null only when both Vault lookups succeed with no row", async () => {
+  it("records a missing non-UUID Vault name as permanent without probing the id column", async () => {
     expect(factories.createSupabaseVaultTokenResolver).toBeTypeOf("function");
-    const vault = factories.createSupabaseVaultTokenResolver!(fakeClient());
+    expect(factories.createSupabaseSenderDataAccess).toBeTypeOf("function");
+    const client = fakeClient();
+    const vault = factories.createSupabaseVaultTokenResolver!(client);
+    const data = factories.createSupabaseSenderDataAccess!(client);
 
-    await expect(vault.resolveAccessToken("missing-ref")).resolves.toBeNull();
+    const summary = await processOutboundBatch(
+      {
+        data,
+        vault,
+        line: successfulLine,
+        logger: createScrubbingLogger({ info: () => {}, error: () => {} }),
+      },
+      { batchSize: 1 },
+    );
+
+    expect(summary.results[0]).toEqual({
+      outboundId: "ob-lookup",
+      status: "failed",
+      reason: "channel_access_token_unresolved",
+      failureClass: "permanent",
+    });
+    expect(client.vaultLookupFields).toEqual(["name"]);
+    expect(client.recordCalls[0]).toMatchObject({
+      p_status: "failed",
+      p_failure_class: "permanent",
+    });
   });
 
   it("keeps genuinely absent conversation configuration permanent when a later lookup also errors", async () => {

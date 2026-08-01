@@ -600,6 +600,8 @@ function stringifyError(err: unknown): string {
 
 /** LINE Messaging API base URL. */
 const LINE_API_BASE = "https://api.line.me/v2/bot/message";
+const UUID_REFERENCE_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The real LINE Messaging API client. Sends a reply or push with the resolved
@@ -649,7 +651,8 @@ export function createLineMessagingClient(): LineMessagingClient {
         // ignore body read errors
       }
       const failureClass: FailureClass =
-        res.status >= 400 && res.status < 500 && res.status !== 429
+        res.status >= 400 && res.status < 500 &&
+          res.status !== 408 && res.status !== 429
           ? "permanent"
           : "transient";
       return {
@@ -792,7 +795,7 @@ export function createSupabaseSenderDataAccess(
               .maybeSingle(),
           );
           if (groupLookup.ok) {
-            groupVertical = groupLookup.data?.vertical_context ?? undefined;
+            groupVertical = groupLookup.data?.vertical_context ?? "monolith";
           } else {
             enrichmentFailure = groupLookup.reason;
             enrichmentFailureClass = "transient";
@@ -801,11 +804,8 @@ export function createSupabaseSenderDataAccess(
         if (!isGroup && (!convo?.line_user_id || !convo.vertical_context)) {
           enrichmentFailure ??= "conversation_enrichment_missing";
         }
-        if (isGroup && !groupVertical) {
-          enrichmentFailure ??= "group_enrichment_missing";
-        }
         const verticalContext: string = isGroup
-          ? (groupVertical ?? "")
+          ? (groupVertical ?? "monolith")
           : (convo?.vertical_context ?? "");
 
         // Resolve the active channel for this vertical (centralized topology).
@@ -927,6 +927,9 @@ export function createSupabaseVaultTokenResolver(
       }
       if (byNameLookup.data?.decrypted_secret) {
         return byNameLookup.data.decrypted_secret;
+      }
+      if (!UUID_REFERENCE_PATTERN.test(ref)) {
+        return null;
       }
       const byIdLookup = await runSupabaseLookup(
         "vault_id",

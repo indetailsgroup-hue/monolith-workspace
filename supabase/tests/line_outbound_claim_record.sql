@@ -1,11 +1,14 @@
 -- pgTAP DB-level invariants — LINE OA outbound claim + result recording (Phase A2)
 -- Feature: atomic outbound claims, service-safe/group-aware single-delivery,
--- due-time backoff, failure classification, and claim fencing (0193 + 0194).
+-- due-time backoff, failure classification, claim fencing, and timezone-safe
+-- successful-send timestamps (0193 + 0194 + 0195 + 0196).
 --
 -- Run only inside the shared-stack rollback wrapper:
 --   psql "$DSN" -X -v ON_ERROR_STOP=1 -c "begin;" \
 --     -f supabase/migrations/0193_line_outbound_claim_and_record.sql \
 --     -f supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql \
+--     -f supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql \
+--     -f supabase/migrations/0196_line_outbound_timezone_safe_sent_at.sql \
 --     -f supabase/tests/line_outbound_claim_record.sql
 --
 -- The caller opens the transaction so any prerequisite migration(s) and this
@@ -14,7 +17,7 @@
 \set ON_ERROR_STOP on
 
 create extension if not exists pgtap;
-select plan(69);
+select plan(70);
 
 -- ---------------------------------------------------------------------------
 -- Test-only dynamic helpers let the complete suite run against the pre-0193
@@ -1297,6 +1300,31 @@ select ok(
     where r->>'id' = 'a3000000-0000-0000-0000-000000000001'
   ),
   'non-UTC session can reclaim the transient row after backoff elapses'
+);
+
+-- ---------------------------------------------------------------------------
+-- 70 (A4): successful delivery timestamps remain absolute in non-UTC sessions.
+-- ---------------------------------------------------------------------------
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a4000000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a4_non_utc_sent_at', '{}'::jsonb
+);
+insert into a1_results values (
+  'a4_non_utc_sent',
+  pg_temp.a2_record_as(
+    'service_role', '{}'::jsonb,
+    'a4000000-0000-0000-0000-000000000001',
+    'sent', null, 'transient'
+  )
+);
+select ok(
+  (select sent_at between now() - interval '5 seconds' and now() + interval '5 seconds'
+   from public.line_oa_outbound_messages
+   where id = 'a4000000-0000-0000-0000-000000000001'),
+  'non-UTC successful send stamps sent_at within five seconds of now()'
 );
 
 select * from finish();

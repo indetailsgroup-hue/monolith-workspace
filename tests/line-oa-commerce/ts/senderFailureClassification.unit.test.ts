@@ -62,6 +62,7 @@ describe("LINE outbound failure classification", () => {
   it.each([
     [400, "permanent"],
     [401, "permanent"],
+    [408, "transient"],
     [409, "permanent"],
     [429, "transient"],
     [500, "transient"],
