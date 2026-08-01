@@ -10,11 +10,13 @@ on:
     paths:
       - "supabase/migrations/**"
       - "supabase/tests/**"
+      - "tests/line-oa-commerce/concurrency/**"
       - ".github/workflows/db-verify.yml"
   pull_request:
     paths:
       - "supabase/migrations/**"
       - "supabase/tests/**"
+      - "tests/line-oa-commerce/concurrency/**"
   workflow_dispatch:
 
 concurrency:
@@ -59,9 +61,17 @@ jobs:
           mkdir -p tap
           for suite in workflow_db_invariants trust_kernel_tenancy trust_kernel_governance \
                        trust_kernel_release trust_kernel_bundles trust_kernel_containment \
-                       trust_kernel_safety repair_phase0_organization repair_phase0_containment; do
-            psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
-              -f "supabase/tests/${suite}.sql" | tee "tap/${suite}.tap"
+                       trust_kernel_safety repair_phase0_organization repair_phase0_containment \
+                       line_outbound_claim_record; do
+            if [[ "$suite" == "line_outbound_claim_record" ]]; then
+              # This suite owns only ROLLBACK; open its transaction in the same
+              # psql session so fixtures and audit rows can never autocommit.
+              psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
+                -c "begin;" -f "supabase/tests/${suite}.sql" | tee "tap/${suite}.tap"
+            else
+              psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
+                -f "supabase/tests/${suite}.sql" | tee "tap/${suite}.tap"
+            fi
             if grep -qE '^not ok' "tap/${suite}.tap"; then
               echo "::error::pgTAP failure in ${suite}.sql"; exit 1
             fi
@@ -70,6 +80,12 @@ jobs:
             fi
             echo "${suite}: all ok ($(grep -cE '^ok ' "tap/${suite}.tap") assertions)"
           done
+
+      - name: Prove LINE outbound claims do not overlap across two clients
+        env:
+          LINE_CLAIM_RACE_DSN: ${{ steps.db.outputs.DB_URL }}
+          LINE_CLAIM_RACE_EPHEMERAL: "1"
+        run: node tests/line-oa-commerce/concurrency/claim-race.mjs
 
       - name: Confirm migration chain reaches 0192
         run: |
@@ -96,6 +112,7 @@ jobs:
             'workflow_db_invariants', 'trust_kernel_tenancy', 'trust_kernel_governance',
             'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
             'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
+            'line_outbound_claim_record',
           ].map((s) => countSuite('tap/' + s + '.tap', s + '.sql'));
           const mig = fs.existsSync('migrations_applied.txt') ? fs.readFileSync('migrations_applied.txt','utf8').trim() : 'unknown';
           const ev = {

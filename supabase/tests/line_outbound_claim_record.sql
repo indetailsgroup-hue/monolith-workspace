@@ -1,10 +1,11 @@
--- pgTAP DB-level invariants — LINE OA outbound claim + result recording (Phase A1)
--- Feature: atomic outbound claims, service-safe/group-aware single-delivery
--- recording, and five-attempt bounded retry (migration 0193).
+-- pgTAP DB-level invariants — LINE OA outbound claim + result recording (Phase A2)
+-- Feature: atomic outbound claims, service-safe/group-aware single-delivery,
+-- due-time backoff, failure classification, and claim fencing (0193 + 0194).
 --
 -- Run only inside the shared-stack rollback wrapper:
 --   psql "$DSN" -X -v ON_ERROR_STOP=1 -c "begin;" \
 --     -f supabase/migrations/0193_line_outbound_claim_and_record.sql \
+--     -f supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql \
 --     -f supabase/tests/line_outbound_claim_record.sql
 --
 -- The caller opens the transaction so any prerequisite migration(s) and this
@@ -13,7 +14,7 @@
 \set ON_ERROR_STOP on
 
 create extension if not exists pgtap;
-select plan(46);
+select plan(67);
 
 -- ---------------------------------------------------------------------------
 -- Test-only dynamic helpers let the complete suite run against the pre-0193
@@ -94,6 +95,85 @@ begin
 end;
 $$;
 
+create or replace function pg_temp.a2_record_as(
+  p_role text,
+  p_claims jsonb,
+  p_outbound_id uuid,
+  p_status text,
+  p_error_detail text,
+  p_failure_class text
+)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_result jsonb;
+  v_state text;
+  v_message text;
+begin
+  perform set_config('request.jwt.claims', p_claims::text, true);
+  begin
+    execute format('set local role %I', p_role);
+    execute $sql$
+      select to_jsonb(r)
+      from public.rpc_record_line_send_result($1, $2, $3, $4) r
+    $sql$ into v_result
+      using p_outbound_id, p_status, p_error_detail, p_failure_class;
+    execute 'reset role';
+    return jsonb_build_object('ok', true, 'result', v_result);
+  exception when others then
+    v_state := sqlstate;
+    v_message := sqlerrm;
+    begin execute 'reset role'; exception when others then null; end;
+    return jsonb_build_object(
+      'ok', false,
+      'sqlstate', v_state,
+      'error', v_message
+    );
+  end;
+end;
+$$;
+
+create or replace function pg_temp.a3_record_as(
+  p_role text,
+  p_claims jsonb,
+  p_outbound_id uuid,
+  p_status text,
+  p_error_detail text,
+  p_failure_class text,
+  p_claim_token uuid
+)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_result jsonb;
+  v_state text;
+  v_message text;
+begin
+  perform set_config('request.jwt.claims', p_claims::text, true);
+  begin
+    execute format('set local role %I', p_role);
+    execute $sql$
+      select to_jsonb(r)
+      from public.rpc_record_line_send_result($1, $2, $3, $4, $5) r
+    $sql$ into v_result
+      using p_outbound_id, p_status, p_error_detail, p_failure_class, p_claim_token;
+    execute 'reset role';
+    return jsonb_build_object('ok', true, 'result', v_result);
+  exception when others then
+    v_state := sqlstate;
+    v_message := sqlerrm;
+    begin execute 'reset role'; exception when others then null; end;
+    return jsonb_build_object(
+      'ok', false,
+      'sqlstate', v_state,
+      'error', v_message
+    );
+  end;
+end;
+$$;
+
 create or replace function pg_temp.a1_outbound_state(p_outbound_id uuid)
 returns jsonb
 language plpgsql
@@ -144,6 +224,85 @@ exception when others then
 end;
 $$;
 
+create or replace function pg_temp.a2_outbound_state(p_outbound_id uuid)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_row jsonb;
+begin
+  execute $sql$
+    select to_jsonb(s)
+    from (
+      select status::text as status,
+             error_detail,
+             sent_at,
+             claimed_at,
+             claimed_by,
+             attempt_count,
+             next_attempt_at
+      from public.line_oa_outbound_messages
+      where id = $1
+    ) s
+  $sql$ into v_row using p_outbound_id;
+  return jsonb_build_object('ok', v_row is not null, 'row', v_row);
+exception when others then
+  return jsonb_build_object('ok', false, 'sqlstate', sqlstate, 'error', sqlerrm);
+end;
+$$;
+
+create or replace function pg_temp.a2_set_next_attempt(
+  p_outbound_id uuid,
+  p_next_attempt_at timestamptz
+)
+returns boolean
+language plpgsql
+as $$
+declare
+  v_updated int;
+begin
+  execute $sql$
+    update public.line_oa_outbound_messages
+       set next_attempt_at = $2,
+           claimed_at = null,
+           claimed_by = null
+     where id = $1
+  $sql$ using p_outbound_id, p_next_attempt_at;
+  get diagnostics v_updated = row_count;
+  return v_updated = 1;
+exception when others then
+  return false;
+end;
+$$;
+
+create or replace function pg_temp.a3_outbound_state(p_outbound_id uuid)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_row jsonb;
+begin
+  execute $sql$
+    select to_jsonb(s)
+    from (
+      select status::text as status,
+             error_detail,
+             sent_at,
+             claimed_at,
+             claimed_by,
+             attempt_count,
+             next_attempt_at,
+             claim_token
+      from public.line_oa_outbound_messages
+      where id = $1
+    ) s
+  $sql$ into v_row using p_outbound_id;
+  return jsonb_build_object('ok', v_row is not null, 'row', v_row);
+exception when others then
+  return jsonb_build_object('ok', false, 'sqlstate', sqlstate, 'error', sqlerrm);
+end;
+$$;
+
 create temporary table a1_results (
   label text primary key,
   payload jsonb not null
@@ -181,6 +340,34 @@ select is(
    where table_schema = 'public' and table_name = 'line_oa_outbound_messages'
      and column_name = 'attempt_count'),
   '0', 'attempt_count defaults to zero'
+);
+select has_column('public', 'line_oa_outbound_messages', 'next_attempt_at',
+  'outbound messages have nullable next_attempt_at');
+select is(
+  (select is_nullable from information_schema.columns
+   where table_schema = 'public' and table_name = 'line_oa_outbound_messages'
+     and column_name = 'next_attempt_at'),
+  'YES', 'next_attempt_at is nullable'
+);
+select is(
+  (select column_default::text from information_schema.columns
+   where table_schema = 'public' and table_name = 'line_oa_outbound_messages'
+     and column_name = 'next_attempt_at'),
+  null::text, 'next_attempt_at defaults to NULL'
+);
+select has_column('public', 'line_oa_outbound_messages', 'claim_token',
+  'outbound messages have nullable claim_token');
+select is(
+  (select is_nullable from information_schema.columns
+   where table_schema = 'public' and table_name = 'line_oa_outbound_messages'
+     and column_name = 'claim_token'),
+  'YES', 'claim_token is nullable'
+);
+select is(
+  (select column_default::text from information_schema.columns
+   where table_schema = 'public' and table_name = 'line_oa_outbound_messages'
+     and column_name = 'claim_token'),
+  null::text, 'claim_token defaults to NULL'
 );
 select ok(
   to_regprocedure('public.rpc_claim_line_outbound_batch(integer,integer)') is not null,
@@ -225,27 +412,27 @@ select ok(
 );
 select ok(
   coalesce((select prosecdef from pg_proc
-            where oid = to_regprocedure('public.rpc_record_line_send_result(uuid,text,text)')), false),
+            where oid = to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)')), false),
   'record-result RPC remains SECURITY DEFINER'
 );
 select ok(
   coalesce(has_function_privilege(
-    'service_role', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text)'), 'EXECUTE'), false),
+    'service_role', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), false),
   'service_role can execute record-result RPC'
 );
 select ok(
   coalesce(has_function_privilege(
-    'authenticated', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text)'), 'EXECUTE'), false),
+    'authenticated', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), false),
   'authenticated retains record-result EXECUTE for the guarded human path'
 );
 select ok(
   not coalesce(has_function_privilege(
-    'anon', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text)'), 'EXECUTE'), false)
+    'anon', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), false)
   and not exists (
     select 1
     from pg_proc p
     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-    where p.oid = to_regprocedure('public.rpc_record_line_send_result(uuid,text,text)')
+    where p.oid = to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)')
       and a.grantee = 0
       and a.privilege_type = 'EXECUTE'
   ),
@@ -322,7 +509,7 @@ select ok(
 select ok(
   coalesce(
     ((select payload->'rows'->0 from a1_results where label = 'claim_first')
-      ?& array['id', 'conversation_id', 'send_type', 'template_key', 'slot_values', 'target_type', 'target_id']),
+      ?& array['id', 'conversation_id', 'send_type', 'template_key', 'slot_values', 'target_type', 'target_id', 'claim_token']),
     false
   ),
   'claim result returns every column the sender needs'
@@ -415,9 +602,14 @@ select ok(
 
 insert into a1_results values (
   'record_group_sent',
-  pg_temp.a1_record_as(
+  pg_temp.a3_record_as(
     'service_role', '{}'::jsonb,
-    'a1000000-0000-0000-0000-000000000010', 'sent', null
+    'a1000000-0000-0000-0000-000000000010', 'sent', null, 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'claim_group')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000010')
   )
 );
 select ok(
@@ -604,9 +796,14 @@ select ok(
 
 insert into a1_results values (
   'retry_failure_1',
-  pg_temp.a1_record_as(
+  pg_temp.a3_record_as(
     'service_role', '{"role":"service_role"}'::jsonb,
-    'a1000000-0000-0000-0000-000000000020', 'failed', 'temporary LINE 503'
+    'a1000000-0000-0000-0000-000000000020', 'failed', 'temporary LINE 503', 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'claim_retry')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000020')
   )
 );
 select ok(
@@ -686,6 +883,365 @@ select ok(
        where event_type = 'outbound_send_result_recorded'
          and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000020|%'),
   'terminal failed row rejects failed-to-sent flip without state or audit change'
+);
+
+-- ---------------------------------------------------------------------------
+-- 47-55 (A2 Task 2): due-time claim filter, exponential backoff, and explicit
+-- transient/permanent failure classification.
+-- ---------------------------------------------------------------------------
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000030',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_due', '{}'::jsonb
+);
+insert into a1_results values (
+  'a2_due_future',
+  jsonb_build_object(
+    'set_due', pg_temp.a2_set_next_attempt(
+      'a1000000-0000-0000-0000-000000000030', timezone('utc', now()) + interval '1 hour'),
+    'claim', pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+  )
+);
+select ok(
+  coalesce(((select payload->>'set_due' from a1_results where label = 'a2_due_future'))::boolean, false)
+  and coalesce(((select payload->'claim'->>'ok' from a1_results where label = 'a2_due_future'))::boolean, false)
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload->'claim'->'rows' from a1_results where label = 'a2_due_future')
+    ) r
+    where r->>'id' = 'a1000000-0000-0000-0000-000000000030'
+  ),
+  'claim excludes pending rows whose next_attempt_at is in the future'
+);
+
+insert into a1_results values (
+  'a2_due_past',
+  jsonb_build_object(
+    'set_due', pg_temp.a2_set_next_attempt(
+      'a1000000-0000-0000-0000-000000000030', timezone('utc', now()) - interval '1 second'),
+    'claim', pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+  )
+);
+select ok(
+  coalesce(((select payload->>'set_due' from a1_results where label = 'a2_due_past'))::boolean, false)
+  and exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload->'claim'->'rows' from a1_results where label = 'a2_due_past')
+    ) r
+    where r->>'id' = 'a1000000-0000-0000-0000-000000000030'
+  ),
+  'claim includes pending rows once next_attempt_at is due'
+);
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000040',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_transient', '{}'::jsonb
+);
+insert into a1_results values (
+  'a2_transient_1',
+  pg_temp.a2_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000040',
+    'failed', 'LINE 503', 'transient'
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a2_transient_1'))::boolean, false)
+  and coalesce(((select payload->'result'->>'recorded' from a1_results where label = 'a2_transient_1'))::boolean, false)
+  and (select payload->'result'->>'status' from a1_results where label = 'a2_transient_1') = 'pending',
+  'explicit transient failure returns to pending below the five-attempt bound'
+);
+select ok(
+  coalesce((pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000040')->>'ok')::boolean, false)
+  and (pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000040')->'row'->>'attempt_count')::int = 1
+  and (pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000040')->'row'->>'next_attempt_at')::timestamptz
+      between statement_timestamp() + interval '0.5 seconds'
+          and statement_timestamp() + interval '2.5 seconds',
+  'first transient failure schedules the notification-style one-second backoff'
+);
+
+insert into a1_results values (
+  'a2_transient_not_due',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload->'rows' from a1_results where label = 'a2_transient_not_due')
+    ) r
+    where r->>'id' = 'a1000000-0000-0000-0000-000000000040'
+  ),
+  'a transiently failed row cannot be reclaimed before its backoff is due'
+);
+
+select pg_temp.a2_set_next_attempt(
+  'a1000000-0000-0000-0000-000000000040', timezone('utc', now()) - interval '1 second');
+insert into a1_results values (
+  'a2_transient_claim_2',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+insert into a1_results values (
+  'a2_transient_2',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000040',
+    'failed', 'LINE 503 again', 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'a2_transient_claim_2')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000040')
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a2_transient_2'))::boolean, false)
+  and (pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000040')->'row'->>'attempt_count')::int = 2
+  and (pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000040')->'row'->>'next_attempt_at')::timestamptz
+      between statement_timestamp() + interval '1.5 seconds'
+          and statement_timestamp() + interval '3.5 seconds',
+  'second transient failure doubles backoff to two seconds'
+);
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000050',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_permanent', '{}'::jsonb
+);
+insert into a1_results values (
+  'a2_permanent_1',
+  pg_temp.a2_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000050',
+    'failed', 'LINE 400', 'permanent'
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a2_permanent_1'))::boolean, false)
+  and coalesce(((select payload->'result'->>'recorded' from a1_results where label = 'a2_permanent_1'))::boolean, false)
+  and (select payload->'result'->>'status' from a1_results where label = 'a2_permanent_1') = 'failed'
+  and (pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000050')->'row'->>'attempt_count')::int = 1,
+  'permanent failure is terminal immediately regardless of remaining attempts'
+);
+select ok(
+  pg_temp.a2_outbound_state('a1000000-0000-0000-0000-000000000050')->'row'->>'next_attempt_at' is null
+  and (select count(*) = 1 from public.line_oa_audit_log
+       where event_type = 'outbound_send_result_recorded'
+         and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000050|%'),
+  'permanent failure has no retry due-time and writes exactly one audit'
+);
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000060',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_invalid_class', '{}'::jsonb
+);
+insert into a1_results values (
+  'a2_invalid_class',
+  pg_temp.a2_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000060',
+    'failed', 'bad classifier', 'unknown'
+  )
+);
+select ok(
+  not coalesce(((select payload->>'ok' from a1_results where label = 'a2_invalid_class'))::boolean, true)
+  and (select payload->>'sqlstate' from a1_results where label = 'a2_invalid_class') = '22023'
+  and (select status = 'pending' from public.line_oa_outbound_messages
+       where id = 'a1000000-0000-0000-0000-000000000060')
+  and (select count(*) = 0 from public.line_oa_audit_log
+       where event_type = 'outbound_send_result_recorded'
+         and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000060|%'),
+  'unsupported failure class is rejected without state or audit change'
+);
+
+-- ---------------------------------------------------------------------------
+-- A2 Task 3: claim ownership fencing rejects stale workers while retaining the
+-- legacy null-token path only for rows that have no stored claim token.
+-- ---------------------------------------------------------------------------
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000070',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_fenced', '{}'::jsonb
+);
+insert into a1_results values (
+  'a3_claim_fenced',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+insert into a1_results values (
+  'a3_reclaim_fenced',
+  case
+    when pg_temp.a1_expire_claim('a1000000-0000-0000-0000-000000000070', 301)
+    then pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+    else jsonb_build_object('ok', false, 'rows', '[]'::jsonb)
+  end
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a3_claim_fenced'))::boolean, false)
+  and coalesce(((select payload->>'ok' from a1_results where label = 'a3_reclaim_fenced'))::boolean, false)
+  and (select r->>'claim_token'
+       from jsonb_array_elements(
+         (select payload->'rows' from a1_results where label = 'a3_claim_fenced')
+       ) r
+       where r->>'id' = 'a1000000-0000-0000-0000-000000000070') is not null
+  and (select r->>'claim_token'
+       from jsonb_array_elements(
+         (select payload->'rows' from a1_results where label = 'a3_claim_fenced')
+       ) r
+       where r->>'id' = 'a1000000-0000-0000-0000-000000000070')
+      <> (select r->>'claim_token'
+          from jsonb_array_elements(
+            (select payload->'rows' from a1_results where label = 'a3_reclaim_fenced')
+          ) r
+          where r->>'id' = 'a1000000-0000-0000-0000-000000000070')
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000070')->'row'->>'claim_token'
+      = (select r->>'claim_token'
+         from jsonb_array_elements(
+           (select payload->'rows' from a1_results where label = 'a3_reclaim_fenced')
+         ) r
+         where r->>'id' = 'a1000000-0000-0000-0000-000000000070'),
+  'reclaim replaces the stale claim token and returns the fresh stored token'
+);
+
+insert into a1_results values (
+  'a3_record_stale',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000070',
+    'sent', null, 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'a3_claim_fenced')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000070')
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a3_record_stale'))::boolean, false)
+  and not coalesce(((select payload->'result'->>'recorded' from a1_results where label = 'a3_record_stale'))::boolean, true),
+  'stale claim token returns recorded=false'
+);
+select ok(
+  pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000070')->'row'->>'status' = 'pending'
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000070')->'row'->>'claim_token'
+      = (select r->>'claim_token'
+         from jsonb_array_elements(
+           (select payload->'rows' from a1_results where label = 'a3_reclaim_fenced')
+         ) r
+         where r->>'id' = 'a1000000-0000-0000-0000-000000000070')
+  and (select count(*) = 0 from public.line_oa_audit_log
+       where event_type = 'outbound_send_result_recorded'
+         and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000070|%'),
+  'stale claim token changes no state and writes no audit'
+);
+
+insert into a1_results values (
+  'a3_record_matching',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000070',
+    'sent', null, 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'a3_reclaim_fenced')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000070')
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a3_record_matching'))::boolean, false)
+  and coalesce(((select payload->'result'->>'recorded' from a1_results where label = 'a3_record_matching'))::boolean, false)
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000070')->'row'->>'status' = 'sent'
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000070')->'row'->>'claim_token' is null
+  and (select count(*) = 1 from public.line_oa_audit_log
+       where event_type = 'outbound_send_result_recorded'
+         and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000070|%'),
+  'matching claim token records the result and clears claim ownership'
+);
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000080',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_legacy_null_token', '{}'::jsonb
+);
+insert into a1_results values (
+  'a3_record_legacy_null',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000080',
+    'sent', null, 'transient', null
+  )
+);
+select ok(
+  coalesce(((select payload->>'ok' from a1_results where label = 'a3_record_legacy_null'))::boolean, false)
+  and coalesce(((select payload->'result'->>'recorded' from a1_results where label = 'a3_record_legacy_null'))::boolean, false)
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000080')->'row'->>'status' = 'sent',
+  'null-token legacy call still works when the row has no claim token'
+);
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a1000000-0000-0000-0000-000000000090',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a2_cleared_fence', '{}'::jsonb
+);
+insert into a1_results values (
+  'a3_claim_cleared_fence',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+insert into a1_results values (
+  'a3_record_transient_clears_fence',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000090',
+    'failed', 'first transient', 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'a3_claim_cleared_fence')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000090')
+  )
+);
+insert into a1_results values (
+  'a3_replay_cleared_fence',
+  pg_temp.a3_record_as(
+    'service_role', '{}'::jsonb,
+    'a1000000-0000-0000-0000-000000000090',
+    'failed', 'stale replay', 'transient',
+    (select (r->>'claim_token')::uuid
+     from jsonb_array_elements(
+       (select payload->'rows' from a1_results where label = 'a3_claim_cleared_fence')
+     ) r
+     where r->>'id' = 'a1000000-0000-0000-0000-000000000090')
+  )
+);
+select ok(
+  coalesce(((select payload->'result'->>'recorded' from a1_results
+             where label = 'a3_record_transient_clears_fence'))::boolean, false)
+  and not coalesce(((select payload->'result'->>'recorded' from a1_results
+                     where label = 'a3_replay_cleared_fence'))::boolean, true)
+  and pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000090')->'row'->>'status' = 'pending'
+  and (pg_temp.a3_outbound_state('a1000000-0000-0000-0000-000000000090')->'row'->>'attempt_count')::int = 1
+  and (select count(*) = 1 from public.line_oa_audit_log
+       where event_type = 'outbound_send_result_recorded'
+         and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000090|%'),
+  'a non-null stale token cannot replay after a transient result clears the fence'
 );
 
 select * from finish();

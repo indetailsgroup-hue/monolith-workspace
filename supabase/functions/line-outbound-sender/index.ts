@@ -55,6 +55,9 @@ export type SendType = "reply" | "push";
 /** Terminal delivery status recorded back to the DB (mirrors the RPC contract). */
 export type SendResultStatus = "sent" | "failed";
 
+/** Retry disposition persisted by `rpc_record_line_send_result` (0194). */
+export type FailureClass = "transient" | "permanent";
+
 /**
  * A `pending` outbound row joined with everything needed to render and send it.
  *
@@ -65,6 +68,10 @@ export type SendResultStatus = "sent" | "failed";
 export interface ClaimedOutbound {
   /** `line_oa_outbound_messages.id`. */
   readonly outboundId: string;
+  /** Per-claim ownership fence returned by the claim RPC (0194). */
+  readonly claimToken?: string;
+  /** Permanent, non-secret claim-enrichment error detected before sending. */
+  readonly enrichmentFailure?: string;
   /** Owning conversation id — null สำหรับแถวส่งเข้ากลุ่ม (0097: target_type='group'). */
   readonly conversationId: string | null;
   /** Resolved send kind from the staged row. */
@@ -93,6 +100,15 @@ export interface ClaimedOutbound {
    * back to `push` (Req 4.5).
    */
   readonly replyToken?: string;
+}
+
+/** Read-only template enrichment shape returned by Supabase. */
+interface ClaimedTemplateRow {
+  readonly template_key: string;
+  readonly vertical_context: string | null;
+  readonly body: string;
+  readonly is_active: boolean;
+  readonly message_kind?: string | null;
 }
 
 /** A LINE text message object. */
@@ -128,6 +144,8 @@ export type LineSendRequest =
       readonly endpoint: "push";
       readonly to: string;
       readonly messages: readonly LineMessage[];
+      /** LINE request dedupe key; production requests use the outbound row id. */
+      readonly retryKey?: string;
     };
 
 /** Outcome of a single LINE API call. */
@@ -135,6 +153,8 @@ export interface LineSendOutcome {
   readonly ok: boolean;
   /** Non-secret failure detail when `ok` is false. */
   readonly errorDetail?: string;
+  /** HTTP-aware retry disposition when `ok` is false. */
+  readonly failureClass?: FailureClass;
 }
 
 // ===========================================================================
@@ -150,7 +170,9 @@ export interface SenderDataAccess {
     outboundId: string,
     status: SendResultStatus,
     errorDetail: string | null,
-  ): Promise<void>;
+    failureClass?: FailureClass,
+    claimToken?: string,
+  ): Promise<boolean | void>;
   /**
    * Signed URL อายุจำกัดสำหรับ object ใน bucket private (0134 — ADR-045 Q2ก:
    * รูปคง private ทั้งหมด, LINE ดึงผ่าน signed URL ~48 ชม. ตอนส่ง).
@@ -202,6 +224,8 @@ export interface ProcessedRow {
   readonly status: SendResultStatus;
   /** Why a row failed (already scrubbed). Present only on failure. */
   readonly reason?: string;
+  /** Whether a failed row may be retried. Present only on failure. */
+  readonly failureClass?: FailureClass;
 }
 
 /** Summary of a batch run, safe to serialize into the HTTP response. */
@@ -358,7 +382,12 @@ export function buildLineRequest(
   if (hasUsableReplyToken) {
     return { endpoint: "reply", replyToken: row.replyToken as string, messages };
   }
-  return { endpoint: "push", to: row.lineUserId, messages };
+  return {
+    endpoint: "push",
+    to: row.lineUserId,
+    messages,
+    retryKey: row.outboundId,
+  };
 }
 
 // ===========================================================================
@@ -391,24 +420,33 @@ export async function processOutboundBatch(
   for (const row of claimed) {
     const outcome = await processOne(row, { vault, line, logger, data });
     results.push(outcome);
-    if (outcome.status === "sent") {
-      sent += 1;
-    } else {
-      failed += 1;
-    }
 
     try {
-      await data.recordResult(
+      const recorded = await data.recordResult(
         row.outboundId,
         outcome.status,
         outcome.status === "failed" ? outcome.reason ?? "send failed" : null,
+        outcome.failureClass,
+        row.claimToken,
       );
+      if (recorded === false) {
+        logger.info(
+          `line-outbound-sender: stale result ignored for ${row.outboundId}`,
+        );
+        continue;
+      }
     } catch (err) {
       // Recording failed — log (scrubbed) and continue; the row stays pending
       // and will be retried on a later sweep.
       logger.error(
         `line-outbound-sender: failed to record result for ${row.outboundId}: ${stringifyError(err)}`,
       );
+    }
+
+    if (outcome.status === "sent") {
+      sent += 1;
+    } else {
+      failed += 1;
     }
   }
 
@@ -430,23 +468,32 @@ async function processOne(
 ): Promise<ProcessedRow> {
   const { vault, line, logger } = deps;
 
+  if (row.enrichmentFailure) {
+    return failure(row, row.enrichmentFailure, logger, "permanent");
+  }
+
   // 1. Resolve the channel access token from Vault and register it for scrubbing
   //    BEFORE it is ever used, so no later log/error can leak it (Req 4.6).
   let token: string | null;
   try {
     token = await vault.resolveAccessToken(row.channelAccessTokenRef);
   } catch (err) {
-    return failure(row, `token_resolution_error: ${stringifyError(err)}`, logger);
+    return failure(
+      row,
+      `token_resolution_error: ${stringifyError(err)}`,
+      logger,
+      "permanent",
+    );
   }
   if (!token) {
-    return failure(row, "channel_access_token_unresolved", logger);
+    return failure(row, "channel_access_token_unresolved", logger, "permanent");
   }
   logger.registerSecret(token);
 
   // 2. Render the bound template with the row's slot values.
   const rendered = renderOutboundText(row);
   if (!rendered.ok) {
-    return failure(row, rendered.reason, logger);
+    return failure(row, rendered.reason, logger, "permanent");
   }
 
   // 2b. แปลงเป็น LINE message ตามชนิด template (flex = การ์ด D-5 — 0098; image — 0134 ADR-045)
@@ -455,16 +502,21 @@ async function processOne(
     // รูปอยู่ bucket private — LINE ต้องดึงเองผ่าน signed URL อายุ ~48 ชม. (Q2ก)
     const signer = deps.data?.createSignedMediaUrl?.bind(deps.data);
     if (!signer) {
-      return failure(row, "media_signer_unavailable", logger);
+      return failure(row, "media_signer_unavailable", logger, "permanent");
     }
     let signedUrl: string | null;
     try {
       signedUrl = await signer(rendered.text, 172800);
     } catch (err) {
-      return failure(row, `media_sign_error: ${stringifyError(err)}`, logger);
+      return failure(
+        row,
+        `media_sign_error: ${stringifyError(err)}`,
+        logger,
+        "permanent",
+      );
     }
     if (!signedUrl) {
-      return failure(row, "media_sign_failed", logger);
+      return failure(row, "media_sign_failed", logger, "permanent");
     }
     message = {
       type: "image",
@@ -474,7 +526,7 @@ async function processOne(
   } else {
     const built = buildOutboundMessage(rendered.text, rendered.kind);
     if (!built.ok) {
-      return failure(row, built.reason, logger);
+      return failure(row, built.reason, logger, "permanent");
     }
     message = built.message;
   }
@@ -485,11 +537,21 @@ async function processOne(
   try {
     outcome = await line.send(request, token);
   } catch (err) {
-    return failure(row, `line_api_error: ${stringifyError(err)}`, logger);
+    return failure(
+      row,
+      `line_api_error: ${stringifyError(err)}`,
+      logger,
+      "transient",
+    );
   }
 
   if (!outcome.ok) {
-    return failure(row, outcome.errorDetail ?? "line_api_send_failed", logger);
+    return failure(
+      row,
+      outcome.errorDetail ?? "line_api_send_failed",
+      logger,
+      outcome.failureClass ?? "transient",
+    );
   }
 
   logger.info(
@@ -503,12 +565,18 @@ function failure(
   row: ClaimedOutbound,
   rawReason: string,
   logger: SenderLogger,
+  failureClass: FailureClass,
 ): ProcessedRow {
   // The logger already scrubs registered secrets + Bearer material; scrub here
   // too so the reason persisted via recordResult carries no token (Req 4.6).
   const reason = scrubSecrets(rawReason, []);
   logger.error(`line-outbound-sender: ${row.outboundId} failed: ${reason}`);
-  return { outboundId: row.outboundId, status: "failed", reason };
+  return {
+    outboundId: row.outboundId,
+    status: "failed",
+    reason,
+    failureClass,
+  };
 }
 
 /** Coerce an unknown thrown value into a string without leaking structure. */
@@ -544,11 +612,22 @@ export function createLineMessagingClient(): LineMessagingClient {
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${accessToken}`,
+          ...(request.endpoint === "push" && request.retryKey
+            ? { "X-Line-Retry-Key": request.retryKey }
+            : {}),
         },
         body: JSON.stringify(body),
       });
 
       if (res.ok) {
+        return { ok: true };
+      }
+      // LINE confirms that this push retry key was accepted previously. This is
+      // delivery reconciliation, not a 4xx send failure.
+      if (
+        request.endpoint === "push" && res.status === 409 &&
+        res.headers.get("x-line-accepted-request-id")
+      ) {
         return { ok: true };
       }
       // Capture a non-secret error detail. The body may echo nothing sensitive,
@@ -562,7 +641,15 @@ export function createLineMessagingClient(): LineMessagingClient {
       } catch {
         // ignore body read errors
       }
-      return { ok: false, errorDetail: scrubSecrets(detail, [accessToken]) };
+      const failureClass: FailureClass =
+        res.status >= 400 && res.status < 500 && res.status !== 429
+          ? "permanent"
+          : "transient";
+      return {
+        ok: false,
+        errorDetail: scrubSecrets(detail, [accessToken]),
+        failureClass,
+      };
     },
   };
 }
@@ -587,28 +674,35 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
 
   const data: SenderDataAccess = {
     async claimPending(limit) {
-      // Read pending rows joined with their conversation (left join — แถว group
-      // ไม่มี conversation; 0097). Template candidates and the channel token ref
-      // are fetched per row. Ordered oldest-first.
-      const { data: rows, error } = await client
-        .from("line_oa_outbound_messages")
-        .select(
-          "id, conversation_id, send_type, template_key, slot_values, " +
-            "target_type, target_id, " +
-            "line_oa_conversations(line_user_id, vertical_context)",
-        )
-        .eq("status", "pending")
-        .order("id", { ascending: true })
-        .limit(limit);
+      // Claim ownership atomically in Postgres. All remaining lookups are
+      // read-only enrichment of rows already leased to this worker.
+      const { data: rows, error } = await client.rpc(
+        "rpc_claim_line_outbound_batch",
+        {
+          p_limit: limit,
+          p_claim_timeout_seconds: 300,
+        },
+      );
       if (error) {
         throw new Error(error.message);
       }
       const claimed: ClaimedOutbound[] = [];
       for (const r of rows ?? []) {
-        const convo = Array.isArray(r.line_oa_conversations)
-          ? r.line_oa_conversations[0]
-          : r.line_oa_conversations;
         const isGroup = r.target_type === "group";
+
+        // Conversation enrichment remains read-only; group rows intentionally
+        // have no conversation_id (0097).
+        let convo:
+          | { line_user_id?: string; vertical_context?: string }
+          | undefined;
+        if (!isGroup && r.conversation_id) {
+          const { data: conversation } = await client
+            .from("line_oa_conversations")
+            .select("line_user_id, vertical_context")
+            .eq("id", r.conversation_id)
+            .maybeSingle();
+          convo = conversation ?? undefined;
+        }
 
         // แถว group: push ไปที่ groupId ตรง ๆ; vertical จาก line_groups (จำตอน #ผูก — 0097)
         let groupVertical: string | undefined;
@@ -620,9 +714,13 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
             .maybeSingle();
           groupVertical = grp?.vertical_context ?? undefined;
         }
+        let enrichmentFailure: string | undefined;
+        if (!isGroup && (!convo?.line_user_id || !convo.vertical_context)) {
+          enrichmentFailure = "conversation_enrichment_missing";
+        }
         const verticalContext: string = isGroup
           ? (groupVertical ?? "monolith")
-          : convo?.vertical_context;
+          : (convo?.vertical_context ?? "");
 
         // Resolve the active channel for this vertical (centralized topology).
         const { data: channel } = await client
@@ -642,14 +740,16 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
 
         claimed.push({
           outboundId: r.id,
+          claimToken: r.claim_token,
+          enrichmentFailure,
           conversationId: r.conversation_id ?? null,
           sendType: r.send_type as SendType,
           templateKey: r.template_key,
           slotValues: (r.slot_values ?? {}) as Record<string, string>,
-          lineUserId: isGroup ? r.target_id : convo?.line_user_id,
+          lineUserId: isGroup ? r.target_id : (convo?.line_user_id ?? ""),
           verticalContext,
           channelAccessTokenRef: channel?.channel_access_token_ref ?? "",
-          candidateTemplates: (templates ?? []).map((t) => ({
+          candidateTemplates: (templates ?? []).map((t: ClaimedTemplateRow) => ({
             templateKey: t.template_key,
             verticalContext: t.vertical_context,
             body: t.body,
@@ -661,15 +761,19 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
       return claimed;
     },
 
-    async recordResult(outboundId, status, errorDetail) {
-      const { error } = await client.rpc("rpc_record_line_send_result", {
+    async recordResult(outboundId, status, errorDetail, failureClass, claimToken) {
+      const { data: result, error } = await client.rpc("rpc_record_line_send_result", {
         p_outbound_id: outboundId,
         p_status: status,
         p_error_detail: errorDetail,
+        p_failure_class: failureClass ?? "transient",
+        p_claim_token: claimToken ?? null,
       });
       if (error) {
         throw new Error(error.message);
       }
+      const record = Array.isArray(result) ? result[0] : result;
+      return record?.recorded === true;
     },
 
     // 0134 — ADR-045 Q2ก: signed URL จาก bucket private (LINE ดึงเองตอนส่ง)
