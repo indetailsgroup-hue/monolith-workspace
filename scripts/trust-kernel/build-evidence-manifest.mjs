@@ -5,26 +5,25 @@
  * before any digest can be signed; this builder only binds the validated bytes
  * and CI identity into the manifest.
  */
-import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { canonicalJson } from './issue-evidence-attestation.mjs';
+import {
+  EVIDENCE_BUILDER_BINARY_PATH,
+  EVIDENCE_DEPENDENCY_LOCK_PATHS,
+  EVIDENCE_VERIFIER_BINARY_PATH,
+  REQUIRED_PRE_ATTESTATION_REPORTS,
+  recomputeEvidenceRootHash,
+  sha256,
+} from './evidence-manifest-integrity.mjs';
 import {
   evaluatePreAttestationReports,
-  REQUIRED_REPORT_MANIFEST,
 } from './final-gate-check.mjs';
 
-export const REQUIRED_PRE_ATTESTATION_REPORTS = Object.freeze(
-  REQUIRED_REPORT_MANIFEST.filter((name) => name !== 'evidence-attestation.json'),
-);
+export { REQUIRED_PRE_ATTESTATION_REPORTS };
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-
-function sha256(value) {
-  return createHash('sha256').update(value).digest('hex');
-}
 
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -121,14 +120,16 @@ export function buildEvidenceManifestFromReports({ reportsRoot, env = process.en
   const branch = requiredValue(env.GITHUB_REF_NAME, 'GITHUB_REF_NAME');
   const keyId = requiredValue(env.EVIDENCE_SIGNER_KEY_ID, 'EVIDENCE_SIGNER_KEY_ID');
   const dirtyFiles = trackedDirtyFiles(root);
-  const lockFiles = ['package-lock.json', 'server/package-lock.json'];
+  const lockFiles = EVIDENCE_DEPENDENCY_LOCK_PATHS;
   const dependencyLockHashes = Object.fromEntries(lockFiles.map((name) => {
     const file = path.join(root, name);
     if (!fs.existsSync(file)) throw new Error(`missing dependency lock: ${name}`);
     return [name, sha256(fs.readFileSync(file))];
   }));
-  const builderFile = fileURLToPath(import.meta.url);
-  const verifierFile = path.join(root, 'scripts', 'trust-kernel', 'final-gate-check.mjs');
+  const builderBinaryPath = EVIDENCE_BUILDER_BINARY_PATH;
+  const verifierBinaryPath = EVIDENCE_VERIFIER_BINARY_PATH;
+  const builderFile = path.join(root, builderBinaryPath);
+  const verifierFile = path.join(root, verifierBinaryPath);
   const goldenPacketHash = fs.readFileSync(reports.get('golden-ubuntu-latest.sha'), 'utf8').trim();
 
   const body = {
@@ -154,16 +155,18 @@ export function buildEvidenceManifestFromReports({ reportsRoot, env = process.en
       arch: requiredValue(env.RUNNER_ARCH, 'RUNNER_ARCH'),
       node: process.version,
     },
+    builderBinaryPath,
     builderBinaryHash: sha256(fs.readFileSync(builderFile)),
+    verifierBinaryPath,
     verifierBinaryHash: sha256(fs.readFileSync(verifierFile)),
     goldenPacketHash,
     ciRunId: requiredValue(env.GITHUB_RUN_ID, 'GITHUB_RUN_ID'),
-    workflowIdentity: requiredValue(env.GITHUB_WORKFLOW_REF, 'GITHUB_WORKFLOW_REF'),
+    workflowIdentity: requiredValue(env.GITHUB_WORKFLOW, 'GITHUB_WORKFLOW'),
     retentionDays: 90,
     evidenceKeyId: keyId,
     issuedAt: new Date().toISOString(),
   };
-  return { ...body, evidenceRootHash: sha256(canonicalJson(body)) };
+  return { ...body, evidenceRootHash: recomputeEvidenceRootHash(body) };
 }
 
 function main() {

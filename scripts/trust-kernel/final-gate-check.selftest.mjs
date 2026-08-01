@@ -16,6 +16,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { buildEvidenceManifestFromReports } from './build-evidence-manifest.mjs';
+import { buildUnsignedEvidenceAttestation } from './evidence-manifest-integrity.mjs';
 import {
   checkVitestReport,
   evaluatePreAttestationReports,
@@ -75,6 +79,37 @@ const CLEAN_REPORT = {
   ],
 };
 
+const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const HEAD = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+const CI_RUN_ID = 'final-gate-selftest-run';
+const WORKFLOW_IDENTITY = 'Trust Kernel Verify';
+const KEY_ID = 'monolith-evidence-key-0001';
+const MANIFEST_ENV = {
+  R_MATRIX: 'success',
+  R_EDGE: 'success',
+  R_E2E: 'success',
+  R_CLAIM: 'success',
+  GITHUB_SHA: HEAD,
+  GITHUB_REF_NAME: 'codex/repair-intelligence-phase0-trust',
+  GITHUB_RUN_ID: CI_RUN_ID,
+  GITHUB_WORKFLOW: WORKFLOW_IDENTITY,
+  RUNNER_OS: 'Linux',
+  RUNNER_ARCH: 'X64',
+  EVIDENCE_SIGNER_KEY_ID: KEY_ID,
+};
+
+function completeAttestation(manifest, verified) {
+  return {
+    schema: 'EvidenceAttestationV1',
+    verified,
+    reason: verified ? 'complete evidence manifest signed and cryptographically self-verified' : 'fixture rejection',
+    attestation: {
+      ...buildUnsignedEvidenceAttestation(manifest),
+      signatureBase64: Buffer.alloc(64, 7).toString('base64'),
+    },
+  };
+}
+
 console.log('checkVitestReport unit checks:');
 check('flags a hidden it.skip (status=skipped) despite green aggregates', checkVitestReport(SKIP_REPORT, 'x.json').length > 0);
 check('flags a test.todo', checkVitestReport(TODO_REPORT, 'x.json').length > 0);
@@ -105,7 +140,6 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('e2e.json', { stats: { expected: 3, unexpected: 0, skipped: 0, flaky: 0 } });
   w('golden-ubuntu-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
   w('golden-windows-latest.sha', 'ac31db34a8352705758de374aea3938dc028c26dc97b96eb5ddf3a819ab42479\n');
-  w('evidence-attestation.json', { schema: 'EvidenceAttestationV1', verified: evidenceVerified });
   // Repair Phase 0 evidence (Task 8): disposition ledger, bilingual docs, route
   // ledger, pinned claim linters, and the two Repair pgTAP suites.
   w('repair-phase0-ledger.json', { pass: true, errors: [], surfaceCount: 18, categories: ['AUTH'], roots: ['PRODUCT'] });
@@ -114,6 +148,9 @@ function writeCleanTree(dir, { evidenceVerified }) {
   w('repair-docs.txt', 'REPAIR PHASE 0 DOCS: PASS\n');
   w('route-ledger.txt', 'ROUTE LEDGER: PASS\n');
   w('claim-linters.txt', 'CLAIM LINTERS: PASS\n');
+  const manifest = buildEvidenceManifestFromReports({ reportsRoot: dir, env: MANIFEST_ENV, root: REPO_ROOT });
+  w('evidence-manifest.json', manifest);
+  w('evidence-attestation.json', completeAttestation(manifest, evidenceVerified));
   for (const report of REQUIRED_REPORT_MANIFEST) {
     if (!fs.existsSync(path.join(dir, report))) throw new Error(`clean fixture omitted required report: ${report}`);
   }
@@ -121,15 +158,75 @@ function writeCleanTree(dir, { evidenceVerified }) {
 }
 
 const base = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-finalgate-'));
-const OK_JOBS = { 'matrix-tests': 'success', 'edge-db': 'success', 'e2e': 'success' };
+const OK_JOBS = {
+  'matrix-tests': 'success',
+  'edge-db': 'success',
+  'e2e': 'success',
+  'claim-linters': 'success',
+  'evidence-self-verify': 'success',
+};
+const FINAL_ENV = { GITHUB_RUN_ID: CI_RUN_ID };
 
 console.log('evaluateReports end-to-end checks:');
 
 // 1. A fully clean, evidence-verified tree PASSES (no violations).
 {
   const dir = writeCleanTree(path.join(base, 'clean'), { evidenceVerified: true });
-  const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: FINAL_ENV });
   check('clean+verified tree yields zero violations', v.length === 0, JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'minimal-evidence'), { evidenceVerified: true });
+  fs.writeFileSync(path.join(dir, 'evidence-attestation.json'), JSON.stringify({ verified: true }));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: FINAL_ENV });
+  check('a bare {verified:true} evidence report is rejected', v.some((s) => /evidence|attestation|schema/i.test(s)), JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'evidence-job-failed'), { evidenceVerified: true });
+  const v = evaluateReports({
+    root: dir,
+    jobResults: { ...OK_JOBS, 'evidence-self-verify': 'failure' },
+    env: FINAL_ENV,
+  });
+  check('a failed evidence-self-verify job result is rejected', v.some((s) => /evidence-self-verify.*failure/i.test(s)), JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'evidence-root-mismatch'), { evidenceVerified: true });
+  const file = path.join(dir, 'evidence-attestation.json');
+  const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+  report.attestation.evidenceRootHash = '0'.repeat(64);
+  fs.writeFileSync(file, JSON.stringify(report));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: FINAL_ENV });
+  check('an attestation evidenceRootHash mismatch is rejected', v.some((s) => /evidence.*root|root.*mismatch/i.test(s)), JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'evidence-report-byte-drift'), { evidenceVerified: true });
+  const file = path.join(dir, 'server-ubuntu-latest.json');
+  const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+  report.testResults[0].assertionResults[0].title = 'still passing, but different report bytes';
+  fs.writeFileSync(file, JSON.stringify(report));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: FINAL_ENV });
+  check('report bytes that drift after manifest creation are rejected', v.some((s) => /digest differs|evidence.*mismatch/i.test(s)), JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'evidence-signature-shape'), { evidenceVerified: true });
+  const file = path.join(dir, 'evidence-attestation.json');
+  const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+  report.attestation.signatureBase64 = 'not-an-ed25519-signature';
+  fs.writeFileSync(file, JSON.stringify(report));
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: FINAL_ENV });
+  check('a malformed Ed25519 signature shape is rejected', v.some((s) => /signature|Ed25519/i.test(s)), JSON.stringify(v));
+}
+
+{
+  const dir = writeCleanTree(path.join(base, 'evidence-ci-run-mismatch'), { evidenceVerified: true });
+  const v = evaluateReports({ root: dir, jobResults: OK_JOBS, env: { GITHUB_RUN_ID: 'different-run' } });
+  check('an attestation ciRunId mismatch is rejected when GITHUB_RUN_ID is present', v.some((s) => /ciRunId|GITHUB_RUN_ID/i.test(s)), JSON.stringify(v));
 }
 
 // The evidence issuer validates the complete upstream tree before an attestation

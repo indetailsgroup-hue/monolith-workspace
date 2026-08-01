@@ -3,7 +3,7 @@
  * Issue and self-verify an EvidenceAttestationV1 proof (design §16.4).
  *
  * Usage:
- *   node issue-evidence-attestation.mjs <output.json> <evidence-manifest.json>
+ *   node issue-evidence-attestation.mjs <output.json> <evidence-manifest.json> <reports-root>
  *
  * The manifest path may instead be supplied as EVIDENCE_MANIFEST_PATH. The
  * managed signer receives only a SHA-256 digest; the separate verifier receives
@@ -12,24 +12,33 @@
  *
  * Phase: NOT_FOR_PRODUCTION.
  */
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { REQUIRED_REPORT_MANIFEST } from './final-gate-check.mjs';
+import {
+  assertEvidenceReportLayers,
+  assertManifestReferencedFiles,
+  buildUnsignedEvidenceAttestation,
+  canonicalJson as canonicalizeJson,
+  EvidenceIntegrityError,
+  REQUIRED_PRE_ATTESTATION_REPORTS,
+  recomputeEvidenceRootHash,
+  sha256,
+} from './evidence-manifest-integrity.mjs';
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const GIT_COMMIT = /^[0-9a-f]{40}$/;
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const MANIFEST_KEYS = [
   'schema', 'phase', 'parentGit', 'productGit', 'layers',
-  'dependencyLockHashes', 'environmentProfile', 'builderBinaryHash',
-  'verifierBinaryHash', 'goldenPacketHash', 'ciRunId', 'workflowIdentity',
+  'dependencyLockHashes', 'environmentProfile', 'builderBinaryPath',
+  'builderBinaryHash', 'verifierBinaryPath', 'verifierBinaryHash',
+  'goldenPacketHash', 'ciRunId', 'workflowIdentity',
   'retentionDays', 'evidenceKeyId', 'issuedAt', 'evidenceRootHash',
 ].sort();
-const REQUIRED_LAYER_NAMES = REQUIRED_REPORT_MANIFEST
-  .filter((name) => name !== 'evidence-attestation.json')
-  .sort();
+const REQUIRED_LAYER_NAMES = [...REQUIRED_PRE_ATTESTATION_REPORTS].sort();
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 class EvidenceError extends Error {
   constructor(code, detail) {
@@ -48,19 +57,11 @@ function isRecord(value) {
 }
 
 export function canonicalJson(value) {
-  if (value === null) return 'null';
-  if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value);
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) fail('MANIFEST_INVALID', 'manifest contains a non-finite number');
-    return JSON.stringify(Object.is(value, -0) ? 0 : value);
+  try {
+    return canonicalizeJson(value);
+  } catch {
+    fail('MANIFEST_INVALID', 'manifest contains a non-JSON value');
   }
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (!isRecord(value)) fail('MANIFEST_INVALID', 'manifest contains a non-JSON value');
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-}
-
-function sha256(value) {
-  return createHash('sha256').update(value).digest('hex');
 }
 
 function assertSha(value, label) {
@@ -127,6 +128,10 @@ export function validateEvidenceManifest(manifest, configuredKeyId) {
 
   assertHashMap(manifest.dependencyLockHashes, 'dependencyLockHashes');
   assertEnvironmentProfile(manifest.environmentProfile);
+  if (typeof manifest.builderBinaryPath !== 'string' || manifest.builderBinaryPath.length === 0
+      || typeof manifest.verifierBinaryPath !== 'string' || manifest.verifierBinaryPath.length === 0) {
+    fail('MANIFEST_INVALID', 'builder and verifier binary paths are required');
+  }
   assertSha(manifest.builderBinaryHash, 'builderBinaryHash');
   assertSha(manifest.verifierBinaryHash, 'verifierBinaryHash');
   assertSha(manifest.goldenPacketHash, 'goldenPacketHash');
@@ -143,7 +148,7 @@ export function validateEvidenceManifest(manifest, configuredKeyId) {
 
   const { evidenceRootHash, ...body } = manifest;
   assertSha(evidenceRootHash, 'evidenceRootHash');
-  if (sha256(canonicalJson(body)) !== evidenceRootHash) {
+  if (recomputeEvidenceRootHash(body) !== evidenceRootHash) {
     fail('ROOT_HASH_MISMATCH', 'manifest evidenceRootHash does not match its canonical body');
   }
   return manifest;
@@ -158,21 +163,30 @@ function parseJsonFile(file) {
   }
 }
 
-function buildUnsignedAttestation(manifest, keyId) {
-  return {
-    schema: 'EvidenceAttestationV1',
-    parentGit: manifest.parentGit,
-    productGit: manifest.productGit,
-    commandReportDigests: manifest.layers,
-    ciRunId: manifest.ciRunId,
-    workflowIdentity: manifest.workflowIdentity,
-    builderBinaryHash: manifest.builderBinaryHash,
-    verifierBinaryHash: manifest.verifierBinaryHash,
-    evidenceRootHash: manifest.evidenceRootHash,
-    issuedAt: manifest.issuedAt,
-    retentionDays: manifest.retentionDays,
-    keyId,
-  };
+function assertPinnedContext(manifest, env) {
+  let head;
+  try {
+    head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).trim();
+  } catch {
+    fail('CONFIG_MISSING', 'unable to resolve the checked-out product Git commit');
+  }
+  if (manifest.productGit.commit !== head) {
+    fail('EVIDENCE_MISMATCH', 'manifest productGit.commit does not match the checked-out HEAD');
+  }
+
+  const contextPins = [
+    ['GITHUB_RUN_ID', manifest.ciRunId, env.GITHUB_RUN_ID],
+    ['GITHUB_WORKFLOW', manifest.workflowIdentity, env.GITHUB_WORKFLOW],
+  ];
+  for (const [name, claimed, actual] of contextPins) {
+    if (typeof actual === 'string' && actual.length > 0 && claimed !== actual) {
+      fail('EVIDENCE_MISMATCH', `manifest context does not match ${name}`);
+    }
+  }
+  const missing = contextPins.filter(([, , actual]) => typeof actual !== 'string' || actual.length === 0);
+  if (missing.length > 0 && env.EVIDENCE_ALLOW_UNPINNED_CONTEXT !== '1') {
+    fail('CONFIG_MISSING', `${missing.map(([name]) => name).join(' and ')} require EVIDENCE_ALLOW_UNPINNED_CONTEXT=1 for a local run`);
+  }
 }
 
 async function postJson(url, body, { token, fetchImpl, label }) {
@@ -219,7 +233,20 @@ function assertSignature(signatureBase64) {
   }
 }
 
-export async function issueEvidenceProof({ manifestPath, env = process.env, fetchImpl = fetch }) {
+function validateEndpointConfig(value, label) {
+  let endpoint;
+  try {
+    endpoint = new URL(value);
+  } catch {
+    fail('CONFIG_INVALID', `${label} endpoint must be a valid URL`);
+  }
+  if (!['http:', 'https:'].includes(endpoint.protocol)) {
+    fail('CONFIG_INVALID', `${label} endpoint protocol is not allowed`);
+  }
+  return endpoint;
+}
+
+function validateIssuerConfig(env) {
   const signerUrl = env.EVIDENCE_SIGNER_URL;
   const keyId = env.EVIDENCE_SIGNER_KEY_ID;
   const verifyUrl = env.EVIDENCE_VERIFY_URL;
@@ -227,10 +254,39 @@ export async function issueEvidenceProof({ manifestPath, env = process.env, fetc
     fail('CONFIG_MISSING', 'signer URL, evidence key id, and verify URL must all be configured');
   }
   const releaseKeyIds = String(env.RELEASE_SIGNER_KEY_IDS ?? '').split(',').map((item) => item.trim()).filter(Boolean);
-  if (releaseKeyIds.includes(keyId)) fail('EVIDENCE_KEY_INVALID', 'evidence key must be separate from release keys');
+  if (releaseKeyIds.length === 0) {
+    fail('CONFIG_MISSING', 'RELEASE_SIGNER_KEY_IDS must name at least one release signing key');
+  }
+  if (releaseKeyIds.includes(keyId)) {
+    fail('EVIDENCE_KEY_INVALID', 'evidence key must be separate from release keys');
+  }
+
+  const signerEndpoint = validateEndpointConfig(signerUrl, 'signer');
+  const verifyEndpoint = validateEndpointConfig(verifyUrl, 'verifier');
+  if (env.EVIDENCE_ALLOW_INSECURE_TRANSPORT !== '1') {
+    if (signerEndpoint.protocol !== 'https:' || verifyEndpoint.protocol !== 'https:') {
+      fail('CONFIG_INVALID', 'signer and verifier endpoints must both use HTTPS');
+    }
+    if (signerEndpoint.origin === verifyEndpoint.origin) {
+      fail('CONFIG_INVALID', 'signer and verifier endpoints must use separate origins');
+    }
+  }
+  return { signerUrl, keyId, verifyUrl };
+}
+
+export async function issueEvidenceProof({ manifestPath, reportsRoot, env = process.env, fetchImpl = fetch }) {
+  const { signerUrl, keyId, verifyUrl } = validateIssuerConfig(env);
 
   const manifest = validateEvidenceManifest(parseJsonFile(manifestPath), keyId);
-  const unsigned = buildUnsignedAttestation(manifest, keyId);
+  try {
+    assertEvidenceReportLayers(manifest, reportsRoot);
+    assertManifestReferencedFiles(manifest, repoRoot);
+  } catch (error) {
+    if (error instanceof EvidenceIntegrityError) fail(error.code, error.message);
+    throw error;
+  }
+  assertPinnedContext(manifest, env);
+  const unsigned = buildUnsignedEvidenceAttestation(manifest, keyId);
   const digestSha256 = sha256(canonicalJson(unsigned));
   const signerResponse = await postJson(signerUrl, { keyId, purpose: 'EVIDENCE', digestSha256 }, {
     token: env.EVIDENCE_WORKLOAD_TOKEN,
@@ -271,8 +327,9 @@ function writeReport(outPath, report) {
 export async function main(argv = process.argv, env = process.env) {
   const outPath = argv[2] || 'reports/evidence-attestation.json';
   const manifestPath = argv[3] || env.EVIDENCE_MANIFEST_PATH;
+  const reportsRoot = argv[4] || env.EVIDENCE_REPORTS_ROOT;
   try {
-    const report = await issueEvidenceProof({ manifestPath, env });
+    const report = await issueEvidenceProof({ manifestPath, reportsRoot, env });
     writeReport(outPath, report);
     console.log('evidence self-verification: VERIFIED');
     return 0;

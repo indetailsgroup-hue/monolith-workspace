@@ -20,40 +20,33 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  assertEvidenceReportLayers,
+  assertManifestReferencedFiles,
+  buildUnsignedEvidenceAttestation,
+  canonicalJson,
+  REQUIRED_REPORT_MANIFEST,
+  recomputeEvidenceRootHash,
+} from './evidence-manifest-integrity.mjs';
+import { validateEvidenceManifest } from './issue-evidence-attestation.mjs';
 
 // Exact basenames emitted by trust-kernel-verify.yml. This is the single source
 // of truth for report completeness; semantic checks below validate each report
 // after this manifest has established that every workflow output is present.
-export const REQUIRED_REPORT_MANIFEST = Object.freeze([
-  'server-ubuntu-latest.json',
-  'server-windows-latest.json',
-  'determinism-ubuntu-latest.json',
-  'determinism-windows-latest.json',
-  'verifier-ubuntu-latest.json',
-  'verifier-windows-latest.json',
-  'containment-ubuntu-latest.json',
-  'containment-windows-latest.json',
-  'repair-ubuntu-latest.json',
-  'repair-windows-latest.json',
-  'route-ledger.txt',
-  'repair-phase0-ledger.json',
-  'repair-docs.txt',
-  'golden-ubuntu-latest.sha',
-  'golden-windows-latest.sha',
-  'edge.json',
-  'pgtap-trust_kernel_tenancy.tap',
-  'pgtap-trust_kernel_governance.tap',
-  'pgtap-trust_kernel_release.tap',
-  'pgtap-trust_kernel_bundles.tap',
-  'pgtap-trust_kernel_containment.tap',
-  'pgtap-workflow_db_invariants.tap',
-  'pgtap-trust_kernel_safety.tap',
-  'pgtap-repair_phase0_organization.tap',
-  'pgtap-repair_phase0_containment.tap',
-  'e2e.json',
-  'claim-linters.txt',
-  'evidence-attestation.json',
-]);
+export { REQUIRED_REPORT_MANIFEST };
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isEd25519Signature(signatureBase64) {
+  return typeof signatureBase64 === 'string'
+    && BASE64.test(signatureBase64)
+    && Buffer.from(signatureBase64, 'base64').length === 64;
+}
 
 // A per-assertion status that means the assertion did NOT actually run to a pass.
 // vitest/jest emit these across v1 and v3. ANY of them fails the gate.
@@ -113,17 +106,77 @@ const walk = (d) =>
       })
     : [];
 
+/** Validate the manifest-backed EvidenceAttestation proof against report-tree bytes. */
+export function checkEvidenceProof({ root, env = process.env, expectedProductCommit }) {
+  const violations = [];
+  const files = walk(root);
+  const evidenceFiles = files.filter((f) => /evidence-attestation.*\.json$/.test(f));
+  const manifestFile = files.find((f) => path.basename(f) === 'evidence-manifest.json');
+  if (evidenceFiles.length === 0) {
+    return [
+      'evidence gate UNVERIFIED: no EvidenceAttestation proof report found — presence-of-signer-env is not a passed gate (design §16.4)',
+    ];
+  }
+
+  for (const f of evidenceFiles) {
+    let report;
+    try {
+      report = JSON.parse(fs.readFileSync(f, 'utf8'));
+    } catch {
+      violations.push(`unparseable evidence attestation report ${f}`);
+      continue;
+    }
+    if (!isRecord(report) || report.schema !== 'EvidenceAttestationV1'
+        || report.verified !== true || !isRecord(report.attestation)) {
+      violations.push(`evidence gate UNVERIFIED in ${f}: a complete EvidenceAttestationV1 with verified=true is required`);
+      continue;
+    }
+    const attestation = report.attestation;
+    if (!isEd25519Signature(attestation.signatureBase64)) {
+      violations.push(`evidence gate INVALID in ${f}: signatureBase64 is not a 64-byte base64 Ed25519 signature`);
+    }
+    if (typeof env.GITHUB_RUN_ID === 'string' && env.GITHUB_RUN_ID.length > 0
+        && attestation.ciRunId !== env.GITHUB_RUN_ID) {
+      violations.push(`evidence gate INVALID in ${f}: attestation ciRunId does not match GITHUB_RUN_ID`);
+    }
+    if (typeof expectedProductCommit === 'string' && expectedProductCommit.length > 0
+        && attestation.productGit?.commit !== expectedProductCommit) {
+      violations.push(`evidence gate INVALID in ${f}: attestation productGit.commit does not match the expected product commit`);
+    }
+    if (!manifestFile) {
+      violations.push(`evidence gate INVALID in ${f}: evidence-manifest.json is missing`);
+      continue;
+    }
+    try {
+      const manifest = validateEvidenceManifest(JSON.parse(fs.readFileSync(manifestFile, 'utf8')), attestation.keyId);
+      assertEvidenceReportLayers(manifest, root);
+      assertManifestReferencedFiles(manifest, repoRoot);
+      const recomputedRoot = recomputeEvidenceRootHash(manifest);
+      if (attestation.evidenceRootHash !== recomputedRoot) {
+        violations.push(`evidence gate INVALID in ${f}: evidenceRootHash does not match the root recomputed from the report tree`);
+      }
+      const expectedUnsigned = buildUnsignedEvidenceAttestation(manifest);
+      const { signatureBase64: _signature, ...actualUnsigned } = attestation;
+      if (canonicalJson(actualUnsigned) !== canonicalJson(expectedUnsigned)) {
+        violations.push(`evidence gate INVALID in ${f}: signed attestation fields do not match evidence-manifest.json`);
+      }
+    } catch (error) {
+      violations.push(`evidence gate INVALID in ${f}: ${error instanceof Error ? error.message : 'manifest verification failed'}`);
+    }
+  }
+  return violations;
+}
+
 /**
  * Evaluate the complete report tree + job results. Returns the list of violations
  * (empty === PASS). Pure: all inputs are explicit.
  */
-function evaluateReportTree({ root, jobResults, requireEvidence }) {
+function evaluateReportTree({ root, jobResults, requireEvidence, env = process.env }) {
   const violations = [];
 
   // (a) Job-level results: any non-success (failure/cancelled/skipped) is rejected.
-  //     claim-linters is intentionally advisory (cross-repo-pending) and excluded.
-  //     evidence-self-verify is NOT gated here by job result — its success must be
-  //     proven by a verified attestation report, never by env-presence (see (f)).
+  //     The final CLI supplies matrix, edge, E2E, claim-linter, and evidence job
+  //     results. The pre-attestation caller intentionally has no evidence job yet.
   for (const [name, res] of Object.entries(jobResults ?? {})) {
     if (res !== 'success') violations.push(`job "${name}" did not succeed (result=${res})`);
   }
@@ -132,7 +185,7 @@ function evaluateReportTree({ root, jobResults, requireEvidence }) {
 
   const presentReportNames = new Set(files.map((f) => path.basename(f)));
   for (const report of REQUIRED_REPORT_MANIFEST) {
-    if (!requireEvidence && report === 'evidence-attestation.json') continue;
+    if (!requireEvidence && ['evidence-manifest.json', 'evidence-attestation.json'].includes(report)) continue;
     if (!presentReportNames.has(report)) violations.push(`missing required report: ${report}`);
   }
 
@@ -168,7 +221,7 @@ function evaluateReportTree({ root, jobResults, requireEvidence }) {
   // A report matching a REQUIRED name (server/verifier/determinism/containment/
   // edge/repair) must be a valid vitest report — shape drift on those fails.
   const REQUIRED_VITEST = /(server|verifier|determinism|containment|edge|repair)-?.*\.json$/;
-  for (const f of files.filter((f) => f.endsWith('.json') && !/e2e\.json$/.test(f) && !/evidence-attestation.*\.json$/.test(f) && !/repair-phase0-ledger\.json$/.test(f))) {
+  for (const f of files.filter((f) => f.endsWith('.json') && !/e2e\.json$/.test(f) && !/evidence-(attestation|manifest).*\.json$/.test(f) && !/repair-phase0-ledger\.json$/.test(f))) {
     let r;
     try {
       r = JSON.parse(fs.readFileSync(f, 'utf8'));
@@ -207,33 +260,10 @@ function evaluateReportTree({ root, jobResults, requireEvidence }) {
     if (directives > 0) violations.push(`${directives} pgTAP SKIP/TODO directive(s) in ${f}`);
   }
 
-  // (f) Evidence gate (C3): a verified EvidenceAttestation proof is REQUIRED. The
-  //     evidence-self-verify job's success on env-PRESENCE is not a passed gate; the
-  //     gate reads the attestation report the job must emit and demands verified===true.
-  //     Absent or unverified => UNVERIFIED (fail closed), never green.
-  if (requireEvidence) {
-    const evidenceFiles = files.filter((f) => /evidence-attestation.*\.json$/.test(f));
-    if (evidenceFiles.length === 0) {
-      violations.push(
-        'evidence gate UNVERIFIED: no EvidenceAttestation proof report found — presence-of-signer-env is not a passed gate (design §16.4)',
-      );
-    } else {
-      for (const f of evidenceFiles) {
-        let a;
-        try {
-          a = JSON.parse(fs.readFileSync(f, 'utf8'));
-        } catch {
-          violations.push(`unparseable evidence attestation report ${f}`);
-          continue;
-        }
-        if (a.verified !== true) {
-          violations.push(
-            `evidence gate UNVERIFIED in ${f}: attestation.verified !== true (a real, SEPARATE evidence signer + verify must produce a verified attestation)`,
-          );
-        }
-      }
-    }
-  }
+  // (f) Evidence gate (C3): require the evidence job AND its complete proof. The
+  //     local gate validates shape and binds the signed fields to a manifest whose
+  //     report/file digests are recomputed from this checkout and report tree.
+  if (requireEvidence) violations.push(...checkEvidenceProof({ root, env }));
 
   // (e) Cross-platform golden packet byte-identity: ubuntu sha == windows sha.
   const shaU = files.find((f) => /golden-ubuntu-latest\.sha$/.test(f));
@@ -255,8 +285,8 @@ function evaluateReportTree({ root, jobResults, requireEvidence }) {
 }
 
 /** Final acceptance path: the verified attestation is always load-bearing. */
-export function evaluateReports({ root, jobResults }) {
-  return evaluateReportTree({ root, jobResults, requireEvidence: true });
+export function evaluateReports({ root, jobResults, env = process.env }) {
+  return evaluateReportTree({ root, jobResults, requireEvidence: true, env });
 }
 
 /**
@@ -279,6 +309,7 @@ if (isMain) {
     // Repair Phase 0 Task 8: the pinned claim/certification linters are load-
     // bearing; their job result gates alongside their PASS report.
     'claim-linters': process.env.R_CLAIM,
+    'evidence-self-verify': process.env.R_EVIDENCE,
   };
   const violations = evaluateReports({ root, jobResults });
   if (violations.length > 0) {

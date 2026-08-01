@@ -26,6 +26,7 @@ const ENV = {
   GITHUB_SHA: '1'.repeat(40),
   GITHUB_REF_NAME: 'codex/repair-intelligence-phase0-trust',
   GITHUB_RUN_ID: '12345',
+  GITHUB_WORKFLOW: 'Trust Kernel Verify',
   GITHUB_WORKFLOW_REF: 'monolith/.github/workflows/trust-kernel-verify.yml@refs/heads/main',
   RUNNER_OS: 'Linux',
   RUNNER_ARCH: 'X64',
@@ -56,6 +57,9 @@ test('builds a root-hash-valid manifest from the complete validated CI report se
     assert.equal(manifest.schema, 'EvidenceManifestV1');
     assert.equal(manifest.layers.length, REQUIRED_PRE_ATTESTATION_REPORTS.length);
     assert.deepEqual(manifest.layers.map((layer) => layer.name).sort(), [...REQUIRED_PRE_ATTESTATION_REPORTS].sort());
+    assert.equal(manifest.builderBinaryPath, 'scripts/trust-kernel/build-evidence-manifest.mjs');
+    assert.equal(manifest.verifierBinaryPath, 'scripts/trust-kernel/final-gate-check.mjs');
+    assert.equal(manifest.workflowIdentity, ENV.GITHUB_WORKFLOW);
     assert.match(manifest.evidenceRootHash, /^[0-9a-f]{64}$/);
   } finally {
     rmSync(dir, { recursive: true, force: true });

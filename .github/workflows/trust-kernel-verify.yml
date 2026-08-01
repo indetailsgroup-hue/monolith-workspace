@@ -316,22 +316,24 @@ jobs:
           EVIDENCE_SIGNER_KEY_ID: ${{ secrets.EVIDENCE_SIGNER_KEY_ID }}
         run: node scripts/trust-kernel/build-evidence-manifest.mjs all-reports reports/evidence-manifest.json
       # C3: presence-of-env is NOT a passed gate. This step ISSUES + SELF-VERIFIES a
-      # real EvidenceAttestation through the SEPARATE evidence signer/verifier and
+      # real EvidenceAttestation through HTTPS signer/verifier endpoints on distinct
+      # origins, with an evidence key id excluded from the declared release-key ids, and
       # writes reports/evidence-attestation.json with `verified: true|false`. The
       # FINAL gate demands verified===true (never the mere success of this job). With
       # no real signer/verify endpoint wired it writes verified:false and fails closed;
-      # a Shadow-Trust-Ready pass requires a real, separate evidence key + verify
-      # endpoint (design §16.4). The report is uploaded even on failure.
+      # a Shadow-Trust-Ready pass requires that strict configuration plus a verifier
+      # response of verified=true (design §16.4). The report uploads even on failure.
       - name: Issue + self-verify evidence attestation (fail closed; writes proof report)
         id: evidence
         env:
           EVIDENCE_SIGNER_URL: ${{ secrets.EVIDENCE_SIGNER_URL }}
           EVIDENCE_SIGNER_KEY_ID: ${{ secrets.EVIDENCE_SIGNER_KEY_ID }}
           EVIDENCE_VERIFY_URL: ${{ secrets.EVIDENCE_VERIFY_URL }}
+          RELEASE_SIGNER_KEY_IDS: ${{ secrets.RELEASE_SIGNER_KEY_IDS }}
         shell: bash
         run: |
           mkdir -p reports
-          node scripts/trust-kernel/issue-evidence-attestation.mjs reports/evidence-attestation.json reports/evidence-manifest.json
+          node scripts/trust-kernel/issue-evidence-attestation.mjs reports/evidence-attestation.json reports/evidence-manifest.json all-reports
       - name: Upload evidence attestation proof
         if: always()
         uses: actions/upload-artifact@v4
@@ -370,8 +372,8 @@ jobs:
           R_EDGE: ${{ needs.edge-db.result }}
           R_E2E: ${{ needs.e2e.result }}
           R_CLAIM: ${{ needs.claim-linters.result }}
-          # NOTE: evidence-self-verify's RESULT is intentionally NOT passed as a gate.
-          # The gate demands a verified EvidenceAttestation proof report (C3); a job
-          # that merely succeeded on env-presence can never satisfy it.
+          R_EVIDENCE: ${{ needs.evidence-self-verify.result }}
+          # Both the evidence job result and its manifest-backed attestation proof
+          # are load-bearing; neither can substitute for the other.
         shell: bash
         run: node scripts/trust-kernel/final-gate-check.mjs all-reports
