@@ -16,7 +16,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { checkVitestReport, evaluateReports, REQUIRED_REPORT_MANIFEST } from './final-gate-check.mjs';
+import {
+  checkVitestReport,
+  evaluatePreAttestationReports,
+  evaluateReports,
+  REQUIRED_REPORT_MANIFEST,
+} from './final-gate-check.mjs';
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -125,6 +130,23 @@ console.log('evaluateReports end-to-end checks:');
   const dir = writeCleanTree(path.join(base, 'clean'), { evidenceVerified: true });
   const v = evaluateReports({ root: dir, jobResults: OK_JOBS });
   check('clean+verified tree yields zero violations', v.length === 0, JSON.stringify(v));
+}
+
+// The evidence issuer validates the complete upstream tree before an attestation
+// exists. This dedicated path omits only that circular input; all other report
+// semantics and job results remain load-bearing.
+{
+  const dir = writeCleanTree(path.join(base, 'clean-pre-attestation'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'evidence-attestation.json'));
+  const v = evaluatePreAttestationReports({ root: dir, jobResults: OK_JOBS });
+  check('pre-attestation validation accepts a clean tree without its not-yet-issued proof', v.length === 0, JSON.stringify(v));
+}
+{
+  const dir = writeCleanTree(path.join(base, 'failed-pre-attestation'), { evidenceVerified: true });
+  fs.unlinkSync(path.join(dir, 'evidence-attestation.json'));
+  fs.writeFileSync(path.join(dir, 'server-ubuntu-latest.json'), JSON.stringify(SKIP_REPORT));
+  const v = evaluatePreAttestationReports({ root: dir, jobResults: OK_JOBS });
+  check('pre-attestation validation still rejects a hidden skip', v.some((s) => /skip|pending|todo/i.test(s)), JSON.stringify(v));
 }
 
 // Every named workflow output is load-bearing, not merely validated if present.

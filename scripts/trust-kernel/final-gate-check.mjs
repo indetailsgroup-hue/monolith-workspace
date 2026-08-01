@@ -117,7 +117,7 @@ const walk = (d) =>
  * Evaluate the complete report tree + job results. Returns the list of violations
  * (empty === PASS). Pure: all inputs are explicit.
  */
-export function evaluateReports({ root, jobResults }) {
+function evaluateReportTree({ root, jobResults, requireEvidence }) {
   const violations = [];
 
   // (a) Job-level results: any non-success (failure/cancelled/skipped) is rejected.
@@ -132,6 +132,7 @@ export function evaluateReports({ root, jobResults }) {
 
   const presentReportNames = new Set(files.map((f) => path.basename(f)));
   for (const report of REQUIRED_REPORT_MANIFEST) {
+    if (!requireEvidence && report === 'evidence-attestation.json') continue;
     if (!presentReportNames.has(report)) violations.push(`missing required report: ${report}`);
   }
 
@@ -210,24 +211,26 @@ export function evaluateReports({ root, jobResults }) {
   //     evidence-self-verify job's success on env-PRESENCE is not a passed gate; the
   //     gate reads the attestation report the job must emit and demands verified===true.
   //     Absent or unverified => UNVERIFIED (fail closed), never green.
-  const evidenceFiles = files.filter((f) => /evidence-attestation.*\.json$/.test(f));
-  if (evidenceFiles.length === 0) {
-    violations.push(
-      'evidence gate UNVERIFIED: no EvidenceAttestation proof report found — presence-of-signer-env is not a passed gate (design §16.4)',
-    );
-  } else {
-    for (const f of evidenceFiles) {
-      let a;
-      try {
-        a = JSON.parse(fs.readFileSync(f, 'utf8'));
-      } catch {
-        violations.push(`unparseable evidence attestation report ${f}`);
-        continue;
-      }
-      if (a.verified !== true) {
-        violations.push(
-          `evidence gate UNVERIFIED in ${f}: attestation.verified !== true (a real, SEPARATE evidence signer + verify must produce a verified attestation)`,
-        );
+  if (requireEvidence) {
+    const evidenceFiles = files.filter((f) => /evidence-attestation.*\.json$/.test(f));
+    if (evidenceFiles.length === 0) {
+      violations.push(
+        'evidence gate UNVERIFIED: no EvidenceAttestation proof report found — presence-of-signer-env is not a passed gate (design §16.4)',
+      );
+    } else {
+      for (const f of evidenceFiles) {
+        let a;
+        try {
+          a = JSON.parse(fs.readFileSync(f, 'utf8'));
+        } catch {
+          violations.push(`unparseable evidence attestation report ${f}`);
+          continue;
+        }
+        if (a.verified !== true) {
+          violations.push(
+            `evidence gate UNVERIFIED in ${f}: attestation.verified !== true (a real, SEPARATE evidence signer + verify must produce a verified attestation)`,
+          );
+        }
       }
     }
   }
@@ -249,6 +252,20 @@ export function evaluateReports({ root, jobResults }) {
   }
 
   return violations;
+}
+
+/** Final acceptance path: the verified attestation is always load-bearing. */
+export function evaluateReports({ root, jobResults }) {
+  return evaluateReportTree({ root, jobResults, requireEvidence: true });
+}
+
+/**
+ * Evidence-issuance preflight: validates the identical upstream report tree
+ * before the circular evidence-attestation.json output exists. This is not a
+ * final-gate override; the CLI and exported final evaluator always require it.
+ */
+export function evaluatePreAttestationReports({ root, jobResults }) {
+  return evaluateReportTree({ root, jobResults, requireEvidence: false });
 }
 
 // --- CLI ---------------------------------------------------------------------
