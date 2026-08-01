@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Repair Intelligence Phase 0 — bilingual document-set verifier (Task 7).
 //
-// The Phase 0 control pack and migration/rollback pack must exist as aligned
-// EN/TH Markdown AND standalone EN/TH HTML, must carry PENDING_OWNER_REVIEW,
-// must contain a threat table, and must never make a positive Gate B /
-// approval / production claim. Missing or violating files fail closed.
+// The four Phase 0 governance packs must exist as aligned EN/TH Markdown AND
+// standalone EN/TH HTML. The English-only first-push operations checklist must
+// also exist. Every document is scanned for positive Gate B / approval /
+// production claims; class-specific status and threat-table rules fail closed.
 
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -13,14 +13,26 @@ import { fileURLToPath } from 'node:url';
 export const REQUIRED_DOC_BASES = [
   'repair-intelligence-phase0-control-pack',
   'repair-intelligence-phase0-migration-rollback',
+  'repair-intelligence-phase0-accepted-risks',
+  'repair-intelligence-phase0-exit-review',
 ];
 
-const REQUIRED_STATUS_LINES = [
-  'PENDING_OWNER_REVIEW',
+export const REQUIRED_STANDALONE_DOCS = [
+  'repair-intelligence-phase0-push-checklist.md',
+];
+
+const COMMON_STATUS_LINES = [
   'Expert Label Protocol: PROPOSED / NOT RUN',
   'Gate B: NOT PASSED',
   'Immutable infrastructure: NOT CLAIMED',
 ];
+
+const DOC_REQUIREMENTS = new Map([
+  ['repair-intelligence-phase0-control-pack', { pending: 'PENDING_OWNER_REVIEW', threatTable: true }],
+  ['repair-intelligence-phase0-migration-rollback', { pending: 'PENDING_OWNER_REVIEW', threatTable: true }],
+  ['repair-intelligence-phase0-accepted-risks', { pending: 'PENDING_OWNER_REVIEW', threatTable: false }],
+  ['repair-intelligence-phase0-exit-review', { pending: 'PENDING_OWNER_APPROVAL', threatTable: false }],
+]);
 
 // A Gate B / release sentence claiming completion without negation is forbidden
 // anywhere (Markdown OR the rendered HTML). The verb list is broadened beyond
@@ -68,6 +80,8 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
   const errors = [];
 
   for (const base of REQUIRED_DOC_BASES) {
+    const requirements = DOC_REQUIREMENTS.get(base);
+    const requiredStatusLines = [requirements.pending, ...COMMON_STATUS_LINES];
     for (const lang of ['en', 'th']) {
       const mdPath = join(dir, `${base}.${lang}.md`);
       const htmlPath = join(dir, `${base}.${lang}.html`);
@@ -79,17 +93,19 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
 
       const text = readFileSync(mdPath, 'utf8');
 
-      for (const line of REQUIRED_STATUS_LINES) {
+      for (const line of requiredStatusLines) {
         if (!text.includes(line)) {
           errors.push(`${base}.${lang}.md: missing required status "${line}"`);
         }
       }
 
       // Threat table: a Markdown table row must appear under a threat heading.
-      const hasThreatTable = /threat[^\n]*\n+[^\n]*\n?\|[^\n]+\|\n\|[-| :]+\|/i.test(text)
-        || (/threat/i.test(text) && /\|[^\n]*\|\n\|[-| :]+\|/.test(text));
-      if (!hasThreatTable) {
-        errors.push(`${base}.${lang}.md: missing threat table`);
+      if (requirements.threatTable) {
+        const hasThreatTable = /threat[^\n]*\n+[^\n]*\n?\|[^\n]+\|\n\|[-| :]+\|/i.test(text)
+          || (/threat/i.test(text) && /\|[^\n]*\|\n\|[-| :]+\|/.test(text));
+        if (!hasThreatTable) {
+          errors.push(`${base}.${lang}.md: missing threat table`);
+        }
       }
 
       scanForbidden(errors, `${base}.${lang}.md`, text);
@@ -105,7 +121,7 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
         if (rawHtml.trim().length < 200) {
           errors.push(`${base}.${lang}.html: HTML edition is empty or too small to be a rendered document`);
         }
-        for (const line of REQUIRED_STATUS_LINES) {
+        for (const line of requiredStatusLines) {
           if (!htmlText.includes(line)) {
             errors.push(`${base}.${lang}.html: rendered HTML is missing required status "${line}"`);
           }
@@ -113,6 +129,19 @@ export function validateRepairPhase0Docs(dir = join(repoRoot, 'docs', 'governanc
         scanForbidden(errors, `${base}.${lang}.html`, htmlText);
       }
     }
+  }
+
+  for (const file of REQUIRED_STANDALONE_DOCS) {
+    const filePath = join(dir, file);
+    if (!existsSync(filePath)) {
+      errors.push(`missing required governance document: ${file}`);
+      continue;
+    }
+    const text = readFileSync(filePath, 'utf8');
+    if (text.trim().length < 200) {
+      errors.push(`${file}: document is empty or too small to be the operations runbook`);
+    }
+    scanForbidden(errors, file, text);
   }
 
   return errors;
@@ -125,7 +154,7 @@ function main() {
     for (const error of errors) console.error(`  - ${error}`);
     process.exit(1);
   }
-  console.log('REPAIR PHASE 0 DOCS: PASS — aligned EN/TH Markdown + standalone HTML, statuses intact.');
+  console.log('REPAIR PHASE 0 DOCS: PASS — required EN/TH Markdown + HTML and push checklist, statuses intact.');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('verify-repair-phase0-docs.mjs')) {

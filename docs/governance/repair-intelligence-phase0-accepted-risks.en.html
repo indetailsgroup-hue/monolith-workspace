@@ -55,6 +55,9 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <body><main>
 <h1>MONOLITH Repair Intelligence — Phase 0 Accepted Risks (EN)</h1>
 <p>Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED</p>
+<p>Expert Label Protocol: PROPOSED / NOT RUN<br>
+Gate B: NOT PASSED<br>
+Immutable infrastructure: NOT CLAIMED</p>
 <p>This register records the LOW-severity findings from the two-vendor phase-gate review that are resolved by a <strong>reviewed, deliberate decision</strong> rather than a code change. Each is a conscious accepted risk with a rationale, not an oversight. The HIGH and MEDIUM findings were fixed in code. The two other LOW findings are tracked separately: <strong>LOW-1 fix implemented in 0192, pending cross-vendor re-review</strong>; LOW-4 exit-review report hashes were corrected and reviewed. Neither is an accepted-risk entry here.</p>
 <h2>1. Trust-root registry tables stay tenant-scoped</h2>
 <p><strong>Finding.</strong> Migration 0189 moved site-scoped tables to organization/site-grant RLS, but the trust-root registry tables from migration 0183 — <code>trust_authority_key</code>, <code>trust_key_revocation</code>, <code>trust_profile_attestation_revocation</code>, <code>trust_warning_grant_revocation</code> — remain tenant-scoped, so any member of a tenant can read them.</p>

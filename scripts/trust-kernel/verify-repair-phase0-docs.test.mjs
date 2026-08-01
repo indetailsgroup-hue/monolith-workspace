@@ -13,11 +13,11 @@ const THREAT_TABLE = [
   '| Identity spoofing | verified bearer | t1 |',
 ].join('\n');
 
-function goodDoc(extra = '') {
+function goodDoc(extra = '', pendingStatus = 'PENDING_OWNER_REVIEW') {
   return [
     '# Repair Intelligence Phase 0',
     '',
-    'Phase 0 exit: PENDING_OWNER_REVIEW',
+    `Phase 0 exit: ${pendingStatus}`,
     'Expert Label Protocol: PROPOSED / NOT RUN',
     'Gate B: NOT PASSED',
     'Immutable infrastructure: NOT CLAIMED',
@@ -31,19 +31,28 @@ function goodDoc(extra = '') {
 
 // A non-trivial HTML edition: the verifier requires the HTML to carry the same
 // status lines as the Markdown (a rendered edition, not an empty placeholder).
-function goodHtml() {
-  return `<!doctype html><html><body><main>${goodDoc()
+function goodHtml(pendingStatus = 'PENDING_OWNER_REVIEW') {
+  return `<!doctype html><html><body><main>${goodDoc('', pendingStatus)
     .split('\n').map((l) => `<p>${l}</p>`).join('')}</main></body></html>`;
 }
 
 function writeCompleteSet(dir, mutate = () => {}) {
   const files = {};
   for (const base of REQUIRED_DOC_BASES) {
+    const pendingStatus = base.endsWith('exit-review') ? 'PENDING_OWNER_APPROVAL' : 'PENDING_OWNER_REVIEW';
     for (const lang of ['en', 'th']) {
-      files[`${base}.${lang}.md`] = goodDoc();
-      files[`${base}.${lang}.html`] = goodHtml();
+      files[`${base}.${lang}.md`] = goodDoc('', pendingStatus);
+      files[`${base}.${lang}.html`] = goodHtml(pendingStatus);
     }
   }
+  files['repair-intelligence-phase0-push-checklist.md'] = [
+    '# First-push checklist',
+    '',
+    'This operations runbook records the ordered CI negative-control ritual.',
+    'It remains fail-closed, contains no override, and never grants owner approval.',
+    'Download the complete CI artifacts and preserve their original filenames.',
+    'Only the owner may decide the Phase 0 exit after reviewing the evidence hashes.',
+  ].join('\n');
   mutate(files);
   for (const [name, content] of Object.entries(files)) {
     if (content !== null) writeFileSync(join(dir, name), content, 'utf8');
@@ -63,6 +72,18 @@ function inTemp(mutate) {
 
 test('accepts a complete bilingual set', () => {
   assert.deepEqual(inTemp(() => {}), []);
+});
+
+test('required set covers accepted risks and exit review', () => {
+  assert.ok(REQUIRED_DOC_BASES.includes('repair-intelligence-phase0-accepted-risks'));
+  assert.ok(REQUIRED_DOC_BASES.includes('repair-intelligence-phase0-exit-review'));
+});
+
+test('rejects a missing push checklist', () => {
+  const errors = inTemp((files) => {
+    files['repair-intelligence-phase0-push-checklist.md'] = null;
+  });
+  assert.ok(errors.some((error) => error.includes('push-checklist') && error.includes('missing')));
 });
 
 test('rejects a missing Thai file', () => {

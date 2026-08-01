@@ -50,7 +50,7 @@ jobs:
       # Each suite runs SEPARATELY into its own named .tap so a failure is attributable
       # to one file. Every suite must (a) emit at least one `ok` (no empty/skipped suite)
       # and (b) emit zero `not ok`. -tA = tuples-only, unaligned -> clean TAP lines.
-      # Repair Phase 0 Task 8: the complete migration chain through 0190 is applied
+      # Repair Phase 0 Task 8: the complete migration chain through 0192 is applied
       # by `supabase start`, and BOTH Repair Phase 0 suites run alongside every
       # workflow and Trust Kernel suite. Each TAP file is uploaded separately.
       - name: Run pgTAP suites (workflow + trust-kernel + Repair Phase 0)
@@ -71,11 +71,12 @@ jobs:
             echo "${suite}: all ok ($(grep -cE '^ok ' "tap/${suite}.tap") assertions)"
           done
 
-      - name: Confirm migration chain reaches 0191
+      - name: Confirm migration chain reaches 0192
         run: |
           test -f supabase/migrations/0189_repair_phase0_organization_scope.sql
           test -f supabase/migrations/0190_repair_phase0_legacy_containment.sql
           test -f supabase/migrations/0191_repair_phase0_revoke_legacy_mutation_authority.sql
+          test -f supabase/migrations/0192_repair_phase0_consume_org_recheck.sql
           psql "${{ steps.db.outputs.DB_URL }}" -tAc "select 1 from pg_tables where schemaname='public' and tablename='monolith_organization'" | grep -q 1
           # The legacy state-transition authority must not be executable by service_role.
           psql "${{ steps.db.outputs.DB_URL }}" -tAc "select has_function_privilege('service_role','public.rpc_factory_job_transition(text,text,text,text[],text[],text,text,text,text,text)','EXECUTE')" | grep -qx f

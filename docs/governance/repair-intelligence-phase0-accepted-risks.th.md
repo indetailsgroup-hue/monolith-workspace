@@ -1,6 +1,9 @@
 # MONOLITH Repair Intelligence — ความเสี่ยงที่ยอมรับของ Phase 0 (TH)
 
 Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED
+Expert Label Protocol: PROPOSED / NOT RUN
+Gate B: NOT PASSED
+Immutable infrastructure: NOT CLAIMED
 
 เอกสารนี้บันทึกผลตรวจระดับ LOW จากการรีวิว phase-gate สองเวนเดอร์ ที่ปิดด้วย
 **การตัดสินใจอย่างจงใจและผ่านการทบทวน** แทนการแก้โค้ด แต่ละข้อเป็นความเสี่ยงที่

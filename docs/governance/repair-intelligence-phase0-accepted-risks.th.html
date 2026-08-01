@@ -55,6 +55,9 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <body><main>
 <h1>MONOLITH Repair Intelligence — ความเสี่ยงที่ยอมรับของ Phase 0 (TH)</h1>
 <p>Status: PENDING_OWNER_REVIEW · Phase 1A–3 capabilities: DISABLED</p>
+<p>Expert Label Protocol: PROPOSED / NOT RUN<br>
+Gate B: NOT PASSED<br>
+Immutable infrastructure: NOT CLAIMED</p>
 <p>เอกสารนี้บันทึกผลตรวจระดับ LOW จากการรีวิว phase-gate สองเวนเดอร์ ที่ปิดด้วย <strong>การตัดสินใจอย่างจงใจและผ่านการทบทวน</strong> แทนการแก้โค้ด แต่ละข้อเป็นความเสี่ยงที่ ยอมรับอย่างมีเหตุผล ไม่ใช่การมองข้าม ผลตรวจระดับ HIGH และ MEDIUM แก้ด้วยโค้ดแล้ว ส่วนผลตรวจ LOW อีกสองข้อมีสถานะแยกกัน: <strong>LOW-1 fix implemented in 0192, pending cross-vendor re-review</strong>; ส่วน LOW-4 แก้การแสดง hash ของรายงานใน exit review ให้ครบและผ่านการทบทวนแล้ว ทั้งสองข้อไม่ใช่รายการ accepted risk ในเอกสารนี้</p>
 <h2>1. ตาราง trust-root registry คงขอบเขตระดับ tenant</h2>
 <p><strong>ผลตรวจ</strong> migration 0189 ย้ายตารางที่เป็น site-scoped ไปใช้ RLS แบบ organization/site-grant แต่ตาราง trust-root registry จาก migration 0183 — <code>trust_authority_key</code>, <code>trust_key_revocation</code>, <code>trust_profile_attestation_revocation</code>, <code>trust_warning_grant_revocation</code> — ยังเป็น tenant-scoped สมาชิกใดในเทแนนต์จึงอ่านได้</p>
