@@ -14,6 +14,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { checkEvidenceProof } from './final-gate-check.mjs';
 
 export const REQUIRED_PHASE0_REPORTS = [
   'workflow_db_invariants.tap',
@@ -30,6 +31,7 @@ export const REQUIRED_PHASE0_REPORTS = [
   // evidence attestation) the review records EVIDENCE_INCOMPLETE — the gate is
   // never downgraded or bypassed when secrets/endpoints are absent.
   'e2e.json',
+  'evidence-manifest.json',
   'evidence-attestation.json',
 ];
 
@@ -39,13 +41,19 @@ function sha256(text) {
   return createHash('sha256').update(text).digest('hex');
 }
 
-function inspectReport(reportsDir, name) {
+function inspectReport(reportsDir, name, evidenceProofViolations) {
   // Local/db-verify evidence uses <suite>.tap, while trust-kernel-verify uploads
   // pgtap-<suite>.tap. Keep one logical report name in the exit review and accept
   // either producer's basename at the filesystem boundary.
   const candidates = name.endsWith('.tap') ? [name, `pgtap-${name}`] : [name];
-  const file = candidates.map((candidate) => join(reportsDir, candidate)).find(existsSync)
-    ?? join(reportsDir, name);
+  const existingCandidates = candidates.map((candidate) => join(reportsDir, candidate)).filter(existsSync);
+  if (existingCandidates.length === 2) {
+    const [rawBytes, ciBytes] = existingCandidates.map((candidate) => readFileSync(candidate));
+    if (!rawBytes.equals(ciBytes)) {
+      throw new Error(`EVIDENCE_CONFLICT: ${name} has different bytes in raw and pgtap report files`);
+    }
+  }
+  const file = existingCandidates[0] ?? join(reportsDir, name);
   if (!existsSync(file)) {
     return { name, present: false, ok: false, detail: 'PENDING_CI_RUN — produced only by the CI workflow', hash: '-', assertions: 0 };
   }
@@ -61,24 +69,25 @@ function inspectReport(reportsDir, name) {
     const notOk = (text.match(/^not ok /gm) ?? []).length;
     if (ok === 0) return { name, present: true, ok: false, detail: 'empty suite (zero assertions)', hash, assertions: 0 };
     if (notOk > 0) return { name, present: true, ok: false, detail: `${notOk} failing assertion(s)`, hash, assertions: ok };
+    if (/^Bail out!/mi.test(text)) return { name, present: true, ok: false, detail: 'pgTAP Bail out!', hash, assertions: ok };
+    const directives = (text.match(/#\s*(SKIP|TODO)\b/gi) ?? []).length;
+    if (directives > 0) return { name, present: true, ok: false, detail: `${directives} pgTAP SKIP/TODO directive(s)`, hash, assertions: ok };
     return { name, present: true, ok: true, detail: `${ok} assertions ok`, hash, assertions: ok };
   }
   if (name === 'e2e.json') {
     try {
       const stats = JSON.parse(text).stats ?? {};
-      const ok = (stats.expected ?? 0) > 0 && (stats.unexpected ?? 1) === 0 && (stats.skipped ?? 1) === 0;
-      return { name, present: true, ok, detail: `expected=${stats.expected ?? 0} unexpected=${stats.unexpected ?? '?'} skipped=${stats.skipped ?? '?'}`, hash, assertions: stats.expected ?? 0 };
+      const ok = (stats.expected ?? 0) > 0 && (stats.unexpected ?? 1) === 0
+        && (stats.skipped ?? 1) === 0 && (stats.flaky ?? 1) === 0;
+      return { name, present: true, ok, detail: `expected=${stats.expected ?? 0} unexpected=${stats.unexpected ?? '?'} skipped=${stats.skipped ?? '?'} flaky=${stats.flaky ?? '?'}`, hash, assertions: stats.expected ?? 0 };
     } catch {
       return { name, present: true, ok: false, detail: 'unparseable JSON', hash, assertions: 0 };
     }
   }
-  if (name === 'evidence-attestation.json') {
-    try {
-      const attestation = JSON.parse(text);
-      return { name, present: true, ok: attestation.verified === true, detail: `verified=${String(attestation.verified)}`, hash, assertions: 0 };
-    } catch {
-      return { name, present: true, ok: false, detail: 'unparseable JSON', hash, assertions: 0 };
-    }
+  if (name === 'evidence-manifest.json' || name === 'evidence-attestation.json') {
+    const ok = evidenceProofViolations.length === 0;
+    const detail = ok ? 'manifest-backed attestation verified' : evidenceProofViolations.join('; ');
+    return { name, present: true, ok, detail, hash, assertions: 0 };
   }
   if (name === 'repair-phase0-ledger.json') {
     try {
@@ -126,7 +135,24 @@ function evidenceTable(rows, lang) {
 }
 
 export function buildRepairPhase0ExitReview({ reportsDir, outDir, meta }) {
-  const rows = REQUIRED_PHASE0_REPORTS.map((name) => inspectReport(reportsDir, name));
+  const evidenceContextViolations = [];
+  const ciRunId = typeof meta?.ciRunId === 'string' ? meta.ciRunId : '';
+  const branchHead = typeof meta?.branchHead === 'string' ? meta.branchHead : '';
+  if (ciRunId.length === 0) {
+    evidenceContextViolations.push('evidence gate INVALID: expected CI run id is missing');
+  }
+  if (!/^[0-9a-f]{40}$/.test(branchHead)) {
+    evidenceContextViolations.push('evidence gate INVALID: execution branch head is not a 40-character lowercase Git commit');
+  }
+  const evidenceProofViolations = [
+    ...evidenceContextViolations,
+    ...checkEvidenceProof({
+      root: reportsDir,
+      env: ciRunId.length > 0 ? { GITHUB_RUN_ID: ciRunId } : {},
+      expectedProductCommit: /^[0-9a-f]{40}$/.test(branchHead) ? branchHead : undefined,
+    }),
+  ];
+  const rows = REQUIRED_PHASE0_REPORTS.map((name) => inspectReport(reportsDir, name, evidenceProofViolations));
   const evidence = rows.every((r) => r.ok) ? 'VERIFIED' : 'EVIDENCE_INCOMPLETE';
 
   const commits = [
@@ -221,11 +247,13 @@ function gitHead() {
 
 function main() {
   const reportsDir = resolve(repoRoot, process.argv[2] ?? 'reports/phase0');
+  const ciRunId = process.argv[3] ?? process.env.EVIDENCE_CI_RUN_ID ?? process.env.GITHUB_RUN_ID ?? '';
   const meta = {
     productMain: 'dd1119af6d0bcba0e38d38516ed1b11125bcf19f',
     governanceBaseline: '55557d7f178dcbe00fec15cffb3061df668eaff8',
     trustKernelHead: '8dfe0cc02e6cbbe8f4cefb3893d80a758fc8d49b',
     branchHead: gitHead(),
+    ciRunId,
   };
   const outDir = join(repoRoot, 'docs', 'governance');
   const { evidence, exitDecision } = buildRepairPhase0ExitReview({ reportsDir, outDir, meta });

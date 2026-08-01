@@ -40,14 +40,33 @@ secret store:
 | `E2E_DESIGNER_A_JWT` | shadow E2E — first human (freeze) |
 | `E2E_APPROVER_B_JWT` | shadow E2E — second human (release, four-eyes) |
 | `E2E_TENANT_002_JWT` | shadow E2E — cross-tenant coexistence |
-| `EVIDENCE_SIGNER_URL` | signed evidence attestation — separate signer |
-| `EVIDENCE_SIGNER_KEY_ID` | signed evidence attestation — key id (never a private key) |
-| `EVIDENCE_VERIFY_URL` | signed evidence attestation — verify endpoint |
+| `EVIDENCE_SIGNER_URL` | signed evidence attestation — HTTPS signer endpoint |
+| `EVIDENCE_SIGNER_KEY_ID` | signed evidence attestation — evidence key id (never a private key) |
+| `EVIDENCE_VERIFY_URL` | signed evidence attestation — HTTPS verify endpoint on a different origin from the signer |
+| `RELEASE_SIGNER_KEY_IDS` | required comma-separated release-signing key ids; must not contain `EVIDENCE_SIGNER_KEY_ID` |
 
 The evidence job downloads every upstream machine report, runs the same semantic
 checks as the final gate except for the not-yet-issued attestation, and builds a
 run-specific `EvidenceManifestV1` before signing. Signer configuration alone can
 never produce `verified:true`.
+
+The local final-gate code performs integrity and consistency checks: it validates
+the `EvidenceAttestationV1` shape, requires the evidence job result, checks the
+64-byte base64 Ed25519 signature *shape*, binds `ciRunId` to the current CI run,
+re-hashes every manifest-listed upstream report plus the referenced builder,
+verifier, and dependency-lock files, and re-derives `evidenceRootHash`. It does **not** cryptographically verify
+the Ed25519 signature from a public key. Only the signer and verify infrastructure,
+configured on distinct HTTPS origins, can prove that the evidence key produced a valid signature;
+CI accepts only when both the evidence job succeeds and its manifest-backed
+`verified:true` report passes the final gate. Local mock-endpoint self-tests prove
+fail-closed gate behavior, not possession of or signing by the real evidence key.
+
+The issuer enforces exactly the configuration boundary above: the release-key list
+must be present and non-empty, the evidence key id must not appear in that declared
+list, both endpoints must use HTTPS, and their URL origins must differ. This proves
+configured key-id and endpoint-origin separation; it does not prove organizational
+independence of the services. Tests may opt in to local HTTP or same-origin mock
+endpoints only with `EVIDENCE_ALLOW_INSECURE_TRANSPORT=1`; the default is strict.
 
 ## 2. Push and watch the workflows
 
@@ -85,11 +104,17 @@ Only after each deliberate break is caught should the green gate be trusted.
 
 ## 4. Generate the evidence-derived exit review from real CI reports
 
-Download the CI report artifacts into `reports/phase0/`, then:
+Download the CI report artifacts into a **new, empty directory** dedicated to
+that CI run, such as `reports/phase0-ci-<run-id>/`. Do not download over
+`reports/`, `reports/phase0/`, or any directory containing interim local reports.
 
 The exit-review builder accepts both the local/db-verify `<suite>.tap` basenames
 and trust-kernel CI's `pgtap-<suite>.tap` basenames. Preserve the downloaded CI
 filenames; no manual rename step is required.
+
+If both `<suite>.tap` and `pgtap-<suite>.tap` exist, the builder compares their
+bytes. Identical files may coexist. Different bytes fail closed with
+`EVIDENCE_CONFLICT` naming the logical suite; neither file silently wins.
 
 Local files under `reports/` are interim evidence, not the durable record. Their
 only committed authentication anchor is the full SHA-256 recorded in the
@@ -97,11 +122,18 @@ committed exit review; after the first push, retained CI artifacts become the
 durable evidence record.
 
 ```bash
-node scripts/trust-kernel/build-repair-phase0-exit-review.mjs reports/phase0
+CI_RUN_ID="1234567890" # replace with the actual run id
+CI_REPORT_DIR="reports/phase0-ci-${CI_RUN_ID}" # directory must be new and empty
+node scripts/trust-kernel/build-repair-phase0-exit-review.mjs "$CI_REPORT_DIR" "$CI_RUN_ID"
 ```
 
-With the E2E and signed-attestation reports present and green, the builder emits
-`Phase 0 implementation evidence: VERIFIED`. The exit decision stays
+The builder reuses the final gate's manifest-backed evidence-proof validator, so
+`VERIFIED` requires `evidence-manifest.json`, the complete manifest-listed report
+tree, and the full attestation—not a bare `verified:true` file. It also binds the
+attestation to the explicit CI run id and to the checkout's current `HEAD`; stale
+run artifacts or evidence for another product commit are incomplete. With that
+proof and E2E present and green, the builder emits `Phase 0 implementation
+evidence: VERIFIED`. The exit decision stays
 `PENDING_OWNER_APPROVAL` — no automated step can change it.
 
 ## 5. Present to the owner
