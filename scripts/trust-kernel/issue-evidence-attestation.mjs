@@ -17,7 +17,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REQUIRED_REPORT_MANIFEST } from './final-gate-check.mjs';
-import { REQUIRED_REPORT_MANIFEST } from './final-gate-check.mjs';
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const GIT_COMMIT = /^[0-9a-f]{40}$/;
@@ -123,26 +122,6 @@ export function validateEvidenceManifest(manifest, configuredKeyId) {
     }
     if (layer.exitCode !== 0 || layer.failed !== 0 || layer.skipped !== 0 || layer.passed <= 0) {
       fail('EVIDENCE_INCOMPLETE', `layer ${layer.name} is failed, skipped, empty, or non-zero`);
-    }
-  }
-
-  // Completeness against the shared workflow manifest: every required report
-  // (except the attestation this script itself writes) must appear exactly
-  // once. This must reject BEFORE any signer interaction so incomplete
-  // evidence can never reach signing.
-  const requiredNames = REQUIRED_REPORT_MANIFEST.filter((name) => name !== 'evidence-attestation.json');
-  const layerCounts = new Map();
-  for (const layer of manifest.layers) {
-    layerCounts.set(layer.name, (layerCounts.get(layer.name) ?? 0) + 1);
-  }
-  for (const name of requiredNames) {
-    if (!layerCounts.has(name)) {
-      fail('EVIDENCE_INCOMPLETE', `required report layer ${name} is missing from the manifest`);
-    }
-  }
-  for (const [name, count] of layerCounts) {
-    if (count > 1) {
-      fail('EVIDENCE_INCOMPLETE', `report layer ${name} appears ${count} times in the manifest`);
     }
   }
 

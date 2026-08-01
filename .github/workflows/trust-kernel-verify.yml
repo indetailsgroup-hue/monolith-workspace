@@ -292,7 +292,7 @@ jobs:
   evidence-self-verify:
     name: evidence self-verify (fail-closed)
     runs-on: ubuntu-latest
-    needs: [matrix-tests, edge-db, e2e]
+    needs: [matrix-tests, edge-db, e2e, claim-linters]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -303,6 +303,18 @@ jobs:
         run: npm ci --prefix server
       - name: Build server (compiles evidence modules)
         run: npm --prefix server run build
+      - name: Download complete upstream report set
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+      - name: Validate reports + build run-specific evidence manifest
+        env:
+          R_MATRIX: ${{ needs.matrix-tests.result }}
+          R_EDGE: ${{ needs.edge-db.result }}
+          R_E2E: ${{ needs.e2e.result }}
+          R_CLAIM: ${{ needs.claim-linters.result }}
+          EVIDENCE_SIGNER_KEY_ID: ${{ secrets.EVIDENCE_SIGNER_KEY_ID }}
+        run: node scripts/trust-kernel/build-evidence-manifest.mjs all-reports reports/evidence-manifest.json
       # C3: presence-of-env is NOT a passed gate. This step ISSUES + SELF-VERIFIES a
       # real EvidenceAttestation through the SEPARATE evidence signer/verifier and
       # writes reports/evidence-attestation.json with `verified: true|false`. The
@@ -319,7 +331,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p reports
-          node scripts/trust-kernel/issue-evidence-attestation.mjs reports/evidence-attestation.json
+          node scripts/trust-kernel/issue-evidence-attestation.mjs reports/evidence-attestation.json reports/evidence-manifest.json
       - name: Upload evidence attestation proof
         if: always()
         uses: actions/upload-artifact@v4
