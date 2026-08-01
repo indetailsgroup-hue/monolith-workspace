@@ -3,9 +3,8 @@
 Spec task: 12.2 Write property test for failure handling.
 
 Implements exactly ONE numbered property against the send-result recording RPC
-shipped by task 12.1
-(``00000000000041_line_oa_record_send_result.sql`` —
-``public.rpc_record_line_send_result(uuid, text, text)``):
+shipped by task 12.1 and extended by Phase A2
+(``public.rpc_record_line_send_result(uuid, text, text, text, uuid)``):
 
     Property 10: A reported failure sets status=failed with non-empty
     error_detail and is never marked sent.
@@ -149,7 +148,7 @@ def _require_dependencies(conn: Any) -> None:
     full stage -> record-failure pipeline can be exercised end-to-end."""
     with conn.cursor() as cur:
         for proc in (
-            "public.rpc_record_line_send_result(uuid,text,text)",
+            "public.rpc_record_line_send_result(uuid,text,text,text,uuid)",
             "public.rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)",
             "public.get_active_site_codes()",
             "public.has_site_access(text)",
@@ -283,8 +282,8 @@ def _record_failure(cur: Any, outbound_id: Any, error_detail: str | None) -> dic
     cur.execute("select set_config('request.jwt.claims', %s, true)", (_CLAIMS,))
     cur.execute(
         "select outbound_id, status, error_detail, sent_at, recorded "
-        "from public.rpc_record_line_send_result(%s, %s, %s)",
-        (outbound_id, "failed", error_detail),
+        "from public.rpc_record_line_send_result(%s, %s, %s, %s, %s)",
+        (outbound_id, "failed", error_detail, "permanent", None),
     )
     r = cur.fetchone()
     return {

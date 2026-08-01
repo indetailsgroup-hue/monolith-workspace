@@ -177,4 +177,74 @@ describe("LINE outbound failure classification", () => {
 
     expect(failureClasses).toEqual(["transient"]);
   });
+
+  it.each([
+    {
+      name: "Vault lookup exception",
+      claimed: row({ outboundId: "ob-vault-operational" }),
+      vault: {
+        resolveAccessToken: async () => {
+          throw new TypeError("vault fetch failed");
+        },
+      } satisfies VaultTokenResolver,
+      extras: {},
+    },
+    {
+      name: "media signing exception",
+      claimed: row({
+        outboundId: "ob-media-operational",
+        slotValues: { media_path: "private/photo.jpg" },
+        candidateTemplates: [{
+          templateKey: "tpl-classify",
+          verticalContext: "monolith",
+          body: "",
+          isActive: true,
+          messageKind: "image",
+        }],
+      }),
+      vault: resolvedVault,
+      extras: {
+        createSignedMediaUrl: async () => {
+          throw new TypeError("storage fetch failed");
+        },
+      },
+    },
+    {
+      name: "media signing response without a URL",
+      claimed: row({
+        outboundId: "ob-media-empty-response",
+        slotValues: { media_path: "private/photo.jpg" },
+        candidateTemplates: [{
+          templateKey: "tpl-classify",
+          verticalContext: "monolith",
+          body: "",
+          isActive: true,
+          messageKind: "image",
+        }],
+      }),
+      vault: resolvedVault,
+      extras: { createSignedMediaUrl: async () => null },
+    },
+  ])("records $name as transient so the row can re-pend", async (testCase) => {
+    const { data, failureClasses } = capturingData(
+      testCase.claimed,
+      testCase.extras,
+    );
+
+    const summary = await processOutboundBatch(
+      {
+        data,
+        vault: testCase.vault,
+        line: successfulLine,
+        logger: createScrubbingLogger({ info: () => {}, error: () => {} }),
+      },
+      { batchSize: 1 },
+    );
+
+    expect(summary.results[0]).toMatchObject({
+      status: "failed",
+      failureClass: "transient",
+    });
+    expect(failureClasses).toEqual(["transient"]);
+  });
 });

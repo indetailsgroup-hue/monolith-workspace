@@ -37,7 +37,17 @@ describe("db-verify LINE outbound suite registration", () => {
     expect(workflow).toContain(
       "node tests/line-oa-commerce/concurrency/claim-race.mjs",
     );
+    expect(harness).not.toContain(
+      "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+    );
     expect(harness).toContain("LINE_CLAIM_RACE_EPHEMERAL");
+    expect(harness).toContain(
+      "SKIP claim-race: set LINE_CLAIM_RACE_DSN to an explicit exclusive ephemeral stack",
+    );
+    expect(harness.indexOf("if (!dsn)")).toBeGreaterThanOrEqual(0);
+    expect(harness.indexOf("if (!dsn)")).toBeLessThan(
+      harness.indexOf("const preflight"),
+    );
     expect(harness).toMatch(/eligibleCount[\s\S]*status = 'pending'/);
     expect(harness).toContain("requires zero pre-existing eligible rows");
   });

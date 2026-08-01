@@ -18,8 +18,7 @@ import { randomUUID } from "node:crypto";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const dsn = process.env.LINE_CLAIM_RACE_DSN ??
-  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const dsn = process.env.LINE_CLAIM_RACE_DSN;
 const windowsPsql = "C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe";
 const psql = process.env.PSQL_BIN ??
   (process.platform === "win32" && existsSync(windowsPsql) ? windowsPsql : "psql");
@@ -51,6 +50,20 @@ function parseClaimResult(stdout, clientName) {
 }
 
 async function main() {
+  if (!dsn) {
+    console.log(
+      "SKIP claim-race: set LINE_CLAIM_RACE_DSN to an explicit exclusive ephemeral stack",
+    );
+    return;
+  }
+
+  if (process.env.LINE_CLAIM_RACE_EPHEMERAL !== "1") {
+    console.log(
+      "SKIP claim-race: set LINE_CLAIM_RACE_EPHEMERAL=1 only for an exclusive ephemeral stack",
+    );
+    return;
+  }
+
   const preflight = await sql(`
     select case when
       to_regprocedure('public.rpc_claim_line_outbound_batch(integer,integer)') is not null
@@ -72,13 +85,6 @@ async function main() {
   if (preflight !== "ready") {
     console.log(
       "SKIP claim-race: requires pre-applied migrations 0193 and 0194; shared stack was not modified",
-    );
-    return;
-  }
-
-  if (process.env.LINE_CLAIM_RACE_EPHEMERAL !== "1") {
-    console.log(
-      "SKIP claim-race: set LINE_CLAIM_RACE_EPHEMERAL=1 only for an exclusive ephemeral stack",
     );
     return;
   }

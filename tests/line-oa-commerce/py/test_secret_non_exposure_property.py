@@ -212,7 +212,7 @@ def _require_dependencies(conn: Any) -> None:
         for proc in (
             "public.line_oa_verify_signature(text,text,text)",
             "public.rpc_ingest_line_webhook(text,text,text)",
-            "public.rpc_record_line_send_result(uuid,text,text)",
+            "public.rpc_record_line_send_result(uuid,text,text,text,uuid)",
             "public.rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)",
             "public.get_active_site_codes()",
             "public.has_site_access(text)",
@@ -403,8 +403,8 @@ def _record_failure(cur: Any, outbound_id: Any, error_detail: str | None) -> dic
     cur.execute("select set_config('request.jwt.claims', %s, true)", (_CLAIMS,))
     cur.execute(
         "select outbound_id, status, error_detail, sent_at, recorded "
-        "from public.rpc_record_line_send_result(%s, %s, %s)",
-        (outbound_id, "failed", error_detail),
+        "from public.rpc_record_line_send_result(%s, %s, %s, %s, %s)",
+        (outbound_id, "failed", error_detail, "permanent", None),
     )
     r = cur.fetchone()
     return {"outbound_id": r[0], "status": r[1], "error_detail": r[2], "sent_at": r[3]}

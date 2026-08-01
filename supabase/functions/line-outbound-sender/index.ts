@@ -70,8 +70,10 @@ export interface ClaimedOutbound {
   readonly outboundId: string;
   /** Per-claim ownership fence returned by the claim RPC (0194). */
   readonly claimToken?: string;
-  /** Permanent, non-secret claim-enrichment error detected before sending. */
+  /** Non-secret claim-enrichment error detected before sending. */
   readonly enrichmentFailure?: string;
+  /** Retry disposition for the enrichment error (absent means permanent). */
+  readonly enrichmentFailureClass?: FailureClass;
   /** Owning conversation id — null สำหรับแถวส่งเข้ากลุ่ม (0097: target_type='group'). */
   readonly conversationId: string | null;
   /** Resolved send kind from the staged row. */
@@ -469,7 +471,12 @@ async function processOne(
   const { vault, line, logger } = deps;
 
   if (row.enrichmentFailure) {
-    return failure(row, row.enrichmentFailure, logger, "permanent");
+    return failure(
+      row,
+      row.enrichmentFailure,
+      logger,
+      row.enrichmentFailureClass ?? "permanent",
+    );
   }
 
   // 1. Resolve the channel access token from Vault and register it for scrubbing
@@ -482,7 +489,7 @@ async function processOne(
       row,
       `token_resolution_error: ${stringifyError(err)}`,
       logger,
-      "permanent",
+      "transient",
     );
   }
   if (!token) {
@@ -512,11 +519,11 @@ async function processOne(
         row,
         `media_sign_error: ${stringifyError(err)}`,
         logger,
-        "permanent",
+        "transient",
       );
     }
     if (!signedUrl) {
-      return failure(row, "media_sign_failed", logger, "permanent");
+      return failure(row, "media_sign_failed", logger, "transient");
     }
     message = {
       type: "image",
@@ -654,6 +661,291 @@ export function createLineMessagingClient(): LineMessagingClient {
   };
 }
 
+interface SupabaseLookupResponse<T> {
+  readonly data: T | null;
+  readonly error?: unknown;
+}
+
+interface SupabaseQueryBuilder<T>
+  extends PromiseLike<SupabaseLookupResponse<T>> {
+  select(columns: string): SupabaseQueryBuilder<T>;
+  eq(column: string, value: unknown): SupabaseQueryBuilder<T>;
+  limit(count: number): SupabaseQueryBuilder<T>;
+  or(filters: string): SupabaseQueryBuilder<T>;
+  maybeSingle(): PromiseLike<SupabaseLookupResponse<T>>;
+}
+
+interface SupabaseSenderClient {
+  rpc(
+    name: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<SupabaseLookupResponse<unknown>>;
+  from<T>(table: string): SupabaseQueryBuilder<T>;
+  schema(name: string): {
+    from<T>(table: string): SupabaseQueryBuilder<T>;
+  };
+  readonly storage: {
+    from(bucket: string): {
+      createSignedUrl(
+        storagePath: string,
+        expiresInSeconds: number,
+      ): PromiseLike<SupabaseLookupResponse<{ signedUrl?: string }>>;
+    };
+  };
+}
+
+type SupabaseLookupOutcome<T> =
+  | { readonly ok: true; readonly data: T | null }
+  | { readonly ok: false; readonly reason: string };
+
+async function runSupabaseLookup<T>(
+  context: string,
+  query: () => PromiseLike<SupabaseLookupResponse<T>>,
+): Promise<SupabaseLookupOutcome<T>> {
+  try {
+    const { data, error } = await query();
+    if (error) {
+      return {
+        ok: false,
+        reason: `${context}_lookup_error: ${supabaseErrorMessage(error)}`,
+      };
+    }
+    return { ok: true, data: data ?? null };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: `${context}_lookup_error: ${stringifyError(err)}`,
+    };
+  }
+}
+
+function supabaseErrorMessage(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { readonly message?: unknown }).message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+  return stringifyError(error);
+}
+
+/** Build the production data-access adapter around an authenticated client. */
+export function createSupabaseSenderDataAccess(
+  client: SupabaseSenderClient,
+): SenderDataAccess {
+  return {
+    async claimPending(limit) {
+      // Claim ownership atomically in Postgres. All remaining lookups are
+      // read-only enrichment of rows already leased to this worker.
+      const { data: claimedRows, error } = await client.rpc(
+        "rpc_claim_line_outbound_batch",
+        {
+          p_limit: limit,
+          p_claim_timeout_seconds: 300,
+        },
+      );
+      if (error) {
+        throw new Error(supabaseErrorMessage(error));
+      }
+      const rows = Array.isArray(claimedRows)
+        ? claimedRows as Record<string, unknown>[]
+        : [];
+      const claimed: ClaimedOutbound[] = [];
+      for (const r of rows ?? []) {
+        const isGroup = r.target_type === "group";
+        let enrichmentFailure: string | undefined;
+        let enrichmentFailureClass: FailureClass | undefined;
+
+        // Conversation enrichment remains read-only; group rows intentionally
+        // have no conversation_id (0097).
+        let convo:
+          | { line_user_id?: string; vertical_context?: string }
+          | undefined;
+        if (!isGroup && r.conversation_id) {
+          const conversationLookup = await runSupabaseLookup(
+            "conversation_enrichment",
+            () => client
+              .from<{ line_user_id?: string; vertical_context?: string }>(
+                "line_oa_conversations",
+              )
+              .select("line_user_id, vertical_context")
+              .eq("id", r.conversation_id)
+              .maybeSingle(),
+          );
+          if (conversationLookup.ok) {
+            convo = conversationLookup.data ?? undefined;
+          } else {
+            enrichmentFailure = conversationLookup.reason;
+            enrichmentFailureClass = "transient";
+          }
+        }
+
+        // แถว group: push ไปที่ groupId ตรง ๆ; vertical จาก line_groups (จำตอน #ผูก — 0097)
+        let groupVertical: string | undefined;
+        if (isGroup) {
+          const groupLookup = await runSupabaseLookup(
+            "group_enrichment",
+            () => client
+              .from<{ vertical_context?: string }>("line_groups")
+              .select("vertical_context")
+              .eq("line_group_id", r.target_id)
+              .maybeSingle(),
+          );
+          if (groupLookup.ok) {
+            groupVertical = groupLookup.data?.vertical_context ?? undefined;
+          } else {
+            enrichmentFailure = groupLookup.reason;
+            enrichmentFailureClass = "transient";
+          }
+        }
+        if (!isGroup && (!convo?.line_user_id || !convo.vertical_context)) {
+          enrichmentFailure ??= "conversation_enrichment_missing";
+        }
+        if (isGroup && !groupVertical) {
+          enrichmentFailure ??= "group_enrichment_missing";
+        }
+        const verticalContext: string = isGroup
+          ? (groupVertical ?? "")
+          : (convo?.vertical_context ?? "");
+
+        // Resolve the active channel for this vertical (centralized topology).
+        const channelLookup = await runSupabaseLookup(
+          "channel_enrichment",
+          () => client
+            .from<{ channel_access_token_ref?: string }>("line_oa_channels")
+            .select("channel_access_token_ref")
+            .eq("vertical_context", verticalContext)
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle(),
+        );
+        if (!channelLookup.ok && !enrichmentFailure) {
+          enrichmentFailure = channelLookup.reason;
+          enrichmentFailureClass = "transient";
+        }
+        const channel = channelLookup.ok ? channelLookup.data : null;
+
+        // Candidate templates for resolution + slot substitution.
+        const templateLookup = await runSupabaseLookup(
+          "template_enrichment",
+          () => client
+            .from<ClaimedTemplateRow[]>("line_oa_message_templates")
+            .select("template_key, vertical_context, body, is_active, message_kind")
+            .eq("template_key", r.template_key)
+            .or(`vertical_context.eq.${verticalContext},vertical_context.is.null`),
+        );
+        if (!templateLookup.ok && !enrichmentFailure) {
+          enrichmentFailure = templateLookup.reason;
+          enrichmentFailureClass = "transient";
+        }
+        const templates = templateLookup.ok ? templateLookup.data : null;
+
+        claimed.push({
+          outboundId: r.id as string,
+          claimToken: r.claim_token as string | undefined,
+          enrichmentFailure,
+          enrichmentFailureClass,
+          conversationId: (r.conversation_id as string | null | undefined) ?? null,
+          sendType: r.send_type as SendType,
+          templateKey: r.template_key as string,
+          slotValues: (r.slot_values ?? {}) as Record<string, string>,
+          lineUserId: isGroup
+            ? r.target_id as string
+            : (convo?.line_user_id ?? ""),
+          verticalContext,
+          channelAccessTokenRef: channel?.channel_access_token_ref ?? "",
+          candidateTemplates: (templates ?? []).map((t: ClaimedTemplateRow) => ({
+            templateKey: t.template_key,
+            verticalContext: t.vertical_context,
+            body: t.body,
+            isActive: t.is_active,
+            messageKind: (t.message_kind ?? "text") as "text" | "flex" | "image",
+          })),
+        });
+      }
+      return claimed;
+    },
+
+    async recordResult(outboundId, status, errorDetail, failureClass, claimToken) {
+      const { data: rawResult, error } = await client.rpc(
+        "rpc_record_line_send_result",
+        {
+          p_outbound_id: outboundId,
+          p_status: status,
+          p_error_detail: errorDetail,
+          p_failure_class: failureClass ?? "transient",
+          p_claim_token: claimToken ?? null,
+        },
+      );
+      if (error) {
+        throw new Error(supabaseErrorMessage(error));
+      }
+      const result = rawResult as
+        | { recorded?: boolean }
+        | Array<{ recorded?: boolean }>
+        | null;
+      const record = Array.isArray(result) ? result[0] : result;
+      return record?.recorded === true;
+    },
+
+    // 0134 — ADR-045 Q2ก: signed URL จาก bucket private (LINE ดึงเองตอนส่ง)
+    async createSignedMediaUrl(storagePath, expiresInSeconds) {
+      const { data: signed, error } = await client.storage
+        .from("installation-media")
+        .createSignedUrl(storagePath, expiresInSeconds);
+      if (error) {
+        throw new Error(supabaseErrorMessage(error));
+      }
+      return signed?.signedUrl ?? null;
+    },
+  };
+}
+
+/** Build the production Vault adapter around an authenticated client. */
+export function createSupabaseVaultTokenResolver(
+  client: SupabaseSenderClient,
+): VaultTokenResolver {
+  return {
+    async resolveAccessToken(ref) {
+      if (!ref) {
+        return null;
+      }
+      // Supabase Vault exposes decrypted secrets via vault.decrypted_secrets.
+      // The ref may be a secret name or id; try by name then by id.
+      const byNameLookup = await runSupabaseLookup(
+        "vault_name",
+        () => client
+          .schema("vault")
+          .from<{ decrypted_secret?: string }>("decrypted_secrets")
+          .select("decrypted_secret")
+          .eq("name", ref)
+          .limit(1)
+          .maybeSingle(),
+      );
+      if (!byNameLookup.ok) {
+        throw new Error(byNameLookup.reason);
+      }
+      if (byNameLookup.data?.decrypted_secret) {
+        return byNameLookup.data.decrypted_secret;
+      }
+      const byIdLookup = await runSupabaseLookup(
+        "vault_id",
+        () => client
+          .schema("vault")
+          .from<{ decrypted_secret?: string }>("decrypted_secrets")
+          .select("decrypted_secret")
+          .eq("id", ref)
+          .limit(1)
+          .maybeSingle(),
+      );
+      if (!byIdLookup.ok) {
+        throw new Error(byIdLookup.reason);
+      }
+      return byIdLookup.data?.decrypted_secret ?? null;
+    },
+  };
+}
+
 /**
  * Build the production dependencies from environment variables and a Supabase
  * service client. Imported lazily so the module can be unit-tested without the
@@ -671,150 +963,9 @@ export async function createSupabaseSenderDeps(): Promise<SenderDeps> {
   });
 
   const logger = createScrubbingLogger();
-
-  const data: SenderDataAccess = {
-    async claimPending(limit) {
-      // Claim ownership atomically in Postgres. All remaining lookups are
-      // read-only enrichment of rows already leased to this worker.
-      const { data: rows, error } = await client.rpc(
-        "rpc_claim_line_outbound_batch",
-        {
-          p_limit: limit,
-          p_claim_timeout_seconds: 300,
-        },
-      );
-      if (error) {
-        throw new Error(error.message);
-      }
-      const claimed: ClaimedOutbound[] = [];
-      for (const r of rows ?? []) {
-        const isGroup = r.target_type === "group";
-
-        // Conversation enrichment remains read-only; group rows intentionally
-        // have no conversation_id (0097).
-        let convo:
-          | { line_user_id?: string; vertical_context?: string }
-          | undefined;
-        if (!isGroup && r.conversation_id) {
-          const { data: conversation } = await client
-            .from("line_oa_conversations")
-            .select("line_user_id, vertical_context")
-            .eq("id", r.conversation_id)
-            .maybeSingle();
-          convo = conversation ?? undefined;
-        }
-
-        // แถว group: push ไปที่ groupId ตรง ๆ; vertical จาก line_groups (จำตอน #ผูก — 0097)
-        let groupVertical: string | undefined;
-        if (isGroup) {
-          const { data: grp } = await client
-            .from("line_groups")
-            .select("vertical_context")
-            .eq("line_group_id", r.target_id)
-            .maybeSingle();
-          groupVertical = grp?.vertical_context ?? undefined;
-        }
-        let enrichmentFailure: string | undefined;
-        if (!isGroup && (!convo?.line_user_id || !convo.vertical_context)) {
-          enrichmentFailure = "conversation_enrichment_missing";
-        }
-        const verticalContext: string = isGroup
-          ? (groupVertical ?? "monolith")
-          : (convo?.vertical_context ?? "");
-
-        // Resolve the active channel for this vertical (centralized topology).
-        const { data: channel } = await client
-          .from("line_oa_channels")
-          .select("channel_access_token_ref")
-          .eq("vertical_context", verticalContext)
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle();
-
-        // Candidate templates for resolution + slot substitution.
-        const { data: templates } = await client
-          .from("line_oa_message_templates")
-          .select("template_key, vertical_context, body, is_active, message_kind")
-          .eq("template_key", r.template_key)
-          .or(`vertical_context.eq.${verticalContext},vertical_context.is.null`);
-
-        claimed.push({
-          outboundId: r.id,
-          claimToken: r.claim_token,
-          enrichmentFailure,
-          conversationId: r.conversation_id ?? null,
-          sendType: r.send_type as SendType,
-          templateKey: r.template_key,
-          slotValues: (r.slot_values ?? {}) as Record<string, string>,
-          lineUserId: isGroup ? r.target_id : (convo?.line_user_id ?? ""),
-          verticalContext,
-          channelAccessTokenRef: channel?.channel_access_token_ref ?? "",
-          candidateTemplates: (templates ?? []).map((t: ClaimedTemplateRow) => ({
-            templateKey: t.template_key,
-            verticalContext: t.vertical_context,
-            body: t.body,
-            isActive: t.is_active,
-            messageKind: (t.message_kind ?? "text") as "text" | "flex" | "image",
-          })),
-        });
-      }
-      return claimed;
-    },
-
-    async recordResult(outboundId, status, errorDetail, failureClass, claimToken) {
-      const { data: result, error } = await client.rpc("rpc_record_line_send_result", {
-        p_outbound_id: outboundId,
-        p_status: status,
-        p_error_detail: errorDetail,
-        p_failure_class: failureClass ?? "transient",
-        p_claim_token: claimToken ?? null,
-      });
-      if (error) {
-        throw new Error(error.message);
-      }
-      const record = Array.isArray(result) ? result[0] : result;
-      return record?.recorded === true;
-    },
-
-    // 0134 — ADR-045 Q2ก: signed URL จาก bucket private (LINE ดึงเองตอนส่ง)
-    async createSignedMediaUrl(storagePath, expiresInSeconds) {
-      const { data: signed, error } = await client.storage
-        .from("installation-media")
-        .createSignedUrl(storagePath, expiresInSeconds);
-      if (error) {
-        throw new Error(error.message);
-      }
-      return signed?.signedUrl ?? null;
-    },
-  };
-
-  const vault: VaultTokenResolver = {
-    async resolveAccessToken(ref) {
-      if (!ref) {
-        return null;
-      }
-      // Supabase Vault exposes decrypted secrets via vault.decrypted_secrets.
-      // The ref may be a secret name or id; try by name then by id.
-      const { data: byName } = await client
-        .schema("vault")
-        .from("decrypted_secrets")
-        .select("decrypted_secret")
-        .eq("name", ref)
-        .limit(1)
-        .maybeSingle();
-      if (byName?.decrypted_secret) {
-        return byName.decrypted_secret as string;
-      }
-      const { data: byId } = await client
-        .schema("vault")
-        .from("decrypted_secrets")
-        .select("decrypted_secret")
-        .eq("id", ref)
-        .limit(1)
-        .maybeSingle();
-      return (byId?.decrypted_secret as string | undefined) ?? null;
-    },
-  };
+  const senderClient = client as unknown as SupabaseSenderClient;
+  const data = createSupabaseSenderDataAccess(senderClient);
+  const vault = createSupabaseVaultTokenResolver(senderClient);
 
   return { data, vault, line: createLineMessagingClient(), logger };
 }

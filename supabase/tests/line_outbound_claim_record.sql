@@ -14,7 +14,7 @@
 \set ON_ERROR_STOP on
 
 create extension if not exists pgtap;
-select plan(67);
+select plan(69);
 
 -- ---------------------------------------------------------------------------
 -- Test-only dynamic helpers let the complete suite run against the pre-0193
@@ -213,7 +213,7 @@ declare
 begin
   execute $sql$
     update public.line_oa_outbound_messages
-       set claimed_at = timezone('utc', now()) - make_interval(secs => $2),
+       set claimed_at = now() - make_interval(secs => $2),
            claimed_by = 'expired-a1-worker'
      where id = $1
   $sql$ using p_outbound_id, p_age_seconds;
@@ -900,7 +900,7 @@ insert into a1_results values (
   'a2_due_future',
   jsonb_build_object(
     'set_due', pg_temp.a2_set_next_attempt(
-      'a1000000-0000-0000-0000-000000000030', timezone('utc', now()) + interval '1 hour'),
+      'a1000000-0000-0000-0000-000000000030', now() + interval '1 hour'),
     'claim', pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
   )
 );
@@ -921,7 +921,7 @@ insert into a1_results values (
   'a2_due_past',
   jsonb_build_object(
     'set_due', pg_temp.a2_set_next_attempt(
-      'a1000000-0000-0000-0000-000000000030', timezone('utc', now()) - interval '1 second'),
+      'a1000000-0000-0000-0000-000000000030', now() - interval '1 second'),
     'claim', pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
   )
 );
@@ -983,7 +983,7 @@ select ok(
 );
 
 select pg_temp.a2_set_next_attempt(
-  'a1000000-0000-0000-0000-000000000040', timezone('utc', now()) - interval '1 second');
+  'a1000000-0000-0000-0000-000000000040', now() - interval '1 second');
 insert into a1_results values (
   'a2_transient_claim_2',
   pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
@@ -1242,6 +1242,61 @@ select ok(
        where event_type = 'outbound_send_result_recorded'
          and entity_ref like 'line_oa_outbound_message:a1000000-0000-0000-0000-000000000090|%'),
   'a non-null stale token cannot replay after a transient result clears the fence'
+);
+
+-- ---------------------------------------------------------------------------
+-- 68-69 (A3): timestamptz backoff must retain its duration in non-UTC sessions.
+-- ---------------------------------------------------------------------------
+set local timezone = 'Asia/Bangkok';
+
+insert into public.line_oa_outbound_messages (
+  id, conversation_id, send_type, status, template_key, slot_values
+) values (
+  'a3000000-0000-0000-0000-000000000001',
+  'a1000000-0000-0000-0000-00000000c001',
+  'push', 'pending', 'tpl_a3_non_utc_backoff', '{}'::jsonb
+);
+insert into a1_results values (
+  'a3_non_utc_transient',
+  pg_temp.a2_record_as(
+    'service_role', '{}'::jsonb,
+    'a3000000-0000-0000-0000-000000000001',
+    'failed', 'temporary LINE 503', 'transient'
+  )
+);
+insert into a1_results values (
+  'a3_non_utc_immediate_claim',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+select ok(
+  (select next_attempt_at > now()
+   from public.line_oa_outbound_messages
+   where id = 'a3000000-0000-0000-0000-000000000001')
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload->'rows' from a1_results where label = 'a3_non_utc_immediate_claim')
+    ) r
+    where r->>'id' = 'a3000000-0000-0000-0000-000000000001'
+  ),
+  'non-UTC session cannot immediately reclaim a just-failed transient row'
+);
+
+select pg_temp.a2_set_next_attempt(
+  'a3000000-0000-0000-0000-000000000001', now() - interval '1 second');
+insert into a1_results values (
+  'a3_non_utc_elapsed_claim',
+  pg_temp.a1_claim_as('service_role', '{"role":"service_role"}'::jsonb, 100, 300)
+);
+select ok(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      (select payload->'rows' from a1_results where label = 'a3_non_utc_elapsed_claim')
+    ) r
+    where r->>'id' = 'a3000000-0000-0000-0000-000000000001'
+  ),
+  'non-UTC session can reclaim the transient row after backoff elapses'
 );
 
 select * from finish();
