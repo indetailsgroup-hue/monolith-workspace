@@ -66,10 +66,13 @@ throwaway commit (revert after each), verify the final gate rejects each class:
 
 1. **Skipped test** — add `it.skip(...)` to any `server/src/trust-kernel` test →
    push → the final gate must FAIL with a skipped-assertion violation. Revert.
-2. **Dropped report** — remove one report's `upload-artifact` step (e.g.
+2. **Ordinary test failure** — change one otherwise-passing trust-kernel assertion
+   so it fails → push → the producing job and final gate must both remain red; a
+   regular failure must never be hidden by report upload or aggregation. Revert.
+3. **Dropped report** — remove one report's `upload-artifact` step (e.g.
    `pgtap-trust_kernel_safety.tap`) → push → the gate must FAIL with
    `missing required report`. Revert.
-3. **Perturbed packet** — change one byte of
+4. **Perturbed packet** — change one byte of
    `test-vectors/factory-packet-v3/valid-minimal/packet.zip` on one OS path →
    push → the gate must FAIL with a cross-platform golden-sha MISMATCH. Revert.
 
@@ -78,6 +81,15 @@ Only after each deliberate break is caught should the green gate be trusted.
 ## 4. Generate the evidence-derived exit review from real CI reports
 
 Download the CI report artifacts into `reports/phase0/`, then:
+
+The exit-review builder accepts both the local/db-verify `<suite>.tap` basenames
+and trust-kernel CI's `pgtap-<suite>.tap` basenames. Preserve the downloaded CI
+filenames; no manual rename step is required.
+
+Local files under `reports/` are interim evidence, not the durable record. Their
+only committed authentication anchor is the full SHA-256 recorded in the
+committed exit review; after the first push, retained CI artifacts become the
+durable evidence record.
 
 ```bash
 node scripts/trust-kernel/build-repair-phase0-exit-review.mjs reports/phase0

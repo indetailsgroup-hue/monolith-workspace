@@ -40,7 +40,12 @@ function sha256(text) {
 }
 
 function inspectReport(reportsDir, name) {
-  const file = join(reportsDir, name);
+  // Local/db-verify evidence uses <suite>.tap, while trust-kernel-verify uploads
+  // pgtap-<suite>.tap. Keep one logical report name in the exit review and accept
+  // either producer's basename at the filesystem boundary.
+  const candidates = name.endsWith('.tap') ? [name, `pgtap-${name}`] : [name];
+  const file = candidates.map((candidate) => join(reportsDir, candidate)).find(existsSync)
+    ?? join(reportsDir, name);
   if (!existsSync(file)) {
     return { name, present: false, ok: false, detail: 'PENDING_CI_RUN — produced only by the CI workflow', hash: '-', assertions: 0 };
   }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, readdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { buildRepairPhase0ExitReview, REQUIRED_PHASE0_REPORTS } from './build-repair-phase0-exit-review.mjs';
@@ -58,6 +58,17 @@ test('complete green fixture reports yield PENDING_OWNER_APPROVAL with VERIFIED 
     assert.ok(text.includes('Immutable infrastructure: NOT CLAIMED'));
     assert.ok(text.includes(META.productMain));
   }
+  rmSync(base, { recursive: true, force: true });
+});
+
+test('CI pgtap-<suite>.tap artifact names yield VERIFIED evidence without manual renaming', () => {
+  const { base, result } = run((dir) => {
+    for (const name of REQUIRED_PHASE0_REPORTS.filter((item) => item.endsWith('.tap'))) {
+      renameSync(join(dir, name), join(dir, `pgtap-${name}`));
+    }
+  });
+  assert.equal(result.evidence, 'VERIFIED');
+  assert.ok(result.rows.filter((row) => row.name.endsWith('.tap')).every((row) => row.present && row.ok));
   rmSync(base, { recursive: true, force: true });
 });
 
