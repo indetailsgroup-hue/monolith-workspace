@@ -8,11 +8,11 @@
  * using fixed ISO 281-aligned thresholds.  All Redis errors are swallowed so
  * connectivity issues never crash the hot sensor path.
  *
- * @version 1.0.0
+ * @version 1.1.0  — added getAggregatedHealth()
  */
 
 import Redis from 'ioredis';
-import type { DegradationIndicator } from '../types/maintenance';
+import { HealthStatus, type DegradationIndicator } from '../types/maintenance';
 
 // ─── Cached feature schema ────────────────────────────────────────────────────
 
@@ -34,6 +34,15 @@ const T = {
   trend_slope:    { baseline: 0.000, warning: 0.001, failure: 0.005 },
   ewma_deviation: { baseline: 0.000, warning: 0.20,  failure: 0.40  },
 } as const;
+
+// ─── normalizedDeviation → HealthStatus thresholds ───────────────────────────
+
+const HEALTH_THRESHOLDS: [number, HealthStatus][] = [
+  [1.0, HealthStatus.FAILED],
+  [0.8, HealthStatus.CRITICAL],
+  [0.6, HealthStatus.WARNING],
+  [0.4, HealthStatus.DEGRADING],
+];
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -80,6 +89,14 @@ function toIndicators(f: CachedFeatures): DegradationIndicator[] {
       normalizedDeviation: normalize(f.ewmaDeviation, T.ewma_deviation.baseline, T.ewma_deviation.failure),
     },
   ];
+}
+
+/** Map worst normalizedDeviation score → HealthStatus (worst-wins). */
+function scoreToHealth(worstScore: number): HealthStatus {
+  for (const [threshold, status] of HEALTH_THRESHOLDS) {
+    if (worstScore >= threshold) return status;
+  }
+  return HealthStatus.HEALTHY;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -144,6 +161,62 @@ export class FeatureCacheService {
       });
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Scan all cached component keys for `machineId` and return the overall
+   * HealthStatus derived from the single worst normalizedDeviation score
+   * across every component and every feature indicator.
+   *
+   * Precedence (worst → best):
+   *   FAILED (≥ 1.0) > CRITICAL (≥ 0.8) > WARNING (≥ 0.6) > DEGRADING (≥ 0.4) > HEALTHY
+   *
+   * Returns HEALTHY when no keys are cached or Redis is unavailable.
+   */
+  async getAggregatedHealth(machineId: string): Promise<HealthStatus> {
+    try {
+      // Use SCAN (non-blocking) to enumerate all component keys for this machine.
+      const pattern = `ds:features:${machineId}:*`;
+      const keys: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, found] = await this.redis.scan(
+          cursor,
+          'MATCH', pattern,
+          'COUNT', 100,
+        );
+        cursor = nextCursor;
+        keys.push(...found);
+      } while (cursor !== '0');
+
+      if (keys.length === 0) return HealthStatus.HEALTHY;
+
+      let worstScore = 0;
+
+      for (const key of keys) {
+        // Extract componentType from key pattern ds:features:{machineId}:{componentType}
+        const componentType = key.split(':').pop() ?? '';
+        if (!componentType) continue;
+
+        const indicators = await this.getIndicators(machineId, componentType);
+        if (!indicators) continue;
+
+        for (const ind of indicators) {
+          if (ind.normalizedDeviation > worstScore) {
+            worstScore = ind.normalizedDeviation;
+          }
+        }
+
+        // Short-circuit: FAILED is the worst possible — no need to scan further
+        if (worstScore >= 1.0) return HealthStatus.FAILED;
+      }
+
+      return scoreToHealth(worstScore);
+    } catch {
+      // Redis unavailable — fail open with HEALTHY so the endpoint keeps serving
+      return HealthStatus.HEALTHY;
     }
   }
 
