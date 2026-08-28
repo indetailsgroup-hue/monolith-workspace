@@ -2,9 +2,9 @@
  * MachineShadow — Factory route page for Digital Shadow view
  *
  * Wraps MachineShadowPanel and handles:
- *   1. SSE auto-reconnect with exponential back-off  (v1.1.0)
- *   2. Dismissible toast banner surfacing reconnect
- *      attempt count and back-off delay              (v1.2.0)
+ *   1. SSE auto-reconnect with exponential back-off         (v1.1.0)
+ *   2. Dismissible toast surfacing reconnect attempt + delay (v1.2.0)
+ *   3. Dismissible stale-features warning banner             (v1.3.0)
  *
  * Back-off policy:
  *   initial delay : 1 s
@@ -12,13 +12,21 @@
  *   cap           : 30 s
  *   reset         : on successful EventSource `open` event
  *
- * @version 1.2.0
+ * Stale-features banner:
+ *   Shown when maintenance.staleFeatures === true for the selected machine.
+ *   Dismissed per-session; resets automatically when a different machine is
+ *   selected or when the maintenance data refreshes with staleFeatures=false.
+ *
+ * @version 1.3.0
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, Clock, X } from 'lucide-react';
 import { MachineShadowPanel } from '../components/shadow/MachineShadowPanel';
-import { useMachineShadowStore } from '../state/machineShadowStore';
+import {
+  useMachineShadowStore,
+  selectSelectedMaintenance,
+} from '../state/machineShadowStore';
 
 // ─── Back-off constants ───────────────────────────────────────────────────────
 
@@ -41,6 +49,7 @@ export function MachineShadow(): React.ReactElement {
   const activeEventSource = useMachineShadowStore((s) => s.activeEventSource);
   const selectedMachineId = useMachineShadowStore((s) => s.selectedMachineId);
   const openEventStream   = useMachineShadowStore((s) => s.openEventStream);
+  const maintenance       = useMachineShadowStore(selectSelectedMaintenance);
 
   /** Consecutive reconnect attempts since last successful open. */
   const attemptRef = useRef(0);
@@ -53,18 +62,30 @@ export function MachineShadow(): React.ReactElement {
    */
   const [toast, setToast] = useState<ReconnectToast | null>(null);
 
+  /**
+   * Controls the stale-features warning banner.
+   * - true  : user dismissed it for this machine session
+   * - Resets to false when selectedMachineId changes
+   */
+  const [staleDismissed, setStaleDismissed] = useState(false);
+
+  // Reset stale banner dismissal whenever the selected machine changes
+  useEffect(() => {
+    setStaleDismissed(false);
+  }, [selectedMachineId]);
+
+  // ── SSE reconnect back-off ────────────────────────────────────────────────
   useEffect(() => {
     if (!activeEventSource || !selectedMachineId) return;
 
-    // ── Reset attempt counter and hide banner on successful open ─────────
+    // Reset attempt counter and hide banner on successful open
     activeEventSource.onopen = () => {
       attemptRef.current = 0;
       setToast(null);
     };
 
-    // ── Schedule reconnect; surface attempt + delay in the toast banner ──
+    // Schedule reconnect; surface attempt + delay in the toast banner
     activeEventSource.onerror = () => {
-      // Cancel any previously scheduled reconnect
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -76,10 +97,8 @@ export function MachineShadow(): React.ReactElement {
       );
       attemptRef.current += 1;
 
-      // Show the toast with current attempt number (post-increment) and delay
       setToast({ attempt: attemptRef.current, delayMs: delay });
 
-      // Capture machineId so a mid-flight deselect is handled safely
       const targetId = selectedMachineId;
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
@@ -87,7 +106,7 @@ export function MachineShadow(): React.ReactElement {
       }, delay);
     };
 
-    // ── Cleanup: cancel pending reconnect on re-render or unmount ─────────
+    // Cancel pending reconnect on re-render or unmount
     return () => {
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
@@ -96,11 +115,77 @@ export function MachineShadow(): React.ReactElement {
     };
   }, [activeEventSource, selectedMachineId, openEventStream]);
 
+  // ── Derived booleans ──────────────────────────────────────────────────────
+
+  /** True when the API reports feature data older than the 300 s TTL. */
+  const isStale = maintenance?.staleFeatures === true;
+
+  /** Show the stale banner only when stale AND not yet dismissed this session. */
+  const showStaleBanner = isStale && !staleDismissed;
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <MachineShadowPanel />
 
-      {/* ── Reconnect toast banner ─────────────────────────────────────── */}
+      {/* ── Stale-features warning banner ─────────────────────────────────── */}
+      {showStaleBanner && (
+        <div
+          role="alert"
+          aria-live="polite"
+          aria-atomic="true"
+          data-testid="stale-features-toast"
+          style={{
+            position:     'fixed',
+            bottom:       '5rem',      // sits above the reconnect toast at 1.5 rem
+            right:        '1.5rem',
+            zIndex:       50,
+            display:      'flex',
+            alignItems:   'center',
+            gap:          '0.625rem',
+            padding:      '0.75rem 1rem',
+            borderRadius: '0.5rem',
+            background:   '#1c1408',
+            color:        '#fef3c7',
+            boxShadow:    '0 4px 16px rgba(0,0,0,0.45)',
+            minWidth:     '280px',
+            maxWidth:     '420px',
+            fontSize:     '0.875rem',
+            lineHeight:   '1.4',
+            border:       '1px solid rgba(245,158,11,0.50)',
+          }}
+        >
+          <Clock
+            size={18}
+            aria-hidden="true"
+            style={{ color: '#f59e0b', flexShrink: 0 }}
+          />
+          <span style={{ flex: 1 }}>
+            Feature data is stale — Redis cache exceeds the{' '}
+            <strong>5&thinsp;min TTL</strong>.{' '}
+            Predictions may not reflect current sensor readings.
+          </span>
+          <button
+            type="button"
+            aria-label="Dismiss stale features notification"
+            onClick={() => setStaleDismissed(true)}
+            style={{
+              background:   'none',
+              border:       'none',
+              cursor:       'pointer',
+              color:        '#92400e',
+              padding:      '0.25rem',
+              flexShrink:   0,
+              display:      'flex',
+              alignItems:   'center',
+              borderRadius: '0.25rem',
+            }}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Reconnect toast banner ─────────────────────────────────────────── */}
       {toast !== null && (
         <div
           role="alert"

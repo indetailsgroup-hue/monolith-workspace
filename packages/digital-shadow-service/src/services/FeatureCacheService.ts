@@ -8,7 +8,7 @@
  * using fixed ISO 281-aligned thresholds.  All Redis errors are swallowed so
  * connectivity issues never crash the hot sensor path.
  *
- * @version 1.2.0  — added getAggregatedHealth(), getOldestTimestamp()
+ * @version 1.3.0  — added getAggregatedHealth(), getOldestTimestamp(), refreshTTL()
  */
 
 import Redis from 'ioredis';
@@ -258,6 +258,46 @@ export class FeatureCacheService {
       return oldest;
     } catch {
       return null;
+    }
+  }
+
+
+  /**
+   * Reset the 300 s TTL on every cached component key for `machineId`.
+   *
+   * Call this whenever new sensor data arrives so warm keys never expire
+   * mid-analysis cycle.  Uses a Redis pipeline to batch all EXPIRE commands
+   * into a single round-trip.  Errors are swallowed — TTL drift is recoverable.
+   *
+   * @param machineId  Machine whose component keys should be refreshed.
+   */
+  async refreshTTL(machineId: string): Promise<void> {
+    try {
+      // 1. Collect all component keys via non-blocking SCAN
+      const pattern = `ds:features:${machineId}:*`;
+      const keys: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, found] = await this.redis.scan(
+          cursor,
+          'MATCH', pattern,
+          'COUNT', 100,
+        );
+        cursor = nextCursor;
+        keys.push(...found);
+      } while (cursor !== '0');
+
+      if (keys.length === 0) return;
+
+      // 2. Pipeline all EXPIRE commands — single round-trip to Redis
+      const pipeline = this.redis.pipeline();
+      for (const key of keys) {
+        pipeline.expire(key, FEATURE_TTL_S);
+      }
+      await pipeline.exec();
+    } catch {
+      // swallow — TTL drift is recoverable on the next setFeatures() call
     }
   }
 
