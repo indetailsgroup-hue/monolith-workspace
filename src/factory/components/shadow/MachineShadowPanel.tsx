@@ -4,7 +4,7 @@
  * Left column: machine list with live state
  * Right column: selected machine details + component health table
  *
- * @version 1.1.0  — overallHealth pre-fetch + badge wired into MachineCard
+ * @version 1.2.0  — overallHealth badges + cacheAge freshness indicator
  */
 import React, { useEffect } from 'react';
 import {
@@ -17,6 +17,18 @@ import { ComponentHealthTable } from './ComponentHealthTable';
 import { HealthBadge, StateBadge } from './HealthBadge';
 import type { HealthStatus } from '../../api/digitalShadowApi';
 import { WwUnitState } from '../../api/digitalShadowApi';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Convert a cacheAge duration (ms) to a compact human-readable string.
+ * Examples: "5 s ago", "2 min ago", "1 h ago"
+ */
+function formatCacheAge(ms: number): string {
+  if (ms < 60_000)      return `${Math.round(ms / 1_000)} s ago`;
+  if (ms < 3_600_000)   return `${Math.round(ms / 60_000)} min ago`;
+  return `${Math.round(ms / 3_600_000)} h ago`;
+}
 
 export function MachineShadowPanel(): React.ReactElement {
   const {
@@ -240,12 +252,30 @@ export function MachineShadowPanel(): React.ReactElement {
                 {maintenance && !maintenanceLoading && (
                   <>
                     {/* Overall health summary */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 12, color: '#6b7280' }}>Overall:</span>
                       <HealthBadge status={maintenance.overallHealth as HealthStatus} />
                       <span style={{ fontSize: 12, color: '#6b7280' }}>
                         Op hours: {maintenance.operatingHours.toLocaleString()} h
                       </span>
+                      {maintenance.cacheAge !== null && maintenance.cacheAge !== undefined && (
+                        <span
+                          data-testid="cache-age-label"
+                          style={{
+                            display:    'flex',
+                            alignItems: 'center',
+                            gap:        4,
+                            fontSize:   11,
+                            color:      maintenance.staleFeatures ? '#f59e0b' : '#4b5563',
+                            marginLeft: 'auto',
+                          }}
+                        >
+                          {maintenance.staleFeatures && (
+                            <span aria-label="Stale feature data" style={{ fontSize: 12 }}>⚠</span>
+                          )}
+                          features updated {formatCacheAge(maintenance.cacheAge)}
+                        </span>
+                      )}
                     </div>
                     <ComponentHealthTable maintenance={maintenance} />
                   </>
@@ -394,4 +424,5 @@ function EmptyDetail() {
     </div>
   );
 }
+
 

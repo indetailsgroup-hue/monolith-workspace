@@ -234,6 +234,12 @@ app.get('/machines/:id/maintenance', async (c) => {
     const oldestTs = await featureCache.getOldestTimestamp(machineId);
     const cacheAge = oldestTs !== null ? Date.now() - oldestTs : null;
 
+    // ── staleFeatures: true when any cached feature is older than the 300 s TTL ──
+    // Matches FEATURE_TTL_S = 300 in FeatureCacheService so a TTL-expired entry
+    // will always be reported as stale before Redis evicts it.
+    const FEATURE_TTL_MS = 300_000;
+    const staleFeatures  = cacheAge !== null ? cacheAge > FEATURE_TTL_MS : null;
+
     return c.json({
       machineId,
       assessedAt: new Date().toISOString(),
@@ -243,6 +249,7 @@ app.get('/machines/:id/maintenance', async (c) => {
       criticalCount,
       warningCount,
       cacheAge,
+      staleFeatures,
     });
   } catch (err) {
     logger.error({ err, machineId }, 'Failed to assess maintenance');
@@ -476,4 +483,5 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // ─── Start ───────────────────────────────────────────────────────────────────
 
 bootstrap();
+
 

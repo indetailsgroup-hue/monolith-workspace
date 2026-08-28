@@ -113,6 +113,12 @@ export interface MaintenanceResponse {
   warningCount: number;
   /** Milliseconds since the oldest cached feature timestamp; null when cache is empty. */
   cacheAge: number | null;
+  /**
+   * True  — at least one feature hash is older than the 300 s Redis TTL.
+   * False — all feature hashes are fresh.
+   * null  — cacheAge is null (no cached features at all).
+   */
+  staleFeatures: boolean | null;
 }
 
 // ─── Internal fetch helper ───────────────────────────────────────────────────
@@ -177,4 +183,5 @@ export async function fetchMachineMaintenance(
 export function openMachineEventStream(machineId: string): EventSource {
   return new EventSource(`${SHADOW_BASE}/machines/${machineId}/events`);
 }
+
 
