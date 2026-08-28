@@ -168,6 +168,12 @@ app.get('/machines/:id/maintenance', async (c) => {
       ? parseFloat(operatingHoursParam)
       : 2500; // default: mid-life CNC
 
+    const forceRefresh = c.req.query('force-refresh') === 'true';
+    if (forceRefresh) {
+      logger.info({ machineId }, 'Force-refreshing feature cache TTLs');
+      await featureCache.refreshTTL(machineId);
+    }
+
     const components = Object.values(ComponentType);
 
     const results = await Promise.all(
