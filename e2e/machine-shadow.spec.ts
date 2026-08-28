@@ -81,32 +81,52 @@ const sseBody = alarmEvent + stateEvent;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Shared route-setup helper ──────────────────────────────────────────────────
+// Registers the three non-SSE routes used by both test cases.  SSE route is
+// registered individually in each test so each can control the body/behaviour.
+
+async function setupBaseRoutes(page: import('@playwright/test').Page) {
+  await page.route('**/health', (route) =>
+    route.fulfill({
+      status:      200,
+      contentType: 'application/json',
+      body:        JSON.stringify({ status: 'ok' }),
+    }),
+  );
+
+  await page.route('**/machines', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.replace(/\/$/, '').endsWith('/machines')) {
+      return route.fulfill({
+        status:      200,
+        contentType: 'application/json',
+        body:        JSON.stringify(machineList),
+      });
+    }
+    return route.continue();
+  });
+
+  await page.route(`**/machines/${MACHINE_ID}/maintenance**`, (route) =>
+    route.fulfill({
+      status:      200,
+      contentType: 'application/json',
+      body:        JSON.stringify(maintenanceStale),
+    }),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 test.describe('MachineShadow — full Digital Shadow flow', () => {
   test('SSE alarm → stale banner appears → force-refresh clears it', async ({ page }) => {
     let forceRefreshCalled = false;
 
-    // ── Register route mocks (most-specific last = highest priority in Playwright) ──
+    // ── Register route mocks ───────────────────────────────────────────────────
 
-    // 1. Health check
-    await page.route('**/health', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) }),
-    );
+    // 1. Shared base routes (health, machines, maintenance)
+    await setupBaseRoutes(page);
 
-    // 2. Machine list
-    await page.route('**/machines', (route) => {
-      // Ignore requests with more path segments (e.g. /machines/cnc-001/...)
-      const url = new URL(route.request().url());
-      if (url.pathname.replace(/\/$/, '').endsWith('/machines')) {
-        return route.fulfill({
-          status:      200,
-          contentType: 'application/json',
-          body:        JSON.stringify(machineList),
-        });
-      }
-      return route.continue();
-    });
-
-    // 3. Maintenance endpoint — handles both normal and force-refresh requests
+    // 2. Override maintenance route to handle force-refresh
     await page.route(`**/machines/${MACHINE_ID}/maintenance**`, (route) => {
       const url = route.request().url();
       if (url.includes('force-refresh=true')) {
@@ -124,7 +144,7 @@ test.describe('MachineShadow — full Digital Shadow flow', () => {
       });
     });
 
-    // 4. SSE stream — deliver alarm + state events then keep stream open
+    // 3. SSE stream — delivers alarm + state events then closes
     await page.route(`**/machines/${MACHINE_ID}/events`, (route) =>
       route.fulfill({
         status:      200,
@@ -172,5 +192,53 @@ test.describe('MachineShadow — full Digital Shadow flow', () => {
     // ── Assert: force-refresh endpoint was actually called ───────────────────
 
     expect(forceRefreshCalled).toBe(true);
+  });
+
+  // ── Reconnect toast ──────────────────────────────────────────────────────────
+  //
+  //   Flow:
+  //     a. SSE route fulfills immediately with an empty body
+  //        → EventSource closes → onerror fires
+  //     b. MachineShadow sets reconnect-toast (attempt=1, delay=1 000 ms)
+  //     c. User clicks the dismiss button → toast hidden
+  //
+  //   The back-off timer is NOT advanced here; the test completes its assertion
+  //   window within the 1 s grace period before the reconnect attempt fires.
+
+  test('SSE onerror fires → reconnect-toast appears → dismiss hides it', async ({ page }) => {
+    // Shared base routes (health, machines, maintenance)
+    await setupBaseRoutes(page);
+
+    // SSE fulfills with empty body — connection closes immediately, EventSource fires onerror
+    await page.route(`**/machines/${MACHINE_ID}/events`, (route) =>
+      route.fulfill({
+        status:      200,
+        contentType: 'text/event-stream',
+        headers:     { 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+        body:        '',
+      }),
+    );
+
+    // ── Navigate ───────────────────────────────────────────────────────────────
+
+    await page.goto('/factory');
+    await page.getByRole('button', { name: /digital shadow/i }).click();
+    await page.getByText(MACHINE_ID).first().click({ timeout: 10_000 });
+
+    // ── Assert: reconnect-toast visible after onerror ─────────────────────────
+
+    const toast = page.getByTestId('reconnect-toast');
+    await expect(toast).toBeVisible({ timeout: 10_000 });
+
+    // Banner must contain the attempt number
+    await expect(toast).toContainText(/attempt\s*1/i);
+
+    // ── Act: dismiss the banner ───────────────────────────────────────────────
+
+    await page.getByRole('button', { name: /dismiss reconnect/i }).click();
+
+    // ── Assert: toast no longer visible ──────────────────────────────────────
+
+    await expect(toast).not.toBeVisible({ timeout: 5_000 });
   });
 });
