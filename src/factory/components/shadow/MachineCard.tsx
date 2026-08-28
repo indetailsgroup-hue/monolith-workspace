@@ -1,8 +1,10 @@
 /**
  * MachineCard — compact card showing a single CNC machine's live status
+ * v1.1.0 — overallHealth badge from live /maintenance Redis aggregation
  */
 import React from 'react';
-import { StateBadge } from './HealthBadge';
+import { StateBadge, HealthBadge } from './HealthBadge';
+import type { HealthStatus } from '../../api/digitalShadowApi';
 import type { MachineShadowState } from '../../api/digitalShadowApi';
 import { WwUnitState, WW_STATE_COLOR } from '../../api/digitalShadowApi';
 
@@ -10,6 +12,8 @@ interface MachineCardProps {
   machine: MachineShadowState;
   selected?: boolean;
   onClick?: () => void;
+  /** Live Redis-aggregated overall health; undefined while not yet loaded. */
+  overallHealth?: HealthStatus;
 }
 
 const CONNECTION_COLOR: Record<string, string> = {
@@ -22,6 +26,7 @@ export function MachineCard({
   machine,
   selected = false,
   onClick,
+  overallHealth,
 }: MachineCardProps): React.ReactElement {
   const connColor = CONNECTION_COLOR[machine.connectionStatus] ?? '#6b7280';
   const stateColor = WW_STATE_COLOR[machine.state as WwUnitState] ?? '#6b7280';
@@ -61,6 +66,9 @@ export function MachineCard({
           </span>
         </div>
         <StateBadge state={machine.state as WwUnitState} size="sm" />
+        {overallHealth !== undefined && (
+          <HealthBadge status={overallHealth} size="sm" />
+        )}
       </div>
 
       {/* Telemetry row */}
@@ -149,3 +157,4 @@ function TelemetryItem({
     </div>
   );
 }
+

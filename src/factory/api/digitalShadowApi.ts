@@ -111,6 +111,8 @@ export interface MaintenanceResponse {
   overallHealth: HealthStatus;
   criticalCount: number;
   warningCount: number;
+  /** Milliseconds since the oldest cached feature timestamp; null when cache is empty. */
+  cacheAge: number | null;
 }
 
 // ─── Internal fetch helper ───────────────────────────────────────────────────
@@ -175,3 +177,4 @@ export async function fetchMachineMaintenance(
 export function openMachineEventStream(machineId: string): EventSource {
   return new EventSource(`${SHADOW_BASE}/machines/${machineId}/events`);
 }
+

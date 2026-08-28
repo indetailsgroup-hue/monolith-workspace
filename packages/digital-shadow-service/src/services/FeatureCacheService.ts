@@ -8,7 +8,7 @@
  * using fixed ISO 281-aligned thresholds.  All Redis errors are swallowed so
  * connectivity issues never crash the hot sensor path.
  *
- * @version 1.1.0  — added getAggregatedHealth()
+ * @version 1.2.0  — added getAggregatedHealth(), getOldestTimestamp()
  */
 
 import Redis from 'ioredis';
@@ -220,7 +220,49 @@ export class FeatureCacheService {
     }
   }
 
+
+  /**
+   * Return the oldest feature `timestamp` (ms epoch) across all cached component
+   * keys for `machineId`.  Used by the /maintenance endpoint to compute `cacheAge`.
+   *
+   * Returns null when no keys are found or Redis is unavailable.
+   */
+  async getOldestTimestamp(machineId: string): Promise<number | null> {
+    try {
+      const pattern = `ds:features:${machineId}:*`;
+      const keys: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, found] = await this.redis.scan(
+          cursor,
+          'MATCH', pattern,
+          'COUNT', 100,
+        );
+        cursor = nextCursor;
+        keys.push(...found);
+      } while (cursor !== '0');
+
+      if (keys.length === 0) return null;
+
+      let oldest: number | null = null;
+
+      for (const key of keys) {
+        const raw = await this.redis.hget(key, 'timestamp');
+        if (!raw) continue;
+        const ts = parseInt(raw, 10);
+        if (!Number.isFinite(ts)) continue;
+        if (oldest === null || ts < oldest) oldest = ts;
+      }
+
+      return oldest;
+    } catch {
+      return null;
+    }
+  }
+
   async quit(): Promise<void> {
     try { await this.redis.quit(); } catch { /* ignore */ }
   }
 }
+

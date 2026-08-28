@@ -230,6 +230,10 @@ app.get('/machines/:id/maintenance', async (c) => {
     // Falls back to HealthStatus.HEALTHY on Redis unavailability (fail-open).
     const overallHealth: HealthStatus = await featureCache.getAggregatedHealth(machineId);
 
+    // ── cacheAge: ms since the oldest cached feature timestamp (null = no cache) ──
+    const oldestTs = await featureCache.getOldestTimestamp(machineId);
+    const cacheAge = oldestTs !== null ? Date.now() - oldestTs : null;
+
     return c.json({
       machineId,
       assessedAt: new Date().toISOString(),
@@ -238,6 +242,7 @@ app.get('/machines/:id/maintenance', async (c) => {
       overallHealth,
       criticalCount,
       warningCount,
+      cacheAge,
     });
   } catch (err) {
     logger.error({ err, machineId }, 'Failed to assess maintenance');
@@ -471,3 +476,4 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // ─── Start ───────────────────────────────────────────────────────────────────
 
 bootstrap();
+

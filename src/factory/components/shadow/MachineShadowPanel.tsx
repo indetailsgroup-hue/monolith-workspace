@@ -4,7 +4,7 @@
  * Left column: machine list with live state
  * Right column: selected machine details + component health table
  *
- * @version 1.0.0
+ * @version 1.1.0  — overallHealth pre-fetch + badge wired into MachineCard
  */
 import React, { useEffect } from 'react';
 import {
@@ -27,12 +27,14 @@ export function MachineShadowPanel(): React.ReactElement {
     serviceHealth,
     lastPollAt,
     selectedMachineId,
+    maintenanceByMachineId,
     maintenanceLoading,
     maintenanceError,
     pollActive,
     startPolling,
     stopPolling,
     selectMachine,
+    loadMaintenance,
   } = useMachineShadowStore();
 
   const selectedMachine = useMachineShadowStore(selectSelectedMachine);
@@ -43,6 +45,18 @@ export function MachineShadowPanel(): React.ReactElement {
     startPolling();
     return () => stopPolling();
   }, [startPolling, stopPolling]);
+
+  // Pre-fetch maintenance for every machine so the factory grid shows health
+  // badges without requiring the user to click each machine first.
+  useEffect(() => {
+    if (machines.length === 0) return;
+    machines.forEach((m) => {
+      // Skip if already loaded to avoid re-fetching on every poll cycle
+      if (!maintenanceByMachineId[m.machineId]) {
+        void loadMaintenance(m.machineId);
+      }
+    });
+  }, [machines, maintenanceByMachineId, loadMaintenance]);
 
   return (
     <div
@@ -160,6 +174,7 @@ export function MachineShadowPanel(): React.ReactElement {
               machine={m}
               selected={m.machineId === selectedMachineId}
               onClick={() => selectMachine(m.machineId)}
+              overallHealth={maintenanceByMachineId[m.machineId]?.overallHealth}
             />
           ))}
         </div>
@@ -379,3 +394,4 @@ function EmptyDetail() {
     </div>
   );
 }
+
