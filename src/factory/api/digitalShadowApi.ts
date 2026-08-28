@@ -160,3 +160,18 @@ export async function fetchMachineMaintenance(
     signal
   );
 }
+
+// ─── SSE ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Open a Server-Sent Events stream for real-time machine state/alarm events.
+ * The returned EventSource emits:
+ *   - `state`  — EventEnvelope<MachineShadowState>
+ *   - `alarm`  — EventEnvelope<{ machineId: string; message: string }>
+ *
+ * Callers must call `.close()` when done (e.g. on component unmount or
+ * machine deselection) to release the HTTP connection.
+ */
+export function openMachineEventStream(machineId: string): EventSource {
+  return new EventSource(`${SHADOW_BASE}/machines/${machineId}/events`);
+}

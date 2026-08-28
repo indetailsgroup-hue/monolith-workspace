@@ -3,8 +3,10 @@
  *
  * Polls @monolith/digital-shadow-service every POLL_INTERVAL_MS and
  * exposes machine health + RUL state to React components.
+ * SSE stream at /machines/:id/events pushes live state/alarm events
+ * whenever a machine is selected.
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { create } from 'zustand';
@@ -13,6 +15,7 @@ import {
   fetchShadowHealth,
   fetchAllMachines,
   fetchMachineMaintenance,
+  openMachineEventStream,
   type ShadowHealthResponse,
   type MachineShadowState,
   type MaintenanceResponse,
@@ -46,12 +49,17 @@ export interface MachineShadowStoreState {
   // Polling lifecycle
   pollActive: boolean;
 
+  // SSE
+  activeEventSource: EventSource | null;
+
   // Actions
   startPolling: () => void;
   stopPolling: () => void;
   selectMachine: (machineId: string | null) => void;
   loadMaintenance: (machineId: string) => Promise<void>;
   refreshOnce: () => Promise<void>;
+  openEventStream: (machineId: string) => void;
+  closeEventStream: () => void;
 }
 
 // ─── Module-level poll timer ─────────────────────────────────────────────────
@@ -77,6 +85,8 @@ export const useMachineShadowStore = create<MachineShadowStoreState>()(
       maintenanceError: null,
 
       pollActive: false,
+
+      activeEventSource: null,
 
       // ── refreshOnce ──────────────────────────────────────────────────────
       refreshOnce: async () => {
@@ -120,13 +130,19 @@ export const useMachineShadowStore = create<MachineShadowStoreState>()(
           clearInterval(_pollTimer);
           _pollTimer = null;
         }
+        get().closeEventStream();
         set({ pollActive: false, serviceStatus: 'idle' });
       },
 
       // ── selectMachine ─────────────────────────────────────────────────────
       selectMachine: (machineId) => {
         set({ selectedMachineId: machineId });
-        if (machineId) void get().loadMaintenance(machineId);
+        if (machineId) {
+          void get().loadMaintenance(machineId);
+          get().openEventStream(machineId);
+        } else {
+          get().closeEventStream();
+        }
       },
 
       // ── loadMaintenance ───────────────────────────────────────────────────
@@ -148,6 +164,65 @@ export const useMachineShadowStore = create<MachineShadowStoreState>()(
             maintenanceLoading: false,
           });
         }
+      },
+
+      // ── openEventStream ───────────────────────────────────────────────────
+      openEventStream: (machineId) => {
+        // Close any existing SSE connection first
+        const { activeEventSource } = get();
+        if (activeEventSource) {
+          activeEventSource.close();
+        }
+
+        const es = openMachineEventStream(machineId);
+
+        // Handle live state updates — merge into the machines array
+        es.addEventListener('state', (e: Event) => {
+          try {
+            const envelope = JSON.parse((e as MessageEvent).data);
+            const machineState = envelope.data as MachineShadowState;
+            if (!machineState?.machineId) return;
+            set((state) => ({
+              machines: state.machines.map((m) =>
+                m.machineId === machineState.machineId
+                  ? { ...m, ...machineState }
+                  : m
+              ),
+            }));
+          } catch {
+            // Ignore malformed frames
+          }
+        });
+
+        // Handle alarm events — append alarm message to the machine
+        es.addEventListener('alarm', (e: Event) => {
+          try {
+            const envelope = JSON.parse((e as MessageEvent).data);
+            const alarmMessage = envelope.data?.message as string | undefined;
+            const sourceId = (envelope.source ?? envelope.data?.machineId) as string | undefined;
+            if (!alarmMessage || !sourceId) return;
+            set((state) => ({
+              machines: state.machines.map((m) =>
+                m.machineId === sourceId
+                  ? { ...m, alarms: [...m.alarms, alarmMessage] }
+                  : m
+              ),
+            }));
+          } catch {
+            // Ignore malformed frames
+          }
+        });
+
+        set({ activeEventSource: es });
+      },
+
+      // ── closeEventStream ──────────────────────────────────────────────────
+      closeEventStream: () => {
+        const { activeEventSource } = get();
+        if (activeEventSource) {
+          activeEventSource.close();
+        }
+        set({ activeEventSource: null });
       },
     }),
     { name: 'MachineShadowStore' }
