@@ -206,4 +206,53 @@ describe('MachineShadow — stale-features toast banner', () => {
 
     expect(mockLoadMaintenance).toHaveBeenCalledWith('machine-001', { forceRefresh: true });
   });
+
+  // ── 6. force-refresh-btn disabled while in-flight, re-enabled on resolve ────
+  //
+  //   Uses a manually-controlled Promise so we can inspect the mid-flight
+  //   disabled state before the `finally { setIsRefreshing(false) }` runs.
+  //
+  //   Flow:
+  //     a. Render with staleFeatures=true → btn starts enabled
+  //     b. Click btn → handleForceRefresh starts, setIsRefreshing(true) queued,
+  //        then awaits controlledPromise (still pending) → btn becomes disabled
+  //     c. act() flushes isRefreshing=true without resolving the promise
+  //     d. Assert btn.disabled === true
+  //     e. resolveRefresh() → finally block runs → setIsRefreshing(false) flushed
+  //     f. Assert btn.disabled === false
+
+  it('force-refresh-btn is disabled while in-flight and re-enables after promise resolves', async () => {
+    storeState._maintenance      = { staleFeatures: true, cacheAge: 400_000 };
+    storeState.selectedMachineId = 'machine-001';
+
+    // Deferred promise — we hold the resolve handle so we can release it later
+    let resolveRefresh!: () => void;
+    const controlledPromise = new Promise<void>((resolve) => {
+      resolveRefresh = resolve;
+    });
+    mockLoadMaintenance.mockReturnValueOnce(controlledPromise);
+
+    const { getByTestId } = render(<MachineShadow />);
+    const btn = getByTestId('force-refresh-btn') as HTMLButtonElement;
+
+    // (a) Button starts enabled
+    expect(btn.disabled).toBe(false);
+
+    // (b)+(c) Click the button; act flushes setIsRefreshing(true) but the
+    //         promise stays pending so the finally block has NOT run yet.
+    await act(async () => {
+      fireEvent.click(btn);
+    });
+
+    // (d) Button must be disabled while the async refresh is in-flight
+    expect(btn.disabled).toBe(true);
+
+    // (e) Resolve the promise — finally { setIsRefreshing(false) } runs
+    await act(async () => {
+      resolveRefresh();
+    });
+
+    // (f) Button is enabled again
+    expect(btn.disabled).toBe(false);
+  });
 });
