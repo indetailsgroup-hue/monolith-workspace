@@ -38,7 +38,7 @@ import {
 import { FeatureCacheService } from './services/FeatureCacheService';
 import { FeatureEngineeringService } from './services/FeatureEngineeringService';
 import { RULPredictionService } from './services/RULPredictionService';
-import { ComponentType } from './types/maintenance';
+import { ComponentType, HealthStatus } from './types/maintenance';
 import { DataQuality } from './types/sensor';
 import { EventStream } from './types/events';
 import type { EventEnvelope } from './types/events';
@@ -223,16 +223,12 @@ app.get('/machines/:id/maintenance', async (c) => {
       (r) => r.status === 'CRITICAL' || r.status === 'FAILED',
     ).length;
     const warningCount = results.filter((r) => r.status === 'WARNING').length;
-    const overallScore =
-      results.reduce((sum, r) => sum + r.healthScore, 0) / results.length;
-    const overallHealth =
-      criticalCount > 0
-        ? 'CRITICAL'
-        : warningCount > 0
-          ? 'WARNING'
-          : overallScore > 0.8
-            ? 'HEALTHY'
-            : 'DEGRADING';
+
+    // ── Aggregate overall health from live Redis feature cache (worst-wins) ──
+    // getAggregatedHealth() scans all cached component keys and returns the
+    // HealthStatus corresponding to the worst normalizedDeviation score seen.
+    // Falls back to HealthStatus.HEALTHY on Redis unavailability (fail-open).
+    const overallHealth: HealthStatus = await featureCache.getAggregatedHealth(machineId);
 
     return c.json({
       machineId,
