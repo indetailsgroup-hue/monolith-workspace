@@ -161,12 +161,12 @@ export async function fetchMachineState(
 
 export async function fetchMachineMaintenance(
   machineId: string,
-  signal?: AbortSignal
+  options?: { forceRefresh?: boolean; signal?: AbortSignal }
 ): Promise<MaintenanceResponse> {
-  return shadowFetch<MaintenanceResponse>(
-    `/machines/${machineId}/maintenance`,
-    signal
-  );
+  const path = options?.forceRefresh
+    ? `/machines/${machineId}/maintenance?force-refresh=true`
+    : `/machines/${machineId}/maintenance`;
+  return shadowFetch<MaintenanceResponse>(path, options?.signal);
 }
 
 // ─── SSE ─────────────────────────────────────────────────────────────────────

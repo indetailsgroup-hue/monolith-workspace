@@ -7,6 +7,7 @@
  *   2. `stale-features-toast` appears when staleFeatures=true
  *   3. Banner disappears after clicking the dismiss button
  *   4. Dismissed banner resets (reappears) when selectedMachineId changes
+ *   5. Clicking force-refresh-btn calls loadMaintenance with { forceRefresh: true }
  *
  * Test file path: src/factory/pages/__tests__/MachineShadow.stale.test.tsx
  */
@@ -20,13 +21,14 @@ import { MachineShadow } from '../MachineShadow';
 // Created in vi.hoisted() so tests can mutate properties between renders and
 // the vi.mock() factory can reference the same object reference.
 
-const { fakeEs, mockOpenEventStream, storeState } = vi.hoisted(() => {
+const { fakeEs, mockOpenEventStream, mockLoadMaintenance, storeState } = vi.hoisted(() => {
   /** Minimal EventSource stub whose handlers MachineShadow will wire. */
   const fakeEs = {
     onopen:  null as ((e?: Event) => void) | null,
     onerror: null as ((e?: Event) => void) | null,
   };
-  const mockOpenEventStream = vi.fn();
+  const mockOpenEventStream  = vi.fn();
+  const mockLoadMaintenance  = vi.fn().mockResolvedValue(undefined);
 
   /**
    * Mutable store snapshot.  Tests may mutate _maintenance and
@@ -37,11 +39,12 @@ const { fakeEs, mockOpenEventStream, storeState } = vi.hoisted(() => {
     activeEventSource: fakeEs as unknown as EventSource,
     selectedMachineId: 'machine-001' as string | null,
     openEventStream:   mockOpenEventStream,
+    loadMaintenance:   mockLoadMaintenance,
     /** Backing field read by the selectSelectedMaintenance selector mock. */
     _maintenance: null as null | { staleFeatures: boolean | null; cacheAge: number | null },
   };
 
-  return { fakeEs, mockOpenEventStream, storeState };
+  return { fakeEs, mockOpenEventStream, mockLoadMaintenance, storeState };
 });
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -78,6 +81,9 @@ vi.mock('lucide-react', () => ({
   X: ({ size, ...p }: { size?: number; [k: string]: unknown }) => (
     <svg data-testid="icon-x" width={size} {...p} />
   ),
+  RefreshCw: ({ size, ...p }: { size?: number; [k: string]: unknown }) => (
+    <svg data-testid="refresh-cw-icon" width={size} {...p} />
+  ),
 }));
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -90,6 +96,8 @@ describe('MachineShadow — stale-features toast banner', () => {
     fakeEs.onerror = null;
     storeState.selectedMachineId = 'machine-001';
     storeState._maintenance      = null;
+    mockLoadMaintenance.mockClear();
+    mockOpenEventStream.mockClear();
   });
 
   afterEach(() => {
@@ -176,5 +184,26 @@ describe('MachineShadow — stale-features toast banner', () => {
 
     // (d) Banner reappears because staleDismissed was reset to false
     expect(getByTestId('stale-features-toast')).toBeDefined();
+  });
+
+  // ── 5. Force-refresh button calls loadMaintenance with { forceRefresh: true } ─
+
+  it('clicking force-refresh-btn calls loadMaintenance with { forceRefresh: true }', async () => {
+    storeState._maintenance      = { staleFeatures: true, cacheAge: 400_000 };
+    storeState.selectedMachineId = 'machine-001';
+
+    const { getByTestId } = render(<MachineShadow />);
+
+    // Verify stale banner and button are present
+    expect(getByTestId('stale-features-toast')).toBeDefined();
+    const btn = getByTestId('force-refresh-btn');
+    expect(btn).toBeDefined();
+
+    // Click — wrap in act(async) so the awaited promise inside handleForceRefresh resolves
+    await act(async () => {
+      fireEvent.click(btn);
+    });
+
+    expect(mockLoadMaintenance).toHaveBeenCalledWith('machine-001', { forceRefresh: true });
   });
 });

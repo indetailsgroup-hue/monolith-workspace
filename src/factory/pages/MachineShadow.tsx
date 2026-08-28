@@ -5,6 +5,7 @@
  *   1. SSE auto-reconnect with exponential back-off         (v1.1.0)
  *   2. Dismissible toast surfacing reconnect attempt + delay (v1.2.0)
  *   3. Dismissible stale-features warning banner             (v1.3.0)
+ *   4. Manual force-refresh button in stale banner           (v1.4.0)
  *
  * Back-off policy:
  *   initial delay : 1 s
@@ -16,12 +17,14 @@
  *   Shown when maintenance.staleFeatures === true for the selected machine.
  *   Dismissed per-session; resets automatically when a different machine is
  *   selected or when the maintenance data refreshes with staleFeatures=false.
+ *   Force-refresh button calls the backend to reset all Redis key TTLs and
+ *   reload the maintenance assessment with live cache values.
  *
- * @version 1.3.0
+ * @version 1.4.0
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Clock, X } from 'lucide-react';
+import { AlertCircle, Clock, RefreshCw, X } from 'lucide-react';
 import { MachineShadowPanel } from '../components/shadow/MachineShadowPanel';
 import {
   useMachineShadowStore,
@@ -49,6 +52,7 @@ export function MachineShadow(): React.ReactElement {
   const activeEventSource = useMachineShadowStore((s) => s.activeEventSource);
   const selectedMachineId = useMachineShadowStore((s) => s.selectedMachineId);
   const openEventStream   = useMachineShadowStore((s) => s.openEventStream);
+  const loadMaintenance   = useMachineShadowStore((s) => s.loadMaintenance);
   const maintenance       = useMachineShadowStore(selectSelectedMaintenance);
 
   /** Consecutive reconnect attempts since last successful open. */
@@ -68,6 +72,12 @@ export function MachineShadow(): React.ReactElement {
    * - Resets to false when selectedMachineId changes
    */
   const [staleDismissed, setStaleDismissed] = useState(false);
+
+  /**
+   * True while the force-refresh API call is in flight.
+   * Disables the refresh button to prevent double-submission.
+   */
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Reset stale banner dismissal whenever the selected machine changes
   useEffect(() => {
@@ -115,6 +125,18 @@ export function MachineShadow(): React.ReactElement {
     };
   }, [activeEventSource, selectedMachineId, openEventStream]);
 
+  // ── Force-refresh handler ──────────────────────────────────────────────────
+
+  const handleForceRefresh = async () => {
+    if (!selectedMachineId || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await loadMaintenance(selectedMachineId, { forceRefresh: true });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // ── Derived booleans ──────────────────────────────────────────────────────
 
   /** True when the API reports feature data older than the 300 s TTL. */
@@ -136,7 +158,7 @@ export function MachineShadow(): React.ReactElement {
           data-testid="stale-features-toast"
           style={{
             position:     'fixed',
-            bottom:       '5rem',      // sits above the reconnect toast at 1.5 rem
+            bottom:       '5rem',
             right:        '1.5rem',
             zIndex:       50,
             display:      'flex',
@@ -164,6 +186,29 @@ export function MachineShadow(): React.ReactElement {
             <strong>5&thinsp;min TTL</strong>.{' '}
             Predictions may not reflect current sensor readings.
           </span>
+          <button
+            type="button"
+            data-testid="force-refresh-btn"
+            aria-label="Force-refresh feature cache"
+            disabled={isRefreshing}
+            onClick={handleForceRefresh}
+            style={{
+              background:   'none',
+              border:       '1px solid rgba(245,158,11,0.50)',
+              cursor:       isRefreshing ? 'not-allowed' : 'pointer',
+              color:        '#fef3c7',
+              padding:      '0.25rem 0.5rem',
+              flexShrink:   0,
+              display:      'flex',
+              alignItems:   'center',
+              gap:          '0.25rem',
+              borderRadius: '0.25rem',
+              fontSize:     '0.75rem',
+            }}
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            {isRefreshing ? 'Refreshing\u2026' : 'Refresh'}
+          </button>
           <button
             type="button"
             aria-label="Dismiss stale features notification"

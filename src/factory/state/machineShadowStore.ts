@@ -6,7 +6,7 @@
  * SSE stream at /machines/:id/events pushes live state/alarm events
  * whenever a machine is selected.
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 import { create } from 'zustand';
@@ -56,7 +56,7 @@ export interface MachineShadowStoreState {
   startPolling: () => void;
   stopPolling: () => void;
   selectMachine: (machineId: string | null) => void;
-  loadMaintenance: (machineId: string) => Promise<void>;
+  loadMaintenance: (machineId: string, options?: { forceRefresh?: boolean }) => Promise<void>;
   refreshOnce: () => Promise<void>;
   openEventStream: (machineId: string) => void;
   closeEventStream: () => void;
@@ -146,10 +146,10 @@ export const useMachineShadowStore = create<MachineShadowStoreState>()(
       },
 
       // ── loadMaintenance ───────────────────────────────────────────────────
-      loadMaintenance: async (machineId) => {
+      loadMaintenance: async (machineId, options) => {
         set({ maintenanceLoading: true, maintenanceError: null });
         try {
-          const data = await fetchMachineMaintenance(machineId);
+          const data = await fetchMachineMaintenance(machineId, options);
           set((state) => ({
             maintenanceByMachineId: {
               ...state.maintenanceByMachineId,
