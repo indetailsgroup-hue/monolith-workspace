@@ -235,4 +235,4 @@ export const AXIS = {
 > **UI can be flexible.
 > Manufacturing cannot.**
 
-If in doubt — make the Gate stricter, not looser.
+If in doubt — make the Gate stricter, not looser.   
