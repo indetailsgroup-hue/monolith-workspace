@@ -8,7 +8,7 @@
  */
 
 const SHADOW_BASE =
-  (import.meta as any).env?.VITE_SHADOW_API_BASE ?? 'http://localhost:3001';
+  (import.meta.env.VITE_SHADOW_API_BASE as string | undefined) ?? 'http://localhost:3001';
 
 // ─── WwUnitState enum mirror (OPC-40550-1) ───────────────────────────────────
 
@@ -183,5 +183,4 @@ export async function fetchMachineMaintenance(
 export function openMachineEventStream(machineId: string): EventSource {
   return new EventSource(`${SHADOW_BASE}/machines/${machineId}/events`);
 }
-
 
