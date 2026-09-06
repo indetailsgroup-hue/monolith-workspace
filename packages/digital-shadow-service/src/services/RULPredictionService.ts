@@ -33,7 +33,10 @@ import {
   MaintenanceUrgency,
   MaintenanceRecommendation,
   ContributingFactor,
+  type DegradationIndicator,
 } from '../types/maintenance';
+
+export type { DegradationIndicator } from '../types/maintenance';
 
 // ─── Configuration ───────────────────────────────────────────────────
 
@@ -263,18 +266,6 @@ export interface RULEstimate {
   confidence: number;
   /** Method used */
   method: 'weibull_3p_proportional_hazards';
-}
-
-// ─── Degradation Indicator ───────────────────────────────────────────
-
-export interface DegradationIndicator {
-  name: string;
-  currentValue: number;
-  normalRange: [number, number];
-  warningThreshold: number;
-  criticalThreshold: number;
-  /** Normalized deviation: 0 = perfectly normal, 1 = at critical */
-  normalizedDeviation: number;
 }
 
 // ─── Service ─────────────────────────────────────────────────────────

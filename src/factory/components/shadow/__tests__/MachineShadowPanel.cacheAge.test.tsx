@@ -104,6 +104,8 @@ function seedStore(maintenance: MaintenanceResponse | null, overrides: StoreOver
     maintenanceError: null,
     pollActive: false,
     activeEventSource: null,
+    startPolling: () => useMachineShadowStore.setState({ pollActive: true }),
+    stopPolling: () => useMachineShadowStore.setState({ pollActive: false }),
     ...overrides,
   });
 }

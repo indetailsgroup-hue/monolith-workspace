@@ -8,7 +8,6 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as ed from '@noble/ed25519';
 import pino from 'pino';
-import { signingConfig } from '../config';
 import type { SensorBatch } from '../types/sensor';
 import type { SensorDataPoint } from '../types/sensor';
 
@@ -18,12 +17,16 @@ export class SensorBatchSigner {
   private publicKey: Uint8Array | null = null;
   private batchCounter = 0;
 
+  constructor(
+    private readonly privateKeyPath = process.env.ED25519_PRIVATE_KEY_PATH,
+  ) {}
+
   // ─── Lifecycle ─────────────────────────────────────────────────────────────
 
   async initialize(): Promise<void> {
     try {
-      if (signingConfig.privateKeyPath) {
-        const keyPem = readFileSync(signingConfig.privateKeyPath, 'utf-8');
+      if (this.privateKeyPath) {
+        const keyPem = readFileSync(this.privateKeyPath, 'utf-8');
         this.privateKey = this.extractKeyFromPem(keyPem);
         this.publicKey = await ed.getPublicKeyAsync(this.privateKey);
         this.logger.info('Ed25519 signing keys loaded');

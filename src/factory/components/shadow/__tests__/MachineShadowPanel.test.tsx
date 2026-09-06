@@ -103,6 +103,8 @@ const mockMaintenance: MaintenanceResponse = {
   overallHealth: 'HEALTHY',
   criticalCount: 0,
   warningCount: 0,
+  cacheAge: null,
+  staleFeatures: null,
   components: ALL_COMPONENT_TYPES.map((componentType) => ({
     componentType,
     healthScore: 0.9,
@@ -140,6 +142,8 @@ function seedStore(overrides: StoreOverrides = {}) {
     maintenanceError: null,
     pollActive: false,
     activeEventSource: null,
+    startPolling: () => useMachineShadowStore.setState({ pollActive: true }),
+    stopPolling: () => useMachineShadowStore.setState({ pollActive: false }),
     ...overrides,
   });
 }
@@ -169,7 +173,7 @@ describe('MachineShadowPanel', () => {
       for (const componentType of ALL_COMPONENT_TYPES) {
         const displayName = componentType.replace(/_/g, ' ');
         expect(
-          screen.getByText(new RegExp(displayName, 'i')),
+          screen.getByText(new RegExp(`^${displayName}$`, 'i')),
           `Expected to find "${displayName}" in the rendered DOM`
         ).toBeInTheDocument();
       }

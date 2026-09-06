@@ -15,14 +15,15 @@ import { MachineShadow } from '../MachineShadow';
 
 // ── Hoisted shared state — must be declared before vi.mock() factories ─────────
 
-const { fakeEs, mockOpenEventStream } = vi.hoisted(() => {
+const { fakeEs, mockOpenEventStream, mockLoadMaintenance } = vi.hoisted(() => {
   /** Minimal EventSource-like object whose handlers MachineShadow will wire. */
   const fakeEs = {
     onopen:  null as ((e?: Event) => void) | null,
     onerror: null as ((e?: Event) => void) | null,
   };
   const mockOpenEventStream = vi.fn();
-  return { fakeEs, mockOpenEventStream };
+  const mockLoadMaintenance = vi.fn().mockResolvedValue(undefined);
+  return { fakeEs, mockOpenEventStream, mockLoadMaintenance };
 });
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -32,12 +33,14 @@ vi.mock('../../state/machineShadowStore', () => {
     activeEventSource: fakeEs as unknown as EventSource,
     selectedMachineId: 'machine-001' as string | null,
     openEventStream:   mockOpenEventStream,
+    loadMaintenance:   mockLoadMaintenance,
   };
   return {
     useMachineShadowStore: vi.fn(
       (selector?: (s: typeof storeState) => unknown) =>
         selector ? selector(storeState) : storeState,
     ),
+    selectSelectedMaintenance: () => null,
   };
 });
 
@@ -48,6 +51,12 @@ vi.mock('../../components/shadow/MachineShadowPanel', () => ({
 vi.mock('lucide-react', () => ({
   AlertCircle: ({ size, ...props }: { size?: number; [k: string]: unknown }) => (
     <svg data-testid="alert-circle" width={size} {...props} />
+  ),
+  Clock: ({ size, ...props }: { size?: number; [k: string]: unknown }) => (
+    <svg data-testid="clock-icon" width={size} {...props} />
+  ),
+  RefreshCw: ({ size, ...props }: { size?: number; [k: string]: unknown }) => (
+    <svg data-testid="refresh-icon" width={size} {...props} />
   ),
   X: ({ size, ...props }: { size?: number; [k: string]: unknown }) => (
     <svg data-testid="icon-x" width={size} {...props} />
@@ -62,6 +71,7 @@ describe('MachineShadow — reconnect toast banner', () => {
     // Reset handler stubs before each test so effects wire them fresh
     fakeEs.onopen  = null;
     fakeEs.onerror = null;
+    mockLoadMaintenance.mockClear();
   });
 
   afterEach(() => {

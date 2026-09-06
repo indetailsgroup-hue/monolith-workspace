@@ -27,25 +27,22 @@ function createIndicators(overrides: Partial<DegradationIndicator>[] = []): Degr
     {
       name: 'vibration_rms',
       currentValue: 3.5,
-      normalRange: [1.0, 4.0],
       warningThreshold: 5.0,
-      criticalThreshold: 8.0,
+      failureThreshold: 8.0,
       normalizedDeviation: 0.2,
     },
     {
       name: 'kurtosis',
       currentValue: 4.0,
-      normalRange: [2.5, 4.5],
       warningThreshold: 5.5,
-      criticalThreshold: 7.0,
+      failureThreshold: 7.0,
       normalizedDeviation: 0.15,
     },
     {
       name: 'temperature_delta',
       currentValue: 5.0,
-      normalRange: [0, 8],
       warningThreshold: 12,
-      criticalThreshold: 18,
+      failureThreshold: 18,
       normalizedDeviation: 0.1,
     },
   ];
@@ -268,9 +265,8 @@ describe('RULPredictionService', () => {
       const indicators: DegradationIndicator[] = [{
         name: 'unknown_feature',
         currentValue: 10,
-        normalRange: [0, 5],
         warningThreshold: 7,
-        criticalThreshold: 10,
+        failureThreshold: 10,
         normalizedDeviation: 0.9,
       }];
 
@@ -308,9 +304,8 @@ describe('RULPredictionService', () => {
       const indicators: DegradationIndicator[] = [{
         name: 'vibration_rms',
         currentValue: 100,
-        normalRange: [1, 4],
         warningThreshold: 5,
-        criticalThreshold: 8,
+        failureThreshold: 8,
         normalizedDeviation: 50, // extreme!
       }];
 
@@ -323,9 +318,8 @@ describe('RULPredictionService', () => {
       const indicators: DegradationIndicator[] = [{
         name: 'vibration_rms',
         currentValue: 0,
-        normalRange: [1, 4],
         warningThreshold: 5,
-        criticalThreshold: 8,
+        failureThreshold: 8,
         normalizedDeviation: -100, // negative (below baseline)
       }];
 
