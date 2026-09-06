@@ -170,7 +170,7 @@ jobs:
       - name: Post lint comment on PR
         if: always() && steps.schema_preflight.outputs.ready == 'true'
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
