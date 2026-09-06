@@ -46,6 +46,24 @@ export interface ContributingFactor {
   severity: 'low' | 'medium' | 'high';
 }
 
+// ─── Feature Cache / Degradation Indicators ─────────────────────────
+
+export interface DegradationIndicator {
+  /** Short identifier, e.g. 'rms_vibration', 'kurtosis', 'trend_slope' */
+  name: string;
+  /** Raw sensor / feature value */
+  currentValue: number;
+  /** Value at which a WARNING should be raised */
+  warningThreshold: number;
+  /** Value at which FAILURE is considered imminent */
+  failureThreshold: number;
+  /**
+   * Normalised deviation in [0, 1].
+   * 0 = baseline (healthy), 1 = failure threshold reached.
+   */
+  normalizedDeviation: number;
+}
+
 // ─── Feature Engineering ─────────────────────────────────────────────
 
 export interface TimeDomainFeatures {

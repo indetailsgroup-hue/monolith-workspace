@@ -68,7 +68,7 @@ const commandRequestSchema = z.object({
     traceId: z.string().optional(),
   }),
   timeoutMs: z.number().positive().default(30_000),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 const emergencyStopSchema = z.object({

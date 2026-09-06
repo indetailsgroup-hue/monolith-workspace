@@ -221,7 +221,7 @@ describe('HomagAdapter', () => {
     });
 
     it('should read full machine state snapshot via OPC UA + cloud enrichment', async () => {
-      mockSession.read.mockResolvedValueOnce([
+      mockSession.read.mockResolvedValue([
         { value: { value: WwUnitState.WORKING }, statusCode: goodStatus() },
         { value: { value: WwUnitMode.AUTOMATIC }, statusCode: goodStatus() },
         { value: { value: 12.5 }, statusCode: goodStatus() },
@@ -230,8 +230,12 @@ describe('HomagAdapter', () => {
         { value: { value: 7200 }, statusCode: goodStatus() },
       ]);
 
-      // Wait briefly for cloud polling to complete
-      await new Promise((r) => setTimeout(r, 50));
+      // The cloud request is intentionally fire-and-forget. Poll the observable
+      // state instead of relying on a fixed delay that flakes on busy runners.
+      await vi.waitFor(async () => {
+        const enrichedState = await adapter.readState();
+        expect(enrichedState.currentProgram).toBe('EDGE-PANEL-B');
+      });
 
       const state = await adapter.readState();
 
