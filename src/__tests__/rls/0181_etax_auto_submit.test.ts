@@ -319,8 +319,8 @@ describe('Group A — Trigger auto-queue', () => {
       status: 'draft',
     })
 
-    // Transition draft → approved — should NOT trigger etax
-    await setInvoiceStatus(adminSb, inv2.id, 'approved')
+    // Transition draft → sent — should NOT trigger eTax or approval accounting
+    await setInvoiceStatus(adminSb, inv2.id, 'sent')
 
     const submission = await getEtaxSubmission(adminSb, inv2.id)
     expect(submission).toBeNull()
@@ -367,7 +367,7 @@ describe('Group B — rpc_etax_auto_submit idempotency', () => {
     })
     expect(e2).toBeNull()
 
-    expect((r1 as any).id).toBe((r2 as any).id)
+    expect((r1 as any).submission_id).toBe((r2 as any).submission_id)
   })
 
   it('B2 — calling rpc_etax_auto_submit on a queued submission keeps it queued', async () => {
@@ -642,14 +642,15 @@ describe('Group D — Cross-tenant isolation', () => {
   it('D5 — org_d1 user can see only their own submissions via rpc_etax_list_submissions', async () => {
     // Create a submission for org D2
     const inv2 = await createInvoice(adminSb, orgD2.org_id, orgD2.customer_id)
-    await insertEtaxSubmission(adminSb, {
+    const orgD2Submission = await insertEtaxSubmission(adminSb, {
       org_id:     orgD2.org_id,
       invoice_id: inv2.id,
     })
 
     const { data: d1List } = await authSbD1.rpc('rpc_etax_list_submissions')
-    const ids = ((d1List ?? []) as any[]).map((r: any) => r.org_id)
-    expect(ids.every((id) => id === orgD1.org_id)).toBe(true)
+    const ids = ((d1List ?? []) as any[]).map((row: any) => row.submission_id)
+    expect(ids).toContain(submissionIdInD1)
+    expect(ids).not.toContain(orgD2Submission.id)
   })
 
   it('D6 — service_role can see submissions from all orgs', async () => {
@@ -685,8 +686,9 @@ describe('Group E — VAT calculation consistency', () => {
         p_vat_rate:  0.07,
       })
       expect(error).toBeNull()
-      expect(Number((data as any).net_amount)).toBeCloseTo(expectedNet, 2)
-      expect(Number((data as any).vat_amount)).toBeCloseTo(expectedVat, 2)
+      const row = Array.isArray(data) ? data[0] : data
+      expect(Number((row as any).net_amount)).toBeCloseTo(expectedNet, 2)
+      expect(Number((row as any).vat_amount)).toBeCloseTo(expectedVat, 2)
     })
   })
 
@@ -696,8 +698,9 @@ describe('Group E — VAT calculation consistency', () => {
         p_gross_amount: gross,
         p_vat_rate:  0.07,
       })
-      const net = Number((data as any).net_amount)
-      const vat = Number((data as any).vat_amount)
+      const row = Array.isArray(data) ? data[0] : data
+      const net = Number((row as any).net_amount)
+      const vat = Number((row as any).vat_amount)
       expect(Math.abs(net + vat - gross)).toBeLessThanOrEqual(0.01)
     }
   })
@@ -763,7 +766,8 @@ describe('Group F — Status transitions', () => {
     })
 
     // Claim it via service role (simulates worker)
-    const { data } = await adminSb.rpc('_etax_claim_batch', { p_limit: 1 })
+    const { data, error } = await adminSb.rpc('_etax_claim_batch', { p_limit: 1000 })
+    expect(error).toBeNull()
     const claimed = ((data ?? []) as any[]).find((r: any) => r.id === sub.id)
     expect(claimed).toBeDefined()
     expect(claimed.status).toBe('submitting')
@@ -777,11 +781,12 @@ describe('Group F — Status transitions', () => {
       status:     'submitting',
     })
 
-    await adminSb.rpc('rpc_etax_mark_submitted', {
+    const { error } = await adminSb.rpc('rpc_etax_mark_submitted', {
       p_submission_id:    sub.id,
       p_rd_ref_no:        'RD-2026-001',
       p_rd_response_code: '200',
     })
+    expect(error).toBeNull()
 
     const { data } = await adminSb
       .from('etax_submissions')

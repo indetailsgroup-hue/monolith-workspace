@@ -170,6 +170,7 @@ async function seedOrgWithSubmissions(
       vat_rate:        0.07,
       status:          statusList[i],
       attempt_count:   statusList[i] === 'submitted' ? 1 : 0,
+      last_attempt_at: statusList[i] === 'failed' ? new Date().toISOString() : null,
       seller_tax_id:   '1234567890123',
       buyer_tax_id:    '9876543210987',
       buyer_name:      'Test Buyer Co Ltd',

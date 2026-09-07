@@ -155,6 +155,7 @@ async function insertSubmissions(
     attemptCount?: number
     pdfStatus?:    string
     lastAttemptAt?: string   // ISO string, default now()
+    createdAt?:     string
     submittedAt?:  string
     rdRefNo?:      string
   }>
@@ -186,6 +187,7 @@ async function insertSubmissions(
       attempt_count:   r.attemptCount ?? 1,
       pdf_status:      r.pdfStatus ?? 'pending',
       last_attempt_at: r.lastAttemptAt ?? new Date().toISOString(),
+      created_at:      r.createdAt ?? new Date().toISOString(),
       submitted_at:    r.submittedAt ?? (r.status === 'submitted' ? new Date().toISOString() : null),
       rd_ref_no:       r.rdRefNo ?? null,
     }).select('id').single()
@@ -825,8 +827,8 @@ describe('Group E — metric accuracy', () => {
     const old = new Date(Date.now() - 72 * 3600000).toISOString()
     const recent = new Date(Date.now() - 1 * 3600000).toISOString()
     await insertSubmissions(db, org.orgId, [
-      { status: 'failed', lastAttemptAt: old },
-      { status: 'failed', lastAttemptAt: recent },
+      { status: 'failed', lastAttemptAt: old, createdAt: old },
+      { status: 'failed', lastAttemptAt: recent, createdAt: recent },
       { status: 'submitted' },  // has submitted_at — excluded from oldest_unresolved
     ])
     const { data: rows } = await db
