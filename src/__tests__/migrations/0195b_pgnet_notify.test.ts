@@ -28,7 +28,7 @@ async function psql(query: string): Promise<any[]> {
 async function seedOrg(name: string): Promise<string> {
   const id = uuidv4();
   await service.from('organizations').insert({
-    id, name, slug: `0195b-${id.slice(0, 8)}`,
+    org_id: id, name, slug: `0195b-${id.slice(0, 8)}`,
   });
   return id;
 }
@@ -107,7 +107,7 @@ afterAll(async () => {
   await service.from('invoices').delete()
     .in('org_id', [orgCritical, orgWarning, orgNoChange, orgFaultTest]);
   await service.from('organizations').delete()
-    .in('id', [orgCritical, orgWarning, orgNoChange, orgFaultTest]);
+    .in('org_id', [orgCritical, orgWarning, orgNoChange, orgFaultTest]);
   // Restore platform_config to empty (non-destructive)
   await setPlatformConfig('etax_risk_notify_url',    '');
   await setPlatformConfig('etax_risk_notify_secret', '');

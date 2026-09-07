@@ -56,7 +56,7 @@ function authed(token: string): SupabaseClient {
 async function createOrg(slug: string): Promise<string> {
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name: slug, slug, plan: 'basic', status: 'active' })
+    .insert({ name: slug, slug, plan: 'FREE', status: 'ACTIVE' })
     .select('org_id').single();
   if (error) throw new Error(`createOrg: ${error.message}`);
   return data.org_id as string;

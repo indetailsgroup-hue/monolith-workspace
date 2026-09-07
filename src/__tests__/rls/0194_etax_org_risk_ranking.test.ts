@@ -65,7 +65,7 @@ async function createOrgMember(
   const name = orgName ?? `TestOrg-${orgId.slice(0, 8)}`;
   const { error: orgErr } = await svc
     .from("organizations")
-    .insert({ id: orgId, name });
+    .insert({ org_id: orgId, name, slug: `test-0194-${orgId}` });
   if (orgErr) throw new Error(`insert org: ${orgErr.message}`);
 
   // Create member

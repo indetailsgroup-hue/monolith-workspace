@@ -60,7 +60,10 @@ async function seedOrg(
 
   // Create auth user
   const { data: authData, error: authErr } = await db.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: ['finance'] },
   })
   if (authErr || !authData.user) throw new Error(`seedOrg(${label}) auth: ${authErr?.message}`)
   const userId = authData.user.id
@@ -69,7 +72,7 @@ async function seedOrg(
   const orgId = crypto.randomUUID()
   const { error: orgErr } = await db
     .from('organizations')
-    .insert({ id: orgId, name: `Org-0186-${label}` })
+    .insert({ org_id: orgId, name: `Org-0186-${label}`, slug: `org-0186-${label}-${orgId}` })
   if (orgErr) throw new Error(`seedOrg(${label}) org: ${orgErr.message}`)
 
   // Add member
@@ -177,7 +180,7 @@ async function cleanupOrg(db: SupabaseClient, orgId: string): Promise<void> {
   await db.from('invoices').delete().eq('org_id', orgId)
   await db.from('etax_submission_audit_log').delete().eq('org_id', orgId)
   await db.from('org_members').delete().eq('org_id', orgId)
-  await db.from('organizations').delete().eq('id', orgId)
+  await db.from('organizations').delete().eq('org_id', orgId)
 }
 
 // ─── Test constants ───────────────────────────────────────────────────────────

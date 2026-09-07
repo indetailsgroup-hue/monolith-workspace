@@ -101,9 +101,10 @@ async function insertRefreshLog(afterMs?: number): Promise<void> {
 
 /** Create a test org and return its org_id */
 async function createTestOrg(): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name: `Test Org ${Date.now()}`, currency: 'THB' })
+    .insert({ org_id: orgId, name: `Test Org ${Date.now()}`, slug: `test-0189-${orgId}` })
     .select('org_id')
     .single()
   if (error) throw new Error(`createTestOrg: ${error.message}`)

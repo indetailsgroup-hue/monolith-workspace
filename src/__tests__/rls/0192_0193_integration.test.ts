@@ -96,13 +96,18 @@ interface HealthSummaryRow {
 // Org + user factory
 // ---------------------------------------------------------------------------
 async function createTestOrg(tag: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await admin
     .from('organizations')
-    .insert({ name: `IntTest_0192_0193_${tag}_${Date.now()}` })
-    .select('id')
+    .insert({
+      org_id: orgId,
+      name: `IntTest_0192_0193_${tag}_${Date.now()}`,
+      slug: `int-0192-0193-${tag.toLowerCase()}-${orgId}`,
+    })
+    .select('org_id')
     .single()
   if (error || !data) throw new Error(`createTestOrg: ${error?.message}`)
-  return data.id
+  return data.org_id
 }
 
 async function createAuthUser(orgId: string, role = 'FINANCE'): Promise<OrgCtx> {
@@ -110,7 +115,10 @@ async function createAuthUser(orgId: string, role = 'FINANCE'): Promise<OrgCtx> 
   const password = 'IntTest@Monolith1!'
 
   const { data: created, error: cErr } = await admin.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
   })
   if (cErr || !created.user) throw new Error(`createUser: ${cErr?.message}`)
   const userId = created.user.id
@@ -141,29 +149,39 @@ function authedClient(token: string): SupabaseClient {
 // ---------------------------------------------------------------------------
 async function getOrCreateInvoice(orgId: string): Promise<string> {
   const { data: existing } = await admin
-    .from('invoices').select('id').eq('org_id', orgId).limit(1).single()
-  if (existing) return existing.id
+    .from('invoices').select('invoice_id').eq('org_id', orgId).limit(1).single()
+  if (existing) return existing.invoice_id
 
   let customerId: string
   const { data: cust } = await admin
-    .from('customers').select('id').eq('org_id', orgId).limit(1).single()
+    .from('customers').select('customer_id').eq('org_id', orgId).limit(1).single()
   if (cust) {
-    customerId = cust.id
+    customerId = cust.customer_id
   } else {
     const { data: nc, error: ncErr } = await admin
       .from('customers')
       .insert({ org_id: orgId, name: `IntTestCust_${Date.now()}` })
-      .select('id').single()
+      .select('customer_id').single()
     if (ncErr || !nc) throw new Error(`createCustomer: ${ncErr?.message}`)
-    customerId = nc.id
+    customerId = nc.customer_id
   }
 
+  const invoiceId = crypto.randomUUID()
   const { data: inv, error: invErr } = await admin
     .from('invoices')
-    .insert({ org_id: orgId, customer_id: customerId, status: 'approved', total: 1000 })
-    .select('id').single()
+    .insert({
+      invoice_id: invoiceId,
+      invoice_code: `INV-0192-0193-${invoiceId}`,
+      org_id: orgId,
+      customer_id: customerId,
+      status: 'approved',
+      total: 1000,
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by: '00000000-0000-0000-0000-000000000001',
+    })
+    .select('invoice_id').single()
   if (invErr || !inv) throw new Error(`createInvoice: ${invErr?.message}`)
-  return inv.id
+  return inv.invoice_id
 }
 
 function daysAgoTs(n: number, hourOffset = 0): string {
@@ -330,8 +348,10 @@ afterAll(async () => {
     await admin.auth.admin.deleteUser(uid).catch(() => {})
   }
   for (const oid of createdOrgIds) {
+    await admin.from('invoices').delete().eq('org_id', oid)
+    await admin.from('customers').delete().eq('org_id', oid)
     await admin.from('org_members').delete().eq('org_id', oid)
-    await admin.from('organizations').delete().eq('id', oid)
+    await admin.from('organizations').delete().eq('org_id', oid)
   }
 })
 

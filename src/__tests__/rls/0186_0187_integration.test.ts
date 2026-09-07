@@ -94,6 +94,7 @@ async function seedOrgWithSubmissions(
   const { error: orgErr } = await admin.from('organizations').insert({
     org_id: orgId,
     name:   `IntegTest Org ${orgId.slice(0, 8)}`,
+    slug:   `integtest-${orgId}`,
   })
   if (orgErr) throw new Error(`seed org: ${orgErr.message}`)
 
@@ -112,6 +113,7 @@ async function seedOrgWithSubmissions(
       email:   `user-${userId.slice(0, 8)}@test.local`,
       password: 'test-password-0186',
       email_confirm: true,
+      app_metadata: { roles: ['finance'], org_id: orgId },
     })
     if (signIn?.user) {
       const { data: session } = await anonClient().auth.signInWithPassword({

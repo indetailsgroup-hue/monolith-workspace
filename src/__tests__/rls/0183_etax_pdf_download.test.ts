@@ -43,7 +43,7 @@ function authedClient(accessToken: string): SupabaseClient {
 async function createOrg(name: string): Promise<string> {
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name, slug: name.toLowerCase().replace(/\s+/g, '-'), plan: 'basic', status: 'active' })
+    .insert({ name, slug: name.toLowerCase().replace(/\s+/g, '-'), plan: 'FREE', status: 'ACTIVE' })
     .select('org_id')
     .single();
   if (error) throw new Error(`createOrg: ${error.message}`);

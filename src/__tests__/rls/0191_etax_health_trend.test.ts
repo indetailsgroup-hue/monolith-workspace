@@ -88,9 +88,10 @@ let tokenDesigner: string;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function createTestOrg(name: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name })
+    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}` })
     .select('org_id')
     .single();
   if (error) throw error;

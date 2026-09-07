@@ -62,11 +62,11 @@ async function makeAuthClient(role: string): Promise<{
   // Resolve or create org
   const { data: orgData } = await serviceClient
     .from('organizations')
-    .select('id')
+    .select('org_id')
     .limit(1)
     .single()
   if (!orgData) throw new Error('No org found for test setup')
-  const orgId = orgData.id
+  const orgId = orgData.org_id
 
   // Insert org_members row
   await serviceClient.from('org_members').upsert({

@@ -47,6 +47,7 @@ async function seedOrg(client: SupabaseClient): Promise<{ orgId: string; userId:
   const { error: orgErr } = await client.from('organizations').insert({
     org_id: orgId,
     name:   `Test Org ${orgId.slice(0, 8)}`,
+    slug:   `test-0188-${orgId}`,
   })
   if (orgErr) throw new Error(`seedOrg organizations: ${orgErr.message}`)
 

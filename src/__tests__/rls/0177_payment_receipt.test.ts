@@ -21,27 +21,40 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL  = process.env.SUPABASE_URL  ?? 'http://localhost:54321';
 const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'test-service-role-key';
+const ANON_KEY      = process.env.SUPABASE_ANON_KEY ?? 'test-anon-key';
 
 /** สร้าง client สำหรับ user ที่ระบุ role และ org */
 function makeClient(jwt?: string): SupabaseClient {
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
+  return createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: jwt ? { Authorization: `Bearer ${jwt}` } : {} },
     auth:   { persistSession: false },
   });
 }
 
-const admin   = makeClient();  // service-role: bypasses RLS
+const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 /** Helper: สร้าง JWT สำหรับ test user (ต้องมี app_role + org_member row) */
 async function signInAs(email: string, password: string): Promise<SupabaseClient> {
-  const { data, error } = await admin.auth.signInWithPassword({ email, password });
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new Error(`signInAs(${email}) failed: ${error?.message}`);
   return makeClient(data.session.access_token);
 }
 
 /** Helper: upsert test org + member + COA entry */
 async function setupOrg(orgId: string, userId: string, role: string) {
-  await admin.from('organizations').upsert({ org_id: orgId, name: `Test Org ${orgId.slice(0,6)}` });
+  await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role], org_id: orgId },
+  });
+  await admin.from('organizations').upsert({
+    org_id: orgId,
+    name: `Test Org ${orgId.slice(0,6)}`,
+    slug: `test-0177-${orgId}`,
+  });
   await admin.from('org_members').upsert({ org_id: orgId, user_id: userId, role });
   // Minimal COA: 1100 Cash, 1200 AR, 4100 Revenue, 2200 VAT
   for (const [code, name] of [['1100','Cash/Bank'],['1200','AR'],['4100','Revenue'],['2200','VAT']]) {
@@ -57,9 +70,12 @@ async function setupOrg(orgId: string, userId: string, role: string) {
 
 /** Helper: สร้าง approved invoice */
 async function createApprovedInvoice(orgId: string, customerId: string, total: number): Promise<string> {
+  const invoiceId = crypto.randomUUID();
   const { data, error } = await admin.from('invoices').insert({
+    invoice_id: invoiceId,
     org_id:     orgId,
-    code:       `INV-TEST-${Date.now()}`,
+    invoice_code: `INV-TEST-${invoiceId}`,
+    code:       `INV-TEST-${invoiceId}`,
     customer_id: customerId,
     status:     'approved',
     subtotal:   total / 1.07,
@@ -72,9 +88,9 @@ async function createApprovedInvoice(orgId: string, customerId: string, total: n
     issued_date: new Date().toISOString().slice(0, 10),
     created_by:  '00000000-0000-0000-0000-000000000001',
     updated_by:  '00000000-0000-0000-0000-000000000001',
-  }).select('id').single();
+  }).select('invoice_id').single();
   if (error) throw new Error(`createApprovedInvoice failed: ${error.message}`);
-  return data!.id;
+  return data!.invoice_id;
 }
 
 // ─── Test fixtures ───────────────────────────────────────────────────────────
@@ -124,12 +140,12 @@ beforeAll(async () => {
   await setupOrg(ORG_B, financeUserIdB, 'finance');
 
   // Minimal customers
-  const { data: cA } = await admin.from('customer').insert({
+  const { data: cA } = await admin.from('customers').insert({
     name: 'Customer A', phone: '0800000001', org_id: ORG_A,
   }).select('customer_id').single().then(r => r, () => ({ data: null }));
   customerIdA = cA?.customer_id ?? '00000000-cccc-0000-0000-000000000001';
 
-  const { data: cB } = await admin.from('customer').insert({
+  const { data: cB } = await admin.from('customers').insert({
     name: 'Customer B', phone: '0800000002', org_id: ORG_B,
   }).select('customer_id').single().then(r => r, () => ({ data: null }));
   customerIdB = cB?.customer_id ?? '00000000-cccc-0000-0000-000000000002';

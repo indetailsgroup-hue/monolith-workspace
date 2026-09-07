@@ -45,8 +45,8 @@ async function createOrg(
     .insert({
       name:   `Test Org ${slug}`,
       slug,
-      plan:   'pro',
-      status: 'active',
+      plan:   'PROFESSIONAL',
+      status: 'ACTIVE',
     })
     .select('org_id')
     .single()

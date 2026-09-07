@@ -41,16 +41,27 @@ const svc = () => createClient(SUPABASE_URL, SERVICE_KEY, {
 /** Authenticated client with a JWT that sets org_id claim */
 async function userClient(userId: string, orgId: string, role = 'FINANCE'): Promise<SupabaseClient> {
   const admin = svc()
-  const { data: genData, error } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
-    email: `${userId}@test.monolith`,
-    options: { data: { org_id: orgId, role } },
+  const email = `${userId}@test.monolith`
+  const password = 'Test1234!'
+  const { error: metadataError } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
+  })
+  if (metadataError) throw metadataError
+  const { data, error } = await anonClient().auth.signInWithPassword({
+    email,
+    password,
   })
   if (error) throw error
-  const session = (genData as any).session as { access_token: string };
+  if (!data.session) throw new Error(`No session for ${userId} (${orgId}, ${role})`)
   return createClient(SUPABASE_URL, ANON_KEY, {
     auth: { persistSession: false },
-    global: { headers: { Authorization: `Bearer ${session!.access_token}` } },
+    global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+  })
+}
+
+function anonClient(): SupabaseClient {
+  return createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   })
 }
 
@@ -70,8 +81,8 @@ beforeAll(async () => {
 
   // Insert test orgs
   await db.from('organizations').upsert([
-    { id: ORG_A, name: 'Org Alpha Risk Test', slug: `org-alpha-risk-${ORG_A.slice(0,8)}` },
-    { id: ORG_B, name: 'Org Beta Risk Test',  slug: `org-beta-risk-${ORG_B.slice(0,8)}`  },
+    { org_id: ORG_A, name: 'Org Alpha Risk Test', slug: `org-alpha-risk-${ORG_A.slice(0,8)}` },
+    { org_id: ORG_B, name: 'Org Beta Risk Test',  slug: `org-beta-risk-${ORG_B.slice(0,8)}`  },
   ])
 
   // Create users and org_members
@@ -90,7 +101,7 @@ afterAll(async () => {
   await db.from('org_members').delete().in('user_id', [USER_A, USER_B])
   await db.auth.admin.deleteUser(USER_A)
   await db.auth.admin.deleteUser(USER_B)
-  await db.from('organizations').delete().in('id', [ORG_A, ORG_B])
+  await db.from('organizations').delete().in('org_id', [ORG_A, ORG_B])
 })
 
 beforeEach(async () => {
@@ -106,7 +117,7 @@ describe('Group A — etax_risk_tier_state table structure + RLS', () => {
   it('A01 — table exists and has required columns', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT column_name, data_type, column_default, is_nullable
         FROM information_schema.columns
         WHERE table_schema = 'public'
@@ -126,7 +137,7 @@ describe('Group A — etax_risk_tier_state table structure + RLS', () => {
   it('A02 — org_id is primary key', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT constraint_type
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage kcu
@@ -338,7 +349,7 @@ describe('Group B — fn_check_risk_tier_changes trigger fire/suppress logic', (
   it('B03 — function is SECURITY DEFINER', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT prosecdef
         FROM pg_proc
         WHERE proname = 'fn_check_risk_tier_changes';
@@ -353,7 +364,7 @@ describe('Group B — fn_check_risk_tier_changes trigger fire/suppress logic', (
   it('B04 — trigger exists on etax_compliance_mv_refresh_log', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT trigger_name, event_manipulation, action_timing
         FROM information_schema.triggers
         WHERE event_object_table = 'etax_compliance_mv_refresh_log'
@@ -371,7 +382,7 @@ describe('Group B — fn_check_risk_tier_changes trigger fire/suppress logic', (
   it('B05 — trigger exists on etax_health_trend_mv_refresh_log', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT trigger_name, event_manipulation, action_timing
         FROM information_schema.triggers
         WHERE event_object_table = 'etax_health_trend_mv_refresh_log'
@@ -430,7 +441,7 @@ describe('Group C — pg_notify payload schema', () => {
     // Use exec_sql to listen and capture one notification payload
     // by directly calling the function logic with test data
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         -- Verify the payload JSON keys by inspecting function source
         SELECT prosrc
         FROM pg_proc
@@ -461,7 +472,7 @@ describe('Group C — pg_notify payload schema', () => {
   it('C02 — pg_notify channel is "etax_risk_rank_changed"', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT prosrc
         FROM pg_proc
         WHERE proname = 'fn_check_risk_tier_changes'
@@ -476,7 +487,7 @@ describe('Group C — pg_notify payload schema', () => {
   it('C03 — notify fires ONLY when v_prev_tier IS DISTINCT FROM v_rec.risk_tier', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT prosrc
         FROM pg_proc
         WHERE proname = 'fn_check_risk_tier_changes'
@@ -494,7 +505,7 @@ describe('Group C — pg_notify payload schema', () => {
   it('C04 — transitioned_at field uses NOW() or CURRENT_TIMESTAMP', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT prosrc FROM pg_proc WHERE proname = 'fn_check_risk_tier_changes' LIMIT 1;
       `,
     })
@@ -512,7 +523,7 @@ describe('Group C — pg_notify payload schema', () => {
     const db = svc()
     const testOrgId = ORG_A
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT json_build_object(
           'org_id',            $1::text,
           'org_name',          'Test Org',
@@ -582,7 +593,7 @@ describe('Group D — Triggers on both refresh-log tables', () => {
   it('D03 — trigger on etax_compliance_mv_refresh_log is FOR EACH ROW', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT action_orientation
         FROM information_schema.triggers
         WHERE event_object_table = 'etax_compliance_mv_refresh_log'
@@ -597,7 +608,7 @@ describe('Group D — Triggers on both refresh-log tables', () => {
   it('D04 — trigger on etax_health_trend_mv_refresh_log is FOR EACH ROW', async () => {
     const db = svc()
     const { data, error } = await db.rpc('exec_sql', {
-      sql: `
+      query: `
         SELECT action_orientation
         FROM information_schema.triggers
         WHERE event_object_table = 'etax_health_trend_mv_refresh_log'
@@ -975,7 +986,7 @@ describe('Group G — Cross-tenant isolation + rollback idempotency', () => {
     const db = svc()
 
     await db.from('organizations').upsert({
-      id: tempOrgId,
+      org_id: tempOrgId,
       name: 'Temp Rollback Org',
       slug: `tmp-rollback-${tempOrgId.slice(0,8)}`,
     })
@@ -985,7 +996,7 @@ describe('Group G — Cross-tenant isolation + rollback idempotency', () => {
 
     // Delete org — FK cascade should clean state row
     await db.from('etax_risk_tier_state').delete().eq('org_id', tempOrgId)
-    await db.from('organizations').delete().eq('id', tempOrgId)
+    await db.from('organizations').delete().eq('org_id', tempOrgId)
 
     const { data, error } = await db
       .from('etax_risk_tier_state')
