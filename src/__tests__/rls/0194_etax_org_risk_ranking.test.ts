@@ -38,6 +38,12 @@ function anonClient(): SupabaseClient {
   });
 }
 
+async function execSql(query: string): Promise<Record<string, any>[]> {
+  const { data, error } = await svc.rpc("exec_sql", { query });
+  if (error) throw new Error(`exec_sql: ${error.message}`);
+  return (data ?? []) as Record<string, any>[];
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -65,8 +71,18 @@ async function createOrgMember(
   const name = orgName ?? `TestOrg-${orgId.slice(0, 8)}`;
   const { error: orgErr } = await svc
     .from("organizations")
-    .insert({ org_id: orgId, name, slug: `test-0194-${orgId}` });
+    .insert({
+      org_id: orgId,
+      name,
+      slug: `test-0194-${orgId}`,
+      plan: "ENTERPRISE",
+    });
   if (orgErr) throw new Error(`insert org: ${orgErr.message}`);
+
+  const { error: metadataErr } = await svc.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
+  });
+  if (metadataErr) throw new Error(`update user: ${metadataErr.message}`);
 
   // Create member
   const { error: memberErr } = await svc
@@ -86,7 +102,7 @@ async function createOrgMember(
   return { orgId, userId, accessToken: signIn.session.access_token };
 }
 
-/** Seed mv_etax_compliance_dashboard for an org with specific success_rate */
+/** Seed source tables for a target compliance profile. */
 async function seedComplianceMV(
   orgId: string,
   successRate: number,
@@ -104,42 +120,130 @@ async function seedComplianceMV(
   const overdue = opts.overdue ?? 0;
   const failedLast24h = opts.failedLast24h ?? 0;
 
-  // Upsert into mv_etax_compliance_dashboard (service_role bypass)
-  const { error } = await svc.from("mv_etax_compliance_dashboard").upsert(
-    {
+  await svc.from("etax_submissions").delete().eq("org_id", orgId);
+  await svc.from("invoice_notifications").delete().eq("org_id", orgId);
+  await svc.from("invoices").delete().eq("org_id", orgId);
+  await svc.from("customers").delete().eq("org_id", orgId);
+
+  const { data: member, error: memberError } = await svc
+    .from("org_members")
+    .select("user_id")
+    .eq("org_id", orgId)
+    .limit(1)
+    .single();
+  if (memberError || !member) throw new Error(`seed member: ${memberError?.message}`);
+
+  const { data: customer, error: customerError } = await svc
+    .from("customers")
+    .insert({ org_id: orgId, name: `Customer-0194-${orgId}` })
+    .select("customer_id")
+    .single();
+  if (customerError || !customer) throw new Error(`seed customer: ${customerError?.message}`);
+
+  const rowCount = total + overdue;
+  const invoiceIds = Array.from({ length: rowCount }, () => uuidv4());
+  const invoices = invoiceIds.map((invoiceId, index) => ({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0194-${orgId}-${index}`,
+    code: `INV-0194-${orgId}-${index}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: "approved",
+    total: 107,
+    remaining_amount: 107,
+    due_date: index >= total ? "2020-01-01" : "2099-12-31",
+    created_by: member.user_id,
+  }));
+  const { error: invoiceError } = await svc.from("invoices").insert(invoices);
+  if (invoiceError) throw new Error(`seed invoices: ${invoiceError.message}`);
+
+  const recent = new Date().toISOString();
+  const old = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const submissions = invoiceIds.map((invoiceId, index) => {
+    const status = index < submitted
+      ? "submitted"
+      : index < submitted + failed
+        ? "failed"
+        : "queued";
+    const failedIndex = index - submitted;
+    return {
       org_id: orgId,
-      total_submissions: total,
-      submitted_count: submitted,
-      failed_count: failed,
-      success_rate: successRate,
-      overdue_with_pending_etax: overdue,
-      failed_last_24h: failedLast24h,
-      last_submission_at: new Date().toISOString(),
-    },
-    { onConflict: "org_id" }
-  );
-  if (error) throw new Error(`seedComplianceMV: ${error.message}`);
+      invoice_id: invoiceId,
+      document_type: "T01",
+      document_number: `ETAX-0194-${orgId}-${index}`,
+      document_date: recent.slice(0, 10),
+      net_amount: 100,
+      vat_amount: 7,
+      gross_amount: 107,
+      vat_rate: 0.07,
+      buyer_name: "0194 test customer",
+      status,
+      attempt_count: status === "queued" ? 0 : 1,
+      last_attempt_at: status === "failed"
+        ? failedIndex < failedLast24h ? recent : old
+        : null,
+      submitted_at: status === "submitted" ? recent : null,
+      created_at: recent,
+      metadata: { test_tag: "0194_test_suite" },
+    };
+  });
+  const { error: submissionError } = await svc
+    .from("etax_submissions")
+    .insert(submissions);
+  if (submissionError) throw new Error(`seed submissions: ${submissionError.message}`);
+
+  if (overdue > 0) {
+    const notifications = invoiceIds.slice(total).map((invoiceId, index) => ({
+      org_id: orgId,
+      invoice_id: invoiceId,
+      notification_type: "overdue_30d",
+      status: "pending",
+      days_overdue: 30,
+      amount_remaining: 107,
+      invoice_code: `INV-0194-${orgId}-${total + index}`,
+    }));
+    const { error: notificationError } = await svc
+      .from("invoice_notifications")
+      .insert(notifications);
+    if (notificationError) throw new Error(`seed notifications: ${notificationError.message}`);
+  }
 }
 
-/** Seed mv_etax_health_trend with day_rank=1 row for an org */
+/** Apply a retry-exhaustion profile, then refresh both materialized views. */
 async function seedTrendMV(
   orgId: string,
   retryExhaustionRate: number
 ): Promise<void> {
-  const { error } = await svc.from("mv_etax_health_trend").upsert(
-    {
-      org_id: orgId,
-      submission_day: new Date().toISOString().slice(0, 10),
-      day_rank: 1,
-      daily_total: 10,
-      daily_submitted: 8,
-      daily_failed: 2,
-      daily_exhausted: Math.round(retryExhaustionRate / 10),
-      retry_exhaustion_rate_pct: retryExhaustionRate,
-    },
-    { onConflict: "org_id,submission_day" }
+  const { data: allRows, error: allRowsError } = await svc
+    .from("etax_submissions")
+    .select("id, status, created_at")
+    .eq("org_id", orgId);
+  if (allRowsError) throw new Error(`seed trend rows: ${allRowsError.message}`);
+
+  const failedRows = (allRows ?? []).filter(row => row.status === "failed");
+  const exhaustedCount = Math.min(
+    failedRows.length,
+    Math.round((allRows?.length ?? 0) * retryExhaustionRate / 100)
   );
-  if (error) throw new Error(`seedTrendMV: ${error.message}`);
+  const exhaustedIds = failedRows.slice(0, exhaustedCount).map(row => row.id);
+  if (exhaustedIds.length > 0) {
+    const { error } = await svc
+      .from("etax_submissions")
+      .update({ attempt_count: 5 })
+      .in("id", exhaustedIds);
+    if (error) throw new Error(`seed exhausted row: ${error.message}`);
+  }
+
+  const { error: complianceError } = await svc.rpc("fn_refresh_etax_compliance_mv", {
+    p_triggered_by: "test",
+  });
+  if (complianceError) throw new Error(`refresh compliance: ${complianceError.message}`);
+
+  const { error: trendError } = await svc.rpc("fn_refresh_etax_health_trend_mv", {
+    p_triggered_by: "test",
+  });
+  if (trendError) throw new Error(`refresh trend: ${trendError.message}`);
 }
 
 /** Seed compliance refresh log so CROSS JOIN in v_etax_full_health_summary resolves */
@@ -164,10 +268,13 @@ async function seedTrendRefreshLog(): Promise<void> {
 
 /** Clean up test data for a specific org */
 async function cleanupOrg(orgId: string, userId: string): Promise<void> {
-  await svc.from("mv_etax_health_trend").delete().eq("org_id", orgId);
-  await svc.from("mv_etax_compliance_dashboard").delete().eq("org_id", orgId);
+  await svc.from("etax_submissions").delete().eq("org_id", orgId);
+  await svc.from("invoice_notifications").delete().eq("org_id", orgId);
+  await svc.from("etax_submission_audit_log").delete().eq("org_id", orgId);
+  await svc.from("invoices").delete().eq("org_id", orgId);
+  await svc.from("customers").delete().eq("org_id", orgId);
   await svc.from("org_members").delete().eq("org_id", orgId);
-  await svc.from("organizations").delete().eq("id", orgId);
+  await svc.from("organizations").delete().eq("org_id", orgId);
   await svc.auth.admin.deleteUser(userId);
 }
 
@@ -176,58 +283,51 @@ async function cleanupOrg(orgId: string, userId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 describe("Group A – Schema: v_etax_org_risk_ranking", () => {
   it("A1: view v_etax_org_risk_ranking exists in public schema", async () => {
-    const { data, error } = await svc.rpc("pg_catalog_view_exists", {
-      schema_name: "public",
-      view_name: "v_etax_org_risk_ranking",
-    });
-    // Fallback: query information_schema
-    const { data: rows } = await svc
-      .from("information_schema.views")
-      .select("table_name")
-      .eq("table_schema", "public")
-      .eq("table_name", "v_etax_org_risk_ranking")
-      .limit(1);
-    expect(rows?.length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`
+      SELECT table_name FROM information_schema.views
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_org_risk_ranking'
+    `);
+    expect(rows).toHaveLength(1);
   });
 
   it("A2: view has at least 18 columns", async () => {
-    const { data, error } = await svc
-      .from("information_schema.columns")
-      .select("column_name")
-      .eq("table_schema", "public")
-      .eq("table_name", "v_etax_org_risk_ranking");
-    expect(error).toBeNull();
-    expect(data?.length).toBeGreaterThanOrEqual(18);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_org_risk_ranking'
+    `);
+    expect(rows.length).toBeGreaterThanOrEqual(18);
   });
 
   it("A3: risk_rank column is present", async () => {
-    const { data } = await svc
-      .from("information_schema.columns")
-      .select("column_name")
-      .eq("table_schema", "public")
-      .eq("table_name", "v_etax_org_risk_ranking")
-      .eq("column_name", "risk_rank");
-    expect(data?.length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_org_risk_ranking'
+        AND column_name = 'risk_rank'
+    `);
+    expect(rows).toHaveLength(1);
   });
 
   it("A4: is_priority_review column is present", async () => {
-    const { data } = await svc
-      .from("information_schema.columns")
-      .select("column_name")
-      .eq("table_schema", "public")
-      .eq("table_name", "v_etax_org_risk_ranking")
-      .eq("column_name", "is_priority_review");
-    expect(data?.length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_org_risk_ranking'
+        AND column_name = 'is_priority_review'
+    `);
+    expect(rows).toHaveLength(1);
   });
 
   it("A5: risk_tier column is present", async () => {
-    const { data } = await svc
-      .from("information_schema.columns")
-      .select("column_name")
-      .eq("table_schema", "public")
-      .eq("table_name", "v_etax_org_risk_ranking")
-      .eq("column_name", "risk_tier");
-    expect(data?.length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_org_risk_ranking'
+        AND column_name = 'risk_tier'
+    `);
+    expect(rows).toHaveLength(1);
   });
 });
 
