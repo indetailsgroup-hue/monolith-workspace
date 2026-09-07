@@ -137,6 +137,7 @@ async function insertSubmission(
     net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 0.07,
     seller_tax_id: '1234567890123', buyer_tax_id: '9876543210987', buyer_name: 'Buyer',
     status, attempt_count: 1, pdf_status: pdfStatus,
+    last_attempt_at: status === 'failed' ? new Date().toISOString() : null,
     submitted_at: status === 'submitted' ? new Date().toISOString() : null,
   }).select('id').single()
   if (error) throw new Error(`insertSubmission: ${error.message}`)

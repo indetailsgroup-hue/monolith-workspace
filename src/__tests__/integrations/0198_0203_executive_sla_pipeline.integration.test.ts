@@ -154,14 +154,16 @@ describe('Group B — v_etax_submission_sla → mv_etax_submission_sla propagati
     expect(deviation).toBeLessThanOrEqual(0.05)
   })
 
-  it('B2: MV sla_breach_flag values match view for same submission IDs', async () => {
-    // Sample up to 20 rows from MV and verify flag matches view
+  it('B2: MV sla_breach_flag values match the aggregate source view', async () => {
+    // Both relations are aggregated by org + document type; compare that key.
     const sample = await sql(`
-      SELECT m.submission_id, m.sla_breach_flag AS mv_flag,
-             v.sla_breach_flag AS view_flag
+      SELECT m.org_id, m.document_type, m.sla_breach_flag AS mv_flag,
+             (v.breached_count > 0) AS view_flag
       FROM mv_etax_submission_sla m
-      JOIN v_etax_submission_sla v ON v.submission_id = m.submission_id
-      WHERE m.sla_breach_flag <> v.sla_breach_flag
+      JOIN v_etax_submission_sla v
+        ON v.org_id = m.org_id
+       AND v.document_type = m.document_type
+      WHERE m.sla_breach_flag IS DISTINCT FROM (v.breached_count > 0)
       LIMIT 20
     `)
     if (sample.length > 0) {

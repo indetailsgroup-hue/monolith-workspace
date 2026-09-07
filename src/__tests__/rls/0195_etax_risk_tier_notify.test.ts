@@ -497,19 +497,17 @@ describe('Group C — pg_notify payload schema', () => {
 
   it('C01 — pg_notify payload contains all 9 required fields', async () => {
     const db = svc()
-    // Use exec_sql to listen and capture one notification payload
-    // by directly calling the function logic with test data
+    // Inspect the exact trigger overload through its stable regprocedure OID.
     const { data, error } = await db.rpc('exec_sql', {
       query: `
-        -- Verify the payload JSON keys by inspecting function source
-        SELECT prosrc
-        FROM pg_proc
-        WHERE proname = 'fn_check_risk_tier_changes'
-        LIMIT 1;
+        SELECT pg_get_functiondef(
+          'public.fn_check_risk_tier_changes()'::regprocedure
+        ) AS function_definition;
       `,
     })
     expect(error).toBeNull()
-    const src = (data as any[])[0]?.prosrc as string ?? ''
+    expect(data).toHaveLength(1)
+    const src = (data as any[])[0]?.function_definition as string ?? ''
 
     // Assert all 9 payload keys are present in function body
     const requiredKeys = [

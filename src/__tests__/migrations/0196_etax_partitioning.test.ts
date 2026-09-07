@@ -28,7 +28,60 @@ let service: SupabaseClient;
 let orgA: string;
 let orgB: string;
 let userA: string;
+let userAEmail: string;
+const userAPassword = 'test-password-123';
 const invoiceIds: string[] = [];
+const customerIds: string[] = [];
+
+async function createInvoice(
+  orgId: string,
+  label: string,
+  invoiceId = uuidv4(),
+): Promise<string> {
+  const customerId = uuidv4();
+  customerIds.push(customerId);
+  const { error: customerError } = await service.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `Partition Customer ${label}`,
+  });
+  if (customerError) throw new Error(`insert customer: ${customerError.message}`);
+
+  invoiceIds.push(invoiceId);
+  const invoiceCode = `INV-0196-${label}-${invoiceId}`;
+  const { error: invoiceError } = await service.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: invoiceCode,
+    code: invoiceCode,
+    org_id: orgId,
+    customer_id: customerId,
+    status: 'approved',
+    total: 1070,
+    remaining_amount: 1070,
+    due_date: '2030-12-31',
+    created_by: userA,
+  });
+  if (invoiceError) throw new Error(`insert invoice: ${invoiceError.message}`);
+  return invoiceId;
+}
+
+function submissionRow(
+  id: string,
+  orgId: string,
+  invoiceId: string,
+  createdAt: string,
+  documentType = 'T01',
+) {
+  return {
+    id,
+    org_id: orgId,
+    invoice_id: invoiceId,
+    document_type: documentType,
+    status: 'queued',
+    created_at: createdAt,
+  };
+}
 
 beforeAll(async () => {
   service = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -36,35 +89,50 @@ beforeAll(async () => {
   // Seed orgs
   orgA = uuidv4();
   orgB = uuidv4();
-  await service.from('organizations').insert([
-    { id: orgA, name: 'Partition Test Org A', slug: `pto-a-${orgA.slice(0,8)}` },
-    { id: orgB, name: 'Partition Test Org B', slug: `pto-b-${orgB.slice(0,8)}` },
+  const { error: orgError } = await service.from('organizations').insert([
+    { org_id: orgA, name: 'Partition Test Org A', slug: `pto-a-${orgA.slice(0,8)}`, plan: 'ENTERPRISE' },
+    { org_id: orgB, name: 'Partition Test Org B', slug: `pto-b-${orgB.slice(0,8)}`, plan: 'ENTERPRISE' },
   ]);
+  if (orgError) throw new Error(`insert organizations: ${orgError.message}`);
 
   // Seed user + org_member for RLS tests
-  userA = uuidv4();
-  await service.from('org_members').insert({ id: uuidv4(), org_id: orgA, user_id: userA, role: 'FINANCE' });
+  userAEmail = `user-0196-${uuidv4()}@test.monolith`;
+  const { data: authData, error: authError } = await service.auth.admin.createUser({
+    email: userAEmail,
+    password: userAPassword,
+    email_confirm: true,
+    app_metadata: { roles: ['finance'], org_id: orgA },
+  });
+  if (authError || !authData.user) throw new Error(`create user: ${authError?.message}`);
+  userA = authData.user.id;
+  const { error: memberError } = await service.from('org_members').insert({
+    org_id: orgA,
+    user_id: userA,
+    role: 'FINANCE',
+    email: userAEmail,
+  });
+  if (memberError) throw new Error(`insert member: ${memberError.message}`);
 
   // Seed invoices for each org (12 invoices × 2 orgs = 24)
   for (let i = 0; i < 12; i++) {
-    const id = uuidv4();
-    invoiceIds.push(id);
-    await service.from('invoices').insert({
-      id,
-      org_id: i < 6 ? orgA : orgB,
-      status: 'approved',
-      total_amount: 10700,
-      due_date: '2026-12-31',
-    });
+    await createInvoice(i < 6 ? orgA : orgB, `base-${i}`);
   }
+
+  // Keep one valid org-B submission so the service-role cross-org assertion is meaningful.
+  const { error: orgBSubmissionError } = await service.from('etax_submissions').insert(
+    submissionRow(uuidv4(), orgB, invoiceIds[6], new Date().toISOString()),
+  );
+  if (orgBSubmissionError) throw new Error(`insert org-B submission: ${orgBSubmissionError.message}`);
 });
 
 afterAll(async () => {
   // Cleanup in reverse dependency order
   await service.from('etax_submissions').delete().in('org_id', [orgA, orgB]);
   await service.from('invoices').delete().in('id', invoiceIds);
+  await service.from('customers').delete().in('customer_id', customerIds);
   await service.from('org_members').delete().eq('user_id', userA);
-  await service.from('organizations').delete().in('id', [orgA, orgB]);
+  await service.from('organizations').delete().in('org_id', [orgA, orgB]);
+  await service.auth.admin.deleteUser(userA);
 });
 
 // ─── GROUP A: Partition table structure ───────────────────────────────────────
@@ -139,9 +207,9 @@ describe('Group B — rows route to correct monthly partition', () => {
   const oct2026InvoiceId  = uuidv4();
 
   beforeAll(async () => {
-    await service.from('invoices').insert([
-      { id: sept2026InvoiceId, org_id: orgA, status: 'approved', total_amount: 1000, due_date: '2026-12-31' },
-      { id: oct2026InvoiceId,  org_id: orgA, status: 'approved', total_amount: 1000, due_date: '2026-12-31' },
+    await Promise.all([
+      createInvoice(orgA, 'sept', sept2026InvoiceId),
+      createInvoice(orgA, 'oct', oct2026InvoiceId),
     ]);
   });
 
@@ -152,14 +220,10 @@ describe('Group B — rows route to correct monthly partition', () => {
 
   it('B1: row with created_at in Sept 2026 lands in etax_submissions_2026_09', async () => {
     const id = uuidv4();
-    await service.from('etax_submissions').insert({
-      id,
-      org_id:        orgA,
-      invoice_id:    sept2026InvoiceId,
-      document_type: 'T01',
-      status:        'queued',
-      created_at:    makeDate(2026, 9),
-    });
+    const { error } = await service.from('etax_submissions').insert(
+      submissionRow(id, orgA, sept2026InvoiceId, makeDate(2026, 9)),
+    );
+    expect(error).toBeNull();
 
     const { data } = await service.rpc('exec_sql', {
       query: `SELECT tableoid::regclass::text AS tbl FROM public.etax_submissions WHERE id='${id}'`,
@@ -169,14 +233,10 @@ describe('Group B — rows route to correct monthly partition', () => {
 
   it('B2: row with created_at in Oct 2026 lands in etax_submissions_2026_10', async () => {
     const id = uuidv4();
-    await service.from('etax_submissions').insert({
-      id,
-      org_id:        orgA,
-      invoice_id:    oct2026InvoiceId,
-      document_type: 'T01',
-      status:        'queued',
-      created_at:    makeDate(2026, 10),
-    });
+    const { error } = await service.from('etax_submissions').insert(
+      submissionRow(id, orgA, oct2026InvoiceId, makeDate(2026, 10)),
+    );
+    expect(error).toBeNull();
 
     const { data } = await service.rpc('exec_sql', {
       query: `SELECT tableoid::regclass::text AS tbl FROM public.etax_submissions WHERE id='${id}'`,
@@ -186,18 +246,12 @@ describe('Group B — rows route to correct monthly partition', () => {
 
   it('B3: row with created_at far in future lands in default partition', async () => {
     const futureInvoiceId = uuidv4();
-    await service.from('invoices').insert({
-      id: futureInvoiceId, org_id: orgA, status: 'approved', total_amount: 1000, due_date: '2030-12-31',
-    });
+    await createInvoice(orgA, 'future', futureInvoiceId);
     const id = uuidv4();
-    await service.from('etax_submissions').insert({
-      id,
-      org_id:        orgA,
-      invoice_id:    futureInvoiceId,
-      document_type: 'T01',
-      status:        'queued',
-      created_at:    makeDate(2030, 1),
-    });
+    const { error } = await service.from('etax_submissions').insert(
+      submissionRow(id, orgA, futureInvoiceId, makeDate(2030, 1)),
+    );
+    expect(error).toBeNull();
 
     const { data } = await service.rpc('exec_sql', {
       query: `SELECT tableoid::regclass::text AS tbl FROM public.etax_submissions WHERE id='${id}'`,
@@ -225,14 +279,12 @@ describe('Group C — cross-partition uniqueness (invoice_id + document_type)', 
   const uqInvoiceId = uuidv4();
 
   beforeAll(async () => {
-    await service.from('invoices').insert({
-      id: uqInvoiceId, org_id: orgA, status: 'approved', total_amount: 500, due_date: '2026-12-31',
-    });
+    await createInvoice(orgA, 'unique', uqInvoiceId);
     // Insert first row in Sept 2026
-    await service.from('etax_submissions').insert({
-      id: uuidv4(), org_id: orgA, invoice_id: uqInvoiceId, document_type: 'T01',
-      status: 'queued', created_at: makeDate(2026, 9),
-    });
+    const { error } = await service.from('etax_submissions').insert(
+      submissionRow(uuidv4(), orgA, uqInvoiceId, makeDate(2026, 9)),
+    );
+    if (error) throw new Error(`insert unique baseline: ${error.message}`);
   });
 
   afterAll(async () => {
@@ -242,8 +294,7 @@ describe('Group C — cross-partition uniqueness (invoice_id + document_type)', 
 
   it('C1: duplicate (invoice_id, document_type) in SAME partition is rejected', async () => {
     const { error } = await service.from('etax_submissions').insert({
-      id: uuidv4(), org_id: orgA, invoice_id: uqInvoiceId, document_type: 'T01',
-      status: 'queued', created_at: makeDate(2026, 9, 20),
+      ...submissionRow(uuidv4(), orgA, uqInvoiceId, makeDate(2026, 9, 20)),
     });
     expect(error).not.toBeNull();
   });
@@ -251,8 +302,7 @@ describe('Group C — cross-partition uniqueness (invoice_id + document_type)', 
   it('C2: duplicate (invoice_id, document_type) ACROSS partitions is rejected by trigger', async () => {
     // Try to insert same invoice+doctype into a DIFFERENT month's partition
     const { error } = await service.from('etax_submissions').insert({
-      id: uuidv4(), org_id: orgA, invoice_id: uqInvoiceId, document_type: 'T01',
-      status: 'queued', created_at: makeDate(2026, 10),
+      ...submissionRow(uuidv4(), orgA, uqInvoiceId, makeDate(2026, 10)),
     });
     expect(error).not.toBeNull();
     expect(error?.message).toMatch(/duplicate key value violates unique constraint/i);
@@ -260,8 +310,7 @@ describe('Group C — cross-partition uniqueness (invoice_id + document_type)', 
 
   it('C3: same invoice, DIFFERENT document_type in different partition is allowed', async () => {
     const { error } = await service.from('etax_submissions').insert({
-      id: uuidv4(), org_id: orgA, invoice_id: uqInvoiceId, document_type: 'T02',
-      status: 'queued', created_at: makeDate(2026, 10),
+      ...submissionRow(uuidv4(), orgA, uqInvoiceId, makeDate(2026, 10), 'T02'),
     });
     expect(error).toBeNull();
   });
@@ -298,10 +347,11 @@ describe('Group E — RLS org isolation', () => {
   beforeAll(async () => {
     // Create an authenticated client for userA (org A)
     userAClient = createClient(SUPABASE_URL, ANON_KEY);
-    await userAClient.auth.signInWithPassword({
-      email: `user-${userA}@test.monolith`,
-      password: 'test-password-123',
+    const { error } = await userAClient.auth.signInWithPassword({
+      email: userAEmail,
+      password: userAPassword,
     });
+    if (error) throw new Error(`sign in user A: ${error.message}`);
   });
 
   it('E1: authenticated user sees only their own org submissions', async () => {
@@ -318,10 +368,8 @@ describe('Group E — RLS org isolation', () => {
   });
 
   it('E3: user A cannot INSERT submissions for org B', async () => {
-    const fakeInvoiceId = uuidv4();
     const { error } = await userAClient.from('etax_submissions').insert({
-      id: uuidv4(), org_id: orgB, invoice_id: fakeInvoiceId,
-      document_type: 'T01', status: 'queued',
+      ...submissionRow(uuidv4(), orgB, invoiceIds[7], new Date().toISOString(), 'T02'),
     });
     expect(error).not.toBeNull();
   });

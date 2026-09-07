@@ -989,11 +989,22 @@ describe('Group F — LEFT JOIN Behaviour', () => {
   })
 
   it('F6: health_score formula uses COALESCE(rex, 0) when trend absent — no rex penalty', async () => {
+    const inv = await getOrCreateInvoice(orgComplianceOnly)
+    await seedSubmission({
+      orgId: orgComplianceOnly,
+      invoiceId: inv,
+      status: 'submitted',
+      daysAgo: 35,
+    })
+    await refreshComplianceMV()
+    await refreshTrendMV()
+
     const { data, error } = await serviceClient.rpc('rpc_etax_full_health_summary_admin', {
       p_org_id: orgComplianceOnly,
     })
     expect(error).toBeNull()
     const row = (data as any[])[0]
+    expect(row).toBeDefined()
     // With rex=0, score depends only on compliance_success_rate, owp, f24h
     const expected = calcExpectedScore({
       successRate:         Number(row.compliance_success_rate),

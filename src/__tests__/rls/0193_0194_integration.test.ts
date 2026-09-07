@@ -112,6 +112,12 @@ async function seedSubmission(params: {
     document_type:   params.docType ?? "T01",
     status:          params.status ?? "submitted",
     attempt_count:   params.attemptCount ?? 1,
+    last_attempt_at: (params.status ?? "submitted") === "failed"
+      ? params.createdAt ?? new Date().toISOString()
+      : null,
+    submitted_at: (params.status ?? "submitted") === "submitted"
+      ? params.createdAt ?? new Date().toISOString()
+      : null,
     created_at:      params.createdAt ?? new Date().toISOString(),
     updated_at:      new Date().toISOString(),
   });
@@ -120,8 +126,15 @@ async function seedSubmission(params: {
 
 /** Force-refresh both MVs via service_role RPCs */
 async function refreshAllMVs() {
-  await db.rpc("rpc_refresh_etax_compliance_mv");
-  await db.rpc("rpc_refresh_etax_health_trend_mv");
+  const { error: complianceError } = await db.rpc("fn_refresh_etax_compliance_mv", {
+    p_triggered_by: "test",
+  });
+  if (complianceError) throw new Error(`refresh compliance MV: ${complianceError.message}`);
+
+  const { error: trendError } = await db.rpc("fn_refresh_etax_health_trend_mv", {
+    p_triggered_by: "test",
+  });
+  if (trendError) throw new Error(`refresh health trend MV: ${trendError.message}`);
 }
 
 /** Wipe test data for all test orgs */
