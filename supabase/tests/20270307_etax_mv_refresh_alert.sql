@@ -25,24 +25,36 @@ SELECT col_is_null(
   '20270307-03: system alerts may omit new_status'
 );
 
-SELECT has_check(
-  'public',
-  'etax_submission_audit_log',
-  'chk_submission_id_or_system',
+SELECT ok(
+  EXISTS (
+    SELECT 1
+      FROM pg_constraint
+     WHERE conrelid = 'public.etax_submission_audit_log'::regclass
+       AND conname = 'chk_submission_id_or_system'
+       AND contype = 'c'
+  ),
   '20270307-04: submission_id NULL is restricted to system rows'
 );
 
-SELECT has_check(
-  'public',
-  'etax_submission_audit_log',
-  'chk_etax_audit_org_or_system',
+SELECT ok(
+  EXISTS (
+    SELECT 1
+      FROM pg_constraint
+     WHERE conrelid = 'public.etax_submission_audit_log'::regclass
+       AND conname = 'chk_etax_audit_org_or_system'
+       AND contype = 'c'
+  ),
   '20270307-05: org_id NULL is restricted to system rows'
 );
 
-SELECT has_check(
-  'public',
-  'etax_submission_audit_log',
-  'chk_etax_audit_status_or_system',
+SELECT ok(
+  EXISTS (
+    SELECT 1
+      FROM pg_constraint
+     WHERE conrelid = 'public.etax_submission_audit_log'::regclass
+       AND conname = 'chk_etax_audit_status_or_system'
+       AND contype = 'c'
+  ),
   '20270307-06: new_status NULL is restricted to system rows'
 );
 

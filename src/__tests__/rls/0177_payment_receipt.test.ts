@@ -47,30 +47,43 @@ async function signInAs(email: string, password: string): Promise<SupabaseClient
 
 /** Helper: upsert test org + member + COA entry */
 async function setupOrg(orgId: string, userId: string, role: string) {
-  await admin.auth.admin.updateUserById(userId, {
+  const { error: userError } = await admin.auth.admin.updateUserById(userId, {
     app_metadata: { roles: [role], org_id: orgId },
   });
-  await admin.from('organizations').upsert({
+  if (userError) throw new Error(`setupOrg user metadata: ${userError.message}`);
+
+  const { error: orgError } = await admin.from('organizations').upsert({
     org_id: orgId,
     name: `Test Org ${orgId.slice(0,6)}`,
     slug: `test-0177-${orgId}`,
   });
-  await admin.from('org_members').upsert({
+  if (orgError) throw new Error(`setupOrg organization: ${orgError.message}`);
+
+  const { error: memberError } = await admin.from('org_members').upsert({
     org_id: orgId,
     user_id: userId,
-    role,
+    role: role.toUpperCase(),
     email: `test-0177-${userId}@monolith.local`,
-  });
+  }, { onConflict: 'org_id,user_id' });
+  if (memberError) throw new Error(`setupOrg member: ${memberError.message}`);
+
   // Minimal COA: 1100 Cash, 1200 AR, 4100 Revenue, 2200 VAT
   for (const [code, name] of [['1100','Cash/Bank'],['1200','AR'],['4100','Revenue'],['2200','VAT']]) {
-    await admin.from('chart_of_accounts').upsert({
-      org_id: orgId, code, name, account_type: code.startsWith('1') ? 'asset' : code.startsWith('4') ? 'revenue' : 'liability',
+    const { error: accountError } = await admin.from('chart_of_accounts').upsert({
+      org_id: orgId, code, name, type: code.startsWith('1') ? 'asset' : code.startsWith('4') ? 'revenue' : 'liability',
     }, { onConflict: 'org_id,code' });
+    if (accountError) throw new Error(`setupOrg account ${code}: ${accountError.message}`);
   }
+
   // book_registry default entry
-  await admin.from('book_registry').upsert({
-    org_id: orgId, book_id: 'internal', name: 'Main Book', is_default: true,
+  const { error: bookError } = await admin.from('book_registry').upsert({
+    org_id: orgId,
+    book_id: 'internal',
+    display_name: 'Main Book',
+    created_by: userId,
+    is_active: true,
   }, { onConflict: 'org_id,book_id' });
+  if (bookError) throw new Error(`setupOrg book: ${bookError.message}`);
 }
 
 /** Helper: สร้าง approved invoice */
