@@ -773,6 +773,11 @@ export interface Cabinet {
   id: string;
   name: string;
   type: CabinetType;
+  /** Legacy grouping label retained when loading older project files. */
+  category?: string;
+  /** Scene placement for multi-cabinet layouts. */
+  scenePosition?: [number, number, number];
+  sceneRotation?: [number, number, number];
 
   // Configuration
   dimensions: CabinetDimensions;

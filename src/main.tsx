@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { AppRouter } from './routes';
 import './index.css';
 import { readTheme, writeTheme } from './core/persistence/appPrefs';
+import { readRaw, writeJson, writeRaw } from './core/persistence/unsafeStorage';
 import { reportDefaultHeightStackOnce } from './core/catalog';
 
 // Surface the default height stack's findings once, at startup, on the real console.
@@ -16,18 +17,18 @@ reportDefaultHeightStackOnce();
 // One-time migration: reset theme to dark (v2.1 fix)
 // Old logic auto-set 'light' from OS preference - clear that
 const THEME_MIGRATED_KEY = 'theme_v2_migrated';
-if (!localStorage.getItem(THEME_MIGRATED_KEY)) {
+if (!readRaw(THEME_MIGRATED_KEY)) {
   writeTheme('dark');
-  localStorage.setItem(THEME_MIGRATED_KEY, '1');
+  writeRaw(THEME_MIGRATED_KEY, '1');
 }
 
 // One-time migration: fix Minifix camDepth 12.5→13.5 for 18mm wood (v3.0 fix)
 // Old defaults used 12.5mm (correct for 16mm wood) but project default is 18mm → 13.5mm
 // Patches any saved project data in localStorage so drill map regeneration uses correct depth
 const MINIFIX_DEPTH_MIGRATED_KEY = 'minifix_v3_camDepth_migrated';
-if (!localStorage.getItem(MINIFIX_DEPTH_MIGRATED_KEY)) {
+if (!readRaw(MINIFIX_DEPTH_MIGRATED_KEY)) {
   try {
-    const projectRaw = localStorage.getItem('monolith-current-project');
+    const projectRaw = readRaw('monolith-current-project');
     if (projectRaw) {
       const project = JSON.parse(projectRaw);
       let patched = false;
@@ -60,13 +61,13 @@ if (!localStorage.getItem(MINIFIX_DEPTH_MIGRATED_KEY)) {
       }
 
       if (patched) {
-        localStorage.setItem('monolith-current-project', JSON.stringify(project));
+        writeJson('monolith-current-project', project);
       }
     }
   } catch {
     // Silently ignore migration errors - defaults will apply on next preset
   }
-  localStorage.setItem(MINIFIX_DEPTH_MIGRATED_KEY, '1');
+  writeRaw(MINIFIX_DEPTH_MIGRATED_KEY, '1');
 }
 
 const initialTheme = readTheme();

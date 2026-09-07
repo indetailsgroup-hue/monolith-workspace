@@ -10,8 +10,10 @@ export interface ApiError extends Error {
   code?: string;
 }
 
-const BASE_URL = (import.meta as any).env?.VITE_FACTORY_API_BASE ?? "/api";
-const ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "";
+const BASE_URL = import.meta.env?.VITE_FACTORY_API_BASE ?? "/api";
+const ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY ?? "";
+
+import { readRaw } from '../../core/persistence/unsafeStorage';
 
 /** Attach the end-user JWT; the anon key is never used as a fallback identity. */
 function authHeaders(): Record<string, string> {
@@ -22,7 +24,7 @@ function authHeaders(): Record<string, string> {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const s = JSON.parse(localStorage.getItem(key) ?? "");
+      const s = JSON.parse(readRaw(key) ?? "");
       if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
         h["Authorization"] = "Bearer " + s.access_token;
         break;

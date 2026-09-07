@@ -12,6 +12,8 @@
  * @version 1.1.0
  */
 
+import { readRaw } from '../persistence/unsafeStorage';
+
 // ============================================
 // TYPES
 // ============================================
@@ -67,7 +69,7 @@ function authHeaders(): Record<string, string> {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const s = JSON.parse(localStorage.getItem(key) ?? '');
+      const s = JSON.parse(readRaw(key) ?? '');
       if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
         h['Authorization'] = 'Bearer ' + s.access_token;
         break;

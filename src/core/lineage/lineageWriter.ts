@@ -19,6 +19,7 @@ import type {
   LineageWriteResult,
 } from './lineageTypes';
 import { sha256TextHex } from '../crypto/hashBytes';
+import { readRaw, remove, writeRaw } from '../persistence/unsafeStorage';
 
 // ============================================
 // STORAGE KEY
@@ -131,14 +132,14 @@ export async function appendLineageEvent(
     const key = getStorageKey(event.jobId);
 
     // Read existing JSONL
-    const existing = localStorage.getItem(key) || '';
+    const existing = readRaw(key) || '';
 
     // Append new event as JSONL line
     const line = JSON.stringify(event);
     const updated = existing ? `${existing}\n${line}` : line;
 
     // Write back
-    localStorage.setItem(key, updated);
+    writeRaw(key, updated);
 
     return { ok: true, eventId: event.id };
   } catch (e) {
@@ -282,5 +283,5 @@ export async function recordExportLink(params: {
  */
 export function __clearLineage_TESTING_ONLY(jobId: string): void {
   const key = getStorageKey(jobId);
-  localStorage.removeItem(key);
+  remove(key);
 }

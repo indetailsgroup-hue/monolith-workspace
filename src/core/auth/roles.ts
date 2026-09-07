@@ -12,6 +12,8 @@
  * - AI_REVIEWER: Reviews Vision-to-BOQ evidence + BOQ drafts (VS-01 pipeline) [AB-AUTH-01 fix]
  */
 
+import { readRaw, writeRaw } from '../persistence/unsafeStorage';
+
 // ============================================================================
 // Role Types
 // ============================================================================
@@ -89,7 +91,7 @@ const ROLE_STORAGE_KEY = 'monolith.user.role';
 export function getCurrentRole(): Role {
   if (typeof window === 'undefined') return 'DESIGNER';
 
-  const stored = localStorage.getItem(ROLE_STORAGE_KEY);
+  const stored = readRaw(ROLE_STORAGE_KEY);
   if (stored && ROLES.includes(stored as Role)) {
     return stored as Role;
   }
@@ -101,7 +103,7 @@ export function getCurrentRole(): Role {
  */
 export function setCurrentRole(role: Role): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ROLE_STORAGE_KEY, role);
+  writeRaw(ROLE_STORAGE_KEY, role);
 }
 
 /**
