@@ -248,8 +248,9 @@ describe('Group B – v_etax_sla_archive_org_rollup worst_severity_tier logic', 
       SELECT breached_document_types FROM v_etax_sla_archive_org_rollup;
     `) as any[];
     rows.forEach(r => {
-      expect(r.breached_document_types).toBeLessThanOrEqual(4);
-      expect(r.breached_document_types).toBeGreaterThanOrEqual(0);
+      expect(r.breached_document_types).toBeInstanceOf(Array);
+      expect(r.breached_document_types.length).toBeLessThanOrEqual(4);
+      expect(r.breached_document_types.length).toBeGreaterThanOrEqual(0);
     });
   });
 

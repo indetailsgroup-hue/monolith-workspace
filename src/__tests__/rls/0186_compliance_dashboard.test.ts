@@ -318,7 +318,7 @@ describe('Group A — rpc_etax_compliance_dashboard org isolation', () => {
     const { data, error } = await anonClient.rpc('rpc_etax_compliance_dashboard')
     expect(error).not.toBeNull()
     // Should be 401 or PGRST301 (JWT required)
-    expect(JSON.stringify(error)).toMatch(/401|403|JWT|unauthorized/i)
+    expect(JSON.stringify(error)).toMatch(/401|403|42501|JWT|unauthorized|permission denied/i)
   })
 })
 

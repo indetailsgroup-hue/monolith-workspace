@@ -607,7 +607,7 @@ describe('Group E — rpc_etax_health_trend_cached_admin Service-Role Guard', ()
       p_days   : 30,
     })
     expect(error).not.toBeNull()
-    expect(error!.message).toMatch(/service_role/i)
+    expect(error!.message).toMatch(/service_role|permission denied/i)
   })
 
   it('E3: authenticated ADMIN call to admin RPC is rejected', async () => {

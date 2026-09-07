@@ -438,7 +438,7 @@ describe('Group F — Tenant isolation', () => {
 describe('Group G — platform_config migration stamp', () => {
   it('G1: migration_0203_applied entry exists in platform_config', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -446,7 +446,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G2: migration stamp has correct version "0203"', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -456,7 +456,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G3: migration stamp has non-null applied_at timestamp', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -465,7 +465,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G4: migration stamp description mentions v_etax_sla_executive_summary', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)

@@ -250,19 +250,27 @@ describe('Group D — ON CONFLICT DO UPDATE semantics', () => {
 // Group E — Prior-migration stamps not regressed
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Group E — Prior migration stamps not regressed', () => {
-  const PRIOR_STAMPS: Array<[string, string]> = [
-    ['migration_0203_applied',   'true'],
-    ['migration_0204_applied',   'true'],
-    ['executive_tab_enabled',    'true'],
-    ['etax_sla_hours',           '24'],   // set by Migration 0198
-  ];
+  it('E: migration_0203_applied retains its structured stamp', async () => {
+    const value = JSON.parse((await getConfig('migration_0203_applied'))!);
+    expect(value.version).toBe('0203');
+    expect(value.applied_at).toBeTruthy();
+  });
 
-  for (const [key, expected] of PRIOR_STAMPS) {
-    it(`E: ${key} = '${expected}' not regressed by Migration 0205`, async () => {
-      const val = await getConfig(key);
-      expect(val).toBe(expected);
-    });
-  }
+  it('E: migration_0204_applied retains its structured stamp', async () => {
+    const value = JSON.parse((await getConfig('migration_0204_applied'))!);
+    expect(value.version).toBe('0204');
+    expect(value.applied_at).toBeTruthy();
+  });
+
+  it('E: executive_tab_enabled retains its structured feature flag', async () => {
+    const value = JSON.parse((await getConfig('executive_tab_enabled'))!);
+    expect(value.enabled).toBe(true);
+    expect(value.tab_id).toBe('executive');
+  });
+
+  it('E: etax_sla_hours remains 24', async () => {
+    expect(await getConfig('etax_sla_hours')).toBe('24');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

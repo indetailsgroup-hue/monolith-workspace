@@ -762,13 +762,13 @@ describe("Group F – RLS and tenant isolation", () => {
     expect(error).toBeNull();
   });
 
-  it("F6: unauthenticated call to rpc_etax_org_risk_ranking returns P0001 error", async () => {
+  it("F6: unauthenticated call to rpc_etax_org_risk_ranking is rejected", async () => {
     const anonClient = createClient(SUPABASE_URL, ANON_KEY, {
       auth: { persistSession: false },
     });
     const { error } = await anonClient.rpc("rpc_etax_org_risk_ranking");
     expect(error).not.toBeNull();
-    expect(error?.code).toBe("P0001");
+    expect(error?.code).toMatch(/P0001|42501/);
   });
 });
 

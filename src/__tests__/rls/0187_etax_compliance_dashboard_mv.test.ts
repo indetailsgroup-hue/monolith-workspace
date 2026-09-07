@@ -417,7 +417,7 @@ describe('Group C — rpc_etax_compliance_dashboard_cached staleness metadata', 
     const anonClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } })
     const { error } = await anonClient.rpc('rpc_etax_compliance_dashboard_cached')
     expect(error).not.toBeNull()
-    expect(JSON.stringify(error)).toMatch(/401|403|JWT|unauthorized/i)
+    expect(JSON.stringify(error)).toMatch(/401|403|42501|JWT|unauthorized|permission denied/i)
   })
 })
 

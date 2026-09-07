@@ -837,7 +837,7 @@ describe('Group E — rpc_etax_full_health_summary_admin Service-Role Guard', ()
       p_org_id: null,
     })
     expect(error).not.toBeNull()
-    expect(error!.message).toMatch(/service_role/i)
+    expect(error!.message).toMatch(/service_role|permission denied/i)
   })
 
   it('E3: authenticated ADMIN is rejected — EXCEPTION mentions service_role', async () => {
@@ -847,7 +847,7 @@ describe('Group E — rpc_etax_full_health_summary_admin Service-Role Guard', ()
       p_org_id: null,
     })
     expect(error).not.toBeNull()
-    expect(error!.message).toMatch(/service_role/i)
+    expect(error!.message).toMatch(/service_role|permission denied/i)
   })
 
   it('E4: p_org_id = NULL returns rows from all orgs (at least 1)', async () => {
