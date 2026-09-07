@@ -302,7 +302,7 @@ describe('Group A — etax_risk_tier_state table structure + RLS', () => {
     expect(deleteErr).not.toBeNull()
   })
 
-  it('A08 — VIEWER role cannot SELECT from etax_risk_tier_state', async () => {
+  it('A08 — VIEWER role can SELECT only its own etax_risk_tier_state row', async () => {
     const viewerUid = crypto.randomUUID()
     const db = svc()
     await db.auth.admin.createUser({ id: viewerUid, email: `${viewerUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
@@ -312,10 +312,10 @@ describe('Group A — etax_risk_tier_state table structure + RLS', () => {
     const client = await userClient(viewerUid, ORG_A, 'VIEWER')
     const { data, error } = await client.from('etax_risk_tier_state').select('*')
 
-    // VIEWER role denied by RLS policy
     const rows = data as any[] ?? []
-    const isBlocked = error !== null || rows.length === 0
-    expect(isBlocked).toBe(true)
+    expect(error).toBeNull()
+    expect(rows).toHaveLength(1)
+    expect(rows[0].org_id).toBe(ORG_A)
 
     // Cleanup
     await db.from('org_members').delete().eq('user_id', viewerUid)
@@ -644,7 +644,7 @@ describe('Group D — Triggers on both refresh-log tables', () => {
 
     const { error } = await db
       .from('etax_health_trend_mv_refresh_log')
-      .insert({ duration_ms: 120, row_count: 30, triggered_by: 'D02-test' })
+      .insert({ duration_ms: 120, row_count: 30, triggered_by: 'test' })
 
     expect(error).toBeNull()
   })

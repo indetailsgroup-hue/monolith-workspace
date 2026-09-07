@@ -33,7 +33,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 
 const SUPABASE_URL      = process.env.SUPABASE_URL      ?? 'http://localhost:54321';
 const SERVICE_ROLE_KEY  = process.env.SERVICE_ROLE_KEY  ?? '';
-const ANON_KEY          = process.env.ANON_KEY          ?? '';
+const ANON_KEY          = process.env.SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? '';
 
 const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -44,6 +44,12 @@ function userClient(accessToken: string): SupabaseClient {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
     auth:   { persistSession: false },
   });
+}
+
+async function execSql(query: string): Promise<Record<string, unknown>[]> {
+  const { data, error } = await svc.rpc('exec_sql', { query });
+  if (error) throw error;
+  return (data ?? []) as Record<string, unknown>[];
 }
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -87,16 +93,20 @@ async function createTestUser(
   const userId = authData.user!.id;
 
   await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role, email });
-
-  const { data: session, error: sessErr } = await svc.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
+  const { error: metadataError } = await svc.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
   });
-  if (sessErr) throw sessErr;
+  if (metadataError) throw metadataError;
 
-  // Exchange magic link for access token (test harness pattern)
-  const { data: tokenData } = await svc.auth.admin.getUserById(userId);
-  return tokenData.user?.email ?? '';   // placeholder — real harness exchanges JWT
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: signIn, error: signInError } = await authClient.auth.signInWithPassword({
+    email,
+    password: 'Test1234!',
+  });
+  if (signInError || !signIn.session) throw signInError ?? new Error(`No session for ${email}`);
+  return signIn.session.access_token;
 }
 
 interface SubmissionOpts {
@@ -275,95 +285,69 @@ describe('Group A — Schema', () => {
   ];
 
   it('A-01: v_etax_submission_health view exists in public schema', async () => {
-    const { data, error } = await svc
-      .from('information_schema.views')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .single();
-    expect(error).toBeNull();
-    expect(data?.table_name).toBe('v_etax_submission_health');
+    const rows = await execSql(`
+      SELECT table_name FROM information_schema.views
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+    `);
+    expect(rows[0]?.table_name).toBe('v_etax_submission_health');
   });
 
   it('A-02: view exposes all 25 expected columns', async () => {
-    const { data, error } = await svc
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health');
-    expect(error).toBeNull();
-    const actual = (data ?? []).map((r: any) => r.column_name);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+    `);
+    const actual = rows.map((row) => row.column_name);
     for (const col of EXPECTED_COLUMNS) {
       expect(actual, `column '${col}' missing from view`).toContain(col);
     }
   });
 
   it('A-03: retry_exhaustion_rate_pct column is numeric type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'retry_exhaustion_rate_pct')
-      .single();
-    expect(data?.data_type).toMatch(/numeric|decimal/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'retry_exhaustion_rate_pct'
+    `);
+    expect(rows[0]?.data_type).toMatch(/numeric|decimal/i);
   });
 
   it('A-04: avg_seconds_to_resolve column is numeric type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'avg_seconds_to_resolve')
-      .single();
-    expect(data?.data_type).toMatch(/numeric|decimal/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'avg_seconds_to_resolve'
+    `);
+    expect(rows[0]?.data_type).toMatch(/numeric|decimal/i);
   });
 
   it('A-05: org_id column is uuid type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'org_id')
-      .single();
-    expect(data?.data_type).toBe('uuid');
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'org_id'
+    `);
+    expect(rows[0]?.data_type).toBe('uuid');
   });
 
   it('A-06: rpc_etax_submission_health function exists', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'rpc_etax_submission_health');
-    expect((data ?? []).length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`SELECT proname FROM pg_proc WHERE proname = 'rpc_etax_submission_health'`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
   it('A-07: rpc_etax_submission_health_admin function exists', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'rpc_etax_submission_health_admin');
-    expect((data ?? []).length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`SELECT proname FROM pg_proc WHERE proname = 'rpc_etax_submission_health_admin'`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
   it('A-08: both RPCs are SECURITY DEFINER', async () => {
-    const { data } = await svc.rpc('query_function_security', {
-      p_names: [
-        'rpc_etax_submission_health',
-        'rpc_etax_submission_health_admin',
-      ],
-    });
-    // Falls back to direct pg_proc query in environments without the helper RPC
-    const { data: pgData } = await svc
-      .from('pg_proc')
-      .select('proname, prosecdef')
-      .in('proname', [
-        'rpc_etax_submission_health',
-        'rpc_etax_submission_health_admin',
-      ]);
-    for (const fn of pgData ?? []) {
-      expect((fn as any).prosecdef, `${(fn as any).proname} must be SECURITY DEFINER`).toBe(true);
+    const rows = await execSql(`
+      SELECT proname, prosecdef FROM pg_proc
+      WHERE proname IN ('rpc_etax_submission_health', 'rpc_etax_submission_health_admin')
+    `);
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const fn of rows) {
+      expect(fn.prosecdef, `${String(fn.proname)} must be SECURITY DEFINER`).toBe(true);
     }
   });
 });

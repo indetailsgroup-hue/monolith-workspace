@@ -80,6 +80,11 @@ async function addOrgMember(
   userId: string,
   role: string,
 ): Promise<void> {
+  const { error: metadataError } = await supabase.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
+  })
+  if (metadataError) throw new Error(`addOrgMember metadata: ${metadataError.message}`)
+
   const { error } = await supabase
     .from('org_members')
     .insert({ org_id: orgId, user_id: userId, role, email: `test-0181-${userId}@monolith.local` })
@@ -96,10 +101,10 @@ async function createCustomer(
   const { data, error } = await supabase
     .from('customers')
     .insert({ org_id: orgId, name, tax_id: '1234567890123' })
-    .select('id')
+    .select('customer_id')
     .single()
   if (error) throw new Error(`createCustomer: ${error.message}`)
-  return data
+  return { id: data.customer_id }
 }
 
 async function createInvoice(
@@ -108,20 +113,34 @@ async function createInvoice(
   customerId: string,
   opts: { status?: string; total_amount?: number; invoice_number?: string } = {},
 ): Promise<{ id: string; invoice_number: string }> {
+  const { data: member, error: memberError } = await supabase
+    .from('org_members')
+    .select('user_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .single()
+  if (memberError) throw new Error(`createInvoice member: ${memberError.message}`)
+
+  const invoiceId = crypto.randomUUID()
+  const invoiceCode = opts.invoice_number ?? `INV-TEST-${invoiceId}`
   const { data, error } = await supabase
     .from('invoices')
     .insert({
+      id:             invoiceId,
+      invoice_id:     invoiceId,
       org_id:         orgId,
       customer_id:    customerId,
-      invoice_number: opts.invoice_number ?? `INV-TEST-${Date.now()}`,
+      invoice_code:   invoiceCode,
       status:         opts.status ?? 'draft',
-      total_amount:   opts.total_amount ?? 1070.00,
+      total:          opts.total_amount ?? 1070.00,
+      remaining_amount: opts.total_amount ?? 1070.00,
       due_date:       new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10),
+      created_by:     member.user_id,
     })
-    .select('id, invoice_number')
+    .select('id, invoice_code')
     .single()
   if (error) throw new Error(`createInvoice: ${error.message}`)
-  return data
+  return { id: data.id, invoice_number: data.invoice_code }
 }
 
 async function setInvoiceStatus(
@@ -193,8 +212,14 @@ let adminSb: SupabaseClient
 async function setupOrgFixture(suffix: string): Promise<OrgFixture> {
   const { org_id } = await createOrg(adminSb, `etax-test-${suffix}`)
   const email = `etax-user-${suffix}@monolith-test.invalid`
-  const { id: user_id, access_token } = await createUser(adminSb, email)
+  const { id: user_id } = await createUser(adminSb, email)
   await addOrgMember(adminSb, org_id, user_id, 'FINANCE')
+  const { data: refreshed, error: signInError } = await anonClient().auth.signInWithPassword({
+    email,
+    password: 'TestPassword123!',
+  })
+  if (signInError || !refreshed.session) throw new Error(`setupOrgFixture sign-in: ${signInError?.message}`)
+  const access_token = refreshed.session.access_token
   const { id: customer_id } = await createCustomer(adminSb, org_id, `Customer ${suffix}`)
   return { org_id, user_id, access_token, customer_id }
 }
@@ -656,8 +681,8 @@ describe('Group E — VAT calculation consistency', () => {
   cases.forEach(({ gross, expectedNet, expectedVat }) => {
     it(`E — gross=${gross} → net=${expectedNet}, vat=${expectedVat}`, async () => {
       const { data, error } = await serviceClient().rpc('_compute_etax_vat', {
-        p_gross: gross,
-        p_rate:  0.07,
+        p_gross_amount: gross,
+        p_vat_rate:  0.07,
       })
       expect(error).toBeNull()
       expect(Number((data as any).net_amount)).toBeCloseTo(expectedNet, 2)
@@ -668,8 +693,8 @@ describe('Group E — VAT calculation consistency', () => {
   it('E — net + vat = gross within 0.01 tolerance (rounding residual)', async () => {
     for (const { gross } of cases) {
       const { data } = await serviceClient().rpc('_compute_etax_vat', {
-        p_gross: gross,
-        p_rate:  0.07,
+        p_gross_amount: gross,
+        p_vat_rate:  0.07,
       })
       const net = Number((data as any).net_amount)
       const vat = Number((data as any).vat_amount)

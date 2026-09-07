@@ -98,34 +98,28 @@ async function seedOrgWithSubmissions(
   })
   if (orgErr) throw new Error(`seed org: ${orgErr.message}`)
 
-  // Create org member
+  const email = `user-${userId.slice(0, 8)}@test.local`
+  const password = 'test-password-0186'
+  const { data: authData, error: authErr } = await admin.auth.admin.createUser({
+    id: userId,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: ['finance'], org_id: orgId },
+  })
+  if (authErr || !authData.user) throw new Error(`seed auth user: ${authErr?.message}`)
+
   const { error: memErr } = await admin.from('org_members').insert({
     org_id: orgId,
     user_id: userId,
     role: 'FINANCE',
-    email: `user-${userId.slice(0, 8)}@test.local`,
+    email,
   })
   if (memErr) throw new Error(`seed member: ${memErr.message}`)
 
-  // Sign in as that user to get a real JWT (works in local supabase)
-  // Fallback: use service token with impersonation header
-  let token = SERVICE_KEY  // fallback; works because SECURITY DEFINER RPCs use get_user_org_id()
-  try {
-    const { data: signIn } = await admin.auth.admin.createUser({
-      id: userId,
-      email:   `user-${userId.slice(0, 8)}@test.local`,
-      password: 'test-password-0186',
-      email_confirm: true,
-      app_metadata: { roles: ['finance'], org_id: orgId },
-    })
-    if (signIn?.user) {
-      const { data: session } = await anonClient().auth.signInWithPassword({
-        email:    `user-${userId.slice(0, 8)}@test.local`,
-        password: 'test-password-0186',
-      })
-      if (session?.session?.access_token) token = session.session.access_token
-    }
-  } catch { /* ignore auth setup failures — fall back to service token */ }
+  const { data: session, error: signInError } = await anonClient().auth.signInWithPassword({ email, password })
+  if (signInError || !session.session) throw new Error(`seed sign-in: ${signInError?.message}`)
+  const token = session.session.access_token
 
   const customerId = uuidv4()
   const { error: customerErr } = await admin.from('customers').insert({

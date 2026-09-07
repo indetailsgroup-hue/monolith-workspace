@@ -24,7 +24,7 @@ BEGIN
     END LOOP;
   END IF;
 
-  IF lower(ltrim(rendered)) ~ '^(select|with|show|values)[[:space:]]' THEN
+  IF lower(rendered) ~ '^[[:space:]]*(select|with|show|values)([[:space:]]|$)' THEN
     RETURN QUERY EXECUTE
       'SELECT to_jsonb(result_row) FROM (' || rendered || ') AS result_row';
   ELSE
