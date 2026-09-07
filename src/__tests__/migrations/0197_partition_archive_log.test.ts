@@ -29,8 +29,7 @@ let orgA:  SupabaseClient   // authenticated as org A user
 let orgB:  SupabaseClient   // authenticated as org B user (cross-tenant)
 
 // ─── Test state ───────────────────────────────────────────────────────────────
-const ORG_A_ID = '00000000-aaaa-aaaa-aaaa-000000000001'
-const ORG_B_ID = '00000000-bbbb-bbbb-bbbb-000000000002'
+const createdUserIds: string[] = []
 
 const TEST_PARTITIONS = [
   {
@@ -69,23 +68,43 @@ const TEST_PARTITIONS = [
 const insertedIds: number[] = []
 
 // ─── Setup / Teardown ─────────────────────────────────────────────────────────
-beforeAll(() => {
+beforeAll(async () => {
   svc  = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
   anon = createClient(SUPABASE_URL, ANON_KEY,    { auth: { persistSession: false } })
 
-  orgA = ORG_A_JWT
-    ? createClient(SUPABASE_URL, ANON_KEY, {
+  const authenticatedClient = async (label: string, configuredJwt: string) => {
+    if (configuredJwt) {
+      return createClient(SUPABASE_URL, ANON_KEY, {
         auth: { persistSession: false },
-        global: { headers: { Authorization: `Bearer ${ORG_A_JWT}` } },
+        global: { headers: { Authorization: `Bearer ${configuredJwt}` } },
       })
-    : svc
+    }
 
-  orgB = ORG_B_JWT
-    ? createClient(SUPABASE_URL, ANON_KEY, {
-        auth: { persistSession: false },
-        global: { headers: { Authorization: `Bearer ${ORG_B_JWT}` } },
-      })
-    : svc
+    const email = `test-0197-${label}-${crypto.randomUUID()}@monolith.test`
+    const password = 'Test@123456!'
+    const { data: created, error: createError } = await svc.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+    if (createError || !created.user) {
+      throw new Error(`create ${label} user: ${createError?.message}`)
+    }
+    createdUserIds.push(created.user.id)
+
+    const client = createClient(SUPABASE_URL, ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { error: signInError } = await client.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (signInError) throw new Error(`sign in ${label}: ${signInError.message}`)
+    return client
+  }
+
+  orgA = await authenticatedClient('org-a', ORG_A_JWT)
+  orgB = await authenticatedClient('org-b', ORG_B_JWT)
 })
 
 afterAll(async () => {
@@ -95,6 +114,9 @@ afterAll(async () => {
       .from('partition_archive_log')
       .delete()
       .in('id', insertedIds)
+  }
+  for (const userId of createdUserIds) {
+    await svc.auth.admin.deleteUser(userId)
   }
 })
 
