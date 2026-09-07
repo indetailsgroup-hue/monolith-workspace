@@ -167,11 +167,10 @@ async function seedOrgWithSubmissions(
       net_amount:      1000,
       vat_amount:      70,
       gross_amount:    1070,
-      vat_rate:        7,
+      vat_rate:        0.07,
       status:          statusList[i],
       attempt_count:   statusList[i] === 'submitted' ? 1 : 0,
       seller_tax_id:   '1234567890123',
-      seller_name:     'Test Seller Co Ltd',
       buyer_tax_id:    '9876543210987',
       buyer_name:      'Test Buyer Co Ltd',
     })
@@ -574,9 +573,9 @@ describe('Group D — Cached vs live view data accuracy', () => {
       id: newSubId, org_id: ctx.orgId, invoice_id: newInvoiceId,
       document_type: 'T01', document_number: `INV-${newSubId.slice(0,8)}`,
       document_date: new Date().toISOString().split('T')[0],
-      net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 7,
+      net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 0.07,
       status: 'submitted', attempt_count: 1,
-      seller_tax_id: '1234567890123', seller_name: 'Test Seller Co Ltd',
+      seller_tax_id: '1234567890123',
       buyer_tax_id: '9876543210987', buyer_name: 'Test Buyer Co Ltd',
     })
     if (submissionErr) throw new Error(`D-03 submission: ${submissionErr.message}`)

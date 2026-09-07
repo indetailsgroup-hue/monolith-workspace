@@ -31,7 +31,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 const SUPABASE_URL      = process.env.SUPABASE_URL      ?? 'http://127.0.0.1:54321'
 const SERVICE_ROLE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-const ANON_KEY          = process.env.SUPABASE_ANON_KEY ?? ''
+const ANON_KEY          = process.env.ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? ''
 
 function adminClient(): SupabaseClient {
   return createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -43,6 +43,15 @@ function adminClient(): SupabaseClient {
 async function seedOrg(client: SupabaseClient): Promise<{ orgId: string; userId: string }> {
   const orgId  = uuidv4()
   const userId = uuidv4()
+  const email = `test-0188-${userId}@example.com`
+
+  const { error: userErr } = await client.auth.admin.createUser({
+    id: userId,
+    email,
+    password: `Test-${userId}-Pass!`,
+    email_confirm: true,
+  })
+  if (userErr) throw new Error(`seedOrg auth user: ${userErr.message}`)
 
   const { error: orgErr } = await client.from('organizations').insert({
     org_id: orgId,
@@ -54,11 +63,18 @@ async function seedOrg(client: SupabaseClient): Promise<{ orgId: string; userId:
   const { error: memErr } = await client.from('org_members').insert({
     org_id:  orgId,
     user_id: userId,
+    email,
     role:    'OWNER',
   })
   if (memErr) throw new Error(`seedOrg org_members: ${memErr.message}`)
 
   return { orgId, userId }
+}
+
+async function execSql(query: string): Promise<Record<string, any>[]> {
+  const { data, error } = await admin.rpc('exec_sql', { query })
+  if (error) throw new Error(`exec_sql: ${error.message}`)
+  return (data ?? []) as Record<string, any>[]
 }
 
 /**
@@ -73,7 +89,7 @@ async function forceRefreshAge(client: SupabaseClient, ageSeconds: number): Prom
     refreshed_at: new Date(Date.now() - ageSeconds * 1000).toISOString(),
     duration_ms:  120,
     row_count:    5,
-    triggered_by: 'test_harness',
+    triggered_by: 'test',
   })
   if (error) throw new Error(`forceRefreshAge insert: ${error.message}`)
 }
@@ -191,8 +207,10 @@ describe('Group A — Critical threshold detection', () => {
     expect(row!.metadata.freshness_status).toBe('critical')
   })
 
-  it('A-05: does NOT insert alert when lag = exactly 1800 s (boundary — stale not critical)', async () => {
-    await forceRefreshAge(admin, 1800) // boundary: stale, NOT critical
+  it('A-05: does NOT insert alert while lag remains within the 1800 s threshold', async () => {
+    // Leave enough transport-time margin to avoid crossing the boundary while
+    // the HTTP request and RPC are in flight.
+    await forceRefreshAge(admin, 1795)
 
     await callAlertFn(admin)
 
@@ -433,12 +451,16 @@ describe('Group C — NULL submission_id (CHECK constraint)', () => {
 
     // Create a real etax submission to reference
     const invoiceId = uuidv4()
-    await admin.from('invoices').insert({
+    const { error: invoiceErr } = await admin.from('invoices').insert({
+      id:         invoiceId,
       invoice_id: invoiceId,
       org_id:     orgId,
+      invoice_code: `INV-${invoiceId.slice(0, 8)}`,
       status:     'approved',
       total:      1000,
-    }).then(() => {}) // ignore if invoices doesn't exist or has different schema
+      remaining_amount: 0,
+    })
+    if (invoiceErr) throw new Error(`C-06 invoice fixture: ${invoiceErr.message}`)
 
     const subId = uuidv4()
     const { error: subErr } = await admin.from('etax_submissions').insert({
@@ -719,37 +741,33 @@ describe('Group F — No alert for fresh / stale lag', () => {
 
 describe('Group G — Idempotency and pg_cron registration', () => {
   it('G-01: pg_cron job check-mv-refresh-lag is registered in cron.job', async () => {
-    const { data, error } = await admin
-      .schema('cron')
-      .from('job')
-      .select('jobname, schedule, command')
-      .eq('jobname', 'check-mv-refresh-lag')
+    const data = await execSql(`
+      SELECT jobname, schedule, command
+        FROM cron.job
+       WHERE jobname = 'check-mv-refresh-lag'
+    `)
 
-    expect(error).toBeNull()
-    expect(data).not.toBeNull()
-    expect(data!.length).toBe(1)
+    expect(data).toHaveLength(1)
   })
 
   it('G-02: check-mv-refresh-lag schedule is */5 * * * *', async () => {
-    const { data } = await admin
-      .schema('cron')
-      .from('job')
-      .select('schedule')
-      .eq('jobname', 'check-mv-refresh-lag')
-      .single()
+    const data = await execSql(`
+      SELECT schedule
+        FROM cron.job
+       WHERE jobname = 'check-mv-refresh-lag'
+    `)
 
-    expect(data!.schedule).toBe('*/5 * * * *')
+    expect(data[0].schedule).toBe('*/5 * * * *')
   })
 
   it('G-03: check-mv-refresh-lag command calls fn_mv_refresh_lag_alert()', async () => {
-    const { data } = await admin
-      .schema('cron')
-      .from('job')
-      .select('command')
-      .eq('jobname', 'check-mv-refresh-lag')
-      .single()
+    const data = await execSql(`
+      SELECT command
+        FROM cron.job
+       WHERE jobname = 'check-mv-refresh-lag'
+    `)
 
-    expect(data!.command).toContain('fn_mv_refresh_lag_alert')
+    expect(data[0].command).toContain('fn_mv_refresh_lag_alert')
   })
 
   it('G-04: all 4 pg_cron jobs are registered', async () => {
@@ -760,56 +778,53 @@ describe('Group G — Idempotency and pg_cron registration', () => {
       'check-mv-refresh-lag',
     ]
 
-    const { data, error } = await admin
-      .schema('cron')
-      .from('job')
-      .select('jobname')
-      .in('jobname', expectedJobs)
+    const data = await execSql(`
+      SELECT jobname
+        FROM cron.job
+       WHERE jobname IN (
+         'etax-submit-worker',
+         'notify-overdue',
+         'refresh-etax-compliance-mv',
+         'check-mv-refresh-lag'
+       )
+    `)
 
-    expect(error).toBeNull()
-    const registeredNames = data!.map((r: any) => r.jobname).sort()
+    const registeredNames = data.map((r: any) => r.jobname).sort()
     expect(registeredNames).toEqual(expectedJobs.sort())
   })
 
   it('G-05: running migration again does not duplicate check-mv-refresh-lag job', async () => {
-    // Simulate idempotent re-run: unschedule + reschedule
-    await admin.rpc('cron.unschedule', { jobname: 'check-mv-refresh-lag' }).then(() => {})
-    // Re-register via direct SQL (simulates running 0188 again)
-    const { error } = await admin.rpc('fn_mv_refresh_lag_alert') // just call fn — no re-schedule here
-    // Count jobs with this name
-    const { data } = await admin
-      .schema('cron')
-      .from('job')
-      .select('jobname')
-      .eq('jobname', 'check-mv-refresh-lag')
+    const data = await execSql(`
+      SELECT count(*)::int AS job_count
+        FROM cron.job
+       WHERE jobname = 'check-mv-refresh-lag'
+    `)
 
-    // After unschedule + no reschedule, should be 0 or 1 depending on what the DB does
-    // The important thing is it is not > 1
-    expect(data!.length).toBeLessThanOrEqual(1)
+    expect(data[0].job_count).toBe(1)
   })
 
   it('G-06: CHECK constraint chk_submission_id_or_system exists on etax_submission_audit_log', async () => {
-    const { data, error } = await admin
-      .from('information_schema.table_constraints')
-      .select('constraint_name')
-      .eq('constraint_schema', 'public')
-      .eq('table_name', 'etax_submission_audit_log')
-      .eq('constraint_name', 'chk_submission_id_or_system')
+    const data = await execSql(`
+      SELECT constraint_name
+        FROM information_schema.table_constraints
+       WHERE constraint_schema = 'public'
+         AND table_name = 'etax_submission_audit_log'
+         AND constraint_name = 'chk_submission_id_or_system'
+    `)
 
-    expect(error).toBeNull()
-    expect(data!.length).toBe(1)
+    expect(data).toHaveLength(1)
   })
 
   it('G-07: idx_etax_audit_log_system_alerts index exists', async () => {
-    const { data, error } = await admin
-      .from('pg_indexes')
-      .select('indexname')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'etax_submission_audit_log')
-      .eq('indexname', 'idx_etax_audit_log_system_alerts')
+    const data = await execSql(`
+      SELECT indexname
+        FROM pg_indexes
+       WHERE schemaname = 'public'
+         AND tablename = 'etax_submission_audit_log'
+         AND indexname = 'idx_etax_audit_log_system_alerts'
+    `)
 
-    expect(error).toBeNull()
-    expect(data!.length).toBe(1)
+    expect(data).toHaveLength(1)
   })
 
   it('G-08: fn_mv_refresh_lag_alert is callable without error when MV is fresh', async () => {
@@ -818,7 +833,7 @@ describe('Group G — Idempotency and pg_cron registration', () => {
     expect(error).toBeNull()
   })
 
-  it('G-09: calling fn_mv_refresh_lag_alert with authenticated user key is blocked (REVOKE PUBLIC)', async () => {
+  it('G-09: calling fn_mv_refresh_lag_alert with the anonymous key is blocked (REVOKE PUBLIC)', async () => {
     const anonClient = createClient(SUPABASE_URL, ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
