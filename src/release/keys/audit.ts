@@ -8,6 +8,8 @@
  * All key operations (import, trust, revoke, override) are logged.
  */
 
+import { readRaw, remove, writeRaw } from '../../core/persistence/unsafeStorage';
+
 const LS_AUDIT = 'monolith.audit.keys.v1';
 const MAX_EVENTS = 500;
 
@@ -54,7 +56,7 @@ function nowIso(): string {
  * Load audit events from storage
  */
 function load(): AuditEvent[] {
-  const raw = localStorage.getItem(LS_AUDIT);
+  const raw = readRaw(LS_AUDIT);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -70,7 +72,7 @@ function load(): AuditEvent[] {
 function save(events: AuditEvent[]): void {
   // Keep only last MAX_EVENTS entries
   const trimmed = events.slice(-MAX_EVENTS);
-  localStorage.setItem(LS_AUDIT, JSON.stringify(trimmed, null, 2));
+  writeRaw(LS_AUDIT, JSON.stringify(trimmed, null, 2));
 }
 
 /**
@@ -122,7 +124,7 @@ export function listAuditForKey(keyId: string): AuditEvent[] {
  * Clear all audit events (use with caution)
  */
 export function clearAudit(): void {
-  localStorage.removeItem(LS_AUDIT);
+  remove(LS_AUDIT);
 }
 
 /**

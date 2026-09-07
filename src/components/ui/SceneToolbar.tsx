@@ -35,6 +35,7 @@ import { useToolStore, ToolId, TOOL_INFO } from '../../core/store/useToolStore';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
 import { useDrillMapStore } from '../../core/store/useDrillMapStore';
 import { useViewStore } from '../../core/store/useViewStore';
+import { remove } from '../../core/persistence/unsafeStorage';
 
 interface ToolButtonProps {
   tool: ToolId;
@@ -458,8 +459,8 @@ export function SceneToolbar({ className = '' }: SceneToolbarProps) {
       <button
         onClick={() => {
           if (window.confirm('ลบข้อมูลทั้งหมดและเริ่มใหม่?\n\nClear all data and restart?')) {
-            localStorage.removeItem('monolith-current-project');
-            localStorage.removeItem('monolith-projects-list');
+            remove('monolith-current-project');
+            remove('monolith-projects-list');
             window.location.reload();
           }
         }}

@@ -27,6 +27,7 @@ import {
 } from '../../core/manufacturing/hardware/hardwareTypes';
 import { useCabinetStore } from '../../core/store/useCabinetStore';
 import { useDrillMapStore } from '../../core/store/useDrillMapStore';
+import { readRaw, writeJson } from '../../core/persistence/unsafeStorage';
 import { ChevronDown, ChevronUp, Settings, Package, X, Save, Trash2, Copy, Check, Edit2, RotateCcw } from 'lucide-react';
 
 // ============================================
@@ -152,7 +153,7 @@ function parseMinifixPresetsFromStorage(jsonString: string): MinifixConfigPreset
       if (migratedResult.success) {
         console.log('[G9] Migration successful, saving updated presets');
         // Save migrated presets back to localStorage
-        localStorage.setItem(MINIFIX_PRESETS_STORAGE_KEY, JSON.stringify(migratedResult.data));
+        writeJson(MINIFIX_PRESETS_STORAGE_KEY, migratedResult.data);
         return migratedResult.data;
       }
 
@@ -508,7 +509,7 @@ export const BUILTIN_MINIFIX_PRESETS: MinifixConfigPreset[] = [
  */
 function loadBuiltinOverrides(): Record<string, Partial<MinifixConfigPreset>> {
   try {
-    const stored = localStorage.getItem(MINIFIX_BUILTIN_OVERRIDES_KEY);
+    const stored = readRaw(MINIFIX_BUILTIN_OVERRIDES_KEY);
     if (stored) {
       return JSON.parse(stored);
     }
@@ -526,7 +527,7 @@ function saveBuiltinOverride(presetId: string, override: Partial<MinifixConfigPr
   try {
     const overrides = loadBuiltinOverrides();
     overrides[presetId] = override;
-    localStorage.setItem(MINIFIX_BUILTIN_OVERRIDES_KEY, JSON.stringify(overrides));
+    writeJson(MINIFIX_BUILTIN_OVERRIDES_KEY, overrides);
     console.log(`[HardwareLibrary] Saved builtin override for ${presetId}`);
   } catch (e) {
     console.error('Failed to save builtin override:', e);
@@ -540,7 +541,7 @@ export function resetBuiltinPreset(presetId: string): void {
   try {
     const overrides = loadBuiltinOverrides();
     delete overrides[presetId];
-    localStorage.setItem(MINIFIX_BUILTIN_OVERRIDES_KEY, JSON.stringify(overrides));
+    writeJson(MINIFIX_BUILTIN_OVERRIDES_KEY, overrides);
     console.log(`[HardwareLibrary] Reset builtin preset ${presetId} to factory defaults`);
   } catch (e) {
     console.error('Failed to reset builtin preset:', e);
@@ -577,7 +578,7 @@ export function loadSavedPresets(): MinifixConfigPreset[] {
   });
 
   // G9: Load user presets with Zod validation (no unsafe cast)
-  const stored = localStorage.getItem(MINIFIX_PRESETS_STORAGE_KEY);
+  const stored = readRaw(MINIFIX_PRESETS_STORAGE_KEY);
   if (stored) {
     const userPresets = parseMinifixPresetsFromStorage(stored);
     // Filter out any user presets that have builtin IDs (shouldn't happen, but safety)
@@ -593,7 +594,7 @@ export function loadSavedPresets(): MinifixConfigPreset[] {
 // Save presets to localStorage
 function savePresetsToStorage(presets: MinifixConfigPreset[]): void {
   try {
-    localStorage.setItem(MINIFIX_PRESETS_STORAGE_KEY, JSON.stringify(presets));
+    writeJson(MINIFIX_PRESETS_STORAGE_KEY, presets);
   } catch (e) {
     console.error('Failed to save Minifix presets:', e);
   }

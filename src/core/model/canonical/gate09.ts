@@ -34,6 +34,7 @@ import {
   CanonicalCabinetSchema,
   CanonicalPanelSchema,
 } from './schemas';
+import { readRaw, writeJson } from '../../persistence/unsafeStorage';
 
 // ============================================
 // GATE09 CORE
@@ -288,7 +289,7 @@ export function validateCabinets(
  */
 export function loadProjectFromStorage(key: string): ValidationResult<CanonicalProject> {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = readRaw(key);
     if (!raw) {
       return {
         ok: false,
@@ -324,7 +325,7 @@ export function loadProjectFromStorage(key: string): ValidationResult<CanonicalP
  */
 export function saveProjectToStorage(key: string, project: ValidatedProject): void {
   // Since it's already validated, we can safely serialize
-  localStorage.setItem(key, JSON.stringify(project));
+  writeJson(key, project);
 }
 
 // ============================================

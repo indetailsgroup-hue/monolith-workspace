@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../core/auth/supabaseClient';
+import { readRaw, remove, writeJson } from '../core/persistence/unsafeStorage';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,12 @@ export interface AutocompleteSuggestion {
   query: string;
   frequency: number;
   lastUsed: string;
+}
+
+interface AutocompleteRpcRow {
+  query_text: string;
+  frequency: number;
+  last_used: string;
 }
 
 // ─── SQL RPC (defined in migration) ──────────────────────────────────────────
@@ -32,7 +39,7 @@ export async function fetchAutocompleteSuggestions(
     return [];
   }
 
-  return (data || []).map((row: any) => ({
+  return ((data || []) as AutocompleteRpcRow[]).map((row) => ({
     query: row.query_text,
     frequency: row.frequency,
     lastUsed: row.last_used,
@@ -46,7 +53,7 @@ const MAX_RECENT = 10;
 
 export function getRecentSearches(): string[] {
   try {
-    const raw = localStorage.getItem(RECENT_KEY);
+    const raw = readRaw(RECENT_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -57,11 +64,11 @@ export function addRecentSearch(query: string): void {
   if (!query.trim()) return;
   const recent = getRecentSearches().filter((q) => q !== query.trim());
   recent.unshift(query.trim());
-  localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
+  writeJson(RECENT_KEY, recent.slice(0, MAX_RECENT));
 }
 
 export function clearRecentSearches(): void {
-  localStorage.removeItem(RECENT_KEY);
+  remove(RECENT_KEY);
 }
 
 // ─── Combined suggestions: recent + server ───────────────────────────────────

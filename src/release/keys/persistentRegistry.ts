@@ -14,6 +14,7 @@
  */
 
 import type { PublicKeyRecord, KeyScope, KeyTrust } from './types';
+import { readRaw, remove, writeRaw } from '../../core/persistence/unsafeStorage';
 
 // localStorage keys
 const LS_KEYS = 'monolith.keys.public.registry.v1';
@@ -31,7 +32,7 @@ function nowIso(): string {
  */
 function loadAll(): PublicKeyRecord[] {
   if (typeof localStorage === 'undefined') return [];
-  const raw = localStorage.getItem(LS_KEYS);
+  const raw = readRaw(LS_KEYS);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -52,7 +53,7 @@ function loadAll(): PublicKeyRecord[] {
  */
 function saveAll(keys: PublicKeyRecord[]): void {
   if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(LS_KEYS, JSON.stringify(keys, null, 2));
+  writeRaw(LS_KEYS, JSON.stringify(keys, null, 2));
 }
 
 /**
@@ -95,7 +96,7 @@ export class PersistentKeyRegistry {
    */
   setActiveKey(keyId: string): void {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(LS_ACTIVE, keyId);
+    writeRaw(LS_ACTIVE, keyId);
   }
 
   /**
@@ -103,7 +104,7 @@ export class PersistentKeyRegistry {
    */
   getActiveKeyId(): string | null {
     if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem(LS_ACTIVE);
+    return readRaw(LS_ACTIVE);
   }
 
   /**
@@ -111,7 +112,7 @@ export class PersistentKeyRegistry {
    */
   clearActiveKey(): void {
     if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(LS_ACTIVE);
+    remove(LS_ACTIVE);
   }
 
   // ============================================

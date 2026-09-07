@@ -9,6 +9,7 @@
 
 import type { ToolUsageEvent, ToolUsageRecord, ToolWearThreshold } from '../types';
 import { initRecord, mergeEventIntoRecord, nowMs } from './toolingStoreHelpers';
+import { readRaw, remove, writeJson } from '../../../core/persistence/unsafeStorage';
 
 const DB_NAME = 'monolith-factory-tooling';
 const DB_VERSION = 1;
@@ -408,7 +409,7 @@ function logMaintenanceAction(
   timestamp?: number
 ): void {
   try {
-    const existing = localStorage.getItem(MAINTENANCE_LOG_KEY);
+    const existing = readRaw(MAINTENANCE_LOG_KEY);
     const log: MaintenanceLogEntry[] = existing ? JSON.parse(existing) : [];
 
     log.push({
@@ -424,7 +425,7 @@ function logMaintenanceAction(
       log.splice(0, log.length - MAX_LOG_ENTRIES);
     }
 
-    localStorage.setItem(MAINTENANCE_LOG_KEY, JSON.stringify(log));
+    writeJson(MAINTENANCE_LOG_KEY, log);
   } catch {
     // Non-critical - swallow errors
   }
@@ -436,7 +437,7 @@ function logMaintenanceAction(
  */
 export function getMaintenanceLog(): MaintenanceLogEntry[] {
   try {
-    const existing = localStorage.getItem(MAINTENANCE_LOG_KEY);
+    const existing = readRaw(MAINTENANCE_LOG_KEY);
     if (!existing) return [];
     const log: MaintenanceLogEntry[] = JSON.parse(existing);
     return log.sort((a, b) => b.timestamp - a.timestamp);
@@ -450,7 +451,7 @@ export function getMaintenanceLog(): MaintenanceLogEntry[] {
  */
 export function clearMaintenanceLog(): void {
   try {
-    localStorage.removeItem(MAINTENANCE_LOG_KEY);
+    remove(MAINTENANCE_LOG_KEY);
   } catch {
     // Non-critical
   }

@@ -12,6 +12,8 @@
  * - Time-based revocation (block releases signed after compromise date)
  */
 
+import { readRaw, remove, writeRaw } from '../../core/persistence/unsafeStorage';
+
 const LS_REVOKE_POLICY = 'monolith.keys.revocationPolicy.v1';
 
 /**
@@ -53,7 +55,7 @@ function nowIso(): string {
  * Load revocation policy from storage
  */
 function load(): RevocationPolicy {
-  const raw = localStorage.getItem(LS_REVOKE_POLICY);
+  const raw = readRaw(LS_REVOKE_POLICY);
   if (!raw) {
     return {
       version: 'revpol-0.1',
@@ -81,7 +83,7 @@ function load(): RevocationPolicy {
  * Save revocation policy to storage
  */
 function save(policy: RevocationPolicy): void {
-  localStorage.setItem(LS_REVOKE_POLICY, JSON.stringify(policy, null, 2));
+  writeRaw(LS_REVOKE_POLICY, JSON.stringify(policy, null, 2));
 }
 
 /**
@@ -198,5 +200,5 @@ export function listRevocationRules(): RevocationRule[] {
  * Clear all revocation rules (use with caution)
  */
 export function clearAllRevocationRules(): void {
-  localStorage.removeItem(LS_REVOKE_POLICY);
+  remove(LS_REVOKE_POLICY);
 }

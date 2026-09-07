@@ -14,7 +14,6 @@
 
 import type {
   SpecLineageEvent,
-  SpecLineageEventType,
   LineageChain,
   LineageQueryOptions,
   LineageGraph,
@@ -23,6 +22,7 @@ import type {
 } from './lineageTypes';
 import { SpecLineageEventSchema } from './lineage.schema';
 import { validateExternalStateSafe } from '../gate/validateExternalState';
+import { readRaw, writeRaw } from '../persistence/unsafeStorage';
 
 // ============================================
 // STORAGE KEY
@@ -77,7 +77,7 @@ function parseJsonl(jsonl: string): SpecLineageEvent[] {
 export function loadLineage(jobId: string): LineageReadResult {
   try {
     const key = getStorageKey(jobId);
-    const jsonl = localStorage.getItem(key) || '';
+    const jsonl = readRaw(key) || '';
     const events = parseJsonl(jsonl);
 
     // Find HEAD (latest release or frozen revision)
@@ -398,7 +398,7 @@ export function getLineageStats(jobId: string): {
  */
 export function exportLineageJsonl(jobId: string): string {
   const key = getStorageKey(jobId);
-  return localStorage.getItem(key) || '';
+  return readRaw(key) || '';
 }
 
 /**
@@ -406,7 +406,7 @@ export function exportLineageJsonl(jobId: string): string {
  */
 export function importLineageJsonl(jobId: string, jsonl: string): number {
   const key = getStorageKey(jobId);
-  const existingJsonl = localStorage.getItem(key) || '';
+  const existingJsonl = readRaw(key) || '';
   const existingEvents = parseJsonl(existingJsonl);
   const newEvents = parseJsonl(jsonl);
 
@@ -423,7 +423,7 @@ export function importLineageJsonl(jobId: string, jsonl: string): number {
   // Append unique new events
   const newLines = uniqueNew.map((e) => JSON.stringify(e)).join('\n');
   const updated = existingJsonl ? `${existingJsonl}\n${newLines}` : newLines;
-  localStorage.setItem(key, updated);
+  writeRaw(key, updated);
 
   return uniqueNew.length;
 }

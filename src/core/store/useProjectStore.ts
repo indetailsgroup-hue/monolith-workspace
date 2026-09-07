@@ -39,17 +39,15 @@ import { create } from 'zustand';
 import { useCabinetStore } from './useCabinetStore';
 import {
   parseAndValidateSafe,
-  validateExternalStateSafe,
-  type ValidationIssue,
 } from '../gate/validateExternalState';
 import { ProjectDataSchema, ImportedProjectSchema, SavedProjectsListSchema } from '../schema/project.schema';
 import {
   readString,
   writeJson,
-  writeRaw,
   remove,
 } from '../persistence/unsafeStorage';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
+import type { Cabinet } from '../types/Cabinet';
 
 // ============================================
 // TYPES
@@ -91,13 +89,19 @@ export interface ProjectMetadata {
  *
  * Contains metadata, active cabinet, and scene layout information.
  */
+type SerializedCabinet = Omit<Cabinet, 'materials'> & {
+  materials: Omit<Cabinet['materials'], 'overrides'> & {
+    overrides: Record<string, string>;
+  };
+};
+
 export interface ProjectData {
   /** Project identification and tracking */
   metadata: ProjectMetadata;
   /** Active cabinet state from useCabinetStore */
-  cabinet: any;
+  cabinet: SerializedCabinet;
   /** All cabinets with scene positions/rotations */
-  cabinets?: any[];
+  cabinets?: SerializedCabinet[];
 }
 
 /**
@@ -138,6 +142,26 @@ function createDefaultMetadata(name: string = 'Untitled Project'): ProjectMetada
     version: '1.0.0',
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function serializeCabinet(cabinet: Cabinet): SerializedCabinet {
+  return {
+    ...cabinet,
+    materials: {
+      ...cabinet.materials,
+      overrides: Object.fromEntries(cabinet.materials.overrides),
+    },
+  };
+}
+
+function deserializeCabinet(cabinet: SerializedCabinet): Cabinet {
+  return {
+    ...cabinet,
+    materials: {
+      ...cabinet.materials,
+      overrides: new Map(Object.entries(cabinet.materials.overrides ?? {})),
+    },
   };
 }
 
@@ -211,7 +235,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
   
   saveProject: () => {
-    const { metadata, autoSaveEnabled, isDirty } = get();
+    const { metadata, isDirty } = get();
     const cabinetStore = useCabinetStore.getState();
     const cabinet = cabinetStore.cabinet;
     const cabinets = cabinetStore.cabinets;
@@ -231,28 +255,18 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     };
 
     // Serialize cabinets with scenePosition/sceneRotation
-    const serializedCabinets = cabinets.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      category: c.category,
-      dimensions: c.dimensions,
-      scenePosition: c.scenePosition || [0, 0, 0],
-      sceneRotation: c.sceneRotation || [0, 0, 0],
-    }));
+    const serializedCabinets = cabinets.map((cabinetToSerialize) =>
+      serializeCabinet({
+        ...cabinetToSerialize,
+        scenePosition: cabinetToSerialize.scenePosition ?? [0, 0, 0],
+        sceneRotation: cabinetToSerialize.sceneRotation ?? [0, 0, 0],
+      })
+    );
 
     // Create project data
     const projectData: ProjectData = {
       metadata: updatedMetadata,
-      cabinet: {
-        ...cabinet,
-        // Convert Map to object for JSON serialization
-        materials: {
-          ...cabinet.materials,
-          overrides: cabinet.materials.overrides
-            ? Object.fromEntries(cabinet.materials.overrides)
-            : {},
-        },
-      },
+      cabinet: serializeCabinet(cabinet),
       cabinets: serializedCabinets,
     };
     
@@ -305,45 +319,46 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       // Parse again for actual use (since we validated)
       const projectData: ProjectData = JSON.parse(stored);
 
+      if (!projectData.cabinet?.materials) {
+        console.error('[Project] Invalid project data: missing cabinet materials');
+        return false;
+      }
+
       // If projectId specified but doesn't match, return false
       if (projectId && projectData.metadata.id !== projectId) {
         return false;
       }
 
       // Restore cabinet state - convert overrides back to Map
-      const cabinet = {
-        ...projectData.cabinet,
-        materials: {
-          ...projectData.cabinet.materials,
-          overrides: new Map(Object.entries(projectData.cabinet.materials?.overrides || {})),
-        },
-      };
+      const cabinet = deserializeCabinet(projectData.cabinet);
 
       // Restore cabinets array with scenePosition/sceneRotation
       let cabinetsToRestore = [cabinet];
       if (projectData.cabinets && projectData.cabinets.length > 0) {
         // Merge saved scene positions into cabinets
-        cabinetsToRestore = projectData.cabinets.map((savedCab: any) => {
+        cabinetsToRestore = projectData.cabinets.map((savedCab) => {
+          const restoredCabinet = deserializeCabinet(savedCab);
           // For the active cabinet, merge with full cabinet data
           if (savedCab.id === cabinet.id) {
             return {
               ...cabinet,
-              scenePosition: savedCab.scenePosition || [0, 0, 0],
-              sceneRotation: savedCab.sceneRotation || [0, 0, 0],
+              ...restoredCabinet,
+              scenePosition: savedCab.scenePosition ?? [0, 0, 0],
+              sceneRotation: savedCab.sceneRotation ?? [0, 0, 0],
             };
           }
           // For other cabinets, use saved data with defaults
           return {
-            ...savedCab,
-            scenePosition: savedCab.scenePosition || [0, 0, 0],
-            sceneRotation: savedCab.sceneRotation || [0, 0, 0],
+            ...restoredCabinet,
+            scenePosition: savedCab.scenePosition ?? [0, 0, 0],
+            sceneRotation: savedCab.sceneRotation ?? [0, 0, 0],
           };
         });
       }
 
       // v4.1 Migration: Auto-apply hardware config to cabinets that don't have one
       // This ensures legacy projects get Minifix S200 + Dowel hardware automatically
-      cabinetsToRestore = cabinetsToRestore.map((cab: any) => {
+      cabinetsToRestore = cabinetsToRestore.map((cab) => {
         if (!cab.hardware?.minifixConfig) {
           // Determine wood thickness from core material (default 18mm)
           const coreId = cab.materials?.defaultCore || 'core-pb-18';
@@ -363,7 +378,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
 
       // Set cabinet and also sync to cabinets array
       useCabinetStore.setState({
-        cabinet: cabinetsToRestore.find((c: any) => c.id === cabinet.id) || cabinet,
+        cabinet: cabinetsToRestore.find((candidate) => candidate.id === cabinet.id) || cabinet,
         cabinets: cabinetsToRestore,
         activeCabinetId: cabinet.id
       });
@@ -430,15 +445,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     
     const projectData: ProjectData = {
       metadata,
-      cabinet: {
-        ...cabinet,
-        materials: {
-          ...cabinet.materials,
-          overrides: cabinet.materials.overrides 
-            ? Object.fromEntries(cabinet.materials.overrides)
-            : {},
-        },
-      },
+      cabinet: serializeCabinet(cabinet),
     };
     
     return JSON.stringify(projectData, null, 2);
@@ -476,13 +483,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       };
 
       // Restore cabinet
-      const cabinet = {
-        ...projectData.cabinet,
-        materials: {
-          ...projectData.cabinet.materials,
-          overrides: new Map(Object.entries(projectData.cabinet.materials?.overrides || {})),
-        },
-      };
+      const cabinet = deserializeCabinet(projectData.cabinet);
 
       useCabinetStore.setState({ cabinet });
 

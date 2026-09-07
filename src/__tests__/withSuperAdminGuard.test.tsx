@@ -363,12 +363,10 @@ describe('withSuperAdminGuard + get_search_suggestions (SECURITY INVOKER)', () =
 
       render(<GuardedSearchPanel queryPrefix="laser" limit={8} />);
 
-      // Guard loading → resolves → wrapped component renders
-      await waitFor(() => {
-        expect(screen.getByTestId('suggestions-list')).toBeInTheDocument();
-      });
-
-      const items = screen.getAllByTestId('suggestion-item');
+      // Wait for the RPC state update, not merely the empty list container that
+      // renders one tick earlier. This keeps the assertion deterministic when
+      // the full suite is scheduling many async component tests concurrently.
+      const items = await screen.findAllByTestId('suggestion-item');
       expect(items).toHaveLength(2);
       expect(items[0]).toHaveTextContent('laser cut');
       expect(items[1]).toHaveTextContent('laser engrave');
