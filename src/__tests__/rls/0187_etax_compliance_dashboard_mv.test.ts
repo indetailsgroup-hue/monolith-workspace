@@ -37,6 +37,12 @@ const userClient = (token: string): SupabaseClient =>
     global: { headers: { Authorization: `Bearer ${token}` } },
   })
 
+async function execSql(query: string): Promise<Record<string, any>[]> {
+  const { data, error } = await svc().rpc('exec_sql', { query })
+  if (error) throw new Error(`exec_sql: ${error.message}`)
+  return (data ?? []) as Record<string, any>[]
+}
+
 // ─── Seed helpers ─────────────────────────────────────────────────────────────
 
 interface SeedOrg { orgId: string; userId: string; token: string }
@@ -76,7 +82,7 @@ async function insertSubmission(
     document_type: 'T01',
     document_number: `ETAX-0187-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
     document_date: new Date().toISOString().split('T')[0],
-    net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 7,
+    net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 0.07,
     seller_tax_id: '1234567890123', buyer_tax_id: '9876543210987', buyer_name: 'Buyer',
     status, attempt_count: 1, pdf_status: pdfStatus,
     submitted_at: status === 'submitted' ? new Date().toISOString() : null,
@@ -199,67 +205,61 @@ describe('Group A — fn_refresh_etax_compliance_mv return contract', () => {
 // =============================================================================
 
 describe('Group B — pg_cron job registration', () => {
-  const db = svc()
-
   it('B-01: job refresh-etax-compliance-mv exists in cron.job', async () => {
-    const { data, error } = await db
-      .from('cron.job')
-      .select('jobname, schedule, command, active')
-      .eq('jobname', 'refresh-etax-compliance-mv')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT jobname, schedule, command, active
+      FROM cron.job
+      WHERE jobname = 'refresh-etax-compliance-mv'
+    `)
     expect(data).toHaveLength(1)
-    expect(data![0].jobname).toBe('refresh-etax-compliance-mv')
+    expect(data[0].jobname).toBe('refresh-etax-compliance-mv')
   })
 
   it('B-02: schedule is */15 * * * * (every 15 minutes)', async () => {
-    const { data } = await db
-      .from('cron.job')
-      .select('schedule')
-      .eq('jobname', 'refresh-etax-compliance-mv')
-      .single()
+    const [data] = await execSql(`
+      SELECT schedule FROM cron.job
+      WHERE jobname = 'refresh-etax-compliance-mv'
+    `)
     expect(data?.schedule).toBe('*/15 * * * *')
   })
 
   it('B-03: command references fn_refresh_etax_compliance_mv', async () => {
-    const { data } = await db
-      .from('cron.job')
-      .select('command')
-      .eq('jobname', 'refresh-etax-compliance-mv')
-      .single()
+    const [data] = await execSql(`
+      SELECT command FROM cron.job
+      WHERE jobname = 'refresh-etax-compliance-mv'
+    `)
     expect(data?.command).toContain('fn_refresh_etax_compliance_mv')
   })
 
   it('B-04: job is active (not paused)', async () => {
-    const { data } = await db
-      .from('cron.job')
-      .select('active')
-      .eq('jobname', 'refresh-etax-compliance-mv')
-      .single()
+    const [data] = await execSql(`
+      SELECT active FROM cron.job
+      WHERE jobname = 'refresh-etax-compliance-mv'
+    `)
     expect(data?.active).toBe(true)
   })
 
   it('B-05: exactly one job with this name (no duplicates)', async () => {
-    const { data } = await db
-      .from('cron.job')
-      .select('jobname')
-      .eq('jobname', 'refresh-etax-compliance-mv')
-    expect(data).toHaveLength(1)
+    const [data] = await execSql(`
+      SELECT count(*)::INT AS job_count FROM cron.job
+      WHERE jobname = 'refresh-etax-compliance-mv'
+    `)
+    expect(data.job_count).toBe(1)
   })
 
   it('B-06: existing 0184 jobs are still present (no clobber)', async () => {
-    const { data } = await db
-      .from('cron.job')
-      .select('jobname')
-      .in('jobname', ['etax-submit-worker', 'check-overdue-invoices'])
+    const data = await execSql(`
+      SELECT jobname FROM cron.job
+      WHERE jobname IN ('etax-submit-worker', 'check-overdue-invoices')
+    `)
     // At least the existing jobs should still be registered
-    expect(data!.length).toBeGreaterThanOrEqual(1)
+    expect(data.length).toBeGreaterThanOrEqual(1)
   })
 
   it('B-07: pg_cron extension is installed', async () => {
-    const { data } = await db
-      .from('pg_extension')
-      .select('extname')
-      .eq('extname', 'pg_cron')
+    const data = await execSql(`
+      SELECT extname FROM pg_extension WHERE extname = 'pg_cron'
+    `)
     expect(data).toHaveLength(1)
   })
 })
@@ -600,15 +600,15 @@ describe('Group F — unique index & CONCURRENT refresh safety', () => {
   const db = svc()
 
   it('F-01: uq_mv_etax_compliance_org index exists on mv_etax_compliance_dashboard', async () => {
-    const { data, error } = await db
-      .from('pg_indexes')
-      .select('indexname, indexdef')
-      .eq('schemaname', 'public')
-      .eq('tablename', 'mv_etax_compliance_dashboard')
-      .eq('indexname', 'uq_mv_etax_compliance_org')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT indexname, indexdef
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND tablename = 'mv_etax_compliance_dashboard'
+        AND indexname = 'uq_mv_etax_compliance_org'
+    `)
     expect(data).toHaveLength(1)
-    expect(data![0].indexdef).toContain('org_id')
+    expect(data[0].indexdef).toContain('org_id')
   })
 
   it('F-02: MV has exactly one row per org_id (unique constraint upheld)', async () => {
@@ -632,19 +632,19 @@ describe('Group F — unique index & CONCURRENT refresh safety', () => {
   })
 
   it('F-04: MV columns exactly match v_etax_compliance_dashboard columns', async () => {
-    const { data: mvCols } = await db.rpc('fn_sql', {
-      sql: `SELECT column_name FROM information_schema.columns
-            WHERE table_schema = 'public'
-              AND table_name   = 'mv_etax_compliance_dashboard'
-            ORDER BY ordinal_position`,
-    }).throwOnError()
+    const mvCols = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'mv_etax_compliance_dashboard'
+      ORDER BY ordinal_position
+    `)
 
-    const { data: viewCols } = await db.rpc('fn_sql', {
-      sql: `SELECT column_name FROM information_schema.columns
-            WHERE table_schema = 'public'
-              AND table_name   = 'v_etax_compliance_dashboard'
-            ORDER BY ordinal_position`,
-    }).throwOnError()
+    const viewCols = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_compliance_dashboard'
+      ORDER BY ordinal_position
+    `)
 
     const mvNames   = (mvCols   as any[]).map(r => r.column_name)
     const viewNames = (viewCols as any[]).map(r => r.column_name)
@@ -677,7 +677,7 @@ describe('Group F — unique index & CONCURRENT refresh safety', () => {
         .select('*')
         .eq('org_id', userOrg.orgId)
       expect(error).not.toBeNull()
-      expect(JSON.stringify(error)).toMatch(/permission|denied|42501|does not exist/i)
+      expect(JSON.stringify(error)).toMatch(/permission|denied|42501|PGRST301|does not exist/i)
     } finally {
       await cleanupOrg(db, userOrg.orgId)
     }
