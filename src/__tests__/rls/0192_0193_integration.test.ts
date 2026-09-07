@@ -124,7 +124,7 @@ async function createAuthUser(orgId: string, role = 'FINANCE'): Promise<OrgCtx> 
   const userId = created.user.id
 
   const { error: mErr } = await admin.from('org_members').upsert({
-    user_id: userId, org_id: orgId, role,
+    user_id: userId, org_id: orgId, role, email,
   })
   if (mErr) throw new Error(`upsert org_members: ${mErr.message}`)
 
@@ -149,8 +149,8 @@ function authedClient(token: string): SupabaseClient {
 // ---------------------------------------------------------------------------
 async function getOrCreateInvoice(orgId: string): Promise<string> {
   const { data: existing } = await admin
-    .from('invoices').select('invoice_id').eq('org_id', orgId).limit(1).single()
-  if (existing) return existing.invoice_id
+    .from('invoices').select('id').eq('org_id', orgId).limit(1).single()
+  if (existing) return existing.id
 
   let customerId: string
   const { data: cust } = await admin
@@ -170,6 +170,7 @@ async function getOrCreateInvoice(orgId: string): Promise<string> {
   const { data: inv, error: invErr } = await admin
     .from('invoices')
     .insert({
+      id: invoiceId,
       invoice_id: invoiceId,
       invoice_code: `INV-0192-0193-${invoiceId}`,
       org_id: orgId,
@@ -179,9 +180,9 @@ async function getOrCreateInvoice(orgId: string): Promise<string> {
       due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
       created_by: '00000000-0000-0000-0000-000000000001',
     })
-    .select('invoice_id').single()
+    .select('id').single()
   if (invErr || !inv) throw new Error(`createInvoice: ${invErr?.message}`)
-  return inv.invoice_id
+  return inv.id
 }
 
 function daysAgoTs(n: number, hourOffset = 0): string {

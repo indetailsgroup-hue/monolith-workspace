@@ -71,7 +71,7 @@ async function createOrgMember(
   // Create member
   const { error: memberErr } = await svc
     .from("org_members")
-    .insert({ org_id: orgId, user_id: userId, role });
+    .insert({ org_id: orgId, user_id: userId, role, email });
   if (memberErr) throw new Error(`insert member: ${memberErr.message}`);
 
   // Sign in

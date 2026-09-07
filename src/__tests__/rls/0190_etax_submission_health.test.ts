@@ -86,7 +86,7 @@ async function createTestUser(
   if (authErr) throw authErr;
   const userId = authData.user!.id;
 
-  await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role });
+  await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role, email });
 
   const { data: session, error: sessErr } = await svc.auth.admin.generateLink({
     type: 'magiclink',
@@ -107,12 +107,49 @@ interface SubmissionOpts {
   invoiceId?:   string;
 }
 
+async function ensureInvoice(orgId: string, invoiceId: string): Promise<void> {
+  const { data: existingCustomer, error: customerError } = await svc
+    .from('customers')
+    .select('customer_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle();
+  if (customerError) throw customerError;
+  let customer = existingCustomer;
+
+  if (!customer) {
+    const customerId = crypto.randomUUID();
+    const inserted = await svc
+      .from('customers')
+      .insert({ customer_id: customerId, org_id: orgId, name: `eTax Test Customer ${orgId}` })
+      .select('customer_id')
+      .single();
+    if (inserted.error) throw inserted.error;
+    customer = inserted.data;
+  }
+
+  const { error } = await svc.from('invoices').upsert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0190-${invoiceId}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 1070,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: '00000000-0000-0000-0000-000000000001',
+  }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
 async function insertSubmission(opts: SubmissionOpts): Promise<string> {
+  const invoiceId = opts.invoiceId ?? crypto.randomUUID();
+  await ensureInvoice(opts.orgId, invoiceId);
   const { data, error } = await svc
     .from('etax_submissions')
     .insert({
       org_id:        opts.orgId,
-      invoice_id:    opts.invoiceId ?? crypto.randomUUID(),
+      invoice_id:    invoiceId,
       document_type: 'T01',
       status:        opts.status,
       attempt_count: opts.attemptCount,
@@ -194,6 +231,8 @@ afterAll(async () => {
 
   // Remove test orgs and users (cascade)
   for (const orgId of [ORG_A, ORG_B, ORG_C]) {
+    await svc.from('invoices').delete().eq('org_id', orgId);
+    await svc.from('customers').delete().eq('org_id', orgId);
     await svc.from('organizations').delete().eq('org_id', orgId);
   }
 });

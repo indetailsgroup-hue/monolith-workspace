@@ -82,7 +82,7 @@ async function addOrgMember(
 ): Promise<void> {
   const { error } = await supabase
     .from('org_members')
-    .insert({ org_id: orgId, user_id: userId, role })
+    .insert({ org_id: orgId, user_id: userId, role, email: `test-0181-${userId}@monolith.local` })
   if (error && !error.message.includes('duplicate')) {
     throw new Error(`addOrgMember: ${error.message}`)
   }

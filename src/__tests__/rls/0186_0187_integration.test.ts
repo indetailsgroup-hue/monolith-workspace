@@ -100,7 +100,10 @@ async function seedOrgWithSubmissions(
 
   // Create org member
   const { error: memErr } = await admin.from('org_members').insert({
-    org_id: orgId, user_id: userId, role: 'FINANCE',
+    org_id: orgId,
+    user_id: userId,
+    role: 'FINANCE',
+    email: `user-${userId.slice(0, 8)}@test.local`,
   })
   if (memErr) throw new Error(`seed member: ${memErr.message}`)
 
@@ -124,6 +127,14 @@ async function seedOrgWithSubmissions(
     }
   } catch { /* ignore auth setup failures — fall back to service token */ }
 
+  const customerId = uuidv4()
+  const { error: customerErr } = await admin.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `IntegTest Customer ${orgId.slice(0, 8)}`,
+  })
+  if (customerErr) throw new Error(`seed customer: ${customerErr.message}`)
+
   // Create invoices and submissions
   const submissionIds: string[] = []
   const statusList: string[] = [
@@ -139,12 +150,18 @@ async function seedOrgWithSubmissions(
     const submissionId = uuidv4()
 
     // Minimal invoice
-    await admin.from('invoices').insert({
+    const { error: invoiceErr } = await admin.from('invoices').insert({
+      id:          invoiceId,
       invoice_id:  invoiceId,
+      invoice_code: `INV-0186-0187-${invoiceId}`,
       org_id:      orgId,
+      customer_id: customerId,
       status:      'approved',
       total:       1000 + i * 100,
-    }).then(() => {}) // best-effort
+      due_date:    new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by:  userId,
+    })
+    if (invoiceErr) throw new Error(`seed invoice[${i}]: ${invoiceErr.message}`)
 
     const { error: subErr } = await admin.from('etax_submissions').insert({
       id:              submissionId,
@@ -211,6 +228,8 @@ async function callCachedDashboard(orgId: string): Promise<Record<string, any> |
 /** Purge all rows seeded by this test run. */
 async function purgeOrg(orgId: string): Promise<void> {
   await admin.from('etax_submissions').delete().eq('org_id', orgId)
+  await admin.from('invoices').delete().eq('org_id', orgId)
+  await admin.from('customers').delete().eq('org_id', orgId)
   await admin.from('org_members').delete().eq('org_id', orgId)
   await admin.from('organizations').delete().eq('org_id', orgId)
   // MV rows for this org (via REFRESH — can't delete from MV directly)
@@ -537,10 +556,27 @@ describe('Group D — Cached vs live view data accuracy', () => {
     // Add a third submission
     const newInvoiceId = uuidv4()
     const newSubId     = uuidv4()
-    await admin.from('invoices').insert({
-      invoice_id: newInvoiceId, org_id: ctx.orgId, status: 'approved', total: 5000,
-    }).then(() => {})
-    await admin.from('etax_submissions').insert({
+    const { data: customer, error: customerErr } = await admin
+      .from('customers')
+      .select('customer_id')
+      .eq('org_id', ctx.orgId)
+      .single()
+    if (customerErr) throw new Error(`D-03 customer: ${customerErr.message}`)
+
+    const { error: invoiceErr } = await admin.from('invoices').insert({
+      id: newInvoiceId,
+      invoice_id: newInvoiceId,
+      invoice_code: `INV-0186-0187-${newInvoiceId}`,
+      org_id: ctx.orgId,
+      customer_id: customer.customer_id,
+      status: 'approved',
+      total: 5000,
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by: ctx.userId,
+    })
+    if (invoiceErr) throw new Error(`D-03 invoice: ${invoiceErr.message}`)
+
+    const { error: submissionErr } = await admin.from('etax_submissions').insert({
       id: newSubId, org_id: ctx.orgId, invoice_id: newInvoiceId,
       document_type: 'T01', document_number: `INV-${newSubId.slice(0,8)}`,
       document_date: new Date().toISOString().split('T')[0],
@@ -549,6 +585,7 @@ describe('Group D — Cached vs live view data accuracy', () => {
       seller_tax_id: '1234567890123', seller_name: 'Test Seller Co Ltd',
       buyer_tax_id: '9876543210987', buyer_name: 'Test Buyer Co Ltd',
     })
+    if (submissionErr) throw new Error(`D-03 submission: ${submissionErr.message}`)
 
     // Before second refresh — cached data still shows old count
     const rowDuring = await callCachedDashboard(ctx.orgId)

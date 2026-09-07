@@ -31,19 +31,14 @@ function serviceClient(): SupabaseClient {
 }
 
 async function userClient(userId: string): Promise<SupabaseClient> {
-  const admin = serviceClient();
-  const { data } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: `${userId}@test.monolith.local`,
-  });
   const client = createClient(SUPABASE_URL, ANON_KEY, {
-    auth: { persistSession: false },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
-  // Sign in via token to get a real JWT with org context
-  await client.auth.setSession({
-    access_token: data?.properties?.hashed_token ?? "",
-    refresh_token: "",
+  const { error } = await client.auth.signInWithPassword({
+    email: `${userId}@test.monolith.local`,
+    password: "Test1234!",
   });
+  if (error) throw new Error(`signIn(${userId}): ${error.message}`);
   return client;
 }
 
@@ -64,6 +59,43 @@ const TEST_ORGS: OrgSeed[] = [
   { orgId: "dddddddd-0004-0004-0004-000000000004", orgName: "Org Delta",   userId: "user-delta-004" },
 ];
 
+async function createInvoiceForSubmission(orgId: string, invoiceTag: string): Promise<string> {
+  const { data: existingCustomer, error: customerError } = await db
+    .from("customers")
+    .select("customer_id")
+    .eq("org_id", orgId)
+    .limit(1)
+    .maybeSingle();
+  if (customerError) throw customerError;
+  let customer = existingCustomer;
+
+  if (!customer) {
+    const customerId = crypto.randomUUID();
+    const inserted = await db
+      .from("customers")
+      .insert({ customer_id: customerId, org_id: orgId, name: `Integration Customer ${orgId}` })
+      .select("customer_id")
+      .single();
+    if (inserted.error) throw inserted.error;
+    customer = inserted.data;
+  }
+
+  const invoiceId = crypto.randomUUID();
+  const { error } = await db.from("invoices").insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0193-0194-${invoiceTag}-${invoiceId}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: "approved",
+    total: 1070,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: "00000000-0000-0000-0000-000000000001",
+  });
+  if (error) throw error;
+  return invoiceId;
+}
+
 /** Insert a raw etax_submission row (bypasses triggers for testing speed) */
 async function seedSubmission(params: {
   orgId: string;
@@ -73,9 +105,10 @@ async function seedSubmission(params: {
   attemptCount?: number;
   createdAt?: string;
 }) {
+  const invoiceId = await createInvoiceForSubmission(params.orgId, params.invoiceId);
   const { error } = await db.from("etax_submissions").insert({
     org_id:          params.orgId,
-    invoice_id:      params.invoiceId,
+    invoice_id:      invoiceId,
     document_type:   params.docType ?? "T01",
     status:          params.status ?? "submitted",
     attempt_count:   params.attemptCount ?? 1,
@@ -108,14 +141,21 @@ beforeAll(async () => {
   // Ensure test orgs and their FINANCE users exist
   for (const org of TEST_ORGS) {
     await db.from("organizations").upsert(
-      { id: org.orgId, name: org.orgName, created_at: new Date().toISOString() },
-      { onConflict: "id" }
+      {
+        org_id: org.orgId,
+        name: org.orgName,
+        slug: `test-0193-0194-${org.orgId}`,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "org_id" }
     );
     // Upsert auth user
     await db.auth.admin.createUser({
       email: `${org.userId}@test.monolith.local`,
       password: "Test1234!",
+      email_confirm: true,
       user_metadata: { org_id: org.orgId },
+      app_metadata: { roles: ["finance"], org_id: org.orgId },
     }).catch(() => { /* already exists */ });
 
     // Upsert org_member with FINANCE role
@@ -123,7 +163,12 @@ beforeAll(async () => {
     const user = { user: usersData?.users?.find(u => u.email === `${org.userId}@test.monolith.local`) ?? null };
     if (user?.user) {
       await db.from("org_members").upsert(
-        { org_id: org.orgId, user_id: user.user.id, role: "FINANCE" },
+        {
+          org_id: org.orgId,
+          user_id: user.user.id,
+          role: "FINANCE",
+          email: `${org.userId}@test.monolith.local`,
+        },
         { onConflict: "org_id,user_id" }
       );
     }
@@ -132,6 +177,11 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanTestOrgs();
+  const orgIds = TEST_ORGS.map((org) => org.orgId);
+  await db.from("invoices").delete().in("org_id", orgIds);
+  await db.from("customers").delete().in("org_id", orgIds);
+  await db.from("org_members").delete().in("org_id", orgIds);
+  await db.from("organizations").delete().in("org_id", orgIds);
 });
 
 beforeEach(async () => {

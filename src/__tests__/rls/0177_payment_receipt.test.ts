@@ -55,7 +55,12 @@ async function setupOrg(orgId: string, userId: string, role: string) {
     name: `Test Org ${orgId.slice(0,6)}`,
     slug: `test-0177-${orgId}`,
   });
-  await admin.from('org_members').upsert({ org_id: orgId, user_id: userId, role });
+  await admin.from('org_members').upsert({
+    org_id: orgId,
+    user_id: userId,
+    role,
+    email: `test-0177-${userId}@monolith.local`,
+  });
   // Minimal COA: 1100 Cash, 1200 AR, 4100 Revenue, 2200 VAT
   for (const [code, name] of [['1100','Cash/Bank'],['1200','AR'],['4100','Revenue'],['2200','VAT']]) {
     await admin.from('chart_of_accounts').upsert({

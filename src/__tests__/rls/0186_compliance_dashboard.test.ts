@@ -75,21 +75,73 @@ async function seedOrg(
     .insert({ org_id: orgId, name: `Org-0186-${label}`, slug: `org-0186-${label}-${orgId}` })
   if (orgErr) throw new Error(`seedOrg(${label}) org: ${orgErr.message}`)
 
+  const { error: metadataErr } = await db.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: ['finance'], org_id: orgId },
+  })
+  if (metadataErr) throw new Error(`seedOrg(${label}) metadata: ${metadataErr.message}`)
+
   // Add member
   const { error: memErr } = await db
     .from('org_members')
-    .insert({ org_id: orgId, user_id: userId, role: 'FINANCE' })
+    .insert({ org_id: orgId, user_id: userId, role: 'FINANCE', email })
   if (memErr) throw new Error(`seedOrg(${label}) member: ${memErr.message}`)
 
-  // Get access token
-  const { data: signIn, error: signErr } = await db.auth.admin.generateLink({
-    type: 'magiclink', email,
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
   })
-  // Fallback: use service token header pattern for test environment
-  const token = (signIn as any)?.properties?.access_token
-    ?? `Bearer-mock-${userId}`
+  const { data: signIn, error: signErr } = await authClient.auth.signInWithPassword({ email, password })
+  if (signErr || !signIn.session) throw new Error(`seedOrg(${label}) sign-in: ${signErr?.message}`)
+  const token = signIn.session.access_token
 
   return { orgId, userId, token }
+}
+
+async function ensureInvoice(
+  db: SupabaseClient,
+  orgId: string,
+  invoiceId: string,
+  dueDate: string,
+): Promise<void> {
+  const { data: member, error: memberError } = await db
+    .from('org_members')
+    .select('user_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .single()
+  if (memberError) throw new Error(`ensureInvoice member: ${memberError.message}`)
+
+  const { data: existingCustomer, error: customerError } = await db
+    .from('customers')
+    .select('customer_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle()
+  if (customerError) throw new Error(`ensureInvoice customer lookup: ${customerError.message}`)
+
+  let customer = existingCustomer
+  if (!customer) {
+    const inserted = await db
+      .from('customers')
+      .insert({ org_id: orgId, name: `Compliance Test Customer ${orgId}` })
+      .select('customer_id')
+      .single()
+    if (inserted.error) throw new Error(`ensureInvoice customer: ${inserted.error.message}`)
+    customer = inserted.data
+  }
+
+  const { error } = await db.from('invoices').upsert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    org_id: orgId,
+    invoice_code: `INV-0186-${invoiceId}`,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 1070,
+    remaining_amount: 1070,
+    due_date: dueDate,
+    created_by: member.user_id,
+  }, { onConflict: 'id' })
+  if (error) throw new Error(`ensureInvoice: ${error.message}`)
 }
 
 /** Insert etax_submissions with specified status/attempt/pdf fields */
@@ -110,17 +162,12 @@ async function insertSubmissions(
   const insertedIds: string[] = []
   for (const r of rows) {
     const invoiceId = r.invoiceId ?? crypto.randomUUID()
-    // Ensure invoice exists
-    await db.from('invoices').upsert({
-      id:           invoiceId,
-      org_id:       orgId,
-      invoice_code: `INV-0186-${invoiceId.slice(0,8)}`,
-      status:       'approved',
-      net_amount:   1000,
-      vat_amount:   70,
-      total_amount: 1070,
-      due_date:     new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-    }, { onConflict: 'id' })
+    await ensureInvoice(
+      db,
+      orgId,
+      invoiceId,
+      new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    )
 
     const { data, error } = await db.from('etax_submissions').insert({
       org_id:          orgId,
@@ -178,6 +225,7 @@ async function cleanupOrg(db: SupabaseClient, orgId: string): Promise<void> {
   await db.from('etax_submissions').delete().eq('org_id', orgId)
   await db.from('invoice_notifications').delete().eq('org_id', orgId)
   await db.from('invoices').delete().eq('org_id', orgId)
+  await db.from('customers').delete().eq('org_id', orgId)
   await db.from('etax_submission_audit_log').delete().eq('org_id', orgId)
   await db.from('org_members').delete().eq('org_id', orgId)
   await db.from('organizations').delete().eq('org_id', orgId)
@@ -411,13 +459,7 @@ describe('Group C — overdue_with_pending_etax logic', () => {
     notifType?:     string
   }): Promise<string> {
     const invoiceId = crypto.randomUUID()
-    await db.from('invoices').insert({
-      id: invoiceId, org_id: org.orgId,
-      invoice_code: `INV-OD-${invoiceId.slice(0,6)}`,
-      status: 'approved', net_amount: 1000, vat_amount: 70,
-      total_amount: 1070,
-      due_date: YESTERDAY,  // already overdue
-    })
+    await ensureInvoice(db, org.orgId, invoiceId, YESTERDAY)
     await insertOverdueNotification(db, org.orgId, invoiceId, {
       type:       opts.notifType    ?? 'overdue_7d',
       status:     opts.notifStatus  ?? 'pending',

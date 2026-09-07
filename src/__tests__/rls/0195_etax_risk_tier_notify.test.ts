@@ -65,6 +65,61 @@ function anonClient(): SupabaseClient {
   })
 }
 
+function orgMember(userId: string, orgId: string, role: string) {
+  return { user_id: userId, org_id: orgId, role, email: `${userId}@test.monolith` }
+}
+
+async function createInvoiceForSubmission(orgId: string): Promise<string> {
+  const db = svc()
+  const { data: existingCustomer, error: customerError } = await db
+    .from('customers')
+    .select('customer_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle()
+  if (customerError) throw customerError
+  let customer = existingCustomer
+
+  if (!customer) {
+    const customerId = crypto.randomUUID()
+    const inserted = await db
+      .from('customers')
+      .insert({ customer_id: customerId, org_id: orgId, name: `Risk Test Customer ${orgId}` })
+      .select('customer_id')
+      .single()
+    if (inserted.error) throw inserted.error
+    customer = inserted.data
+  }
+
+  const invoiceId = crypto.randomUUID()
+  const { error } = await db.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0195-${invoiceId}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 1070,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: '00000000-0000-0000-0000-000000000001',
+  })
+  if (error) throw error
+  return invoiceId
+}
+
+async function createFailedSubmission(orgId: string, documentType: string): Promise<void> {
+  const invoiceId = await createInvoiceForSubmission(orgId)
+  const { error } = await svc().from('etax_submissions').insert({
+    org_id: orgId,
+    invoice_id: invoiceId,
+    document_type: documentType,
+    status: 'failed',
+    attempt_count: 5,
+    pdf_status: 'pending',
+  })
+  if (error) throw error
+}
+
 // ---------------------------------------------------------------------------
 // Shared test data
 // ---------------------------------------------------------------------------
@@ -90,13 +145,21 @@ beforeAll(async () => {
     [USER_A, ORG_A, 'FINANCE'],
     [USER_B, ORG_B, 'FINANCE'],
   ] as const) {
-    await db.auth.admin.createUser({ id: uid, email: `${uid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: uid, org_id: oid, role })
+    await db.auth.admin.createUser({
+      id: uid,
+      email: `${uid}@test.monolith`,
+      password: 'Test1234!',
+      email_confirm: true,
+    })
+    await db.from('org_members').upsert(orgMember(uid, oid, role))
   }
 })
 
 afterAll(async () => {
   const db = svc()
+  await db.from('etax_submissions').delete().in('org_id', [ORG_A, ORG_B])
+  await db.from('invoices').delete().in('org_id', [ORG_A, ORG_B])
+  await db.from('customers').delete().in('org_id', [ORG_A, ORG_B])
   await db.from('etax_risk_tier_state').delete().in('org_id', [ORG_A, ORG_B])
   await db.from('org_members').delete().in('user_id', [USER_A, USER_B])
   await db.auth.admin.deleteUser(USER_A)
@@ -105,8 +168,11 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-  // Clean risk tier state before each test
-  await svc().from('etax_risk_tier_state').delete().in('org_id', [ORG_A, ORG_B])
+  const db = svc()
+  await db.from('etax_submissions').delete().in('org_id', [ORG_A, ORG_B])
+  await db.from('invoices').delete().in('org_id', [ORG_A, ORG_B])
+  await db.from('customers').delete().in('org_id', [ORG_A, ORG_B])
+  await db.from('etax_risk_tier_state').delete().in('org_id', [ORG_A, ORG_B])
 })
 
 // =============================================================================
@@ -239,8 +305,8 @@ describe('Group A — etax_risk_tier_state table structure + RLS', () => {
   it('A08 — VIEWER role cannot SELECT from etax_risk_tier_state', async () => {
     const viewerUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: viewerUid, email: `${viewerUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: viewerUid, org_id: ORG_A, role: 'VIEWER' })
+    await db.auth.admin.createUser({ id: viewerUid, email: `${viewerUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(viewerUid, ORG_A, 'VIEWER'))
     await db.from('etax_risk_tier_state').upsert({ org_id: ORG_A, risk_tier: 'HEALTHY', health_score: 90, risk_rank: 1 })
 
     const client = await userClient(viewerUid, ORG_A, 'VIEWER')
@@ -290,10 +356,7 @@ describe('Group B — fn_check_risk_tier_changes trigger fire/suppress logic', (
     })
 
     // Seed etax_submissions so risk ranking view returns CRITICAL for ORG_A
-    await db.from('etax_submissions').insert([
-      { org_id: ORG_A, invoice_id: crypto.randomUUID(), document_type: 'T01',
-        status: 'failed', attempt_count: 5, pdf_status: 'pending' },
-    ])
+    await createFailedSubmission(ORG_A, 'T01')
 
     // Trigger by inserting into refresh log
     await insertRefreshLog(ORG_A)
@@ -408,12 +471,8 @@ describe('Group B — fn_check_risk_tier_changes trigger fire/suppress logic', (
     })
 
     // Insert failed submissions to push ORG_A into CRITICAL
-    await db.from('etax_submissions').insert([
-      { org_id: ORG_A, invoice_id: crypto.randomUUID(), document_type: 'T01',
-        status: 'failed', attempt_count: 5, pdf_status: 'pending' },
-      { org_id: ORG_A, invoice_id: crypto.randomUUID(), document_type: 'T02',
-        status: 'failed', attempt_count: 5, pdf_status: 'pending' },
-    ])
+    await createFailedSubmission(ORG_A, 'T01')
+    await createFailedSubmission(ORG_A, 'T02')
 
     // Fire trigger via refresh log
     await db.from('etax_compliance_mv_refresh_log').insert({
@@ -671,8 +730,8 @@ describe('Group E — rpc_etax_risk_tier_state (authenticated)', () => {
   it('E02 — ADMIN role can call rpc_etax_risk_tier_state', async () => {
     const adminUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: adminUid, email: `${adminUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: adminUid, org_id: ORG_A, role: 'ADMIN' })
+    await db.auth.admin.createUser({ id: adminUid, email: `${adminUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(adminUid, ORG_A, 'ADMIN'))
 
     const client = await userClient(adminUid, ORG_A, 'ADMIN')
     const { data, error } = await client.rpc('rpc_etax_risk_tier_state')
@@ -686,8 +745,8 @@ describe('Group E — rpc_etax_risk_tier_state (authenticated)', () => {
   it('E03 — OWNER role can call rpc_etax_risk_tier_state', async () => {
     const ownerUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: ownerUid, email: `${ownerUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: ownerUid, org_id: ORG_A, role: 'OWNER' })
+    await db.auth.admin.createUser({ id: ownerUid, email: `${ownerUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(ownerUid, ORG_A, 'OWNER'))
 
     const client = await userClient(ownerUid, ORG_A, 'OWNER')
     const { data, error } = await client.rpc('rpc_etax_risk_tier_state')
@@ -701,8 +760,8 @@ describe('Group E — rpc_etax_risk_tier_state (authenticated)', () => {
   it('E04 — DESIGNER role is denied: raises P0001', async () => {
     const designerUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: designerUid, email: `${designerUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: designerUid, org_id: ORG_A, role: 'DESIGNER' })
+    await db.auth.admin.createUser({ id: designerUid, email: `${designerUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(designerUid, ORG_A, 'DESIGNER'))
 
     const client = await userClient(designerUid, ORG_A, 'DESIGNER')
     const { error } = await client.rpc('rpc_etax_risk_tier_state')
@@ -716,8 +775,8 @@ describe('Group E — rpc_etax_risk_tier_state (authenticated)', () => {
   it('E05 — FACTORY role is denied: raises P0001', async () => {
     const factoryUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: factoryUid, email: `${factoryUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: factoryUid, org_id: ORG_A, role: 'FACTORY' })
+    await db.auth.admin.createUser({ id: factoryUid, email: `${factoryUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(factoryUid, ORG_A, 'FACTORY'))
 
     const client = await userClient(factoryUid, ORG_A, 'FACTORY')
     const { error } = await client.rpc('rpc_etax_risk_tier_state')
@@ -731,8 +790,8 @@ describe('Group E — rpc_etax_risk_tier_state (authenticated)', () => {
   it('E06 — VIEWER role is denied: raises P0001', async () => {
     const viewerUid = crypto.randomUUID()
     const db = svc()
-    await db.auth.admin.createUser({ id: viewerUid, email: `${viewerUid}@test.monolith`, password: 'Test1234!' })
-    await db.from('org_members').upsert({ user_id: viewerUid, org_id: ORG_A, role: 'VIEWER' })
+    await db.auth.admin.createUser({ id: viewerUid, email: `${viewerUid}@test.monolith`, password: 'Test1234!', email_confirm: true })
+    await db.from('org_members').upsert(orgMember(viewerUid, ORG_A, 'VIEWER'))
 
     const client = await userClient(viewerUid, ORG_A, 'VIEWER')
     const { error } = await client.rpc('rpc_etax_risk_tier_state')
