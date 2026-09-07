@@ -2,7 +2,7 @@
 
 BEGIN;
 
-SELECT plan(9);
+SELECT plan(10);
 
 SELECT ok(
   to_regprocedure('public.fn_check_risk_tier_changes()') IS NOT NULL,
@@ -55,18 +55,27 @@ SELECT ok(
   '20270306-07: PUBLIC revoke prevents anon from executing the trigger function'
 );
 
+SELECT ok(
+  NOT has_function_privilege(
+    'authenticated',
+    'public.fn_check_risk_tier_changes()',
+    'EXECUTE'
+  ),
+  '20270306-08: authenticated cannot execute the trigger function directly'
+);
+
 SELECT lives_ok(
   $$INSERT INTO public.etax_compliance_mv_refresh_log
       (duration_ms, row_count, triggered_by)
     VALUES (1, 0, 'test')$$,
-  '20270306-08: compliance refresh-log insert executes the repaired trigger'
+  '20270306-09: compliance refresh-log insert executes the repaired trigger'
 );
 
 SELECT lives_ok(
   $$INSERT INTO public.etax_health_trend_mv_refresh_log
       (duration_ms, row_count, triggered_by)
     VALUES (1, 0, 'test')$$,
-  '20270306-09: health-trend refresh-log insert executes the repaired trigger'
+  '20270306-10: health-trend refresh-log insert executes the repaired trigger'
 );
 
 SELECT * FROM finish();

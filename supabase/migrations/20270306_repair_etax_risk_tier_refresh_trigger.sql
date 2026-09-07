@@ -142,7 +142,10 @@ BEGIN
 END;
 $function$;
 
-REVOKE ALL ON FUNCTION public.fn_check_risk_tier_changes() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fn_check_risk_tier_changes()
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_check_risk_tier_changes()
+  TO service_role;
 
 COMMENT ON FUNCTION public.fn_check_risk_tier_changes() IS
   'After an eTax MV refresh-log insert, scans the canonical org_id-based risk '
