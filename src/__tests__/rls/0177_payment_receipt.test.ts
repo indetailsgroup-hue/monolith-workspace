@@ -57,6 +57,7 @@ async function setupOrg(orgId: string, userId: string, role: string) {
     name: `Test Org ${orgId.slice(0,6)}`,
     slug: `test-0177-${orgId}`,
     plan: 'ENTERPRISE',
+    max_users: 50,
   });
   if (orgError) throw new Error(`setupOrg organization: ${orgError.message}`);
 

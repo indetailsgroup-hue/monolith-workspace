@@ -30,6 +30,7 @@ const ORG_B_ID   = uuidv4()  // isolation org
 const USER_A_ID  = uuidv4()
 const USER_B_ID  = uuidv4()
 const INV_IDS    = Array.from({ length: 8 }, () => uuidv4())
+const ORG_B_INV_ID = uuidv4()
 
 // helper: current timestamp minus N hours
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString()
@@ -41,6 +42,34 @@ let clientB: SupabaseClient
 
 // ── Shared cleanup registry ───────────────────────────────────────────────────
 const submissionIds: string[] = []
+const customerIds: string[] = []
+
+async function createInvoice(orgId: string, invoiceId: string, label: string): Promise<void> {
+  const customerId = uuidv4()
+  customerIds.push(customerId)
+  const { error: customerError } = await svc.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `SLA customer ${label}`,
+  })
+  if (customerError) throw new Error(`create customer: ${customerError.message}`)
+
+  const invoiceCode = `INV-SLA-${label}-${invoiceId}`
+  const { error: invoiceError } = await svc.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: invoiceCode,
+    code: invoiceCode,
+    org_id: orgId,
+    customer_id: customerId,
+    status: 'approved',
+    total: 1000,
+    remaining_amount: 1000,
+    due_date: '2030-12-31',
+    created_by: USER_A_ID,
+  })
+  if (invoiceError) throw new Error(`create invoice: ${invoiceError.message}`)
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SETUP
@@ -48,7 +77,13 @@ const submissionIds: string[] = []
 beforeAll(async () => {
   // 1. Create two orgs
   for (const [id, name] of [[ORG_A_ID, '__sla_test_org_a__'], [ORG_B_ID, '__sla_test_org_b__']]) {
-    const { error } = await svc.from('organizations').insert({ id, name })
+    const { error } = await svc.from('organizations').insert({
+      org_id: id,
+      name,
+      slug: `test-0198-${id}`,
+      plan: 'ENTERPRISE',
+      max_users: 20,
+    })
     if (error && !error.message.includes('duplicate')) throw error
   }
 
@@ -62,7 +97,18 @@ beforeAll(async () => {
 
   // 3. Add users to org_members (FINANCE role)
   for (const [uid, oid] of [[USER_A_ID, ORG_A_ID], [USER_B_ID, ORG_B_ID]]) {
-    const { error } = await svc.from('org_members').insert({ user_id: uid, org_id: oid, role: 'FINANCE' })
+    const email = uid === USER_A_ID
+      ? `sla_test_a_${ORG_A_ID.slice(0,8)}@test.monolith`
+      : `sla_test_b_${ORG_B_ID.slice(0,8)}@test.monolith`
+    await svc.auth.admin.updateUserById(uid, {
+      app_metadata: { roles: ['finance'], org_id: oid },
+    })
+    const { error } = await svc.from('org_members').insert({
+      user_id: uid,
+      org_id: oid,
+      role: 'FINANCE',
+      email,
+    })
     if (error && !error.message.includes('duplicate')) throw error
   }
 
@@ -85,12 +131,9 @@ beforeAll(async () => {
 
   // 5. Seed invoices for ORG_A
   for (const invId of INV_IDS) {
-    const { error } = await svc.from('invoices').insert({
-      id: invId, org_id: ORG_A_ID, status: 'approved',
-      total_amount: 1000, currency: 'THB', created_at: new Date().toISOString(),
-    })
-    if (error && !error.message.includes('duplicate')) throw error
+    await createInvoice(ORG_A_ID, invId, 'org-a')
   }
+  await createInvoice(ORG_B_ID, ORG_B_INV_ID, 'org-b')
 
   // 6. Seed etax_submissions for ORG_A — mix of breach / non-breach, document types
   //
@@ -139,7 +182,7 @@ beforeAll(async () => {
   const orgBSubId = uuidv4()
   submissionIds.push(orgBSubId)
   const { error: bErr } = await svc.from('etax_submissions').insert({
-    id: orgBSubId, org_id: ORG_B_ID, invoice_id: INV_IDS[0],
+    id: orgBSubId, org_id: ORG_B_ID, invoice_id: ORG_B_INV_ID,
     document_type: 'T01', status: 'failed',
     attempt_count: 3, created_at: hoursAgo(50), updated_at: hoursAgo(50),
   })
@@ -155,7 +198,8 @@ afterAll(async () => {
     await svc.from('invoices').delete().eq('id', invId).then(() => {}, () => {})
   }
   await svc.from('org_members').delete().in('org_id', [ORG_A_ID, ORG_B_ID]).then(() => {}, () => {})
-  await svc.from('organizations').delete().in('id', [ORG_A_ID, ORG_B_ID]).then(() => {}, () => {})
+  if (customerIds.length) await svc.from('customers').delete().in('customer_id', customerIds)
+  await svc.from('organizations').delete().in('org_id', [ORG_A_ID, ORG_B_ID]).then(() => {}, () => {})
   await svc.auth.admin.deleteUser(USER_A_ID).then(() => {}, () => {})
   await svc.auth.admin.deleteUser(USER_B_ID).then(() => {}, () => {})
 })
@@ -362,8 +406,13 @@ describe('Group C — severity tier logic', () => {
     const cleanSubId = uuidv4()
     const cleanUserId = uuidv4()
 
-    await svc.from('organizations').insert({ id: cleanOrgId, name: '__sla_clean_org__' })
-    await svc.from('invoices').insert({ id: cleanInvId, org_id: cleanOrgId, status: 'approved', total_amount: 100, currency: 'THB' })
+    await svc.from('organizations').insert({
+      org_id: cleanOrgId,
+      name: '__sla_clean_org__',
+      slug: `test-0198-clean-${cleanOrgId}`,
+      plan: 'ENTERPRISE',
+    })
+    await createInvoice(cleanOrgId, cleanInvId, 'clean')
     await svc.from('etax_submissions').insert({
       id: cleanSubId, org_id: cleanOrgId, invoice_id: cleanInvId,
       document_type: 'T01', status: 'submitted',
@@ -381,7 +430,7 @@ describe('Group C — severity tier logic', () => {
     // Cleanup
     await svc.from('etax_submissions').delete().eq('id', cleanSubId)
     await svc.from('invoices').delete().eq('id', cleanInvId)
-    await svc.from('organizations').delete().eq('id', cleanOrgId)
+    await svc.from('organizations').delete().eq('org_id', cleanOrgId)
 
     expect(error).toBeNull()
     expect(data!.sla_severity).toBe('HEALTHY')
@@ -393,9 +442,14 @@ describe('Group C — severity tier logic', () => {
     const elevInvIds = Array.from({ length: 10 }, () => uuidv4())
     const elevSubIds: string[] = []
 
-    await svc.from('organizations').insert({ id: elevOrgId, name: '__sla_elevated_org__' })
+    await svc.from('organizations').insert({
+      org_id: elevOrgId,
+      name: '__sla_elevated_org__',
+      slug: `test-0198-elevated-${elevOrgId}`,
+      plan: 'ENTERPRISE',
+    })
     for (const i of elevInvIds) {
-      await svc.from('invoices').insert({ id: i, org_id: elevOrgId, status: 'approved', total_amount: 100, currency: 'THB' })
+      await createInvoice(elevOrgId, i, 'elevated')
     }
     // 1 breach out of 10 → 10% → ELEVATED
     for (let idx = 0; idx < 10; idx++) {
@@ -420,7 +474,7 @@ describe('Group C — severity tier logic', () => {
     // Cleanup
     await svc.from('etax_submissions').delete().in('id', elevSubIds)
     for (const i of elevInvIds) await svc.from('invoices').delete().eq('id', i)
-    await svc.from('organizations').delete().eq('id', elevOrgId)
+    await svc.from('organizations').delete().eq('org_id', elevOrgId)
 
     expect(error).toBeNull()
     expect(['ELEVATED', 'NORMAL']).toContain(data!.sla_severity)

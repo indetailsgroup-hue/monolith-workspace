@@ -87,13 +87,20 @@ async function createTestOrg(
   label: string,
 ): Promise<{ orgId: string; userId: string; jwt: string }> {
   // สร้าง org
-  const { data: org } = await svc
+  const orgId = crypto.randomUUID();
+  const { data: org, error: orgError } = await svc
     .from("organizations")
-    .insert({ name: `Test Org ${label} ${Date.now()}` })
+    .insert({
+      org_id: orgId,
+      name: `Test Org ${label} ${Date.now()}`,
+      slug: `test-0180-${label.toLowerCase()}-${orgId}`,
+      plan: "ENTERPRISE",
+      max_users: 10,
+    })
     .select("org_id")
     .single();
 
-  if (!org) throw new Error(`Failed to create test org ${label}`);
+  if (orgError || !org) throw new Error(`Failed to create test org ${label}: ${orgError?.message}`);
 
   // สร้าง user ผ่าน Auth admin
   const email = `test-overdue-${label}-${Date.now()}@monolith-test.internal`;
@@ -101,21 +108,30 @@ async function createTestOrg(
     email,
     password: "Test1234!",
     email_confirm: true,
-    user_metadata: { role: "finance" },
+    app_metadata: { roles: ["finance"], org_id: org.org_id },
   });
 
   if (!authUser?.user) throw new Error(`Failed to create test user ${label}`);
 
   // เพิ่มเข้า org_members
-  await svc.from("org_members").insert({
+  const { error: memberError } = await svc.from("org_members").insert({
     org_id: org.org_id,
     user_id: authUser.user.id,
-    role: "finance",
+    role: "FINANCE",
+    email,
   });
+  if (memberError) throw new Error(`Failed to create org member ${label}: ${memberError.message}`);
 
   // ขอ JWT
-  const { data: session } = await svc.auth.admin.getUserById(authUser.user.id);
-  const jwt = (session as any)?.session?.access_token ?? "mock-jwt";
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: session, error: signInError } = await authClient.auth
+    .signInWithPassword({ email, password: "Test1234!" });
+  if (signInError || !session.session) {
+    throw new Error(`Failed to sign in test user ${label}: ${signInError?.message}`);
+  }
+  const jwt = session.session.access_token;
 
   return { orgId: org.org_id, userId: authUser.user.id, jwt };
 }
@@ -148,18 +164,39 @@ async function createTestInvoice(
 
   const total = opts.total ?? 10000;
   const remaining = opts.remaining ?? total;
+  const invoiceId = crypto.randomUUID();
+  const customerId = crypto.randomUUID();
+  const { data: member, error: memberError } = await svc
+    .from("org_members")
+    .select("user_id")
+    .eq("org_id", orgId)
+    .limit(1)
+    .single();
+  if (memberError || !member) throw new Error(`Failed to resolve invoice creator: ${memberError?.message}`);
+  const { error: customerError } = await svc.from("customers").insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `Overdue customer ${customerId}`,
+  });
+  if (customerError) throw new Error(`Failed to create test customer: ${customerError.message}`);
+  const invoiceCode = `INV-TEST-${invoiceId}`;
 
   const { data, error } = await svc
     .from("invoices")
     .insert({
+      id:               invoiceId,
+      invoice_id:       invoiceId,
       org_id:           orgId,
-      code:             `INV-TEST-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      customer_id:      customerId,
+      invoice_code:     invoiceCode,
+      code:             invoiceCode,
       status:           opts.status ?? "approved",
       total:            total,
       paid_amount:      total - remaining,
       remaining_amount: remaining,
       due_date:         dueDate,
-      issued_date:      new Date().toISOString().split("T")[0],
+      issued_at:        new Date().toISOString(),
+      created_by:       member.user_id,
     })
     .select("id")
     .single();
@@ -172,6 +209,7 @@ async function createTestInvoice(
 async function cleanupOrg(svc: SupabaseClient, orgId: string): Promise<void> {
   await svc.from("invoice_notifications").delete().eq("org_id", orgId);
   await svc.from("invoices").delete().eq("org_id", orgId);
+  await svc.from("customers").delete().eq("org_id", orgId);
   await svc.from("org_members").delete().eq("org_id", orgId);
   await svc.from("organizations").delete().eq("org_id", orgId);
 }

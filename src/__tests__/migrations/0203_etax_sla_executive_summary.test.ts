@@ -418,17 +418,12 @@ describe('Group F — Tenant isolation', () => {
     }
   })
 
-  it('F3: service_role can see both orgs', async () => {
+  it('F3: service_role RPC exposes every row from the executive view', async () => {
     const allRows = await rpc('rpc_etax_sla_executive_summary', {})
-    const orgIds = allRows.map((r: any) => r.org_id)
-    // If both orgs have data, both should appear
-    if (orgIds.length >= 2) {
-      const hasA = orgIds.includes(TEST_ORG_A_ID)
-      const hasB = orgIds.includes(TEST_ORG_B_ID)
-      // At least one org visible for service_role
-      expect(hasA || hasB).toBe(true)
-    }
-    // If less than 2 rows, test data may not be seeded — acceptable
+    const viewRows = await sql(`SELECT org_id FROM v_etax_sla_executive_summary`)
+    const rpcOrgIds = allRows.map((row: any) => row.org_id).sort()
+    const viewOrgIds = viewRows.map((row: any) => row.org_id).sort()
+    expect(rpcOrgIds).toEqual(viewOrgIds)
   })
 })
 

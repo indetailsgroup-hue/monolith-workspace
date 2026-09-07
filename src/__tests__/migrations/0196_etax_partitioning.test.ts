@@ -118,11 +118,14 @@ beforeAll(async () => {
     await createInvoice(i < 6 ? orgA : orgB, `base-${i}`);
   }
 
-  // Keep one valid org-B submission so the service-role cross-org assertion is meaningful.
-  const { error: orgBSubmissionError } = await service.from('etax_submissions').insert(
+  // Keep one valid row per org so the cross-org RLS assertions are meaningful.
+  const { error: baselineSubmissionError } = await service.from('etax_submissions').insert([
+    submissionRow(uuidv4(), orgA, invoiceIds[0], new Date().toISOString()),
     submissionRow(uuidv4(), orgB, invoiceIds[6], new Date().toISOString()),
-  );
-  if (orgBSubmissionError) throw new Error(`insert org-B submission: ${orgBSubmissionError.message}`);
+  ]);
+  if (baselineSubmissionError) {
+    throw new Error(`insert baseline submissions: ${baselineSubmissionError.message}`);
+  }
 });
 
 afterAll(async () => {

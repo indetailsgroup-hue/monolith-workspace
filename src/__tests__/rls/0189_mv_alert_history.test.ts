@@ -104,7 +104,13 @@ async function createTestOrg(): Promise<string> {
   const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ org_id: orgId, name: `Test Org ${Date.now()}`, slug: `test-0189-${orgId}` })
+    .insert({
+      org_id: orgId,
+      name: `Test Org ${Date.now()}`,
+      slug: `test-0189-${orgId}`,
+      plan: 'ENTERPRISE',
+      max_users: 20,
+    })
     .select('org_id')
     .single()
   if (error) throw new Error(`createTestOrg: ${error.message}`)
@@ -130,6 +136,7 @@ async function createTestUser(orgId: string, role: string): Promise<string> {
     org_id: orgId,
     user_id: userId,
     role,
+    email,
   })
   if (memberError) throw new Error(`createTestUser org_members: ${memberError.message}`)
 

@@ -97,7 +97,7 @@ async function createTestOrg(name: string): Promise<string> {
   const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}`, plan: 'ENTERPRISE' })
+    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}`, plan: 'ENTERPRISE', max_users: 20 })
     .select('org_id')
     .single();
   if (error) throw error;

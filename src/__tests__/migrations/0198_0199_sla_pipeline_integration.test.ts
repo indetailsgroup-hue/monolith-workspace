@@ -49,6 +49,43 @@ let clientB: SupabaseClient;
 
 let seedInvoiceId: string;
 let seedEtaxId:    string;
+const seedInvoiceIds: string[] = [];
+const seedCustomerIds: string[] = [];
+
+async function createInvoice(orgId: string, total: number, issuedAt: string): Promise<string> {
+  const customerId = crypto.randomUUID();
+  const invoiceId = crypto.randomUUID();
+  seedCustomerIds.push(customerId);
+  seedInvoiceIds.push(invoiceId);
+  const { error: customerError } = await serviceClient.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `SLA pipeline customer ${customerId}`,
+  });
+  if (customerError) throw new Error(`Seed customer: ${customerError.message}`);
+
+  const { data: member, error: memberError } = await serviceClient
+    .from('org_members').select('user_id').eq('org_id', orgId).limit(1).single();
+  if (memberError || !member) throw new Error(`Seed member lookup: ${memberError?.message}`);
+
+  const invoiceCode = `INV-SLA-PIPE-${invoiceId}`;
+  const { error: invoiceError } = await serviceClient.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: invoiceCode,
+    code: invoiceCode,
+    org_id: orgId,
+    customer_id: customerId,
+    status: 'approved',
+    total,
+    remaining_amount: total,
+    due_date: '2030-12-31',
+    issued_at: issuedAt,
+    created_by: member.user_id,
+  });
+  if (invoiceError) throw new Error(`Seed invoice: ${invoiceError.message}`);
+  return invoiceId;
+}
 
 // ─── setup / teardown ────────────────────────────────────────────────────────
 beforeAll(async () => {
@@ -56,19 +93,11 @@ beforeAll(async () => {
   clientB = await signInClient(FIXTURE.ORG_B_EMAIL, FIXTURE.ORG_B_PASS);
 
   // Seed: create an invoice for Org A
-  const { data: inv, error: invErr } = await serviceClient
-    .from('invoices')
-    .insert({
-      org_id:      FIXTURE.ORG_A_ID,
-      status:      'approved',
-      total_amount: 1000,
-      currency:    'THB',
-      issued_at:   new Date(Date.now() - 30 * 3600 * 1000).toISOString(), // 30 h ago → SLA breach
-    })
-    .select('id')
-    .single();
-  if (invErr) throw new Error(`Seed invoice: ${invErr.message}`);
-  seedInvoiceId = inv.id;
+  seedInvoiceId = await createInvoice(
+    FIXTURE.ORG_A_ID,
+    1000,
+    new Date(Date.now() - 30 * 3600 * 1000).toISOString(),
+  );
 
   // Seed: create etax_submission in queued state (will age > SLA threshold)
   const { data: etax, error: etaxErr } = await serviceClient
@@ -91,8 +120,11 @@ afterAll(async () => {
   if (seedEtaxId) {
     await serviceClient.from('etax_submissions').delete().eq('id', seedEtaxId);
   }
-  if (seedInvoiceId) {
-    await serviceClient.from('invoices').delete().eq('id', seedInvoiceId);
+  if (seedInvoiceIds.length) {
+    await serviceClient.from('invoices').delete().in('id', seedInvoiceIds);
+  }
+  if (seedCustomerIds.length) {
+    await serviceClient.from('customers').delete().in('customer_id', seedCustomerIds);
   }
 });
 
@@ -307,23 +339,17 @@ describe('Group E — MV staleness before / after refresh', () => {
 
   it('E1: new submission is NOT visible via RPC cached before refresh', async () => {
     // Insert a new submission AFTER the last refresh
-    const { data: inv } = await serviceClient
-      .from('invoices')
-      .insert({
-        org_id:      FIXTURE.ORG_A_ID,
-        status:      'approved',
-        total_amount: 500,
-        currency:    'THB',
-        issued_at:   new Date(Date.now() - 48 * 3600 * 1000).toISOString(), // 48 h → breach
-      })
-      .select('id')
-      .single();
+    const staleInvoiceId = await createInvoice(
+      FIXTURE.ORG_A_ID,
+      500,
+      new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+    );
 
     const { data: etax } = await serviceClient
       .from('etax_submissions')
       .insert({
         org_id:        FIXTURE.ORG_A_ID,
-        invoice_id:    inv!.id,
+        invoice_id:    staleInvoiceId,
         document_type: 'T02',
         status:        'queued',
         attempt_count: 0,

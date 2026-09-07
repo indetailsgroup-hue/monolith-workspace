@@ -53,6 +53,35 @@ const MV_COLUMNS = [
   'updated_at',
 ] as const
 
+const customerIds: string[] = []
+
+async function createInvoice(orgId: string, invoiceId: string, label: string): Promise<void> {
+  const customerId = uuidv4()
+  customerIds.push(customerId)
+  const { error: customerError } = await svc.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `MV SLA customer ${label}`,
+  })
+  if (customerError) throw new Error(`create customer: ${customerError.message}`)
+
+  const invoiceCode = `INV-MV-${label}-${invoiceId}`
+  const { error: invoiceError } = await svc.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: invoiceCode,
+    code: invoiceCode,
+    org_id: orgId,
+    customer_id: customerId,
+    status: 'approved',
+    total: 1000,
+    remaining_amount: 1000,
+    due_date: '2030-12-31',
+    created_by: USER_A_ID,
+  })
+  if (invoiceError) throw new Error(`create invoice: ${invoiceError.message}`)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SETUP
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,7 +91,13 @@ beforeAll(async () => {
     [ORG_A_ID, '__mv_sla_org_a__', `mv-sla-a-${ORG_A_ID.slice(0, 8)}`],
     [ORG_B_ID, '__mv_sla_org_b__', `mv-sla-b-${ORG_B_ID.slice(0, 8)}`],
   ]) {
-    const { error } = await svc.from('organizations').insert({ id, name, slug })
+    const { error } = await svc.from('organizations').insert({
+      org_id: id,
+      name,
+      slug,
+      plan: 'ENTERPRISE',
+      max_users: 20,
+    })
     if (error && !error.message.includes('duplicate')) throw error
   }
 
@@ -81,9 +116,15 @@ beforeAll(async () => {
     [USER_A_ID, ORG_A_ID],
     [USER_B_ID, ORG_B_ID],
   ]) {
+    const email = uid === USER_A_ID
+      ? `mv_sla_a_${ORG_A_ID.slice(0, 8)}@test.monolith`
+      : `mv_sla_b_${ORG_B_ID.slice(0, 8)}@test.monolith`
+    await svc.auth.admin.updateUserById(uid, {
+      app_metadata: { roles: ['finance'], org_id: oid },
+    })
     const { error } = await svc
       .from('org_members')
-      .insert({ user_id: uid, org_id: oid, role: 'FINANCE' })
+      .insert({ user_id: uid, org_id: oid, role: 'FINANCE', email })
     if (error && !error.message.includes('duplicate')) throw error
   }
 
@@ -115,12 +156,7 @@ beforeAll(async () => {
     [INV_IDS[4], 'T01', 26],   // breached
     [INV_IDS[5], 'T03', 5],    // within SLA
   ]) {
-    const { error: ei } = await svc.from('invoices').insert({
-      id: invId, org_id: ORG_A_ID,
-      invoice_number: `INV-MV-${invId}`, total_amount: 1000,
-      status: 'approved', created_at: hoursAgo(hoursBack as number),
-    })
-    if (ei && !ei.message.includes('duplicate')) throw ei
+    await createInvoice(ORG_A_ID, invId as string, `org-a-${hoursBack}`)
 
     const { error: es } = await svc.from('etax_submissions').insert({
       id: uuidv4(), org_id: ORG_A_ID,
@@ -133,11 +169,7 @@ beforeAll(async () => {
 
   // 6. Seed one submission for org_b (isolation fixture)
   const bInvId = uuidv4()
-  await svc.from('invoices').insert({
-    id: bInvId, org_id: ORG_B_ID,
-    invoice_number: `INV-MV-B-${bInvId}`, total_amount: 500,
-    status: 'approved', created_at: hoursAgo(50),
-  }).then(() => {}, () => {})
+  await createInvoice(ORG_B_ID, bInvId, 'org-b')
   await svc.from('etax_submissions').insert({
     id: uuidv4(), org_id: ORG_B_ID,
     invoice_id: bInvId, document_type: 'T01',
@@ -155,11 +187,12 @@ beforeAll(async () => {
 afterAll(async () => {
   await svc.from('etax_submissions').delete().in('org_id', [ORG_A_ID, ORG_B_ID])
   await svc.from('invoices').delete().in('org_id', [ORG_A_ID, ORG_B_ID])
+  if (customerIds.length) await svc.from('customers').delete().in('customer_id', customerIds)
   for (const uid of [USER_A_ID, USER_B_ID]) {
     await svc.auth.admin.deleteUser(uid).then(() => {}, () => {})
   }
   await svc.from('org_members').delete().in('org_id', [ORG_A_ID, ORG_B_ID])
-  await svc.from('organizations').delete().in('id', [ORG_A_ID, ORG_B_ID])
+  await svc.from('organizations').delete().in('org_id', [ORG_A_ID, ORG_B_ID])
   // Remove test platform_config key if added
   await svc.from('platform_config').delete().eq('key', 'mv_etax_sla_last_refreshed_test')
 })

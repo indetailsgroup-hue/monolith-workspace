@@ -41,13 +41,20 @@ function userClient(accessToken: string): SupabaseClient {
 }
 
 async function createTestOrg(name: string): Promise<TestOrg> {
+  const orgId = crypto.randomUUID();
   const { data, error } = await serviceClient
     .from("organizations")
-    .insert({ name })
-    .select("id, name")
+    .insert({
+      org_id: orgId,
+      name,
+      slug: `test-0173-${orgId}`,
+      plan: "ENTERPRISE",
+      max_users: 50,
+    })
+    .select("org_id, name")
     .single();
   if (error) throw new Error(`createTestOrg failed: ${error.message}`);
-  return data as TestOrg;
+  return { id: data.org_id, name: data.name } as TestOrg;
 }
 
 async function createTestUser(
@@ -65,11 +72,17 @@ async function createTestUser(
   if (authErr) throw new Error(`createTestUser auth failed: ${authErr.message}`);
 
   const userId = authData.user!.id;
+  const canonicalRole = role >= 60 ? "FINANCE" : "VIEWER";
+
+  const { error: metadataError } = await serviceClient.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [canonicalRole.toLowerCase()], org_id: orgId },
+  });
+  if (metadataError) throw new Error(`createTestUser metadata failed: ${metadataError.message}`);
 
   // Link to org
   const { error: memberErr } = await serviceClient
-    .from("organization_members")
-    .insert({ user_id: userId, org_id: orgId, role });
+    .from("org_members")
+    .insert({ user_id: userId, org_id: orgId, role: canonicalRole, email });
   if (memberErr)
     throw new Error(`createTestUser member failed: ${memberErr.message}`);
 
@@ -106,7 +119,7 @@ async function cleanupUser(userId: string) {
 }
 
 async function cleanupOrg(orgId: string) {
-  await serviceClient.from("organizations").delete().eq("id", orgId);
+  await serviceClient.from("organizations").delete().eq("org_id", orgId);
 }
 
 // ─── Test State ───────────────────────────────────────────────────────────────

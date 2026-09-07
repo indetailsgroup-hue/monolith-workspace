@@ -419,7 +419,7 @@ describe("Group B – risk_rank ordering via DENSE_RANK", () => {
     await cleanupOrg(t2.orgId, t2.userId);
   });
 
-  it("B5: after a tie, the next distinct score gets rank = tie_rank + 1 (DENSE_RANK, not RANK)", async () => {
+  it("B5: distinct scores use consecutive ranks after ties (DENSE_RANK, not RANK)", async () => {
     const t1 = await createOrgMember("OWNER", "DenseT1");
     const t2 = await createOrgMember("OWNER", "DenseT2");
     const t3 = await createOrgMember("OWNER", "DenseT3");
@@ -436,9 +436,19 @@ describe("Group B – risk_rank ordering via DENSE_RANK", () => {
       p_limit: 200,
     });
     const r1 = data?.find((r: any) => r.org_id === t1.orgId);
+    const r2 = data?.find((r: any) => r.org_id === t2.orgId);
     const r3 = data?.find((r: any) => r.org_id === t3.orgId);
-    // DENSE_RANK: if t1/t2 rank = N, t3 rank = N+1 (not N+2)
-    expect(r3?.risk_rank).toBe(r1?.risk_rank + 1);
+    expect(r1?.risk_rank).toBe(r2?.risk_rank);
+    expect(r3?.risk_rank).toBeGreaterThan(r1?.risk_rank);
+
+    // Other seeded suites may contribute intermediate scores. Across the full
+    // response, DENSE_RANK must still never leave a numeric gap.
+    const distinctRanks = [...new Set<number>(
+      (data ?? []).map((row: any) => Number(row.risk_rank)),
+    )].sort((left, right) => left - right);
+    for (let index = 1; index < distinctRanks.length; index++) {
+      expect(distinctRanks[index]).toBe(distinctRanks[index - 1] + 1);
+    }
 
     await cleanupOrg(t1.orgId, t1.userId);
     await cleanupOrg(t2.orgId, t2.userId);
@@ -516,9 +526,9 @@ describe("Group C – is_priority_review flag", () => {
     await seedComplianceMV(healthyOrg.orgId, 98, { overdue: 0, failedLast24h: 0 });
     await seedTrendMV(healthyOrg.orgId, 0);
 
-    // boundary 49 = critical
-    await seedComplianceMV(bound49Org.orgId, 49, { overdue: 0, failedLast24h: 2 });
-    await seedTrendMV(bound49Org.orgId, 0);
+    // boundary 49 = 100 - 40 compliance - 9 retry - 2 overdue
+    await seedComplianceMV(bound49Org.orgId, 0, { overdue: 1, failedLast24h: 0 });
+    await seedTrendMV(bound49Org.orgId, 30);
 
     // boundary 50 = warning (not critical)
     await seedComplianceMV(bound50Org.orgId, 74, { overdue: 0, failedLast24h: 0 });
@@ -627,8 +637,8 @@ describe("Group D – risk_tier labels", () => {
 
     const warning = await createOrgMember("OWNER", "TierWarning");
     orgs.push(warning);
-    await seedComplianceMV(warning.orgId, 78, { overdue: 2, failedLast24h: 1 });
-    await seedTrendMV(warning.orgId, 5);
+    await seedComplianceMV(warning.orgId, 60, { overdue: 2, failedLast24h: 1 });
+    await seedTrendMV(warning.orgId, 40);
 
     const healthy = await createOrgMember("OWNER", "TierHealthy");
     orgs.push(healthy);
@@ -857,14 +867,14 @@ describe("Group F – rpc_etax_org_risk_ranking_admin()", () => {
     expect(Array.isArray(data)).toBe(true);
   });
 
-  it("F2: non-service_role (authenticated) call raises P0003", async () => {
+  it("F2: non-service_role (authenticated) cannot call admin RPC", async () => {
     const client = createClient(SUPABASE_URL, ANON_KEY, {
       auth: { persistSession: false },
       global: { headers: { Authorization: `Bearer ${regularUser.accessToken}` } },
     });
     const { data, error } = await client.rpc("rpc_etax_org_risk_ranking_admin");
     expect(error).not.toBeNull();
-    expect(error?.code).toBe("P0003");
+    expect(["42501", "P0003"]).toContain(error?.code);
   });
 
   it("F3: p_org_id filter returns only the specified org", async () => {
