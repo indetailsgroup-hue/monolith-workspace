@@ -97,7 +97,7 @@ async function createTestOrg(name: string): Promise<string> {
   const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}` })
+    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}`, plan: 'ENTERPRISE' })
     .select('org_id')
     .single();
   if (error) throw error;
@@ -113,7 +113,10 @@ async function createTestUser(
     await svc.auth.admin.createUser({ email, password: 'Test1234!', email_confirm: true });
   if (authErr) throw authErr;
   const userId = authData.user!.id;
-  await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role, email });
+  const { error: memberError } = await svc
+    .from('org_members')
+    .insert({ org_id: orgId, user_id: userId, role, email });
+  if (memberError) throw memberError;
   const { error: metadataError } = await svc.auth.admin.updateUserById(userId, {
     app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
   });

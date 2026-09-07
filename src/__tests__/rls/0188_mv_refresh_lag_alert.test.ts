@@ -83,7 +83,7 @@ async function execSql(query: string): Promise<Record<string, any>[]> {
  */
 async function forceRefreshAge(client: SupabaseClient, ageSeconds: number): Promise<void> {
   // Delete all existing log rows so v_mv_refresh_lag reads the inserted one
-  await client.from('etax_compliance_mv_refresh_log').delete().gte('id', '00000000-0000-0000-0000-000000000000')
+  await purgeRefreshLog(client)
 
   const { error } = await client.from('etax_compliance_mv_refresh_log').insert({
     refreshed_at: new Date(Date.now() - ageSeconds * 1000).toISOString(),
@@ -145,10 +145,11 @@ async function purgeSystemAlerts(client: SupabaseClient): Promise<void> {
 
 /** Purge all refresh log rows (for test isolation). */
 async function purgeRefreshLog(client: SupabaseClient): Promise<void> {
-  await client
+  const { error } = await client
     .from('etax_compliance_mv_refresh_log')
     .delete()
-    .gte('id', '00000000-0000-0000-0000-000000000000')
+    .gte('id', 0)
+  if (error) throw new Error(`purgeRefreshLog: ${error.message}`)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -406,9 +407,10 @@ describe('Group C — NULL submission_id (CHECK constraint)', () => {
   it('C-03: direct INSERT with NULL submission_id + trigger_source=trigger FAILS CHECK', async () => {
     const { error } = await admin.from('etax_submission_audit_log').insert({
       submission_id:  null,
-      org_id:         null,
+      org_id:         '00000000-0000-0000-0000-000000000000',
       actor_id:       null,
       actor_role:     'system',
+      new_status:     'queued',
       trigger_source: 'trigger',  // NOT 'system' → should violate CHECK
       attempt_count:  0,
       metadata:       { note: 'should fail' },
@@ -447,7 +449,15 @@ describe('Group C — NULL submission_id (CHECK constraint)', () => {
   })
 
   it('C-06: direct INSERT with non-NULL submission_id + trigger_source=trigger succeeds (normal audit row)', async () => {
-    const { orgId } = await seedOrg(admin)
+    const { orgId, userId } = await seedOrg(admin)
+
+    const customerId = uuidv4()
+    const { error: customerErr } = await admin.from('customers').insert({
+      customer_id: customerId,
+      org_id: orgId,
+      name: `Test Customer ${customerId.slice(0, 8)}`,
+    })
+    if (customerErr) throw new Error(`C-06 customer fixture: ${customerErr.message}`)
 
     // Create a real etax submission to reference
     const invoiceId = uuidv4()
@@ -456,9 +466,12 @@ describe('Group C — NULL submission_id (CHECK constraint)', () => {
       invoice_id: invoiceId,
       org_id:     orgId,
       invoice_code: `INV-${invoiceId.slice(0, 8)}`,
+      customer_id: customerId,
       status:     'approved',
       total:      1000,
       remaining_amount: 0,
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by: userId,
     })
     if (invoiceErr) throw new Error(`C-06 invoice fixture: ${invoiceErr.message}`)
 
@@ -473,7 +486,7 @@ describe('Group C — NULL submission_id (CHECK constraint)', () => {
       net_amount:      1000,
       vat_amount:      70,
       gross_amount:    1070,
-      vat_rate:        7,
+      vat_rate:        0.07,
       status:          'queued',
     })
     // If insert fails (FK constraint), skip this test gracefully
