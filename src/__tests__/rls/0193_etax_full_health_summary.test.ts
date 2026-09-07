@@ -42,6 +42,12 @@ const serviceClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
 
+async function execSql(query: string): Promise<Record<string, any>[]> {
+  const { data, error } = await serviceClient.rpc('exec_sql', { query })
+  if (error) throw new Error(`exec_sql: ${error.message}`)
+  return (data ?? []) as Record<string, any>[]
+}
+
 // ---------------------------------------------------------------------------
 // Auth helper — creates a user + org_member row, returns a signed-in client
 // ---------------------------------------------------------------------------
@@ -64,20 +70,22 @@ async function makeAuthClient(
   // Resolve or create org
   let resolvedOrgId = orgId
   if (!resolvedOrgId) {
-    const { data: orgData } = await serviceClient
-      .from('organizations')
-      .select('id')
-      .limit(1)
-      .single()
-    if (!orgData) throw new Error('No org found for test setup')
-    resolvedOrgId = orgData.id
+    resolvedOrgId = await createTestOrg(`auth-${role.toLowerCase()}`)
+    createdOrgIds.push(resolvedOrgId)
   }
 
-  await serviceClient.from('org_members').upsert({
+  const { error: metadataError } = await serviceClient.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: resolvedOrgId },
+  })
+  if (metadataError) throw new Error(`updateUser failed: ${metadataError.message}`)
+
+  const { error: memberError } = await serviceClient.from('org_members').insert({
     user_id : userId,
     org_id  : resolvedOrgId,
     role,
+    email,
   })
+  if (memberError) throw new Error(`org member failed: ${memberError.message}`)
 
   const anonClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } })
   const { error: signInErr } = await anonClient.auth.signInWithPassword({ email, password })
@@ -90,55 +98,71 @@ async function makeAuthClient(
 // Org helper — creates an isolated org, returns its id
 // ---------------------------------------------------------------------------
 async function createTestOrg(suffix: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await serviceClient
     .from('organizations')
-    .insert({ name: `test_0193_org_${suffix}_${Date.now()}` })
-    .select('id')
+    .insert({
+      org_id: orgId,
+      name: `test_0193_org_${suffix}_${Date.now()}`,
+      slug: `test-0193-${suffix.toLowerCase()}-${orgId}`,
+      plan: 'ENTERPRISE',
+    })
+    .select('org_id')
     .single()
   if (error || !data) throw new Error(`createTestOrg failed: ${error?.message}`)
-  return data.id
+  return data.org_id
 }
 
 // ---------------------------------------------------------------------------
 // Invoice helper — resolves or creates a minimal invoice in an org
 // ---------------------------------------------------------------------------
-async function getOrCreateInvoice(orgId: string): Promise<string> {
-  const { data: existing } = await serviceClient
-    .from('invoices')
-    .select('id')
-    .eq('org_id', orgId)
-    .limit(1)
-    .single()
-  if (existing) return existing.id
+async function getOrCreateInvoice(orgId: string, forceNew = false): Promise<string> {
+  if (!forceNew) {
+    const { data: existing } = await serviceClient
+      .from('invoices')
+      .select('id')
+      .eq('org_id', orgId)
+      .limit(1)
+      .single()
+    if (existing) return existing.id
+  }
 
   // Need a customer first
   let customerId: string
   const { data: cust } = await serviceClient
     .from('customers')
-    .select('id')
+    .select('customer_id')
     .eq('org_id', orgId)
     .limit(1)
     .single()
   if (cust) {
-    customerId = cust.id
+    customerId = cust.customer_id
   } else {
     const { data: newCust, error: custErr } = await serviceClient
       .from('customers')
       .insert({ org_id: orgId, name: `test_cust_0193_${Date.now()}` })
-      .select('id')
+      .select('customer_id')
       .single()
     if (custErr || !newCust)
       throw new Error(`Could not create test customer: ${custErr?.message}`)
-    customerId = newCust.id
+    customerId = newCust.customer_id
   }
 
+  const invoiceId = crypto.randomUUID()
   const { data: inv, error: invErr } = await serviceClient
     .from('invoices')
     .insert({
+      id          : invoiceId,
+      invoice_id  : invoiceId,
+      invoice_code: `INV-0193-${invoiceId}`,
+      code        : `INV-0193-${invoiceId}`,
       org_id      : orgId,
       customer_id : customerId,
       status      : 'approved',
       total       : 100,
+      remaining_amount: 100,
+      due_date    : new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by  : '00000000-0000-0000-0000-000000000001',
     })
     .select('id')
     .single()
@@ -177,7 +201,15 @@ async function seedSubmission(opts: {
     docType = 'T01',
   } = opts
 
-  const invoiceId = opts.invoiceId ?? await getOrCreateInvoice(orgId)
+  let invoiceId = opts.invoiceId ?? await getOrCreateInvoice(orgId)
+  const { data: duplicate } = await serviceClient
+    .from('etax_submissions')
+    .select('id')
+    .eq('invoice_id', invoiceId)
+    .eq('document_type', docType)
+    .limit(1)
+    .maybeSingle()
+  if (duplicate) invoiceId = await getOrCreateInvoice(orgId, true)
 
   const { data, error } = await serviceClient
     .from('etax_submissions')
@@ -185,8 +217,17 @@ async function seedSubmission(opts: {
       org_id        : orgId,
       invoice_id    : invoiceId,
       document_type : docType,
+      document_number: `ETAX-0193-${crypto.randomUUID()}`,
+      document_date : daysAgoTs(daysAgo).slice(0, 10),
+      net_amount    : 93.46,
+      vat_amount    : 6.54,
+      gross_amount  : 100,
+      vat_rate      : 0.07,
+      buyer_name    : '0193 test customer',
       status,
       attempt_count : attempt,
+      last_attempt_at: status === 'failed' ? daysAgoTs(daysAgo) : null,
+      submitted_at  : status === 'submitted' ? daysAgoTs(daysAgo) : null,
       created_at    : daysAgoTs(daysAgo),
       metadata      : { test_tag: TEST_TAG },
     })
@@ -293,8 +334,14 @@ afterAll(async () => {
   for (const uid of createdUserIds) {
     await serviceClient.auth.admin.deleteUser(uid)
   }
-  for (const oid of createdOrgIds) {
-    await serviceClient.from('organizations').delete().eq('id', oid)
+  for (const oid of new Set(createdOrgIds)) {
+    await serviceClient.from('etax_submissions').delete().eq('org_id', oid)
+    await serviceClient.from('invoice_notifications').delete().eq('org_id', oid)
+    await serviceClient.from('etax_submission_audit_log').delete().eq('org_id', oid)
+    await serviceClient.from('invoices').delete().eq('org_id', oid)
+    await serviceClient.from('customers').delete().eq('org_id', oid)
+    await serviceClient.from('org_members').delete().eq('org_id', oid)
+    await serviceClient.from('organizations').delete().eq('org_id', oid)
   }
 })
 
@@ -304,12 +351,11 @@ afterAll(async () => {
 describe('Group A — Schema Validation', () => {
 
   it('A1: v_etax_full_health_summary exists in information_schema.views', async () => {
-    const { data, error } = await serviceClient
-      .from('information_schema.views' as any)
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name',   'v_etax_full_health_summary')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT table_name FROM information_schema.views
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_full_health_summary'
+    `)
     expect(data).toHaveLength(1)
   })
 
@@ -327,46 +373,42 @@ describe('Group A — Schema Validation', () => {
   })
 
   it('A4: view has health_score column', async () => {
-    const { data, error } = await serviceClient
-      .from('information_schema.columns' as any)
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name',   'v_etax_full_health_summary')
-      .eq('column_name',  'health_score')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_full_health_summary'
+        AND column_name = 'health_score'
+    `)
     expect(data).toHaveLength(1)
   })
 
   it('A5: view has health_status column', async () => {
-    const { data, error } = await serviceClient
-      .from('information_schema.columns' as any)
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name',   'v_etax_full_health_summary')
-      .eq('column_name',  'health_status')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_full_health_summary'
+        AND column_name = 'health_status'
+    `)
     expect(data).toHaveLength(1)
   })
 
   it('A6: view has compliance_mv_age_seconds column', async () => {
-    const { data, error } = await serviceClient
-      .from('information_schema.columns' as any)
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name',   'v_etax_full_health_summary')
-      .eq('column_name',  'compliance_mv_age_seconds')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_full_health_summary'
+        AND column_name = 'compliance_mv_age_seconds'
+    `)
     expect(data).toHaveLength(1)
   })
 
   it('A7: view has trend_mv_age_seconds column', async () => {
-    const { data, error } = await serviceClient
-      .from('information_schema.columns' as any)
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name',   'v_etax_full_health_summary')
-      .eq('column_name',  'trend_mv_age_seconds')
-    expect(error).toBeNull()
+    const data = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'v_etax_full_health_summary'
+        AND column_name = 'trend_mv_age_seconds'
+    `)
     expect(data).toHaveLength(1)
   })
 

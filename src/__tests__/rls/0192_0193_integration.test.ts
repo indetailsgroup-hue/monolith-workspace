@@ -223,6 +223,12 @@ async function seedSubmission(opts: {
       document_type: docType,
       status,
       attempt_count: attempt,
+      last_attempt_at: status === 'failed'
+        ? daysAgoTs(daysAgo, hourOffset)
+        : null,
+      submitted_at: status === 'submitted'
+        ? daysAgoTs(daysAgo, hourOffset)
+        : null,
       created_at:    daysAgoTs(daysAgo, hourOffset),
       updated_at:    daysAgoTs(daysAgo, hourOffset),
       metadata:      { test_tag: TEST_TAG },
@@ -486,10 +492,14 @@ describe('Group B — health_score end-to-end formula accuracy', () => {
     const orgId = await createTestOrg('B1')
     createdOrgIds.push(orgId)
 
-    const invId = await getOrCreateInvoice(orgId)
-    for (const doc of ['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10'] as const) {
-      await seedSubmission({ orgId, invoiceId: invId, status: 'submitted', docType: doc as string, attempt: 1 })
-        .catch(() => {})
+    for (let i = 0; i < 10; i++) {
+      await seedSubmission({
+        orgId,
+        status: 'submitted',
+        docType: 'T01',
+        attempt: 1,
+        newInvoice: i > 0,
+      })
     }
     await refreshBothMVs()
 
@@ -505,15 +515,15 @@ describe('Group B — health_score end-to-end formula accuracy', () => {
     const orgId = await createTestOrg('B2')
     createdOrgIds.push(orgId)
 
-    const invId = await getOrCreateInvoice(orgId)
     const statusSeq = ['submitted','submitted','submitted','submitted','submitted','failed','failed','failed','failed','failed']
-    const docs      = ['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10']
     for (let i = 0; i < 10; i++) {
       await seedSubmission({
-        orgId, invoiceId: invId,
-        status: statusSeq[i], docType: docs[i],
+        orgId,
+        status: statusSeq[i],
+        docType: 'T01',
         daysAgo: 0, hourOffset: i + 1,
-      }).catch(() => {})
+        newInvoice: i > 0,
+      })
     }
     await refreshBothMVs()
 

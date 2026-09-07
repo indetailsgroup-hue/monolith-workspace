@@ -51,15 +51,44 @@ async function seedOrg(db: SupabaseClient, label: string): Promise<SeedOrg> {
   const email    = `test-0187-${label}-${Date.now()}@monolith.test`
   const password = 'Test1234!'
   const { data: authData, error: authErr } = await db.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: ['finance'] },
   })
   if (authErr || !authData.user) throw new Error(`seedOrg(${label}): ${authErr?.message}`)
   const userId = authData.user.id
   const orgId  = crypto.randomUUID()
-  await db.from('organizations').insert({ id: orgId, name: `Org-0187-${label}` })
-  await db.from('org_members').insert({ org_id: orgId, user_id: userId, role: 'FINANCE' })
-  const { data: link } = await db.auth.admin.generateLink({ type: 'magiclink', email })
-  const token = (link as any)?.properties?.access_token ?? `mock-token-${userId}`
+  const { error: orgError } = await db.from('organizations').insert({
+    org_id: orgId,
+    name: `Org-0187-${label}`,
+    slug: `org-0187-${label.toLowerCase()}-${orgId}`,
+    plan: 'ENTERPRISE',
+  })
+  if (orgError) throw new Error(`seedOrg(${label}) org: ${orgError.message}`)
+
+  const { error: metadataError } = await db.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: ['finance'], org_id: orgId },
+  })
+  if (metadataError) throw new Error(`seedOrg(${label}) metadata: ${metadataError.message}`)
+
+  const { error: memberError } = await db.from('org_members').insert({
+    org_id: orgId,
+    user_id: userId,
+    role: 'FINANCE',
+    email,
+  })
+  if (memberError) throw new Error(`seedOrg(${label}) member: ${memberError.message}`)
+
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data: signIn, error: signInError } = await authClient.auth
+    .signInWithPassword({ email, password })
+  if (signInError || !signIn.session) {
+    throw new Error(`seedOrg(${label}) sign-in: ${signInError?.message}`)
+  }
+  const token = signIn.session.access_token
   return { orgId, userId, token }
 }
 
@@ -70,12 +99,35 @@ async function insertSubmission(
   pdfStatus = 'downloaded'
 ): Promise<string> {
   const invoiceId = crypto.randomUUID()
-  await db.from('invoices').upsert({
-    id: invoiceId, org_id: orgId,
+  const { data: member, error: memberError } = await db
+    .from('org_members')
+    .select('user_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .single()
+  if (memberError) throw new Error(`insertSubmission member: ${memberError.message}`)
+
+  const { data: customer, error: customerError } = await db
+    .from('customers')
+    .insert({ org_id: orgId, name: `Customer-0187-${invoiceId}` })
+    .select('customer_id')
+    .single()
+  if (customerError) throw new Error(`insertSubmission customer: ${customerError.message}`)
+
+  const { error: invoiceError } = await db.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    org_id: orgId,
+    customer_id: customer.customer_id,
     invoice_code: `INV-0187-${invoiceId.slice(0,8)}`,
-    status: 'approved', net_amount: 1000, vat_amount: 70, total_amount: 1070,
+    code: `INV-0187-${invoiceId.slice(0,8)}`,
+    status: 'approved',
+    total: 1070,
+    remaining_amount: 1070,
     due_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-  }, { onConflict: 'id' })
+    created_by: member.user_id,
+  })
+  if (invoiceError) throw new Error(`insertSubmission invoice: ${invoiceError.message}`)
 
   const { data, error } = await db.from('etax_submissions').insert({
     org_id: orgId, invoice_id: invoiceId,
@@ -94,10 +146,11 @@ async function insertSubmission(
 async function cleanupOrg(db: SupabaseClient, orgId: string) {
   await db.from('etax_submissions').delete().eq('org_id', orgId)
   await db.from('invoices').delete().eq('org_id', orgId)
+  await db.from('customers').delete().eq('org_id', orgId)
   await db.from('etax_submission_audit_log').delete().eq('org_id', orgId)
   await db.from('invoice_notifications').delete().eq('org_id', orgId)
   await db.from('org_members').delete().eq('org_id', orgId)
-  await db.from('organizations').delete().eq('id', orgId)
+  await db.from('organizations').delete().eq('org_id', orgId)
 }
 
 /** Trigger a manual refresh via service-role and return the JSONB result */
@@ -633,17 +686,21 @@ describe('Group F — unique index & CONCURRENT refresh safety', () => {
 
   it('F-04: MV columns exactly match v_etax_compliance_dashboard columns', async () => {
     const mvCols = await execSql(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'mv_etax_compliance_dashboard'
-      ORDER BY ordinal_position
+      SELECT attname AS column_name
+      FROM pg_attribute
+      WHERE attrelid = 'public.mv_etax_compliance_dashboard'::regclass
+        AND attnum > 0
+        AND NOT attisdropped
+      ORDER BY attnum
     `)
 
     const viewCols = await execSql(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'v_etax_compliance_dashboard'
-      ORDER BY ordinal_position
+      SELECT attname AS column_name
+      FROM pg_attribute
+      WHERE attrelid = 'public.v_etax_compliance_dashboard'::regclass
+        AND attnum > 0
+        AND NOT attisdropped
+      ORDER BY attnum
     `)
 
     const mvNames   = (mvCols   as any[]).map(r => r.column_name)
