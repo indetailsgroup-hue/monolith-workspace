@@ -684,17 +684,14 @@ describe('Group G — Index presence', () => {
 
   it('G-05: MV contains org_a rows after new submission is added and MV refreshed', async () => {
     const newInvId = uuidv4()
-    await svc.from('invoices').insert({
-      id: newInvId, org_id: ORG_A_ID,
-      invoice_number: `INV-MV-NEW-${newInvId}`, total_amount: 999,
-      status: 'approved', created_at: hoursAgo(35),
-    })
-    await svc.from('etax_submissions').insert({
+    await createInvoice(ORG_A_ID, newInvId, 'new-t04')
+    const { error: submissionError } = await svc.from('etax_submissions').insert({
       id: uuidv4(), org_id: ORG_A_ID,
       invoice_id: newInvId, document_type: 'T04',
       status: 'submitting', attempt_count: 1,
       created_at: hoursAgo(35),
     })
+    expect(submissionError).toBeNull()
 
     await svc.rpc('fn_refresh_mv_etax_submission_sla')
 

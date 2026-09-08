@@ -141,6 +141,7 @@ describe('Group A — All pipeline stages exist', () => {
 // =============================================================================
 describe('Group B — v_etax_submission_sla → mv_etax_submission_sla propagation', () => {
   it('B1: MV row count matches or is close to view row count (within 5%)', async () => {
+    await refreshMV()
     const viewRows = await sql(`SELECT COUNT(*) AS n FROM v_etax_submission_sla`)
     const mvRows   = await sql(`SELECT COUNT(*) AS n FROM mv_etax_submission_sla`)
     const vn = Number(viewRows[0].n)

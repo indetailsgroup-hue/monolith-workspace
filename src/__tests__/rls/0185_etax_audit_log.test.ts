@@ -254,14 +254,19 @@ describe('Group A: trg_etax_audit_on_status_change', () => {
   it('A-3: pdf_status change alone creates an audit row', async () => {
     const invId = await createInvoice(orgA);
     const rdRef = `RD-A3-${Date.now()}`;
-    const subId = await createSub(orgA, invId, { status: 'submitted', rd_ref_no: rdRef });
+    const subId = await createSub(orgA, invId, {
+      status: 'submitted',
+      pdf_status: null,
+      rd_ref_no: rdRef,
+    });
     createdSubs.push(subId);
     const countBefore = (await getAuditRows(subId)).length;
 
     // Update only pdf_status
-    await svc.from('etax_submissions')
+    const { error } = await svc.from('etax_submissions')
       .update({ pdf_status: 'pending' })
       .eq('id', subId);
+    expect(error).toBeNull();
 
     const rows = await getAuditRows(subId);
     expect(rows.length).toBeGreaterThan(countBefore);

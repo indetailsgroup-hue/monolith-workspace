@@ -270,7 +270,10 @@ SELECT
   COALESCE(alerts.current_lag_seconds, -1) AS current_lag_seconds,
   alerts.current_last_refreshed_at
 FROM org_stats stats
-CROSS JOIN alert_health alerts;
+CROSS JOIN alert_health alerts
+ORDER BY stats.retry_exhaustion_rate_pct DESC NULLS LAST,
+         stats.failed_submissions DESC,
+         stats.org_id;
 
 REVOKE ALL ON public.v_etax_submission_health FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.v_etax_submission_health TO service_role, postgres;
@@ -406,6 +409,11 @@ GRANT EXECUTE ON FUNCTION public.rpc_etax_submission_health_admin()
 REVOKE ALL ON FUNCTION public.rpc_etax_health_trend_admin()
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_etax_health_trend_admin()
+  TO service_role, postgres;
+
+REVOKE ALL ON FUNCTION public.rpc_etax_health_trend_admin(UUID)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_etax_health_trend_admin(UUID)
   TO service_role, postgres;
 
 REVOKE ALL ON FUNCTION public.rpc_list_mv_alert_history_admin(INT)

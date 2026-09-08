@@ -132,10 +132,25 @@ GRANT SELECT ON public.v_etax_compliance_dashboard TO postgres;
 DO $migration$
 DECLARE
   refresh_result JSONB;
+  is_populated BOOLEAN;
 BEGIN
-  refresh_result := public.fn_refresh_etax_compliance_mv('migration_rebind');
-  IF NOT COALESCE((refresh_result ->> 'ok')::BOOLEAN, FALSE) THEN
-    RAISE EXCEPTION '20270309: compliance MV refresh failed: %', refresh_result;
+  SELECT relation.relispopulated
+    INTO is_populated
+    FROM pg_catalog.pg_class AS relation
+   WHERE relation.oid = 'public.mv_etax_compliance_dashboard'::REGCLASS;
+
+  IF COALESCE(is_populated, FALSE) THEN
+    refresh_result := public.fn_refresh_etax_compliance_mv('migration_rebind');
+    IF NOT COALESCE((refresh_result ->> 'ok')::BOOLEAN, FALSE) THEN
+      RAISE EXCEPTION '20270309: compliance MV refresh failed: %', refresh_result;
+    END IF;
+  ELSE
+    -- pg_dump --schema-only restores materialized views WITH NO DATA.
+    -- CONCURRENTLY cannot perform that first population, and logging the
+    -- failure would invoke the risk-ranking trigger while its input MVs are
+    -- still unpopulated. Populate directly; 20270310 logs the coordinated
+    -- refresh after both compliance and trend MVs are ready.
+    REFRESH MATERIALIZED VIEW public.mv_etax_compliance_dashboard;
   END IF;
 END;
 $migration$;
