@@ -5,6 +5,74 @@
 BEGIN;
 
 -- ---------------------------------------------------------------------------
+-- Canonical journal-line write contract
+-- ---------------------------------------------------------------------------
+-- Historical accounting writers predate the tenant/account-code columns added
+-- by later hardening migrations.  Normalize those fields at the table boundary
+-- so every writer (including invoice approval and reversal triggers) produces
+-- the same final row shape.  A supplied tenant may never disagree with the
+-- owning journal entry.
+
+CREATE OR REPLACE FUNCTION public.fn_normalize_journal_line_contract()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_entry_org_id UUID;
+BEGIN
+  SELECT entry.org_id
+  INTO v_entry_org_id
+  FROM public.journal_entry entry
+  WHERE entry.id = NEW.journal_entry_id;
+
+  IF v_entry_org_id IS NULL THEN
+    RAISE EXCEPTION 'journal line references an entry without an organization'
+      USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  IF NEW.org_id IS NULL THEN
+    NEW.org_id := v_entry_org_id;
+  ELSIF NEW.org_id IS DISTINCT FROM v_entry_org_id THEN
+    RAISE EXCEPTION 'journal line organization must match its journal entry'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF NEW.account_code IS NULL AND NEW.account_id IS NOT NULL THEN
+    SELECT account.code
+    INTO NEW.account_code
+    FROM public.chart_of_accounts account
+    WHERE account.id = NEW.account_id
+      AND account.org_id = NEW.org_id;
+  END IF;
+
+  IF NEW.account_code IS NULL THEN
+    RAISE EXCEPTION 'journal line requires an account code'
+      USING ERRCODE = 'not_null_violation';
+  END IF;
+
+  IF NEW.account_id IS NULL THEN
+    SELECT account.id
+    INTO NEW.account_id
+    FROM public.chart_of_accounts account
+    WHERE account.org_id = NEW.org_id
+      AND account.code = NEW.account_code
+    LIMIT 1;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_normalize_journal_line_contract
+  ON public.journal_line;
+CREATE TRIGGER trg_normalize_journal_line_contract
+  BEFORE INSERT OR UPDATE OF journal_entry_id, org_id, account_code, account_id
+  ON public.journal_line
+  FOR EACH ROW EXECUTE FUNCTION public.fn_normalize_journal_line_contract();
+
+-- ---------------------------------------------------------------------------
 -- Journal posting
 -- ---------------------------------------------------------------------------
 -- Migration 0066 and Migration 0179 published overloads whose named arguments

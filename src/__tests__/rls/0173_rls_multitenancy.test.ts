@@ -624,8 +624,17 @@ describe("Accounting Invariants", () => {
         .delete()
         .eq("id", data!.id);
 
-      // Should fail due to delete rule/trigger
-      expect(error).not.toBeNull();
+      // PostgreSQL RLS may reject the statement or silently affect zero rows.
+      // The invariant is that the journal row remains present either way.
+      if (!error) {
+        const { data: after, error: verifyError } = await serviceClient
+          .from("journal_entry")
+          .select("id")
+          .eq("id", data!.id)
+          .single();
+        expect(verifyError).toBeNull();
+        expect(after!.id).toBe(data!.id);
+      }
     });
 
     it("cannot UPDATE journal_line amount after posting", async () => {
