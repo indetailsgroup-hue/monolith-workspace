@@ -38,6 +38,12 @@ const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString
 let clientA: SupabaseClient
 let clientB: SupabaseClient
 
+function freshAnonymousClient(): SupabaseClient {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
 // ── Expected MV columns ───────────────────────────────────────────────────────
 const MV_COLUMNS = [
   'org_id',
@@ -523,14 +529,13 @@ describe('Group E — Cross-tenant RLS isolation', () => {
     expect(leakedOrgs).toHaveLength(0)
   })
 
-  it('E-03: clientA direct SELECT on mv_etax_submission_sla returns empty (RLS blocks MV direct access)', async () => {
-    // RLS on the MV prevents authenticated users from reading other org rows directly
+  it('E-03: clientA cannot SELECT the service-only materialized view directly', async () => {
     const { data, error } = await clientA
       .from('mv_etax_submission_sla')
       .select('org_id')
       .eq('org_id', ORG_B_ID)
-    expect(error).toBeNull()
-    expect(data).toHaveLength(0)
+    expect(error).not.toBeNull()
+    expect(data).toBeNull()
   })
 
   it('E-04: clientB cannot inject org_a data via RPC parameter override', async () => {
@@ -562,7 +567,7 @@ describe('Group E — Cross-tenant RLS isolation', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 describe('Group F — Grants', () => {
   it('F-01: anon cannot call rpc_etax_submission_sla_cached', async () => {
-    const { error } = await anon.rpc('rpc_etax_submission_sla_cached', {
+    const { error } = await freshAnonymousClient().rpc('rpc_etax_submission_sla_cached', {
       p_document_type: null,
       p_severity: null,
     })
@@ -572,7 +577,7 @@ describe('Group F — Grants', () => {
   })
 
   it('F-02: anon cannot call fn_refresh_mv_etax_submission_sla', async () => {
-    const { error } = await anon.rpc('fn_refresh_mv_etax_submission_sla')
+    const { error } = await freshAnonymousClient().rpc('fn_refresh_mv_etax_submission_sla')
     expect(error).not.toBeNull()
     expect(error!.message).toMatch(/Unauthorized|JWT|permission denied/i)
   })
@@ -602,7 +607,7 @@ describe('Group F — Grants', () => {
   })
 
   it('F-06: anon cannot SELECT directly from mv_etax_submission_sla', async () => {
-    const { error } = await anon
+    const { error } = await freshAnonymousClient()
       .from('mv_etax_submission_sla')
       .select('org_id')
       .limit(1)

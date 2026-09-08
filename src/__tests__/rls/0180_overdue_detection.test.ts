@@ -11,7 +11,7 @@
  *     A4  service role can scan all orgs (p_org_id=NULL)
  *     A5  authenticated user can only scan own org
  *     A6  rejects non-finance/admin user
- *     A7  skips paid / cancelled / void invoices
+ *     A7  skips paid / cancelled invoices
  *     A8  skips snoozed invoices
  *     A9  scans due_soon window (within 7 days)
  *
@@ -370,18 +370,32 @@ describe("Group A: rpc_check_overdue_invoices", () => {
   });
 
   it("A6: non-finance user gets Forbidden error", async () => {
-    // สร้าง user ที่ไม่มี finance role
+    // สร้างสมาชิก VIEWER จริงและลงชื่อเข้าใช้ เพื่อให้ทดสอบ authorization
+    // ด้วย JWT ที่ Supabase ออกให้ แทน token จำลองที่ถูกปฏิเสธก่อนถึง RPC
     const email = `test-nofinance-${Date.now()}@monolith-test.internal`;
     const { data: authUser } = await svc.auth.admin.createUser({
       email,
       password: "Test1234!",
       email_confirm: true,
-      user_metadata: { role: "viewer" },
+      app_metadata: { roles: ["viewer"], org_id: orgA.orgId },
     });
-    const { data: sess } = await svc.auth.admin.getUserById(authUser!.user!.id);
-    const jwt = (sess as any)?.session?.access_token ?? "mock-jwt";
 
-    const client = userClient(jwt);
+    await svc.from("org_members").insert({
+      org_id: orgA.orgId,
+      user_id: authUser!.user!.id,
+      role: "VIEWER",
+      email,
+    });
+
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: session, error: signInError } = await authClient.auth
+      .signInWithPassword({ email, password: "Test1234!" });
+    expect(signInError).toBeNull();
+    expect(session.session).not.toBeNull();
+
+    const client = userClient(session.session!.access_token);
     const { error } = await client.rpc("rpc_check_overdue_invoices", {
       p_org_id:  orgA.orgId,
       p_dry_run: true,
@@ -389,13 +403,13 @@ describe("Group A: rpc_check_overdue_invoices", () => {
     expect(error).not.toBeNull();
     expect(error!.message).toMatch(/Forbidden/i);
 
+    await svc.from("org_members").delete().eq("user_id", authUser!.user!.id);
     await svc.auth.admin.deleteUser(authUser!.user!.id);
   });
 
-  it("A7: skips paid/cancelled/void invoices", async () => {
+  it("A7: skips paid/cancelled invoices", async () => {
     const invPaid   = await createTestInvoice(svc, orgA.orgId, { daysOverdue: 5, status: "paid", remaining: 0 });
     const invCancelled = await createTestInvoice(svc, orgA.orgId, { daysOverdue: 5, status: "cancelled" });
-    const invVoid   = await createTestInvoice(svc, orgA.orgId, { daysOverdue: 5, status: "void" });
 
     const { data } = await svc.rpc("rpc_check_overdue_invoices", {
       p_org_id:  orgA.orgId,
@@ -406,9 +420,8 @@ describe("Group A: rpc_check_overdue_invoices", () => {
 
     expect(ids).not.toContain(invPaid);
     expect(ids).not.toContain(invCancelled);
-    expect(ids).not.toContain(invVoid);
 
-    await svc.from("invoices").delete().in("id", [invPaid, invCancelled, invVoid]);
+    await svc.from("invoices").delete().in("id", [invPaid, invCancelled]);
   });
 
   it("A8: skips snoozed invoices", async () => {

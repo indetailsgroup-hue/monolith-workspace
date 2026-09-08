@@ -478,12 +478,12 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     });
   });
 
-  // ── RPC: rpc_list_invoices ────────────────────────────────────────────────────
-  describe("RPC: rpc_list_invoices", () => {
+  // ── Canonical invoice RLS read path ───────────────────────────────────────────
+  describe("Table: invoices", () => {
     it("returns only orgA invoices for userA", async () => {
-      const { data, error } = await userClient(userA.accessToken).rpc(
-        "rpc_list_invoices"
-      );
+      const { data, error } = await userClient(userA.accessToken)
+        .from("invoices")
+        .select("org_id");
       expect(error).toBeNull();
       const orgIds = (data as any[]).map((r: any) => r.org_id);
       expect(orgIds.every((id: string) => id === orgA.id)).toBe(true);
@@ -525,7 +525,7 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA can see own org books", async () => {
       const { data, error } = await userClient(userA.accessToken)
         .from("book_registry")
-        .select("id, org_id, code");
+        .select("book_id, org_id, display_name");
       expect(error).toBeNull();
       const orgIds = (data ?? []).map((r: any) => r.org_id);
       expect(orgIds.every((id: string) => id === orgA.id)).toBe(true);
@@ -534,7 +534,7 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA CANNOT see orgB books", async () => {
       const { data } = await userClient(userA.accessToken)
         .from("book_registry")
-        .select("id")
+        .select("book_id")
         .eq("org_id", orgB.id);
       expect(data).toHaveLength(0);
     });
@@ -542,14 +542,14 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("rpc_register_book creates book only for caller org", async () => {
       const { data, error } = await userClient(userA.accessToken).rpc(
         "rpc_register_book",
-        { p_code: "test-book-rls", p_name: "RLS Test Book" }
+        { p_book_id: "test-book-rls", p_display_name: "RLS Test Book" }
       );
       expect(error).toBeNull();
       // Verify it belongs to orgA
       const { data: book } = await serviceClient
         .from("book_registry")
         .select("org_id")
-        .eq("code", "test-book-rls")
+        .eq("book_id", "test-book-rls")
         .single();
       expect(book!.org_id).toBe(orgA.id);
     });
@@ -561,11 +561,12 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
 describe("Accounting Invariants", () => {
   describe("Double-entry balance invariant", () => {
     it("rejects journal entry where debits ≠ credits", async () => {
-      const { error } = await serviceClient.rpc("rpc_post_journal_entry", {
-        p_org_id: orgA.id,
+      const { error } = await userClient(userA.accessToken).rpc("rpc_post_journal_entry", {
         p_book_id: "internal",
         p_entry_date: "2026-08-01",
         p_description: "Unbalanced test",
+        p_currency: "THB",
+        p_source_ref: null,
         p_lines: [
           { account_code: "1100", debit: 1000, credit: 0 },
           { account_code: "4100", debit: 0, credit: 500 }, // intentionally wrong
@@ -576,11 +577,12 @@ describe("Accounting Invariants", () => {
     });
 
     it("accepts balanced journal entry", async () => {
-      const { error } = await serviceClient.rpc("rpc_post_journal_entry", {
-        p_org_id: orgA.id,
+      const { error } = await userClient(userA.accessToken).rpc("rpc_post_journal_entry", {
         p_book_id: "internal",
         p_entry_date: "2026-08-01",
         p_description: "Balanced test entry",
+        p_currency: "THB",
+        p_source_ref: null,
         p_lines: [
           { account_code: "1100", debit: 1000, credit: 0 },
           { account_code: "4100", debit: 0, credit: 1000 },
@@ -599,7 +601,7 @@ describe("Accounting Invariants", () => {
         .limit(1)
         .single();
 
-      const { error } = await serviceClient
+      const { error } = await userClient(userA.accessToken)
         .from("journal_entry")
         .delete()
         .eq("id", data!.id);
@@ -623,7 +625,7 @@ describe("Accounting Invariants", () => {
         .limit(1)
         .single();
 
-      const { error } = await serviceClient
+      const { error } = await userClient(userA.accessToken)
         .from("journal_line")
         .update({ debit: 99999 })
         .eq("id", line!.id);

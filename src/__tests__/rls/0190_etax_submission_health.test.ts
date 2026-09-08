@@ -27,7 +27,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
 // ─── Client setup ────────────────────────────────────────────────────────────
 
@@ -360,7 +360,7 @@ describe('Group A — Schema', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Group B — Org Isolation / Access Control', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Seed 3 submissions for ORG_A and 2 for ORG_B
     await insertSubmission({ orgId: ORG_A, status: 'submitted', attemptCount: 1 });
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
@@ -599,7 +599,7 @@ describe('Group D — success_rate_pct accuracy', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Group E — rpc_etax_submission_health_admin cross-org ordering', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     // ORG_A: 2 exhausted of 4 = 50% exhaustion
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
@@ -751,7 +751,7 @@ describe('Group F — System alert columns (CROSS JOIN correctness)', () => {
 
     const [adminResult, orgResult] = await Promise.all([
       svc.rpc('rpc_etax_submission_health_admin'),
-      svc.rpc('rpc_etax_submission_health'), // service_role bypasses auth guard for testing
+      userClient(tokenOwnerA).rpc('rpc_etax_submission_health'),
     ]);
 
     const adminRow = (adminResult.data ?? []).find((r: any) => r.org_id === ORG_A);

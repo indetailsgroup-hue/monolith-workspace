@@ -637,6 +637,12 @@ describe('Group E — rpc_etax_sla_summary aggregate', () => {
 // GROUP F — Cross-tenant RLS isolation
 // ═══════════════════════════════════════════════════════════════════════════════
 describe('Group F — cross-tenant RLS isolation', () => {
+  function freshAnonymousClient(): SupabaseClient {
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  }
+
   it('F-01: clientA cannot see ORG_B rows in v_etax_submission_sla', async () => {
     const { data, error } = await clientA
       .from('v_etax_submission_sla')
@@ -668,7 +674,7 @@ describe('Group F — cross-tenant RLS isolation', () => {
   })
 
   it('F-05: anon client receives empty array from v_etax_submission_sla (no org context)', async () => {
-    const { data, error } = await anon
+    const { data, error } = await freshAnonymousClient()
       .from('v_etax_submission_sla')
       .select('org_id')
     // Either an empty array or permission-denied — not actual data rows
@@ -677,13 +683,13 @@ describe('Group F — cross-tenant RLS isolation', () => {
   })
 
   it('F-06: anon rpc_etax_submission_sla returns no rows', async () => {
-    const { data } = await anon.rpc('rpc_etax_submission_sla', {})
+    const { data } = await freshAnonymousClient().rpc('rpc_etax_submission_sla', {})
     const rows = Array.isArray(data) ? data : []
     expect(rows.length).toBe(0)
   })
 
   it('F-07: anon rpc_etax_sla_summary returns no rows', async () => {
-    const { data } = await anon.rpc('rpc_etax_sla_summary')
+    const { data } = await freshAnonymousClient().rpc('rpc_etax_sla_summary')
     const rows = Array.isArray(data) ? data : []
     expect(rows.length).toBe(0)
   })

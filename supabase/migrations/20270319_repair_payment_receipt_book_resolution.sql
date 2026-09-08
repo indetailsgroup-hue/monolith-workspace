@@ -1,0 +1,237 @@
+-- Migration 0177 was authored before the canonical multi-book table landed in
+-- 0179.  Its trigger still queried the removed book_registry.is_default column.
+-- Resolve the active internal book deterministically against the final schema.
+
+CREATE OR REPLACE FUNCTION public.fn_post_payment_receipt_journal()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_inv public.invoices%ROWTYPE;
+  v_org_id UUID;
+  v_book_id TEXT;
+  v_cash_account_id UUID;
+  v_ar_account_id UUID;
+  v_entry_id UUID;
+  v_new_paid NUMERIC(12,2);
+  v_new_remaining NUMERIC(12,2);
+  v_new_status public.invoice_status;
+  v_desc TEXT;
+  v_total_debit NUMERIC(12,2);
+  v_total_credit NUMERIC(12,2);
+BEGIN
+  SELECT * INTO v_inv
+  FROM public.invoices
+  WHERE invoice_id = NEW.invoice_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'payment_receipt trigger: invoice % not found', NEW.invoice_id;
+  END IF;
+
+  IF v_inv.status IN ('PAID'::public.invoice_status, 'CANCELLED'::public.invoice_status) THEN
+    RAISE EXCEPTION
+      'Cannot record payment: invoice % has status %. Must be PENDING or PARTIAL.',
+      v_inv.invoice_id, v_inv.status;
+  END IF;
+
+  v_org_id := COALESCE(NEW.org_id, v_inv.org_id);
+  NEW.org_id := v_org_id;
+
+  SELECT registry.book_id
+  INTO v_book_id
+  FROM public.book_registry registry
+  WHERE registry.org_id = v_org_id
+    AND registry.is_active
+  ORDER BY (registry.book_id = 'internal') DESC, registry.created_at, registry.book_id
+  LIMIT 1;
+  v_book_id := COALESCE(v_book_id, 'internal');
+
+  v_cash_account_id := public._get_account_id(v_org_id, '1100');
+  v_ar_account_id := public._get_account_id(v_org_id, '1200');
+
+  IF v_cash_account_id IS NULL THEN
+    RAISE EXCEPTION
+      'Auto-journal failed: account code 1100 (Cash/Bank) not found for org %',
+      v_org_id;
+  END IF;
+  IF v_ar_account_id IS NULL THEN
+    RAISE EXCEPTION
+      'Auto-journal failed: account code 1200 (Accounts Receivable) not found for org %',
+      v_org_id;
+  END IF;
+
+  v_desc := format(
+    'Payment received — Invoice %s | Method: %s | Ref: %s',
+    v_inv.invoice_code,
+    NEW.method,
+    COALESCE(NEW.reference_no, 'N/A')
+  );
+
+  INSERT INTO public.journal_entry (
+    org_id,
+    book_id,
+    entry_date,
+    description,
+    source_type,
+    source_id,
+    created_by,
+    status
+  )
+  VALUES (
+    v_org_id,
+    v_book_id,
+    COALESCE(NEW.received_at::DATE, CURRENT_DATE),
+    v_desc,
+    'payment_receipt',
+    NEW.id,
+    NEW.created_by,
+    'posted'
+  )
+  RETURNING id INTO v_entry_id;
+
+  INSERT INTO public.journal_line (
+    journal_entry_id, account_id, debit, credit, description
+  ) VALUES (
+    v_entry_id, v_cash_account_id, NEW.amount, 0,
+    format('Cash/Bank received — %s', COALESCE(NEW.reference_no, 'no reference'))
+  );
+
+  INSERT INTO public.journal_line (
+    journal_entry_id, account_id, debit, credit, description
+  ) VALUES (
+    v_entry_id, v_ar_account_id, 0, NEW.amount,
+    format('Accounts Receivable — Invoice %s', v_inv.invoice_code)
+  );
+
+  SELECT COALESCE(SUM(line.debit), 0), COALESCE(SUM(line.credit), 0)
+  INTO v_total_debit, v_total_credit
+  FROM public.journal_line line
+  WHERE line.journal_entry_id = v_entry_id;
+
+  IF ABS(v_total_debit - v_total_credit) > 0.01 THEN
+    RAISE EXCEPTION
+      'Double-entry balance violation: debit=% credit=% for entry %',
+      v_total_debit, v_total_credit, v_entry_id;
+  END IF;
+
+  NEW.journal_entry_id := v_entry_id;
+
+  SELECT COALESCE(SUM(receipt.amount), 0) + NEW.amount
+  INTO v_new_paid
+  FROM public.payment_receipt receipt
+  WHERE receipt.invoice_id = NEW.invoice_id;
+
+  v_new_remaining := GREATEST(0, COALESCE(v_inv.total, 0) - v_new_paid);
+  v_new_status := CASE
+    WHEN v_new_remaining <= 0.005 THEN 'PAID'::public.invoice_status
+    WHEN v_new_paid > 0 THEN 'PARTIAL'::public.invoice_status
+    ELSE v_inv.status
+  END;
+
+  UPDATE public.invoices
+  SET paid_amount = v_new_paid,
+      remaining_amount = v_new_remaining,
+      status = v_new_status,
+      paid_at = CASE
+        WHEN v_new_status = 'PAID'::public.invoice_status THEN NOW()
+        ELSE NULL
+      END,
+      updated_at = NOW()
+  WHERE invoice_id = NEW.invoice_id;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Stable ordering is required when OFFSET pagination crosses equal due dates.
+CREATE OR REPLACE FUNCTION public.rpc_list_overdue_invoices(
+  p_include_due_soon BOOLEAN DEFAULT TRUE,
+  p_limit INT DEFAULT 50,
+  p_offset INT DEFAULT 0
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_org_id UUID;
+  v_result JSONB;
+  v_today DATE := CURRENT_DATE;
+BEGIN
+  IF NOT (
+    public.has_app_role('finance')
+    OR public.has_app_role('admin')
+    OR public.has_app_role('designer')
+    OR public.is_governance_role()
+  ) THEN
+    RAISE EXCEPTION 'Forbidden: requires at least DESIGNER role';
+  END IF;
+
+  v_org_id := public.get_user_org_id();
+
+  SELECT jsonb_agg(page.row_data ORDER BY page.days_overdue DESC, page.invoice_id)
+  INTO v_result
+  FROM (
+    SELECT
+      invoice.invoice_id,
+      (v_today - invoice.due_date::DATE)::INT AS days_overdue,
+      jsonb_build_object(
+        'invoice_id', invoice.invoice_id,
+        'invoice_code', invoice.invoice_code,
+        'customer_name', COALESCE(customer.name, 'Unknown'),
+        'due_date', invoice.due_date,
+        'days_overdue', (v_today - invoice.due_date::DATE)::INT,
+        'total_amount', invoice.total,
+        'paid_amount', COALESCE(invoice.paid_amount, 0),
+        'remaining_amount', invoice.remaining_amount,
+        'payment_pct', ROUND(
+          COALESCE(invoice.paid_amount, 0) / NULLIF(invoice.total, 0) * 100,
+          1
+        ),
+        'invoice_status', invoice.status,
+        'notification_count', (
+          SELECT COUNT(*)
+          FROM public.invoice_notifications notification
+          WHERE notification.invoice_id = invoice.invoice_id
+            AND notification.org_id = invoice.org_id
+        ),
+        'last_notification', (
+          SELECT jsonb_build_object(
+            'type', notification.notification_type,
+            'status', notification.status,
+            'created_at', notification.created_at
+          )
+          FROM public.invoice_notifications notification
+          WHERE notification.invoice_id = invoice.invoice_id
+          ORDER BY notification.created_at DESC, notification.id
+          LIMIT 1
+        )
+      ) AS row_data
+    FROM public.invoices invoice
+    LEFT JOIN public.customers customer
+      ON customer.customer_id = invoice.customer_id
+    WHERE invoice.org_id = v_org_id
+      AND invoice.remaining_amount > 0
+      AND invoice.status NOT IN ('PAID', 'CANCELLED')
+      AND (
+        invoice.due_date < v_today
+        OR (
+          p_include_due_soon
+          AND invoice.due_date BETWEEN v_today AND v_today + 7
+        )
+      )
+    ORDER BY (v_today - invoice.due_date::DATE) DESC, invoice.invoice_id
+    LIMIT LEAST(GREATEST(p_limit, 1), 200)
+    OFFSET GREATEST(p_offset, 0)
+  ) page;
+
+  RETURN COALESCE(v_result, '[]'::JSONB);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.rpc_list_overdue_invoices(BOOLEAN, INT, INT)
+  TO authenticated;

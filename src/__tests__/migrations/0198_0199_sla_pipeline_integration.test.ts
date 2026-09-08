@@ -134,7 +134,7 @@ describe('Group A — v_etax_submission_sla base view', () => {
   it('A1: required columns are present', async () => {
     const { data, error } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('org_id, org_name, document_type, total_submissions, breach_count, breach_rate, severity_tier, avg_processing_hours, sla_threshold_hours, sla_breach_flag')
+      .select('org_id, org_name, document_type, total_submissions, breached_count, breach_rate_pct, sla_severity, avg_processing_hours, sla_threshold_hours')
       .limit(1);
     expect(error).toBeNull();
     expect(data).toBeDefined();
@@ -143,24 +143,24 @@ describe('Group A — v_etax_submission_sla base view', () => {
   it('A2: seeded 30-h submission appears as SLA breach', async () => {
     const { data, error } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('org_id, document_type, sla_breach_flag, severity_tier')
+      .select('org_id, document_type, breached_count, sla_severity')
       .eq('org_id', FIXTURE.ORG_A_ID)
       .eq('document_type', 'T01');
     expect(error).toBeNull();
     const row = data?.[0];
     expect(row).toBeDefined();
-    expect(row!.sla_breach_flag).toBe(true);
+    expect(row!.breached_count).toBeGreaterThan(0);
   });
 
   it('A3: severity_tier escalates correctly for high breach rate', async () => {
     const { data } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('breach_rate, severity_tier')
+      .select('breach_rate_pct, sla_severity')
       .eq('org_id', FIXTURE.ORG_A_ID)
       .eq('document_type', 'T01')
       .single();
     // Seeded 1 submission, 1 breach → 100% → CRITICAL
-    expect(['CRITICAL', 'WARNING', 'ELEVATED', 'NORMAL']).toContain(data?.severity_tier);
+    expect(['CRITICAL', 'WARNING', 'ELEVATED', 'NORMAL']).toContain(data?.sla_severity);
   });
 
   it('A4: org_name is populated (not null)', async () => {
@@ -173,15 +173,15 @@ describe('Group A — v_etax_submission_sla base view', () => {
     expect(data?.org_name).toBeTruthy();
   });
 
-  it('A5: breach_rate is within [0, 1] range', async () => {
+  it('A5: breach_rate_pct is within [0, 100] range', async () => {
     const { data } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('breach_rate')
+      .select('breach_rate_pct')
       .eq('org_id', FIXTURE.ORG_A_ID);
     data?.forEach(row => {
-      if (row.breach_rate !== null) {
-        expect(Number(row.breach_rate)).toBeGreaterThanOrEqual(0);
-        expect(Number(row.breach_rate)).toBeLessThanOrEqual(1);
+      if (row.breach_rate_pct !== null) {
+        expect(Number(row.breach_rate_pct)).toBeGreaterThanOrEqual(0);
+        expect(Number(row.breach_rate_pct)).toBeLessThanOrEqual(100);
       }
     });
   });
@@ -218,18 +218,18 @@ describe('Group B — mv_etax_submission_sla population', () => {
   it('B3: MV breach counts match live view for Org A', async () => {
     const { data: liveRows } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('document_type, breach_count, total_submissions')
+      .select('document_type, breached_count, total_submissions')
       .eq('org_id', FIXTURE.ORG_A_ID);
 
     const { data: mvRows } = await serviceClient
       .from('mv_etax_submission_sla')
-      .select('document_type, breach_count, total_submissions')
+      .select('document_type, sla_breached_count, total_submissions')
       .eq('org_id', FIXTURE.ORG_A_ID);
 
     liveRows?.forEach(liveRow => {
       const mvRow = mvRows?.find(r => r.document_type === liveRow.document_type);
       if (mvRow) {
-        expect(mvRow.breach_count).toBe(liveRow.breach_count);
+        expect(mvRow.sla_breached_count).toBe(liveRow.breached_count);
         expect(mvRow.total_submissions).toBe(liveRow.total_submissions);
       }
     });
@@ -298,14 +298,14 @@ describe('Group D — rpc_etax_submission_sla_cached reads MV not live view', ()
     const { data: rpcRows } = await serviceClient.rpc('rpc_etax_submission_sla_cached');
     const { data: mvRows }  = await serviceClient
       .from('mv_etax_submission_sla')
-      .select('org_id, document_type, breach_count, total_submissions');
+      .select('org_id, document_type, sla_breached_count, total_submissions');
 
     rpcRows?.forEach((rpcRow: any) => {
       const mvRow = mvRows?.find(
         r => r.org_id === rpcRow.org_id && r.document_type === rpcRow.document_type
       );
       if (mvRow) {
-        expect(rpcRow.breach_count).toBe(mvRow.breach_count);
+        expect(rpcRow.sla_breached_count).toBe(mvRow.sla_breached_count);
         expect(rpcRow.total_submissions).toBe(mvRow.total_submissions);
       }
     });
@@ -407,11 +407,12 @@ describe('Group F — RLS consistency across all three layers', () => {
     data?.forEach(r => expect(r.org_id).toBe(FIXTURE.ORG_A_ID));
   });
 
-  it('F2: mv_etax_submission_sla — Org A user sees only Org A rows', async () => {
-    const { data } = await clientA
+  it('F2: mv_etax_submission_sla — direct authenticated access is blocked', async () => {
+    const { data, error } = await clientA
       .from('mv_etax_submission_sla')
       .select('org_id');
-    data?.forEach(r => expect(r.org_id).toBe(FIXTURE.ORG_A_ID));
+    expect(error).not.toBeNull();
+    expect(data).toBeNull();
   });
 
   it('F3: rpc_etax_submission_sla_cached — Org A user sees only Org A rows', async () => {
@@ -426,7 +427,8 @@ describe('Group F — RLS consistency across all three layers', () => {
       clientA.rpc('rpc_etax_submission_sla_cached'),
     ]);
     expect(viewData.data).toHaveLength(0);
-    expect(mvData.data).toHaveLength(0);
+    expect(mvData.error).not.toBeNull();
+    expect(mvData.data).toBeNull();
     (rpcData.data as any[])?.forEach(r => expect(r.org_id).not.toBe(FIXTURE.ORG_B_ID));
   });
 
@@ -457,21 +459,21 @@ describe('Group G — pipeline integrity: breach counts consistent across all th
     await serviceClient.rpc('fn_refresh_mv_etax_submission_sla');
   }, 30_000);
 
-  it('G1: live view breach_count ≥ 0 for all rows', async () => {
+  it('G1: live view breached_count ≥ 0 for all rows', async () => {
     const { data } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('breach_count');
-    data?.forEach(r => expect(r.breach_count).toBeGreaterThanOrEqual(0));
+      .select('breached_count');
+    data?.forEach(r => expect(r.breached_count).toBeGreaterThanOrEqual(0));
   });
 
   it('G2: MV breach_count matches live view post-refresh (all orgs)', async () => {
     const { data: liveRows } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('org_id, document_type, breach_count, total_submissions');
+      .select('org_id, document_type, breached_count, total_submissions');
 
     const { data: mvRows } = await serviceClient
       .from('mv_etax_submission_sla')
-      .select('org_id, document_type, breach_count, total_submissions');
+      .select('org_id, document_type, sla_breached_count, total_submissions');
 
     let checkedCount = 0;
     liveRows?.forEach(live => {
@@ -479,7 +481,7 @@ describe('Group G — pipeline integrity: breach counts consistent across all th
         r => r.org_id === live.org_id && r.document_type === live.document_type
       );
       if (mv) {
-        expect(mv.breach_count).toBe(live.breach_count);
+        expect(mv.sla_breached_count).toBe(live.breached_count);
         expect(mv.total_submissions).toBe(live.total_submissions);
         checkedCount++;
       }
@@ -488,29 +490,29 @@ describe('Group G — pipeline integrity: breach counts consistent across all th
     expect(checkedCount).toBeGreaterThan(0);
   });
 
-  it('G3: cached RPC breach_count matches MV post-refresh', async () => {
+  it('G3: cached RPC sla_breached_count matches MV post-refresh', async () => {
     const { data: rpcRows }  = await serviceClient.rpc('rpc_etax_submission_sla_cached');
     const { data: mvRows }   = await serviceClient
       .from('mv_etax_submission_sla')
-      .select('org_id, document_type, breach_count');
+      .select('org_id, document_type, sla_breached_count');
 
     (rpcRows as any[])?.forEach(rpc => {
       const mv = mvRows?.find(
         r => r.org_id === rpc.org_id && r.document_type === rpc.document_type
       );
-      if (mv) expect(rpc.breach_count).toBe(mv.breach_count);
+      if (mv) expect(rpc.sla_breached_count).toBe(mv.sla_breached_count);
     });
   });
 
-  it('G4: breach_rate = breach_count / total_submissions for each row', async () => {
+  it('G4: breach_rate_pct = breached_count / total_submissions × 100', async () => {
     const { data } = await serviceClient
       .from('v_etax_submission_sla')
-      .select('total_submissions, breach_count, breach_rate')
+      .select('total_submissions, breached_count, breach_rate_pct')
       .gt('total_submissions', 0);
 
     data?.forEach(r => {
-      const expected = Number((r.breach_count / r.total_submissions).toFixed(4));
-      expect(Math.abs(Number(r.breach_rate) - expected)).toBeLessThan(0.001);
+      const expected = Number(((r.breached_count / r.total_submissions) * 100).toFixed(2));
+      expect(Math.abs(Number(r.breach_rate_pct) - expected)).toBeLessThan(0.01);
     });
   });
 

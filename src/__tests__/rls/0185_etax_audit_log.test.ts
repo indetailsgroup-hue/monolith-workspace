@@ -656,14 +656,13 @@ describe('Group E: Immutability — RLS blocks direct INSERT / UPDATE / DELETE',
     expect(rows.length).toBeGreaterThanOrEqual(1);
     const rowId = rows[0].id as string;
 
-    const { error } = await authed(ownerA.token)
+    await authed(ownerA.token)
       .from('etax_submission_audit_log')
       .update({ new_status: 'tampered' })
       .eq('id', rowId);
 
-    expect(error).not.toBeNull();   // no UPDATE policy
-
-    // Verify the row is unchanged
+    // PostgreSQL RLS may report success with zero affected rows, so immutability
+    // is established by reading the canonical row back through service_role.
     const after = await getAuditRows(subId);
     expect(after[0].new_status).not.toBe('tampered');
   });
@@ -676,14 +675,12 @@ describe('Group E: Immutability — RLS blocks direct INSERT / UPDATE / DELETE',
     const rows = await getAuditRows(subId);
     const rowId = rows[0].id as string;
 
-    const { error } = await authed(ownerA.token)
+    await authed(ownerA.token)
       .from('etax_submission_audit_log')
       .delete()
       .eq('id', rowId);
 
-    expect(error).not.toBeNull();   // no DELETE policy
-
-    // Confirm row still exists
+    // DELETE can also be a successful no-op under RLS; verify preservation.
     const after = await getAuditRows(subId);
     expect(after.map((r) => r.id)).toContain(rowId);
   });
