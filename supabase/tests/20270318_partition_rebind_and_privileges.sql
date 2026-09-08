@@ -40,11 +40,15 @@ SELECT ok(
   '20270318-05: submission health no longer reads the legacy table'
 );
 
-SELECT ok(
-  pg_get_viewdef('public.v_etax_submission_sla'::REGCLASS, TRUE)
-    ILIKE '%auth.role() = ''service_role''%',
-  '20270318-06: live SLA view supports controlled service-role refreshes'
+SET LOCAL ROLE service_role;
+SET LOCAL "request.jwt.claims" = '{"role":"service_role"}';
+
+SELECT lives_ok(
+  $$SELECT COUNT(*) FROM public.v_etax_submission_sla$$,
+  '20270318-06: service role can read the live SLA view for cache refreshes'
 );
+
+RESET ROLE;
 
 SELECT ok(
   COALESCE(
