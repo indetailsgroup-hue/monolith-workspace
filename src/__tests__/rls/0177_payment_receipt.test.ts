@@ -307,16 +307,14 @@ describe('rpc_confirm_payment', () => {
     });
 
     it('rejects payment on cancelled invoice', async () => {
-      const { data: inv } = await admin.from('invoices').insert({
-        org_id: ORG_A, code: `INV-CANCEL-${Date.now()}`,
-        customer_id: customerIdA, status: 'cancelled',
-        total: 1000, paid_amount: 0, remaining_amount: 1000,
-        due_date: '2026-12-31', issued_date: '2026-01-01',
-        created_by: adminUserIdA, updated_by: adminUserIdA,
-      }).select('id').single();
+      const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 1000);
+      const { error: fixtureError } = await admin.from('invoices')
+        .update({ status: 'cancelled' })
+        .eq('invoice_id', invoiceId);
+      expect(fixtureError).toBeNull();
 
       const { error } = await financeClientA.rpc('rpc_confirm_payment', {
-        p_invoice_id: inv!.id,
+        p_invoice_id: invoiceId,
         p_amount:     1000,
       });
 
@@ -325,16 +323,14 @@ describe('rpc_confirm_payment', () => {
     });
 
     it('rejects payment on draft invoice (not yet approved)', async () => {
-      const { data: inv } = await admin.from('invoices').insert({
-        org_id: ORG_A, code: `INV-DRAFT-${Date.now()}`,
-        customer_id: customerIdA, status: 'draft',
-        total: 1000, paid_amount: 0, remaining_amount: 1000,
-        due_date: '2026-12-31', issued_date: '2026-01-01',
-        created_by: adminUserIdA, updated_by: adminUserIdA,
-      }).select('id').single();
+      const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 1000);
+      const { error: fixtureError } = await admin.from('invoices')
+        .update({ status: 'draft' })
+        .eq('invoice_id', invoiceId);
+      expect(fixtureError).toBeNull();
 
       const { error } = await financeClientA.rpc('rpc_confirm_payment', {
-        p_invoice_id: inv!.id,
+        p_invoice_id: invoiceId,
         p_amount:     1000,
       });
 
@@ -856,19 +852,16 @@ describe('v_invoice_payment_status', () => {
   });
 
   it('shows OVERDUE for past-due invoice with unpaid balance', async () => {
-    const { data: inv } = await admin.from('invoices').insert({
-      org_id: ORG_A, code: `INV-OVERDUE-${Date.now()}`,
-      customer_id: customerIdA, status: 'approved',
-      total: 5350, paid_amount: 0, remaining_amount: 5350,
-      due_date: '2020-01-01',  // เลยกำหนดนานแล้ว
-      issued_date: '2020-01-01',
-      created_by: adminUserIdA, updated_by: adminUserIdA,
-    }).select('id').single();
+    const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 5350);
+    const { error: fixtureError } = await admin.from('invoices')
+      .update({ due_date: '2020-01-01', issued_date: '2020-01-01' })
+      .eq('invoice_id', invoiceId);
+    expect(fixtureError).toBeNull();
 
     const { data } = await financeClientA
       .from('v_invoice_payment_status')
       .select('payment_state')
-      .eq('invoice_id', inv!.id)
+      .eq('invoice_id', invoiceId)
       .single();
 
     expect(data!.payment_state).toBe('OVERDUE');
@@ -1015,7 +1008,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_amount, remaining_amount, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(Number(inv!.paid_amount)).toBe(6000);
     expect(Number(inv!.remaining_amount)).toBeCloseTo(10700 - 6000, 1);
@@ -1032,7 +1025,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_at, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(inv!.paid_at).toBeTruthy();
     expect(inv!.status).toBe('paid');
@@ -1048,7 +1041,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_at, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(inv!.paid_at).toBeNull();
     expect(inv!.status).toBe('partial');

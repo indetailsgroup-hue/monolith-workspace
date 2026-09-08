@@ -41,13 +41,20 @@ BEGIN
     RAISE EXCEPTION 'payment_receipt trigger: invoice % not found', NEW.invoice_id;
   END IF;
 
-  IF v_inv.status IN ('PAID'::public.invoice_status, 'CANCELLED'::public.invoice_status) THEN
+  IF lower(v_inv.status::TEXT) NOT IN ('approved', 'partial') THEN
     RAISE EXCEPTION
-      'Cannot record payment: invoice % has status %. Must be PENDING or PARTIAL.',
+      'Cannot record payment: invoice % has status %. Must be APPROVED or PARTIAL.',
       v_inv.invoice_id, v_inv.status;
   END IF;
 
-  v_org_id := COALESCE(NEW.org_id, v_inv.org_id);
+  IF NEW.org_id IS NOT NULL AND NEW.org_id IS DISTINCT FROM v_inv.org_id THEN
+    RAISE EXCEPTION
+      'Cannot record payment: invoice % belongs to org %, not org %',
+      v_inv.invoice_id, v_inv.org_id, NEW.org_id
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  v_org_id := v_inv.org_id;
   NEW.org_id := v_org_id;
 
   SELECT registry.book_id
@@ -140,8 +147,8 @@ BEGIN
 
   v_new_remaining := GREATEST(0, COALESCE(v_inv.total, 0) - v_new_paid);
   v_new_status := CASE
-    WHEN v_new_remaining <= 0.005 THEN 'PAID'::public.invoice_status
-    WHEN v_new_paid > 0 THEN 'PARTIAL'::public.invoice_status
+    WHEN v_new_remaining <= 0.005 THEN 'paid'::public.invoice_status
+    WHEN v_new_paid > 0 THEN 'partial'::public.invoice_status
     ELSE v_inv.status
   END;
 
@@ -150,7 +157,7 @@ BEGIN
       remaining_amount = v_new_remaining,
       status = v_new_status,
       paid_at = CASE
-        WHEN v_new_status = 'PAID'::public.invoice_status THEN NOW()
+        WHEN v_new_status = 'paid'::public.invoice_status THEN NOW()
         ELSE NULL
       END,
       updated_at = NOW()
@@ -180,7 +187,10 @@ DECLARE
   v_new_remaining NUMERIC(12,2);
   v_new_status public.invoice_status;
 BEGIN
-  IF NOT (public.has_app_role('admin') OR public.is_governance_role()) THEN
+  IF NOT (
+    public.has_app_role('admin')
+    OR public.has_app_role('executive_owner')
+  ) THEN
     RAISE EXCEPTION 'Forbidden: rpc_void_payment_receipt requires ADMIN role';
   END IF;
 
@@ -244,8 +254,8 @@ BEGIN
   v_new_paid := GREATEST(0, COALESCE(v_inv.paid_amount, 0) - v_receipt.amount);
   v_new_remaining := GREATEST(0, COALESCE(v_inv.total, 0) - v_new_paid);
   v_new_status := CASE
-    WHEN v_new_paid <= 0 THEN 'PENDING'::public.invoice_status
-    WHEN v_new_remaining > 0.005 THEN 'PARTIAL'::public.invoice_status
+    WHEN v_new_paid <= 0 THEN 'approved'::public.invoice_status
+    WHEN v_new_remaining > 0.005 THEN 'partial'::public.invoice_status
     ELSE v_inv.status
   END;
 
@@ -273,6 +283,49 @@ REVOKE ALL ON FUNCTION public.rpc_void_payment_receipt(UUID, TEXT)
   FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_void_payment_receipt(UUID, TEXT)
   TO authenticated;
+
+CREATE OR REPLACE VIEW public.v_invoice_payment_status
+WITH (security_invoker = true)
+AS
+SELECT
+  invoice.invoice_id,
+  invoice.invoice_code,
+  invoice.org_id,
+  invoice.status AS invoice_status,
+  COALESCE(invoice.total, 0) AS total_amount,
+  COALESCE(invoice.paid_amount, 0) AS paid_amount,
+  COALESCE(invoice.remaining_amount, invoice.total) AS remaining_amount,
+  COALESCE(invoice.paid_amount, 0) / NULLIF(invoice.total, 0) AS payment_pct,
+  invoice.due_date,
+  invoice.paid_at,
+  CASE
+    WHEN lower(invoice.status::TEXT) = 'paid' THEN 'FULLY_PAID'
+    WHEN COALESCE(invoice.paid_amount, 0) > 0 THEN 'PARTIAL'
+    WHEN invoice.due_date < CURRENT_DATE
+      AND lower(invoice.status::TEXT) NOT IN ('paid', 'cancelled', 'voided')
+      THEN 'OVERDUE'
+    ELSE 'PENDING'
+  END AS payment_state,
+  COUNT(receipt.id)::INT AS receipt_count,
+  MAX(receipt.received_at) AS last_payment_at
+FROM public.invoices invoice
+LEFT JOIN public.payment_receipt receipt
+  ON receipt.invoice_id = invoice.invoice_id
+ AND receipt.org_id = invoice.org_id
+WHERE invoice.org_id = public.get_user_org_id()
+GROUP BY
+  invoice.invoice_id,
+  invoice.invoice_code,
+  invoice.org_id,
+  invoice.status,
+  invoice.total,
+  invoice.paid_amount,
+  invoice.remaining_amount,
+  invoice.due_date,
+  invoice.paid_at;
+
+REVOKE ALL ON public.v_invoice_payment_status FROM PUBLIC, anon;
+GRANT SELECT ON public.v_invoice_payment_status TO authenticated;
 
 -- Stable ordering is required when OFFSET pagination crosses equal due dates.
 CREATE OR REPLACE FUNCTION public.rpc_list_overdue_invoices(

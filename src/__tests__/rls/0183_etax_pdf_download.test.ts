@@ -564,7 +564,7 @@ describe('Group D: rpc_etax_mark_pdf_failed', () => {
     createdSubmissionIds.push(subId);
 
     const result = await markFailed(subId, 'unexpected error');
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
 
     const row = await getSubmission(subId);
     expect(row.pdf_status).toBe('failed');
@@ -581,7 +581,7 @@ describe('Group D: rpc_etax_mark_pdf_failed', () => {
 
     const result = await markFailed(subId, 'late failure');
     // Implementation should return a warning rather than overwriting a successful download
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(result.warning).toBeDefined();
 
     // pdf_status must remain 'downloaded'

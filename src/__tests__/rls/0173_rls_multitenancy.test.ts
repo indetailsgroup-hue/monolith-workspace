@@ -137,6 +137,24 @@ beforeAll(async () => {
   // Create 1 user per org
   userA = await createTestUser("test-userA@rls-test.local", orgA.id, 60);
   userB = await createTestUser("test-userB@rls-test.local", orgB.id, 60);
+
+  const { error: bookError } = await serviceClient.from("book_registry").upsert([
+    {
+      org_id: orgA.id,
+      book_id: "internal",
+      display_name: "Internal Book",
+      created_by: userA.id,
+      is_active: true,
+    },
+    {
+      org_id: orgB.id,
+      book_id: "internal",
+      display_name: "Internal Book",
+      created_by: userB.id,
+      is_active: true,
+    },
+  ], { onConflict: "org_id,book_id" });
+  if (bookError) throw new Error(`seed books failed: ${bookError.message}`);
 });
 
 afterAll(async () => {

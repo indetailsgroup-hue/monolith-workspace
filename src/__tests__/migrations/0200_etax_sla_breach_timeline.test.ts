@@ -490,12 +490,71 @@ describe('Group F — RLS cross-tenant isolation', () => {
   });
 
   it('F6: service_role can retrieve rows for any org_id', async () => {
-    const { data } = await serviceClient
-      .from('v_etax_sla_breach_timeline')
-      .select('org_id')
-      .limit(100);
-    const orgIds = new Set(data?.map(r => r.org_id));
-    // service_role must see at least Org A
-    expect(orgIds.has(FX.ORG_A_ID)).toBe(true);
+    // Use an isolated row so cleanup in an earlier legacy suite cannot remove
+    // the deterministic shared Org A fixture before this authorization check.
+    const orgId = crypto.randomUUID();
+    const customerId = crypto.randomUUID();
+    const invoiceId = crypto.randomUUID();
+    const submissionId = crypto.randomUUID();
+
+    try {
+      const { error: orgError } = await serviceClient.from('organizations').insert({
+        org_id: orgId,
+        name: `Timeline service org ${orgId}`,
+        slug: `timeline-service-${orgId}`,
+        plan: 'ENTERPRISE',
+        max_users: 5,
+      });
+      expect(orgError).toBeNull();
+
+      const { error: customerError } = await serviceClient.from('customers').insert({
+        customer_id: customerId,
+        org_id: orgId,
+        name: `Timeline service customer ${customerId}`,
+      });
+      expect(customerError).toBeNull();
+
+      const invoiceCode = `INV-TIMELINE-SERVICE-${invoiceId}`;
+      const { error: invoiceError } = await serviceClient.from('invoices').insert({
+        id: invoiceId,
+        invoice_id: invoiceId,
+        invoice_code: invoiceCode,
+        code: invoiceCode,
+        org_id: orgId,
+        customer_id: customerId,
+        status: 'approved',
+        total: 100,
+        remaining_amount: 100,
+        due_date: '2030-12-31',
+        created_by: '00000000-0000-0000-0000-000000000001',
+      });
+      expect(invoiceError).toBeNull();
+
+      const { error: submissionError } = await serviceClient
+        .from('etax_submissions')
+        .insert({
+          id: submissionId,
+          org_id: orgId,
+          invoice_id: invoiceId,
+          document_type: 'T01',
+          status: 'queued',
+          attempt_count: 0,
+        });
+      expect(submissionError).toBeNull();
+
+      const { data, error } = await serviceClient
+        .from('v_etax_sla_breach_timeline')
+        .select('org_id')
+        .eq('org_id', orgId)
+        .limit(1);
+      expect(error).toBeNull();
+      expect(data).toHaveLength(1);
+      expect(data![0].org_id).toBe(orgId);
+    } finally {
+      await serviceClient.from('etax_submissions').delete().eq('id', submissionId);
+      await serviceClient.from('invoices').delete().eq('invoice_id', invoiceId);
+      await serviceClient.from('customers').delete().eq('customer_id', customerId);
+      await serviceClient.from('organizations').delete().eq('org_id', orgId);
+    }
   });
 });
