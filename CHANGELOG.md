@@ -44,6 +44,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.2] — 2027-03-14 — Sprint 10: OrgHealthScoreBoard Stories + Component Tests + Culture Metrics Store
+
+#### Added
+- `src/org-health/OrgHealthScoreBoard.stories.tsx` — 13 CSF3 Storybook stories with `withOrgHealthStore` decorator factory, `fn()` spies, and fixtures; covers: PlanGateWallFree, PlanGateWallProfessional, Loading, EmptyScore, FullScore (all 5 dimensions), HistorySnapshotSelection, ConfigPanelDefault; 2 play-function stories: ConfigPanelEditSave (edit weight → save → verify `updateScoringConfig` spy called) and ComputeNow (click compute → verify `computeScore` spy called)
+- `src/org-health/__tests__/OrgHealthScoreBoard.test.tsx` — Vitest component tests; explicit `StoreShape` interface; `makeDefaultState`/`setStore` helpers; covers plan gate wall (FREE/PROFESSIONAL), loading state, score gauge rendering, grade badge, dimension card weights, config panel inline edit/cancel/save, compute button interactions, error banner
+- `src/culture-metrics/cultureMetricsTypes.ts` — **rewritten** v18.5: standalone camelCase app-layer types; `CmdFilters` updated to `metricCategory`/`periodType`; `CMD_ENPS_STATUS_LABEL_TH` alias; `CMD_HEALTH_STATUS_LABEL_TH`/`CMD_HEALTH_STATUS_COLOR` with `HEALTHY` key; `EnpsResultsRow` alias; new mappers `mapCmdEnpsResultsRow`/`mapCmdOrgHealthRow`
+- `src/culture-metrics/cultureMetricsStore.ts` — **rewritten** v18.5: state fields aligned (`enpsSurveys`, `enpsResults`, `orgHealth`, `isSnapshotLoading`, `isEnpsLoading`); 11 actions with correct signatures; `fetchEnpsResults` sets `isEnpsLoading`, fixed error message `'Failed to load eNPS results'`, maps via `mapCmdEnpsResultsRow`; `submitEnpsResponse` plan-gate exempt, no `supabase.auth.getUser`; all camelCase payloads
+
 ### [18.5.1] — target 2027-03-13 — Sprint 9: OrgHealthScoreBoard UI + OHS Store Tests + QcAnomalyDashboard Component Tests
 
 ### Added

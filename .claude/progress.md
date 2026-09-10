@@ -53,8 +53,11 @@
 - `src/qc-anomaly/__tests__/QcAnomalyDashboard.test.tsx` — Vitest component tests: explicit `StoreShape` interface (resolves Zustand auto-mock unknown issue); `makeStore`/`renderBoard` helpers; plan gate · loading · summary cards · filter bar · anomaly list · acknowledge · resolve · threshold toggle · error banner
 - `src/qc-anomaly/QcAnomalyDashboard.tsx` — fixed 4 tsc errors: `METRIC_KEYS` corrected to QcaMetricKey values, `threshold_value` → `threshold_breach_detail`, `acknowledgeAnomaly`/`resolveAnomaly` 3-arg → 2-arg
 
-### 🔜 Pending (v18.5 — sprint 10+)
-- Next module TBD
+### ✅ Completed (v18.5 — sprint 10: OrgHealthScoreBoard Stories + Component Tests + Culture Metrics Store)
+- `src/org-health/OrgHealthScoreBoard.stories.tsx` — 13 CSF3 stories; decorator factory; fn() spies; 2 play functions (ConfigPanelEditSave, ComputeNow)
+- `src/org-health/__tests__/OrgHealthScoreBoard.test.tsx` — Vitest component tests: plan gate, score gauge, dimension weights, config panel inline edit/cancel/save, compute button, error banner
+- `src/culture-metrics/cultureMetricsTypes.ts` — rewritten: standalone camelCase app-layer types; CmdFilters updated (metricCategory/periodType); CMD_HEALTH_STATUS_COLOR/CMD_HEALTH_STATUS_LABEL_TH with HEALTHY key; EnpsResultsRow alias; new mappers
+- `src/culture-metrics/cultureMetricsStore.ts` — rewritten: state fields aligned (enpsSurveys/enpsResults/orgHealth/isSnapshotLoading/isEnpsLoading); 11 actions with correct signatures; fetchEnpsResults with isEnpsLoading + 'Failed to load eNPS results'; submitEnpsResponse plan-gate exempt (no auth.getUser); all camelCase payloads
 
 ### ✅ Completed (v18.0 — sprint 7: Leadership Action Board UI + Storybook Stories + LAT Tests)
 - `src/leadership-actions/LeadershipActionBoard.tsx` — ENTERPRISE-gated UI; plan-gate wall, loading state, summary bar (open/in-progress/blocked/completed counts from `actions` array), filter bar (status/priority/category), new-action form, action list with status/priority/category Thai-label badges, detail panel (complete/cancel/reassign via `window.prompt`, post-update form, updates list), error banner; all `lat-*` data-testids; zero TS errors
