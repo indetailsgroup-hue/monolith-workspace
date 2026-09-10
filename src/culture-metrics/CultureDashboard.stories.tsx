@@ -338,3 +338,42 @@ export const StoreError: Story = {
     }),
   ],
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Added in sprint 11 — story #12
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Org health with three distinct health statuses: NORMAL, WARNING, and CRITICAL.
+// The component renders health-metric-row entries via the org-health-section grid.
+const METRIC_GRID: CmdOrgHealth[] = [
+  ...HEALTH_ROWS,                      // NORMAL (latestScore 72) + WARNING (latestScore 65)
+  {
+    orgId:                 'org-1',
+    metricId:              'metric-turnover',
+    displayName:           'Employee Turnover Rate',
+    displayNameTh:         'อัตราการลาออกพนักงาน',
+    metricCategory:        'ENGAGEMENT',
+    metricSource:          'OTHER',
+    targetScore:           15,
+    warningThreshold:      20,
+    criticalThreshold:     30,
+    healthWeight:          0.5,
+    latestScore:           35,
+    latestRespondentCount: 50,
+    latestPeriod:          '2026-Q3',
+    latestSnapshotDate:    '2026-09-30',
+    healthStatus:          'CRITICAL',
+  },
+];
+
+// 12. Metric grid — org-health-section with NORMAL + WARNING + CRITICAL rows
+export const WithMetricGrid: Story = {
+  name: 'Metric Grid (NORMAL + WARNING + CRITICAL)',
+  args: { orgId: 'org-1', orgPlan: 'PROFESSIONAL', isAdmin: false },
+  decorators: [
+    withCultureStore({
+      ...BASE_STATE,
+      orgHealth: METRIC_GRID,
+    }),
+  ],
+};

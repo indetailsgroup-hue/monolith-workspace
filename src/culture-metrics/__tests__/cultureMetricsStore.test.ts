@@ -446,3 +446,227 @@ describe('clearError', () => {
     expect(useCultureMetricsStore.getState().error).toBeNull();
   });
 });
+
+// ============================================================================
+// fetchOrgHealth
+// ============================================================================
+
+function makeOrgHealthRow(overrides: Partial<{
+  org_id: string; metric_id: string; display_name: string; display_name_th: string | null;
+  metric_category: string; metric_source: string; target_score: number | null;
+  warning_threshold: number | null; critical_threshold: number | null; health_weight: number;
+  latest_score: number; latest_respondent_count: number; latest_period: string;
+  latest_snapshot_date: string; health_status: string;
+}> = {}) {
+  return {
+    org_id:                  'org-1',
+    metric_id:               'metric-eng-1',
+    display_name:            'Employee Engagement',
+    display_name_th:         null,
+    metric_category:         'ENGAGEMENT',
+    metric_source:           'PS_SURVEY',
+    target_score:            80,
+    warning_threshold:       60,
+    critical_threshold:      40,
+    health_weight:           0.3,
+    latest_score:            72,
+    latest_respondent_count: 45,
+    latest_period:           '2026-Q3',
+    latest_snapshot_date:    '2026-09-30',
+    health_status:           'NORMAL',
+    ...overrides,
+  };
+}
+
+describe('fetchOrgHealth', () => {
+  const orgId = 'org-1';
+
+  it('queries the cmd_org_health_v view', async () => {
+    mockResult = { data: [], error: null };
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    expect(lastFromTable).toBe('cmd_org_health_v');
+  });
+
+  it('stores empty orgHealth when data array is empty', async () => {
+    mockResult = { data: [], error: null };
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    expect(useCultureMetricsStore.getState().orgHealth).toHaveLength(0);
+  });
+
+  it('maps DB rows to camelCase CmdOrgHealth objects', async () => {
+    const row1 = makeOrgHealthRow({ metric_id: 'metric-1', latest_score: 72, health_status: 'NORMAL' });
+    const row2 = makeOrgHealthRow({ metric_id: 'metric-2', latest_score: 55, health_status: 'WARNING', display_name_th: 'ประสิทธิภาพ' });
+    mockResult = { data: [row1, row2], error: null };
+
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    const { orgHealth } = useCultureMetricsStore.getState();
+
+    expect(orgHealth).toHaveLength(2);
+    expect(orgHealth[0].metricId).toBe('metric-1');
+    expect(orgHealth[0].latestScore).toBe(72);
+    expect(orgHealth[0].healthStatus).toBe('NORMAL');
+    expect(orgHealth[1].metricId).toBe('metric-2');
+    expect(orgHealth[1].latestScore).toBe(55);
+    expect(orgHealth[1].healthStatus).toBe('WARNING');
+    expect(orgHealth[1].displayNameTh).toBe('ประสิทธิภาพ');
+  });
+
+  it('maps all camelCase fields from a single row correctly', async () => {
+    const row = makeOrgHealthRow({
+      org_id: 'org-99', metric_id: 'metric-turnover',
+      display_name: 'Turnover', display_name_th: 'อัตราการลาออก',
+      metric_category: 'CUSTOM', metric_source: 'OTHER',
+      target_score: 15, warning_threshold: 20, critical_threshold: 30,
+      health_weight: 0.5, latest_score: 35, latest_respondent_count: 50,
+      latest_period: '2026-Q4', latest_snapshot_date: '2026-12-31',
+      health_status: 'CRITICAL',
+    });
+    mockResult = { data: [row], error: null };
+
+    await useCultureMetricsStore.getState().fetchOrgHealth('org-99');
+    const h = useCultureMetricsStore.getState().orgHealth[0];
+
+    expect(h.orgId).toBe('org-99');
+    expect(h.metricId).toBe('metric-turnover');
+    expect(h.displayName).toBe('Turnover');
+    expect(h.displayNameTh).toBe('อัตราการลาออก');
+    expect(h.metricCategory).toBe('CUSTOM');
+    expect(h.metricSource).toBe('OTHER');
+    expect(h.targetScore).toBe(15);
+    expect(h.warningThreshold).toBe(20);
+    expect(h.criticalThreshold).toBe(30);
+    expect(h.healthWeight).toBe(0.5);
+    expect(h.latestRespondentCount).toBe(50);
+    expect(h.latestPeriod).toBe('2026-Q4');
+    expect(h.latestSnapshotDate).toBe('2026-12-31');
+    expect(h.healthStatus).toBe('CRITICAL');
+  });
+
+  it('sets error to "Failed to load org health data" on DB failure', async () => {
+    mockResult = { data: null, error: { message: 'relation does not exist' } };
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    expect(useCultureMetricsStore.getState().error).toBe('Failed to load org health data');
+  });
+
+  it('resets isLoading to false after fetch completes (success)', async () => {
+    mockResult = { data: [], error: null };
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    expect(useCultureMetricsStore.getState().isLoading).toBe(false);
+  });
+
+  it('resets isLoading to false after fetch completes (error)', async () => {
+    mockResult = { data: null, error: { message: 'timeout' } };
+    await useCultureMetricsStore.getState().fetchOrgHealth(orgId);
+    expect(useCultureMetricsStore.getState().isLoading).toBe(false);
+  });
+});
+
+// ============================================================================
+// createMetricDefinition — payload mapping, state update, error path
+// ============================================================================
+
+describe('createMetricDefinition — payload mapping and state update', () => {
+  const orgId = 'org-1';
+  const plan  = 'PROFESSIONAL' as const;
+
+  const fullPayload = {
+    metricCategory:    'ENGAGEMENT' as const,
+    metricSource:      'PS_SURVEY' as const,
+    displayName:       'Employee Satisfaction',
+    displayNameTh:     'ความพึงพอใจพนักงาน',
+    minScore:          0,
+    maxScore:          100,
+    targetScore:       75,
+    warningThreshold:  60,
+    criticalThreshold: 40,
+    healthWeight:      1.5,
+    description:       'Quarterly satisfaction survey score',
+  };
+
+  it('inserts into cmd_metric_definitions with snake_case field mapping', async () => {
+    mockResult = { data: makeMetricDefinitionRow(), error: null };
+    await useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, fullPayload);
+
+    const args = lastInsertArgs as Record<string, unknown>;
+    expect(args.org_id).toBe('org-1');
+    expect(args.metric_category).toBe('ENGAGEMENT');
+    expect(args.metric_source).toBe('PS_SURVEY');
+    expect(args.display_name).toBe('Employee Satisfaction');
+    expect(args.display_name_th).toBe('ความพึงพอใจพนักงาน');
+    expect(args.min_score).toBe(0);
+    expect(args.max_score).toBe(100);
+    expect(args.target_score).toBe(75);
+    expect(args.warning_threshold).toBe(60);
+    expect(args.critical_threshold).toBe(40);
+    expect(args.health_weight).toBe(1.5);
+    expect(args.description).toBe('Quarterly satisfaction survey score');
+  });
+
+  it('applies null defaults for optional fields when omitted', async () => {
+    mockResult = { data: makeMetricDefinitionRow(), error: null };
+    await useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+      metricCategory: 'ENGAGEMENT',
+      metricSource:   'PS_SURVEY',
+      displayName:    'Minimal Metric',
+    });
+
+    const args = lastInsertArgs as Record<string, unknown>;
+    expect(args.display_name_th).toBeNull();
+    expect(args.target_score).toBeNull();
+    expect(args.warning_threshold).toBeNull();
+    expect(args.critical_threshold).toBeNull();
+    expect(args.description).toBeNull();
+    expect(args.min_score).toBe(0);
+    expect(args.max_score).toBe(100);
+    expect(args.health_weight).toBe(1.0);
+  });
+
+  it('appends the new definition to metricDefinitions state', async () => {
+    mockResult = { data: makeMetricDefinitionRow(), error: null };
+    await useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+      metricCategory: 'ENGAGEMENT',
+      metricSource:   'PS_SURVEY',
+      displayName:    'Satisfaction',
+    });
+    expect(useCultureMetricsStore.getState().metricDefinitions).toHaveLength(1);
+    expect(useCultureMetricsStore.getState().metricDefinitions[0].id).toBe('metric-1');
+  });
+
+  it('accumulates multiple definitions without clobbering previous ones', async () => {
+    const row2 = { ...makeMetricDefinitionRow(), id: 'metric-2', display_name: 'Training' };
+    mockResult = { data: makeMetricDefinitionRow(), error: null };
+    await useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+      metricCategory: 'ENGAGEMENT', metricSource: 'PS_SURVEY', displayName: 'Satisfaction',
+    });
+
+    mockResult = { data: row2, error: null };
+    await useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+      metricCategory: 'CUSTOM', metricSource: 'OTHER', displayName: 'Training',
+    });
+
+    const defs = useCultureMetricsStore.getState().metricDefinitions;
+    expect(defs).toHaveLength(2);
+    expect(defs[0].id).toBe('metric-1');
+    expect(defs[1].id).toBe('metric-2');
+  });
+
+  it('sets error to "Failed to create metric definition" on DB failure and re-throws', async () => {
+    mockResult = { data: null, error: { message: 'insert failed' } };
+    await expect(
+      useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+        metricCategory: 'ENGAGEMENT', metricSource: 'PS_SURVEY', displayName: 'Will fail',
+      }),
+    ).rejects.toBeDefined();
+    expect(useCultureMetricsStore.getState().error).toBe('Failed to create metric definition');
+  });
+
+  it('does not append to metricDefinitions on DB failure', async () => {
+    mockResult = { data: null, error: { message: 'unique violation' } };
+    await expect(
+      useCultureMetricsStore.getState().createMetricDefinition(orgId, plan, {
+        metricCategory: 'ENGAGEMENT', metricSource: 'PS_SURVEY', displayName: 'Dupe',
+      }),
+    ).rejects.toBeDefined();
+    expect(useCultureMetricsStore.getState().metricDefinitions).toHaveLength(0);
+  });
+});

@@ -44,6 +44,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.3] — 2027-03-15 — Sprint 11: CultureDashboard Store Tests (fetchOrgHealth + createMetricDefinition) + Storybook WithMetricGrid
+
+#### Added
+- **`src/culture-metrics/__tests__/cultureMetricsStore.test.ts`** — extended with:
+  - `fetchOrgHealth` describe block: 6 tests (view query, empty data, row mapping, full camelCase field mapping, error path, isLoading reset x2)
+  - `createMetricDefinition — payload mapping and state update` describe block: 6 tests (snake_case insert mapping, null defaults, state append, accumulation, error path, no-append on failure)
+- **`src/culture-metrics/CultureDashboard.stories.tsx`** — story #12 `WithMetricGrid`: org-health-section grid with NORMAL + WARNING + CRITICAL health status rows
+
 ### [18.5.2] — 2027-03-14 — Sprint 10: OrgHealthScoreBoard Stories + Component Tests + Culture Metrics Store
 
 #### Added

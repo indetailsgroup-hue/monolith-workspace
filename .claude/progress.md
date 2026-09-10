@@ -53,6 +53,10 @@
 - `src/qc-anomaly/__tests__/QcAnomalyDashboard.test.tsx` — Vitest component tests: explicit `StoreShape` interface (resolves Zustand auto-mock unknown issue); `makeStore`/`renderBoard` helpers; plan gate · loading · summary cards · filter bar · anomaly list · acknowledge · resolve · threshold toggle · error banner
 - `src/qc-anomaly/QcAnomalyDashboard.tsx` — fixed 4 tsc errors: `METRIC_KEYS` corrected to QcaMetricKey values, `threshold_value` → `threshold_breach_detail`, `acknowledgeAnomaly`/`resolveAnomaly` 3-arg → 2-arg
 
+### ✅ Completed (v18.5 — sprint 11: CultureDashboard Store Tests + WithMetricGrid Story)
+- `src/culture-metrics/__tests__/cultureMetricsStore.test.ts` — extended: `fetchOrgHealth` (6 tests: view query, empty data, row mapping, full camelCase field mapping, error path, isLoading resets x2); `createMetricDefinition — payload mapping and state update` (6 tests: snake_case insert mapping, null defaults, state append, accumulation, error path, no-append on failure)
+- `src/culture-metrics/CultureDashboard.stories.tsx` — story #12 `WithMetricGrid`: org-health-section grid with NORMAL + WARNING + CRITICAL health status rows (3-item `METRIC_GRID` fixture)
+
 ### ✅ Completed (v18.5 — sprint 10: OrgHealthScoreBoard Stories + Component Tests + Culture Metrics Store)
 - `src/org-health/OrgHealthScoreBoard.stories.tsx` — 13 CSF3 stories; decorator factory; fn() spies; 2 play functions (ConfigPanelEditSave, ComputeNow)
 - `src/org-health/__tests__/OrgHealthScoreBoard.test.tsx` — Vitest component tests: plan gate, score gauge, dimension weights, config panel inline edit/cancel/save, compute button, error banner
