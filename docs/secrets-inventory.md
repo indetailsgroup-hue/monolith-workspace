@@ -40,10 +40,12 @@
 | Secret | Workflow | Notes |
 |---|---|---|
 | `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN` | `ci.yml` | **Renamed** (was `LINE_CHANNEL_ACCESS_TOKEN`) — clearly scoped to Monolith |
-| `LINE_FPR_CHANNEL_ACCESS_TOKEN` | `ci.yml` | Has `FPR_` prefix — clearly scoped to FPR module |
-| `LINE_FPR_CHANNEL_SECRET` | `ci.yml` | Has `FPR_` prefix — clearly scoped to FPR module |
+| `LINE_FPR_CHANNEL_ACCESS_TOKEN` | `ci.yml` | ✅ Compliant — MODULE=LINE, SERVICE=FPR_CHANNEL, TYPE=ACCESS_TOKEN |
+| `LINE_FPR_CHANNEL_SECRET` | `ci.yml` | ✅ Compliant — MODULE=LINE, SERVICE=FPR_CHANNEL, TYPE=SECRET |
 
 **Resolved:** renamed to `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN`; now consistent with the `FPR_` and `NOTIFY` prefix convention.
+
+**Verification:** `LINE_FPR_CHANNEL_ACCESS_TOKEN` and `LINE_FPR_CHANNEL_SECRET` were audited against the `MODULE_SERVICE_CREDENTIAL_TYPE` pattern (see `docs/secrets-naming-convention.md`) — both are fully compliant and require no changes.
 
 ### Issue 2 — Supabase URL/key naming (`SUPABASE_*` bare vs. `FIELD_SUPABASE_*` prefix)
 
@@ -74,8 +76,8 @@
 | ~~P1~~ | ~~Rename `LINE_CHANNEL_ACCESS_TOKEN` → `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN`~~ — **DONE** (`ci.yml` secret ref updated; internal env var key left unchanged for app-code compatibility) |
 | ~~P1~~ | ~~Rename bare `SUPABASE_URL` / `SUPABASE_ANON_KEY` → `MONOLITH_SUPABASE_URL` / `MONOLITH_SUPABASE_ANON_KEY`~~ — **DONE** (`ci.yml` updated; only `ci.yml` held direct secret refs) |
 | ~~P2~~ | ~~Move `VITE_LINE_LOGIN_CHANNEL_ID` and `VITE_MONOLITH_URL` to **Repository Variables**~~ — **DONE** (workflow updated to `vars.*`; remember to create the Variables and delete the old Secrets in GitHub UI) |
-| P3 | Add a naming convention doc under `docs/` (e.g., `<MODULE>_<SERVICE>_<CREDENTIAL_TYPE>`) so future secrets follow a consistent pattern |
-| P3 | Consider splitting the 7 `LINE_*` secrets (`LINE_API_BASE`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_FPR_*`, `LINE_NOTIFY_TOKEN`) into a dedicated LINE-integration secrets review — they represent 3 different LINE products (Messaging API, FPR channel, Notify) |
+| ~~P3~~ | ~~Add a naming convention doc~~ — **DONE** (`docs/secrets-naming-convention.md` created; full compliance table for all 20 secrets, approved MODULE/CREDENTIAL_TYPE token lists, future-secrets checklist) |
+| P3 | Consider renaming remaining non-compliant secrets (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_JWT_SECRET`, `SUPABASE_PROJECT_REF`, `SUPABASE_SERVICE_ROLE_KEY`) on next rotation — see compliance table in `docs/secrets-naming-convention.md` |
 
 ---
 
