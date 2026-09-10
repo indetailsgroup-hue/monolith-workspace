@@ -3,6 +3,9 @@ name: pgTAP Tests
 # This workflow is fully local and does not require hosted Supabase secrets.
 
 on:
+  schedule:
+    # Every Monday at 02:00 UTC — catches regressions from weekend dependency updates
+    - cron: '0 2 * * 1'
   push:
     branches: [main]
   pull_request:
