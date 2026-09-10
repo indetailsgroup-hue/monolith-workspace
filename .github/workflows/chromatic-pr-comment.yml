@@ -35,6 +35,7 @@ jobs:
   comment:
     name: Post Chromatic build link as PR comment
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Post Chromatic build link

@@ -21,6 +21,7 @@ jobs:
   validate:
     name: Validate Pinned Keyset
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout

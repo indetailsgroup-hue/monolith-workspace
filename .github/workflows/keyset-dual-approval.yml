@@ -34,6 +34,7 @@ jobs:
   dual-approval:
     name: Dual Approval Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     # Only run on PRs that modify keyset files
     if: |
@@ -153,6 +154,7 @@ jobs:
   ceremony-evidence:
     name: Ceremony Evidence Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     # Only run on PRs that include ceremony docs
     if: |
@@ -277,6 +279,7 @@ jobs:
   fingerprint-check:
     name: Keyset Fingerprint Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     if: |
       github.event_name == 'pull_request' &&

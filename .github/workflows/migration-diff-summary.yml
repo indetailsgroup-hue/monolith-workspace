@@ -40,6 +40,7 @@ jobs:
   migration-summary:
     name: Summarise SQL migration changes
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout (full history for diff)

@@ -66,6 +66,7 @@ jobs:
     # corroborated, within the committed allowlist. Runs on every push and PR.
     name: claim + certification linters (local mode)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -82,6 +83,7 @@ jobs:
     name: deep absence re-verification (schedule + on demand)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:

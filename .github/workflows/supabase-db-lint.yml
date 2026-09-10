@@ -33,6 +33,7 @@ jobs:
   db-lint:
     name: Supabase DB Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Check database lint credentials

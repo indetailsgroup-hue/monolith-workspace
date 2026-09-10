@@ -43,6 +43,7 @@ jobs:
   test:
     name: Deno Tests (21 suites)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     env:
       SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
@@ -212,6 +213,7 @@ jobs:
   migrate:
     name: Production Schema Reconciliation (read-only)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: test
     if: >-
       github.ref == 'refs/heads/main' &&
@@ -349,6 +351,7 @@ jobs:
   deploy-functions:
     name: Deploy Edge Functions
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: migrate
     if: >-
       github.ref == 'refs/heads/main' &&
@@ -408,6 +411,7 @@ jobs:
   hosted-security-verify:
     name: Hosted RLS verification (#49/#50)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: github.event_name == 'workflow_dispatch'
 
     steps:
@@ -572,6 +576,7 @@ jobs:
   e2e-smoke:
     name: E2E Smoke Tests (local Supabase)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Runs in parallel with Job 1 — does not need remote secrets
     needs: []
 

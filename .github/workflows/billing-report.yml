@@ -1,0 +1,64 @@
+name: Monthly Billing Report
+
+on:
+  schedule:
+    # Run at 00:00 UTC on the 1st of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: billing-report-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+
+jobs:
+  report:
+    name: Generate GitHub Actions billing report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compute previous-month start date
+        id: dates
+        run: |
+          python3 - << 'EOF'
+          import datetime, os
+          today = datetime.date.today()
+          # First day of previous month
+          first_of_this_month = today.replace(day=1)
+          last_month = first_of_this_month - datetime.timedelta(days=1)
+          since = last_month.replace(day=1).isoformat()
+          report_name = f"billing_report_{last_month.strftime('%Y-%m')}.csv"
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"since={since}\n")
+              f.write(f"report_name={report_name}\n")
+          EOF
+
+      - name: Run billing report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/gh_billing_report.py \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }} \
+            --token "$GH_TOKEN" \
+            --since ${{ steps.dates.outputs.since }} \
+            --csv ${{ steps.dates.outputs.report_name }}
+
+      - name: Upload billing CSV as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.dates.outputs.report_name }}
+          path: ${{ steps.dates.outputs.report_name }}
+          retention-days: 90
+          if-no-files-found: warn
