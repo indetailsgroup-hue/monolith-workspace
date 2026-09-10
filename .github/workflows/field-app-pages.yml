@@ -27,8 +27,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
-          VITE_LINE_LOGIN_CHANNEL_ID: ${{ secrets.VITE_LINE_LOGIN_CHANNEL_ID }}
-          VITE_MONOLITH_URL: ${{ secrets.VITE_MONOLITH_URL }}
+          VITE_LINE_LOGIN_CHANNEL_ID: ${{ vars.VITE_LINE_LOGIN_CHANNEL_ID }}
+          VITE_MONOLITH_URL: ${{ vars.VITE_MONOLITH_URL }}
       # MONOLITH (ADR-057): เสิร์ฟใต้ /monolith/ ใน Pages เดียวกัน — deep link จาก DesignerHome
       - run: npm run build -- --base=/monolith-workspace/designer/
         env:

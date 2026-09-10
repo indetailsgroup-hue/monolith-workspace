@@ -55,7 +55,7 @@ jobs:
       SUPABASE_ANON_KEY:         ${{ secrets.MONOLITH_SUPABASE_ANON_KEY }}
       LINE_FPR_CHANNEL_SECRET:   ${{ secrets.LINE_FPR_CHANNEL_SECRET }}
       LINE_FPR_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_FPR_CHANNEL_ACCESS_TOKEN }}
-      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+      LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_MONOLITH_CHANNEL_ACCESS_TOKEN }}
       LINE_API_BASE:             ${{ secrets.LINE_API_BASE }}
       DISPATCH_LIMIT:            "50"
       VERTICAL:                  "field_purchase"

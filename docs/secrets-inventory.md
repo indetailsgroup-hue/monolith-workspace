@@ -17,7 +17,7 @@
 | 5 | `FIELD_SUPABASE_URL` | Supabase (field-app) | `field-app-pages.yml` |
 | 6 | `GITHUB_TOKEN` | GitHub built-in | `billing-report.yml`, `chromatic-pr-comment.yml`, `dependabot-auto-merge.yml`, `kernel-pyocc.yml`, `keyset-dual-approval.yml`, `migration-diff-summary.yml`, `supabase-db-lint.yml`, `vitest-pr-summary.yml` |
 | 7 | `LINE_API_BASE` | LINE Messaging | `ci.yml` |
-| 8 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging | `ci.yml` |
+| 8 | `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN` | LINE Messaging | `ci.yml` |
 | 9 | `LINE_FPR_CHANNEL_ACCESS_TOKEN` | LINE Messaging (FPR) | `ci.yml` |
 | 10 | `LINE_FPR_CHANNEL_SECRET` | LINE Messaging (FPR) | `ci.yml` |
 | 11 | `LINE_NOTIFY_TOKEN` | LINE Notify | `billing-report.yml` |
@@ -28,8 +28,8 @@
 | 16 | `SUPABASE_PROJECT_REF` | Supabase (core) | `ci.yml`, `production-bootstrap-plan.yml`, `production-migration-apply.yml`, `supabase-db-lint.yml` |
 | 17 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase (core) | `ci.yml` |
 | 18 | `MONOLITH_SUPABASE_URL` | Supabase (core) | `ci.yml` |
-| 19 | `VITE_LINE_LOGIN_CHANNEL_ID` | Build variable | `field-app-pages.yml` |
-| 20 | `VITE_MONOLITH_URL` | Build variable | `field-app-pages.yml` |
+| 19 | `VITE_LINE_LOGIN_CHANNEL_ID` | Build variable (**→ Repository Variable**) | `field-app-pages.yml` |
+| 20 | `VITE_MONOLITH_URL` | Build variable (**→ Repository Variable**) | `field-app-pages.yml` |
 
 ---
 
@@ -39,11 +39,11 @@
 
 | Secret | Workflow | Notes |
 |---|---|---|
-| `LINE_CHANNEL_ACCESS_TOKEN` | `ci.yml` | No module prefix — ambiguous which LINE channel |
+| `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN` | `ci.yml` | **Renamed** (was `LINE_CHANNEL_ACCESS_TOKEN`) — clearly scoped to Monolith |
 | `LINE_FPR_CHANNEL_ACCESS_TOKEN` | `ci.yml` | Has `FPR_` prefix — clearly scoped to FPR module |
 | `LINE_FPR_CHANNEL_SECRET` | `ci.yml` | Has `FPR_` prefix — clearly scoped to FPR module |
 
-**Risk:** `LINE_CHANNEL_ACCESS_TOKEN` is under-qualified; if a second LINE channel is ever added, the name will clash or require a breaking rename.
+**Resolved:** renamed to `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN`; now consistent with the `FPR_` and `NOTIFY` prefix convention.
 
 ### Issue 2 — Supabase URL/key naming (`SUPABASE_*` bare vs. `FIELD_SUPABASE_*` prefix)
 
@@ -63,7 +63,7 @@
 | `VITE_LINE_LOGIN_CHANNEL_ID` | `field-app-pages.yml` | Not sensitive — a public LINE Login channel ID used at build time |
 | `VITE_MONOLITH_URL` | `field-app-pages.yml` | Not sensitive — a public URL injected into the Vite bundle |
 
-**Risk:** Storing non-sensitive values as encrypted Secrets makes them invisible to `${{ vars.* }}` references, prevents auditing via the UI variable list, and wastes secret slot budget unnecessarily.
+**Resolved:** `field-app-pages.yml` updated to use `${{ vars.VITE_LINE_LOGIN_CHANNEL_ID }}` and `${{ vars.VITE_MONOLITH_URL }}`. Action needed: create these two Repository Variables in GitHub Settings → Secrets and Variables → Variables, then delete the old Secrets of the same name.
 
 ---
 
@@ -71,9 +71,9 @@
 
 | Priority | Action |
 |---|---|
-| P1 | Rename `LINE_CHANNEL_ACCESS_TOKEN` → `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN` (or a clear module prefix) and update `ci.yml` |
+| ~~P1~~ | ~~Rename `LINE_CHANNEL_ACCESS_TOKEN` → `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN`~~ — **DONE** (`ci.yml` secret ref updated; internal env var key left unchanged for app-code compatibility) |
 | ~~P1~~ | ~~Rename bare `SUPABASE_URL` / `SUPABASE_ANON_KEY` → `MONOLITH_SUPABASE_URL` / `MONOLITH_SUPABASE_ANON_KEY`~~ — **DONE** (`ci.yml` updated; only `ci.yml` held direct secret refs) |
-| P2 | Move `VITE_LINE_LOGIN_CHANNEL_ID` and `VITE_MONOLITH_URL` from **Secrets** to **Repository Variables** (`vars.VITE_LINE_LOGIN_CHANNEL_ID` etc.) and update `field-app-pages.yml` accordingly |
+| ~~P2~~ | ~~Move `VITE_LINE_LOGIN_CHANNEL_ID` and `VITE_MONOLITH_URL` to **Repository Variables**~~ — **DONE** (workflow updated to `vars.*`; remember to create the Variables and delete the old Secrets in GitHub UI) |
 | P3 | Add a naming convention doc under `docs/` (e.g., `<MODULE>_<SERVICE>_<CREDENTIAL_TYPE>`) so future secrets follow a consistent pattern |
 | P3 | Consider splitting the 7 `LINE_*` secrets (`LINE_API_BASE`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_FPR_*`, `LINE_NOTIFY_TOKEN`) into a dedicated LINE-integration secrets review — they represent 3 different LINE products (Messaging API, FPR channel, Notify) |
 
