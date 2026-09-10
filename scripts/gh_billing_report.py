@@ -169,6 +169,8 @@ def main() -> None:
                         help="Cycle start date YYYY-MM-DD; default = 1st of current month")
     parser.add_argument("--csv",    default=None, metavar="FILE",
                         help="Also write per-workflow table to this CSV file")
+    parser.add_argument("--top",    default=None, type=int, metavar="N",
+                        help="Print only the top N most expensive workflows in the summary table")
     args = parser.parse_args()
 
     if not args.token:
@@ -275,10 +277,17 @@ def main() -> None:
     grand_cost = sum(r["cost"]  for r in rows)
     col_w = 44
 
+    display_rows = [r for r in rows if not (r["mins"] == 0 and r["runs"] == 0)]
+    if args.top:
+        display_rows = display_rows[:args.top]
+        top_label = f"  (top {args.top} of {len(rows)} workflows)"
+    else:
+        top_label = ""
+
     print(f"\n{'-'*78}")
-    print(f"  {'Workflow':<{col_w}} {'Runs':>5}  {'Min':>7}  {'Cost':>9}  Breakdown")
+    print(f"  {'Workflow':<{col_w}} {'Runs':>5}  {'Min':>7}  {'Cost':>9}  Breakdown{top_label}")
     print(f"{'-'*78}")
-    for r in rows:
+    for r in display_rows:
         if r["mins"] == 0 and r["runs"] == 0:
             continue
         bd_str = "  ".join(
@@ -288,7 +297,7 @@ def main() -> None:
         )
         print(f"  {r['name']:<{col_w}} {r['runs']:>5}  {r['mins']:>7}  ${r['cost']:>8.2f}  {bd_str}")
     print(f"{'-'*78}")
-    print(f"  {'TOTAL':<{col_w}} {'':>5}  {grand_min:>7}  ${grand_cost:>8.2f}")
+    print(f"  {'TOTAL (all workflows)':<{col_w}} {'':>5}  {grand_min:>7}  ${grand_cost:>8.2f}")
     print()
 
     # ── optional CSV ─────────────────────────────────────────────────────────

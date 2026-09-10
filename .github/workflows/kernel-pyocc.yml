@@ -24,6 +24,10 @@ on:
       - '.github/workflows/kernel-pyocc.yml'
   workflow_dispatch:
 
+
+concurrency:
+  group: kernel-pyocc-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   build-and-test:
     runs-on: ubuntu-latest

@@ -32,6 +32,10 @@ permissions:
   pull-requests: write
   contents: read
 
+
+concurrency:
+  group: migration-diff-summary-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   migration-summary:
     name: Summarise SQL migration changes

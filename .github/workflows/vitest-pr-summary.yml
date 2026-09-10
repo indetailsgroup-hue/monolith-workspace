@@ -11,6 +11,10 @@ permissions:
   pull-requests: write
   contents: read
 
+
+concurrency:
+  group: vitest-pr-summary-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Run Vitest & post summary

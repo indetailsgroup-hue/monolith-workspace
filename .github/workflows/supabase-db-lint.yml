@@ -25,6 +25,10 @@ permissions:
   issues: write
   contents: read
 
+
+concurrency:
+  group: supabase-db-lint-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   db-lint:
     name: Supabase DB Lint

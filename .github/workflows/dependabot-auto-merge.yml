@@ -8,6 +8,10 @@ permissions:
   pull-requests: write
   contents: write
 
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   auto-merge:
     name: Auto-merge patch Storybook / Vitest PRs

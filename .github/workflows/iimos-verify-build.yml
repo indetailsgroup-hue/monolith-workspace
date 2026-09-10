@@ -10,6 +10,10 @@ on:
       - "tools/iimos-verify/**"
   workflow_dispatch:
 
+
+concurrency:
+  group: iimos-verify-build-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   # `tools/iimos-verify/` does not exist in this repository and never has --
   # `git log --diff-filter=A --all -- 'tools/iimos-verify/*'` is empty, and this
