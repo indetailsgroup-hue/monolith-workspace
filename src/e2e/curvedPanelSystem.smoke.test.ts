@@ -16,6 +16,12 @@
 
 import { describe, it, expect } from 'vitest';
 
+// DXF sheet builder (Stage 11–12)
+import { buildDxfSheet } from '../core/export/monolith/builders/buildDxfSheets';
+import { getFactoryProfile } from '../core/export/factoryPackageProfiles';
+import type { NestingSheet } from '../core/export/monolith/monolithExportContext';
+import type { PlannedSheet } from '../core/export/planFactoryPackage';
+
 // Curve Profile
 import { computeCurveProfile, validatePanelProfile } from '../core/manufacturing/curve/curveProfile';
 // Kerf Pattern Generator
@@ -300,5 +306,90 @@ describe('@smoke — 5. flatPartToDxfR12 (ARC entity in DXF export)', () => {
     expect(dxf).toContain('AC1009');
     expect(dxf).toContain('ENDSEC');
     expect(dxf.trim()).toContain('EOF');
+  });
+});
+
+// ============================================================
+// Shared fixtures for Stage 11–12: DXF sheet HATCH_CURVED count
+// ============================================================
+
+const DXF_PROFILE = getFactoryProfile('DEFAULT');
+
+const DXF_PLANNED: PlannedSheet = {
+  index1: 1,
+  sheetId: 'SHEET_SMOKE',
+  materialId: 'MDF_18',
+};
+
+// ============================================================
+// 11. no HATCH_CURVED when all three panels are straight
+// ============================================================
+
+describe('@smoke — 11. no HATCH_CURVED when all three panels are straight', () => {
+  it('DXF ENTITIES section contains zero HATCH_CURVED LINE entities', () => {
+    const sheet: NestingSheet = {
+      index1: 1,
+      label: 'SMOKE_ALL_FLAT',
+      materialId: 'MDF_18',
+      sheetW: 1220,
+      sheetH: 2440,
+      sheetThickness: 18,
+      utilization: 60.0,
+      placements: [
+        { partId: 'FLAT_1', x: 10,  y: 10, rotation: 0, cutW: 300, cutH: 600 },
+        { partId: 'FLAT_2', x: 320, y: 10, rotation: 0, cutW: 300, cutH: 600 },
+        { partId: 'FLAT_3', x: 630, y: 10, rotation: 0, cutW: 300, cutH: 600 },
+      ],
+    };
+
+    const dxf = buildDxfSheet({
+      planned: DXF_PLANNED,
+      nesting: sheet,
+      profile: DXF_PROFILE,
+    }).content;
+
+    const entitiesStart = dxf.indexOf('ENTITIES');
+    const entitiesSection = dxf.slice(entitiesStart);
+    const segments = entitiesSection.split('LINE');
+    const hatchLines = segments.filter((s) => s.includes('HATCH_CURVED'));
+
+    expect(hatchLines).toHaveLength(0);
+  });
+});
+
+// ============================================================
+// 12. HATCH_CURVED count === 2 when exactly one panel is curved
+// ============================================================
+
+describe('@smoke — 12. HATCH_CURVED count === 2 when one of three panels is curved', () => {
+  it('DXF ENTITIES section contains exactly 2 HATCH_CURVED LINE entities', () => {
+    const sheet: NestingSheet = {
+      index1: 1,
+      label: 'SMOKE_ONE_CURVED',
+      materialId: 'MDF_18',
+      sheetW: 1220,
+      sheetH: 2440,
+      sheetThickness: 18,
+      utilization: 65.0,
+      placements: [
+        { partId: 'FLAT_A',  x: 10,  y: 10, rotation: 0, cutW: 300, cutH: 600 },
+        { partId: 'FLAT_B',  x: 320, y: 10, rotation: 0, cutW: 300, cutH: 600 },
+        { partId: 'CURVED_C', x: 630, y: 10, rotation: 0, cutW: 300, cutH: 600, isCurved: true },
+      ],
+    };
+
+    const dxf = buildDxfSheet({
+      planned: DXF_PLANNED,
+      nesting: sheet,
+      profile: DXF_PROFILE,
+    }).content;
+
+    const entitiesStart = dxf.indexOf('ENTITIES');
+    const entitiesSection = dxf.slice(entitiesStart);
+    const segments = entitiesSection.split('LINE');
+    const hatchLines = segments.filter((s) => s.includes('HATCH_CURVED'));
+
+    // One curved placement → exactly 2 diagonal LINE entities on HATCH_CURVED
+    expect(hatchLines).toHaveLength(2);
   });
 });
