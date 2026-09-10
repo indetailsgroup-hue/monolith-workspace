@@ -23,11 +23,11 @@
 | 11 | `LINE_NOTIFY_TOKEN` | LINE Notify | `billing-report.yml` |
 | 12 | `MIGRATION_BACKUP_KEY` | Database | `production-migration-apply.yml` |
 | 13 | `SUPABASE_ACCESS_TOKEN` | Supabase (core) | `ci.yml` |
-| 14 | `SUPABASE_ANON_KEY` | Supabase (core) | `ci.yml` |
+| 14 | `MONOLITH_SUPABASE_ANON_KEY` | Supabase (core) | `ci.yml` |
 | 15 | `SUPABASE_JWT_SECRET` | Supabase (core) | `ci.yml` |
 | 16 | `SUPABASE_PROJECT_REF` | Supabase (core) | `ci.yml`, `production-bootstrap-plan.yml`, `production-migration-apply.yml`, `supabase-db-lint.yml` |
 | 17 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase (core) | `ci.yml` |
-| 18 | `SUPABASE_URL` | Supabase (core) | `ci.yml` |
+| 18 | `MONOLITH_SUPABASE_URL` | Supabase (core) | `ci.yml` |
 | 19 | `VITE_LINE_LOGIN_CHANNEL_ID` | Build variable | `field-app-pages.yml` |
 | 20 | `VITE_MONOLITH_URL` | Build variable | `field-app-pages.yml` |
 
@@ -49,8 +49,8 @@
 
 | Secret | Workflow | Notes |
 |---|---|---|
-| `SUPABASE_URL` | `ci.yml` | Bare — refers to the main/monolith Supabase project |
-| `SUPABASE_ANON_KEY` | `ci.yml` | Bare |
+| `MONOLITH_SUPABASE_URL` | `ci.yml` | **Renamed** (was `SUPABASE_URL`) — main/monolith Supabase project |
+| `MONOLITH_SUPABASE_ANON_KEY` | `ci.yml` | **Renamed** (was `SUPABASE_ANON_KEY`) |
 | `FIELD_SUPABASE_URL` | `field-app-pages.yml` | `FIELD_` prefix — separate field-app Supabase project |
 | `FIELD_SUPABASE_ANON_KEY` | `field-app-pages.yml` | `FIELD_` prefix |
 
@@ -72,7 +72,7 @@
 | Priority | Action |
 |---|---|
 | P1 | Rename `LINE_CHANNEL_ACCESS_TOKEN` → `LINE_MONOLITH_CHANNEL_ACCESS_TOKEN` (or a clear module prefix) and update `ci.yml` |
-| P1 | Rename bare `SUPABASE_URL` / `SUPABASE_ANON_KEY` → `MONOLITH_SUPABASE_URL` / `MONOLITH_SUPABASE_ANON_KEY` (or `CORE_`) to mirror the `FIELD_` convention; update all 4 workflows that reference them |
+| ~~P1~~ | ~~Rename bare `SUPABASE_URL` / `SUPABASE_ANON_KEY` → `MONOLITH_SUPABASE_URL` / `MONOLITH_SUPABASE_ANON_KEY`~~ — **DONE** (`ci.yml` updated; only `ci.yml` held direct secret refs) |
 | P2 | Move `VITE_LINE_LOGIN_CHANNEL_ID` and `VITE_MONOLITH_URL` from **Secrets** to **Repository Variables** (`vars.VITE_LINE_LOGIN_CHANNEL_ID` etc.) and update `field-app-pages.yml` accordingly |
 | P3 | Add a naming convention doc under `docs/` (e.g., `<MODULE>_<SERVICE>_<CREDENTIAL_TYPE>`) so future secrets follow a consistent pattern |
 | P3 | Consider splitting the 7 `LINE_*` secrets (`LINE_API_BASE`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_FPR_*`, `LINE_NOTIFY_TOKEN`) into a dedicated LINE-integration secrets review — they represent 3 different LINE products (Messaging API, FPR channel, Notify) |

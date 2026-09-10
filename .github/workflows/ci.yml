@@ -49,10 +49,10 @@ jobs:
     timeout-minutes: 20
 
     env:
-      SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+      SUPABASE_URL:              ${{ secrets.MONOLITH_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_JWT_SECRET:       ${{ secrets.SUPABASE_JWT_SECRET }}
-      SUPABASE_ANON_KEY:         ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_ANON_KEY:         ${{ secrets.MONOLITH_SUPABASE_ANON_KEY }}
       LINE_FPR_CHANNEL_SECRET:   ${{ secrets.LINE_FPR_CHANNEL_SECRET }}
       LINE_FPR_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_FPR_CHANNEL_ACCESS_TOKEN }}
       LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
