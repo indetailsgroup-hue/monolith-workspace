@@ -238,7 +238,8 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C2 – sla_archive_last_run value is valid JSONB', async () => {
     await callArchiveFn();
     const rows: any[] = await sql(`
-      SELECT value FROM platform_config WHERE key = 'sla_archive_last_run';
+      SELECT value::jsonb AS value
+      FROM platform_config WHERE key = 'sla_archive_last_run';
     `) as any[];
     expect(rows.length).toBe(1);
     const val = rows[0].value;
@@ -249,7 +250,7 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C3 – sla_archive_last_run contains run_at field', async () => {
     await callArchiveFn();
     const rows: any[] = await sql(`
-      SELECT value->>'run_at' AS run_at FROM platform_config
+      SELECT value::jsonb->>'run_at' AS run_at FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     expect(rows[0]?.run_at).toBeTruthy();
@@ -261,7 +262,7 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C4 – sla_archive_last_run contains rows_upserted ≥ 0', async () => {
     await callArchiveFn();
     const rows: any[] = await sql(`
-      SELECT (value->>'rows_upserted')::int AS cnt FROM platform_config
+      SELECT (value::jsonb->>'rows_upserted')::int AS cnt FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     expect(rows[0]?.cnt).toBeGreaterThanOrEqual(0);
@@ -270,7 +271,7 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C5 – sla_archive_last_run contains duration_ms ≥ 0', async () => {
     await callArchiveFn();
     const rows: any[] = await sql(`
-      SELECT (value->>'duration_ms')::float AS ms FROM platform_config
+      SELECT (value::jsonb->>'duration_ms')::float AS ms FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     expect(rows[0]?.ms).toBeGreaterThanOrEqual(0);
@@ -279,7 +280,7 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C6 – run_at reflects a recent timestamp (within last 60 seconds)', async () => {
     await callArchiveFn();
     const rows: any[] = await sql(`
-      SELECT value->>'run_at' AS run_at FROM platform_config
+      SELECT value::jsonb->>'run_at' AS run_at FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     const ts   = new Date(rows[0].run_at).getTime();
@@ -290,14 +291,14 @@ describe('Group C – platform_config.sla_archive_last_run stamping', () => {
   it('C7 – second run updates run_at to a later or equal timestamp', async () => {
     await callArchiveFn();
     const rows1: any[] = await sql(`
-      SELECT value->>'run_at' AS run_at FROM platform_config
+      SELECT value::jsonb->>'run_at' AS run_at FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     const ts1 = new Date(rows1[0].run_at).getTime();
     await new Promise(r => setTimeout(r, 500));
     await callArchiveFn();
     const rows2: any[] = await sql(`
-      SELECT value->>'run_at' AS run_at FROM platform_config
+      SELECT value::jsonb->>'run_at' AS run_at FROM platform_config
       WHERE key = 'sla_archive_last_run';
     `) as any[];
     const ts2 = new Date(rows2[0].run_at).getTime();

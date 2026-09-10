@@ -35,7 +35,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from
 
 const SUPABASE_URL     = process.env.SUPABASE_URL     ?? 'http://localhost:54321';
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY ?? '';
-const ANON_KEY         = process.env.ANON_KEY         ?? '';
+const ANON_KEY         = process.env.SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? '';
 
 const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -46,6 +46,12 @@ function userClient(token: string): SupabaseClient {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth:   { persistSession: false },
   });
+}
+
+async function execSql(query: string): Promise<Record<string, unknown>[]> {
+  const { data, error } = await svc.rpc('exec_sql', { query });
+  if (error) throw error;
+  return (data ?? []) as Record<string, unknown>[];
 }
 
 // ─── Date helpers (UTC) ───────────────────────────────────────────────────────
@@ -88,9 +94,10 @@ let tokenDesigner: string;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function createTestOrg(name: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name })
+    .insert({ org_id: orgId, name, slug: `test-0191-${orgId}`, plan: 'ENTERPRISE', max_users: 20 })
     .select('org_id')
     .single();
   if (error) throw error;
@@ -106,9 +113,24 @@ async function createTestUser(
     await svc.auth.admin.createUser({ email, password: 'Test1234!', email_confirm: true });
   if (authErr) throw authErr;
   const userId = authData.user!.id;
-  await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role });
-  // In the real harness, exchange magic link for JWT; returning userId as placeholder
-  return userId;
+  const { error: memberError } = await svc
+    .from('org_members')
+    .insert({ org_id: orgId, user_id: userId, role, email });
+  if (memberError) throw memberError;
+  const { error: metadataError } = await svc.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
+  });
+  if (metadataError) throw metadataError;
+
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: signIn, error: signInError } = await authClient.auth.signInWithPassword({
+    email,
+    password: 'Test1234!',
+  });
+  if (signInError || !signIn.session) throw signInError ?? new Error(`No session for ${email}`);
+  return signIn.session.access_token;
 }
 
 interface SubOpts {
@@ -119,12 +141,49 @@ interface SubOpts {
   createdAt?:   string;   // ISO timestamp — defaults to today noon UTC
 }
 
+async function ensureInvoice(orgId: string, invoiceId: string): Promise<void> {
+  const { data: existingCustomer, error: customerError } = await svc
+    .from('customers')
+    .select('customer_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle();
+  if (customerError) throw customerError;
+  let customer = existingCustomer;
+
+  if (!customer) {
+    const customerId = crypto.randomUUID();
+    const inserted = await svc
+      .from('customers')
+      .insert({ customer_id: customerId, org_id: orgId, name: `eTax Trend Customer ${orgId}` })
+      .select('customer_id')
+      .single();
+    if (inserted.error) throw inserted.error;
+    customer = inserted.data;
+  }
+
+  const { error } = await svc.from('invoices').upsert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0191-${invoiceId}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 1070,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: '00000000-0000-0000-0000-000000000001',
+  }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
 async function insertSubmission(opts: SubOpts): Promise<string> {
+  const invoiceId = crypto.randomUUID();
+  await ensureInvoice(opts.orgId, invoiceId);
   const { data, error } = await svc
     .from('etax_submissions')
     .insert({
       org_id:        opts.orgId,
-      invoice_id:    crypto.randomUUID(),
+      invoice_id:    invoiceId,
       document_type: 'T01',
       status:        opts.status,
       attempt_count: opts.attemptCount,
@@ -162,6 +221,8 @@ beforeAll(async () => {
 afterAll(async () => {
   await purgeTestData();
   for (const orgId of [ORG_A, ORG_B, ORG_C]) {
+    await svc.from('invoices').delete().eq('org_id', orgId);
+    await svc.from('customers').delete().eq('org_id', orgId);
     await svc.from('organizations').delete().eq('org_id', orgId);
   }
 });
@@ -196,110 +257,92 @@ describe('Group A — Schema', () => {
   ];
 
   it('A-01: v_etax_health_trend exists in public schema', async () => {
-    const { data, error } = await svc
-      .from('information_schema.views')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend')
-      .single();
-    expect(error).toBeNull();
-    expect(data?.table_name).toBe('v_etax_health_trend');
+    const rows = await execSql(`
+      SELECT table_name FROM information_schema.views
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+    `);
+    expect(rows[0]?.table_name).toBe('v_etax_health_trend');
   });
 
   it('A-02: view exposes all 17 expected columns', async () => {
-    const { data, error } = await svc
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend');
-    expect(error).toBeNull();
-    const actual = (data ?? []).map((r: any) => r.column_name);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+    `);
+    const actual = rows.map((row) => row.column_name);
     for (const col of EXPECTED_COLUMNS) {
       expect(actual, `column '${col}' missing`).toContain(col);
     }
   });
 
   it('A-03: submission_day is of type date', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend')
-      .eq('column_name', 'submission_day')
-      .single();
-    expect(data?.data_type).toBe('date');
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+        AND column_name = 'submission_day'
+    `);
+    expect(rows[0]?.data_type).toBe('date');
   });
 
   it('A-04: retry_exhaustion_rate_pct and success_rate_pct are numeric', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('column_name, data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend')
-      .in('column_name', ['retry_exhaustion_rate_pct', 'success_rate_pct']);
-    for (const row of data ?? []) {
-      expect((row as any).data_type).toMatch(/numeric|decimal/i);
+    const rows = await execSql(`
+      SELECT column_name, data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+        AND column_name IN ('retry_exhaustion_rate_pct', 'success_rate_pct')
+    `);
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.data_type).toMatch(/numeric|decimal/i);
     }
   });
 
   it('A-05: day_rank is bigint', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend')
-      .eq('column_name', 'day_rank')
-      .single();
-    expect(data?.data_type).toMatch(/bigint|int8/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+        AND column_name = 'day_rank'
+    `);
+    expect(rows[0]?.data_type).toMatch(/bigint|int8/i);
   });
 
   it('A-06: snapshot_at is timestamptz', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_health_trend')
-      .eq('column_name', 'snapshot_at')
-      .single();
-    expect(data?.data_type).toMatch(/timestamp with time zone/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_health_trend'
+        AND column_name = 'snapshot_at'
+    `);
+    expect(rows[0]?.data_type).toMatch(/timestamp with time zone/i);
   });
 
   it('A-07: rpc_etax_health_trend function exists', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'rpc_etax_health_trend');
-    expect((data ?? []).length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`SELECT proname FROM pg_proc WHERE proname = 'rpc_etax_health_trend'`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
   it('A-08: both rpc_etax_health_trend_admin variants exist (0-arg and 1-arg)', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname, pronargs')
-      .eq('proname', 'rpc_etax_health_trend_admin');
-    const argCounts = (data ?? []).map((r: any) => r.pronargs).sort();
+    const rows = await execSql(`SELECT proname, pronargs FROM pg_proc WHERE proname = 'rpc_etax_health_trend_admin'`);
+    const argCounts = rows.map((row) => row.pronargs).sort();
     expect(argCounts).toContain(0);
     expect(argCounts).toContain(1);
   });
 
   it('A-09: all three RPCs are SECURITY DEFINER', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname, prosecdef')
-      .in('proname', ['rpc_etax_health_trend', 'rpc_etax_health_trend_admin']);
-    for (const fn of data ?? []) {
-      expect((fn as any).prosecdef, `${(fn as any).proname} must be SECURITY DEFINER`).toBe(true);
+    const rows = await execSql(`
+      SELECT proname, prosecdef FROM pg_proc
+      WHERE proname IN ('rpc_etax_health_trend', 'rpc_etax_health_trend_admin')
+    `);
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    for (const fn of rows) {
+      expect(fn.prosecdef, `${String(fn.proname)} must be SECURITY DEFINER`).toBe(true);
     }
   });
 
   it('A-10: supporting index idx_etaxsub_org_created_at exists', async () => {
-    const { data } = await svc
-      .from('pg_indexes')
-      .select('indexname')
-      .eq('schemaname', 'public')
-      .eq('indexname', 'idx_etaxsub_org_created_at')
-      .single();
-    expect(data?.indexname).toBe('idx_etaxsub_org_created_at');
+    const rows = await execSql(`
+      SELECT indexname FROM pg_indexes
+      WHERE schemaname = 'public' AND indexname = 'idx_etaxsub_org_created_at'
+    `);
+    expect(rows[0]?.indexname).toBe('idx_etaxsub_org_created_at');
   });
 });
 

@@ -56,7 +56,7 @@ function authed(token: string): SupabaseClient {
 async function createOrg(slug: string): Promise<string> {
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name: slug, slug, plan: 'basic', status: 'active' })
+    .insert({ name: slug, slug, plan: 'ENTERPRISE', status: 'ACTIVE', max_users: 20 })
     .select('org_id').single();
   if (error) throw new Error(`createOrg: ${error.message}`);
   return data.org_id as string;
@@ -72,14 +72,44 @@ async function createUser(email: string): Promise<{ id: string; token: string }>
 }
 
 async function addMember(orgId: string, userId: string, role: string): Promise<void> {
-  const { error } = await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role });
+  const { data: userData } = await svc.auth.admin.getUserById(userId);
+  const { error } = await svc.from('org_members').insert({
+    org_id: orgId,
+    user_id: userId,
+    role,
+    email: userData.user?.email ?? `${userId}@test.monolith`,
+  });
   if (error) throw new Error(`addMember: ${error.message}`);
 }
 
 async function createInvoice(orgId: string): Promise<string> {
+  const invoiceId = crypto.randomUUID();
+  const customerId = crypto.randomUUID();
+  const { data: member, error: memberError } = await svc
+    .from('org_members').select('user_id').eq('org_id', orgId).limit(1).single();
+  if (memberError || !member) throw new Error(`createInvoice member: ${memberError?.message}`);
+  const { error: customerError } = await svc.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `Audit customer ${customerId}`,
+  });
+  if (customerError) throw new Error(`createInvoice customer: ${customerError.message}`);
+  const invoiceCode = `INV-AUDIT-${invoiceId}`;
   const { data, error } = await svc
     .from('invoices')
-    .insert({ org_id: orgId, status: 'approved', total_amount: 10700, tax_amount: 700, net_amount: 10000 })
+    .insert({
+      id: invoiceId,
+      invoice_id: invoiceId,
+      invoice_code: invoiceCode,
+      code: invoiceCode,
+      org_id: orgId,
+      customer_id: customerId,
+      status: 'approved',
+      total: 10700,
+      remaining_amount: 10700,
+      due_date: '2030-12-31',
+      created_by: member.user_id,
+    })
     .select('id').single();
   if (error) throw new Error(`createInvoice: ${error.message}`);
   return data.id as string;
@@ -170,6 +200,8 @@ afterAll(async () => {
   if (createdSubs.length) {
     await svc.from('etax_submissions').delete().in('id', createdSubs);
   }
+  await svc.from('invoices').delete().in('org_id', [orgA, orgB]);
+  await svc.from('customers').delete().in('org_id', [orgA, orgB]);
   for (const uid of createdUsers) {
     await svc.auth.admin.deleteUser(uid);
   }
@@ -222,14 +254,19 @@ describe('Group A: trg_etax_audit_on_status_change', () => {
   it('A-3: pdf_status change alone creates an audit row', async () => {
     const invId = await createInvoice(orgA);
     const rdRef = `RD-A3-${Date.now()}`;
-    const subId = await createSub(orgA, invId, { status: 'submitted', rd_ref_no: rdRef });
+    const subId = await createSub(orgA, invId, {
+      status: 'submitted',
+      pdf_status: null,
+      rd_ref_no: rdRef,
+    });
     createdSubs.push(subId);
     const countBefore = (await getAuditRows(subId)).length;
 
     // Update only pdf_status
-    await svc.from('etax_submissions')
+    const { error } = await svc.from('etax_submissions')
       .update({ pdf_status: 'pending' })
       .eq('id', subId);
+    expect(error).toBeNull();
 
     const rows = await getAuditRows(subId);
     expect(rows.length).toBeGreaterThan(countBefore);
@@ -624,14 +661,13 @@ describe('Group E: Immutability — RLS blocks direct INSERT / UPDATE / DELETE',
     expect(rows.length).toBeGreaterThanOrEqual(1);
     const rowId = rows[0].id as string;
 
-    const { error } = await authed(ownerA.token)
+    await authed(ownerA.token)
       .from('etax_submission_audit_log')
       .update({ new_status: 'tampered' })
       .eq('id', rowId);
 
-    expect(error).not.toBeNull();   // no UPDATE policy
-
-    // Verify the row is unchanged
+    // PostgreSQL RLS may report success with zero affected rows, so immutability
+    // is established by reading the canonical row back through service_role.
     const after = await getAuditRows(subId);
     expect(after[0].new_status).not.toBe('tampered');
   });
@@ -644,14 +680,12 @@ describe('Group E: Immutability — RLS blocks direct INSERT / UPDATE / DELETE',
     const rows = await getAuditRows(subId);
     const rowId = rows[0].id as string;
 
-    const { error } = await authed(ownerA.token)
+    await authed(ownerA.token)
       .from('etax_submission_audit_log')
       .delete()
       .eq('id', rowId);
 
-    expect(error).not.toBeNull();   // no DELETE policy
-
-    // Confirm row still exists
+    // DELETE can also be a successful no-op under RLS; verify preservation.
     const after = await getAuditRows(subId);
     expect(after.map((r) => r.id)).toContain(rowId);
   });

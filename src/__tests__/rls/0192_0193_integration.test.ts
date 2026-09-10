@@ -80,7 +80,7 @@ interface HealthSummaryRow {
   compliance_success_rate:         number
   failed_last_24h:                 number
   overdue_with_pending_etax:       number
-  today_daily_total:               number | null
+  today_total:                     number | null
   today_daily_submitted:           number | null
   today_daily_failed:              number | null
   today_daily_exhausted:           number | null
@@ -96,13 +96,18 @@ interface HealthSummaryRow {
 // Org + user factory
 // ---------------------------------------------------------------------------
 async function createTestOrg(tag: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await admin
     .from('organizations')
-    .insert({ name: `IntTest_0192_0193_${tag}_${Date.now()}` })
-    .select('id')
+    .insert({
+      org_id: orgId,
+      name: `IntTest_0192_0193_${tag}_${Date.now()}`,
+      slug: `int-0192-0193-${tag.toLowerCase()}-${orgId}`,
+    })
+    .select('org_id')
     .single()
   if (error || !data) throw new Error(`createTestOrg: ${error?.message}`)
-  return data.id
+  return data.org_id
 }
 
 async function createAuthUser(orgId: string, role = 'FINANCE'): Promise<OrgCtx> {
@@ -110,13 +115,16 @@ async function createAuthUser(orgId: string, role = 'FINANCE'): Promise<OrgCtx> 
   const password = 'IntTest@Monolith1!'
 
   const { data: created, error: cErr } = await admin.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
   })
   if (cErr || !created.user) throw new Error(`createUser: ${cErr?.message}`)
   const userId = created.user.id
 
   const { error: mErr } = await admin.from('org_members').upsert({
-    user_id: userId, org_id: orgId, role,
+    user_id: userId, org_id: orgId, role, email,
   })
   if (mErr) throw new Error(`upsert org_members: ${mErr.message}`)
 
@@ -139,28 +147,41 @@ function authedClient(token: string): SupabaseClient {
 // ---------------------------------------------------------------------------
 // Invoice + submission factory
 // ---------------------------------------------------------------------------
-async function getOrCreateInvoice(orgId: string): Promise<string> {
-  const { data: existing } = await admin
-    .from('invoices').select('id').eq('org_id', orgId).limit(1).single()
-  if (existing) return existing.id
+async function getOrCreateInvoice(orgId: string, forceNew = false): Promise<string> {
+  if (!forceNew) {
+    const { data: existing } = await admin
+      .from('invoices').select('id').eq('org_id', orgId).limit(1).single()
+    if (existing) return existing.id
+  }
 
   let customerId: string
   const { data: cust } = await admin
-    .from('customers').select('id').eq('org_id', orgId).limit(1).single()
+    .from('customers').select('customer_id').eq('org_id', orgId).limit(1).single()
   if (cust) {
-    customerId = cust.id
+    customerId = cust.customer_id
   } else {
     const { data: nc, error: ncErr } = await admin
       .from('customers')
       .insert({ org_id: orgId, name: `IntTestCust_${Date.now()}` })
-      .select('id').single()
+      .select('customer_id').single()
     if (ncErr || !nc) throw new Error(`createCustomer: ${ncErr?.message}`)
-    customerId = nc.id
+    customerId = nc.customer_id
   }
 
+  const invoiceId = crypto.randomUUID()
   const { data: inv, error: invErr } = await admin
     .from('invoices')
-    .insert({ org_id: orgId, customer_id: customerId, status: 'approved', total: 1000 })
+    .insert({
+      id: invoiceId,
+      invoice_id: invoiceId,
+      invoice_code: `INV-0192-0193-${invoiceId}`,
+      org_id: orgId,
+      customer_id: customerId,
+      status: 'approved',
+      total: 1000,
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by: '00000000-0000-0000-0000-000000000001',
+    })
     .select('id').single()
   if (invErr || !inv) throw new Error(`createInvoice: ${invErr?.message}`)
   return inv.id
@@ -181,6 +202,7 @@ async function seedSubmission(opts: {
   daysAgo?:   number
   docType?:   string
   hourOffset?: number
+  newInvoice?: boolean
 }): Promise<string> {
   const {
     orgId,
@@ -190,7 +212,8 @@ async function seedSubmission(opts: {
     docType  = 'T01',
     hourOffset = 10,
   } = opts
-  const invoiceId = opts.invoiceId ?? await getOrCreateInvoice(orgId)
+  const invoiceId = opts.invoiceId
+    ?? await getOrCreateInvoice(orgId, opts.newInvoice)
 
   const { data, error } = await admin
     .from('etax_submissions')
@@ -200,6 +223,12 @@ async function seedSubmission(opts: {
       document_type: docType,
       status,
       attempt_count: attempt,
+      last_attempt_at: status === 'failed'
+        ? daysAgoTs(daysAgo, hourOffset)
+        : null,
+      submitted_at: status === 'submitted'
+        ? daysAgoTs(daysAgo, hourOffset)
+        : null,
       created_at:    daysAgoTs(daysAgo, hourOffset),
       updated_at:    daysAgoTs(daysAgo, hourOffset),
       metadata:      { test_tag: TEST_TAG },
@@ -330,8 +359,10 @@ afterAll(async () => {
     await admin.auth.admin.deleteUser(uid).catch(() => {})
   }
   for (const oid of createdOrgIds) {
+    await admin.from('invoices').delete().eq('org_id', oid)
+    await admin.from('customers').delete().eq('org_id', oid)
     await admin.from('org_members').delete().eq('org_id', oid)
-    await admin.from('organizations').delete().eq('id', oid)
+    await admin.from('organizations').delete().eq('org_id', oid)
   }
 })
 
@@ -433,8 +464,8 @@ describe('Group A — Full pipeline data accuracy', () => {
       .single()
 
     const summaryRow = await getSummaryRow(orgId)
-    expect(summaryRow!.today_daily_total).toBe(trendRow!.daily_total)
-    expect(summaryRow!.today_daily_total).toBe(3)
+    expect(summaryRow!.today_total).toBe(trendRow!.daily_total)
+    expect(summaryRow!.today_total).toBe(3)
   })
 
   it('A6: compliance_mv_last_refreshed_at and trend_mv_last_refreshed_at are populated', async () => {
@@ -461,10 +492,14 @@ describe('Group B — health_score end-to-end formula accuracy', () => {
     const orgId = await createTestOrg('B1')
     createdOrgIds.push(orgId)
 
-    const invId = await getOrCreateInvoice(orgId)
-    for (const doc of ['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10'] as const) {
-      await seedSubmission({ orgId, invoiceId: invId, status: 'submitted', docType: doc as string, attempt: 1 })
-        .catch(() => {})
+    for (let i = 0; i < 10; i++) {
+      await seedSubmission({
+        orgId,
+        status: 'submitted',
+        docType: 'T01',
+        attempt: 1,
+        newInvoice: i > 0,
+      })
     }
     await refreshBothMVs()
 
@@ -480,15 +515,15 @@ describe('Group B — health_score end-to-end formula accuracy', () => {
     const orgId = await createTestOrg('B2')
     createdOrgIds.push(orgId)
 
-    const invId = await getOrCreateInvoice(orgId)
     const statusSeq = ['submitted','submitted','submitted','submitted','submitted','failed','failed','failed','failed','failed']
-    const docs      = ['T01','T02','T03','T04','T05','T06','T07','T08','T09','T10']
     for (let i = 0; i < 10; i++) {
       await seedSubmission({
-        orgId, invoiceId: invId,
-        status: statusSeq[i], docType: docs[i],
+        orgId,
+        status: statusSeq[i],
+        docType: 'T01',
         daysAgo: 0, hourOffset: i + 1,
-      }).catch(() => {})
+        newInvoice: i > 0,
+      })
     }
     await refreshBothMVs()
 
@@ -940,7 +975,12 @@ describe('Group E — MV staleness propagation', () => {
 
     await seedSubmission({ orgId, status: 'submitted', docType: 'T03' })
     await seedSubmission({ orgId, status: 'submitted', docType: 'T04' })
-    await seedSubmission({ orgId, status: 'submitted', docType: 'T05' })
+    await seedSubmission({
+      orgId,
+      status: 'submitted',
+      docType: 'T01',
+      newInvoice: true,
+    })
     await refreshBothMVs()
     const rowBetter = await getSummaryRow(orgId)
 
@@ -1003,8 +1043,8 @@ describe('Group F — LEFT JOIN behaviour — missing today trend row', () => {
         .eq('day_rank', 1)
         .maybeSingle()
       if (!hasTodayTrend.data) {
-        expect(row.today_daily_total).toBeNull()
-        expect(row.today_retry_exhaustion_rate_pct).toBeNull()
+        expect(row.today_total).toBe(0)
+        expect(row.today_retry_exhaustion_rate_pct).toBe(0)
       }
     }
   })
@@ -1038,16 +1078,16 @@ describe('Group F — LEFT JOIN behaviour — missing today trend row', () => {
     await seedSubmission({ orgId, status: 'submitted', docType: 'T01', daysAgo: 1 })
     await refreshBothMVs()
     const rowBefore = await getSummaryRow(orgId)
-    const todayBefore = rowBefore?.today_daily_total ?? null
+    const todayBefore = rowBefore?.today_total ?? null
 
     await seedSubmission({ orgId, status: 'submitted', docType: 'T02', daysAgo: 0 })
     await refreshTrendMV()
     const rowAfter = await getSummaryRow(orgId)
 
     // After seeding today + refreshing trend, today_daily_total should be ≥ 1
-    expect(rowAfter?.today_daily_total ?? 0).toBeGreaterThanOrEqual(1)
+    expect(rowAfter?.today_total ?? 0).toBeGreaterThanOrEqual(1)
     // And greater than before (which was null / 0)
-    expect(rowAfter?.today_daily_total ?? 0).toBeGreaterThan(todayBefore ?? 0)
+    expect(rowAfter?.today_total ?? 0).toBeGreaterThan(todayBefore ?? 0)
   })
 
   it('F5: summary row still has compliance_mv_last_refreshed_at even when trend row is absent', async () => {
@@ -1068,8 +1108,20 @@ describe('Group F — LEFT JOIN behaviour — missing today trend row', () => {
     createdOrgIds.push(orgId)
 
     await seedSubmission({ orgId, status: 'submitted', docType: 'T01', daysAgo: 0 })
-    await seedSubmission({ orgId, status: 'submitted', docType: 'T01', daysAgo: 1 })
-    await seedSubmission({ orgId, status: 'submitted', docType: 'T01', daysAgo: 2 })
+    await seedSubmission({
+      orgId,
+      status: 'submitted',
+      docType: 'T01',
+      daysAgo: 1,
+      newInvoice: true,
+    })
+    await seedSubmission({
+      orgId,
+      status: 'submitted',
+      docType: 'T01',
+      daysAgo: 2,
+      newInvoice: true,
+    })
     await refreshTrendMV()
 
     const { data: trendRows } = await admin

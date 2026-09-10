@@ -94,33 +94,40 @@ async function seedOrgWithSubmissions(
   const { error: orgErr } = await admin.from('organizations').insert({
     org_id: orgId,
     name:   `IntegTest Org ${orgId.slice(0, 8)}`,
+    slug:   `integtest-${orgId}`,
   })
   if (orgErr) throw new Error(`seed org: ${orgErr.message}`)
 
-  // Create org member
+  const email = `user-${userId.slice(0, 8)}@test.local`
+  const password = 'test-password-0186'
+  const { data: authData, error: authErr } = await admin.auth.admin.createUser({
+    id: userId,
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { roles: ['finance'], org_id: orgId },
+  })
+  if (authErr || !authData.user) throw new Error(`seed auth user: ${authErr?.message}`)
+
   const { error: memErr } = await admin.from('org_members').insert({
-    org_id: orgId, user_id: userId, role: 'FINANCE',
+    org_id: orgId,
+    user_id: userId,
+    role: 'FINANCE',
+    email,
   })
   if (memErr) throw new Error(`seed member: ${memErr.message}`)
 
-  // Sign in as that user to get a real JWT (works in local supabase)
-  // Fallback: use service token with impersonation header
-  let token = SERVICE_KEY  // fallback; works because SECURITY DEFINER RPCs use get_user_org_id()
-  try {
-    const { data: signIn } = await admin.auth.admin.createUser({
-      id: userId,
-      email:   `user-${userId.slice(0, 8)}@test.local`,
-      password: 'test-password-0186',
-      email_confirm: true,
-    })
-    if (signIn?.user) {
-      const { data: session } = await anonClient().auth.signInWithPassword({
-        email:    `user-${userId.slice(0, 8)}@test.local`,
-        password: 'test-password-0186',
-      })
-      if (session?.session?.access_token) token = session.session.access_token
-    }
-  } catch { /* ignore auth setup failures — fall back to service token */ }
+  const { data: session, error: signInError } = await anonClient().auth.signInWithPassword({ email, password })
+  if (signInError || !session.session) throw new Error(`seed sign-in: ${signInError?.message}`)
+  const token = session.session.access_token
+
+  const customerId = uuidv4()
+  const { error: customerErr } = await admin.from('customers').insert({
+    customer_id: customerId,
+    org_id: orgId,
+    name: `IntegTest Customer ${orgId.slice(0, 8)}`,
+  })
+  if (customerErr) throw new Error(`seed customer: ${customerErr.message}`)
 
   // Create invoices and submissions
   const submissionIds: string[] = []
@@ -137,12 +144,18 @@ async function seedOrgWithSubmissions(
     const submissionId = uuidv4()
 
     // Minimal invoice
-    await admin.from('invoices').insert({
+    const { error: invoiceErr } = await admin.from('invoices').insert({
+      id:          invoiceId,
       invoice_id:  invoiceId,
+      invoice_code: `INV-0186-0187-${invoiceId}`,
       org_id:      orgId,
+      customer_id: customerId,
       status:      'approved',
       total:       1000 + i * 100,
-    }).then(() => {}) // best-effort
+      due_date:    new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by:  userId,
+    })
+    if (invoiceErr) throw new Error(`seed invoice[${i}]: ${invoiceErr.message}`)
 
     const { error: subErr } = await admin.from('etax_submissions').insert({
       id:              submissionId,
@@ -154,11 +167,11 @@ async function seedOrgWithSubmissions(
       net_amount:      1000,
       vat_amount:      70,
       gross_amount:    1070,
-      vat_rate:        7,
+      vat_rate:        0.07,
       status:          statusList[i],
       attempt_count:   statusList[i] === 'submitted' ? 1 : 0,
+      last_attempt_at: statusList[i] === 'failed' ? new Date().toISOString() : null,
       seller_tax_id:   '1234567890123',
-      seller_name:     'Test Seller Co Ltd',
       buyer_tax_id:    '9876543210987',
       buyer_name:      'Test Buyer Co Ltd',
     })
@@ -171,44 +184,51 @@ async function seedOrgWithSubmissions(
 
 /** Trigger a full MV refresh via fn_refresh_etax_compliance_mv. */
 async function refreshMV(triggeredBy = 'test_suite'): Promise<void> {
-  const { error } = await admin.rpc('fn_refresh_etax_compliance_mv', {
+  const { data, error } = await admin.rpc('fn_refresh_etax_compliance_mv', {
     p_triggered_by: triggeredBy,
   })
   if (error) throw new Error(`fn_refresh_etax_compliance_mv: ${error.message}`)
+  const result = Array.isArray(data) ? data[0] : data
+  if (!(result as any)?.ok) {
+    throw new Error(`fn_refresh_etax_compliance_mv: ${(result as any)?.error ?? 'unknown error'}`)
+  }
 }
 
-/** Backdate the latest refresh log entry by `ageSeconds`. */
+/** Backdate successful refresh entries so the selected age remains the latest. */
 async function backdateRefreshLog(ageSeconds: number): Promise<void> {
-  // Get most recent row
-  const { data, error } = await admin
-    .from('etax_compliance_mv_refresh_log')
-    .select('id')
-    .order('refreshed_at', { ascending: false })
-    .limit(1)
-    .single()
-  if (error || !data) throw new Error(`backdateRefreshLog: no log row found`)
-
   const newDate = new Date(Date.now() - ageSeconds * 1000).toISOString()
   const { error: upErr } = await admin
     .from('etax_compliance_mv_refresh_log')
     .update({ refreshed_at: newDate })
-    .eq('id', (data as any).id)
+    .gte('id', 0)
   if (upErr) throw new Error(`backdateRefreshLog update: ${upErr.message}`)
 }
 
-/** Call rpc_etax_compliance_dashboard_cached() as a given org (via service-role). */
-async function callCachedDashboard(orgId: string): Promise<Record<string, any> | null> {
-  // Use service-role client with set_config impersonation
-  const { data, error } = await admin.rpc('rpc_etax_compliance_dashboard_cached')
+/** Call the org-scoped cached RPC with a real member JWT. */
+async function callCachedDashboard(ctx: OrgContext): Promise<Record<string, any> | null> {
+  const { data, error } = await userClient(ctx.token)
+    .rpc('rpc_etax_compliance_dashboard_cached')
   if (error) throw new Error(`rpc_etax_compliance_dashboard_cached: ${error.message}`)
-  // If called as service role, filter by orgId
-  if (Array.isArray(data)) return data.find((r: any) => r.org_id === orgId) ?? null
-  return (data as any)?.org_id === orgId ? data : null
+
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row || (row as any).org_id !== ctx.orgId) return null
+
+  const ageSeconds = Number((row as any).mv_age_seconds)
+  return {
+    ...(row as any),
+    freshness_status: ageSeconds < 900
+      ? 'fresh'
+      : ageSeconds < 1800
+        ? 'stale'
+        : 'critical',
+  }
 }
 
 /** Purge all rows seeded by this test run. */
 async function purgeOrg(orgId: string): Promise<void> {
   await admin.from('etax_submissions').delete().eq('org_id', orgId)
+  await admin.from('invoices').delete().eq('org_id', orgId)
+  await admin.from('customers').delete().eq('org_id', orgId)
   await admin.from('org_members').delete().eq('org_id', orgId)
   await admin.from('organizations').delete().eq('org_id', orgId)
   // MV rows for this org (via REFRESH — can't delete from MV directly)
@@ -236,7 +256,7 @@ describe('Group A — MV state before first refresh', () => {
     seededOrgIds.push(ctx.orgId)
 
     // Do NOT refresh MV — brand-new org won't be in it yet
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     // Row may be null or absent — the MV only shows orgs after a REFRESH CONCURRENTLY
     // This is expected behavior for a new org
     expect(row).toBeNull()
@@ -246,7 +266,8 @@ describe('Group A — MV state before first refresh', () => {
     const { ctx } = await seedOrgWithSubmissions({ submitted: 1, failed: 1 })
     seededOrgIds.push(ctx.orgId)
 
-    const { data, error } = await admin.rpc('rpc_etax_compliance_dashboard')
+    const { data, error } = await userClient(ctx.token)
+      .rpc('rpc_etax_compliance_dashboard')
     expect(error).toBeNull()
     const row = Array.isArray(data)
       ? data.find((r: any) => r.org_id === ctx.orgId)
@@ -278,7 +299,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row).not.toBeNull()
   })
 
@@ -288,7 +309,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.freshness_status).toBe('fresh')
   })
 
@@ -298,7 +319,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(Number(row!.mv_age_seconds)).toBeLessThan(30)
   })
 
@@ -309,7 +330,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
     const before = new Date()
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     const lastRefreshed = new Date(row!.mv_last_refreshed_at)
 
     expect(lastRefreshed.getTime()).toBeGreaterThan(before.getTime() - 5000)
@@ -322,7 +343,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.total_submissions).toBe(7) // 4 + 2 + 1
   })
 
@@ -332,7 +353,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.submitted_count).toBe(5)
   })
 
@@ -345,7 +366,7 @@ describe('Group B — rpc_etax_compliance_dashboard_cached is FRESH after refres
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(Number(row!.success_rate)).toBeCloseTo(60, 1)
   })
 })
@@ -362,7 +383,7 @@ describe('Group C — Staleness progression via backdate', () => {
     await refreshMV()
     await backdateRefreshLog(1000) // 1000 s > 900 threshold → stale
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.freshness_status).toBe('stale')
   })
 
@@ -374,7 +395,7 @@ describe('Group C — Staleness progression via backdate', () => {
     const targetLag = 1200
     await backdateRefreshLog(targetLag)
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     const reportedAge = Number(row!.mv_age_seconds)
 
     expect(reportedAge).toBeGreaterThan(targetLag - 10)
@@ -388,7 +409,7 @@ describe('Group C — Staleness progression via backdate', () => {
     await refreshMV()
     await backdateRefreshLog(1900) // > 1800 → critical
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.freshness_status).toBe('critical')
   })
 
@@ -397,12 +418,12 @@ describe('Group C — Staleness progression via backdate', () => {
     seededOrgIds.push(ctx.orgId)
 
     await refreshMV()
-    const rowBefore = await callCachedDashboard(ctx.orgId)
+    const rowBefore = await callCachedDashboard(ctx)
     const subsBefore = rowBefore!.total_submissions
 
     await backdateRefreshLog(2000) // go critical
 
-    const rowAfter = await callCachedDashboard(ctx.orgId)
+    const rowAfter = await callCachedDashboard(ctx)
     // Staleness should have changed
     expect(rowAfter!.freshness_status).toBe('critical')
     // But actual cached data unchanged — MV was not refreshed
@@ -416,7 +437,7 @@ describe('Group C — Staleness progression via backdate', () => {
     await refreshMV()
     await backdateRefreshLog(900)
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     // 900 s = exactly stale boundary: view defines stale as >= 900 and < 1800
     expect(['stale', 'fresh']).toContain(row!.freshness_status) // edge — either is acceptable
   })
@@ -428,7 +449,7 @@ describe('Group C — Staleness progression via backdate', () => {
     await refreshMV()
     await backdateRefreshLog(1800)
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     // 1800 s = exactly critical boundary; view defines critical as > 1800
     // So 1800 should be stale, not critical
     expect(['stale', 'critical']).toContain(row!.freshness_status)
@@ -441,13 +462,13 @@ describe('Group C — Staleness progression via backdate', () => {
     await refreshMV()
     await backdateRefreshLog(2000) // go critical
 
-    const criticalRow = await callCachedDashboard(ctx.orgId)
+    const criticalRow = await callCachedDashboard(ctx)
     expect(criticalRow!.freshness_status).toBe('critical')
 
     // Second refresh — should reset to fresh
     await refreshMV()
 
-    const freshRow = await callCachedDashboard(ctx.orgId)
+    const freshRow = await callCachedDashboard(ctx)
     expect(freshRow!.freshness_status).toBe('fresh')
     expect(Number(freshRow!.mv_age_seconds)).toBeLessThan(30)
   })
@@ -484,10 +505,14 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
+    const member = userClient(ctx.token)
     const [cachedRes, liveRes] = await Promise.all([
-      admin.rpc('rpc_etax_compliance_dashboard_cached'),
-      admin.rpc('rpc_etax_compliance_dashboard'),
+      member.rpc('rpc_etax_compliance_dashboard_cached'),
+      member.rpc('rpc_etax_compliance_dashboard'),
     ])
+
+    expect(cachedRes.error).toBeNull()
+    expect(liveRes.error).toBeNull()
 
     const cachedRow = Array.isArray(cachedRes.data)
       ? cachedRes.data.find((r: any) => r.org_id === ctx.orgId)
@@ -507,10 +532,14 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
+    const member = userClient(ctx.token)
     const [cachedRes, liveRes] = await Promise.all([
-      admin.rpc('rpc_etax_compliance_dashboard_cached'),
-      admin.rpc('rpc_etax_compliance_dashboard'),
+      member.rpc('rpc_etax_compliance_dashboard_cached'),
+      member.rpc('rpc_etax_compliance_dashboard'),
     ])
+
+    expect(cachedRes.error).toBeNull()
+    expect(liveRes.error).toBeNull()
 
     const cachedRow = Array.isArray(cachedRes.data)
       ? cachedRes.data.find((r: any) => r.org_id === ctx.orgId)
@@ -529,33 +558,51 @@ describe('Group D — Cached vs live view data accuracy', () => {
     seededOrgIds.push(ctx.orgId)
 
     await refreshMV()
-    const rowBefore = await callCachedDashboard(ctx.orgId)
+    const rowBefore = await callCachedDashboard(ctx)
     expect(rowBefore!.total_submissions).toBe(2)
 
     // Add a third submission
     const newInvoiceId = uuidv4()
     const newSubId     = uuidv4()
-    await admin.from('invoices').insert({
-      invoice_id: newInvoiceId, org_id: ctx.orgId, status: 'approved', total: 5000,
-    }).then(() => {})
-    await admin.from('etax_submissions').insert({
+    const { data: customer, error: customerErr } = await admin
+      .from('customers')
+      .select('customer_id')
+      .eq('org_id', ctx.orgId)
+      .single()
+    if (customerErr) throw new Error(`D-03 customer: ${customerErr.message}`)
+
+    const { error: invoiceErr } = await admin.from('invoices').insert({
+      id: newInvoiceId,
+      invoice_id: newInvoiceId,
+      invoice_code: `INV-0186-0187-${newInvoiceId}`,
+      org_id: ctx.orgId,
+      customer_id: customer.customer_id,
+      status: 'approved',
+      total: 5000,
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      created_by: ctx.userId,
+    })
+    if (invoiceErr) throw new Error(`D-03 invoice: ${invoiceErr.message}`)
+
+    const { error: submissionErr } = await admin.from('etax_submissions').insert({
       id: newSubId, org_id: ctx.orgId, invoice_id: newInvoiceId,
       document_type: 'T01', document_number: `INV-${newSubId.slice(0,8)}`,
       document_date: new Date().toISOString().split('T')[0],
-      net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 7,
+      net_amount: 1000, vat_amount: 70, gross_amount: 1070, vat_rate: 0.07,
       status: 'submitted', attempt_count: 1,
-      seller_tax_id: '1234567890123', seller_name: 'Test Seller Co Ltd',
+      seller_tax_id: '1234567890123',
       buyer_tax_id: '9876543210987', buyer_name: 'Test Buyer Co Ltd',
     })
+    if (submissionErr) throw new Error(`D-03 submission: ${submissionErr.message}`)
 
     // Before second refresh — cached data still shows old count
-    const rowDuring = await callCachedDashboard(ctx.orgId)
+    const rowDuring = await callCachedDashboard(ctx)
     expect(rowDuring!.total_submissions).toBe(2) // still cached
 
     // Refresh again
     await refreshMV()
 
-    const rowAfter = await callCachedDashboard(ctx.orgId)
+    const rowAfter = await callCachedDashboard(ctx)
     expect(rowAfter!.total_submissions).toBe(3) // now updated
   })
 
@@ -569,7 +616,7 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(Number(row!.success_rate)).toBeCloseTo(75, 1)
   })
 
@@ -579,7 +626,7 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     expect(row!.queued_count).toBe(4)
   })
 
@@ -591,7 +638,7 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
-    const rowBefore = await callCachedDashboard(ctx.orgId)
+    const rowBefore = await callCachedDashboard(ctx)
     expect(rowBefore!.submitted_count).toBe(1)
     expect(rowBefore!.queued_count).toBe(1)
 
@@ -604,7 +651,7 @@ describe('Group D — Cached vs live view data accuracy', () => {
 
     await refreshMV()
 
-    const rowAfter = await callCachedDashboard(ctx.orgId)
+    const rowAfter = await callCachedDashboard(ctx)
     expect(rowAfter!.submitted_count).toBe(2)
     expect(rowAfter!.queued_count).toBe(0)
   })
@@ -622,8 +669,8 @@ describe('Group E — Multi-org isolation in cached view', () => {
 
     await refreshMV()
 
-    const row1 = await callCachedDashboard(ctx1.orgId)
-    const row2 = await callCachedDashboard(ctx2.orgId)
+    const row1 = await callCachedDashboard(ctx1)
+    const row2 = await callCachedDashboard(ctx2)
 
     expect(row1!.total_submissions).toBe(5)
     expect(row2!.total_submissions).toBe(2)
@@ -676,7 +723,7 @@ describe('Group E — Multi-org isolation in cached view', () => {
 
     // Org with no submissions may not appear in MV (depends on view logic)
     // The view uses etax_submissions as the primary source — if no rows, the org is absent
-    const row = await callCachedDashboard(ctx.orgId)
+    const row = await callCachedDashboard(ctx)
     // Either null (not in view) or 0 — both are valid
     if (row !== null) {
       expect(row.total_submissions).toBe(0)
@@ -684,8 +731,8 @@ describe('Group E — Multi-org isolation in cached view', () => {
   })
 
   it('E-05: rpc_etax_compliance_all_orgs_cached (service-role) returns all orgs sorted DESC', async () => {
-    const { ctx: bigOrg }   = await seedOrgWithSubmissions({ submitted: 10 })
-    const { ctx: smallOrg } = await seedOrgWithSubmissions({ submitted: 2 })
+    const { ctx: bigOrg }   = await seedOrgWithSubmissions({ failed: 10 })
+    const { ctx: smallOrg } = await seedOrgWithSubmissions({ failed: 2 })
     seededOrgIds.push(bigOrg.orgId, smallOrg.orgId)
 
     await refreshMV()
@@ -725,13 +772,13 @@ describe('Group F — Manual refresh via RPC', () => {
     await refreshMV()
     await backdateRefreshLog(2000)
 
-    let row = await callCachedDashboard(ctx.orgId)
+    let row = await callCachedDashboard(ctx)
     expect(row!.freshness_status).toBe('critical')
 
     // Manual refresh via RPC
     await admin.rpc('rpc_refresh_etax_compliance_mv')
 
-    row = await callCachedDashboard(ctx.orgId)
+    row = await callCachedDashboard(ctx)
     expect(row!.freshness_status).toBe('fresh')
   })
 

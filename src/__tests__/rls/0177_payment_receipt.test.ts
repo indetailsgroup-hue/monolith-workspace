@@ -21,45 +21,81 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL  = process.env.SUPABASE_URL  ?? 'http://localhost:54321';
 const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'test-service-role-key';
+const ANON_KEY      = process.env.SUPABASE_ANON_KEY ?? 'test-anon-key';
 
 /** สร้าง client สำหรับ user ที่ระบุ role และ org */
 function makeClient(jwt?: string): SupabaseClient {
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
+  return createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: jwt ? { Authorization: `Bearer ${jwt}` } : {} },
     auth:   { persistSession: false },
   });
 }
 
-const admin   = makeClient();  // service-role: bypasses RLS
+const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 /** Helper: สร้าง JWT สำหรับ test user (ต้องมี app_role + org_member row) */
 async function signInAs(email: string, password: string): Promise<SupabaseClient> {
-  const { data, error } = await admin.auth.signInWithPassword({ email, password });
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await authClient.auth.signInWithPassword({ email, password });
   if (error || !data.session) throw new Error(`signInAs(${email}) failed: ${error?.message}`);
   return makeClient(data.session.access_token);
 }
 
 /** Helper: upsert test org + member + COA entry */
 async function setupOrg(orgId: string, userId: string, role: string) {
-  await admin.from('organizations').upsert({ org_id: orgId, name: `Test Org ${orgId.slice(0,6)}` });
-  await admin.from('org_members').upsert({ org_id: orgId, user_id: userId, role });
+  const { error: userError } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role], org_id: orgId },
+  });
+  if (userError) throw new Error(`setupOrg user metadata: ${userError.message}`);
+
+  const { error: orgError } = await admin.from('organizations').upsert({
+    org_id: orgId,
+    name: `Test Org ${orgId.slice(0,6)}`,
+    slug: `test-0177-${orgId}`,
+    plan: 'ENTERPRISE',
+    max_users: 50,
+  });
+  if (orgError) throw new Error(`setupOrg organization: ${orgError.message}`);
+
+  const { error: memberError } = await admin.from('org_members').upsert({
+    org_id: orgId,
+    user_id: userId,
+    role: role.toUpperCase(),
+    email: `test-0177-${userId}@monolith.local`,
+  }, { onConflict: 'org_id,user_id' });
+  if (memberError) throw new Error(`setupOrg member: ${memberError.message}`);
+
   // Minimal COA: 1100 Cash, 1200 AR, 4100 Revenue, 2200 VAT
   for (const [code, name] of [['1100','Cash/Bank'],['1200','AR'],['4100','Revenue'],['2200','VAT']]) {
-    await admin.from('chart_of_accounts').upsert({
-      org_id: orgId, code, name, account_type: code.startsWith('1') ? 'asset' : code.startsWith('4') ? 'revenue' : 'liability',
+    const { error: accountError } = await admin.from('chart_of_accounts').upsert({
+      org_id: orgId, code, name, type: code.startsWith('1') ? 'asset' : code.startsWith('4') ? 'revenue' : 'liability',
     }, { onConflict: 'org_id,code' });
+    if (accountError) throw new Error(`setupOrg account ${code}: ${accountError.message}`);
   }
+
   // book_registry default entry
-  await admin.from('book_registry').upsert({
-    org_id: orgId, book_id: 'internal', name: 'Main Book', is_default: true,
+  const { error: bookError } = await admin.from('book_registry').upsert({
+    org_id: orgId,
+    book_id: 'internal',
+    display_name: 'Main Book',
+    created_by: userId,
+    is_active: true,
   }, { onConflict: 'org_id,book_id' });
+  if (bookError) throw new Error(`setupOrg book: ${bookError.message}`);
 }
 
 /** Helper: สร้าง approved invoice */
 async function createApprovedInvoice(orgId: string, customerId: string, total: number): Promise<string> {
+  const invoiceId = crypto.randomUUID();
   const { data, error } = await admin.from('invoices').insert({
+    invoice_id: invoiceId,
     org_id:     orgId,
-    code:       `INV-TEST-${Date.now()}`,
+    invoice_code: `INV-TEST-${invoiceId}`,
+    code:       `INV-TEST-${invoiceId}`,
     customer_id: customerId,
     status:     'approved',
     subtotal:   total / 1.07,
@@ -72,9 +108,9 @@ async function createApprovedInvoice(orgId: string, customerId: string, total: n
     issued_date: new Date().toISOString().slice(0, 10),
     created_by:  '00000000-0000-0000-0000-000000000001',
     updated_by:  '00000000-0000-0000-0000-000000000001',
-  }).select('id').single();
+  }).select('invoice_id').single();
   if (error) throw new Error(`createApprovedInvoice failed: ${error.message}`);
-  return data!.id;
+  return data!.invoice_id;
 }
 
 // ─── Test fixtures ───────────────────────────────────────────────────────────
@@ -124,12 +160,12 @@ beforeAll(async () => {
   await setupOrg(ORG_B, financeUserIdB, 'finance');
 
   // Minimal customers
-  const { data: cA } = await admin.from('customer').insert({
+  const { data: cA } = await admin.from('customers').insert({
     name: 'Customer A', phone: '0800000001', org_id: ORG_A,
   }).select('customer_id').single().then(r => r, () => ({ data: null }));
   customerIdA = cA?.customer_id ?? '00000000-cccc-0000-0000-000000000001';
 
-  const { data: cB } = await admin.from('customer').insert({
+  const { data: cB } = await admin.from('customers').insert({
     name: 'Customer B', phone: '0800000002', org_id: ORG_B,
   }).select('customer_id').single().then(r => r, () => ({ data: null }));
   customerIdB = cB?.customer_id ?? '00000000-cccc-0000-0000-000000000002';
@@ -271,16 +307,14 @@ describe('rpc_confirm_payment', () => {
     });
 
     it('rejects payment on cancelled invoice', async () => {
-      const { data: inv } = await admin.from('invoices').insert({
-        org_id: ORG_A, code: `INV-CANCEL-${Date.now()}`,
-        customer_id: customerIdA, status: 'cancelled',
-        total: 1000, paid_amount: 0, remaining_amount: 1000,
-        due_date: '2026-12-31', issued_date: '2026-01-01',
-        created_by: adminUserIdA, updated_by: adminUserIdA,
-      }).select('id').single();
+      const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 1000);
+      const { error: fixtureError } = await admin.from('invoices')
+        .update({ status: 'cancelled' })
+        .eq('invoice_id', invoiceId);
+      expect(fixtureError).toBeNull();
 
       const { error } = await financeClientA.rpc('rpc_confirm_payment', {
-        p_invoice_id: inv!.id,
+        p_invoice_id: invoiceId,
         p_amount:     1000,
       });
 
@@ -289,16 +323,14 @@ describe('rpc_confirm_payment', () => {
     });
 
     it('rejects payment on draft invoice (not yet approved)', async () => {
-      const { data: inv } = await admin.from('invoices').insert({
-        org_id: ORG_A, code: `INV-DRAFT-${Date.now()}`,
-        customer_id: customerIdA, status: 'draft',
-        total: 1000, paid_amount: 0, remaining_amount: 1000,
-        due_date: '2026-12-31', issued_date: '2026-01-01',
-        created_by: adminUserIdA, updated_by: adminUserIdA,
-      }).select('id').single();
+      const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 1000);
+      const { error: fixtureError } = await admin.from('invoices')
+        .update({ status: 'draft' })
+        .eq('invoice_id', invoiceId);
+      expect(fixtureError).toBeNull();
 
       const { error } = await financeClientA.rpc('rpc_confirm_payment', {
-        p_invoice_id: inv!.id,
+        p_invoice_id: invoiceId,
         p_amount:     1000,
       });
 
@@ -820,19 +852,16 @@ describe('v_invoice_payment_status', () => {
   });
 
   it('shows OVERDUE for past-due invoice with unpaid balance', async () => {
-    const { data: inv } = await admin.from('invoices').insert({
-      org_id: ORG_A, code: `INV-OVERDUE-${Date.now()}`,
-      customer_id: customerIdA, status: 'approved',
-      total: 5350, paid_amount: 0, remaining_amount: 5350,
-      due_date: '2020-01-01',  // เลยกำหนดนานแล้ว
-      issued_date: '2020-01-01',
-      created_by: adminUserIdA, updated_by: adminUserIdA,
-    }).select('id').single();
+    const invoiceId = await createApprovedInvoice(ORG_A, customerIdA, 5350);
+    const { error: fixtureError } = await admin.from('invoices')
+      .update({ due_date: '2020-01-01', issued_date: '2020-01-01' })
+      .eq('invoice_id', invoiceId);
+    expect(fixtureError).toBeNull();
 
     const { data } = await financeClientA
       .from('v_invoice_payment_status')
       .select('payment_state')
-      .eq('invoice_id', inv!.id)
+      .eq('invoice_id', invoiceId)
       .single();
 
     expect(data!.payment_state).toBe('OVERDUE');
@@ -979,7 +1008,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_amount, remaining_amount, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(Number(inv!.paid_amount)).toBe(6000);
     expect(Number(inv!.remaining_amount)).toBeCloseTo(10700 - 6000, 1);
@@ -996,7 +1025,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_at, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(inv!.paid_at).toBeTruthy();
     expect(inv!.status).toBe('paid');
@@ -1012,7 +1041,7 @@ describe('invoice columns after payment', () => {
 
     const { data: inv } = await admin
       .from('invoices').select('paid_at, status')
-      .eq('id', invoiceId).single();
+      .eq('invoice_id', invoiceId).single();
 
     expect(inv!.paid_at).toBeNull();
     expect(inv!.status).toBe('partial');

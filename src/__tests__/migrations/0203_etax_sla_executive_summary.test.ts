@@ -418,17 +418,12 @@ describe('Group F — Tenant isolation', () => {
     }
   })
 
-  it('F3: service_role can see both orgs', async () => {
+  it('F3: service_role RPC exposes every row from the executive view', async () => {
     const allRows = await rpc('rpc_etax_sla_executive_summary', {})
-    const orgIds = allRows.map((r: any) => r.org_id)
-    // If both orgs have data, both should appear
-    if (orgIds.length >= 2) {
-      const hasA = orgIds.includes(TEST_ORG_A_ID)
-      const hasB = orgIds.includes(TEST_ORG_B_ID)
-      // At least one org visible for service_role
-      expect(hasA || hasB).toBe(true)
-    }
-    // If less than 2 rows, test data may not be seeded — acceptable
+    const viewRows = await sql(`SELECT org_id FROM v_etax_sla_executive_summary`)
+    const rpcOrgIds = allRows.map((row: any) => row.org_id).sort()
+    const viewOrgIds = viewRows.map((row: any) => row.org_id).sort()
+    expect(rpcOrgIds).toEqual(viewOrgIds)
   })
 })
 
@@ -438,7 +433,7 @@ describe('Group F — Tenant isolation', () => {
 describe('Group G — platform_config migration stamp', () => {
   it('G1: migration_0203_applied entry exists in platform_config', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -446,7 +441,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G2: migration stamp has correct version "0203"', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -456,7 +451,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G3: migration stamp has non-null applied_at timestamp', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)
@@ -465,7 +460,7 @@ describe('Group G — platform_config migration stamp', () => {
 
   it('G4: migration stamp description mentions v_etax_sla_executive_summary', async () => {
     const rows = await sql(`
-      SELECT value FROM platform_config
+      SELECT value::jsonb AS value FROM platform_config
       WHERE key = 'migration_0203_applied'
     `)
     expect(rows.length).toBe(1)

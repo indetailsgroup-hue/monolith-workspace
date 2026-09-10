@@ -66,6 +66,11 @@ async function ensureUser(email) {
 }
 
 async function upsertMembership(orgId, user, email) {
+  const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: { roles: ['admin'], org_id: orgId },
+  });
+  if (metadataError) throw new Error(`seed user metadata ${email}: ${metadataError.message}`);
+
   const { error } = await admin.from('org_members').upsert({
     org_id: orgId,
     user_id: user.id,

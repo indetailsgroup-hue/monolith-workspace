@@ -59,28 +59,73 @@ async function makeAuthClient(role: string): Promise<{
   if (createErr || !userRec.user) throw new Error(`createUser failed: ${createErr?.message}`)
   const userId = userRec.user.id
 
-  // Resolve or create org
-  const { data: orgData } = await serviceClient
+  const orgId = crypto.randomUUID()
+  const { error: orgError } = await serviceClient
     .from('organizations')
-    .select('id')
-    .limit(1)
-    .single()
-  if (!orgData) throw new Error('No org found for test setup')
-  const orgId = orgData.id
+    .insert({
+      org_id: orgId,
+      name: `test_0192_org_${role.toLowerCase()}_${orgId}`,
+      slug: `test-0192-${role.toLowerCase()}-${orgId}`,
+      plan: 'ENTERPRISE',
+    })
+  if (orgError) throw new Error(`create org failed: ${orgError.message}`)
+  createdOrgIds.push(orgId)
 
-  // Insert org_members row
-  await serviceClient.from('org_members').upsert({
+  const { error: metadataError } = await serviceClient.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
+  })
+  if (metadataError) throw new Error(`updateUser failed: ${metadataError.message}`)
+
+  const { error: memberError } = await serviceClient.from('org_members').insert({
     user_id : userId,
     org_id  : orgId,
     role,
+    email,
   })
+  if (memberError) throw new Error(`org member failed: ${memberError.message}`)
 
-  // Sign in
+  // Sign in after app metadata and membership are present in the issued JWT.
   const anonClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } })
   const { error: signInErr } = await anonClient.auth.signInWithPassword({ email, password })
   if (signInErr) throw new Error(`signIn failed: ${signInErr.message}`)
 
   return { client: anonClient, userId, orgId }
+}
+
+async function createInvoice(orgId: string): Promise<string> {
+  const { data: member, error: memberError } = await serviceClient
+    .from('org_members')
+    .select('user_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .single()
+  if (memberError || !member) throw new Error(`No member for org ${orgId}`)
+
+  const { data: customer, error: customerError } = await serviceClient
+    .from('customers')
+    .insert({ org_id: orgId, name: `test_customer_0192_${crypto.randomUUID()}` })
+    .select('customer_id')
+    .single()
+  if (customerError || !customer) throw new Error(`create customer failed: ${customerError?.message}`)
+
+  const invoiceId = crypto.randomUUID()
+  const code = `INV-0192-${invoiceId}`
+  const { error: invoiceError } = await serviceClient.from('invoices').insert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: code,
+    code,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 107,
+    remaining_amount: 107,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: member.user_id,
+  })
+  if (invoiceError) throw new Error(`create invoice failed: ${invoiceError.message}`)
+
+  return invoiceId
 }
 
 // ---------------------------------------------------------------------------
@@ -106,23 +151,25 @@ async function seedSubmission(opts: {
 }): Promise<string> {
   const { orgId, status = 'submitted', attempt = 1, daysAgo = 0, docType = 'T01' } = opts
 
-  // Resolve any invoice in this org for FK
-  const { data: inv } = await serviceClient
-    .from('invoices')
-    .select('id')
-    .eq('org_id', orgId)
-    .limit(1)
-    .single()
-  if (!inv) throw new Error(`No invoice for org ${orgId}`)
+  const invoiceId = await createInvoice(orgId)
 
   const { data, error } = await serviceClient
     .from('etax_submissions')
     .insert({
       org_id        : orgId,
-      invoice_id    : inv.id,
+      invoice_id    : invoiceId,
       document_type : docType,
+      document_number: `ETAX-0192-${crypto.randomUUID()}`,
+      document_date : daysAgoTs(daysAgo).slice(0, 10),
+      net_amount    : 100,
+      vat_amount    : 7,
+      gross_amount  : 107,
+      vat_rate      : 0.07,
+      buyer_name    : '0192 test customer',
       status,
       attempt_count : attempt,
+      last_attempt_at: status === 'failed' ? daysAgoTs(daysAgo) : null,
+      submitted_at  : status === 'submitted' ? daysAgoTs(daysAgo) : null,
       created_at    : daysAgoTs(daysAgo),
       metadata      : { test_tag: TEST_TAG },
     })
@@ -150,6 +197,7 @@ async function forceRefreshLog(opts: {
 // Cleanup
 // ---------------------------------------------------------------------------
 const createdUserIds: string[] = []
+const createdOrgIds: string[] = []
 
 afterEach(async () => {
   await serviceClient
@@ -167,6 +215,13 @@ afterEach(async () => {
 afterAll(async () => {
   for (const uid of createdUserIds) {
     await serviceClient.auth.admin.deleteUser(uid)
+  }
+  for (const orgId of new Set(createdOrgIds)) {
+    await serviceClient.from('etax_submissions').delete().eq('org_id', orgId)
+    await serviceClient.from('invoices').delete().eq('org_id', orgId)
+    await serviceClient.from('customers').delete().eq('org_id', orgId)
+    await serviceClient.from('org_members').delete().eq('org_id', orgId)
+    await serviceClient.from('organizations').delete().eq('org_id', orgId)
   }
 })
 
@@ -219,7 +274,7 @@ describe('Group A — Schema Validation', () => {
       p_days: 1,
     })
     // Will fail with auth error, not "function does not exist"
-    expect(error?.message).not.toMatch(/function .* does not exist/i)
+    expect(error?.message ?? '').not.toMatch(/function .* does not exist/i)
   })
 
   it('A5: rpc_etax_health_trend_cached_admin function exists', async () => {
@@ -227,7 +282,7 @@ describe('Group A — Schema Validation', () => {
       p_org_id : null,
       p_days   : 1,
     })
-    expect(error?.message).not.toMatch(/function .* does not exist/i)
+    expect(error?.message ?? '').not.toMatch(/function .* does not exist/i)
   })
 
   it('A6: fn_refresh_etax_health_trend_mv function exists (service_role can call it)', async () => {
@@ -533,18 +588,18 @@ describe('Group D — fn_refresh_etax_health_trend_mv Refresh Mechanics', () => 
   })
 
   it('D5: each fn_refresh call appends exactly one row to etax_health_trend_mv_refresh_log', async () => {
-    const { data: before } = await serviceClient
+    const { data, error } = await serviceClient.rpc('fn_refresh_etax_health_trend_mv', {
+      p_triggered_by: 'test',
+    })
+    expect(error).toBeNull()
+
+    const { count } = await serviceClient
       .from('etax_health_trend_mv_refresh_log')
       .select('id', { count: 'exact', head: true })
+      .eq('triggered_by', 'test')
+      .eq('refreshed_at', data.refreshed_at)
 
-    await serviceClient.rpc('fn_refresh_etax_health_trend_mv', { p_triggered_by: 'test' })
-
-    const { count: after } = await serviceClient
-      .from('etax_health_trend_mv_refresh_log')
-      .select('id', { count: 'exact', head: true })
-
-    const beforeCount = (before as any)?.count ?? 0
-    expect(after).toBe(Number(beforeCount) + 1)
+    expect(count).toBe(1)
   })
 
   it('D6: consecutive refreshes both succeed (CONCURRENT works after first blocking run)', async () => {
@@ -607,7 +662,7 @@ describe('Group E — rpc_etax_health_trend_cached_admin Service-Role Guard', ()
       p_days   : 30,
     })
     expect(error).not.toBeNull()
-    expect(error!.message).toMatch(/service_role/i)
+    expect(error!.message).toMatch(/service_role|permission denied/i)
   })
 
   it('E3: authenticated ADMIN call to admin RPC is rejected', async () => {

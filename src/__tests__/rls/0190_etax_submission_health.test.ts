@@ -27,13 +27,13 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 
 // ─── Client setup ────────────────────────────────────────────────────────────
 
 const SUPABASE_URL      = process.env.SUPABASE_URL      ?? 'http://localhost:54321';
 const SERVICE_ROLE_KEY  = process.env.SERVICE_ROLE_KEY  ?? '';
-const ANON_KEY          = process.env.ANON_KEY          ?? '';
+const ANON_KEY          = process.env.SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? '';
 
 const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -44,6 +44,12 @@ function userClient(accessToken: string): SupabaseClient {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
     auth:   { persistSession: false },
   });
+}
+
+async function execSql(query: string): Promise<Record<string, unknown>[]> {
+  const { data, error } = await svc.rpc('exec_sql', { query });
+  if (error) throw error;
+  return (data ?? []) as Record<string, unknown>[];
 }
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -63,9 +69,10 @@ let tokenDesigner: string; // DESIGNER in ORG_A
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function createTestOrg(name: string): Promise<string> {
+  const orgId = crypto.randomUUID()
   const { data, error } = await svc
     .from('organizations')
-    .insert({ name, test_tag: TEST_TAG })
+    .insert({ org_id: orgId, name, slug: `test-0190-${orgId}`, plan: 'ENTERPRISE', max_users: 20 })
     .select('org_id')
     .single();
   if (error) throw error;
@@ -85,17 +92,24 @@ async function createTestUser(
   if (authErr) throw authErr;
   const userId = authData.user!.id;
 
-  await svc.from('org_members').insert({ org_id: orgId, user_id: userId, role });
-
-  const { data: session, error: sessErr } = await svc.auth.admin.generateLink({
-    type: 'magiclink',
-    email,
+  const { error: memberError } = await svc
+    .from('org_members')
+    .insert({ org_id: orgId, user_id: userId, role, email });
+  if (memberError) throw memberError;
+  const { error: metadataError } = await svc.auth.admin.updateUserById(userId, {
+    app_metadata: { roles: [role.toLowerCase()], org_id: orgId },
   });
-  if (sessErr) throw sessErr;
+  if (metadataError) throw metadataError;
 
-  // Exchange magic link for access token (test harness pattern)
-  const { data: tokenData } = await svc.auth.admin.getUserById(userId);
-  return tokenData.user?.email ?? '';   // placeholder — real harness exchanges JWT
+  const authClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: signIn, error: signInError } = await authClient.auth.signInWithPassword({
+    email,
+    password: 'Test1234!',
+  });
+  if (signInError || !signIn.session) throw signInError ?? new Error(`No session for ${email}`);
+  return signIn.session.access_token;
 }
 
 interface SubmissionOpts {
@@ -106,12 +120,49 @@ interface SubmissionOpts {
   invoiceId?:   string;
 }
 
+async function ensureInvoice(orgId: string, invoiceId: string): Promise<void> {
+  const { data: existingCustomer, error: customerError } = await svc
+    .from('customers')
+    .select('customer_id')
+    .eq('org_id', orgId)
+    .limit(1)
+    .maybeSingle();
+  if (customerError) throw customerError;
+  let customer = existingCustomer;
+
+  if (!customer) {
+    const customerId = crypto.randomUUID();
+    const inserted = await svc
+      .from('customers')
+      .insert({ customer_id: customerId, org_id: orgId, name: `eTax Test Customer ${orgId}` })
+      .select('customer_id')
+      .single();
+    if (inserted.error) throw inserted.error;
+    customer = inserted.data;
+  }
+
+  const { error } = await svc.from('invoices').upsert({
+    id: invoiceId,
+    invoice_id: invoiceId,
+    invoice_code: `INV-0190-${invoiceId}`,
+    org_id: orgId,
+    customer_id: customer.customer_id,
+    status: 'approved',
+    total: 1070,
+    due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+    created_by: '00000000-0000-0000-0000-000000000001',
+  }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
 async function insertSubmission(opts: SubmissionOpts): Promise<string> {
+  const invoiceId = opts.invoiceId ?? crypto.randomUUID();
+  await ensureInvoice(opts.orgId, invoiceId);
   const { data, error } = await svc
     .from('etax_submissions')
     .insert({
       org_id:        opts.orgId,
-      invoice_id:    opts.invoiceId ?? crypto.randomUUID(),
+      invoice_id:    invoiceId,
       document_type: 'T01',
       status:        opts.status,
       attempt_count: opts.attemptCount,
@@ -193,6 +244,8 @@ afterAll(async () => {
 
   // Remove test orgs and users (cascade)
   for (const orgId of [ORG_A, ORG_B, ORG_C]) {
+    await svc.from('invoices').delete().eq('org_id', orgId);
+    await svc.from('customers').delete().eq('org_id', orgId);
     await svc.from('organizations').delete().eq('org_id', orgId);
   }
 });
@@ -235,95 +288,69 @@ describe('Group A — Schema', () => {
   ];
 
   it('A-01: v_etax_submission_health view exists in public schema', async () => {
-    const { data, error } = await svc
-      .from('information_schema.views')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .single();
-    expect(error).toBeNull();
-    expect(data?.table_name).toBe('v_etax_submission_health');
+    const rows = await execSql(`
+      SELECT table_name FROM information_schema.views
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+    `);
+    expect(rows[0]?.table_name).toBe('v_etax_submission_health');
   });
 
   it('A-02: view exposes all 25 expected columns', async () => {
-    const { data, error } = await svc
-      .from('information_schema.columns')
-      .select('column_name')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health');
-    expect(error).toBeNull();
-    const actual = (data ?? []).map((r: any) => r.column_name);
+    const rows = await execSql(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+    `);
+    const actual = rows.map((row) => row.column_name);
     for (const col of EXPECTED_COLUMNS) {
       expect(actual, `column '${col}' missing from view`).toContain(col);
     }
   });
 
   it('A-03: retry_exhaustion_rate_pct column is numeric type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'retry_exhaustion_rate_pct')
-      .single();
-    expect(data?.data_type).toMatch(/numeric|decimal/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'retry_exhaustion_rate_pct'
+    `);
+    expect(rows[0]?.data_type).toMatch(/numeric|decimal/i);
   });
 
   it('A-04: avg_seconds_to_resolve column is numeric type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'avg_seconds_to_resolve')
-      .single();
-    expect(data?.data_type).toMatch(/numeric|decimal/i);
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'avg_seconds_to_resolve'
+    `);
+    expect(rows[0]?.data_type).toMatch(/numeric|decimal/i);
   });
 
   it('A-05: org_id column is uuid type', async () => {
-    const { data } = await svc
-      .from('information_schema.columns')
-      .select('data_type')
-      .eq('table_schema', 'public')
-      .eq('table_name', 'v_etax_submission_health')
-      .eq('column_name', 'org_id')
-      .single();
-    expect(data?.data_type).toBe('uuid');
+    const rows = await execSql(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'v_etax_submission_health'
+        AND column_name = 'org_id'
+    `);
+    expect(rows[0]?.data_type).toBe('uuid');
   });
 
   it('A-06: rpc_etax_submission_health function exists', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'rpc_etax_submission_health');
-    expect((data ?? []).length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`SELECT proname FROM pg_proc WHERE proname = 'rpc_etax_submission_health'`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
   it('A-07: rpc_etax_submission_health_admin function exists', async () => {
-    const { data } = await svc
-      .from('pg_proc')
-      .select('proname')
-      .eq('proname', 'rpc_etax_submission_health_admin');
-    expect((data ?? []).length).toBeGreaterThanOrEqual(1);
+    const rows = await execSql(`SELECT proname FROM pg_proc WHERE proname = 'rpc_etax_submission_health_admin'`);
+    expect(rows.length).toBeGreaterThanOrEqual(1);
   });
 
   it('A-08: both RPCs are SECURITY DEFINER', async () => {
-    const { data } = await svc.rpc('query_function_security', {
-      p_names: [
-        'rpc_etax_submission_health',
-        'rpc_etax_submission_health_admin',
-      ],
-    });
-    // Falls back to direct pg_proc query in environments without the helper RPC
-    const { data: pgData } = await svc
-      .from('pg_proc')
-      .select('proname, prosecdef')
-      .in('proname', [
-        'rpc_etax_submission_health',
-        'rpc_etax_submission_health_admin',
-      ]);
-    for (const fn of pgData ?? []) {
-      expect((fn as any).prosecdef, `${(fn as any).proname} must be SECURITY DEFINER`).toBe(true);
+    const rows = await execSql(`
+      SELECT proname, prosecdef FROM pg_proc
+      WHERE proname IN ('rpc_etax_submission_health', 'rpc_etax_submission_health_admin')
+    `);
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const fn of rows) {
+      expect(fn.prosecdef, `${String(fn.proname)} must be SECURITY DEFINER`).toBe(true);
     }
   });
 });
@@ -333,7 +360,7 @@ describe('Group A — Schema', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Group B — Org Isolation / Access Control', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     // Seed 3 submissions for ORG_A and 2 for ORG_B
     await insertSubmission({ orgId: ORG_A, status: 'submitted', attemptCount: 1 });
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
@@ -572,7 +599,7 @@ describe('Group D — success_rate_pct accuracy', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Group E — rpc_etax_submission_health_admin cross-org ordering', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     // ORG_A: 2 exhausted of 4 = 50% exhaustion
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
     await insertSubmission({ orgId: ORG_A, status: 'failed',    attemptCount: 5 });
@@ -724,7 +751,7 @@ describe('Group F — System alert columns (CROSS JOIN correctness)', () => {
 
     const [adminResult, orgResult] = await Promise.all([
       svc.rpc('rpc_etax_submission_health_admin'),
-      svc.rpc('rpc_etax_submission_health'), // service_role bypasses auth guard for testing
+      userClient(tokenOwnerA).rpc('rpc_etax_submission_health'),
     ]);
 
     const adminRow = (adminResult.data ?? []).find((r: any) => r.org_id === ORG_A);
