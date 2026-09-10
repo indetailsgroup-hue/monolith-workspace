@@ -47,6 +47,9 @@ concurrency:
   group: chromatic-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
   # chromatic-upload

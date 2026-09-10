@@ -5,6 +5,12 @@ on:
     # Run at 00:00 UTC on the 1st of every month
     - cron: '0 0 1 * *'
   workflow_dispatch:
+    inputs:
+      alert_threshold_usd:
+        description: 'Alert threshold in USD (send LINE if total estimated cost exceeds this)'
+        required: false
+        default: '20'
+        type: string
 
 concurrency:
   group: billing-report-${{ github.ref }}
@@ -39,12 +45,15 @@ jobs:
           last_month = first_of_this_month - datetime.timedelta(days=1)
           since = last_month.replace(day=1).isoformat()
           report_name = f"billing_report_{last_month.strftime('%Y-%m')}.csv"
+          month_label = last_month.strftime('%B %Y')
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write(f"since={since}\n")
               f.write(f"report_name={report_name}\n")
+              f.write(f"month_label={month_label}\n")
           EOF
 
       - name: Run billing report
+        id: billing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -62,3 +71,100 @@ jobs:
           path: ${{ steps.dates.outputs.report_name }}
           retention-days: 90
           if-no-files-found: warn
+
+      - name: Check spend and notify via LINE
+        if: ${{ secrets.LINE_NOTIFY_TOKEN != '' }}
+        env:
+          LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
+          THRESHOLD_USD: ${{ inputs.alert_threshold_usd || '20' }}
+          REPORT_FILE: ${{ steps.dates.outputs.report_name }}
+          MONTH_LABEL: ${{ steps.dates.outputs.month_label }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - << 'PYEOF'
+          import csv, os, sys, urllib.request, urllib.parse
+
+          report_file = os.environ['REPORT_FILE']
+          threshold   = float(os.environ.get('THRESHOLD_USD', '20'))
+          month_label = os.environ['MONTH_LABEL']
+          repo        = os.environ['REPO']
+          run_url     = os.environ['RUN_URL']
+          token       = os.environ['LINE_NOTIFY_TOKEN']
+
+          # --- Parse CSV -------------------------------------------------------
+          total_linux_min = 0
+          total_win_min   = 0
+          total_usd       = 0.0
+          top_rows        = []
+
+          try:
+              with open(report_file, newline='') as f:
+                  reader = csv.DictReader(f)
+                  rows = list(reader)
+
+              for row in rows:
+                  try:
+                      total_linux_min += int(row.get('linux_min', 0) or 0)
+                      total_win_min   += int(row.get('windows_min', 0) or 0)
+                      total_usd       += float(row.get('estimated_usd', 0) or 0)
+                  except (ValueError, KeyError):
+                      pass
+
+              # Top 5 by estimated_usd
+              rows_sorted = sorted(rows, key=lambda r: float(r.get('estimated_usd', 0) or 0), reverse=True)
+              top_rows = rows_sorted[:5]
+          except FileNotFoundError:
+              print(f'Report file not found: {report_file}')
+              sys.exit(0)
+
+          print(f'Total estimated: ${total_usd:.2f} (threshold: ${threshold:.2f})')
+
+          # --- Always send if threshold = 0, else only when over threshold -----
+          if total_usd < threshold and threshold > 0:
+              print(f'Spend ${total_usd:.2f} is below threshold ${threshold:.2f} — skipping LINE notification')
+              sys.exit(0)
+
+          # --- Build message ---------------------------------------------------
+          alert_tag = '🚨 ALERT — ' if total_usd >= threshold and threshold > 0 else ''
+          lines = [
+              f'\n{alert_tag}GitHub Actions Billing Report',
+              f'Repo: {repo}',
+              f'Period: {month_label}',
+              f'',
+              f'Linux  : {total_linux_min:,} min',
+              f'Windows: {total_win_min:,} min',
+              f'Est. cost: ${total_usd:.2f} USD',
+          ]
+
+          if threshold > 0 and total_usd >= threshold:
+              lines.append(f'⚠ Exceeds ${threshold:.0f} threshold!')
+
+          if top_rows:
+              lines.append('')
+              lines.append('Top workflows:')
+              for r in top_rows:
+                  name = r.get('workflow', r.get('name', '?'))[:30]
+                  usd  = float(r.get('estimated_usd', 0) or 0)
+                  if usd > 0:
+                      lines.append(f'  {name}: ${usd:.2f}')
+
+          lines += ['', f'Full report: {run_url}']
+          message = '\n'.join(lines)
+
+          # --- Send to LINE Notify ---------------------------------------------
+          data = urllib.parse.urlencode({'message': message}).encode()
+          req  = urllib.request.Request(
+              'https://notify-api.line.me/api/notify',
+              data=data,
+              headers={'Authorization': f'Bearer {token}'},
+              method='POST'
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=10) as resp:
+                  body = resp.read()
+                  print(f'LINE Notify response: {resp.status} {body.decode()}')
+          except Exception as e:
+              print(f'LINE Notify failed (non-fatal): {e}')
+              sys.exit(0)
+          PYEOF

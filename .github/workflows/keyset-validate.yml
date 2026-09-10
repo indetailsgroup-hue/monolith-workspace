@@ -17,6 +17,9 @@ on:
 concurrency:
   group: keyset-validate-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate Pinned Keyset
