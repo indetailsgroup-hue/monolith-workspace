@@ -32,6 +32,17 @@ on:
       - 'package-lock.json'
       - 'tsconfig*.json'
   pull_request:
+    paths:
+      - 'src/**'
+      - 'server/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - '*.jsx'
+      - 'eslint.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
   workflow_dispatch:
 
 concurrency:
