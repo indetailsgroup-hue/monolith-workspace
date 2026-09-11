@@ -51,6 +51,7 @@ export function makeRedis(): Redis {
   redisInstance = new Redis(url, {
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false,
+    protocol: 2, // ioredis v6: retain RESP2 wire protocol (RESP3 is default in v6)
   });
 
   redisInstance.on('error', (err: Error) => {
