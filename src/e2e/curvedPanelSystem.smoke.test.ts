@@ -393,3 +393,40 @@ describe('@smoke — 12. HATCH_CURVED count === 2 when one of three panels is cu
     expect(hatchLines).toHaveLength(2);
   });
 });
+
+// ============================================================
+// 13. HATCH_CURVED count scales with N curved panels
+// ============================================================
+
+describe('@smoke — 13. HATCH_CURVED count scales with N curved panels', () => {
+  it('DXF ENTITIES section contains exactly 6 HATCH_CURVED LINE entities for 3 curved panels', () => {
+    const sheet: NestingSheet = {
+      index1: 1,
+      label: 'SMOKE_THREE_CURVED',
+      materialId: 'MDF_18',
+      sheetW: 1220,
+      sheetH: 2440,
+      sheetThickness: 18,
+      utilization: 75.0,
+      placements: [
+        { partId: 'CURVED_1', x: 10,  y: 10, rotation: 0, cutW: 300, cutH: 600, isCurved: true },
+        { partId: 'CURVED_2', x: 320, y: 10, rotation: 0, cutW: 300, cutH: 600, isCurved: true },
+        { partId: 'CURVED_3', x: 630, y: 10, rotation: 0, cutW: 300, cutH: 600, isCurved: true },
+      ],
+    };
+
+    const dxf = buildDxfSheet({
+      planned: DXF_PLANNED,
+      nesting: sheet,
+      profile: DXF_PROFILE,
+    }).content;
+
+    const entitiesStart = dxf.indexOf('ENTITIES');
+    const entitiesSection = dxf.slice(entitiesStart);
+    const segments = entitiesSection.split('LINE');
+    const hatchLines = segments.filter((s) => s.includes('HATCH_CURVED'));
+
+    // 3 curved placements × 2 diagonal LINE entities each = 6
+    expect(hatchLines).toHaveLength(6);
+  });
+});
