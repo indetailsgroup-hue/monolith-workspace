@@ -22,7 +22,7 @@ AS $$
 DECLARE
   v_plan TEXT;
 BEGIN
-  SELECT plan INTO v_plan FROM tenants WHERE id = p_org_id;
+  SELECT plan INTO v_plan FROM public.organizations WHERE org_id = p_org_id;
   IF v_plan NOT IN ('PROFESSIONAL', 'ENTERPRISE') THEN
     RAISE EXCEPTION 'EST module requires PROFESSIONAL or ENTERPRISE plan (org: %)', p_org_id;
   END IF;
@@ -36,7 +36,7 @@ $$;
 -- Per-org per-dimension configuration (active flag, inversion, period type)
 CREATE TABLE IF NOT EXISTS est_timeline_configs (
   id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id        UUID        NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  org_id        UUID        NOT NULL REFERENCES public.organizations(org_id) ON DELETE CASCADE,
   dimension     TEXT        NOT NULL CHECK (dimension IN (
                               'MORALE','ENGAGEMENT','STRESS','COLLABORATION','CLARITY'
                             )),
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS est_timeline_configs (
 -- Anonymous sentiment entries — no user_id (same anonymity model as enps_responses)
 CREATE TABLE IF NOT EXISTS est_sentiment_entries (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id       UUID        NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  org_id       UUID        NOT NULL REFERENCES public.organizations(org_id) ON DELETE CASCADE,
   dimension    TEXT        NOT NULL CHECK (dimension IN (
                              'MORALE','ENGAGEMENT','STRESS','COLLABORATION','CLARITY'
                            )),

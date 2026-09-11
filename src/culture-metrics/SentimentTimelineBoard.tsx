@@ -78,7 +78,6 @@ export default function SentimentTimelineBoard({
   useEffect(() => {
     fetchSummary(orgId, plan);
     fetchTimelineConfigs(orgId, plan);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, plan]);
 
   // ─────────────────────────────────────────────────────────────────────────
