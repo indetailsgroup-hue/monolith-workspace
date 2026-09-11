@@ -9,11 +9,13 @@ import { ComponentType } from '../../src/types/maintenance';
 
 // Mock InfluxDB
 vi.mock('@influxdata/influxdb-client', () => ({
-  InfluxDB: vi.fn().mockImplementation(() => ({
-    getQueryApi: vi.fn(() => ({
-      queryRows: vi.fn(),
-    })),
-  })),
+  InfluxDB: vi.fn(function MockInfluxDB() {
+    return {
+      getQueryApi: vi.fn(() => ({
+        queryRows: vi.fn(),
+      })),
+    };
+  }),
 }));
 
 // Mock pino

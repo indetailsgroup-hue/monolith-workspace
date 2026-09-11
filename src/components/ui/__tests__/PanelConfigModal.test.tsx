@@ -166,14 +166,14 @@ vi.mock('@/core/engines/ManufacturingCalculator', () => ({
 // ============================================
 
 describe('PanelConfigModal', () => {
-  let mockOnClose: ReturnType<typeof vi.fn>;
+  let mockOnClose: ReturnType<typeof vi.fn<() => void>>;
 
   afterEach(() => {
     cleanup();
   });
 
   beforeEach(() => {
-    mockOnClose = vi.fn();
+    mockOnClose = vi.fn<() => void>();
     mockUpdatePanelMaterial.mockClear();
     mockUpdatePanelEdge.mockClear();
   });

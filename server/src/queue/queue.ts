@@ -48,10 +48,11 @@ export function makeRedis(): Redis {
   if (redisInstance) return redisInstance;
 
   const url = process.env.REDIS_URL || 'redis://localhost:6379';
+  // Note: ioredis v6 defaults to RESP2; protocol:2 is unnecessary and
+  // narrows the return type to Redis<"legacy">, breaking BullMQ types.
   redisInstance = new Redis(url, {
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false,
-    protocol: 2, // ioredis v6: retain RESP2 wire protocol (RESP3 is default in v6)
   });
 
   redisInstance.on('error', (err: Error) => {
@@ -88,8 +89,9 @@ export function makeQueue(): Queue<ExportJobData, ExportJobResult> {
   if (queueInstance) return queueInstance;
 
   const connection = makeRedis();
-  queueInstance = new Queue<ExportJobData, ExportJobResult>(QUEUE_NAME, {
-    connection,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  queueInstance = (new Queue<ExportJobData, ExportJobResult>(QUEUE_NAME, {
+    connection: connection as any, // BullMQ ships its own nested ioredis; cast bridges the type gap
     defaultJobOptions: {
       attempts: 3,
       backoff: {
@@ -104,7 +106,7 @@ export function makeQueue(): Queue<ExportJobData, ExportJobResult> {
         age: 86400, // Keep failed jobs for 24 hours
       },
     },
-  });
+  }) as unknown) as Queue<ExportJobData, ExportJobResult>;
 
   return queueInstance;
 }
@@ -138,7 +140,7 @@ export function makeWorker(
     QUEUE_NAME,
     processor,
     {
-      connection,
+      connection: connection as any, // same nested-ioredis type bridge
       concurrency: options?.concurrency ?? 2,
     }
   );

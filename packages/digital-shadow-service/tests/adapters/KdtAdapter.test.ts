@@ -13,7 +13,7 @@ import { DataQuality } from '../../src/types/sensor';
 
 // ─── Mock modbus-serial ───────────────────────────────────────────────────────
 
-const mockModbus = {
+const mockModbus = vi.hoisted(() => ({
   connectTCP: vi.fn().mockResolvedValue(undefined),
   close: vi.fn((cb: () => void) => cb()),
   setID: vi.fn(),
@@ -21,10 +21,10 @@ const mockModbus = {
   readHoldingRegisters: vi.fn(),
   writeRegister: vi.fn().mockResolvedValue(undefined),
   writeRegisters: vi.fn().mockResolvedValue(undefined),
-};
+}));
 
 vi.mock('modbus-serial', () => ({
-  default: vi.fn(() => mockModbus),
+  default: vi.fn(function MockModbusRTU() { return mockModbus; }),
 }));
 
 // Mock config

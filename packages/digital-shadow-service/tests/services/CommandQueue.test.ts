@@ -6,35 +6,37 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // ─── Mock ioredis ─────────────────────────────────────────────────────────────
-const mockPipelineExec = vi.fn().mockResolvedValue([]);
-const mockPipeline = {
-  set: vi.fn().mockReturnThis(),
-  zadd: vi.fn().mockReturnThis(),
-  sadd: vi.fn().mockReturnThis(),
-  srem: vi.fn().mockReturnThis(),
-  zrem: vi.fn().mockReturnThis(),
-  del: vi.fn().mockReturnThis(),
-  exec: mockPipelineExec,
-};
-
-const mockRedis = {
-  get: vi.fn(),
-  set: vi.fn().mockResolvedValue('OK'),
-  del: vi.fn().mockResolvedValue(1),
-  zcard: vi.fn().mockResolvedValue(0),
-  zadd: vi.fn().mockResolvedValue(1),
-  zpopmin: vi.fn(),
-  zrange: vi.fn().mockResolvedValue([]),
-  zrangebyscore: vi.fn().mockResolvedValue([]),
-  zrem: vi.fn().mockResolvedValue(1),
-  sadd: vi.fn().mockResolvedValue(1),
-  srem: vi.fn().mockResolvedValue(1),
-  pipeline: vi.fn(() => mockPipeline),
-  quit: vi.fn().mockResolvedValue('OK'),
-};
+const { mockPipelineExec, mockPipeline, mockRedis } = vi.hoisted(() => {
+  const mockPipelineExec = vi.fn().mockResolvedValue([]);
+  const mockPipeline = {
+    set: vi.fn().mockReturnThis(),
+    zadd: vi.fn().mockReturnThis(),
+    sadd: vi.fn().mockReturnThis(),
+    srem: vi.fn().mockReturnThis(),
+    zrem: vi.fn().mockReturnThis(),
+    del: vi.fn().mockReturnThis(),
+    exec: mockPipelineExec,
+  };
+  const mockRedis = {
+    get: vi.fn(),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    zcard: vi.fn().mockResolvedValue(0),
+    zadd: vi.fn().mockResolvedValue(1),
+    zpopmin: vi.fn(),
+    zrange: vi.fn().mockResolvedValue([]),
+    zrangebyscore: vi.fn().mockResolvedValue([]),
+    zrem: vi.fn().mockResolvedValue(1),
+    sadd: vi.fn().mockResolvedValue(1),
+    srem: vi.fn().mockResolvedValue(1),
+    pipeline: vi.fn(() => mockPipeline),
+    quit: vi.fn().mockResolvedValue('OK'),
+  };
+  return { mockPipelineExec, mockPipeline, mockRedis };
+});
 
 vi.mock('ioredis', () => ({
-  default: vi.fn(() => mockRedis),
+  default: vi.fn(function MockIoRedis() { return mockRedis; }),
 }));
 
 vi.mock('../../src/config/index.js', () => ({
