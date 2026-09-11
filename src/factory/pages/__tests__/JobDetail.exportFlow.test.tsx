@@ -112,8 +112,8 @@ import { useFactoryStore } from "../../state/factoryStore";
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
 describe("JobDetail — Export Flow E2E", () => {
-  let createObjectURLSpy: ReturnType<typeof vi.fn>;
-  let revokeObjectURLSpy: ReturnType<typeof vi.fn>;
+  let createObjectURLSpy: ReturnType<typeof vi.fn<(obj: Blob | MediaSource) => string>>;
+  let revokeObjectURLSpy: ReturnType<typeof vi.fn<(url: string) => void>>;
 
   beforeEach(() => {
     mockBuildCutListXlsx.mockClear();
@@ -121,8 +121,8 @@ describe("JobDetail — Export Flow E2E", () => {
     mockExportCurvedDxfBatch.mockClear();
 
     // Stub URL.createObjectURL / revokeObjectURL
-    createObjectURLSpy = vi.fn().mockReturnValue("blob:fake-url");
-    revokeObjectURLSpy = vi.fn();
+    createObjectURLSpy = vi.fn<(obj: Blob | MediaSource) => string>().mockReturnValue("blob:fake-url");
+    revokeObjectURLSpy = vi.fn<(url: string) => void>();
     global.URL.createObjectURL = createObjectURLSpy;
     global.URL.revokeObjectURL = revokeObjectURLSpy;
 

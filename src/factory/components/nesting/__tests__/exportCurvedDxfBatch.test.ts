@@ -67,11 +67,11 @@ const SHEET_FLAT: NestingSheet = {
 
 describe('exportCurvedDxfBatch', () => {
   let originalCreateElement: typeof document.createElement;
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    clickSpy = vi.fn();
+    clickSpy = vi.fn<() => void>();
     originalCreateElement = document.createElement.bind(document);
 
     // jsdom doesn't have URL.createObjectURL — define stubs
