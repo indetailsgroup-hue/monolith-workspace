@@ -31,6 +31,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig*.json'
+      - '.github/workflows/**'   # catch non-compliant secret names in new workflows
   pull_request:
     paths:
       - 'src/**'
@@ -43,6 +44,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig*.json'
+      - '.github/workflows/**'   # catch non-compliant secret names in new workflows
   workflow_dispatch:
 
 concurrency:
@@ -137,3 +139,16 @@ jobs:
       # including in the CNC post-processor — would have shipped unnoticed.
       - name: Typecheck server
         run: npm run typecheck:server
+
+  secret-name-lint:
+    name: Secret name lint (MODULE_SERVICE_CREDENTIAL_TYPE)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    # Python 3 is pre-installed on ubuntu-latest — no setup-python needed.
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate secret names
+        run: python3 scripts/lint_secret_names.py

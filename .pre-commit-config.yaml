@@ -1,0 +1,37 @@
+# .pre-commit-config.yaml
+# Install hooks:  pre-commit install
+# Run manually:   pre-commit run --all-files
+#
+# The hooks below mirror the checks that CI enforces so developers get instant
+# local feedback before pushing.
+
+repos:
+  # ── Built-in file hygiene ──────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ── Secret-name convention (MODULE_SERVICE_CREDENTIAL_TYPE) ───────────────
+  # Runs scripts/lint_secret_names.py against every .github/workflows/*.yml
+  # that is staged.  Fails if any ${{ secrets.NAME }} ref is non-compliant and
+  # not in the ALLOWLIST.  See docs/secrets-naming-convention.md.
+  - repo: local
+    hooks:
+      - id: lint-secret-names
+        name: Validate GitHub Actions secret names
+        language: python
+        entry: python3 scripts/lint_secret_names.py
+        # The script scans the whole workflows dir on every run — passing
+        # individual staged files would give incomplete coverage.
+        pass_filenames: false
+        # Trigger only when a workflow YAML is staged to avoid unnecessary
+        # overhead on commits that touch only source code.
+        types: [yaml]
+        files: ^\.github/workflows/
