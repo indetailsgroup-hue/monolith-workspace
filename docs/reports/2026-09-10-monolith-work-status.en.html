@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH — Work status as of 10 September 2026</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">MONOLITH — Work status as of 10 September 2026</h1>
+<p id="L3">Publication note: This is a dated evidence snapshot, not a new runtime or CI audit. Local artifact references are not included in this publication. SC-01–SC-18 are roadmap workstream IDs, distinct from Steering Committee resolutions.</p>
+<h2 id="L6">Verdict</h2>
+<p id="L8">Substantial product implementation exists, and <a href="https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v17.5.2" target="_blank" rel="noopener">v17.5.2 was published on 7 September</a>. However, <strong>current main does not pass the complete CI gate, and Designer packets remain prohibited for real cutting</strong>. Remaining work includes quality gates, integrations, unfinished feature portions and production/factory evidence.</p>
+<p id="L10">No overall completion percentage is defensible: checklists mix parent/child tasks, several are stale, and there is no recently ratified scope denominator. Source presence, main integration, release, deployment and operational acceptance are distinct states.</p>
+<h2 id="L12">Scope and revisions</h2>
+<ul>
+<li id="L14">Review date: 2026-09-10, Asia/Bangkok.</li>
+<li id="L15">GitHub main pinned to <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/package.json" target="_blank" rel="noopener">52e0eeb12527d4bb3866ee726b4f30d4d74dca57</a>; version 17.5.2. Non-truncated recursive tree: 4,137 blob files and 322 SQL migration source files, not a count of canonical production-applied migrations.</li>
+<li id="L16">Parent governance root: [local governance workspace], branch guardrails/claim-linters, HEAD aa1b30e509ece9d8efad3d68e949860aa79bdecf; before report creation: 11 modified / 574 untracked status entries.</li>
+<li id="L17">Nested product root: determined-williams/, branch fix/dxf-truth-chain, HEAD 9c4bee6759f6d1919a320a2f56088ce683287f58 (11 August); 10 modified / 12 deleted / 61 untracked entries; local package remains 2.1.0.</li>
+<li id="L18">CONTEXT.md and the 21 July repository-scope correction were read. Parent apps/packages do not establish runtime absence.</li>
+<li id="L19">This is a workstream review and inventory of all 13 discovered task files, not a line-by-line security audit or UAT of every requirement. Tests on the old local snapshot were not presented as current-main results.</li>
+<li id="L20">Separate local branches/worktrees were not exhaustively ancestry-compared with remote main; they are not automatically classified as merged or deployed.</li>
+</ul>
+<h2 id="L22">Priority findings</h2>
+<ol>
+<li id="L24"><strong>B1 — Main quality gate is red (VERIFIED FACT):</strong> 2,237 lint warnings exceed the 2,235 ceiling; zero errors. Full Verify stops at lint, skipping the root suite in that job. Separate TypeScript/build lanes succeeded. Reduce warnings and complete required jobs before the next release.</li>
+<li id="L25"><strong>B0 if packets are used for real cutting — NO_CUT remains (VERIFIED FACT):</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts" target="_blank" rel="noopener">src/core/config/shadowMode.ts</a> is true; <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/governance/adr-064-signoff-checklist.th.md" target="_blank" rel="noopener">docs/governance/adr-064-signoff-checklist.th.md</a> retains placeholder hashes and four PENDING signatures. Software publication does not authorize manufacturing.</li>
+<li id="L26"><strong>B1 — Org Health contains simulated data (VERIFIED FACT):</strong> SQL fixes PERFORMANCE at 75.0 with placeholder_v18.5 provenance. Do not represent it as a measured performance outcome.</li>
+<li id="L27"><strong>B1 — Status records drift (CONTRADICTED):</strong> progress still calls published v17.5.2 a release candidate. Field Purchase, Curved and Accounting source has advanced beyond checkboxes. The 6–7 September “all gates passed” record is not today's main status.</li>
+<li id="L28"><strong>B2 — Billing report failure (VERIFIED FACT / cause UNKNOWN):</strong> the failed run returns no jobs. Workflow validation/check annotations need investigation; no cause is inferred.</li>
+</ol>
+<h2 id="L30">Workstream matrix</h2>
+<p id="L32">“Implemented” means the cited source/wiring exists; it does not certify every feature against production acceptance. Missing integration conclusions are UNKNOWN or INFERENCE within the stated inspection scope.</p>
+<div class="tablewrap"><table><thead><tr id="L34"><th>Workstream</th><th>Status</th><th>Evidence and remaining work</th></tr></thead><tbody>
+<tr id="L36"><td>Designer / Cabinet / 3D</td><td>Implemented</td><td>Parametric cabinet, panels, materials and 3D tools; factory qualification remains separate. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/App.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L37"><td>Connector / Drawer / Hinge</td><td>Implemented</td><td>Drawer calculators, drill maps, HingeCatalog and UI exist; the old blanket pending claim conflicts with source. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/manufacturing/drawer/generateDrawerPanels.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L38"><td>Curved panels / Kerf / DXF</td><td>Implemented portions with new regression coverage</td><td>Curve, kerf and mating-slot code plus Stage 11–12 smoke assertions exist; 2/33 checked boxes is stale, not 6% delivery. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/manufacturing/curve/kerfPatternGenerator.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L39"><td>CNC / Factory Packet / Verifier</td><td>Implemented; real cutting blocked</td><td>S17-4 generator CI succeeded, but shadowMode=true and ADR-064 signatures remain PENDING. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L40"><td>Workflow / Approvals / Copilot</td><td>Implemented; checklist closed</td><td>137 checked / 0 unchecked is a document state, not certification of every production flow. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-workflow-copilot/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L41"><td>LINE OA Commerce</td><td>Implemented; checklist closed</td><td>81 checked / 0 unchecked with RPCs, Edge Functions and tests; no live LINE transaction executed in this review. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/line-oa-commerce/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L42"><td>Capture / OCR / MCP</td><td>Partial; integration needs verification</td><td>Core and Edge Functions exist; PDPA, on-prem and external service coverage still needs live evidence reconciliation. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/capture-spine/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L43"><td>Installation / Field PWA</td><td>Implemented with CI evidence</td><td>Field App build/test and pages workflow succeeded; 37 unchecked items need reconciliation against later delivery and field evidence. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/packages/field-app/package.json" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L44"><td>Field Purchase</td><td>Implemented; old checklist contradicted</td><td>Receiving, payment, budget and notification migrations and Edge Function exist; September report records deployment despite 0/16 checklist. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/functions/field-purchase-line/index.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L45"><td>Accounting / Ledger / WHT / eTax</td><td>Substantial implementation; full ERP unverified</td><td>Ledger, multibook, tax, /accounting, /etax and E2E files exist; bank API, OCR, PDM and full live accounting flow are not freshly established. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-accounting/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L46"><td>Tenancy / Roles / Plan / Billing</td><td>Implemented; whole-system coverage unproven</td><td>Eleven business routes use active tenant/member/role/plan boundaries; every mutation quota and commercial pricing need further proof. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/routes/businessModuleRegistry.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L47"><td>People / Culture foundation</td><td>Implemented with release record</td><td>PeopleDirectory, skills/state, survey/feedback store and UI/tests exist; not every roadmap feature is established. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/culture/cultureStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L48"><td>Process Templates / Bottleneck</td><td>Implemented with release record</td><td>Store, template list, heatmap, tests/stories and published v17.0.0 exist. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/jobs/processTemplateStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L49"><td>Training / Super Employee</td><td>Implemented</td><td>Store/UI/tests/stories and routes exist; older roadmap plan tiers differ from runtime. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/training/trainingStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L50"><td>AI Cost Estimation</td><td>Cost tracking implemented</td><td>Usage, cost, ROI, budget and dashboard exist; this does not establish autonomous construction estimating. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-cost/aiCostEstimationStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L51"><td>AI Production Scheduler</td><td>Workflow present; AI engine unverified</td><td>Store manages machines, runs, items, constraints and approval; no model invocation found in the inspected store. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-scheduler/aiSchedulerStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L52"><td>Culture Metrics / eNPS</td><td>Implemented; forward version track</td><td>Dashboard/store/tests/stories and route exist; v17.5.3+ are forward version records, not separately verified releases. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/culture-metrics/cultureMetricsStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L53"><td>OrgChart / Role Network</td><td>Implemented and routed</td><td>Canvas/store/schema/tests exist; v18.x remains a forward track in progress records. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/routes/BusinessModuleRoutes.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L54"><td>QC Anomaly Detection</td><td>Implemented and routed</td><td>Thresholds, measurements, SQL detection, UI/tests exist; calibration against live factory data is unverified. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/migrations/20270210_qc_anomaly_detection.sql" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L55"><td>AI Quotation Draft</td><td>Workflow present; AI generation unverified</td><td>Draft, line item, submit, approve and reject flow exists; inspected store uses DB CRUD without model invocation. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-quotation/aiQuotationDraftStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L56"><td>Leadership Actions</td><td>Implemented and routed</td><td>Board/store/tests/stories and OWNER/ADMIN route boundary exist. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/leadership-actions/LeadershipActionBoard.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L57"><td>Org Health Score</td><td>Incomplete</td><td>UI/store/SQL exist, but PERFORMANCE=75.0 is a placeholder; no route found in inspected canonical registry/index. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/migrations/20270227_org_health_score.sql" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L58"><td>Digital Shadow / HOMAG</td><td>Implemented with CI evidence</td><td>Build/unit/integration lane succeeded with Redis and local OPC UA simulator; not machine commissioning. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/packages/digital-shadow-service/package.json" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L59"><td>Daph Second Brain</td><td>Checklist closed</td><td>Active checklist 61/0; archived 0/16 is not fresh backlog; local exports have pending changes. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/daph-obsidian-second-brain/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L60"><td>Design Hub / Marketplace / UGC</td><td>Planned; implementation not established</td><td>Checklist 0/56 and tree discovery found design/requirements/tasks; not a proof of absence under every possible symbol. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/design-hub-platform-phase2/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L61"><td>Capacity AI / Benchmarks / Team Builder / SOP AI</td><td>Planned; implementation evidence not found</td><td>Listed in 2S2P1C roadmap; no dedicated module/migration identified in this inventory. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/MONOLITH_2S2P1C_FEATURE_SPEC_ROADMAP.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L62"><td>SpatialLM / Change Readiness / AI Comfort / Labels</td><td>Completion not established</td><td>Roadmap/pending entries exist without verified production callers; spatialHash is not SpatialLM. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/MONOLITH_2S2P1C_FEATURE_SPEC_ROADMAP.md" target="_blank" rel="noopener">source</a></td></tr>
+</tbody></table></div>
+<h2 id="L64">CI at the examined revision</h2>
+<div class="tablewrap"><table><thead><tr id="L66"><th>Workflow / job</th><th>GitHub conclusion</th></tr></thead><tbody>
+<tr id="L68"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950518" target="_blank" rel="noopener">Full Verify</a></td><td>failure: root lint; root typecheck/test/build skipped; dependent E2E jobs skipped</td></tr>
+<tr id="L69"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950559" target="_blank" rel="noopener">Lint</a></td><td>warning budget failure; ESLint errors job and app/server TypeScript job success</td></tr>
+<tr id="L70"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950557" target="_blank" rel="noopener">Standalone E2E Smoke</a></td><td>success</td></tr>
+<tr id="L71"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950490" target="_blank" rel="noopener">pgTAP</a></td><td>success</td></tr>
+<tr id="L72"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950487" target="_blank" rel="noopener">npm audit</a></td><td>success</td></tr>
+<tr id="L73"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459949364" target="_blank" rel="noopener">billing-report.yml</a></td><td>failure; no jobs returned; cause UNKNOWN</td></tr>
+<tr id="L74"><td>Full Verify: factory server, field app, digital shadow, tools, S17-4, LineOS, node controls, manifests, strict bypass scan, hermetic build, dependency audit</td><td>success at examined SHA</td></tr>
+</tbody></table></div>
+<p id="L77">These are freshly retrieved GitHub Actions conclusions for the same SHA, not locally rerun tests or reused September 6–7 test counts. Standalone smoke success and dependent smoke skipped in Full Verify can coexist because they are different workflows.</p>
+<h2 id="L79">Incomplete work versus unverified completion</h2>
+<ul>
+<li id="L81"><strong>Confirmed outstanding:</strong> lint budget, complete Full Verify, billing-report failure, PERFORMANCE placeholder, Org Health routing/acceptance, status-ledger reconciliation.</li>
+<li id="L82"><strong>Workflow exists; integration unverified:</strong> AI scheduler model execution, AI quotation generation, external bank/OCR/PDM, end-to-end accounting, production quota coverage and live tenant-boundary acceptance.</li>
+<li id="L83"><strong>Roadmap / implementation not identified in inventory:</strong> Design Hub Phase 2, marketplace/UGC/learning/payment scope, Capacity Planning AI, Industry Benchmarks, Cross-functional Team Builder and SOP AI Assistant.</li>
+<li id="L84"><strong>UNKNOWN:</strong> complete dogfood house-chain acceptance, physical machine calibration/bench evidence, current key/signoff ceremony and field acceptance. The <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json" target="_blank" rel="noopener">dogfood record</a> establishes STARTED on 18 July and realCutAllowed=false only; house-01 tree contains started.json/sha256, not a completion record.</li>
+<li id="L85">Change Readiness, AI Adoption Comfort, SpatialLM and labels require specific caller and acceptance evidence; similarly named modules are insufficient.</li>
+</ul>
+<h2 id="L87">Open PRs and issues</h2>
+<p id="L89">GitHub search returned five open PRs, all dependency upgrades, and zero open results for is:issue. An empty issue list is not an empty backlog.</p>
+<ul>
+<li id="L91"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/72" target="_blank" rel="noopener">#72: chore(deps)(deps-dev): bump @vitest/ui from 3.2.7 to 5.0.0</a></li>
+<li id="L92"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/71" target="_blank" rel="noopener">#71: chore(deps)(deps-dev): bump vitest from 2.1.9 to 5.0.0</a></li>
+<li id="L93"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/69" target="_blank" rel="noopener">#69: chore(deps)(deps-dev): bump @vitest/coverage-v8 from 2.1.9 to 5.0.0</a></li>
+<li id="L94"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/64" target="_blank" rel="noopener">#64: chore(deps/server)(deps): bump ioredis from 5.11.1 to 6.0.0 in /server</a></li>
+<li id="L95"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/63" target="_blank" rel="noopener">#63: chore(deps/server)(deps): bump pdfkit from 0.17.2 to 0.20.2 in /server</a></li>
+</ul>
+<h2 id="L97">Local work requiring reconciliation</h2>
+<p id="L99">The parent has modified tenancy/protected-delivery plans and document-renderer work. The nested repository has pending order-adapter.ts and orderNormalization.property.test.ts changes, generated dist changes and Daph exports. These cannot automatically be counted as shipped.</p>
+<p id="L101">Separate ProjectContext, protected-delivery, LINE trust, repair, Section 16 and Section 4 worktrees/branches exist. The parent ProjectContext preflight targets codex/repair-operations-phase-a-adr and records DEPLOYED_LINEAGE_UNESTABLISHED. Lane closure cannot close main without revision/source comparison.</p>
+<h2 id="L103">Appendix — checklist inventory</h2>
+<div class="tablewrap"><table><thead><tr id="L105"><th>Checklist</th><th align="right">Checked</th><th align="right">Unchecked</th></tr></thead><tbody>
+<tr id="L107"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/capture-spine/tasks.md" target="_blank" rel="noopener">.kiro/specs/capture-spine/tasks.md</a></td><td align="right">30</td><td align="right">6</td></tr>
+<tr id="L108"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/curved-panel-system/tasks.md" target="_blank" rel="noopener">.kiro/specs/curved-panel-system/tasks.md</a></td><td align="right">2</td><td align="right">31</td></tr>
+<tr id="L109"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/daph-obsidian-second-brain/tasks.md" target="_blank" rel="noopener">.kiro/specs/daph-obsidian-second-brain/tasks.md</a></td><td align="right">61</td><td align="right">0</td></tr>
+<tr id="L110"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/design-hub-platform-phase2/tasks.md" target="_blank" rel="noopener">.kiro/specs/design-hub-platform-phase2/tasks.md</a></td><td align="right">0</td><td align="right">56</td></tr>
+<tr id="L111"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/entitlement-tier/tasks.md" target="_blank" rel="noopener">.kiro/specs/entitlement-tier/tasks.md</a></td><td align="right">8</td><td align="right">11</td></tr>
+<tr id="L112"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/field-purchase/tasks.md" target="_blank" rel="noopener">.kiro/specs/field-purchase/tasks.md</a></td><td align="right">0</td><td align="right">16</td></tr>
+<tr id="L113"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/installation-pm/tasks.md" target="_blank" rel="noopener">.kiro/specs/installation-pm/tasks.md</a></td><td align="right">112</td><td align="right">37</td></tr>
+<tr id="L114"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/line-oa-commerce/tasks.md" target="_blank" rel="noopener">.kiro/specs/line-oa-commerce/tasks.md</a></td><td align="right">81</td><td align="right">0</td></tr>
+<tr id="L115"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-accounting/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-accounting/tasks.md</a></td><td align="right">32</td><td align="right">49</td></tr>
+<tr id="L116"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-mcp-layer/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-mcp-layer/tasks.md</a></td><td align="right">43</td><td align="right">6</td></tr>
+<tr id="L117"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-workflow-copilot/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-workflow-copilot/tasks.md</a></td><td align="right">137</td><td align="right">0</td></tr>
+<tr id="L118"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/_archived/obsidian-second-brain/tasks.md" target="_blank" rel="noopener">.kiro/specs/_archived/obsidian-second-brain/tasks.md</a></td><td align="right">0</td><td align="right">16</td></tr>
+<tr id="L119"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/specs/main/tasks.md" target="_blank" rel="noopener">specs/main/tasks.md</a></td><td align="right">0</td><td align="right">0</td></tr>
+</tbody></table></div>
+<p id="L121">Counts include parent and child checkbox lines, not unique deliverables, and must not become progress percentages. Archived Second Brain is superseded by the active checklist. specs/main/tasks.md uses a different format; 0/0 does not mean no work. Every checkbox line is retained in the evidence JSON (local evidence snapshot; not published).</p>
+<h2 id="L123">Proposed sequence and acceptance (PROPOSAL)</h2>
+<div class="tablewrap"><table><thead><tr id="L125"><th>Priority</th><th>Proposed owner</th><th>Work</th><th>Acceptance</th></tr></thead><tbody>
+<tr id="L127"><td>1</td><td>Engineering / QA</td><td>Repair lint/billing workflow; rerun main</td><td>At most 2,235 warnings; all required Full Verify lanes execute and succeed</td></tr>
+<tr id="L128"><td>2</td><td>Product / Tech Lead</td><td>Reconcile status ledger</td><td>Every requirement maps to commit, route, test/run and release/deployment status; explicitly supersede stale claims</td></tr>
+<tr id="L129"><td>3</td><td>Data / Product</td><td>Org Health and AI integrations</td><td>Real PERFORMANCE data or unavailable state; routing/permissions/tests; AI invocation and acceptance</td></tr>
+<tr id="L130"><td>4</td><td>Platform / Finance / Field</td><td>Live tenant/accounting/LINE validation</td><td>Cross-tenant rejection, complete transaction/rollback evidence and signed field acceptance</td></tr>
+<tr id="L131"><td>5</td><td>PO / TL / Security / Factory</td><td>Real-cut authorization gates</td><td>Exact-byte signatures, completed dogfood, calibrated profile/bench evidence and approval before NFP changes</td></tr>
+<tr id="L132"><td>6</td><td>Product</td><td>Rebaseline remaining roadmap</td><td>Explicit scope, owner and acceptance before Design Hub/advanced AI expansion</td></tr>
+</tbody></table></div>
+<h2 id="L134">Confidence and limitations</h2>
+<p id="L136">High confidence in revision, source presence, explicit flags/placeholders, release existence and CI conclusions; moderate confidence in implementation breadth; live operation of every system remains unverified. No product, governance status, commit, push, merge or deployment was changed.</p>
+<p id="L138">Read source snapshots, checklists and CI job metadata are retained in evidence JSON; tree/run snapshots are in tmp/2026-09-10-github-tree.json and tmp/2026-09-10-github-runs.json. GitHub may advance after this snapshot; use the pinned SHA.</p>
+</main></body>
+</html>

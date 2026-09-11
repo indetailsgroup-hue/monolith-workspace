@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH delivery roadmap</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">MONOLITH delivery roadmap</h1>
+<p id="L3">Publication note: This is a dated evidence snapshot, not a new runtime or CI audit. Local artifact references are not included in this publication. SC-01–SC-18 are roadmap workstream IDs, distinct from Steering Committee resolutions.</p>
+<p id="L5">11 September 2026 · EN · Revision 2 — SciSpace reconciliation added; delivery proposals remain subject to their gates</p>
+<h2 id="L7">Target and recommendation</h2>
+<p id="L9">Deliver one traceable cabinet/interior project from design through approval, manufacturing evidence, installation and financial close. Expand after this journey passes acceptance. This is a proposed product roadmap, not an approved implementation plan or permission to cut material.</p>
+<p id="L11">Three approaches were considered:</p>
+<ul>
+<li id="L12"><strong>Complete one pilot journey first — recommended:</strong> exposes integration gaps while reusing existing modules; broad feature expansion waits.</li>
+<li id="L13">Complete every module independently: broader coverage, but delays proof that the whole project works.</li>
+<li id="L14">Lead with AI and marketplace features: attractive demonstrations, but depends on unresolved data and operational acceptance.</li>
+</ul>
+<p id="L16">Working assumption: a cabinet/interior delivery pilot is the first business priority. Team capacity, pilot customer, machine access and integration providers are not yet confirmed. Phase order is dependency-based; elapsed durations are not commitments.</p>
+<h2 id="L18">Evidence baseline and repository boundaries</h2>
+<p id="L20">GitHub main examined: <strong>52e0eeb12527d4bb3866ee726b4f30d4d74dca57</strong>. Local governance root: <code>[local governance workspace]</code>, HEAD <code>aa1b30e</code>. Local active product root: its separate <code>determined-williams/</code> repository, HEAD <code>9c4bee6</code>. Both worktrees contain pre-existing changes and were inspected separately. Current remote product claims below come from GitHub main, not the older local checkout. CONTEXT and the 21 July scope correction informed this review.</p>
+<ul>
+<li id="L22">Implementation exists for cabinet/3D design, connectors, drawers/hinges, curved panels, DXF/CNC packets, workflow/LINE, field, accounting and organizational modules.</li>
+<li id="L23">v17.5.2 is published, but Full Verify fails: lint has 2,237 warnings against a ceiling of 2,235. Root tests/build and dependent E2E were skipped in that run. Separate smoke and pgTAP succeeded; several service checks succeeded.</li>
+<li id="L24">Real cutting remains blocked by shadow mode. ADR-064 signatures and completed dogfood evidence remain outstanding in inspected records.</li>
+<li id="L25">Org Health PERFORMANCE uses a fixed 75.0 placeholder; its route was not found in the inspected canonical registry. AI CRUD/store implementation alone does not prove model execution or business acceptance.</li>
+<li id="L26">Billing-report failure is undiagnosed; five dependency PRs remain open.</li>
+<li id="L27">Source presence and migration file counts do not establish deployed, applied or accepted behavior.</li>
+</ul>
+<p id="L29">See the <a href="../reports/2026-09-10-monolith-work-status.en.html">detailed audit</a> and <a href="../reports/2026-09-11-monolith-cp06-comparison.en.html">repository comparison</a>. No fresh local product test suite was run for this roadmap.</p>
+<h2 id="L31">Delivery sequence</h2>
+<div class="tablewrap"><table><thead><tr id="L33"><th>Phase</th><th>Work and outcome</th><th>Completion gate</th><th>Proposed accountable role</th></tr></thead><tbody>
+<tr id="L35"><td>R0 — Reliable baseline</td><td>Reconcile remote/local revisions; isolate delivery work; repair lint regression; diagnose billing-report; refresh stale status records and triage dependency PRs</td><td>Required CI passes on the same candidate SHA, including previously skipped checks; every remaining failure has an explicit disposition and owner</td><td>Tech lead + QA</td></tr>
+<tr id="L36"><td>R1 — Project and access integrity</td><td>Validate login, organization/project context, roles, tenant isolation, approval versions and evidence references across the selected pilot; rehearse migration/backup/restore in staging</td><td>Negative cross-tenant and unauthorized-action tests pass; approved design and packet revisions stay traceable; restore rehearsal succeeds</td><td>Backend/security lead + QA</td></tr>
+<tr id="L37"><td>R2 — Complete shadow pilot</td><td>Run one project through design → quotation → customer approval → BOM/DXF/packet verification → simulated factory handoff → field acceptance record → financial reconciliation; resolve integration gaps using existing modules</td><td>One revision-bound evidence pack covers every step; rejection, revision and retry paths work; no unresolved critical pilot defect; shadow restrictions remain active</td><td>Product owner + design/factory/field/finance representatives</td></tr>
+<tr id="L38"><td>R3 — Controlled factory pilot</td><td>Close S17-1…5; obtain ADR-064 signatures; complete required full-chain dogfood; calibrate machine profile; review verifier, stop and rollback procedures</td><td>All four existing real-cut conditions are evidenced and approved by authorized owners before cutting; controlled pilot results are reviewed against agreed tolerances</td><td>Factory lead + PO/TL/Security</td></tr>
+<tr id="L39"><td>R4 — Operational release</td><td>Complete field photo/QC/rework/acceptance flow, purchasing/inventory/accounting reconciliation and selected external integrations; validate monitoring, support and recovery</td><td>Named users accept the selected journey in its target environment; transactions reconcile, recovery works, support ownership and release evidence are recorded</td><td>Operations/finance lead + release owner</td></tr>
+<tr id="L40"><td>R5 — Business and AI expansion</td><td>Replace Org Health placeholder with approved metrics and accessible routes; verify live scheduler/quotation AI; then consider capacity planning, benchmarks, DesignHub and spatial capabilities</td><td>Each feature has real data, authorization checks, measurable acceptance and an owner; AI additionally has evaluation, budget and human-review controls</td><td>Product owner + data/AI lead</td></tr>
+</tbody></table></div>
+<p id="L42">Dependencies: R0 → R1 → R2 → R3. R4 preparation can follow R2 in parallel with factory readiness, but real-cut production release still requires R3. R5 discovery can run earlier; it must not displace pilot blockers.</p>
+<p id="L44">R2 can record simulated manufacturing and staged field/finance acceptance; it must label those records explicitly. R3 must satisfy the repository's actual dogfood/signoff definition, not treat a simulated R2 record as automatic permission.</p>
+<h2 id="L46">First two-week planning window</h2>
+<p id="L48">This is a prioritization window, not a guaranteed two-week completion date.</p>
+<ol>
+<li id="L50">Pin the candidate revision and inventory local changes before any integration. Record which branch will receive fixes.</li>
+<li id="L51">Find and correct the lint warning increase without raising the ceiling simply to pass. Run Full Verify and investigate any newly exposed failures.</li>
+<li id="L52">Diagnose billing-report separately. Triage dependency PRs by compatibility and risk; merge only after their checks pass.</li>
+<li id="L53">Create a single evidence-backed backlog: implemented / integrated / verified / accepted. Update stale checklists without deleting historical evidence.</li>
+<li id="L54">Select one pilot project, its users and minimum integrations. Define acceptance for each R2 handoff.</li>
+<li id="L55">Start R1 access and project-revision tests on the selected flow. Produce the R2 implementation plan only after that scope is agreed.</li>
+</ol>
+<p id="L57">Window exit: a trustworthy candidate baseline, an owned blocker list and one testable pilot scope. If CI is still failing, keep the window open around those failures instead of claiming pilot readiness.</p>
+<h2 id="L59">Review checkpoints and measures</h2>
+<ul>
+<li id="L61"><strong>Day 30 review:</strong> assess R0/R1 evidence and remaining blockers; revise delivery dates from actual capacity.</li>
+<li id="L62"><strong>Day 60 review:</strong> assess complete shadow-pilot coverage and the real-cut gate evidence.</li>
+<li id="L63"><strong>Day 90 review:</strong> decide whether controlled rollout is justified; expand only after acceptance.</li>
+</ul>
+<p id="L65">These are review checkpoints from an agreed kickoff, not promised phase completion dates. Track required CI pass rate at one SHA, accepted pilot steps, unresolved critical defects, tenant-isolation results, evidence completeness, manufacturing discrepancies and reconciliation discrepancies. Establish numerical business targets with pilot owners before R2; do not invent current performance values.</p>
+<h2 id="L67">Deferred scope and decisions</h2>
+<p id="L69">CP06 is outside this roadmap. FieldFlow is a separate incomplete artifact; first compare it with MONOLITH's existing field app before deciding whether to reuse anything.</p>
+<p id="L71">Defer marketplace/UGC/learning expansion, broad autonomous AI and new spatial products until the pilot demonstrates a need. Existing People/Training/OrgChart/QC modules should be maintained and checked for regressions rather than rebuilt by default.</p>
+<p id="L73">Decisions before implementation planning: name the pilot project and owner; confirm available team and machine; select target environment and external providers; agree manufacturing tolerances and acceptance ownership. Proposed roles above are not actual assignments.</p>
+<h2 id="L75">Risks and control points</h2>
+<ul>
+<li id="L77">Remote/local divergence: isolate the chosen revision and preserve existing work.</li>
+<li id="L78">Stale completion claims: bind each acceptance record to revision, environment and date.</li>
+<li id="L79">Factory access/signatures unavailable: continue shadow validation; keep real cutting blocked.</li>
+<li id="L80">External integrations unavailable: use explicitly labelled staging evidence; do not mark live acceptance complete.</li>
+<li id="L81">Scope growth: require a pilot blocker or an approved subsequent phase for new features.</li>
+</ul>
+<h2 id="L83">Revision 2 — SciSpace work incorporated</h2>
+<p id="L85"><strong>Authorization:</strong> the owner approved incorporating SciSpace work into the roadmap on 11 September 2026. This approves this documentation revision; budgets, procurement, deployment and production signoffs are not approved by that message. R0–R5 remain the delivery sequence.</p>
+<p id="L87"><strong>Coverage:</strong> the previously identified SciSpace groups are now explicitly mapped below, together with related deliverables discovered in the same package changelog. This is a workstream-level reconciliation, not an exhaustive audit of every file or the owner's SciSpace account. Direct attribution comes from Scispace Agent author markers in S14/S16–20 records, S51–58 generators and local document generators. Other entries are associated through the package changelog; individual authorship is not independently established.</p>
+<p id="L89"><strong>Status vocabulary:</strong> D = document/specification exists or is recorded; C = source/configuration/prototype exists; V = runtime verification; A = operational acceptance. D/C never imply V/A. “Not verified” is not a finding that implementation is absent. No new runtime tests were executed.</p>
+<h3 id="L91">Evidence-to-delivery matrix</h3>
+<div class="tablewrap"><table><thead><tr id="L93"><th>ID / work</th><th>Document and provenance</th><th>Implementation evidence</th><th>Verification / acceptance</th><th>Remaining work and exit evidence</th><th>Roadmap / proposed owner</th></tr></thead><tbody>
+<tr id="L95"><td>SC-01 SOP, summary, executive decks and training</td><td>Package changelog; S14 tracked authorship; S1–15 related package history</td><td>Documentation generators and deliverables; no product feature inferred</td><td>D; V/A not applicable to document creation, runtime claims unverified</td><td>Maintain one source index, match SOP requirements to actual modules, record unresolved claims and aligned TH/EN deliverables</td><td>R0; product/document owner</td></tr>
+<tr id="L96"><td>SC-02 Agent orchestration, KPI/SLA, incident response — S16–18</td><td>Direct SciSpace tracked-change records</td><td>Workflow/LINE product source exists; conformance to these contracts not traced end-to-end</td><td>D; V/A not verified</td><td>Map pilot agents/events; test retry, deduplication, escalation and human handoff; measure agreed KPIs</td><td>R1–R2, operational drills R4; integration lead</td></tr>
+<tr id="L97"><td>SC-03 Privacy, ethics, lifecycle, audit and steering — S19–23</td><td>S19–20 direct authorship; S21–23 package records</td><td>IAM/role and workflow source exists; full policy enforcement unverified</td><td>D; V/A not verified</td><td>Map permissions/data retention, human review, agent retirement and audit responsibilities; attach negative tests and review records</td><td>R1 and R4; security/governance owner</td></tr>
+<tr id="L98"><td>SC-04 Programme amendments and deployment narratives — S24–50</td><td>Changelog and SOP-to-GitHub mapping, including future programme years</td><td>Document statements only for claimed programme completion</td><td>D; go-live/ratification claims not independently verified</td><td>Classify each as proposal, historical record or supported acceptance; reconcile S1–52 mapping with current revision; replace assumed dates/coverage with evidence</td><td>R0, later R5; programme owner</td></tr>
+<tr id="L99"><td>SC-05 AI Creative Engine procurement — S51</td><td>Generator explicitly names Scispace Agent</td><td>RFP/spec and Thai procurement brief; no supplier award established</td><td>D; procurement acceptance unverified</td><td>Resolve AIE ID conflict first; confirm business case, scope, budget owner, evaluation and buy/build decision before any RFP</td><td>R0 definitions; R5 delivery; product/procurement</td></tr>
+<tr id="L100"><td>SC-06 AI vendor integration and go-live — S52–53</td><td>Direct SciSpace generators and vendor brief</td><td>Integration/SLA/cutover plans; connected AIE service not established</td><td>D; V/A not verified</td><td>Once SC-05 is approved, validate interfaces, tenant separation, UAT, rollback and actual support results</td><td>R5 after SC-05; integration/release owner</td></tr>
+<tr id="L101"><td>SC-07 Phase 3 definition, RFP, onboarding and go-live — S54–57</td><td>Four direct SciSpace generators</td><td>Plans for biophilic/design freeze/sensory/POE/CX/materials/model governance; feature completeness unknown</td><td>D; V/A not verified</td><td>Resolve GAP IDs; map each intended capability to existing source before creating tasks; schedule only accepted business scope</td><td>R0 reconciliation; R5 expansion; product/data lead</td></tr>
+<tr id="L102"><td>SC-08 BAU Governance — S58</td><td>Direct generator and closure-certificate template</td><td>Document generation, not independent programme closure</td><td>D; signatures/operational acceptance unverified</td><td>Prepare support owners, review cadence, incident and recovery evidence; issue closure only for the actually delivered scope</td><td>R4 for pilot; R5 for expanded programme; operations</td></tr>
+<tr id="L103"><td>SC-09 MCP, automation, LINE/LIFF and API reference</td><td>Package records: MCP implementation, automation spec, customer journey and 55-tool API reference</td><td>HTML code examples; existing workflow/LINE runtime is a separate source of evidence</td><td>D/C; deployed 55-tool coverage not established</td><td>Inventory documented vs implemented endpoints; reconcile identity/payloads; exercise pilot events with authorization, retry and delivery receipts</td><td>R1–R2; integration lead</td></tr>
+<tr id="L104"><td>SC-10 RAG, prompts, knowledge approval and agent evaluation</td><td>Package changelog records pgvector roadmap, prompt engineering, approval workflow and evaluation metrics</td><td>Specifications/examples; live retrieval/model evaluation not verified</td><td>D; V/A not verified</td><td>Preserve source/rights metadata; define approval before knowledge publication; evaluate retrieval/model outputs on a named dataset</td><td>R1 governance; R5 AI delivery; knowledge/AI owner</td></tr>
+<tr id="L105"><td>SC-11 Installation agent and PFMEA</td><td>Installation spec and PFMEA dashboard package records</td><td>HTML dashboard with embedded data and local status, plus existing product QC/field source</td><td>D/C; real incident/halt acceptance not verified</td><td>Resolve severity thresholds and checklist rules; bind defects/photos to project revision; test critical escalation and human release</td><td>R2–R4; field/QA lead</td></tr>
+<tr id="L106"><td>SC-12 Installation HTML field prototype</td><td>thai_installation_agent_fieldapp.html</td><td>Directly inspected simulateSync() and browser service-worker registration</td><td>C prototype; sync/offline acceptance not verified</td><td>Compare with existing MONOLITH field app; retain useful UX; prove actual API/offline/conflict recovery before claiming sync</td><td>R2 architecture choice, R4 acceptance; field lead</td></tr>
+<tr id="L107"><td>SC-13 FieldFlow native mobile and onboarding</td><td>Local SciSpace-authored pack generators; DOCX/PDF; related extracted Expo source</td><td>T1–T12 partial source, Drizzle schema and tests; see artifact audit</td><td>C partial; no fresh build/device/RLS acceptance</td><td>Select existing field app vs native investment; if native is selected, fix package/types, photo contract, storage isolation/recovery, magic-link callback, offline/search; complete device and integration tests</td><td>Decision R1–R2; selected delivery R4; mobile/backend leads</td></tr>
+<tr id="L108"><td>SC-14 Platform/client boundary, configs and Swift example</td><td>Platform spec, registry, client JSON and validator recorded in package</td><td>Config/validator source and showcase pages; changelog pass counts are historical</td><td>C; live multi-tenant/client deployment unverified</td><td>Reconcile with canonical MONOLITH tenant model; verify secrets remain server-side and isolation in runtime; keep Swift logistics as deferred example</td><td>R1 Daph/platform boundary; R5 other verticals; platform/security</td></tr>
+<tr id="L109"><td>SC-15 VS-01 Vision-to-BOQ</td><td>Pinned docs/specs VS-01 draft, HTML and checksum; package records</td><td>Detailed spec/prompts/schemas/ACs; matching live pipeline not established</td><td>D; AC-VS01-01–10 not independently passed</td><td>Resolve naming and canonical-value claims; benchmark current candidate models when implementing; enforce confidence/refusal/provenance/human review and all 10 ACs</td><td>R5 sandbox after R1; AI/design owner</td></tr>
+<tr id="L110"><td>SC-16 BOI executive summary</td><td>Local create_boi_summary.py author marker and DOCX output</td><td>Business document, not an application feature or BOI approval</td><td>D; business/legal/financial validation not performed</td><td>Reconcile product scope/cost/evidence with this roadmap; obtain current eligibility and financial review before external use</td><td>Business lane alongside R0/R2; business/finance owner</td></tr>
+<tr id="L111"><td>SC-17 Barausse knowledge and research</td><td>Local generators plus SCISPACE_REFERENCES in four extracted topic files</td><td>Thai notes and research tables; no canonical import established</td><td>D; supplier/engineering acceptance unverified</td><td>Verify source version, rights, units and supplier-native codes; review market data separately from technical facts before governed knowledge import</td><td>R1 knowledge review; R5 reusable catalog; knowledge/domain owner</td></tr>
+<tr id="L112"><td>SC-18 Barausse BOM, installation checklist and worksheet</td><td>Local SciSpace author markers and DOCX/HTML outputs</td><td>Project-specific documents for SECRET doors, including 1-bedroom/2-bath BOM</td><td>D; physical fit/install/cost acceptance unverified</td><td>Validate measurements, hardware compatibility, quantity and site procedure with domain owner; use in pilot only if selected project includes these doors</td><td>Conditional R2–R4; design/installation lead</td></tr>
+</tbody></table></div>
+<h3 id="L114">Conflicts to close before dependent implementation</h3>
+<ol>
+<li id="L116"><strong>ID collision:</strong> SciSpace DOCX S17 is Agent KPI/SLA, while the manufacturing S17-1…5 gate is a separate namespace. They cannot close one another.</li>
+<li id="L117"><strong>AIE scope drift:</strong> S51 describes AIE-003 rendering, AIE-004 QA and AIE-005 integration gateway; S52 acceptance describes material SKUs, mood boards and presentation rendering respectively. Freeze one versioned requirement map before procurement or tests.</li>
+<li id="L118"><strong>GAP scope drift:</strong> S53 describes GAP-13 ethics, GAP-14 decommissioning and GAP-15 data-subject requests; S54 uses those IDs for CX, sustainable procurement and model governance. Record an explicit mapping or renumbering decision; retain both originals.</li>
+<li id="L119"><strong>Programme dates and closure:</strong> the package includes future programme-year narratives and closure statements. Changelog generation, accepted Word edits and historical validator counts do not establish real signatures, deployment, customer count or achieved coverage.</li>
+<li id="L120"><strong>VS-01 naming:</strong> the pinned spec heading still includes “S55”, although package notes say VS-01 avoids the procurement S55 collision. Normalize references and validate claimed canonical values against current governed contracts before implementation.</li>
+<li id="L121"><strong>Field acceptance rules:</strong> package descriptions use different PFMEA severity/checklist thresholds. Choose approved domain-specific rules, not a silent union of conflicting defaults. HTML simulated sync must not count as backend acceptance.</li>
+</ol>
+<h3 id="L123">Changes to phase gates and immediate backlog</h3>
+<ul>
+<li id="L125"><strong>R0 now also requires:</strong> SC-01/04 index, IDs/source hashes, a conflict register for items 1–5, and a disposition for every SC row. Existing historical CI observations retain their dated SHA; this revision does not claim a fresh CI run.</li>
+<li id="L126"><strong>R1 now also requires:</strong> selected agent/knowledge governance from SC-02/03/10, platform boundary checks from SC-14 and one field-app architecture decision covering SC-12/13 and the existing product field app.</li>
+<li id="L127"><strong>R2 now also requires:</strong> SC-09 pilot contract tests and SC-11 defect/handoff evidence; SC-18 only when Barausse belongs to the selected pilot.</li>
+<li id="L128"><strong>R3 remains unchanged:</strong> actual manufacturing authority gates still control real cutting. No SciSpace go-live or BAU document bypasses them.</li>
+<li id="L129"><strong>R4 now also requires:</strong> selected field implementation device/offline acceptance, incident/support drills and scope-specific SC-08 BAU ownership.</li>
+<li id="L130"><strong>R5 now explicitly tracks:</strong> SC-05/06/07/10/15 and optional multi-client expansion from SC-14. These are visible backlog, not a promise to build all of them.</li>
+<li id="L131"><strong>Business/knowledge lane:</strong> SC-16/17 can be reviewed alongside delivery; BOI approval and market-research completion are not automatic factory-pilot blockers.</li>
+</ul>
+<p id="L133">Add to the first two-week window: inventory and resolve terminology conflicts; classify programme assertions; select the field path; select applicable Barausse pilot inputs; assign business review of BOI. Then produce a scoped implementation plan with file-level changes and tests. Do not execute all historical procurement/deployment steps merely because they appear in imported documents.</p>
+<h3 id="L135">Evidence links for this revision</h3>
+<ul>
+<li id="L137"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/changelog_v25.md" target="_blank" rel="noopener">SciSpace package changelog</a></li>
+<li id="L138"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/sop_github_mapping.md" target="_blank" rel="noopener">Historical SOP × source mapping</a></li>
+<li id="L139"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s51.py" target="_blank" rel="noopener">S51</a> / <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s52.py" target="_blank" rel="noopener">S52</a></li>
+<li id="L140"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s53.py" target="_blank" rel="noopener">S53</a> / <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s54.py" target="_blank" rel="noopener">S54</a> / <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s58.py" target="_blank" rel="noopener">S58</a></li>
+<li id="L141"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/thai_installation_agent_fieldapp.html" target="_blank" rel="noopener">HTML field prototype</a></li>
+<li id="L142"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/specs/vs01-vision-to-boq-vertical-slice-v1.th.md" target="_blank" rel="noopener">VS-01 spec</a></li>
+<li id="L143"><a href="../reports/2026-09-11-fieldflow-artifact-status.en.html">Local FieldFlow audit</a></li>
+<li id="L144">Local bundle: ../../agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/ — author evidence in create_fieldflow_pack.py, create_boi_summary.py, build_barausse_notes.py, build_barausse_bom.py, build_barausse_checklist.py and build_worksheet_p1.py.</li>
+</ul>
+<h2 id="L147">SciSpace package intake follow-up</h2>
+<p id="L149">The returned package has been reviewed with corrections. Its 13 CON records are mapped to SC/R phases in the <a href="../reports/2026-09-11-scispace-reconciliation-intake.en.html">intake review</a>. CON-013 is resolved as missing local handoff context. AIE/GAP canonical choices and blanket PFMEA threshold changes are not adopted; R0 semantic reconciliation and R1 domain-specific validation remain backlog.</p>
+<h2 id="L151">Sources</h2>
+<ul>
+<li id="L153"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/tree/52e0eeb12527d4bb3866ee726b4f30d4d74dca57" target="_blank" rel="noopener">Pinned source</a></li>
+<li id="L154"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950518" target="_blank" rel="noopener">Full Verify evidence</a></li>
+<li id="L155"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950559" target="_blank" rel="noopener">Lint evidence</a></li>
+<li id="L156"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts" target="_blank" rel="noopener">Real-cut restriction</a></li>
+<li id="L157"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/prd/monolith-complete-roadmap-v1.en.md" target="_blank" rel="noopener">Existing complete roadmap — historical planning baseline</a></li>
+</ul>
+<p id="L159">Documentation only. No product code, migrations, release settings, approvals or deployment changed.</p>
+</main></body>
+</html>

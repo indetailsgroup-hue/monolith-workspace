@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH — สถานะงาน ณ 10 กันยายน 2026</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">MONOLITH — สถานะงาน ณ 10 กันยายน 2026</h1>
+<p id="L3">หมายเหตุการเผยแพร่: เอกสารอ้างหลักฐานตามวันที่เดิม ไม่ใช่การตรวจ runtime หรือ CI ใหม่ ไฟล์หลักฐานเฉพาะในเครื่องไม่ได้รวมในการเผยแพร่นี้ SC-01–SC-18 เป็นรหัสสายงาน roadmap แยกจากรหัสมติ Steering Committee</p>
+<h2 id="L6">ข้อสรุป</h2>
+<p id="L8">มีผลิตภัณฑ์และงาน implementation จำนวนมากแล้ว และ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v17.5.2" target="_blank" rel="noopener">v17.5.2 เผยแพร่จริงเมื่อ 7 กันยายน</a> แต่ <strong>main ล่าสุดยังไม่ผ่าน CI ทั้งชุด และยังห้ามใช้ Designer packet ตัดชิ้นงานจริง</strong> งานที่เหลือมีทั้งการปิด quality gates, เชื่อม integration, ทำ feature ส่วนที่ขาด และรวบรวมหลักฐาน production/โรงงาน</p>
+<p id="L10">ไม่ให้เปอร์เซ็นต์รวม เพราะ checklist ซ้อน parent/subtask, บางชุดล้าสมัย และไม่มี denominator ของ scope ที่ ratify ล่าสุด งาน “มีโค้ด”, “รวม main”, “release”, “deploy” และ “ใช้จริงผ่าน” เป็นคนละสถานะ</p>
+<h2 id="L12">ขอบเขตและ revision</h2>
+<ul>
+<li id="L14">วันที่ตรวจ: 2026-09-10 เขตเวลา Asia/Bangkok</li>
+<li id="L15">GitHub main ยึด <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/package.json" target="_blank" rel="noopener">52e0eeb12527d4bb3866ee726b4f30d4d74dca57</a>; version 17.5.2; recursive tree ไม่ truncated: 4,137 blob files และ 322 SQL migration source files (ไม่ใช่จำนวน canonical migrations ที่ apply production)</li>
+<li id="L16">Parent governance root: [local governance workspace], branch guardrails/claim-linters, HEAD aa1b30e509ece9d8efad3d68e949860aa79bdecf; สถานะก่อนสร้างรายงาน 11 modified / 574 untracked status entries</li>
+<li id="L17">Nested product root: determined-williams/, branch fix/dxf-truth-chain, HEAD 9c4bee6759f6d1919a320a2f56088ce683287f58 (11 ส.ค.); 10 modified / 12 deleted / 61 untracked entries; package ในเครื่องยัง 2.1.0</li>
+<li id="L18">อ่าน CONTEXT.md และ scope correction 21 ก.ค. แล้ว ไม่อนุมานความไม่มี runtime จาก parent apps/packages</li>
+<li id="L19">นี่เป็นการตรวจสถานะระดับ workstream + inventory checklist ทั้ง 13 ไฟล์ที่ค้นพบ ไม่ใช่ security audit ทุกบรรทัดหรือ UAT ทุก requirement ไม่ได้รัน test บน snapshot เก่าแล้วอ้างเป็นผล main ใหม่</li>
+<li id="L20">หลักฐานในเครื่องหลาย branch/worktree ยังไม่ได้เทียบ ancestry กับ remote main จึงไม่เรียกงานเหล่านั้นว่า merged หรือ deployed</li>
+</ul>
+<h2 id="L22">เรื่องเร่งด่วน</h2>
+<ol>
+<li id="L24"><strong>B1 — Main quality gate ยังแดง (VERIFIED FACT):</strong> lint 2,237 warnings เกินเพดาน 2,235; 0 errors. Full Verify หยุดที่ lint ทำให้ root suite ไม่ได้รันใน job นั้น แม้ TypeScript และ build ใน lane แยกผ่าน ต้องลด warnings และรัน required jobs ให้ครบก่อน release ถัดไป</li>
+<li id="L25"><strong>B0 หากนำ packet ไปตัดจริง — ยัง NO_CUT (VERIFIED FACT):</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts" target="_blank" rel="noopener">src/core/config/shadowMode.ts</a> เปิด true; <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/governance/adr-064-signoff-checklist.th.md" target="_blank" rel="noopener">docs/governance/adr-064-signoff-checklist.th.md</a> ยังมี placeholder/hash/signatures PENDING ทั้งสี่บทบาท; release ซอฟต์แวร์ไม่ใช่อนุมัติตัดจริง</li>
+<li id="L26"><strong>B1 — Org Health Score ยังมีค่าจำลอง (VERIFIED FACT):</strong> PERFORMANCE คงที่ 75.0 ใน SQL และ source metadata placeholder_v18.5; ห้ามใช้เป็นผลวัดผลงานจริงโดยไม่มีคำอธิบาย</li>
+<li id="L27"><strong>B1 — สถานะเอกสารคลาดเคลื่อน (CONTRADICTED):</strong> progress ยังเรียก v17.5.2 release candidate ทั้งที่ release เผยแพร่แล้ว; Field Purchase/Curved/Accounting มี source ใหม่กว่าช่องติ๊ก; claim “ทุก gate ผ่าน” ในรายงาน 6–7 ก.ย. ไม่ใช่สถานะ main วันนี้</li>
+<li id="L28"><strong>B2 — Billing report workflow failure (VERIFIED FACT / cause UNKNOWN):</strong> run ล้มแต่ API ไม่คืน jobs ต้องตรวจ workflow validation/check annotations ต่อ ไม่เดาสาเหตุ</li>
+</ol>
+<h2 id="L30">สถานะงานทั้งหมดตาม workstream</h2>
+<p id="L32">สถานะ “มี implementation” หมายถึงมี source/wiring ที่ระบุ ไม่ได้ยืนยันว่า feature ทั้งหมดผ่าน production acceptance. ข้อสรุป missing integration เป็น UNKNOWN หรือ INFERENCE ตามขอบเขตที่ระบุ</p>
+<div class="tablewrap"><table><thead><tr id="L34"><th>งาน</th><th>สถานะ</th><th>หลักฐานและสิ่งที่เหลือ</th></tr></thead><tbody>
+<tr id="L36"><td>Designer / Cabinet / 3D</td><td>มี implementation</td><td>Parametric cabinet, panels, materials, 3D tools; การรับรองใช้งานโรงงานยังแยกต่างหาก <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/App.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L37"><td>Connector / Drawer / Hinge</td><td>มี implementation</td><td>มี drawer calculators, drill map, HingeCatalog และ UI; pending เก่าที่บอกยังไม่ทำขัดกับ source <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/manufacturing/drawer/generateDrawerPanels.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L38"><td>Curved panels / Kerf / DXF</td><td>ทำแล้วบางส่วนและมี regression ใหม่</td><td>มี curveProfile, kerfPatternGenerator, matingSlotGenerator และ smoke Stage 11–12; checklist 2/33 ล้าสมัย ไม่ใช่ 6% เสร็จ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/manufacturing/curve/kerfPatternGenerator.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L39"><td>CNC / Factory Packet / Verifier</td><td>มี implementation; ห้ามตัดจริง</td><td>S17-4 generator CI ผ่าน แต่ shadowMode=true และลายเซ็น ADR-064 ยัง PENDING <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L40"><td>Workflow / Approvals / Copilot</td><td>มี implementation; checklist ปิด</td><td>137 checked / 0 unchecked เป็นสถานะเอกสาร ไม่ใช่รับรองทุก production flow <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-workflow-copilot/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L41"><td>LINE OA Commerce</td><td>มี implementation; checklist ปิด</td><td>81 checked / 0 unchecked พร้อม RPC, Edge Functions และ tests; ไม่ได้ยิง LINE จริงรอบนี้ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/line-oa-commerce/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L42"><td>Capture / OCR / MCP</td><td>บางส่วน; integration ต้องยืนยัน</td><td>มี core และ Edge Functions; งาน PDPA/on-prem/บริการภายนอกยังต้องเทียบ checklist กับ live evidence <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/capture-spine/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L43"><td>Installation / Field PWA</td><td>มี implementation และ CI</td><td>Field App build/test และ pages workflow ผ่าน; checklist ยังมี 37 ข้อไม่ติ๊ก ต้องแยกงานที่ทำทีหลังกับงานภาคสนามจริง <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/packages/field-app/package.json" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L44"><td>Field Purchase</td><td>มี implementation; checklist เก่าขัดแย้ง</td><td>มี receiving/payment/budget/notification migrations และ Edge Function; รายงาน 7 ก.ย. อ้าง deploy แล้ว แม้ checklist 0/16 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/functions/field-purchase-line/index.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L45"><td>Accounting / Ledger / WHT / eTax</td><td>มีหลายส่วน; ไม่รับรองครบ ERP</td><td>มี ledger/multibook/tax, /accounting, /etax และ e2e; bank API/OCR/PDM/บัญชีจริงครบวงจรยังไม่มีหลักฐานใหม่ในรอบนี้ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-accounting/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L46"><td>Tenancy / Roles / Plan / Billing</td><td>มี implementation; coverage ทั้งระบบยังไม่พิสูจน์</td><td>11 business routes ใช้ active tenant/member/role/plan boundary; quota ทุก mutation และ commercial pricing ต้องตรวจเพิ่ม <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/routes/businessModuleRegistry.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L47"><td>People / Culture foundation</td><td>มี implementation และ release record</td><td>PeopleDirectory, skills/state, survey/feedback store และ UI/tests; ไม่อ้างว่าทุก roadmap feature ครบ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/culture/cultureStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L48"><td>Process Templates / Bottleneck</td><td>มี implementation และ release record</td><td>มี store, template list, heatmap, tests/stories; release v17.0.0 มีจริง <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/jobs/processTemplateStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L49"><td>Training / Super Employee</td><td>มี implementation</td><td>มี store/UI/tests/stories และ route; roadmap plan tier เก่าต่างจาก runtime <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/training/trainingStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L50"><td>AI Cost Estimation</td><td>มี cost tracking implementation</td><td>มี usage/cost/ROI/budget และ dashboard; ไม่ใช่หลักฐานว่า AI ประเมินงานก่อสร้างเองครบแล้ว <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-cost/aiCostEstimationStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L51"><td>AI Production Scheduler</td><td>workflow มี; AI engine ไม่ยืนยัน</td><td>store จัดการ machines/runs/items/constraints/approval; ยังไม่พบ model invocation ใน store ที่ตรวจ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-scheduler/aiSchedulerStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L52"><td>Culture Metrics / eNPS</td><td>มี implementation; version track เดินต่อ</td><td>มี dashboard/store/tests/stories และ route; v17.5.3+ เป็น forward version records ไม่ใช่ release แยกที่ยืนยันแล้ว <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/culture-metrics/cultureMetricsStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L53"><td>OrgChart / Role Network</td><td>มี implementation และ route</td><td>มี canvas/store/schema/tests; v18.x เป็น forward track ตาม progress <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/routes/BusinessModuleRoutes.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L54"><td>QC Anomaly Detection</td><td>มี implementation และ route</td><td>มี threshold/measurement/SQL detection/UI/tests; การ calibrate กับข้อมูลโรงงานจริงยังไม่ยืนยัน <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/migrations/20270210_qc_anomaly_detection.sql" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L55"><td>AI Quotation Draft</td><td>workflow มี; AI generation ไม่ยืนยัน</td><td>มี draft/line items/submit/approve/reject; store ที่ตรวจเป็น DB CRUD ไม่มี model invocation <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/ai-quotation/aiQuotationDraftStore.ts" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L56"><td>Leadership Actions</td><td>มี implementation และ route</td><td>มี board/store/tests/stories และ role boundary OWNER/ADMIN <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/leadership-actions/LeadershipActionBoard.tsx" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L57"><td>Org Health Score</td><td>ยังไม่ครบ</td><td>มี UI/store/SQL แต่ PERFORMANCE=75.0 placeholder; ไม่พบ route ใน canonical registry/index ที่ตรวจ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/supabase/migrations/20270227_org_health_score.sql" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L58"><td>Digital Shadow / HOMAG</td><td>มี implementation และ CI</td><td>build/unit/integration lane ผ่าน (Redis + local OPC UA simulator); ไม่ใช่ machine commissioning <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/packages/digital-shadow-service/package.json" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L59"><td>Daph Second Brain</td><td>checklist ปิด</td><td>active checklist 61/0; archived 0/16 ต้องไม่นับเป็น backlog ใหม่; export ในเครื่องมี changes ค้าง <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/daph-obsidian-second-brain/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L60"><td>Design Hub / Marketplace / UGC</td><td>แผน; ยังไม่ยืนยัน implementation</td><td>checklist 0/56 และค้น tree พบ design/requirements/tasks; ไม่ใช่การพิสูจน์เชิงลบทุกสัญลักษณ์ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/design-hub-platform-phase2/tasks.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L61"><td>Capacity AI / Benchmarks / Team Builder / SOP AI</td><td>แผน; ยังไม่พบหลักฐาน implementation</td><td>อยู่ใน roadmap 2S2P1C; ไม่พบ module/migration เฉพาะจาก inventory รอบนี้ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/MONOLITH_2S2P1C_FEATURE_SPEC_ROADMAP.md" target="_blank" rel="noopener">source</a></td></tr>
+<tr id="L62"><td>SpatialLM / Change Readiness / AI Comfort / Labels</td><td>ยังสรุปว่าเสร็จไม่ได้</td><td>roadmap/pending มีรายการ แต่ยังไม่ยืนยัน production caller; spatialHash ไม่ใช่ SpatialLM <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/MONOLITH_2S2P1C_FEATURE_SPEC_ROADMAP.md" target="_blank" rel="noopener">source</a></td></tr>
+</tbody></table></div>
+<h2 id="L64">CI ณ revision ที่ตรวจ</h2>
+<div class="tablewrap"><table><thead><tr id="L66"><th>Workflow / job</th><th>GitHub conclusion</th></tr></thead><tbody>
+<tr id="L68"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950518" target="_blank" rel="noopener">Full Verify</a></td><td>failure: root lint; root typecheck/test/build skipped; dependent E2E jobs skipped</td></tr>
+<tr id="L69"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950559" target="_blank" rel="noopener">Lint</a></td><td>warning budget failure; ESLint errors job and app/server TypeScript job success</td></tr>
+<tr id="L70"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950557" target="_blank" rel="noopener">Standalone E2E Smoke</a></td><td>success</td></tr>
+<tr id="L71"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950490" target="_blank" rel="noopener">pgTAP</a></td><td>success</td></tr>
+<tr id="L72"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459950487" target="_blank" rel="noopener">npm audit</a></td><td>success</td></tr>
+<tr id="L73"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34459949364" target="_blank" rel="noopener">billing-report.yml</a></td><td>failure; no jobs returned; cause UNKNOWN</td></tr>
+<tr id="L74"><td>Full Verify: factory server, field app, digital shadow, tools, S17-4, LineOS, node controls, manifests, strict bypass scan, hermetic build, dependency audit</td><td>success at examined SHA</td></tr>
+</tbody></table></div>
+<p id="L77">อ่านสถานะผ่านจาก GitHub Actions ของ SHA เดียวกัน ไม่ได้ rerun CI หรืออ้างจำนวน tests เก่าของวันที่ 6–7 ก.ย. เป็นผลวันนี้ ตัวอย่างสำคัญ: standalone smoke success กับ dependent smoke skipped ใน Full Verify เกิดพร้อมกันได้ เพราะเป็นคนละ workflow</p>
+<h2 id="L79">งานที่ยังไม่จบ แยกจากงานที่เพียงยังไม่พิสูจน์</h2>
+<ul>
+<li id="L81"><strong>ค้างยืนยันชัด:</strong> lint budget, Full Verify ครบทุก lane, billing-report failure, PERFORMANCE placeholder, การจัด route/acceptance ของ Org Health, update status ledger</li>
+<li id="L82"><strong>workflow มี แต่ integration ไม่ยืนยัน:</strong> AI scheduler/model execution, AI quotation generation, external bank/OCR/PDM, end-to-end accounting, production quota coverage และ live tenant-boundary acceptance</li>
+<li id="L83"><strong>roadmap / ยังไม่พบ implementation ใน inventory:</strong> Design Hub Phase 2, marketplace/UGC/learning/payment scope, Capacity Planning AI, Industry Benchmarks, Cross-functional Team Builder, SOP AI Assistant</li>
+<li id="L84"><strong>UNKNOWN:</strong> การปิดบ้าน dogfood ครบสาย, calibration/bench test เครื่องจริง, key/signoff ceremony ล่าสุด และ field acceptance. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json" target="_blank" rel="noopener">dogfood record</a> พิสูจน์เพียง STARTED เมื่อ 18 ก.ค. และ realCutAllowed=false; tree ของ house-01 มี started.json/sha256 ไม่มี completion record</li>
+<li id="L85">Change Readiness, AI Adoption Comfort, SpatialLM และ labels ไม่ควรถูกเรียกเสร็จจากชื่อโมดูลใกล้เคียง ต้องมี caller และ acceptance evidence เฉพาะ</li>
+</ul>
+<h2 id="L87">PR / issue ที่ค้าง</h2>
+<p id="L89">ผลค้น GitHub ณ เวลาตรวจ: open PR 5 รายการ ล้วน dependency upgrades; issue เปิดที่ query is:issue คืน 0 รายการ การไม่มี issue ไม่ได้แปลว่าไม่มี backlog</p>
+<ul>
+<li id="L91"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/72" target="_blank" rel="noopener">#72: chore(deps)(deps-dev): bump @vitest/ui from 3.2.7 to 5.0.0</a></li>
+<li id="L92"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/71" target="_blank" rel="noopener">#71: chore(deps)(deps-dev): bump vitest from 2.1.9 to 5.0.0</a></li>
+<li id="L93"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/69" target="_blank" rel="noopener">#69: chore(deps)(deps-dev): bump @vitest/coverage-v8 from 2.1.9 to 5.0.0</a></li>
+<li id="L94"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/64" target="_blank" rel="noopener">#64: chore(deps/server)(deps): bump ioredis from 5.11.1 to 6.0.0 in /server</a></li>
+<li id="L95"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/63" target="_blank" rel="noopener">#63: chore(deps/server)(deps): bump pdfkit from 0.17.2 to 0.20.2 in /server</a></li>
+</ul>
+<h2 id="L97">งานในเครื่องที่ต้อง reconcile</h2>
+<p id="L99">Parent มีแผน tenancy/protected delivery ที่แก้ค้าง และงาน document renderer; nested มี order-adapter.ts กับ orderNormalization.property.test.ts ที่แก้ค้าง, generated dist และ Daph export changes จึงยังนับเป็น shipped ไม่ได้</p>
+<p id="L101">พบ worktree/branch เฉพาะด้าน ProjectContext, protected delivery, LINE trust, repair, Section 16 และ Section 4. Parent preflight ของ ProjectContext อ้าง target codex/repair-operations-phase-a-adr และ DEPLOYED_LINEAGE_UNESTABLISHED; ห้ามเอาการปิดใน lane ไปปิด main โดยไม่เทียบ source/revision</p>
+<h2 id="L103">Appendix — checklist inventory</h2>
+<div class="tablewrap"><table><thead><tr id="L105"><th>Checklist</th><th align="right">Checked</th><th align="right">Unchecked</th></tr></thead><tbody>
+<tr id="L107"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/capture-spine/tasks.md" target="_blank" rel="noopener">.kiro/specs/capture-spine/tasks.md</a></td><td align="right">30</td><td align="right">6</td></tr>
+<tr id="L108"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/curved-panel-system/tasks.md" target="_blank" rel="noopener">.kiro/specs/curved-panel-system/tasks.md</a></td><td align="right">2</td><td align="right">31</td></tr>
+<tr id="L109"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/daph-obsidian-second-brain/tasks.md" target="_blank" rel="noopener">.kiro/specs/daph-obsidian-second-brain/tasks.md</a></td><td align="right">61</td><td align="right">0</td></tr>
+<tr id="L110"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/design-hub-platform-phase2/tasks.md" target="_blank" rel="noopener">.kiro/specs/design-hub-platform-phase2/tasks.md</a></td><td align="right">0</td><td align="right">56</td></tr>
+<tr id="L111"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/entitlement-tier/tasks.md" target="_blank" rel="noopener">.kiro/specs/entitlement-tier/tasks.md</a></td><td align="right">8</td><td align="right">11</td></tr>
+<tr id="L112"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/field-purchase/tasks.md" target="_blank" rel="noopener">.kiro/specs/field-purchase/tasks.md</a></td><td align="right">0</td><td align="right">16</td></tr>
+<tr id="L113"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/installation-pm/tasks.md" target="_blank" rel="noopener">.kiro/specs/installation-pm/tasks.md</a></td><td align="right">112</td><td align="right">37</td></tr>
+<tr id="L114"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/line-oa-commerce/tasks.md" target="_blank" rel="noopener">.kiro/specs/line-oa-commerce/tasks.md</a></td><td align="right">81</td><td align="right">0</td></tr>
+<tr id="L115"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-accounting/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-accounting/tasks.md</a></td><td align="right">32</td><td align="right">49</td></tr>
+<tr id="L116"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-mcp-layer/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-mcp-layer/tasks.md</a></td><td align="right">43</td><td align="right">6</td></tr>
+<tr id="L117"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/monolith-workflow-copilot/tasks.md" target="_blank" rel="noopener">.kiro/specs/monolith-workflow-copilot/tasks.md</a></td><td align="right">137</td><td align="right">0</td></tr>
+<tr id="L118"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/_archived/obsidian-second-brain/tasks.md" target="_blank" rel="noopener">.kiro/specs/_archived/obsidian-second-brain/tasks.md</a></td><td align="right">0</td><td align="right">16</td></tr>
+<tr id="L119"><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/specs/main/tasks.md" target="_blank" rel="noopener">specs/main/tasks.md</a></td><td align="right">0</td><td align="right">0</td></tr>
+</tbody></table></div>
+<p id="L121">นับ checkbox line ทั้ง parent และ child ไม่ใช่ unique deliverables และไม่คำนวณเป็น progress %. Archived Second Brain ถูกแทนด้วย active checklist; specs/main/tasks.md ใช้รูปแบบอื่นจึง 0/0 ไม่ได้แปลว่าไม่มีงาน. รายการ checkbox ทุกบรรทัดอยู่ใน evidence JSON (local evidence snapshot; not published)</p>
+<h2 id="L123">ลำดับแนะนำและเกณฑ์รับงาน (PROPOSAL)</h2>
+<div class="tablewrap"><table><thead><tr id="L125"><th>ลำดับ</th><th>Owner ที่เสนอ</th><th>งาน</th><th>เกณฑ์รับ</th></tr></thead><tbody>
+<tr id="L127"><td>1</td><td>Engineering / QA</td><td>ปิด lint และ billing workflow; rerun main</td><td>warnings ไม่เกิน 2,235; Full Verify ทุก required lane รันจริงและผ่าน</td></tr>
+<tr id="L128"><td>2</td><td>Product / Tech Lead</td><td>รวม status ledger</td><td>ทุก requirement ผูก commit, route, test/run และ release/deploy status; ลบ claim เก่าด้วย supersession</td></tr>
+<tr id="L129"><td>3</td><td>Data / Product</td><td>Org Health + AI integrations</td><td>PERFORMANCE มาจากข้อมูลจริงหรือแสดง unavailable; route/permissions/test ครบ; AI มี invocation และ acceptance</td></tr>
+<tr id="L130"><td>4</td><td>Platform / Finance / Field</td><td>Live tenant/accounting/LINE validation</td><td>หลักฐานข้าม tenant ถูกปฏิเสธ, transaction และ rollback ครบ; field acceptance ลงชื่อ</td></tr>
+<tr id="L131"><td>5</td><td>PO / TL / Security / Factory</td><td>Manufacturing real-cut gate</td><td>exact-byte signatures, complete dogfood, calibrated profile/bench proof และอนุมัติครบก่อนเปลี่ยน NFP</td></tr>
+<tr id="L132"><td>6</td><td>Product</td><td>Rebaseline remaining roadmap</td><td>scope/owner/acceptance ชัดก่อนเพิ่ม Design Hub และ advanced AI</td></tr>
+</tbody></table></div>
+<h2 id="L134">ความเชื่อมั่นและข้อจำกัด</h2>
+<p id="L136">สูงสำหรับ revision, source presence, explicit placeholder/flag, release existence และ CI conclusions; ปานกลางสำหรับภาพรวม implementation; ยังไม่ยืนยัน live operation ทุกระบบ ไม่แก้ product, governance status, commit, push, merge หรือ deploy ในรอบตรวจนี้</p>
+<p id="L138">หลักฐาน source ที่อ่านและ checklist/CI job metadata เก็บใน evidence JSON; tree/run snapshots อยู่ tmp/2026-09-10-github-tree.json และ tmp/2026-09-10-github-runs.json. GitHub อาจเดินหน้าหลัง snapshot นี้ ให้ยึด SHA ที่ระบุ</p>
+</main></body>
+</html>
