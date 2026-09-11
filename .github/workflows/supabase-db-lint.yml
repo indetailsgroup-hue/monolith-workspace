@@ -40,7 +40,7 @@ jobs:
         id: preflight
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"

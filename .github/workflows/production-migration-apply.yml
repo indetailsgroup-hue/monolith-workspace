@@ -36,7 +36,7 @@ jobs:
     environment: production
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
       MIGRATION_BACKUP_KEY: ${{ secrets.MIGRATION_BACKUP_KEY }}
 
     steps:
