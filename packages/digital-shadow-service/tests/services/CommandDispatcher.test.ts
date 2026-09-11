@@ -6,11 +6,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 
 // ─── Mock ioredis ─────────────────────────────────────────────────────────────
-const mockRedis = {
+const mockRedis = vi.hoisted(() => ({
   xadd: vi.fn().mockResolvedValue('1-1'),
   quit: vi.fn().mockResolvedValue('OK'),
-};
-vi.mock('ioredis', () => ({ default: vi.fn(() => mockRedis) }));
+}));
+vi.mock('ioredis', () => ({ default: vi.fn(function MockIoRedis() { return mockRedis; }) }));
 
 // ─── Mock config ──────────────────────────────────────────────────────────────
 vi.mock('../../src/config/index.js', () => ({
@@ -22,7 +22,7 @@ vi.mock('../../src/config/index.js', () => ({
 }));
 
 // ─── Mock CommandQueue ────────────────────────────────────────────────────────
-const mockCommandQueue = {
+const mockCommandQueue = vi.hoisted(() => ({
   start: vi.fn().mockResolvedValue(undefined),
   stop: vi.fn().mockResolvedValue(undefined),
   enqueue: vi.fn().mockResolvedValue('cmd_queued123'),
@@ -30,9 +30,9 @@ const mockCommandQueue = {
   getEntry: vi.fn().mockResolvedValue(null),
   updateStatus: vi.fn().mockResolvedValue(null),
   retry: vi.fn().mockResolvedValue(true),
-};
+}));
 vi.mock('../../src/services/CommandQueue', () => ({
-  CommandQueue: vi.fn(() => mockCommandQueue),
+  CommandQueue: vi.fn(function MockCommandQueue() { return mockCommandQueue; }),
   QueueFullError: class QueueFullError extends Error {
     machineId: string; currentDepth: number; maxDepth: number;
     constructor(m: string, c: number, mx: number) {
@@ -43,12 +43,12 @@ vi.mock('../../src/services/CommandQueue', () => ({
 }));
 
 // ─── Mock CommandSafetyGate ───────────────────────────────────────────────────
-const mockSafetyGate = {
+const mockSafetyGate = vi.hoisted(() => ({
   validate: vi.fn().mockResolvedValue([{ rule: 'test', passed: true }]),
   canProceed: vi.fn().mockReturnValue(true),
-};
+}));
 vi.mock('../../src/services/CommandSafetyGate', () => ({
-  CommandSafetyGate: vi.fn(() => mockSafetyGate),
+  CommandSafetyGate: vi.fn(function MockCommandSafetyGate() { return mockSafetyGate; }),
 }));
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
