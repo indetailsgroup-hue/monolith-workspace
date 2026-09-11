@@ -377,3 +377,100 @@ export const WithMetricGrid: Story = {
     }),
   ],
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Added in sprint 12 — stories #13–16 (admin create-survey form + metric btn)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const createEnpsSurveySpy      = fn();
+const createMetricDefinitionSpy = fn();
+
+// 13. Admin + empty surveys → create-survey-form is visible (no play fn)
+export const AdminCreateSurveyFormVisible: Story = {
+  name: 'Admin – Create Survey Form Visible',
+  args: { orgId: 'org-1', orgPlan: 'PROFESSIONAL', isAdmin: true },
+  decorators: [
+    withCultureStore({
+      ...BASE_STATE,
+      enpsSurveys: [],
+    }),
+  ],
+};
+
+// 14. Admin types a valid title and submits → createEnpsSurvey spy called
+export const AdminCreateSurveySubmit: Story = {
+  name: 'Admin – Create Survey Submit (valid title)',
+  args: { orgId: 'org-1', orgPlan: 'PROFESSIONAL', isAdmin: true },
+  decorators: [
+    withCultureStore({
+      ...BASE_STATE,
+      enpsSurveys:      [],
+      createEnpsSurvey: createEnpsSurveySpy,
+    }),
+  ],
+  beforeEach() {
+    createEnpsSurveySpy.mockReset();
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input  = await canvas.findByTestId('create-survey-title-input');
+    const btn    = await canvas.findByTestId('create-survey-submit-btn');
+    await userEvent.type(input, 'Q1 Test Survey');
+    await userEvent.click(btn);
+    expect(createEnpsSurveySpy).toHaveBeenCalledOnce();
+    expect(createEnpsSurveySpy).toHaveBeenCalledWith(
+      'org-1',
+      'PROFESSIONAL',
+      { title: 'Q1 Test Survey' }
+    );
+  },
+};
+
+// 15. Admin clicks submit with empty input → createEnpsSurvey spy NOT called
+export const AdminCreateSurveyBlankGuard: Story = {
+  name: 'Admin – Create Survey Blank Guard',
+  args: { orgId: 'org-1', orgPlan: 'PROFESSIONAL', isAdmin: true },
+  decorators: [
+    withCultureStore({
+      ...BASE_STATE,
+      enpsSurveys:      [],
+      createEnpsSurvey: createEnpsSurveySpy,
+    }),
+  ],
+  beforeEach() {
+    createEnpsSurveySpy.mockReset();
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const btn    = await canvas.findByTestId('create-survey-submit-btn');
+    await userEvent.click(btn);
+    expect(createEnpsSurveySpy).not.toHaveBeenCalled();
+  },
+};
+
+// 16. Admin clicks create-metric-btn → createMetricDefinition spy called with CUSTOM payload
+export const AdminCreateMetricButton: Story = {
+  name: 'Admin – Create Metric Button',
+  args: { orgId: 'org-1', orgPlan: 'PROFESSIONAL', isAdmin: true },
+  decorators: [
+    withCultureStore({
+      ...BASE_STATE,
+      orgHealth:              [],
+      createMetricDefinition: createMetricDefinitionSpy,
+    }),
+  ],
+  beforeEach() {
+    createMetricDefinitionSpy.mockReset();
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const btn    = await canvas.findByTestId('create-metric-btn');
+    await userEvent.click(btn);
+    expect(createMetricDefinitionSpy).toHaveBeenCalledOnce();
+    expect(createMetricDefinitionSpy).toHaveBeenCalledWith(
+      'org-1',
+      'PROFESSIONAL',
+      { metricCategory: 'CUSTOM', metricSource: 'OTHER', displayName: 'Metric ใหม่' }
+    );
+  },
+};

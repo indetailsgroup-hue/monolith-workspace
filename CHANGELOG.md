@@ -44,6 +44,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.5]
+
+#### Added — Sprint 13: Employee Sentiment Timeline (EST) module
+- `supabase/migrations/20270321_employee_sentiment_timeline.sql` — tables `est_timeline_configs` (per-org per-dimension config, STRESS `is_inverted=TRUE`) and `est_sentiment_entries` (anonymous scores, no `user_id`); view `est_sentiment_summary_v` (aggregated timeline with health-status thresholds); PROFESSIONAL+ plan-gate helper; RLS: entries INSERT=org-member, SELECT=ADMIN+; configs ALL=ADMIN+
+- `src/culture-metrics/employeeSentimentTypes.ts` — `EstDimension` (MORALE/ENGAGEMENT/STRESS/COLLABORATION/CLARITY), `EstPeriodType` (WEEKLY/MONTHLY/QUARTERLY), `EstHealthStatus`; DB row interfaces; app-layer camelCase types; `canAccessEstModule` plan gate; display maps (`EST_DIMENSION_LABEL`, `EST_DIMENSION_ICON`, `EST_HEALTH_STATUS_COLOR`); action payloads; `EstFilters`; mappers
+- `src/culture-metrics/employeeSentimentStore.ts` — Zustand store (`useEstStore`): `fetchSummary` / `fetchTimelineConfigs` (PROFESSIONAL+ gated); `submitSentimentEntry` (plan-gate EXEMPT, anonymous, no `auth.getUser`); `upsertTimelineConfig` (PROFESSIONAL+ gated); `setFilters`; `clearError`
+- `src/culture-metrics/SentimentTimelineBoard.tsx` — PROFESSIONAL+ plan-gate wall; loading skeleton; error banner + clear button; dimension summary section (per-active-config card with score + health badge); timeline history section with period/dimension filters; anonymous submit form; admin config panel stub
+- `src/culture-metrics/CultureDashboard.stories.tsx` — stories #13–16: `AdminCreateSurveyFormVisible` (admin + empty surveys → form visible); `AdminCreateSurveySubmit` (play: type title → submit → spy called); `AdminCreateSurveyBlankGuard` (play: blank submit → spy NOT called); `AdminCreateMetricButton` (play: click create-metric-btn → `createMetricDefinition` spy called with CUSTOM payload)
+
 ### [18.5.4] — Sprint 12: CultureDashboard component tests & admin UI extensions
 
 #### Added
