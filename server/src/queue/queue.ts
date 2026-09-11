@@ -48,11 +48,14 @@ export function makeRedis(): Redis {
   if (redisInstance) return redisInstance;
 
   const url = process.env.REDIS_URL || 'redis://localhost:6379';
+  // ioredis v6: `protocol: 2` narrows return type to Redis<"legacy"> which is
+  // incompatible with BullMQ ConnectionOptions (expects Redis<"default">).
+  // The cast is safe — runtime object is a valid Redis client either way.
   redisInstance = new Redis(url, {
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false,
-    protocol: 2, // ioredis v6: retain RESP2 wire protocol (RESP3 is default in v6)
-  });
+    protocol: 2, // ioredis v6: retain RESP2 wire protocol
+  }) as unknown as Redis;
 
   redisInstance.on('error', (err: Error) => {
     console.error('[Redis] Connection error:', err.message);
