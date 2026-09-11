@@ -53,6 +53,12 @@
 - `src/qc-anomaly/__tests__/QcAnomalyDashboard.test.tsx` — Vitest component tests: explicit `StoreShape` interface (resolves Zustand auto-mock unknown issue); `makeStore`/`renderBoard` helpers; plan gate · loading · summary cards · filter bar · anomaly list · acknowledge · resolve · threshold toggle · error banner
 - `src/qc-anomaly/QcAnomalyDashboard.tsx` — fixed 4 tsc errors: `METRIC_KEYS` corrected to QcaMetricKey values, `threshold_value` → `threshold_breach_detail`, `acknowledgeAnomaly`/`resolveAnomaly` 3-arg → 2-arg
 
+### ✅ Completed (v18.5 — sprint 12: CultureDashboard Component Tests + Admin UI Extensions)
+- `src/culture-metrics/CultureDashboard.tsx` — extended: `useState` import; `createEnpsSurvey`/`createMetricDefinition` destructured from store; create-survey mini-form (`create-survey-form`, `create-survey-title-input`, `create-survey-submit-btn`) in `no-surveys` empty state (admin only) with blank/whitespace guard; `create-metric-btn` in `no-health-data` empty state (admin only) with default CUSTOM payload
+- `src/culture-metrics/__tests__/CultureDashboard.test.tsx` — 23 new tests across 4 describe blocks: `effects on mount` (5: fetch actions called for PROFESSIONAL/ENTERPRISE; blocked FREE/STARTER; loading skeleton); `createMetricDefinition — admin button` (5: presence by role/state; args verification); `admin create-survey form` (7: presence; blank/whitespace guard; valid submit with trim); `WithMetricGrid scenario` (6: row count; no-health-data absent; CRITICAL/NORMAL/WARNING badge colours; CRITICAL score display)
+- Vitest: **87/87 passed** (CultureDashboard.test.tsx: 47 | cultureMetricsStore.test.ts: 40)
+- CHANGELOG: `[18.5.4]` entry added
+
 ### ✅ Completed (v18.5 — sprint 11: CultureDashboard Store Tests + WithMetricGrid Story)
 - `src/culture-metrics/__tests__/cultureMetricsStore.test.ts` — extended: `fetchOrgHealth` (6 tests: view query, empty data, row mapping, full camelCase field mapping, error path, isLoading resets x2); `createMetricDefinition — payload mapping and state update` (6 tests: snake_case insert mapping, null defaults, state append, accumulation, error path, no-append on failure)
 - `src/culture-metrics/CultureDashboard.stories.tsx` — story #12 `WithMetricGrid`: org-health-section grid with NORMAL + WARNING + CRITICAL health status rows (3-item `METRIC_GRID` fixture)

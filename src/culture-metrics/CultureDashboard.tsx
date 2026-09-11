@@ -19,7 +19,7 @@
  *   org-health-section, health-metric-row, no-health-data
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCultureMetricsStore } from './cultureMetricsStore';
 import type { OrgPlan } from '../tenant/types';
 import type { CmdEnpsSurvey, CmdEnpsResults, CmdOrgHealth } from './cultureMetricsTypes';
@@ -231,10 +231,14 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
     fetchOrgHealth,
     activateEnpsSurvey,
     closeEnpsSurvey,
+    createEnpsSurvey,
+    createMetricDefinition,
     clearError,
   } = useCultureMetricsStore();
 
   const canAccess = canAccessCultureMetrics(orgPlan);
+
+  const [createSurveyTitle, setCreateSurveyTitle] = useState('');
 
   // Hooks must run in the same order for gated and entitled users. Keep the
   // access check inside the effect so a gated render performs no data request.
@@ -360,9 +364,37 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
           >
             <p className="text-sm text-gray-400">ยังไม่มีแบบสำรวจ</p>
             {isAdmin && (
-              <p className="mt-1 text-xs text-gray-400">
-                สร้างแบบสำรวจแรกเพื่อเริ่มเก็บข้อมูล eNPS
-              </p>
+              <>
+                <p className="mt-1 text-xs text-gray-400">
+                  สร้างแบบสำรวจแรกเพื่อเริ่มเก็บข้อมูล eNPS
+                </p>
+                <form
+                  className="mt-4 flex gap-2"
+                  data-testid="create-survey-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!createSurveyTitle.trim()) return;
+                    createEnpsSurvey(orgId, orgPlan, { title: createSurveyTitle.trim() });
+                    setCreateSurveyTitle('');
+                  }}
+                >
+                  <input
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    data-testid="create-survey-title-input"
+                    onChange={(e) => setCreateSurveyTitle(e.target.value)}
+                    placeholder="ชื่อแบบสำรวจ"
+                    type="text"
+                    value={createSurveyTitle}
+                  />
+                  <button
+                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    data-testid="create-survey-submit-btn"
+                    type="submit"
+                  >
+                    สร้างแบบสำรวจ
+                  </button>
+                </form>
+              </>
             )}
           </div>
         ) : (
@@ -416,9 +448,25 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
           >
             <p className="text-sm text-gray-400">ยังไม่มีข้อมูลสุขภาพองค์กร</p>
             {isAdmin && (
-              <p className="mt-1 text-xs text-gray-400">
-                บันทึก metric snapshot แรกเพื่อเริ่มติดตาม
-              </p>
+              <>
+                <p className="mt-1 text-xs text-gray-400">
+                  บันทึก metric snapshot แรกเพื่อเริ่มติดตาม
+                </p>
+                <button
+                  className="mt-3 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  data-testid="create-metric-btn"
+                  onClick={() =>
+                    createMetricDefinition(orgId, orgPlan, {
+                      metricCategory: 'CUSTOM',
+                      metricSource:   'OTHER',
+                      displayName:    'Metric ใหม่',
+                    })
+                  }
+                  type="button"
+                >
+                  เพิ่ม Metric Definition
+                </button>
+              </>
             )}
           </div>
         ) : (

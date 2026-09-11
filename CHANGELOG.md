@@ -44,6 +44,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.4] — Sprint 12: CultureDashboard component tests & admin UI extensions
+
+#### Added
+- `CultureDashboard.tsx` — admin create-survey mini-form (`create-survey-form`, `create-survey-title-input`, `create-survey-submit-btn`) inside `no-surveys` empty state; blank/whitespace guard before calling `createEnpsSurvey`
+- `CultureDashboard.tsx` — `create-metric-btn` in `no-health-data` empty state (admin only); calls `createMetricDefinition` with default CUSTOM payload
+- `CultureDashboard.test.tsx` — 23 new Vitest component tests across 4 describe blocks:
+  - `effects on mount` (5 tests): fetch actions called on mount for PROFESSIONAL/ENTERPRISE; blocked for FREE/STARTER; loading skeleton while `isLoading: true`
+  - `createMetricDefinition — admin button` (5 tests): presence/absence by role & health-data state; args verification
+  - `admin create-survey form` (7 tests): presence/absence by role & survey state; blank/whitespace guard; valid submit with trim
+  - `WithMetricGrid scenario` (6 tests): row count, no-health-data absent, CRITICAL/NORMAL/WARNING badge colour classes, CRITICAL score display
+
+#### Test results
+- `src/culture-metrics`: **87/87 passed** (CultureDashboard.test.tsx: 47 | cultureMetricsStore.test.ts: 40)
+
 ### [18.5.3] — 2027-03-15 — Sprint 11: CultureDashboard Store Tests (fetchOrgHealth + createMetricDefinition) + Storybook WithMetricGrid
 
 #### Added

@@ -353,3 +353,240 @@ describe('CultureDashboard', () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 12 additions
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Effects on mount ──────────────────────────────────────────────────────────
+describe('effects on mount', () => {
+  it('calls fetchEnpsSurveys, fetchEnpsResults, and fetchOrgHealth with orgId on mount (PROFESSIONAL)', () => {
+    const fetchEnpsSurveys   = vi.fn();
+    const fetchEnpsResults   = vi.fn();
+    const fetchOrgHealth     = vi.fn();
+    seedStore({ fetchEnpsSurveys, fetchEnpsResults, fetchOrgHealth });
+    render(<CultureDashboard orgId="org-42" orgPlan={'PROFESSIONAL' as any} />);
+    expect(fetchEnpsSurveys).toHaveBeenCalledWith('org-42');
+    expect(fetchEnpsResults).toHaveBeenCalledWith('org-42');
+    expect(fetchOrgHealth).toHaveBeenCalledWith('org-42');
+  });
+
+  it('calls all three fetch actions with orgId on mount (ENTERPRISE)', () => {
+    const fetchEnpsSurveys   = vi.fn();
+    const fetchEnpsResults   = vi.fn();
+    const fetchOrgHealth     = vi.fn();
+    seedStore({ fetchEnpsSurveys, fetchEnpsResults, fetchOrgHealth });
+    render(<CultureDashboard orgId="org-ent" orgPlan={'ENTERPRISE' as any} />);
+    expect(fetchEnpsSurveys).toHaveBeenCalledWith('org-ent');
+    expect(fetchEnpsResults).toHaveBeenCalledWith('org-ent');
+    expect(fetchOrgHealth).toHaveBeenCalledWith('org-ent');
+  });
+
+  it('does NOT call fetchOrgHealth when plan is FREE (gate blocks effect)', () => {
+    const fetchOrgHealth = vi.fn();
+    seedStore({ fetchOrgHealth });
+    render(<CultureDashboard orgId="org-1" orgPlan={'FREE' as any} />);
+    expect(fetchOrgHealth).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call fetchEnpsSurveys when plan is STARTER (gate blocks effect)', () => {
+    const fetchEnpsSurveys = vi.fn();
+    seedStore({ fetchEnpsSurveys });
+    render(<CultureDashboard orgId="org-1" orgPlan={'STARTER' as any} />);
+    expect(fetchEnpsSurveys).not.toHaveBeenCalled();
+  });
+
+  it('shows dashboard-loading skeleton while fetchOrgHealth is in progress (isLoading: true)', () => {
+    const fetchOrgHealth = vi.fn();
+    seedStore({ isLoading: true, fetchOrgHealth });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    expect(screen.getByTestId('dashboard-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('org-health-section')).not.toBeInTheDocument();
+  });
+});
+
+// ── createMetricDefinition — admin button ─────────────────────────────────────
+describe('createMetricDefinition — admin button', () => {
+  it('shows create-metric-btn for admin when orgHealth is empty', () => {
+    seedStore({ orgHealth: [] });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    expect(screen.getByTestId('create-metric-btn')).toBeInTheDocument();
+  });
+
+  it('hides create-metric-btn for non-admin even when orgHealth is empty', () => {
+    seedStore({ orgHealth: [] });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin={false} />);
+    expect(screen.queryByTestId('create-metric-btn')).not.toBeInTheDocument();
+  });
+
+  it('hides create-metric-btn when orgHealth rows are present (not in empty state)', () => {
+    seedStore({ orgHealth: HEALTH_ROWS });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    expect(screen.queryByTestId('create-metric-btn')).not.toBeInTheDocument();
+  });
+
+  it('calls createMetricDefinition with orgId, orgPlan, and default CUSTOM payload on click', () => {
+    const createMetricDefinition = vi.fn().mockResolvedValue({});
+    seedStore({ orgHealth: [], createMetricDefinition });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    fireEvent.click(screen.getByTestId('create-metric-btn'));
+    expect(createMetricDefinition).toHaveBeenCalledWith(
+      'org-1',
+      'PROFESSIONAL',
+      { metricCategory: 'CUSTOM', metricSource: 'OTHER', displayName: 'Metric ใหม่' },
+    );
+  });
+
+  it('calls createMetricDefinition with ENTERPRISE plan when orgPlan is ENTERPRISE', () => {
+    const createMetricDefinition = vi.fn().mockResolvedValue({});
+    seedStore({ orgHealth: [], createMetricDefinition });
+    render(<CultureDashboard orgId="org-ent" orgPlan={'ENTERPRISE' as any} isAdmin />);
+    fireEvent.click(screen.getByTestId('create-metric-btn'));
+    expect(createMetricDefinition).toHaveBeenCalledWith(
+      'org-ent',
+      'ENTERPRISE',
+      { metricCategory: 'CUSTOM', metricSource: 'OTHER', displayName: 'Metric ใหม่' },
+    );
+  });
+});
+
+// ── Admin create-survey form ───────────────────────────────────────────────────
+describe('admin create-survey form', () => {
+  it('renders create-survey-form for admin when surveys list is empty', () => {
+    seedStore({ enpsSurveys: [] });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    expect(screen.getByTestId('create-survey-form')).toBeInTheDocument();
+    expect(screen.getByTestId('create-survey-title-input')).toBeInTheDocument();
+    expect(screen.getByTestId('create-survey-submit-btn')).toBeInTheDocument();
+  });
+
+  it('hides create-survey-form for non-admin', () => {
+    seedStore({ enpsSurveys: [] });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin={false} />);
+    expect(screen.queryByTestId('create-survey-form')).not.toBeInTheDocument();
+  });
+
+  it('hides create-survey-form when surveys already exist (not in no-surveys state)', () => {
+    seedStore({ enpsSurveys: [DRAFT_SURVEY] });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    expect(screen.queryByTestId('create-survey-form')).not.toBeInTheDocument();
+  });
+
+  it('does NOT call createEnpsSurvey when title input is empty on submit', () => {
+    const createEnpsSurvey = vi.fn().mockResolvedValue({});
+    seedStore({ enpsSurveys: [], createEnpsSurvey });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    fireEvent.submit(screen.getByTestId('create-survey-form'));
+    expect(createEnpsSurvey).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call createEnpsSurvey when title is whitespace only', () => {
+    const createEnpsSurvey = vi.fn().mockResolvedValue({});
+    seedStore({ enpsSurveys: [], createEnpsSurvey });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    fireEvent.change(screen.getByTestId('create-survey-title-input'), {
+      target: { value: '   ' },
+    });
+    fireEvent.submit(screen.getByTestId('create-survey-form'));
+    expect(createEnpsSurvey).not.toHaveBeenCalled();
+  });
+
+  it('calls createEnpsSurvey(orgId, orgPlan, { title }) when a valid title is submitted', () => {
+    const createEnpsSurvey = vi.fn().mockResolvedValue({});
+    seedStore({ enpsSurveys: [], createEnpsSurvey });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    fireEvent.change(screen.getByTestId('create-survey-title-input'), {
+      target: { value: 'Q2 2027 eNPS Survey' },
+    });
+    fireEvent.submit(screen.getByTestId('create-survey-form'));
+    expect(createEnpsSurvey).toHaveBeenCalledOnce();
+    expect(createEnpsSurvey).toHaveBeenCalledWith('org-1', 'PROFESSIONAL', {
+      title: 'Q2 2027 eNPS Survey',
+    });
+  });
+
+  it('trims leading/trailing whitespace from the title before calling createEnpsSurvey', () => {
+    const createEnpsSurvey = vi.fn().mockResolvedValue({});
+    seedStore({ enpsSurveys: [], createEnpsSurvey });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} isAdmin />);
+    fireEvent.change(screen.getByTestId('create-survey-title-input'), {
+      target: { value: '  Q2 Survey  ' },
+    });
+    fireEvent.submit(screen.getByTestId('create-survey-form'));
+    expect(createEnpsSurvey).toHaveBeenCalledWith('org-1', 'PROFESSIONAL', {
+      title: 'Q2 Survey',
+    });
+  });
+});
+
+// ── WithMetricGrid scenario (NORMAL + WARNING + CRITICAL) ─────────────────────
+describe('WithMetricGrid scenario', () => {
+  const CRITICAL_ROW: CmdOrgHealth = {
+    orgId:                 'org-1',
+    metricId:              'metric-turnover',
+    displayName:           'Employee Turnover Rate',
+    displayNameTh:         'อัตราการลาออกพนักงาน',
+    metricCategory:        'ENGAGEMENT',
+    metricSource:          'OTHER',
+    targetScore:           15,
+    warningThreshold:      20,
+    criticalThreshold:     30,
+    healthWeight:          0.5,
+    latestScore:           35,
+    latestRespondentCount: 50,
+    latestPeriod:          '2026-Q3',
+    latestSnapshotDate:    '2026-09-30',
+    healthStatus:          'CRITICAL',
+  };
+
+  const METRIC_GRID = [...HEALTH_ROWS, CRITICAL_ROW]; // NORMAL + WARNING + CRITICAL
+
+  it('renders exactly 3 health-metric-row elements for METRIC_GRID', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    expect(screen.getAllByTestId('health-metric-row')).toHaveLength(3);
+  });
+
+  it('does NOT show no-health-data when METRIC_GRID rows are present', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    expect(screen.queryByTestId('no-health-data')).not.toBeInTheDocument();
+  });
+
+  it('CRITICAL badge has the red colour classes (text-red-700 bg-red-50)', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    // The CRITICAL badge is the span with data-health-status="CRITICAL"
+    const criticalBadge = document.querySelector('[data-health-status="CRITICAL"]');
+    expect(criticalBadge).toBeInTheDocument();
+    expect(criticalBadge).toHaveClass('text-red-700');
+    expect(criticalBadge).toHaveClass('bg-red-50');
+  });
+
+  it('NORMAL badge has the blue colour classes (text-blue-700 bg-blue-50)', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    const normalBadge = document.querySelector('[data-health-status="NORMAL"]');
+    expect(normalBadge).toBeInTheDocument();
+    expect(normalBadge).toHaveClass('text-blue-700');
+    expect(normalBadge).toHaveClass('bg-blue-50');
+  });
+
+  it('WARNING badge has the amber colour classes (text-amber-700 bg-amber-50)', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    const warningBadge = document.querySelector('[data-health-status="WARNING"]');
+    expect(warningBadge).toBeInTheDocument();
+    expect(warningBadge).toHaveClass('text-amber-700');
+    expect(warningBadge).toHaveClass('bg-amber-50');
+  });
+
+  it('shows the correct latestScore for the CRITICAL row', () => {
+    seedStore({ orgHealth: METRIC_GRID });
+    render(<CultureDashboard orgId="org-1" orgPlan={'PROFESSIONAL' as any} />);
+    // The CRITICAL row card should show score 35
+    const criticalRow = document.querySelector('[data-metric-id="metric-turnover"]');
+    expect(criticalRow).toBeInTheDocument();
+    expect(criticalRow).toHaveTextContent('35');
+  });
+});
