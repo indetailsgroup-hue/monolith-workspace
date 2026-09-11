@@ -21,6 +21,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useCultureMetricsStore } from './cultureMetricsStore';
+import SentimentTimelineBoard from './SentimentTimelineBoard';
 import type { OrgPlan } from '../tenant/types';
 import type { CmdEnpsSurvey, CmdEnpsResults, CmdOrgHealth } from './cultureMetricsTypes';
 import {
@@ -239,6 +240,7 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
   const canAccess = canAccessCultureMetrics(orgPlan);
 
   const [createSurveyTitle, setCreateSurveyTitle] = useState('');
+  const [activeTab, setActiveTab] = useState<'surveys' | 'sentiment'>('surveys');
 
   // Hooks must run in the same order for gated and entitled users. Keep the
   // access check inside the effect so a gated render performs no data request.
@@ -341,7 +343,38 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
         </div>
       )}
 
-      {/* ── Section 1: eNPS Surveys ───────────────────────────────────────── */}
+      {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
+      <div data-testid="culture-tab-bar" className="flex gap-1 border-b border-gray-200">
+        <button
+          data-testid="culture-tab-surveys"
+          onClick={() => setActiveTab('surveys')}
+          type="button"
+          className={`px-4 py-2 text-sm font-medium ${
+            activeTab === 'surveys'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          แบบสำรวจ &amp; สุขภาพองค์กร
+        </button>
+        <button
+          data-testid="culture-tab-sentiment"
+          onClick={() => setActiveTab('sentiment')}
+          type="button"
+          className={`px-4 py-2 text-sm font-medium ${
+            activeTab === 'sentiment'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          ความรู้สึกพนักงาน
+        </button>
+      </div>
+
+      {/* ── Surveys tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'surveys' && (
+        <>
+
       <section aria-labelledby="surveys-heading" data-testid="surveys-section">
         <div className="mb-4 flex items-center justify-between">
           <h2
@@ -477,6 +510,15 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
           </div>
         )}
       </section>
+        </>
+      )}
+
+      {/* ── Sentiment tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'sentiment' && (
+        <div data-testid="est-tab-panel">
+          <SentimentTimelineBoard orgId={orgId} plan={orgPlan} isAdmin={isAdmin} />
+        </div>
+      )}
 
     </div>
   );

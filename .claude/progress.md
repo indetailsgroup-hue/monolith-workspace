@@ -53,6 +53,15 @@
 - `src/qc-anomaly/__tests__/QcAnomalyDashboard.test.tsx` — Vitest component tests: explicit `StoreShape` interface (resolves Zustand auto-mock unknown issue); `makeStore`/`renderBoard` helpers; plan gate · loading · summary cards · filter bar · anomaly list · acknowledge · resolve · threshold toggle · error banner
 - `src/qc-anomaly/QcAnomalyDashboard.tsx` — fixed 4 tsc errors: `METRIC_KEYS` corrected to QcaMetricKey values, `threshold_value` → `threshold_breach_detail`, `acknowledgeAnomaly`/`resolveAnomaly` 3-arg → 2-arg
 
+### ✅ Completed (v18.5 — sprint 14: EST Tests, Stories, CultureDashboard Tab)
+- `src/culture-metrics/__tests__/employeeSentimentStore.test.ts` — 42 Vitest unit tests; all 6 actions: `fetchSummary` (plan gate + DB error + success), `fetchTimelineConfigs` (plan gate + DB error + success), `submitSentimentEntry` (plan-gate EXEMPT all plans; anonymous no `auth.getUser`; DB error; column mapping), `upsertTimelineConfig` (plan gate; DB error; success + re-fetch call count), `setFilters` (partial merge), `clearError`; `vi.clearAllMocks()` in `beforeEach` prevents cross-test mock accumulation
+- `src/culture-metrics/SentimentTimelineBoard.stories.tsx` — 12 CSF3 stories; `withEstStore` decorator (prevents Supabase calls on mount; spies on `submitSentimentEntry`/`upsertTimelineConfig`); covers plan-gate wall (FREE/STARTER), loading, error banner, empty, dimension cards, timeline rows, submit form play, admin config panel play, filters, full board
+- `src/culture-metrics/__tests__/SentimentTimelineBoard.test.tsx` — ~30 Vitest component tests; plan-gate wall (FREE/STARTER), loading, error banner + clear, empty no-data, dimension cards (presence + score + health badge colour classes), timeline rows, submit form (`submitSentimentEntry` called with correct payload), admin panel visibility
+- `src/culture-metrics/CultureDashboard.tsx` — tab nav added: `activeTab` useState (default `'surveys'`); tab bar (`culture-tab-bar`, `culture-tab-surveys`, `culture-tab-sentiment`); existing 3 sections in surveys guard; sentiment panel (`est-tab-panel`) renders `<SentimentTimelineBoard>`; all 47 prior CultureDashboard tests remain green
+- Full culture-metrics suite: **158 tests, 158 passed**
+- CHANGELOG: `[18.5.6]` entry added
+- Committed + pushed as sprint 14 at `HEAD`
+
 ### ✅ Completed (v18.5 — sprint 13: Employee Sentiment Timeline Module + CultureDashboard Admin Stories)
 - `supabase/migrations/20270321_employee_sentiment_timeline.sql` — tables `est_timeline_configs` + `est_sentiment_entries`; view `est_sentiment_summary_v`; `check_est_plan_gate()` function; RLS policies (PROFESSIONAL+ SELECT/INSERT; ADMIN+ DELETE; plan-gate wall on entries); indexes
 - `src/culture-metrics/employeeSentimentTypes.ts` — full EST type layer: `EstSentimentDimension` (MORALE/ENGAGEMENT/STRESS/COLLABORATION/CLARITY), `EstPeriodType` (WEEKLY/MONTHLY/QUARTERLY), `EstHealthStatus` (CRITICAL/WARNING/NORMAL), `EstSentimentEntry`, `EstSentimentSummary`, `EstTimelineConfig`, `EstSentimentState`; mappers; constants (STRESS inverted, health badge colours, dimension label TH, period label TH); `EST_PLAN_GATE_THRESHOLD`, `EST_MIN_RESPONDENTS`

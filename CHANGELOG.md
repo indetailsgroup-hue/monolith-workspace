@@ -44,6 +44,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.6]
+
+#### Added — Sprint 14: EST tests, stories, CultureDashboard tab
+- `src/culture-metrics/__tests__/employeeSentimentStore.test.ts` — 42 Vitest unit tests covering all 6 EST store actions: `fetchSummary` (PROFESSIONAL+ gate, DB error, success + state shape), `fetchTimelineConfigs` (PROFESSIONAL+ gate, DB error, success), `submitSentimentEntry` (plan-gate EXEMPT — resolves for all plans, anonymous — no `auth.getUser`, DB error path, correct table + column mapping), `upsertTimelineConfig` (PROFESSIONAL+ gate, DB error, success + re-fetch), `setFilters` (partial merge), `clearError`; `vi.clearAllMocks()` in `beforeEach` prevents cross-test mock accumulation
+- `src/culture-metrics/SentimentTimelineBoard.stories.tsx` — 12 CSF3 Storybook stories: `PlanGateWall` (FREE), `PlanGateWallStarter` (STARTER), `LoadingState`, `ErrorBanner`, `EmptyState` (configs empty), `WithDimensionCards` (3 active configs), `WithTimelineRows`, `SubmitFormInteraction` (play: set score → select MORALE → submit → spy called), `AdminConfigPanel`, `AdminConfigPanelSubmit` (play: fill form → submit → `upsertTimelineConfig` spy called), `FiltersActive`, `FullBoard`; `withEstStore` decorator prevents Supabase calls on mount
+- `src/culture-metrics/__tests__/SentimentTimelineBoard.test.tsx` — ~30 Vitest component tests: plan-gate wall (FREE/STARTER), loading skeleton, error banner + clear, empty/no-data state, dimension cards (MORALE/ENGAGEMENT presence, score display, health badge colour classes CRITICAL/WARNING/NORMAL), timeline period rows, submit form (score input + dimension select default, submit fires `submitSentimentEntry` with correct payload), admin config panel visibility (admin vs non-admin), EST health badge colour assertions
+- `src/culture-metrics/CultureDashboard.tsx` — `SentimentTimelineBoard` tab integration: `activeTab` useState (default `'surveys'`); tab bar with `data-testid="culture-tab-bar"`, `culture-tab-surveys`, `culture-tab-sentiment`; existing 3 sections wrapped in `{activeTab === 'surveys' && ...}` (all prior tests remain green); sentiment panel `data-testid="est-tab-panel"` renders `<SentimentTimelineBoard orgId={orgId} plan={orgPlan} isAdmin={isAdmin} />`
+- Full suite: **158 tests, 158 passed** across `cultureMetricsStore`, `CultureDashboard`, `employeeSentimentStore`, `SentimentTimelineBoard` test files
+
 ### [18.5.5]
 
 #### Added — Sprint 13: Employee Sentiment Timeline (EST) module
