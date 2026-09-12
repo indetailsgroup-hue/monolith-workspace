@@ -14,7 +14,10 @@
  *   est-dimension-card, est-dimension-card-{DIM},
  *   est-dim-score-{DIM}, est-health-badge-{DIM},
  *   est-timeline-section, est-period-row, est-no-data,
- *   est-submit-form, est-score-input, est-dimension-select, est-submit-btn
+ *   est-submit-form, est-score-input, est-dimension-select, est-submit-btn,
+ *   est-admin-config-form, est-admin-dim-select, est-admin-period-select,
+ *   est-admin-active-checkbox, est-admin-inverted-checkbox,
+ *   est-admin-min-responses-input, est-admin-upsert-btn
  */
 
 import React, { useEffect, useState } from 'react';
@@ -62,6 +65,7 @@ export default function SentimentTimelineBoard({
     fetchSummary,
     fetchTimelineConfigs,
     submitSentimentEntry,
+    upsertTimelineConfig,
     setFilters,
     clearError,
   } = useEstStore();
@@ -73,6 +77,13 @@ export default function SentimentTimelineBoard({
   const [submitLabel,   setSubmitLabel]   = useState<string>('');
   const [submitNote,    setSubmitNote]    = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+
+  // ── Admin config form local state ──────────────────────────────────────
+  const [adminDim,      setAdminDim]      = useState<EstDimension>('MORALE');
+  const [adminPeriod,   setAdminPeriod]   = useState<EstPeriodType>('WEEKLY');
+  const [adminActive,   setAdminActive]   = useState<boolean>(true);
+  const [adminInverted, setAdminInverted] = useState<boolean>(false);
+  const [adminMinResp,  setAdminMinResp]  = useState<number>(3);
 
   // ── Initial data load ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -153,6 +164,24 @@ export default function SentimentTimelineBoard({
     setSubmitNote('');
     setSubmitSuccess(true);
     setTimeout(() => setSubmitSuccess(false), 3000);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Admin upsert handler
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleAdminUpsert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await upsertTimelineConfig(
+      {
+        orgId,
+        dimension:    adminDim,
+        isActive:     adminActive,
+        isInverted:   adminInverted,
+        periodType:   adminPeriod,
+        minResponses: adminMinResp,
+      },
+      plan,
+    );
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -403,10 +432,89 @@ export default function SentimentTimelineBoard({
       {/* ── Admin config panel ─────────────────────────────────────────────── */}
       {isAdmin && (
         <section className="rounded-lg border border-dashed border-gray-300 p-4">
-          <h3 className="mb-2 text-sm font-semibold text-gray-600">การตั้งค่ามิติ (Admin)</h3>
-          <p className="text-xs text-gray-400">
-            ตั้งค่า is_active / is_inverted / period_type ผ่าน upsertTimelineConfig
-          </p>
+          <h3 className="mb-3 text-sm font-semibold text-gray-600">การตั้งค่ามิติ (Admin)</h3>
+
+          <form
+            data-testid="est-admin-config-form"
+            onSubmit={handleAdminUpsert}
+            className="flex flex-wrap items-end gap-3"
+          >
+            {/* Dimension */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">มิติ</label>
+              <select
+                data-testid="est-admin-dim-select"
+                value={adminDim}
+                onChange={e => setAdminDim(e.target.value as EstDimension)}
+                className="rounded border border-gray-300 px-2 py-1 text-sm"
+              >
+                {EST_DIMENSIONS.map(d => (
+                  <option key={d} value={d}>{EST_DIMENSION_LABEL[d]}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Period type */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">ช่วงเวลา</label>
+              <select
+                data-testid="est-admin-period-select"
+                value={adminPeriod}
+                onChange={e => setAdminPeriod(e.target.value as EstPeriodType)}
+                className="rounded border border-gray-300 px-2 py-1 text-sm"
+              >
+                {EST_PERIOD_TYPES.map(pt => (
+                  <option key={pt} value={pt}>{EST_PERIOD_LABEL[pt]}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Min responses */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">ขั้นต่ำ (ตอบ)</label>
+              <input
+                data-testid="est-admin-min-responses-input"
+                type="number"
+                min={1}
+                max={100}
+                value={adminMinResp}
+                onChange={e => setAdminMinResp(Number(e.target.value))}
+                className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
+              />
+            </div>
+
+            {/* isActive */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">เปิดใช้งาน</label>
+              <input
+                data-testid="est-admin-active-checkbox"
+                type="checkbox"
+                checked={adminActive}
+                onChange={e => setAdminActive(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+            </div>
+
+            {/* isInverted */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Inverted</label>
+              <input
+                data-testid="est-admin-inverted-checkbox"
+                type="checkbox"
+                checked={adminInverted}
+                onChange={e => setAdminInverted(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+            </div>
+
+            <button
+              data-testid="est-admin-upsert-btn"
+              type="submit"
+              className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              บันทึกการตั้งค่า
+            </button>
+          </form>
         </section>
       )}
     </div>

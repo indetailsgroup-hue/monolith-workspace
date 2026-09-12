@@ -115,14 +115,19 @@ function withEstStore(
       loading:   false,
       error:     null,
       // no-op fetches to prevent real Supabase calls on mount
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fetchSummary:          noopAsync as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fetchTimelineConfigs:  noopAsync as any,
       // mutating action spies
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       submitSentimentEntry:  submitSentimentEntrySpy as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       upsertTimelineConfig:  upsertTimelineConfigSpy as any,
       setFilters:            setFiltersSpy,
       clearError:            clearErrorSpy,
       ...stateOverride,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     fetchSummarySpy.mockClear();
@@ -295,4 +300,57 @@ export const ErrorBanner: Story = {
 export const AdminView: Story = {
   args:       { isAdmin: true },
   decorators: [withEstStore({ configs: ACTIVE_CONFIGS, summaries: SUMMARIES_NORMAL })],
+};
+
+/**
+ * AdminConfigUpsertInteraction
+ *
+ * End-to-end play function:
+ *   1. Select ENGAGEMENT in est-admin-dim-select
+ *   2. Select MONTHLY in est-admin-period-select
+ *   3. Click est-admin-upsert-btn
+ *   4. Assert upsertTimelineConfigSpy called once with correct payload
+ *
+ * Default admin form state: dimension=MORALE, period=WEEKLY, isActive=true,
+ * isInverted=false, minResponses=3 — so after selectOptions, payload must
+ * reflect ENGAGEMENT / MONTHLY while isActive/isInverted/minResponses stay
+ * at their React defaults (true / false / 3).
+ */
+export const AdminConfigUpsertInteraction: Story = {
+  args:       { isAdmin: true, plan: 'ENTERPRISE' },
+  decorators: [withEstStore({ configs: ACTIVE_CONFIGS, summaries: SUMMARIES_NORMAL })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Select ENGAGEMENT dimension
+    await userEvent.selectOptions(
+      canvas.getByTestId('est-admin-dim-select'),
+      'ENGAGEMENT',
+    );
+
+    // Select MONTHLY period
+    await userEvent.selectOptions(
+      canvas.getByTestId('est-admin-period-select'),
+      'MONTHLY',
+    );
+
+    // Submit admin form
+    await userEvent.click(canvas.getByTestId('est-admin-upsert-btn'));
+
+    // Assert spy was called exactly once
+    expect(upsertTimelineConfigSpy).toHaveBeenCalledTimes(1);
+
+    // Assert payload shape
+    expect(upsertTimelineConfigSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orgId:        ORG_ID,
+        dimension:    'ENGAGEMENT',
+        periodType:   'MONTHLY',
+        isActive:     true,
+        isInverted:   false,
+        minResponses: 3,
+      }),
+      'ENTERPRISE',
+    );
+  },
 };

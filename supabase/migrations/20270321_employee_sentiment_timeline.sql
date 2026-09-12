@@ -136,8 +136,8 @@ CREATE POLICY est_entries_insert ON est_sentiment_entries
   TO authenticated
   WITH CHECK (
     org_id IN (
-      SELECT org_id FROM user_profiles
-       WHERE auth_user_id = auth.uid()
+      SELECT org_id FROM public.org_members
+       WHERE user_id = auth.uid() AND is_active = true
     )
   );
 
@@ -147,9 +147,9 @@ CREATE POLICY est_entries_select_admin ON est_sentiment_entries
   TO authenticated
   USING (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   );
 
@@ -159,16 +159,16 @@ CREATE POLICY est_configs_admin ON est_timeline_configs
   TO authenticated
   USING (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   )
   WITH CHECK (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   );
 

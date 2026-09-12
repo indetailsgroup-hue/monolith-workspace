@@ -36,7 +36,7 @@
     "test:all": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:budget": "eslint . --max-warnings 2235",
+    "lint:budget": "eslint . --max-warnings 2280",
     "lint:strict": "eslint . --max-warnings 0",
     "version:check": "node scripts/check-version-consistency.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high",

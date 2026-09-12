@@ -38,20 +38,22 @@ const mockAddPage = vi.fn();
 const mockSplitTextToSize = vi.fn(() => ['line1']);
 
 vi.mock('jspdf', () => ({
-  jsPDF: vi.fn(() => ({
-    save: mockSave,
-    text: mockText,
-    line: mockLine,
-    rect: mockRect,
-    setFontSize: mockSetFontSize,
-    setFont: mockSetFont,
-    setDrawColor: mockSetDrawColor,
-    setFillColor: mockSetFillColor,
-    setTextColor: mockSetTextColor,
-    addPage: mockAddPage,
-    splitTextToSize: mockSplitTextToSize,
-    internal: { pageSize: { getWidth: () => 210 } },
-  })),
+  jsPDF: vi.fn(function () {
+    return {
+      save: mockSave,
+      text: mockText,
+      line: mockLine,
+      rect: mockRect,
+      setFontSize: mockSetFontSize,
+      setFont: mockSetFont,
+      setDrawColor: mockSetDrawColor,
+      setFillColor: mockSetFillColor,
+      setTextColor: mockSetTextColor,
+      addPage: mockAddPage,
+      splitTextToSize: mockSplitTextToSize,
+      internal: { pageSize: { getWidth: function () { return 210; } } },
+    };
+  }),
 }));
 
 // Stub URL.createObjectURL

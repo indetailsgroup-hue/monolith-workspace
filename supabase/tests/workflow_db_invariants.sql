@@ -36,12 +36,19 @@ select ok(
   'work_item RLS enabled'
 );
 
+
+-- CI-FIX-22: bypass FK triggers for test-fixture INSERTs (T5 audit log)
+set local session_replication_role = replica;
+
 -- Audit immutability (Req 9.2): INSERT ได้ แต่ UPDATE/DELETE ถูก trigger ปฏิเสธ
 select lives_ok(
   $$insert into public.workflow_audit_log(id, event_type, performed_by, detail, org_id)
-    values ('f9f9f9f9-0000-0000-0000-0000000000a1', 'pgtap_probe', 'tester', '{}'::jsonb, '00000000-0000-0000-0000-000000000000')$$,
+    values ('f9f9f9f9-0000-0000-0000-0000000000a1', 'pgtap_probe', 'tester', '{}'::jsonb, 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'audit log INSERT allowed (append)'
 );
+
+-- CI-FIX-22: restore DEFAULT mode — append-only trigger must fire (T6-T7)
+set local session_replication_role = DEFAULT;
 select throws_ok(
   $$update public.workflow_audit_log set event_type = 'tampered' where id = 'f9f9f9f9-0000-0000-0000-0000000000a1'$$,
   null, null,
@@ -53,25 +60,29 @@ select throws_ok(
   'audit log DELETE rejected (append-only trigger)'
 );
 
+
+-- CI-FIX-22: replica mode for idempotency + finance fixture INSERTs (T8-T14)
+set local session_replication_role = replica;
+
 -- Idempotency (Req 4.7/16.5): webhook_event_id unique ปฏิเสธ decision ซ้ำ
 select lives_ok(
   $$insert into public.work_item(id, site_code, current_step, status, version, org_id)
-    values ('f9f9f9f9-0000-0000-0000-0000000000b1', 'S', 'Sale', 'awaiting_approval', 0, '00000000-0000-0000-0000-000000000000')$$,
+    values ('f9f9f9f9-0000-0000-0000-0000000000b1', 'S', 'Sale', 'awaiting_approval', 0, 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'work_item insert (setup)'
 );
 select lives_ok(
   $$insert into public.approval_request(id, work_item_id, process_step, resolved_approver, approver_kind, quorum, sla_deadline, timeout_at, status, attempt, org_id)
-    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'f9f9f9f9-0000-0000-0000-0000000000b1', 'Sale', 'lead', 'employee', 'unanimous', now(), now(), 'pending', 1, '00000000-0000-0000-0000-000000000000')$$,
+    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'f9f9f9f9-0000-0000-0000-0000000000b1', 'Sale', 'lead', 'employee', 'unanimous', now(), now(), 'pending', 1, 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'approval_request insert (setup)'
 );
 select lives_ok(
   $$insert into public.approval_decision(approval_request_id, webhook_event_id, decider, decision, channel, org_id)
-    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'evt-pgtap-uniq', 'd1', 'approved', 'web', '00000000-0000-0000-0000-000000000000')$$,
+    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'evt-pgtap-uniq', 'd1', 'approved', 'web', 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'first approval_decision with webhook_event_id (allowed)'
 );
 select throws_ok(
   $$insert into public.approval_decision(approval_request_id, webhook_event_id, decider, decision, channel, org_id)
-    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'evt-pgtap-uniq', 'd2', 'rejected', 'web', '00000000-0000-0000-0000-000000000000')$$,
+    values ('f9f9f9f9-0000-0000-0000-0000000000c1', 'evt-pgtap-uniq', 'd2', 'rejected', 'web', 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   '23505', null,
   'idempotency: duplicate webhook_event_id rejected (unique_violation)'
 );
@@ -86,14 +97,14 @@ select throws_ok(
 -- setup: บ้าน 1 หลัง site BKK-HQ-01 + งวด notified (b1) + งวด paid (b2 — ทดสอบ short-circuit)
 select lives_ok(
   $$insert into public.installation_projects(id, site_code, name, org_id)
-    values ('f4f4f4f4-0000-0000-0000-0000000000a1', 'BKK-HQ-01', 'บ้าน pgTAP การเงิน', '00000000-0000-0000-0000-000000000000')$$,
+    values ('f4f4f4f4-0000-0000-0000-0000000000a1', 'BKK-HQ-01', 'บ้าน pgTAP การเงิน', 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'finance: project insert (setup)'
 );
 select lives_ok(
   $$insert into public.payment_installments(id, project_id, site_code, seq, label, percent, amount, trigger_event, status, notified_at, org_id)
     values ('f4f4f4f4-0000-0000-0000-0000000000b1', 'f4f4f4f4-0000-0000-0000-0000000000a1',
             'BKK-HQ-01', 1, 'มัดจำ (เซ็นสัญญา)', 50, 100000, 'contract_signed', 'notified',
-            timezone('utc', now()) - interval '2 days', '00000000-0000-0000-0000-000000000000')$$,
+            timezone('utc', now()) - interval '2 days', 'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'finance: notified installment insert (setup)'
 );
 select lives_ok(
@@ -101,9 +112,13 @@ select lives_ok(
     values ('f4f4f4f4-0000-0000-0000-0000000000b2', 'f4f4f4f4-0000-0000-0000-0000000000a1',
             'BKK-HQ-01', 2, 'ก่อนผลิต (เซ็นแบบ final)', 30, 60000, 'g3_approved', 'paid',
             timezone('utc', now()) - interval '2 days', timezone('utc', now()) - interval '1 day',
-            '00000000-0000-0000-0000-000000000000')$$,
+            'a1a1a1a1-0000-0000-0000-000000000001')$$,
   'finance: paid installment insert (setup)'
 );
+
+
+-- CI-FIX-22: restore DEFAULT before RPC/JWT tests (T15+)
+set local session_replication_role = DEFAULT;
 
 -- (ก) JWT ผิด site (ไม่มี governance role, site_codes ไม่ครอบ BKK-HQ-01) → ทุก RPC ต้อง 42501
 -- (do-block เพื่อไม่ให้ set_config พ่น output ปนใน TAP stream)

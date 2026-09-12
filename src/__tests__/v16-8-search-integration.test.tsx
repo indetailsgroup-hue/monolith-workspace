@@ -83,10 +83,10 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 const mockCreateObjectURL = vi.fn().mockReturnValue('blob:mock');
 const mockRevokeObjectURL = vi.fn();
-Object.defineProperty(window, 'URL', {
-  value: { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL },
-  writable: true,
-});
+// Preserve the URL constructor (needed by supabase, etc.) —
+// only override the static blob helpers used by CSV export.
+URL.createObjectURL = mockCreateObjectURL as unknown as typeof URL.createObjectURL;
+URL.revokeObjectURL = mockRevokeObjectURL;
 
 // ─── Mock csvExport ──────────────────────────────────────────────────────────
 
