@@ -22,7 +22,8 @@
  *   withOrgHealthScoreStore decorator calls useOrgHealthScoreStore.setState(…)
  *   to seed state + replace async actions with spies.
  *   Fetch actions always replaced with noopAsync to prevent Supabase calls.
- *   Mutating action spies use .mockResolvedValue(…) so .then() chains work.
+ *   Mutating action spies keep an async default so Storybook mock restoration
+ *   preserves the Promise contract used by component .then() chains.
  */
 
 import React from 'react';
@@ -42,13 +43,13 @@ import {
 
 // =============================================================================
 // Module-level spies
-// All async mutating actions use .mockResolvedValue(…) so component
-// .then() chains work correctly in the Storybook browser environment.
+// Storybook restores spies before rendering. Put async behavior in the original
+// implementation so restoration keeps the Promise contract of store actions.
 // =============================================================================
 
-const computeScoreSpy        = fn().mockResolvedValue(82.5);
-const updateScoringConfigSpy = fn().mockResolvedValue(undefined);
-const upsertScoringConfigSpy = fn().mockResolvedValue(undefined);
+const computeScoreSpy        = fn(async () => 82.5);
+const updateScoringConfigSpy = fn(async () => {});
+const upsertScoringConfigSpy = fn(async () => {});
 
 // =============================================================================
 // Sample data helpers

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-gh_billing_report.py — GitHub Actions per-workflow minute spend
-for the current billing cycle (1st of current month → today).
+gh_billing_report.py — GitHub Actions sampled gross runner-cost estimate
+for runs created during the selected date window (default: current month).
+All available attempts of those runs are included, even outside that window.
 
 Usage:
   export GH_TOKEN=ghp_...
@@ -16,7 +17,7 @@ Usage:
   # Also write results to a CSV file:
   python3 scripts/gh_billing_report.py --csv billing_report.csv
 
-Requires only Python 3.9+ stdlib — no pip installs needed.
+Requires only Python 3.10+ stdlib — no pip installs needed.
 """
 
 import csv
@@ -25,23 +26,34 @@ import os
 import sys
 import argparse
 import datetime
+import math
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 # Force line-buffered output so progress appears even when piped
-sys.stdout.reconfigure(line_buffering=True)
+sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 
 # ─── constants ────────────────────────────────────────────────────────────────
 BASE = "https://api.github.com"
 
-# GitHub Actions billing multipliers (minutes → USD)
-RATES  = {"UBUNTU": 0.008, "WINDOWS": 0.016, "MACOS": 0.08}
+# Standard hosted x64 runner assumptions, not an account invoice. These rates
+# exclude included minutes, public-repository discounts, storage and larger runners.
+RATES_AS_OF = "2026-09-12"
+PRICING_URL = "https://docs.github.com/en/billing/reference/actions-runner-pricing"
+ATTEMPT_SCOPE = "All available job attempts, including attempts outside the run creation window"
+RATES  = {"UBUNTU": 0.006, "WINDOWS": 0.010, "MACOS": 0.062}
 LABELS = {"UBUNTU": "Linux", "WINDOWS": "Windows", "MACOS": "macOS"}
+RUNNER_LABELS = {
+    "UBUNTU": {"ubuntu-latest", "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04"},
+    "WINDOWS": {"windows-latest", "windows-2019", "windows-2022", "windows-2025"},
+    "MACOS": {"macos-latest", "macos-13", "macos-14", "macos-15", "macos-26"},
+}
 
 MAX_WORKERS           = 20   # parallel requests
-MAX_RUNS_PER_WORKFLOW = 10   # cap per workflow; 30 wf × 10 = 300 timing calls max
+MAX_RUNS_PER_WORKFLOW = 10   # explicit sample cap; every workflow is enumerated
 API_TIMEOUT           = 8    # seconds per individual API call
 
 
@@ -61,25 +73,13 @@ def api_get(token: str, url: str) -> dict:
 
 
 # ─── API wrappers ─────────────────────────────────────────────────────────────
-def org_billing_summary(token: str, owner: str) -> dict:
-    for endpoint in (
-        f"{BASE}/orgs/{owner}/settings/billing/actions",
-        f"{BASE}/users/{owner}/settings/billing/actions",
-    ):
-        try:
-            return api_get(token, endpoint)
-        except RuntimeError as e:
-            if "HTTP 404" in str(e) or "HTTP 403" in str(e):
-                continue
-            raise
-    return {}
-
-
 def list_workflows(token: str, owner: str, repo: str) -> list[dict]:
     out, page = [], 1
     while True:
         d = api_get(token, f"{BASE}/repos/{owner}/{repo}/actions/workflows?per_page=100&page={page}")
-        batch = d.get("workflows", [])
+        batch = d.get("workflows")
+        if not isinstance(batch, list):
+            raise RuntimeError("Workflow API returned an invalid inventory")
         out.extend(batch)
         if len(batch) < 100:
             break
@@ -88,29 +88,62 @@ def list_workflows(token: str, owner: str, repo: str) -> list[dict]:
 
 
 def workflow_runs_since(token: str, owner: str, repo: str,
-                        workflow_id: int, since: str) -> list[dict]:
+                        workflow_id: int, since: str, until: str | None = None) -> list[dict]:
     """Fetch up to MAX_RUNS_PER_WORKFLOW completed runs on/after `since`."""
-    url = (f"{BASE}/repos/{owner}/{repo}/actions/runs"
-           f"?workflow_id={workflow_id}&status=completed"
-           f"&created=>={since}&per_page={MAX_RUNS_PER_WORKFLOW}&page=1")
-    try:
-        d = api_get(token, url)
-        return d.get("workflow_runs", [])
-    except Exception:
-        return []
+    created = f">={since}"
+    if until:
+        last_day = datetime.date.fromisoformat(until) - datetime.timedelta(days=1)
+        created = f"{since}..{last_day.isoformat()}T23:59:59Z"
+    query = urlencode({"status": "completed", "created": created,
+                       "per_page": MAX_RUNS_PER_WORKFLOW, "page": 1})
+    d = api_get(token, f"{BASE}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs?{query}")
+    runs = d.get("workflow_runs")
+    if not isinstance(runs, list):
+        raise RuntimeError("Run API returned an invalid sample")
+    return runs
 
 
 def run_billing_minutes(token: str, owner: str, repo: str,
                         run_id: int) -> dict[str, int]:
-    """Returns {OS_KEY: billable_minutes} for one run; {} on any error."""
-    try:
-        d = api_get(token, f"{BASE}/repos/{owner}/{repo}/actions/runs/{run_id}/timing")
-        return {
-            os_key: data.get("total_ms", 0) // 60_000
-            for os_key, data in d.get("billable", {}).items()
-        }
-    except Exception:
-        return {}
+    """Estimate rounded hosted-job minutes; reject unpriced/unknown observations.
+
+    The retired /timing endpoint is deliberately not used. filter=all includes
+    distinct retry attempts; stable job IDs deduplicate overlapping pages.
+    """
+    totals = defaultdict(int)
+    seen = set()
+    page = 1
+    while True:
+        d = api_get(token, f"{BASE}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
+                    f"?filter=all&per_page=100&page={page}")
+        jobs = d.get("jobs")
+        if not isinstance(jobs, list) or (page == 1 and not jobs):
+            raise RuntimeError(f"Job data unavailable for run {run_id}")
+        for job in jobs:
+            job_id = job.get("id")
+            if job_id is not None and job_id in seen:
+                continue
+            if job_id is not None:
+                seen.add(job_id)
+            if job.get("conclusion") == "skipped":
+                continue
+            labels = {str(label).lower() for label in job.get("labels", [])}
+            matches = [key for key, allowed in RUNNER_LABELS.items() if labels & allowed]
+            if len(labels) != 1 or "self-hosted" in labels or len(matches) != 1:
+                raise RuntimeError(f"Unpriced runner in run {run_id}, job {job_id}")
+            try:
+                start = datetime.datetime.fromisoformat(job["started_at"].replace("Z", "+00:00"))
+                end = datetime.datetime.fromisoformat(job["completed_at"].replace("Z", "+00:00"))
+                seconds = (end - start).total_seconds()
+                if seconds < 0:
+                    raise ValueError("negative duration")
+            except (KeyError, TypeError, ValueError, AttributeError) as error:
+                raise RuntimeError(f"Job duration unavailable for run {run_id}, job {job_id}") from error
+            totals[matches[0]] += math.ceil(seconds / 60)
+        if len(jobs) < 100:
+            break
+        page += 1
+    return dict(totals)
 
 
 # ─── report helpers ───────────────────────────────────────────────────────────
@@ -118,27 +151,10 @@ def cycle_start() -> str:
     return datetime.date.today().replace(day=1).isoformat()
 
 
-def print_org_summary(summary: dict) -> None:
-    if not summary:
-        print("  (org billing endpoint not accessible with this token)")
-        return
-    inc  = summary.get("included_minutes", "n/a")
-    used = summary.get("total_minutes_used", "n/a")
-    paid = summary.get("total_paid_minutes_used", 0)
-    bd   = summary.get("minutes_used_breakdown", {})
-    print(f"  Included quota : {inc!s:>8} min")
-    print(f"  Total used     : {used!s:>8} min")
-    for key, label in LABELS.items():
-        mins = bd.get(key, 0)
-        if mins:
-            print(f"    {label:<10}: {mins:>6} min  (${mins * RATES[key]:.2f})")
-    if paid:
-        print(f"  Paid overage   : {paid:>8} min")
-
-
-def write_csv(path: str, rows: list[dict]) -> None:
+def write_csv(path: str, rows: list[dict], since: str, until: str) -> None:
     fieldnames = ["workflow", "file", "runs_sampled", "total_min", "total_cost_usd",
-                  "linux_min", "windows_min", "macos_min"]
+                  "linux_min", "windows_min", "macos_min", "data_status", "failed_requests",
+                  "rate_assumptions_date", "run_created_since", "run_created_until_exclusive", "attempt_scope"]
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
@@ -153,13 +169,19 @@ def write_csv(path: str, rows: list[dict]) -> None:
                 "linux_min":      bd.get("UBUNTU", 0),
                 "windows_min":    bd.get("WINDOWS", 0),
                 "macos_min":      bd.get("MACOS", 0),
+                "data_status":    "partial" if r["failed_requests"] else "sampled",
+                "failed_requests": r["failed_requests"],
+                "rate_assumptions_date": RATES_AS_OF,
+                "run_created_since": since,
+                "run_created_until_exclusive": until,
+                "attempt_scope": ATTEMPT_SCOPE,
             })
 
 
 # ─── main ─────────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="GitHub Actions billing report — per-workflow minute spend"
+        description="GitHub Actions sampled gross runner-cost estimate (not an invoice)"
     )
     parser.add_argument("--owner",  default=os.environ.get("GH_OWNER", "indetailsgroup-hue"))
     parser.add_argument("--repo",   default=os.environ.get("GH_REPO",  "monolith-workspace"))
@@ -167,6 +189,8 @@ def main() -> None:
                         help="GitHub PAT (or set GH_TOKEN env var)")
     parser.add_argument("--since",  default=None,
                         help="Cycle start date YYYY-MM-DD; default = 1st of current month")
+    parser.add_argument("--until", default=None,
+                        help="Exclusive end date YYYY-MM-DD; default = today plus one day")
     parser.add_argument("--csv",    default=None, metavar="FILE",
                         help="Also write per-workflow table to this CSV file")
     parser.add_argument("--top",    default=None, type=int, metavar="N",
@@ -177,42 +201,51 @@ def main() -> None:
         sys.exit("ERROR: pass --token or set the GH_TOKEN environment variable.")
 
     since = args.since or cycle_start()
-    today = datetime.date.today().isoformat()
+    until = args.until or (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+    try:
+        if datetime.date.fromisoformat(since) >= datetime.date.fromisoformat(until):
+            raise ValueError("since must precede until")
+    except ValueError as error:
+        parser.error(str(error))
 
     print(f"\n{'='*68}")
-    print(f"  GitHub Actions Billing Report")
+    print(f"  GitHub Actions sampled gross runner-cost estimate — NOT AN INVOICE")
     print(f"  Repo   : {args.owner}/{args.repo}")
-    print(f"  Period : {since} -> {today}")
+    print(f"  Run creation window : {since} -> {until} (exclusive)")
     print(f"  Sample : up to {MAX_RUNS_PER_WORKFLOW} most-recent runs per workflow")
+    print(f"  Attempt scope: {ATTEMPT_SCOPE}")
     print(f"{'='*68}\n")
 
-    # ── org-level totals ──────────────────────────────────────────────────────
-    print("-- Org-level Actions billing (full cycle) --")
-    summary = org_billing_summary(args.token, args.owner)
-    print_org_summary(summary)
+    print(f"Standard-runner rate assumptions ({RATES_AS_OF}): {RATES}; {PRICING_URL}")
+    print("Not total monthly spend: quotas, discounts, public-repository free usage, storage and other runner sizes are excluded.")
 
     # ── list workflows ────────────────────────────────────────────────────────
     print(f"\n-- Fetching workflows & runs since {since} --")
     workflows = list_workflows(args.token, args.owner, args.repo)
     if not workflows:
         print("  No workflows found.")
+        if args.csv:
+            write_csv(args.csv, [], since, until)
         return
     print(f"  {len(workflows)} workflows found")
 
     # Fetch run lists for all workflows in parallel
     wf_runs: dict[int, list[dict]] = {}
+    failed_requests = defaultdict(int)
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         fs = {
             pool.submit(workflow_runs_since, args.token, args.owner,
-                        args.repo, wf["id"], since): wf
+                        args.repo, wf["id"], since, until): wf
             for wf in workflows
         }
         for f in as_completed(fs):
             wf = fs[f]
             try:
                 wf_runs[wf["id"]] = f.result()
-            except Exception:
+            except Exception as error:
                 wf_runs[wf["id"]] = []
+                failed_requests[wf["id"]] += 1
+                print(f"WARNING: run inventory unavailable for workflow {wf['id']}: {error}")
 
     all_run_pairs = [
         (run["id"], wf_id)
@@ -225,6 +258,7 @@ def main() -> None:
 
     # Global parallel timing fetch
     run_totals: dict[int, dict[str, int]] = {}
+    run_id_to_wf = {run_id: wf_id for run_id, wf_id in all_run_pairs}
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         fs2 = {
             pool.submit(run_billing_minutes, args.token, args.owner,
@@ -235,17 +269,14 @@ def main() -> None:
             run_id = fs2[f]
             try:
                 run_totals[run_id] = f.result()
-            except Exception:
+            except Exception as error:
                 run_totals[run_id] = {}
+                failed_requests[run_id_to_wf[run_id]] += 1
+                print(f"WARNING: sampled run {run_id} could not be priced: {error}")
 
     print(f"  Timing complete.")
 
     # ── aggregate per-workflow ────────────────────────────────────────────────
-    run_id_to_wf: dict[int, int] = {
-        run["id"]: wf_id
-        for wf_id, runs in wf_runs.items()
-        for run in runs
-    }
     wf_breakdown: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for run_id, timing in run_totals.items():
         wf_id = run_id_to_wf.get(run_id)
@@ -268,6 +299,7 @@ def main() -> None:
             "mins":      total_min,
             "cost":      cost,
             "breakdown": bd,
+            "failed_requests": failed_requests[wf["id"]],
         })
 
     rows.sort(key=lambda r: r["mins"], reverse=True)
@@ -297,13 +329,16 @@ def main() -> None:
         )
         print(f"  {r['name']:<{col_w}} {r['runs']:>5}  {r['mins']:>7}  ${r['cost']:>8.2f}  {bd_str}")
     print(f"{'-'*78}")
-    print(f"  {'TOTAL (all workflows)':<{col_w}} {'':>5}  {grand_min:>7}  ${grand_cost:>8.2f}")
+    print(f"  {'KNOWN SAMPLE (all workflows)':<{col_w}} {'':>5}  {grand_min:>7}  ${grand_cost:>8.2f}")
     print()
 
     # ── optional CSV ─────────────────────────────────────────────────────────
     if args.csv:
-        write_csv(args.csv, rows)
+        write_csv(args.csv, rows, since, until)
         print(f"  CSV written -> {args.csv}")
+    if sum(failed_requests.values()):
+        print(f"INCOMPLETE: {sum(failed_requests.values())} failed or unpriced requests; known sample only.")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
