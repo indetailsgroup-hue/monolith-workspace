@@ -335,6 +335,7 @@ function RoleDetailPanel({
     width: 280,
     height: '100%',
     background: '#ffffff',
+    color: '#111827',
     borderLeft: '1px solid #e5e7eb',
     padding: 16,
     overflowY: 'auto',

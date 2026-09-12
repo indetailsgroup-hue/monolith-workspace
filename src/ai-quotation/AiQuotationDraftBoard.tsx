@@ -1120,7 +1120,7 @@ export function AiQuotationDraftBoard({
                         colSpan={isEditable ? 4 : 3}
                         style={{ padding: '6px 10px', fontSize: 13, color: '#6b7280' }}
                       >
-                        ภาษี ({selectedDraft.tax_rate}%)
+                        ภาษี ({(selectedDraft.tax_rate * 100).toLocaleString('th', { maximumFractionDigits: 2 })}%)
                       </td>
                       <td
                         data-testid="aqd-tax-amount"

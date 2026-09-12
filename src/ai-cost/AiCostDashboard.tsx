@@ -353,18 +353,20 @@ export function AiCostDashboard({ orgId, orgPlan, isAdmin = false }: AiCostDashb
               return (
                 <div
                   key={item.month}
-                  className="flex-1 flex flex-col items-center gap-1"
+                  className="flex-1 h-full min-h-0 flex flex-col items-center gap-1"
                 >
                   <span className="text-xs text-gray-500 font-medium">
                     ฿{formatThb(item.totalCostThb)}
                   </span>
-                  <div
-                    className="w-full bg-indigo-500 rounded-t-md transition-all duration-500 hover:bg-indigo-600"
-                    style={{ height: `${Math.max(heightPct, 4)}%` }}
-                    title={`${item.month}: ฿${formatThb(item.totalCostThb)}`}
-                    data-testid="trend-bar"
-                    data-month={item.month}
-                  />
+                  <div className="flex-1 min-h-0 w-full flex items-end">
+                    <div
+                      className="w-full bg-indigo-500 rounded-t-md transition-all duration-500 hover:bg-indigo-600"
+                      style={{ height: `${Math.max(heightPct, 4)}%` }}
+                      title={`${item.month}: ฿${formatThb(item.totalCostThb)}`}
+                      data-testid="trend-bar"
+                      data-month={item.month}
+                    />
+                  </div>
                   <span
                     className="text-xs text-gray-400 text-center truncate w-full"
                     data-testid="trend-bar-label"
