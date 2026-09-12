@@ -59,6 +59,10 @@ export default defineConfig({
       '_daph_extract/**',
       'minifix-skill-pack/**',
       'furniture-hardware-vault/**',
+      // Smoke / integration tests under src/e2e/ exercise full pipelines
+      // (DXF generation, Uint8Array payloads) that need Node, not jsdom.
+      // They run in dedicated e2e lanes, not the root unit-test runner.
+      'src/e2e/**',
     ],
   },
   server: {
