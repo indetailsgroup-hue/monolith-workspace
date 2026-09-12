@@ -24,6 +24,7 @@ import { useCultureMetricsStore } from './cultureMetricsStore';
 import SentimentTimelineBoard from './SentimentTimelineBoard';
 import type { OrgPlan } from '../tenant/types';
 import type { CmdEnpsSurvey, CmdEnpsResults, CmdOrgHealth } from './cultureMetricsTypes';
+import TeamPulseBoard from './TeamPulseBoard';
 import {
   canAccessCultureMetrics,
   CMD_ENPS_STATUS_LABEL_TH,
@@ -39,6 +40,7 @@ interface CultureDashboardProps {
   orgId:    string;
   orgPlan:  OrgPlan;
   isAdmin?: boolean;
+  userId?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,7 +221,7 @@ function HealthMetricRow({ metric }: HealthMetricRowProps) {
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDashboardProps) {
+export function CultureDashboard({ orgId, orgPlan, isAdmin = false, userId }: CultureDashboardProps) {
   const {
     enpsSurveys,
     enpsResults,
@@ -240,7 +242,7 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
   const canAccess = canAccessCultureMetrics(orgPlan);
 
   const [createSurveyTitle, setCreateSurveyTitle] = useState('');
-  const [activeTab, setActiveTab] = useState<'surveys' | 'sentiment'>('surveys');
+  const [activeTab, setActiveTab] = useState<'surveys' | 'sentiment' | 'pulse'>('surveys');
 
   // Hooks must run in the same order for gated and entitled users. Keep the
   // access check inside the effect so a gated render performs no data request.
@@ -368,6 +370,18 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
           }`}
         >
           ความรู้สึกพนักงาน
+        </button>
+        <button
+          data-testid="culture-tab-pulse"
+          onClick={() => setActiveTab('pulse')}
+          type="button"
+          className={`px-4 py-2 text-sm font-medium ${
+            activeTab === 'pulse'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Team Pulse
         </button>
       </div>
 
@@ -518,6 +532,10 @@ export function CultureDashboard({ orgId, orgPlan, isAdmin = false }: CultureDas
         <div data-testid="est-tab-panel">
           <SentimentTimelineBoard orgId={orgId} plan={orgPlan} isAdmin={isAdmin} />
         </div>
+      )}
+
+      {activeTab === 'pulse' && (
+        <TeamPulseBoard orgId={orgId} plan={orgPlan} isAdmin={isAdmin} userId={userId} />
       )}
 
     </div>
