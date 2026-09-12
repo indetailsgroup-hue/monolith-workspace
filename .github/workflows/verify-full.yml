@@ -17,6 +17,9 @@ on:
       - "packages/digital-shadow-service/**"
       - "tools/**"
       - "supabase/migrations/**"
+      - "supabase/functions/**"
+      - "tests/workflow/ts/**"
+      - "tests/line-oa-commerce/ts/**"
       - "package.json"
       - "package-lock.json"
       - "README.md"
@@ -28,6 +31,8 @@ on:
       - "tsconfig*.json"
       - "vite.config.*"
       - "vitest.database.config.ts"
+      - "vitest.transport.config.ts"
+      - "scripts/check-transport-test-report*"
       - "playwright.config.ts"
       - "docs/governance/**"
       - ".github/workflows/verify-full.yml"
@@ -39,6 +44,9 @@ on:
       - 'packages/digital-shadow-service/**'
       - 'tools/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'tests/workflow/ts/**'
+      - 'tests/line-oa-commerce/ts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'README.md'
@@ -50,6 +58,8 @@ on:
       - 'tsconfig*.json'
       - 'vite.config.*'
       - 'vitest.database.config.ts'
+      - 'vitest.transport.config.ts'
+      - 'scripts/check-transport-test-report*'
       - 'playwright.config.ts'
       - '.github/workflows/verify-full.yml'
   workflow_dispatch:
@@ -125,6 +135,32 @@ jobs:
           path: |
             verify-evidence.json
             vitest-report.json
+          retention-days: 90
+
+  workflow-transport:
+    name: workflow + LINE OA commerce — Node transport contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify report guard regression tests
+        run: npm run test:transport:guard
+      - name: Run workflow and LINE OA commerce contracts
+        run: npm run test:transport -- --project workflow --project line-oa-commerce --reporter=default --reporter=json --outputFile=workflow-transport-report.json
+      - name: Require every expected contract test file to run and pass
+        if: always()
+        run: node scripts/check-transport-test-report.mjs workflow-transport-report.json workflow line-oa-commerce
+      - name: Upload transport test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: workflow-transport-evidence-${{ github.sha }}
+          path: workflow-transport-report.json
           retention-days: 90
 
   lineos:

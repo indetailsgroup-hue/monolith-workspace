@@ -2,169 +2,109 @@ name: Monthly Billing Report
 
 on:
   schedule:
-    # Run at 00:00 UTC on the 1st of every month
     - cron: '0 0 1 * *'
   workflow_dispatch:
     inputs:
       alert_threshold_usd:
-        description: 'Alert threshold in USD (send LINE if total estimated cost exceeds this)'
+        description: 'Flag sampled runner-cost estimates at or above this USD amount in the job summary'
         required: false
         default: '20'
         type: string
+  pull_request:
+    paths:
+      - '.github/workflows/billing-report.yml'
+      - 'scripts/*billing*'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/billing-report.yml'
+      - 'scripts/*billing*'
 
 concurrency:
-  group: billing-report-${{ github.ref }}
+  group: billing-report-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
+  contents: read
   actions: read
 
 jobs:
+  validate:
+    name: Billing regression checks (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: node --test scripts/billing-workflow.test.mjs
+      - run: python3 -m unittest scripts.test_gh_billing_report
+
   report:
-    name: Generate GitHub Actions billing report
+    name: Generate sampled GitHub Actions cost report
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - name: Compute previous-month start date
+      - name: Compute previous-month date bounds
         id: dates
         run: |
           python3 - << 'EOF'
           import datetime, os
-          today = datetime.date.today()
-          # First day of previous month
-          first_of_this_month = today.replace(day=1)
+          first_of_this_month = datetime.datetime.now(datetime.timezone.utc).date().replace(day=1)
           last_month = first_of_this_month - datetime.timedelta(days=1)
-          since = last_month.replace(day=1).isoformat()
-          report_name = f"billing_report_{last_month.strftime('%Y-%m')}.csv"
-          month_label = last_month.strftime('%B %Y')
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"since={since}\n")
-              f.write(f"report_name={report_name}\n")
-              f.write(f"month_label={month_label}\n")
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              f.write(f"since={last_month.replace(day=1).isoformat()}\n")
+              f.write(f"until={first_of_this_month.isoformat()}\n")
+              f.write(f"report_name=billing_report_{last_month.strftime('%Y-%m')}.csv\n")
+              f.write(f"month_label={last_month.strftime('%B %Y')}\n")
           EOF
 
       - name: Run billing report
         id: billing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+          REPORT_SINCE: ${{ steps.dates.outputs.since }}
+          REPORT_UNTIL: ${{ steps.dates.outputs.until }}
+          REPORT_FILE: ${{ steps.dates.outputs.report_name }}
         run: |
+          set -o pipefail
           python3 scripts/gh_billing_report.py \
-            --owner ${{ github.repository_owner }} \
-            --repo ${{ github.event.repository.name }} \
-            --token "$GH_TOKEN" \
-            --since ${{ steps.dates.outputs.since }} \
-            --csv ${{ steps.dates.outputs.report_name }}
+            --since "$REPORT_SINCE" --until "$REPORT_UNTIL" \
+            --csv "$REPORT_FILE" 2>&1 | tee billing-report.log
 
-      - name: Upload billing CSV as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.dates.outputs.report_name }}
-          path: ${{ steps.dates.outputs.report_name }}
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Check spend and notify via LINE
-        if: ${{ secrets.LINE_NOTIFY_TOKEN != '' }}
+      - name: Publish billing summary
+        if: ${{ always() }}
         env:
-          LINE_NOTIFY_TOKEN: ${{ secrets.LINE_NOTIFY_TOKEN }}
-          THRESHOLD_USD: ${{ inputs.alert_threshold_usd || '20' }}
           REPORT_FILE: ${{ steps.dates.outputs.report_name }}
           MONTH_LABEL: ${{ steps.dates.outputs.month_label }}
-          REPO: ${{ github.repository }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          python3 - << 'PYEOF'
-          import csv, os, sys, urllib.request, urllib.parse
+          BILLING_OUTCOME: ${{ steps.billing.outcome }}
+          THRESHOLD_USD: ${{ inputs.alert_threshold_usd || '20' }}
+          SUMMARY_FILE: billing-summary.md
+        run: python3 scripts/gh_billing_summary.py
 
-          report_file = os.environ['REPORT_FILE']
-          threshold   = float(os.environ.get('THRESHOLD_USD', '20'))
-          month_label = os.environ['MONTH_LABEL']
-          repo        = os.environ['REPO']
-          run_url     = os.environ['RUN_URL']
-          token       = os.environ['LINE_NOTIFY_TOKEN']
-
-          # --- Parse CSV -------------------------------------------------------
-          total_linux_min = 0
-          total_win_min   = 0
-          total_usd       = 0.0
-          top_rows        = []
-
-          try:
-              with open(report_file, newline='') as f:
-                  reader = csv.DictReader(f)
-                  rows = list(reader)
-
-              for row in rows:
-                  try:
-                      total_linux_min += int(row.get('linux_min', 0) or 0)
-                      total_win_min   += int(row.get('windows_min', 0) or 0)
-                      total_usd       += float(row.get('estimated_usd', 0) or 0)
-                  except (ValueError, KeyError):
-                      pass
-
-              # Top 5 by estimated_usd
-              rows_sorted = sorted(rows, key=lambda r: float(r.get('estimated_usd', 0) or 0), reverse=True)
-              top_rows = rows_sorted[:5]
-          except FileNotFoundError:
-              print(f'Report file not found: {report_file}')
-              sys.exit(0)
-
-          print(f'Total estimated: ${total_usd:.2f} (threshold: ${threshold:.2f})')
-
-          # --- Always send if threshold = 0, else only when over threshold -----
-          if total_usd < threshold and threshold > 0:
-              print(f'Spend ${total_usd:.2f} is below threshold ${threshold:.2f} — skipping LINE notification')
-              sys.exit(0)
-
-          # --- Build message ---------------------------------------------------
-          alert_tag = '🚨 ALERT — ' if total_usd >= threshold and threshold > 0 else ''
-          lines = [
-              f'\n{alert_tag}GitHub Actions Billing Report',
-              f'Repo: {repo}',
-              f'Period: {month_label}',
-              f'',
-              f'Linux  : {total_linux_min:,} min',
-              f'Windows: {total_win_min:,} min',
-              f'Est. cost: ${total_usd:.2f} USD',
-          ]
-
-          if threshold > 0 and total_usd >= threshold:
-              lines.append(f'⚠ Exceeds ${threshold:.0f} threshold!')
-
-          if top_rows:
-              lines.append('')
-              lines.append('Top workflows:')
-              for r in top_rows:
-                  name = r.get('workflow', r.get('name', '?'))[:30]
-                  usd  = float(r.get('estimated_usd', 0) or 0)
-                  if usd > 0:
-                      lines.append(f'  {name}: ${usd:.2f}')
-
-          lines += ['', f'Full report: {run_url}']
-          message = '\n'.join(lines)
-
-          # --- Send to LINE Notify ---------------------------------------------
-          data = urllib.parse.urlencode({'message': message}).encode()
-          req  = urllib.request.Request(
-              'https://notify-api.line.me/api/notify',
-              data=data,
-              headers={'Authorization': f'Bearer {token}'},
-              method='POST'
-          )
-          try:
-              with urllib.request.urlopen(req, timeout=10) as resp:
-                  body = resp.read()
-                  print(f'LINE Notify response: {resp.status} {body.decode()}')
-          except Exception as e:
-              print(f'LINE Notify failed (non-fatal): {e}')
-              sys.exit(0)
-          PYEOF
+      - name: Upload billing CSV and diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: billing-report-${{ github.run_id }}
+          path: |
+            billing_report_*.csv
+            billing-report.log
+            billing-summary.md
+          retention-days: 90
+          if-no-files-found: error
