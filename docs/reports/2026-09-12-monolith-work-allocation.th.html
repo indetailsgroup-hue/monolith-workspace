@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH — แบ่งงานระหว่าง SciSpace และ Codex</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">MONOLITH — แบ่งงานระหว่าง SciSpace และ Codex</h1>
+<p id="L3">12 กันยายน 2026 · TH · ข้อเสนอการบริหารงานจากหลักฐานที่ตรวจ</p>
+<p id="L5"><strong>ข้อเสนอ:</strong> ให้ SciSpace เป็นผู้รับผิดชอบหลักด้านวิจัย ปรับข้อกำหนดให้ตรงกัน คู่มือ SOP และความรู้ซัพพลายเออร์ ให้ Codex ประสานงานพัฒนาระบบ ตรวจโค้ดและการทดสอบ ลงมือแก้งานที่ตกลง และเตรียมรวมผลงาน เจ้าของตัดสินใจขอบเขตธุรกิจและรับมอบผลใช้งาน โดยรักษาและต่อยอดโค้ดที่ SciSpace ทำไว้แล้ว</p>
+<p id="L7">เอกสารนี้จัดสรรงานเพื่อให้ตรวจทาน ยังไม่ได้ส่งคำสั่งไปยัง SciSpace หยุดงานที่กำลังรัน เปลี่ยนสิทธิ์ repository เปลี่ยนระบบใช้งานจริง หรือเปลี่ยนสถานะการอนุมัติ</p>
+<h2 id="L9">ขอบเขตหลักฐาน</h2>
+<p id="L11">บัญชี SciSpace ที่เข้าสู่ระบบแสดงโฟลเดอร์ Monolith มี <strong>9 บทสนทนา 10 สมุดบันทึก และ 0 ไฟล์ในแท็บ Files ของโฟลเดอร์</strong> ส่วนไฟล์แนบในบทสนทนามีแยกต่างหาก รอบนี้อ่านกิจกรรมหรือสรุปล่าสุดที่แสดงของทั้ง 9 บทสนทนา และสำรวจชื่อสมุดบันทึก ไม่ได้ตรวจประวัติทุกข้อความ เนื้อหาสมุดบันทึกทั้งหมด หรือไฟล์แนบทุกชุด</p>
+<p id="L13">ตรวจ Git ทั้งสอง root แยกกัน พร้อมอ่าน CONTEXT และข้อแก้ไขขอบเขตวันที่ 21 กรกฎาคม:</p>
+<div class="tablewrap"><table><thead><tr id="L15"><th>แหล่งข้อมูล</th><th>รุ่น / ขอบเขต</th><th>งานเดิมที่มีอยู่</th></tr></thead><tbody>
+<tr id="L17"><td>Parent governance root ที่ <code>C:/Users/thai3/determined-williams (2)</code></td><td><code>aa1b30e509ece9d8efad3d68e949860aa79bdecf</code>, <code>guardrails/claim-linters</code>; ใช้อ้างอิง roadmap และ intake</td><td>tracked changes 11 รายการ; untracked 591 รายการก่อนสร้างรายงานนี้</td></tr>
+<tr id="L18"><td>Nested product root ที่ <code>determined-williams/</code></td><td><code>9c4bee6759f6d1919a320a2f56088ce683287f58</code>, <code>fix/dxf-truth-chain</code>; เป็น repository ผลิตภัณฑ์แยกต่างหาก</td><td>tracked changes 22 รายการ; untracked 61 รายการ; รักษาไว้</td></tr>
+<tr id="L19"><td>GitHub remote</td><td><code>1c554a3cdf33c43ae4971ce1b984d39572f5d47a</code>; ภาพสถานะ CI ประมาณ 07:47 น. เวลาไทย</td><td>หลักฐานการรวมระบบปัจจุบันตามด้านล่าง แยกจากสองรุ่นในเครื่อง</td></tr>
+</tbody></table></div>
+<p id="L21">รอบจัดสรรงานนี้ไม่ได้รันทดสอบระบบใหม่ การมีโค้ด ผล workflow ผ่าน และการรับมอบใช้งานเป็นคนละสถานะ ข้อค้นพบ CI ปัจจุบันอ้าง GitHub remote ไม่ใช่ checkout เก่าทั้งสองแห่ง</p>
+<h2 id="L23">งานที่พบจริงใน SciSpace</h2>
+<div class="tablewrap"><table><thead><tr id="L25"><th>บทสนทนาที่ตรวจ</th><th>งานล่าสุดที่แสดง</th><th>แนวทางส่งต่อที่เสนอ</th></tr></thead><tbody>
+<tr id="L27"><td><a href="https://scispace.com/chat/8fe0bb23-1325-4cf5-98c5-5e05b740286f" target="_blank" rel="noopener">MONOLITH Manufacturing OS</a></td><td>Sprint 15: migration/types/store ของ Team Pulse Check และงานผู้ดูแล Sentiment Timeline; รายงาน commit <code>8387a825</code></td><td>เก็บ implementation เดิม SciSpace ส่งความต้องการผู้ใช้ Codex ตรวจและต่อ UI/การทดสอบตามสัญญาข้อมูลเดิม</td></tr>
+<tr id="L28"><td><a href="https://scispace.com/chat/240be26b-287a-4ada-8ab0-f181ffe8e788" target="_blank" rel="noopener">Security Audit Session Roadmap</a></td><td>แก้ root tests และเพิ่ม exclusions; ยังมีงานปรับรายงานความปลอดภัย</td><td>Codex รับความครอบคลุมการทดสอบและหลักฐานความปลอดภัย SciSpace ปรับคำอธิบายจากผลที่ยืนยันแล้ว</td></tr>
+<tr id="L29"><td><a href="https://scispace.com/chat/80c1d8ef-3d73-41ac-ad74-c890b6e278cd" target="_blank" rel="noopener">Integrated Operational Framework</a></td><td>แก้ฐานข้อมูล Round 23 และส่งต่องาน Round 24 พร้อมเอกสาร SOP</td><td>SciSpace ดูแลความสอดคล้อง SOP ส่วน Codex เทียบรายการแก้ระบบเก่ากับ commit ปัจจุบันก่อนลงมือ</td></tr>
+<tr id="L30"><td><a href="https://scispace.com/chat/c8c7d395-868d-488f-835e-caafa146e675" target="_blank" rel="noopener">Elastic Monolith Review</a></td><td>ชุด reconciliation ใหม่ 36 ไฟล์และ dashboard; CON-013 ยัง blocked; บางงาน PFMEA และสถานะโครงการแสดงว่าปิดแล้ว</td><td>SciSpace เทียบชุดใหม่กับ intake Codex ตรวจแหล่งอ้างอิงและผลต่อระบบ รักษาการตัดสินใจจริงของเจ้าของพร้อมหลักฐาน</td></tr>
+<tr id="L31"><td><a href="https://scispace.com/chat/abcf131c-4325-49f4-af02-38af4d5555d6" target="_blank" rel="noopener">Barausse Manual Guide</a></td><td>เอกสารตรวจ domain ของ SC-17/18 และดัชนีกลาง; รายงานว่ายังรอเผยแพร่</td><td>SciSpace ส่งชุดงานและที่มา Codex ตรวจ remote ก่อนนำเข้า</td></tr>
+<tr id="L32"><td><a href="https://scispace.com/chat/e677e193-a431-48b9-96e6-96c81c07d9ae" target="_blank" rel="noopener">Modular Monolithic Furniture</a></td><td>BOM ตารางเปรียบเทียบ RFQ และ checklist ของ Blum; รายงาน local commit <code>573cf73</code> รอ push</td><td>SciSpace ตรวจข้อมูลสินค้าและสมมติฐานราคา Codex ตรวจการเผยแพร่และความเข้ากันของเอกสาร สถานะพร้อม push ยังไม่ใช่รับมอบบน remote</td></tr>
+<tr id="L33"><td><a href="https://scispace.com/chat/770b95f7-6594-426b-81a3-fb1bba44d646" target="_blank" rel="noopener">Here are the thread names 1 Fix Missing</a></td><td>งานชื่อ secrets/hook และคำขอโทเคน LINE Notify</td><td>Codex เทียบ workflow ปัจจุบัน เปลี่ยนรายการ LINE Notify ที่ล้าสมัย ข้อมูลลับให้จัดการผ่านการตั้งค่าบัญชี</td></tr>
+<tr id="L34"><td><a href="https://scispace.com/chat/0ea95798-2ce9-467d-a450-6e7c8b5962b1" target="_blank" rel="noopener">ระบบ accounting ในระบบ Monolith การจัดการบัญชีแบบรวมศูนย์</a></td><td>ขณะตรวจยังติดตาม CI อยู่</td><td>รับ handoff งานระบบที่กำลังทำ ไม่แบ่งงานตามชื่อ accounting เพียงอย่างเดียว</td></tr>
+<tr id="L35"><td><a href="https://scispace.com/chat/883b1d71-3e68-4f56-9ee6-be3b5612814f" target="_blank" rel="noopener">Supplier Portal (พอร์ทัลซัพพลายเออร์ หรือ Vendor Portal) ของ Monolith ทั้งระบบ</a></td><td>แก้นโยบายฐานข้อมูล TPC ที่ <code>1c554a3c</code> และกำลังติดตาม CI</td><td>รักษางานแก้และรับ handoff ชื่อบทสนทนานี้ไม่ใช่หลักฐานว่า supplier portal เสร็จ</td></tr>
+</tbody></table></div>
+<h2 id="L37">ชุดงานที่ควรเริ่ม</h2>
+<p id="L39">ลำดับความสำคัญบอกลำดับทำงาน ไม่ใช่คำรับรองวันเสร็จ ผู้รับผิดชอบด้านล่างเป็นข้อเสนอผู้ทำงานหลัก ไม่ใช่การแต่งตั้งบุคคลผู้อนุมัติ</p>
+<div class="tablewrap"><table><thead><tr id="L41"><th>รหัส / ลำดับ</th><th>ผู้รับผิดชอบหลัก</th><th>สิ่งส่งมอบ</th><th>หลักฐานว่าจบ</th></tr></thead><tbody>
+<tr id="L43"><td>O-01 / ทันที</td><td>เจ้าของบัญชี โดย Codex ช่วยตรวจ</td><td>เพิกถอนหรือเปลี่ยนข้อมูลรับรอง GitHub ที่ปรากฏในประวัติคำสั่ง SciSpace และเชื่อมบัญชีที่จำเป็นใหม่ผ่านการตั้งค่าที่ปลอดภัย</td><td>เจ้าของบันทึกว่าจัดการแล้วโดยไม่เผยค่าลับ ตรวจสิทธิ์ที่จำเป็น รอบนี้ไม่ได้ทดสอบว่าโทเคนเดิมยังใช้ได้หรือไม่</td></tr>
+<tr id="L44"><td>C-01 / P1</td><td>Codex</td><td>จับคู่ชุดทดสอบกับ runtime/config และเงื่อนไขเรียก CI แก้ exclusions หรือ runner ที่จำเป็น</td><td>ทุกกลุ่มที่ได้รับผลมีช่องทางรันจริง จำนวน tests ที่คาดไว้มากกว่าศูนย์ และเก็บผลที่รุ่นเดียวกัน รักษาตัวตรวจชุดทดสอบว่างของ edge ที่มีอยู่</td></tr>
+<tr id="L45"><td>C-02 / P1</td><td>Codex</td><td>เตรียม PR #106 เทียบ main ปัจจุบัน รักษางาน SciSpace และตรวจการเปลี่ยนกติกา lint/allowlist</td><td>มี candidate รวมให้ตรวจ ผลทดสอบที่เกี่ยวข้องใหม่ และไม่มีงานสูญหาย แยกการรวมโค้ดจากการเปิดใช้งานจริง</td></tr>
+<tr id="L46"><td>C-03 / P1</td><td>Codex; SciSpace ให้ความต้องการแจ้งเตือน</td><td>แก้ workflow รายงานบัญชีและออกแบบช่องทางแจ้งเตือนที่ยังรองรับ</td><td>สร้างรายงานได้แยกจากการส่งแจ้งเตือน ทดสอบความล้มเหลวของช่องทางที่เลือก การส่งข้อความจริงต้องมีผู้รับและการอนุญาตส่ง</td></tr>
+<tr id="L47"><td>C-04 / P2</td><td>Codex</td><td>วินิจฉัย component error ที่ Chromatic รายงาน</td><td>อธิบายสาเหตุของ component และตรวจผลแก้ ไม่รับ baseline เพียงเพื่อซ่อน error</td></tr>
+<tr id="L48"><td>C-05 / งานผลิตภัณฑ์ถัดไปที่ตกลง</td><td>Codex; SciSpace ให้ข้อกำหนด</td><td>UI และ tests ของ TPC โดยใช้ store/schema เดิม หากยังอยู่ในขอบเขตส่งมอบที่เลือก</td><td>ครอบคลุมสิทธิ์ตามแผน การตอบแบบประเมิน DRAFT→ACTIVE→CLOSED ความล้มเหลว/ย้อนสถานะ และการแยก tenant พร้อมหลักฐาน UI และการรับมอบผู้ใช้</td></tr>
+<tr id="L49"><td>S-01 / P1 ทำคู่ขนาน</td><td>SciSpace; Codex ตรวจหลักฐาน</td><td>ดัชนีแหล่งข้อมูลและทะเบียนการตัดสินใจ/สถานะกลางที่แก้ตามชุดใหม่</td><td>ทุก SC-01–18 มี source/version และผลพิจารณา แก้ CON-013 ที่ล้าสมัยด้วย roadmap ที่มีแล้ว เทียบรายการปิดกับการตัดสินใจจริงและขอบเขต</td></tr>
+<tr id="L50"><td>S-02 / P1 ทำคู่ขนาน</td><td>SciSpace; เจ้าของ architecture/product ตัดสินใจ</td><td>ตารางความหมาย AIE/GAP พจนานุกรม namespace และข้อเสนอชื่อ VS-01</td><td>เก็บความสามารถที่ต่างกันครบ แยก SOP S17 จาก manufacturing S17-1…5 ไม่สร้าง GAP-16 อัตโนมัติหรือยกเลิกข้อกำหนดเงียบ ๆ มีมติระบุรุ่นก่อนงานที่พึ่งพา</td></tr>
+<tr id="L51"><td>S-03 / ก่อนลงมือ pilot</td><td>SciSpace; Codex พัฒนา/ทดสอบ</td><td>SOP โครงการทดลอง ข้อกำหนด agent/API และตารางการดำเนินการ field/PFMEA</td><td>ระบุข้อมูลเข้า/ออก บทบาท retry escalation หลักฐานและตัวอย่างรับมอบ แยก classify/notify/halt/resume ราย domain Codex ตามจุดใช้ค่าและทดสอบขอบเขต 7/8/9</td></tr>
+<tr id="L52"><td>S-04 / เมื่อ pilot ใช้</td><td>SciSpace; เจ้าของ domain ตรวจ; Codex นำเข้า</td><td>ทะเบียนแหล่งข้อมูล Barausse/Blum, BOM และ checklist ติดตั้ง</td><td>ตรวจรหัสผู้ผลิต รุ่นเอกสาร หน่วย สิทธิ์ใช้และ compatibility ผู้รับผิดชอบยืนยันขนาด/จำนวน/ต้นทุนจริง ติดตามการนำเข้าบน remote</td></tr>
+<tr id="L53"><td>S-05 / งานธุรกิจหรือระยะหลัง</td><td>SciSpace; เจ้าของจัดลำดับ</td><td>หลักฐาน BOI/ธุรกิจ งานวิจัย การอบรม และข้อกำหนด AI/ความรู้ระยะถัดไป</td><td>ใช้แหล่งปฐมภูมิปัจจุบันและระบุสมมติฐาน Codex ให้ข้อเท็จจริงระบบที่พิสูจน์แล้ว การผูกพันภายนอกหรือปิดโครงการต้องมีมติจากผู้รับผิดชอบ</td></tr>
+</tbody></table></div>
+<h2 id="L55">เหตุผลที่รายการงานระบบเปลี่ยน</h2>
+<p id="L57">ที่ main รุ่นอ้างอิง <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443159" target="_blank" rel="noopener">Full Verify</a>, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443157" target="_blank" rel="noopener">FPR</a> และ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443140" target="_blank" rel="noopener">DB Verify</a> ผ่านแล้ว <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443146" target="_blank" rel="noopener">pgTAP</a> ยังรัน ส่วน <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662442748" target="_blank" rel="noopener">Billing</a> ล้มเหลวและไม่มี job แสดง นี่คือภาพสถานะตามเวลาตรวจ ไม่ใช่ข้อสรุปว่าผ่านทั้งหมด</p>
+<ul>
+<li id="L59"><strong>ต้องยืนยันว่าทดสอบครอบคลุม:</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/commit/ecf48605a3981e50419d3a59e941e9982de6ba25" target="_blank" rel="noopener">ecf48605</a> เพิ่ม exclusions กว้างที่ <code>tests/**</code>, <code>supabase/**</code>, <code>entitlement-db/**</code> แต่ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/tests/workflow/ts/captureMediaWorker.unit.test.ts" target="_blank" rel="noopener">workflow test ที่ตรวจ</a> ใช้ Vitest และ workflow <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/edge-fn-verify.yml" target="_blank" rel="noopener">edge</a> กับ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/entitlement-db-verify.yml" target="_blank" rel="noopener">entitlement</a> เรียก Vitest โดยไม่ระบุ config อื่น ความไม่สอดคล้องใน source นี้รองรับงาน C-01 แต่ยังไม่ใช่ผลทดลองรันใหม่ทุกชุด</li>
+<li id="L60"><strong>ไม่แจกงานแก้ซ้ำ:</strong> upstream แก้การอ้าง <code>user_profiles</code> ของ EST และ TPC แล้ว ต้องเทียบ 33 root failures เดิมกับ fixes และ coverage ปัจจุบันก่อนแจกซ้ำ <a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/106" target="_blank" rel="noopener">PR #106</a> ยัง Draft/Open ที่ <code>43ed3720</code> และตามหลัง main พบ PR เปิด 1 รายการ และ issue เปิด 0 รายการในภาพสถานะนี้ จำนวน issue ไม่ใช่จำนวนงานค้างทั้งหมด</li>
+<li id="L61"><strong>รายงานบัญชีต้องใช้ช่องทางปัจจุบัน:</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/billing-report.yml" target="_blank" rel="noopener">workflow</a> อ้าง secrets ในเงื่อนไขและ LINE Notify ยังไม่ได้ยืนยัน annotation ต้นเหตุที่เริ่ม workflow ไม่ได้ LINE ยุติ Notify ตั้งแต่ <strong>31 มีนาคม 2025</strong> จึงไม่ควรมีงานขอโทเคน Notify ใหม่ ดู <a href="https://developers.line.biz/en/news/2025/04/01/line-notify/" target="_blank" rel="noopener">ประกาศ LINE</a></li>
+<li id="L62"><strong>หลักฐานเฉพาะขอบเขตอื่น:</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662132678/job/103466643573" target="_blank" rel="noopener">Chromatic run</a> รายงาน 1 component error ที่ <code>8387a825</code> และ tree <code>src/culture-metrics</code> ที่ตรวจบน main มี TPC types/store แต่ไม่มี UI/story/test เฉพาะ TPC ข้อนี้จำกัดเฉพาะขอบเขตที่ตรวจ ไม่ใช่การอ้างว่าหาไม่พบทั้ง repository</li>
+<li id="L63"><strong>ข้อมูลรับรองปรากฏในประวัติ:</strong> พบข้อมูลรับรอง GitHub ในคำสั่งที่หน้าเว็บแสดง ยังไม่ทราบความใช้ได้หรือการนำไปใช้ผิดวัตถุประสงค์ ควรเพิกถอน/เปลี่ยนโดยไม่คัดลอกค่าลงรายงานหรือแชต ตาม <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository" target="_blank" rel="noopener">คำแนะนำ GitHub</a></li>
+</ul>
+<h2 id="L65">ข้อตกลงการทำงานร่วมกัน</h2>
+<ol>
+<li id="L67">ใช้ backlog กลาง มีรหัสงาน ผู้ทำ ผู้ตรวจ รุ่นแหล่งข้อมูล ไฟล์ที่เกี่ยวข้อง งานที่พึ่งพา สถานะและหลักฐานรับมอบ ชื่อบทสนทนา SciSpace ไม่ใช่รหัสงาน</li>
+<li id="L68">ให้งานระบบที่ SciSpace กำลังทำจบหรือถึงจุด handoff ก่อนอีกฝั่งแก้ไฟล์เดียวกัน บันทึกรุ่นสุดท้ายและงานที่ยังไม่เสร็จ รอบตรวจนี้ไม่ได้หยุดงานเหล่านั้น</li>
+<li id="L69">SciSpace ส่งโค้ดหรือต้นแบบได้ใน branch แยกตามงาน Codex ตรวจ ทดสอบ และเตรียมรวมผ่าน PR เสนอให้มีผู้ประสานการรวมงานเพียงรายเดียว ไม่แก้ main พร้อมกันและไม่จองเลข migration ซ้ำ</li>
+<li id="L70">ทุก handoff ระบุรุ่นไฟล์/แหล่งข้อมูล สิ่งที่เปลี่ยน ข้อที่ยังไม่รู้ มติที่ได้รับอนุญาตแล้ว การทดสอบที่คาดหวังและผู้รับช่วง ห้ามใส่ค่าลับ</li>
+<li id="L71">ใช้สถานะชัดเจน: เสนอ / กำลังทำ / ส่งตรวจ / ตรวจยืนยัน / รับมอบ การสร้างเอกสาร local commit อัปโหลดสำเร็จ หรือ tests บางชุดผ่าน เพียงอย่างเดียวยังไม่ยืนยันว่าทั้งโครงการจบ</li>
+<li id="L72">เอกสารโครงการมี TH/EN Markdown และ HTML ที่ตรงกันและเปิดเดี่ยวได้ SciSpace รับผิดชอบคุณภาพเนื้อหา Codex ตรวจลิงก์หลักฐานและข้ออ้างด้านระบบก่อนเผยแพร่</li>
+</ol>
+<p id="L74">เจ้าของเลือก pilot และแนวทาง field app รับมอบแผนความหมาย AIE/GAP ยืนยันกฎ PFMEA ราย domain งบประมาณและการรับมอบการผลิตจริง ทั้งสองฝ่ายเตรียมทางเลือกและหลักฐานที่ตรวจได้ก่อนขอมติ ระหว่างรอมติให้ทำ R0 ส่วนที่ไม่พึ่งพาต่อได้ ส่วนการขยาย AI อยู่ R5 เว้นแต่มี dependency ของ pilot ที่รับไว้แล้วเปลี่ยนลำดับ</p>
+<h2 id="L76">ครอบคลุม roadmap เดิมอย่างไร</h2>
+<p id="L78">S-01 ครอบคลุม SC-01/04/08 และ CON-011/013; S-02 ครอบคลุม SC-03/05/06/07/15 และ CON-001–010; S-03 ครอบคลุม SC-02/03/09/10/11/12/13/14 และ CON-012; S-04 ครอบคลุม SC-17/18 พร้อมงาน Blum ที่เพิ่งตรวจ; S-05 ครอบคลุม SC-16 และงานวิจัย/อบรม/AI ระยะหลัง ส่วน C-01–05 ลงมือและตรวจยืนยันงานส่งมอบที่เกี่ยวข้อง การจับคู่นี้ไม่ใช่คำมั่นว่าจะสร้างทุกข้อเสนอในประวัติ</p>
+<p id="L80">อ่านร่วมกับ <a href="../roadmap/2026-09-11-monolith-delivery-roadmap.th.html">roadmap การส่งมอบ</a>, <a href="2026-09-11-scispace-reconciliation-intake.th.html">ข้อแก้ไข intake</a> และ ข้อแก้ไขขอบเขต repository ใน governance root (<code>docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.th.md</code>; เอกสารในเครื่อง ยังไม่ได้คัดลอกเข้า product repository) ชุด SciSpace ใหม่ 36 ไฟล์ยังไม่ถือเป็นชุดเดียวกับ intake 6 ไฟล์เดิมและไม่ได้ใช้ hash ของชุดเก่าแทน รายงานการอนุมัติ PFMEA และปิดโครงการต้องเทียบกับมติจริง ไม่อนุมานว่ามีหรือไม่มีการอนุมัติจากสรุปบทสนทนาเพียงอย่างเดียว</p>
+<p id="L82"><a href="2026-09-12-monolith-work-allocation.en.html">English edition</a></p>
+</main></body>
+</html>
