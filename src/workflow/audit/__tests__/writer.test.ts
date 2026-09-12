@@ -31,20 +31,40 @@ describe('audit writer (Req 9)', () => {
   });
 
   // Feature: monolith-workflow-copilot, Property 19: การลบความลับออกจากทุกผลลัพธ์
+  function expectScrubbedPayload(secret: string, ctx: string) {
+    const payload = {
+      a: `${ctx}${secret}${ctx}`,
+      nested: { b: secret, arr: [secret, 'safe'] },
+    };
+    // Check string values and structure, not JSON syntax, keys or marker substrings.
+    const literalSecret = new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const expected = {
+      a: payload.a.replace(literalSecret, '[REDACTED]'),
+      nested: {
+        b: '[REDACTED]',
+        arr: ['[REDACTED]', 'safe'.replace(literalSecret, '[REDACTED]')],
+      },
+    };
+    expect(scrubObject(payload, [secret])).toEqual(expected);
+  }
+
   it('Property 19: ความลับถูก scrub จากทุก string ใน object', () => {
     fc.assert(
-      fc.property(fc.string({ minLength: 3, maxLength: 8 }), fc.string(), (secret, ctx) => {
-        const payload = {
-          a: `${ctx}${secret}${ctx}`,
-          nested: { b: secret, arr: [secret, 'safe'] },
-        };
-        const scrubbed = scrubObject(payload, [secret]);
-        const json = JSON.stringify(scrubbed);
-        expect(json.includes(secret)).toBe(false);
-      }),
+      fc.property(fc.string({ minLength: 3, maxLength: 8 }), fc.string(), expectScrubbedPayload),
       { numRuns: 200 },
     );
   });
+
+  it.each([
+    ['e"]', ''], // Previously matched JSON syntax following the unchanged "safe" value.
+    ['nested', ''],
+    ['RED', ''],
+    ['[REDACTED]', 'prefix'],
+    ['safe', ''],
+    ['aaa', 'aa'],
+    ['a.b', '$&'],
+    ['"\\\n', '\t'],
+  ])('scrubs literal string values for secret %j and context %j', expectScrubbedPayload);
 
   it('scrubString แทนที่ด้วย [REDACTED]', () => {
     expect(scrubString('token=abc123', ['abc123'])).toBe('token=[REDACTED]');
