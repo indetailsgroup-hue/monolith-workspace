@@ -1,29 +1,45 @@
 # MONOLITH — approved work execution ledger
 
-12 September 2026 · EN · Published verification checkpoint and pending follow-up
+12 September 2026 · EN · Verified published checkpoint and static-capture follow-up
 
-The original SciSpace assignment was sent and acknowledged. Its v2 package is received and inspected, with integration **HOLD**. The separate eight-point v3 draft remains **UNSENT**, pending exact-payload approval. Code checkpoint 529930f passed hosted CI; the next source batch and remaining visual acceptance are pending. The whole programme remains open.
+The original SciSpace assignment was sent and acknowledged. Its v2 package is received and inspected, with integration **HOLD**. The separate eight-point v3 draft remains **UNSENT**, pending exact-payload approval. Published dfdb466 passed CI; six Culture images still require fresh acceptance after the new static-chart change. The whole programme remains open.
 
-## Latest status — 12 September 2026
+## Latest recorded checkpoint — 12 September 2026
 
-Published checkpoint [529930fde04c8a049dec6df0c069227cae0b841b](https://github.com/indetailsgroup-hue/monolith-workspace/commit/529930fde04c8a049dec6df0c069227cae0b841b) contains source `3da5546` and its technical report. At 04:16 UTC on 12 September 2026, all **19 PR workflows succeeded**. This result applies to that published revision, not the next source changes.
+At the recorded **04:35:35 UTC, 12 September 2026** checkpoint, published head [dfdb466871f83cb812d17506788a973ac21c5a98](https://github.com/indetailsgroup-hue/monolith-workspace/commit/dfdb466871f83cb812d17506788a973ac21c5a98) had **19 successful PR workflows**. It includes the required database step, role-select color correction and the subsequently unsuccessful 2,000 ms Culture delay experiment. These results apply to that published checkpoint; consult [PR #106](https://github.com/indetailsgroup-hue/monolith-workspace/pull/106) for later CI, visual acceptance and integration outcomes.
 
-| Hosted check at 529930f | Observed result | Scope |
+| Hosted check associated with dfdb466 | Verified result | Scope |
 |---|---|---|
-| Root unit suite / build / typecheck | **361 files / 7,329 tests passed**; build and TypeScript check succeeded | Includes the late quotation regression. [Full Verify run](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671757990/job/103494307311) |
-| SQL pgTAP | **37 files / 695 assertions passed** | Fresh local Supabase stack on the CI runner; complete prepared migration chain |
-| Repaired 0173 SDK suite | **55 cases passed** | Strict setup and authorization assertions include Auth-issued login/refresh, allowed FINANCE, denied VIEWER/cross-tenant access, and repeat-approval rejection |
-| Configured TypeScript database selection | **31 files / 1,407 reported passed; zero reported skipped** | Some other legacy cases still return early conditionally (for example, unavailable `0205` SQL helper paths). This total does not establish that every case exercised its database assertions |
+| Root unit / typecheck / build | **361 files / 7,329 tests passed**; full TypeScript and build succeeded | [Full Verify job 103498040023](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34673089458/job/103498040023) |
+| SQL pgTAP | **37 files / 695 assertions passed** | Fresh CI Supabase with the complete prepared migration chain |
+| Repaired 0173 SDK suite | **55 cases passed in the required step** | Strict setup, Auth-issued login/refresh, FINANCE allowance, VIEWER/cross-tenant denial and repeat-approval rejection |
+| Configured TypeScript database selection | **31 files / 1,407 reported passed; zero reported skipped** | The log explicitly reports unavailable `public.run_sql(query)` for legacy 0205 F1/F2/G3/G4; those cases return before assertions. The total is not proof of non-vacuous assertions in every case |
 
-Database proof: [run 34671758042, job 103494306989](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671758042/job/103494306989). The coordinator's machine-readable record is parent-only `tmp/ci-529930f-evidence.json`.
+Database [job 103498040070](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34673089545/job/103498040070) confirmed the required step, outcome report, evidence upload and cleanup all succeeded. Raw logs identify standard PR merge ref `0a144abb1a33432ba77ed71024567ceb5c55ee41`, combining dfdb466 with base `1c554a3cdf33c43ae4971ce1b984d39572f5d47a`. Compact proof is parent-only `tmp/ci-dfdb466-evidence.json`; no raw credential-bearing logs were saved.
 
-<!-- adversary: Read the exact-head coordinator record: 19 successful workflows, SQL 37/695, strict 0173 55 PASS and configured 31/1407. Retain the conditional-early-return limitation; a reported zero-skipped total is not non-vacuous coverage proof. The next workflow, role-select and Culture capture changes require their own CI/capture result. -->
+<!-- adversary: Independently fetched complete root and database job logs and final step outcomes for this PR-head checkpoint. Parsed root 361/7329, SQL 37/695, strict 0173 55 and configured 31/1407; retained actual 0205 early-return warnings and PR merge-ref qualification. CI success does not accept unstable visuals or certify later source edits. -->
 
-The three source follow-ups are committed locally at **187c6302af03a7dae4d51467050269b18584401b** and await publication at this handoff: make the TypeScript database step required, correct the role-panel native select colors, and add a Culture-only 2,000 ms capture delay. Their new CI and corrected visual captures are **PENDING**. The delay tests a likely Recharts JavaScript-animation cause; it is not yet a confirmed stability fix. Product animation, fixtures and interaction assertions remain unchanged.
+The preceding 529930f checkpoint and source commits `3da5546` / `187c6302` remain dated history; 187c6302 was published through dfdb466. Static-chart source candidate [53fbc3368393293dde0cb94df252155f86831125](https://github.com/indetailsgroup-hue/monolith-workspace/commit/53fbc3368393293dde0cb94df252155f86831125) has the local verification below; CI and Chromatic capture for the next published head are **PENDING at authoring**. Final outcomes will be recorded in PR #106 and the parent final addendum.
 
-### Visual acceptance
+At the authenticated PR #106 UI inspection, merge still required verified commit signatures and at least one approving review from a reviewer with write access. Merge remains pending those repository gates and the remaining visual review; CI success alone does not authorize bypassing them.
 
-At **04:21 UTC on 12 September 2026**, the coordinator confirmed [Build 94](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=94): **28 Accepted / 5 Unreviewed / 8 Auto-ignored**. Accepted images comprise 13 coordinator cases (nine stable Culture stories and four AiCost stories), 11 QC cases and four other corrected cases. Five role-panel images remain held for the select-color follow-up. Eight Culture images were **Auto-ignored by Chromatic and remain UNACCEPTED**: NonAdmin VIEWER, Multiple Periods, SAFETY filter, RESOLVED filter, PENDING filter, ACKNOWLEDGE, RESOLVE and DISMISS. Auto-ignore is not review approval. Coordinator evidence is parent-only `tmp/chromatic-build94-root-review.json`.
+### Build 95 visual acceptance
+
+[Build 95](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=95) is associated with dfdb466: **233 tests, 13 changes; 7 Accepted and 6 Auto-ignored/held**. Five role-panel images were accepted after the select-color fix. SAFETY and ACKNOWLEDGE Culture stories became stable and were individually accepted. NonAdmin VIEWER, Multiple Periods, RESOLVED, PENDING, RESOLVE and DISMISS remain **UNACCEPTED**.
+
+The fully loaded Multiple Periods image (2560 × 2862) stops the trend line between Q2 and Q3 and has no point markers, while the Q3 label and score 71 are present. Its trace contains 22 screenshot calls through 18.6 seconds. Thus the 2,000 ms delay did not meet the complete-capture requirement. The [official flake-filter documentation](https://www.chromatic.com/docs/flake-filter/) says auto-ignore status is reevaluated per build and does not persist; these six statuses cannot be dismissed as inherited flags.
+
+Parent evidence: `tmp/chromatic-build95-culture-review.json`.
+
+### Static-chart follow-up
+
+The replacement adds optional `animateCharts?: boolean` and passes it to the real Recharts Line and Bar. Omission leaves `undefined`, preserving the library's existing CSR/SSR defaults; only Culture story metadata sets `animateCharts: false`. The failed `chromatic.delay: 2000` is removed. Product motion, fixtures and interaction assertions are preserved.
+
+The implementing reviewer reported a regression-first RED of **1 failed / 1 passed**, with four expected SVG bars absent. GREEN rendered complete bars and line markers immediately, after rerender and after a score-store update, without advancing timers. It uses real Recharts and the real selector with only a fixed viewport adapter: widths 109 / 218 / 327 / 436 px, then 327 / 109 / 436 / 218 px; line markers change from two to three. The real-chart file passed **2 tests**, and the focused Culture/PS selection passed **51 tests across 3 files**.
+
+Full `tsc --noEmit -p tsconfig.json`, scoped lint and diff checks exited 0; lint retained three existing story warnings. Source and assertions were independently read for this handoff: `src/culture/CultureDashboard.tsx`, `src/culture/CultureDashboard.stories.tsx`, `src/culture/__tests__/CultureDashboard.chart.test.tsx`.
+
+<!-- adversary: Implementer supplied complete RED/GREEN/focused/type/lint tool output, and this report's reviewer inspected the source/test diff. The test checks actual SVG widths and marker counts across store updates, not mock-prop equality. Local geometry proof does not establish new Chromatic stability; fresh capture and new-head CI remain pending. -->
 
 ### Work allocation
 
@@ -31,9 +47,9 @@ At **04:21 UTC on 12 September 2026**, the coordinator confirmed [Build 94](http
 |---|---|---|
 | O-01 credentials | Five-token revocation selection still pending | The existing exact-selection question remains open; no revocation is recorded. SciSpace assignment approval does not settle this separate action |
 | C-01 transport | Earlier repair implemented and hosted-verified | Retain the dated b89727f2 evidence below; candidate checks remain revision-specific |
-| C-02 integration / legacy DB | Published 529930f repair verified; required-step follow-up pending | Strict 55 SDK cases passed. Required workflow promotion has local checks; its next exact-head CI is pending |
+| C-02 integration / legacy DB | Required step verified at published dfdb466 | Strict 55 cases passed; preserve the configured 1407-total early-return qualification |
 | C-03 billing | Engineering repair and offline checks verified | Live monthly collection and operational acceptance remain open |
-| C-04 components / visual review | Build 94 partially accepted; role select and Culture stability remain open | Eight auto-ignored Culture cases are unaccepted. New capture must verify the scoped 2,000 ms delay hypothesis and role select colors |
+| C-04 components / visual review | Build 95: seven accepted; six Culture cases held | Delay experiment insufficient; static story charts locally verified, new CI/capture pending at authoring |
 | C-05 Team Pulse | Implemented with dated evidence below | Preserve gates, tenant/identity boundaries and separate operational acceptance |
 | S-01 / S-02 | v2 delivered for review; integration HOLD | 45 ZIP files; all 44 manifest hash/size entries matched. Integrity does not settle source/decision reconciliation or acceptance |
 | S-03 pilot SOP/API/field requirements | Assigned; delivered preparation incomplete | Complete roles, inputs/outputs, failure handling and acceptance contracts against actual pilot decisions |
@@ -43,7 +59,7 @@ At **04:21 UTC on 12 September 2026**, the coordinator confirmed [Build 94](http
 
 ### Retained scope and external actions
 
-The a99b474 baseline remains recorded below: 47 passed / 4 failed of 51, followed by the native 7 + 15 checks, local aggregate 360/7326 and late quotation 77-case delta. The later 529930f hosted result above supersedes their pending-CI status without rewriting that history. Five-token revocation selection is still pending; original SciSpace assignment approval does not settle it. Hosted Auth activation, the existing multi-organization resolver limitation, operational acceptance and live monthly billing verification remain separate.
+The a99b474 baseline remains recorded below: 47 passed / 4 failed of 51, followed by the native 7 + 15 checks, local aggregate 360/7326 and late quotation 77-case delta. The later 529930f and dfdb466 hosted checkpoints supersede their pending-CI status without rewriting that history. Five-token revocation selection is still pending; original SciSpace assignment approval does not settle it. Hosted Auth activation, the existing multi-organization resolver limitation, operational acceptance and live monthly billing verification remain separate.
 
 SciSpace v2 contains 45 files; all 44 manifest hash/size entries matched. Integrity is separate from content acceptance; see the parent-only docs/reports/2026-09-12-scispace-v2-acceptance-review.en.md and companion editions. The 3,333-character v3 follow-up was blocked by automatic approval review and awaits approval of the exact payload.
 

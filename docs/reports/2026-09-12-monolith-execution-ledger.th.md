@@ -1,29 +1,45 @@
 # MONOLITH — บันทึกดำเนินงานที่ได้รับอนุมัติ
 
-12 กันยายน 2026 · TH · จุดตรวจรุ่นที่เผยแพร่และงานติดตามที่ยังรอ
+12 กันยายน 2026 · TH · จุดตรวจรุ่นที่เผยแพร่และงานกราฟคงที่ติดตาม
 
-คำมอบหมาย SciSpace เดิมส่งและตอบรับแล้ว ได้รับและตรวจแพ็กเกจ v2 โดยยัง **HOLD การนำเข้า** ส่วนร่าง v3 แปดข้อเป็นคนละข้อความและยัง **UNSENT** รออนุมัติ payload ที่แน่นอน รุ่น 529930f ผ่าน hosted CI แล้ว แต่ source รอบถัดไปและการรับภาพที่เหลือยังรอ ไม่ประกาศปิดทั้งโครงการ
+คำมอบหมาย SciSpace เดิมส่งและตอบรับแล้ว แพ็กเกจ v2 ได้รับและตรวจโดยยัง **HOLD การนำเข้า** ร่าง v3 แปดข้อเป็นคนละข้อความและยัง **UNSENT** รออนุมัติ payload ที่แน่นอน รุ่น dfdb466 ที่เผยแพร่ผ่าน CI แล้ว แต่ภาพ Culture หกภาพยังต้องรับใหม่หลังแก้กราฟคงที่ ไม่ประกาศปิดทั้งโครงการ
 
-## สถานะล่าสุด — 12 กันยายน 2026
+## จุดตรวจล่าสุดที่บันทึก — 12 กันยายน 2026
 
-รุ่นที่เผยแพร่ [529930fde04c8a049dec6df0c069227cae0b841b](https://github.com/indetailsgroup-hue/monolith-workspace/commit/529930fde04c8a049dec6df0c069227cae0b841b) รวม source `3da5546` และรายงานเทคนิค เวลา 11:16 น. ไทย วันที่ 12 กันยายน 2026 ยืนยันว่า **19 PR workflows ผ่านทั้งหมด** ผลนี้ผูกกับรุ่นที่เผยแพร่นั้น ไม่ใช่ source ที่กำลังแก้รอบถัดไป
+ณ จุดตรวจที่บันทึก **11:35:35 น. ไทย วันที่ 12 กันยายน 2026** รุ่นที่เผยแพร่ [dfdb466871f83cb812d17506788a973ac21c5a98](https://github.com/indetailsgroup-hue/monolith-workspace/commit/dfdb466871f83cb812d17506788a973ac21c5a98) มี **19 PR workflows ผ่านทั้งหมด** รุ่นนี้รวมขั้นฐานข้อมูลที่บังคับผ่าน การแก้สี role select และการทดลองรอภาพ Culture 2,000 ms ซึ่งภายหลังพบว่ายังไม่เพียงพอ ผลนี้ผูกกับรุ่นที่เผยแพร่นั้น ดูผล CI การรับภาพและการรวมงานภายหลังใน [PR #106](https://github.com/indetailsgroup-hue/monolith-workspace/pull/106)
 
-| การตรวจบน CI ที่ 529930f | ผลที่พบจริง | ขอบเขต |
+| การตรวจบน CI ที่ผูกกับ dfdb466 | ผลยืนยัน | ขอบเขต |
 |---|---|---|
-| Root unit / build / typecheck | **ผ่าน 361 ไฟล์ / 7,329 ข้อ**; build และ TypeScript ผ่าน | รวม regression ป้ายภาษีที่เพิ่มท้ายรอบแล้ว [Full Verify run](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671757990/job/103494307311) |
-| SQL pgTAP | **ผ่าน 37 ไฟล์ / 695 assertions** | Supabase local ใหม่บน CI runner พร้อม prepared migration chain ครบ |
-| ชุด SDK 0173 ที่ซ่อม | **ผ่าน 55 กรณี** | ตรวจ setup และสิทธิ์จริง รวม login/refresh ที่ Auth ออก token, FINANCE ที่มีสิทธิ์, การปฏิเสธ VIEWER/ข้ามองค์กร และการอนุมัติซ้ำ |
-| TypeScript database ที่ตั้งค่าให้รัน | **31 ไฟล์ / รายงานผ่าน 1,407 ข้อ; รายงานข้าม 0** | ชุด legacy อื่นบางกรณียัง return ก่อนตามเงื่อนไข เช่นเส้นทาง SQL helper ของ `0205` ที่ใช้ไม่ได้ ยอดนี้ไม่พิสูจน์ว่าทุกกรณีได้ตรวจ assertions ของฐานข้อมูลจริง |
+| Root unit / typecheck / build | **ผ่าน 361 ไฟล์ / 7,329 ข้อ**; TypeScript ทั้งโครงการและ build ผ่าน | [Full Verify job 103498040023](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34673089458/job/103498040023) |
+| SQL pgTAP | **ผ่าน 37 ไฟล์ / 695 assertions** | Supabase ใหม่บน CI พร้อม prepared migration chain ครบ |
+| ชุด SDK 0173 ที่ซ่อม | **ผ่าน 55 กรณีในขั้นที่บังคับ** | setup แบบ strict, login/refresh ที่ Auth ออก token, FINANCE ที่มีสิทธิ์, การปฏิเสธ VIEWER/ข้ามองค์กร และการอนุมัติซ้ำ |
+| TypeScript database ที่ตั้งค่าให้รัน | **31 ไฟล์ / รายงานผ่าน 1,407 ข้อ; รายงานข้าม 0** | log ระบุว่า `public.run_sql(query)` ใช้ไม่ได้ใน legacy 0205 F1/F2/G3/G4 ซึ่ง return ก่อน assertions ยอดนี้ไม่พิสูจน์ว่าทุกกรณีตรวจ assertions จริง |
 
-หลักฐานฐานข้อมูล: [run 34671758042, job 103494306989](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671758042/job/103494306989) บันทึกผลที่เครื่องอ่านได้ของผู้ประสานงานอยู่เฉพาะ parent ที่ `tmp/ci-529930f-evidence.json`
+[Database job 103498040070](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34673089545/job/103498040070) ยืนยันว่าขั้นบังคับ รายงานผล อัปโหลดหลักฐาน และ cleanup ผ่านทั้งหมด Raw logs ระบุ PR merge ref มาตรฐาน `0a144abb1a33432ba77ed71024567ceb5c55ee41` ซึ่งรวม dfdb466 กับ base `1c554a3cdf33c43ae4971ce1b984d39572f5d47a` หลักฐานสรุปอยู่เฉพาะ parent ที่ `tmp/ci-dfdb466-evidence.json` ไม่ได้เก็บ raw logs ที่อาจมีข้อมูลรับรองลงดิสก์
 
-<!-- adversary: อ่านบันทึกผู้ประสานงานที่ผูกกับ head จริง: workflow ผ่าน 19, SQL 37/695, 0173 แบบ strict ผ่าน 55 และชุดที่ตั้งค่ารายงาน 31/1407 คงข้อจำกัด conditional early return ไว้ ยอด reported skipped เป็นศูนย์ไม่พิสูจน์ว่าทุกเคสตรวจจริง การเปลี่ยน workflow, role select และการถ่าย Culture รอบถัดไปต้องมีผล CI/ภาพของตนเอง -->
+<!-- adversary: ดึง root/database job logs ครบและ step outcomes สุดท้ายของจุดตรวจ PR head นี้แยกเอง อ่านผล root 361/7329, SQL 37/695, 0173 แบบ strict55 และชุดที่ตั้งค่า31/1407 คงคำเตือน0205ที่returnก่อนจริงและขอบเขตPRmerge refไว้ CIผ่านไม่ใช่การรับภาพที่ไม่คงที่หรือการรับรองsourceที่แก้ภายหลัง -->
 
-source ติดตามสามไฟล์ commit ในเครื่องที่ **187c6302af03a7dae4d51467050269b18584401b** และยังรอเผยแพร่ ณ จุดส่งต่อนี้ ได้แก่ บังคับให้ขั้น TypeScript database ล้มเหลวแล้วหยุดงาน แก้สี native select ใน role panel และเพิ่มเวลารอถ่ายภาพเฉพาะ Culture 2,000 ms ผล CI และภาพแก้ไขรอบใหม่ยัง **PENDING** การรอภาพเป็นการทดลองสมมติฐานว่า Recharts JavaScript animation เป็นสาเหตุที่น่าจะเกี่ยวข้อง ยังไม่ยืนยันว่าแก้ความไม่คงที่แล้ว โดยคง animation ของผลิตภัณฑ์ fixtures และ interaction assertions ไว้
+จุดตรวจ 529930f และ source commits `3da5546` / `187c6302` เป็นประวัติตามเวลา โดย 187c6302 เผยแพร่ผ่าน dfdb466 แล้ว Source candidate ของกราฟคงที่ [53fbc3368393293dde0cb94df252155f86831125](https://github.com/indetailsgroup-hue/monolith-workspace/commit/53fbc3368393293dde0cb94df252155f86831125) มีผลตรวจในเครื่องด้านล่าง แต่ CI และภาพ Chromatic ของ head ที่จะเผยแพร่ถัดไปยัง **PENDING ณ เวลาเขียน** ผลสุดท้ายจะอยู่ใน PR #106 และภาคผนวก parent
 
-### การรับภาพ
+การตรวจหน้า PR #106 ที่ลงชื่อเข้าใช้พบว่า merge ยังต้องมีลายเซ็น commit ที่ตรวจสอบได้ และ approving review อย่างน้อยหนึ่งรายการจากผู้มีสิทธิ์ write จึงยังรอเงื่อนไข repository เหล่านี้และการรับภาพที่เหลือ ผล CI ที่ผ่านไม่ใช่อำนาจให้ข้ามเงื่อนไข
 
-เวลา **11:21 น. ไทย วันที่ 12 กันยายน 2026** ผู้ประสานงานยืนยัน [Build 94](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=94): **Accepted 28 / Unreviewed 5 / Auto-ignored 8** ภาพที่รับประกอบด้วยขอบเขตผู้ประสานงาน 13 ภาพ (Culture ที่คงที่เก้าและ AiCost สี่) QC 11 และภาพแก้อื่นอีกสี่ ภาพ role panel ห้ารายการยังพักรับเพื่อแก้สี select ส่วน Culture แปดรายการถูก **Chromatic Auto-ignored และยังไม่ได้รับ (UNACCEPTED)** ได้แก่ NonAdmin VIEWER, Multiple Periods, ตัวกรอง SAFETY, RESOLVED, PENDING และ ACKNOWLEDGE, RESOLVE, DISMISS การ auto-ignore ไม่ใช่การอนุมัติรับภาพ หลักฐานผู้ประสานงานอยู่เฉพาะ parent ที่ `tmp/chromatic-build94-root-review.json`
+### การรับภาพ Build 95
+
+[Build 95](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=95) ผูกกับ dfdb466: **233 tests, เปลี่ยน 13 รายการ; Accepted 7 และ Auto-ignored/พักรับ 6** รับภาพ role panel ห้ารายการหลังแก้สี select แล้ว ส่วน Culture SAFETY และ ACKNOWLEDGE คงที่และตรวจรับแยกทีละภาพแล้ว NonAdmin VIEWER, Multiple Periods, RESOLVED, PENDING, RESOLVE และ DISMISS ยัง **ไม่ได้รับ (UNACCEPTED)**
+
+ภาพ Multiple Periods โหลดครบขนาด 2560 × 2862 แต่เส้นแนวโน้มหยุดระหว่าง Q2 กับ Q3 และไม่มีจุดคะแนน ทั้งที่มีป้าย Q3 และคะแนน 71 Trace มีการถ่ายภาพ 22 ครั้งถึงวินาที 18.6 จึงยืนยันว่าการรอ 2,000 ms ยังไม่ผ่านเกณฑ์ภาพสมบูรณ์ [เอกสาร flake filter ทางการ](https://www.chromatic.com/docs/flake-filter/) ระบุว่าประเมิน auto-ignore ใหม่ทุก build ไม่ยกสถานะข้าม build จึงไม่อาจอธิบายทั้งหกว่าเป็นเพียงธงเก่าค้าง
+
+หลักฐาน parent: `tmp/chromatic-build95-culture-review.json`
+
+### งานกราฟคงที่ติดตาม
+
+แนวแก้ใหม่เพิ่ม `animateCharts?: boolean` แบบเลือกใช้และส่งต่อให้ Line กับ Bar ของ Recharts จริง หากไม่ส่ง prop ค่าจะเป็น `undefined` และคงค่า CSR/SSR เดิมของไลบรารีไว้ เฉพาะ metadata ของ Culture stories ตั้ง `animateCharts: false` พร้อมถอด `chromatic.delay: 2000` ที่ทดลองแล้วไม่เพียงพอ รักษาการเคลื่อนไหวของผลิตภัณฑ์ fixtures และ interaction assertions ไว้
+
+ผู้ลงมือแก้รายงาน RED ก่อนแก้ว่า **ไม่ผ่าน 1 / ผ่าน 1** เพราะไม่พบ SVG bar ทั้งสี่ที่คาดไว้ GREEN แสดง bar และจุดเส้นครบตั้งแต่ทันที หลัง rerender และหลังเปลี่ยน store คะแนนโดยไม่เลื่อนเวลา ใช้ Recharts และ selector จริง โดยปรับเฉพาะ viewport: ความกว้าง 109 / 218 / 327 / 436 px แล้วเป็น 327 / 109 / 436 / 218 px จุดเส้นเพิ่มจากสองเป็นสาม ไฟล์กราฟจริงผ่าน **2 ข้อ** และชุด Culture/PS เฉพาะส่วนผ่าน **51 ข้อใน 3 ไฟล์**
+
+ตรวจ `tsc --noEmit -p tsconfig.json` ทั้งโครงการ scoped lint และ diff exit 0 โดย lint คงคำเตือน story เดิมสามรายการ ผู้ตรวจรายงานอ่าน source และ assertions แยกแล้วที่ `src/culture/CultureDashboard.tsx`, `src/culture/CultureDashboard.stories.tsx`, `src/culture/__tests__/CultureDashboard.chart.test.tsx`
+
+<!-- adversary: ผู้ลงมือแก้ส่งผลtool RED/GREEN/focused/type/lint ครบ ผู้ตรวจรายงานอ่าน source/test diff แยก การทดสอบตรวจความกว้างSVGและจำนวนจุดจริงหลังstoreเปลี่ยน ไม่ใช่เพียงค่าpropในmock ผลgeometryในเครื่องยังไม่ยืนยันChromaticรุ่นใหม่ ต้องรอภาพและCIของheadใหม่ -->
 
 ### การแบ่งงาน
 
@@ -31,9 +47,9 @@ source ติดตามสามไฟล์ commit ในเครื่อ�
 |---|---|---|
 | O-01 ข้อมูลรับรอง | ยังรอยืนยันรายการโทเคนห้ารายการที่จะเพิกถอน | คำถามเดิมเรื่องรายการที่แน่นอนยังเปิดอยู่ ยังไม่บันทึกว่ามีการเพิกถอน การอนุมัติคำมอบหมาย SciSpace ไม่ตอบเรื่องนี้แทน |
 | C-01 transport | ชุดซ่อมเดิมพัฒนาและตรวจบน GitHub ผ่านแล้ว | เก็บผล b89727f2 ตามวันที่ด้านล่าง การตรวจ candidate ต้องผูกกับรุ่นของตนเอง |
-| C-02 การรวมงาน / legacy DB | รุ่น 529930f ที่ซ่อมตรวจผ่านแล้ว ยังรอขั้นบังคับ CI รอบถัดไป | ชุด SDK แบบ strict ผ่าน 55 กรณี การยกระดับ workflow ตรวจในเครื่องแล้ว แต่ยังรอ CI ของ head ถัดไป |
+| C-02 การรวมงาน / legacy DB | ขั้นบังคับตรวจผ่านในรุ่น dfdb466 แล้ว | แบบ strict ผ่าน 55 กรณี คงข้อจำกัด early return ของยอด 1,407 ที่ตั้งค่าให้รัน |
 | C-03 billing | ตรวจชุดซ่อมวิศวกรรมและกรณี offline แล้ว | ยังรอการเก็บรายงานรายเดือนจริงและการยอมรับเชิงปฏิบัติการ |
-| C-04 หน้าจอ / ทบทวนภาพ | Build 94 รับบางส่วน ยังเปิด role select และความคงที่ของ Culture | Culture ที่ auto-ignore แปดรายการยังไม่ได้รับ ต้องใช้ภาพใหม่พิสูจน์สมมติฐานรอ 2,000 ms และสี role select |
+| C-04 หน้าจอ / ทบทวนภาพ | Build 95 รับเจ็ดรายการ พัก Culture หกรายการ | การรอภาพไม่เพียงพอ กราฟคงที่ใน stories ตรวจในเครื่องแล้ว แต่ CI/ภาพใหม่ยังรอ ณ เวลาเขียน |
 | C-05 Team Pulse | พัฒนาแล้ว พร้อมหลักฐานตามรุ่นด้านล่าง | รักษา gate ขอบเขตองค์กร/ตัวตน และแยกการยอมรับหน้างาน |
 | S-01 / S-02 | ได้รับ v2 เพื่อตรวจ ยัง HOLD การนำเข้า | ZIP มี 45 ไฟล์ ตรวจ hash/ขนาดตรงครบ 44 รายการใน manifest ความสมบูรณ์ของไฟล์ไม่แทนการทบทวน source/มติหรือการรับมอบ |
 | S-03 SOP/API/งานภาคสนามของ pilot | มอบหมายแล้ว สิ่งที่ส่งมาเป็นการเตรียมงานที่ยังไม่ครบ | เติมบทบาท input/output การรับมือข้อผิดพลาดและเกณฑ์ยอมรับตามมติ pilot จริง |
@@ -43,7 +59,7 @@ source ติดตามสามไฟล์ commit ในเครื่อ�
 
 ### ขอบเขตเดิมและงานภายนอก
 
-เก็บผลฐาน a99b474 ด้านล่างไว้ตามจริง: ผ่าน 47 ล้มเหลว 4 จาก 51 ต่อด้วย native 7 + 15 ข้อ aggregate ในเครื่อง 360/7326 และผล quotation ช่วงท้าย 77 ข้อ ผล hosted ที่ 529930f ด้านบนใช้แทนสถานะรอ CI เดิมโดยไม่เขียนประวัติใหม่ ยังรอยืนยันรายการโทเคนห้ารายการที่จะเพิกถอน การอนุมัติคำมอบหมาย SciSpace เดิมไม่ตอบแทนเรื่องนี้ ส่วน hosted Auth activation ข้อจำกัด resolver สำหรับผู้มีหลายองค์กร การยอมรับหน้างาน และ billing รายเดือนจริงยังเป็นคนละขั้น
+เก็บผลฐาน a99b474 ด้านล่างไว้ตามจริง: ผ่าน 47 ล้มเหลว 4 จาก 51 ต่อด้วย native 7 + 15 ข้อ aggregate ในเครื่อง 360/7326 และผล quotation ช่วงท้าย 77 ข้อ ผล hosted ที่ 529930f และ dfdb466 ใช้แทนสถานะรอ CI เดิมโดยไม่เขียนประวัติใหม่ ยังรอยืนยันรายการโทเคนห้ารายการที่จะเพิกถอน การอนุมัติคำมอบหมาย SciSpace เดิมไม่ตอบแทนเรื่องนี้ ส่วน hosted Auth activation ข้อจำกัด resolver สำหรับผู้มีหลายองค์กร การยอมรับหน้างาน และ billing รายเดือนจริงยังเป็นคนละขั้น
 
 SciSpace v2 มี 45 ไฟล์ โดย hash/ขนาดตรงครบ 44 รายการใน manifest ความสมบูรณ์ไฟล์ไม่ใช่การรับเนื้อหา ดู docs/reports/2026-09-12-scispace-v2-acceptance-review.th.md และฉบับคู่กันที่อยู่เฉพาะ parent ร่างติดตาม v3 ยาว 3,333 อักขระถูกระบบอนุมัติอัตโนมัติระงับและยังรออนุมัติข้อความที่แน่นอน
 
