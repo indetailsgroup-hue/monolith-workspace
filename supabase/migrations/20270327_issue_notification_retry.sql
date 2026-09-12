@@ -131,10 +131,12 @@ REVOKE ALL ON FUNCTION public.fn_issue_sla_sweep() FROM PUBLIC, anon, authentica
 GRANT EXECUTE ON FUNCTION public.fn_issue_sla_sweep() TO service_role;
 
 -- The0197 pending-row trigger already publishes created_at, but the queue
--- schema never defined it. Preserve that existing function/payload contract.
--- No backfill: pre-existing rows keep NULL because their original creation
--- times are unknown; only future inserts receive the timestamp default.
-ALTER TABLE public.line_oa_outbound_messages ADD COLUMN created_at timestamptz;
+-- canonical fresh schema omitted it; older bootstrap paths may already have it.
+-- Preserve that existing function/payload contract and any existing values.
+-- When adding the column, leave historical rows NULL without a backfill.
+-- If it already exists, retain its values and constraints. Set the default
+-- for future inserts only; existing creation times are never fabricated.
+ALTER TABLE public.line_oa_outbound_messages ADD COLUMN IF NOT EXISTS created_at timestamptz;
 ALTER TABLE public.line_oa_outbound_messages ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
 
 COMMIT;

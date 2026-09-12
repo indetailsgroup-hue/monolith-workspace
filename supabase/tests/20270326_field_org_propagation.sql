@@ -4,7 +4,7 @@
 -- These are attribution/provenance tests, not a claim that the existing broad
 -- governance/site/membership RPC predicates implement complete org isolation.
 BEGIN;
-SELECT plan(66);
+SELECT plan(68);
 
 CREATE TEMP TABLE field_org_results (label text PRIMARY KEY, result jsonb);
 GRANT ALL ON field_org_results TO authenticated;
@@ -15,9 +15,11 @@ INSERT INTO public.organizations (org_id,name,slug) VALUES
  ('a1260000-0000-0000-0000-000000000001','R1 field A','pgtap-r1-field-a'),
  ('b1260000-0000-0000-0000-000000000001','R1 field B','pgtap-r1-field-b');
 INSERT INTO auth.users (id,email) VALUES
- ('a1260000-0000-0000-0000-000000000011','r1-field@test.local');
+ ('a1260000-0000-0000-0000-000000000011','r1-field@test.local'),
+ ('b1260000-0000-0000-0000-000000000012','r1-field-other@test.local');
 INSERT INTO public.org_members (org_id,user_id,email,role,is_active) VALUES
- ('a1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000011','r1-field@test.local','ADMIN',true);
+ ('a1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000011','r1-field@test.local','ADMIN',true),
+ ('b1260000-0000-0000-0000-000000000001','b1260000-0000-0000-0000-000000000012','r1-field-other@test.local','VIEWER',true);
 -- A final synthetic step avoids depending on the number of seeded steps.
 INSERT INTO public.process_model (canonical_order,process_step,sub_process_group,requires_approval)
  SELECT coalesce(max(canonical_order),0)+1,'Installation','Field',false FROM public.process_model;
@@ -179,13 +181,19 @@ SELECT throws_ok($$ INSERT INTO public.line_oa_outbound_messages(org_id,send_typ
 SELECT throws_ok($$ INSERT INTO public.line_oa_outbound_messages(org_id,send_type,status,template_key,slot_values,target_type,target_id) VALUES
  ('a1260000-0000-0000-0000-000000000001','push','pending','tpl_inst_issue_alert','{}','group','R1-FIELD-BAD-GROUP-SITE') $$,'23514',null,'Outbound rejects a group site conflicting with its project');
 
+-- The existing get_user_org_id helper resolves earliest active membership,
+-- not a selected-org JWT claim. Use a real different member and verify the
+-- effective identity; selected-org/multiple-membership semantics are unchanged.
 DO $$ BEGIN
- PERFORM set_config('request.jwt.claims','{"sub":"a1260000-0000-0000-0000-000000000011","role":"authenticated","org_id":"b1260000-0000-0000-0000-000000000001","app_metadata":{"roles":[],"site_codes":[]}}',true);
+ PERFORM set_config('request.jwt.claim.sub','b1260000-0000-0000-0000-000000000012',true);
+ PERFORM set_config('request.jwt.claims','{"sub":"b1260000-0000-0000-0000-000000000012","role":"authenticated","org_id":"b1260000-0000-0000-0000-000000000001","app_metadata":{"roles":[],"site_codes":[]}}',true);
 END $$;
 SET LOCAL ROLE authenticated;
+SELECT is(auth.uid()::text,'b1260000-0000-0000-0000-000000000012','Isolation fixture uses the distinct organization B user');
+SELECT is(public.get_user_org_id()::text,'b1260000-0000-0000-0000-000000000001','Existing membership resolver identifies organization B before visibility check');
 SELECT throws_ok($$ SELECT public.rpc_field_raise_issue('a1260000-0000-0000-0000-000000000031','material','denied') $$,'42501',null,'Caller without governance, site access or membership still cannot raise an issue');
 SELECT throws_ok($$ SELECT public.rpc_field_close_house('a1260000-0000-0000-0000-000000000031','denied') $$,'42501',null,'Caller without existing field access still cannot close a house');
-SELECT is((SELECT count(*)::integer FROM public.installation_issues WHERE id='a1260000-0000-0000-0000-000000000061'),0,'Existing org SELECT policy hides the owned issue from a different org claim');
+SELECT is((SELECT count(*)::integer FROM public.installation_issues WHERE id='a1260000-0000-0000-0000-000000000061'),0,'Existing org SELECT policy hides the owned issue from a member of another organization');
 RESET ROLE;
 SELECT is((SELECT org_id::text FROM public.installation_issues WHERE id='a1260000-0000-0000-0000-000000000061'),'a1260000-0000-0000-0000-000000000001','Rejected ownership changes leave the original tenant intact');
 
