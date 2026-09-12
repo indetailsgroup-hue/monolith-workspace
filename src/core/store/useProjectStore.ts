@@ -15,6 +15,7 @@
  *
  * ## Storage Keys
  * - `monolith-current-project`: Active project data
+ * - `monolith-project:<id>`: Saved data for each project
  * - `monolith-projects-list`: Recent projects list (max 20)
  *
  * ## Usage
@@ -126,6 +127,19 @@ const STORAGE_KEY = 'monolith-current-project';
 const PROJECTS_LIST_KEY = 'monolith-projects-list';
 const AUTO_SAVE_DELAY = 2000; // 2 seconds
 
+const projectStorageKey = (id: string) => `monolith-project:${id}`;
+
+// Keep the previous current-only save when first writing the new per-ID format.
+// The original payload is retained; there is no bulk migration or deletion.
+function preservePreviousCurrent(nextId: string): void {
+  const stored = readString(STORAGE_KEY);
+  if (!stored) return;
+  const validation = parseAndValidateSafe(stored, ImportedProjectSchema, 'localStorage-legacy');
+  if (!validation.ok || !validation.data.metadata.id || validation.data.metadata.id === nextId) return;
+  const key = projectStorageKey(validation.data.metadata.id);
+  if (readString(key) === null) writeJson(key, JSON.parse(stored));
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -163,6 +177,59 @@ function deserializeCabinet(cabinet: SerializedCabinet): Cabinet {
       overrides: new Map(Object.entries(cabinet.materials.overrides ?? {})),
     },
   };
+}
+
+function serializeScene(cabinet: Cabinet, cabinets: Cabinet[]): SerializedCabinet[] {
+  const scene = cabinets.some((candidate) => candidate.id === cabinet.id)
+    ? cabinets.map((candidate) => candidate.id === cabinet.id ? {
+      ...cabinet,
+      // Move/rotate actions update the scene entry independently of cabinet.
+      scenePosition: candidate.scenePosition ?? cabinet.scenePosition,
+      sceneRotation: candidate.sceneRotation ?? cabinet.sceneRotation,
+    } : candidate)
+    : [...cabinets, cabinet];
+  return scene.map((candidate) => serializeCabinet({
+    ...candidate,
+    scenePosition: candidate.scenePosition ?? [0, 0, 0],
+    sceneRotation: candidate.sceneRotation ?? [0, 0, 0],
+  }));
+}
+
+function restoreScene(projectData: ProjectData): Cabinet[] {
+  const active = projectData.cabinet;
+  const saved = projectData.cabinets?.length ? projectData.cabinets : [active];
+  if (![active, ...saved].every((cabinet) => typeof cabinet?.id === 'string' && cabinet.id.trim())) {
+    throw new Error('Invalid project scene: each cabinet requires an identity');
+  }
+  if (new Set(saved.map((cabinet) => cabinet.id)).size !== saved.length) {
+    throw new Error('Invalid project scene: duplicate cabinet identities');
+  }
+  // Older files may omit the active cabinet from the optional scene array.
+  const scene = saved.some((candidate) => candidate.id === active.id) ? saved : [...saved, active];
+  return scene.map((candidate) => {
+    const cabinet = deserializeCabinet(candidate.id === active.id ? {
+      ...active,
+      scenePosition: candidate.scenePosition ?? active.scenePosition,
+      sceneRotation: candidate.sceneRotation ?? active.sceneRotation,
+    } : candidate);
+    const restored = {
+      ...cabinet,
+      scenePosition: cabinet.scenePosition ?? [0, 0, 0] as [number, number, number],
+      sceneRotation: cabinet.sceneRotation ?? [0, 0, 0] as [number, number, number],
+    };
+    if (restored.hardware?.minifixConfig) return restored;
+    // Preserve the existing v4.1 hardware migration for legacy cabinets.
+    const coreId = restored.materials?.defaultCore || 'core-pb-18';
+    const thickness = coreId.includes('16') ? 16 : coreId.includes('19') ? 19 : 18;
+    return {
+      ...restored,
+      hardware: {
+        ...restored.hardware,
+        minifixConfig: getMinifixFullConfigForThickness(thickness),
+        minifixPresetId: `builtin_minifix_${thickness}mm`,
+      },
+    };
+  });
 }
 
 // ============================================
@@ -223,6 +290,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     
     // Create new cabinet
     useCabinetStore.getState().createCabinet('BASE', name);
+    useCabinetStore.setState({ selectedPanelId: null });
     
     set({
       metadata,
@@ -255,13 +323,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     };
 
     // Serialize cabinets with scenePosition/sceneRotation
-    const serializedCabinets = cabinets.map((cabinetToSerialize) =>
-      serializeCabinet({
-        ...cabinetToSerialize,
-        scenePosition: cabinetToSerialize.scenePosition ?? [0, 0, 0],
-        sceneRotation: cabinetToSerialize.sceneRotation ?? [0, 0, 0],
-      })
-    );
+    const serializedCabinets = serializeScene(cabinet, cabinets);
 
     // Create project data
     const projectData: ProjectData = {
@@ -272,6 +334,8 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     
     // Save to localStorage via G9 boundary
     try {
+      preservePreviousCurrent(metadata.id);
+      writeJson(projectStorageKey(metadata.id), projectData);
       writeJson(STORAGE_KEY, projectData);
 
       // Update projects list
@@ -297,7 +361,8 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   loadProject: (projectId?: string) => {
     try {
       // If no projectId, load current project (via G9 boundary)
-      const stored = readString(STORAGE_KEY);
+      const stored = (projectId ? readString(projectStorageKey(projectId)) : null)
+        ?? readString(STORAGE_KEY);
       if (!stored) {
         return false;
       }
@@ -329,58 +394,25 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
         return false;
       }
 
-      // Restore cabinet state - convert overrides back to Map
-      const cabinet = deserializeCabinet(projectData.cabinet);
-
-      // Restore cabinets array with scenePosition/sceneRotation
-      let cabinetsToRestore = [cabinet];
-      if (projectData.cabinets && projectData.cabinets.length > 0) {
-        // Merge saved scene positions into cabinets
-        cabinetsToRestore = projectData.cabinets.map((savedCab) => {
-          const restoredCabinet = deserializeCabinet(savedCab);
-          // For the active cabinet, merge with full cabinet data
-          if (savedCab.id === cabinet.id) {
-            return {
-              ...cabinet,
-              ...restoredCabinet,
-              scenePosition: savedCab.scenePosition ?? [0, 0, 0],
-              sceneRotation: savedCab.sceneRotation ?? [0, 0, 0],
-            };
-          }
-          // For other cabinets, use saved data with defaults
-          return {
-            ...restoredCabinet,
-            scenePosition: savedCab.scenePosition ?? [0, 0, 0],
-            sceneRotation: savedCab.sceneRotation ?? [0, 0, 0],
-          };
-        });
+      const cabinetsToRestore = restoreScene(projectData);
+      // Explicit selection must persist the current snapshot before switching
+      // memory. Startup recovery reads the current snapshot without requiring
+      // a redundant write (e.g. a readable store whose quota is exhausted).
+      if (projectId) {
+        preservePreviousCurrent(projectData.metadata.id);
+        writeJson(STORAGE_KEY, projectData);
       }
-
-      // v4.1 Migration: Auto-apply hardware config to cabinets that don't have one
-      // This ensures legacy projects get Minifix S200 + Dowel hardware automatically
-      cabinetsToRestore = cabinetsToRestore.map((cab) => {
-        if (!cab.hardware?.minifixConfig) {
-          // Determine wood thickness from core material (default 18mm)
-          const coreId = cab.materials?.defaultCore || 'core-pb-18';
-          const woodThickness = coreId.includes('16') ? 16 : coreId.includes('19') ? 19 : 18;
-          const minifixConfig = getMinifixFullConfigForThickness(woodThickness);
-          return {
-            ...cab,
-            hardware: {
-              ...cab.hardware,
-              minifixConfig,
-              minifixPresetId: `builtin_minifix_${woodThickness}mm`,
-            },
-          };
-        }
-        return cab;
-      });
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
 
       // Set cabinet and also sync to cabinets array
       useCabinetStore.setState({
-        cabinet: cabinetsToRestore.find((candidate) => candidate.id === cabinet.id) || cabinet,
+        cabinet: cabinetsToRestore.find((candidate) => candidate.id === projectData.cabinet.id)!,
         cabinets: cabinetsToRestore,
-        activeCabinetId: cabinet.id
+        activeCabinetId: projectData.cabinet.id,
+        selectedPanelId: null,
       });
       
       set({
@@ -401,10 +433,21 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     // Remove from list (via G9 boundary)
     const updatedList = savedProjects.filter(p => p.id !== projectId);
     writeJson(PROJECTS_LIST_KEY, updatedList);
+    remove(projectStorageKey(projectId));
 
     // If deleting current project, clear it
     if (metadata?.id === projectId) {
       remove(STORAGE_KEY);
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
+      useCabinetStore.setState({
+        cabinet: null,
+        cabinets: [],
+        activeCabinetId: null,
+        selectedPanelId: null,
+      });
       set({
         metadata: null,
         isDirty: false,
@@ -446,6 +489,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     const projectData: ProjectData = {
       metadata,
       cabinet: serializeCabinet(cabinet),
+      cabinets: serializeScene(cabinet, useCabinetStore.getState().cabinets),
     };
     
     return JSON.stringify(projectData, null, 2);
@@ -482,10 +526,17 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
         updatedAt: Date.now(),
       };
 
-      // Restore cabinet
-      const cabinet = deserializeCabinet(projectData.cabinet);
-
-      useCabinetStore.setState({ cabinet });
+      const cabinets = restoreScene(projectData);
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
+      useCabinetStore.setState({
+        cabinet: cabinets.find((candidate) => candidate.id === projectData.cabinet.id)!,
+        cabinets,
+        activeCabinetId: projectData.cabinet.id,
+        selectedPanelId: null,
+      });
 
       set({
         metadata: newMetadata,

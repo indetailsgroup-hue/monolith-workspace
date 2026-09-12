@@ -1186,6 +1186,44 @@ function NotFoundPage() {
 // Router Configuration
 // ============================================================================
 
+function ProjectDesignPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const selectedId = useProjectStore((state) => state.metadata?.id);
+  const [resolved, setResolved] = useState<{ requestedId?: string; loadedId?: string } | null>(null);
+
+  useEffect(() => {
+    const store = useProjectStore.getState();
+    const loaded = !!projectId && store.loadProject(projectId === 'current' ? undefined : projectId);
+    setResolved({ requestedId: projectId, loadedId: loaded ? useProjectStore.getState().metadata?.id : undefined });
+  }, [projectId]);
+
+  // A new URL must resolve before the previous designer can render under it.
+  if (!resolved || resolved.requestedId !== projectId) return <WorkspaceLoadingFallback />;
+  if (projectId === 'current' && resolved.loadedId) {
+    return <Navigate to={`/projects/${encodeURIComponent(resolved.loadedId)}/design`} replace />;
+  }
+  if (!resolved.loadedId || selectedId !== resolved.loadedId) {
+    const changed = !!resolved.loadedId;
+    return (
+      <div className="min-h-screen bg-surface-0 text-textc-primary flex items-center justify-center p-8">
+        <div role="alert" className="max-w-lg space-y-4">
+          <h1 className="text-xl font-semibold">{changed ? 'Project changed / โครงการเปลี่ยน' : 'Project unavailable / ไม่สามารถเปิดโครงการได้'}</h1>
+          <p>{changed
+            ? 'Open the selected project to continue. / เปิดโครงการที่เลือกเพื่อทำงานต่อ'
+            : 'This project could not be loaded from this browser. / ไม่สามารถโหลดโครงการนี้จากเบราว์เซอร์นี้ได้'}</p>
+          {changed && selectedId && (
+            <Link className="block underline" to={`/projects/${encodeURIComponent(selectedId)}/design`}>
+              Open selected project / เปิดโครงการที่เลือก
+            </Link>
+          )}
+          <Link className="block underline" to="/projects">Back to projects / กลับไปที่โครงการ</Link>
+        </div>
+      </div>
+    );
+  }
+  return <Suspense fallback={<WorkspaceLoadingFallback />}><DesignerWorkspace key={resolved.loadedId} /></Suspense>;
+}
+
 export const router = createBrowserRouter([
   // Designer Workspace (default) - T018: Lazy loaded
   {
@@ -1214,11 +1252,7 @@ export const router = createBrowserRouter([
   // Project Designer - T018: Lazy loaded
   {
     path: '/projects/:projectId/design',
-    element: (
-      <Suspense fallback={<WorkspaceLoadingFallback />}>
-        <DesignerWorkspace />
-      </Suspense>
-    ),
+    element: <ProjectDesignPage />,
   },
   // Project Validation
   {
