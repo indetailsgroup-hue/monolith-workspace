@@ -66,15 +66,17 @@ function makeUsageSummary(overrides: Partial<AiUsageSummary> = {}): AiUsageSumma
 }
 
 function makeBudgetPeriod(overrides: Partial<AiBudgetPeriod> = {}): AiBudgetPeriod {
-  const year = new Date().getFullYear();
-  const month = String(new Date().getMonth() + 1).padStart(2, '0');
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
   return {
     id: 'bp-001',
     orgId: ORG_ID,
     periodType: 'MONTHLY',
-    periodLabel: `มกราคม ${year}`,
+    periodLabel: now.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }),
     startDate: `${year}-${month}-01`,
-    endDate: `${year}-${month}-31`,
+    endDate: `${year}-${month}-${lastDay}`,
     budgetUsd: 100,
     budgetThb: 3500,
     alertThreshold: 0.8,
@@ -325,11 +327,11 @@ export const WithBudgetUtilization: Story = {
     withDashboardStore({
       costModels: MOCK_COST_MODELS,
       usageSummary: [
-        // This month spend: 126 + 89 = 215 THB out of 3500 budget ≈ 6.1%
+        // This month spend: 126 + 89 = 215 THB out of 537.50 budget = 40%.
         makeUsageSummary({ totalCostThb: 126, usageMonth: THIS_MONTH }),
         makeUsageSummary({ tool: 'CLAUDE', modelName: 'Claude 3.5', totalCostThb: 89, usageMonth: THIS_MONTH }),
       ],
-      budgetPeriods: [makeBudgetPeriod({ budgetThb: 3500, alertThreshold: 0.8 })],
+      budgetPeriods: [makeBudgetPeriod({ budgetThb: 537.5, budgetUsd: 537.5 / 35, alertThreshold: 0.8 })],
     }),
   ],
   play: async ({ canvasElement }) => {

@@ -190,7 +190,8 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback, onAction }) => {
         {/* Action selector */}
         <div className="shrink-0">
           <select
-            className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+            className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+            style={{ colorScheme: 'light' }}
             value={feedback.actionStatus}
             disabled={updating}
             onChange={(e) => handleStatusChange(e.target.value as FeedbackActionStatus)}
@@ -381,7 +382,7 @@ export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId }) => 
             <LineChart data={chartData} margin={{ top: 5, right: 24, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
-                dataKey="periodLabel"
+                dataKey="period"
                 tickFormatter={(v: string) => formatPeriodLabel(v)}
                 tick={{ fontSize: 11, fill: '#6b7280' }}
               />
@@ -474,7 +475,8 @@ export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId }) => 
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-semibold text-gray-900">ความคิดเห็นนิรนาม</h2>
           <select
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            style={{ colorScheme: 'light' }}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as FeedbackActionStatus | 'ALL')}
           >

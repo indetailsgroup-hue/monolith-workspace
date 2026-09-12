@@ -255,6 +255,9 @@ export function QcAnomalyDashboard({
               setFilters({ metricKey: e.target.value as typeof filters['metricKey'] })
             }
             style={{
+              background:   '#ffffff',
+              color:        '#374151',
+              colorScheme:  'light',
               padding:      '6px 10px',
               borderRadius: 6,
               border:       '1px solid #d1d5db',
@@ -279,6 +282,9 @@ export function QcAnomalyDashboard({
               setFilters({ severity: e.target.value as typeof filters['severity'] })
             }
             style={{
+              background:   '#ffffff',
+              color:        '#374151',
+              colorScheme:  'light',
               padding:      '6px 10px',
               borderRadius: 6,
               border:       '1px solid #d1d5db',
@@ -303,6 +309,9 @@ export function QcAnomalyDashboard({
               setFilters({ status: e.target.value as typeof filters['status'] })
             }
             style={{
+              background:   '#ffffff',
+              color:        '#374151',
+              colorScheme:  'light',
               padding:      '6px 10px',
               borderRadius: 6,
               border:       '1px solid #d1d5db',

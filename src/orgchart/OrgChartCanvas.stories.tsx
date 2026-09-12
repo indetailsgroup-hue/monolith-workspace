@@ -319,6 +319,16 @@ export const NodeDragInteraction: Story = {
   ],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Match the real store's optimistic update so cards and SVG edges use the
+    // same final coordinates after the drag interaction.
+    moveNodeSpy.mockImplementation(async (...args: Parameters<ReturnType<typeof useOrgChartStore.getState>['moveNode']>) => {
+      const [, , payload] = args;
+      useOrgChartStore.setState(state => ({
+        flatNodes: state.flatNodes.map(node => node.id === payload.nodeId
+          ? { ...node, parent_id: payload.parentId, position_x: payload.position_x, position_y: payload.position_y }
+          : node),
+      }));
+    });
     // Wait for canvas area to be present
     const canvasArea = canvas.getByTestId('orgchart-canvas-area');
     const dragHandles = canvas.getAllByTestId('node-drag-handle');

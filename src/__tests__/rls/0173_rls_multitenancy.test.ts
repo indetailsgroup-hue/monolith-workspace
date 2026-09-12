@@ -40,6 +40,11 @@ function userClient(accessToken: string): SupabaseClient {
   });
 }
 
+function issuedClaims(accessToken: string): { sub: string; org_id?: string; role: string } {
+  // Read tokens returned by Supabase Auth; do not manufacture signed sessions.
+  return JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8"));
+}
+
 async function createTestOrg(name: string): Promise<TestOrg> {
   const orgId = crypto.randomUUID();
   const { data, error } = await serviceClient
@@ -86,25 +91,17 @@ async function createTestUser(
   if (memberErr)
     throw new Error(`createTestUser member failed: ${memberErr.message}`);
 
-  // Sign in to get token
-  const { data: signIn, error: signInErr } =
-    await serviceClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-  if (signInErr)
-    throw new Error(`generateLink failed: ${signInErr.message}`);
-
-  // Use service client impersonation via JWT
-  const { data: session } =
-    await serviceClient.auth.admin.getUserById(userId);
-
-  // For tests: create a session token via sign-in
-  const anonClient = createClient(SUPABASE_URL, ANON_KEY);
+  // The same production hook configured locally must populate the signed claim.
+  const anonClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const { data: loginData, error: loginErr } =
     await anonClient.auth.signInWithPassword({ email, password: "Test1234!" });
   if (loginErr)
     throw new Error(`signIn failed: ${loginErr.message}`);
+  expect(issuedClaims(loginData.session!.access_token)).toMatchObject({
+    sub: userId, org_id: orgId, role: "authenticated",
+  });
 
   return {
     id: userId,
@@ -234,6 +231,64 @@ async function seedInvoice(orgId: string, jobId: string, code: string) {
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
 describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
+  describe("Auth-issued organization claim", () => {
+    it("password login and refresh issue the active org claim accepted by the RPC", async () => {
+      const client = createClient(SUPABASE_URL, ANON_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: login, error: loginError } = await client.auth.signInWithPassword({
+        email: userA.email, password: "Test1234!",
+      });
+      expect(loginError).toBeNull();
+      expect(issuedClaims(login.session!.access_token)).toMatchObject({ sub: userA.id, org_id: orgA.id });
+      const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+      expect(refreshError).toBeNull();
+      expect(issuedClaims(refreshed.session!.access_token)).toMatchObject({ sub: userA.id, org_id: orgA.id });
+      const { error } = await userClient(refreshed.session!.access_token).rpc(
+        "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
+      );
+      expect(error).toBeNull();
+    });
+
+    it.each(["foreign selection", "inactive membership"] as const)(
+      "refresh removes tenant authority for %s and the RPC rejects the issued token",
+      async (reason) => {
+        const user = await createTestUser(`hook-${crypto.randomUUID()}@rls-test.local`, orgA.id);
+        try {
+          const client = createClient(SUPABASE_URL, ANON_KEY, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          const { error: loginError } = await client.auth.signInWithPassword({
+            email: user.email, password: "Test1234!",
+          });
+          expect(loginError).toBeNull();
+          if (reason === "foreign selection") {
+            const { error } = await serviceClient.auth.admin.updateUserById(user.id, {
+              app_metadata: { roles: ["finance"], org_id: orgB.id },
+            });
+            expect(error).toBeNull();
+          } else {
+            await serviceClient.from("org_members").update({ is_active: false })
+              .eq("user_id", user.id).eq("org_id", orgA.id).throwOnError();
+          }
+
+          const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+          expect(refreshError).toBeNull();
+          expect(refreshed.session).not.toBeNull();
+          expect(issuedClaims(refreshed.session!.access_token).org_id).toBeUndefined();
+          const { data, error } = await userClient(refreshed.session!.access_token).rpc(
+            "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
+          );
+          expect(data).toBeNull();
+          expect(error).toMatchObject({ code: "22023" });
+          expect(error!.message).toMatch(/org_id JWT claim is absent or null/);
+        } finally {
+          await cleanupUser(user.id);
+        }
+      }
+    );
+  });
+
   // ── jobs table ──────────────────────────────────────────────────────────────
   describe("Table: jobs", () => {
     let jobAId: string;
@@ -550,6 +605,17 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
 
   // ── Privilege escalation ─────────────────────────────────────────────────────
   describe("Privilege escalation prevention", () => {
+    it("FINANCE(60) can INSERT and read a job in its own org", async () => {
+      const { data, error } = await userClient(userA.accessToken).from("jobs")
+        .insert({ ...tenantFixture(orgA.id), org_id: orgA.id, job_code: "FINANCE-ALLOWED", title: "Finance own job", status: "DRAFT" })
+        .select("job_id, org_id").single();
+      expect(error).toBeNull();
+      expect(data).toMatchObject({ org_id: orgA.id });
+      const { data: stored } = await serviceClient.from("jobs").select("job_id, org_id")
+        .eq("job_id", data!.job_id).single().throwOnError();
+      expect(stored).toEqual(data);
+    });
+
     it("VIEWER(10) cannot INSERT jobs", async () => {
       // Create viewer user in orgA
       const viewer = await createTestUser(
@@ -932,12 +998,30 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
 
   describe("Idempotency", () => {
     it("calling rpc_approve_invoice on already-approved invoice returns error", async () => {
-      const { data } = await userClient(userA.accessToken).rpc(
+      const { data: before } = await serviceClient.from("invoices")
+        .select("status, approved_at, auto_journal_entry_id, auto_journal_posted_at")
+        .eq("id", approvedInvoiceId).single().throwOnError();
+      const { count: journalsBefore } = await serviceClient.from("journal_entry")
+        .select("id", { count: "exact", head: true })
+        .eq("source_id", approvedInvoiceId).throwOnError();
+
+      const { data, error } = await userClient(userA.accessToken).rpc(
         "rpc_approve_invoice",
         { p_invoice_id: approvedInvoiceId }
       );
-      expect(data.success).toBe(false);
-      expect(data.error).toMatch(/already approved/i);
+      // P0004 is assert_failure, deliberately not caught by PL/pgSQL OTHERS.
+      expect(data).toBeNull();
+      expect(error).toMatchObject({ code: "P0004" });
+      expect(error!.message).toMatch(/already approved/i);
+
+      const { data: after } = await serviceClient.from("invoices")
+        .select("status, approved_at, auto_journal_entry_id, auto_journal_posted_at")
+        .eq("id", approvedInvoiceId).single().throwOnError();
+      const { count: journalsAfter } = await serviceClient.from("journal_entry")
+        .select("id", { count: "exact", head: true })
+        .eq("source_id", approvedInvoiceId).throwOnError();
+      expect(after).toEqual(before);
+      expect(journalsAfter).toBe(journalsBefore);
     });
 
     it("does NOT double-post journal if trigger fires twice (idempotency guard)", async () => {

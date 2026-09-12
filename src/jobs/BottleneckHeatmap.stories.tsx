@@ -90,7 +90,12 @@ const TEMPLATE_ROWS: BottleneckHeatmapRow[] = MIXED_ROWS.map((r, i) => ({
 }));
 
 const SINGLE_ROW: BottleneckHeatmapRow[] = [
-  makeRow('ตัด CNC', 145, { stageOrder: 1, jobCount: 10 }),
+  makeRow('ตัด CNC', 145, {
+    stageOrder: 1,
+    jobCount: 10,
+    bottleneckCount: 4,
+    bottleneckRatePct: (4 / 10) * 100,
+  }),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
