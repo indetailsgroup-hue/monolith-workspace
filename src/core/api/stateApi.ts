@@ -12,7 +12,7 @@
  * @version 1.1.0
  */
 
-import { readRaw } from '../persistence/unsafeStorage';
+import { getRequestAuthHeaders } from '../auth/requestAuthHeaders';
 
 // ============================================
 // TYPES
@@ -55,29 +55,6 @@ export interface TransitionRequest {
 
 // ADR-060: ชี้ factory-api (Supabase Edge Function) — ตั้งผ่าน env; ว่าง = vite proxy เดิม
 const API_BASE = (import.meta.env?.VITE_FACTORY_API_BASE as string | undefined) ?? '';
-const ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
-
-/**
- * Attach only the current end-user JWT. The anon key remains an API key, never a
- * substitute identity: a missing/expired session is rejected by factory-api.
- */
-function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = {};
-  if (!ANON_KEY) return h;
-  h['apikey'] = ANON_KEY;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const s = JSON.parse(readRaw(key) ?? '');
-      if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
-        h['Authorization'] = 'Bearer ' + s.access_token;
-        break;
-      }
-    }
-  } catch { /* no session */ }
-  return h;
-}
 
 // ============================================
 // API FUNCTIONS
@@ -93,7 +70,7 @@ export async function getJobState(jobId: string): Promise<StateResponse> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
     });
 
@@ -121,7 +98,7 @@ export async function freezeJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -150,7 +127,7 @@ export async function releaseJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -179,7 +156,7 @@ export async function unfreezeJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -208,7 +185,7 @@ export async function revokeJob(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -234,7 +211,7 @@ export async function checkCanExport(jobId: string): Promise<CanExportResponse> 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
     });
 
@@ -269,7 +246,7 @@ export async function uploadPacket(
 
     const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/packet`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json', ...await getRequestAuthHeaders() },
       body: JSON.stringify({ zipBase64 }),
     });
     return await response.json();
@@ -302,15 +279,30 @@ export function getSyncStatus(response: StateResponse): SyncStatus {
  * Check if server is reachable.
  */
 export async function isServerReachable(): Promise<boolean> {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const response = await fetch(`${API_BASE}/api/health`, {
-      method: 'GET',
-      headers: authHeaders(),
-      signal: AbortSignal.timeout(3000), // 3 second timeout
+    const deadline = new Promise<boolean>((resolve) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        resolve(false);
+      }, 3000);
     });
-    return response.ok;
+    const probe = async () => {
+      const headers = await getRequestAuthHeaders();
+      if (controller.signal.aborted) return false;
+      const response = await fetch(`${API_BASE}/api/health`, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+      return response.ok;
+    };
+    return await Promise.race([deadline, probe()]);
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -392,7 +384,7 @@ export async function getProofBundle(jobId: string): Promise<ProofBundle> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
+        ...await getRequestAuthHeaders(),
       },
     });
 
