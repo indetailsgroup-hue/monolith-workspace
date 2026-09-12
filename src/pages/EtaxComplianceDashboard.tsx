@@ -193,7 +193,7 @@ export default function EtaxComplianceDashboard() {
       </div>
 
       {/* Content */}
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-6">
+      <main className="mx-auto max-w-7xl space-y-6 px-6 py-6" aria-busy={isLoading}>
         {/* Error state */}
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

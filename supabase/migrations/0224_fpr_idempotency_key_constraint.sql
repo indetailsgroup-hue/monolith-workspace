@@ -34,14 +34,14 @@ DECLARE
 BEGIN
   SELECT EXISTS (
     SELECT 1 FROM pg_constraint
-    WHERE  conrelid = 'fpr.fpr_payment'::regclass
+    WHERE  conrelid = 'public.fpr_payment'::regclass
       AND  conname   = v_auto_name
       AND  contype   = 'u'
   ) INTO v_exists_auto;
 
   SELECT EXISTS (
     SELECT 1 FROM pg_constraint
-    WHERE  conrelid = 'fpr.fpr_payment'::regclass
+    WHERE  conrelid = 'public.fpr_payment'::regclass
       AND  conname   = v_canon_name
       AND  contype   = 'u'
   ) INTO v_exists_canon;
@@ -53,14 +53,14 @@ BEGIN
   ELSIF v_exists_auto THEN
     -- Rename the auto-generated constraint to the canonical name
     EXECUTE format(
-      'ALTER TABLE fpr.fpr_payment RENAME CONSTRAINT %I TO %I',
+      'ALTER TABLE public.fpr_payment RENAME CONSTRAINT %I TO %I',
       v_auto_name, v_canon_name
     );
     RAISE NOTICE 'Renamed % → %', v_auto_name, v_canon_name;
 
   ELSE
     -- Neither exists: create from scratch (e.g. env where 0212 skipped UNIQUE)
-    ALTER TABLE fpr.fpr_payment
+    ALTER TABLE public.fpr_payment
       ADD CONSTRAINT uq_fpr_payment_idempotency_key
         UNIQUE (idempotency_key);
     RAISE NOTICE 'Created constraint uq_fpr_payment_idempotency_key';
@@ -72,10 +72,10 @@ END $$;
 -- Partial index: fast ON CONFLICT / lookup for non-null idempotency keys
 -- ---------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_fpr_payment_idempotency_key_nn
-  ON fpr.fpr_payment (idempotency_key)
+  ON public.fpr_payment (idempotency_key)
   WHERE idempotency_key IS NOT NULL;
 
-COMMENT ON CONSTRAINT uq_fpr_payment_idempotency_key ON fpr.fpr_payment
+COMMENT ON CONSTRAINT uq_fpr_payment_idempotency_key ON public.fpr_payment
   IS 'Canonical unique constraint on idempotency_key; renamed from auto-generated '
      'fpr_payment_idempotency_key_key (0212) in migration 0224.'
      'Used by rpc_bulk_record_fpr_payment for ON CONFLICT idempotency guard.';

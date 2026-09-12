@@ -53,6 +53,16 @@
 - `src/qc-anomaly/__tests__/QcAnomalyDashboard.test.tsx` — Vitest component tests: explicit `StoreShape` interface (resolves Zustand auto-mock unknown issue); `makeStore`/`renderBoard` helpers; plan gate · loading · summary cards · filter bar · anomaly list · acknowledge · resolve · threshold toggle · error banner
 - `src/qc-anomaly/QcAnomalyDashboard.tsx` — fixed 4 tsc errors: `METRIC_KEYS` corrected to QcaMetricKey values, `threshold_value` → `threshold_breach_detail`, `acknowledgeAnomaly`/`resolveAnomaly` 3-arg → 2-arg
 
+### ✅ Completed (v18.5 — sprint 15: Team Pulse Check module + EST admin stories)
+- `supabase/migrations/20270322_team_pulse_check.sql` — `can_access_tpc_module` helper; tables `tpc_pulse_configs`, `tpc_pulse_sessions`, `tpc_pulse_responses`; view `tpc_pulse_summary_v`; RLS (responses INSERT=org-member, configs/sessions ALL=ADMIN+); 4 indexes; pgTAP assertions
+- `src/culture-metrics/teamPulseTypes.ts` — `TpcTopic` (WORKLOAD/COMMUNICATION/DIRECTION/SUPPORT/RECOGNITION), `TpcSessionStatus` (DRAFT/ACTIVE/CLOSED), `TpcHealthStatus`; exported `TPC_PLAN_GATE_ERROR`; display maps + mappers; Likert 1–5 scale
+- `src/culture-metrics/teamPulseStore.ts` — Zustand store 11 actions: `fetchConfigs`, `fetchSessions`, `fetchSummary`, `upsertConfig` (re-fetches), `createSession`, `activateSession`, `closeSession` (optimistic state), `submitResponse` (plan-gate EXEMPT), `setActiveSession`, `setFilters`, `clearError`
+- `src/culture-metrics/SentimentTimelineBoard.tsx` — admin panel replaced from stub: `upsertTimelineConfig` destructured; 5 useState hooks for admin form; `handleAdminUpsert`; full `<form data-testid="est-admin-config-form">` with 7 testids
+- `src/culture-metrics/SentimentTimelineBoard.stories.tsx` — 13th story `AdminConfigUpsertInteraction`: end-to-end play selects ENGAGEMENT/MONTHLY → clicks upsert → asserts spy called with `objectContaining` payload
+- Full repo Vitest: **5,722+ tests, 0 failures** (0 test files failed)
+- CHANGELOG: `[18.5.7]` entry added
+- Committed + pushed as sprint 15
+
 ### ✅ Completed (v18.5 — sprint 14: EST Tests, Stories, CultureDashboard Tab)
 - `src/culture-metrics/__tests__/employeeSentimentStore.test.ts` — 42 Vitest unit tests; all 6 actions: `fetchSummary` (plan gate + DB error + success), `fetchTimelineConfigs` (plan gate + DB error + success), `submitSentimentEntry` (plan-gate EXEMPT all plans; anonymous no `auth.getUser`; DB error; column mapping), `upsertTimelineConfig` (plan gate; DB error; success + re-fetch call count), `setFilters` (partial merge), `clearError`; `vi.clearAllMocks()` in `beforeEach` prevents cross-test mock accumulation
 - `src/culture-metrics/SentimentTimelineBoard.stories.tsx` — 12 CSF3 stories; `withEstStore` decorator (prevents Supabase calls on mount; spies on `submitSentimentEntry`/`upsertTimelineConfig`); covers plan-gate wall (FREE/STARTER), loading, error banner, empty, dimension cards, timeline rows, submit form play, admin config panel play, filters, full board

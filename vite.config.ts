@@ -59,6 +59,18 @@ export default defineConfig({
       '_daph_extract/**',
       'minifix-skill-pack/**',
       'furniture-hardware-vault/**',
+      // Smoke / integration tests under src/e2e/ exercise full pipelines
+      // (DXF generation, Uint8Array payloads) that need Node, not jsdom.
+      // They run in dedicated e2e lanes, not the root unit-test runner.
+      'src/e2e/**',
+      // Supabase Edge Function tests use Deno imports (npm:@supabase/supabase-js@2)
+      // that Vite/vitest cannot bundle. They run via Deno CLI, not root vitest.
+      'supabase/**',
+      // Entitlement DB has its own runner and DB context.
+      'entitlement-db/**',
+      // External integration/workflow test suites under tests/ use their own
+      // node:test or dedicated CI runners, not root vitest.
+      'tests/**',
     ],
   },
   server: {
