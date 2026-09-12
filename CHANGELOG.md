@@ -44,6 +44,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The following work is present in the repository but has not received a release tag or GitHub Release. Keeping it below level two prevents roadmap versions from being mistaken for published releases.
 
+### [18.5.7]
+
+#### Added — Sprint 15: Team Pulse Check (TPC) module + EST admin stories
+- `supabase/migrations/20270322_team_pulse_check.sql` — PROFESSIONAL+ plan-gate helper `can_access_tpc_module`; tables `tpc_pulse_configs` (per-org per-topic config), `tpc_pulse_sessions` (DRAFT→ACTIVE→CLOSED lifecycle), `tpc_pulse_responses` (anonymous Likert 1–5 scores, no `user_id`); view `tpc_pulse_summary_v` (topic-average per session, health thresholds CRITICAL<2.5/WARNING<3.5/NORMAL≥3.5, suppressed until ≥3 responses); 4 indexes; RLS: responses INSERT=org-member, configs/sessions ALL=ADMIN+; pgTAP assertions for table/view/index existence
+- `src/culture-metrics/teamPulseTypes.ts` — `TpcTopic` (WORKLOAD/COMMUNICATION/DIRECTION/SUPPORT/RECOGNITION), `TpcSessionStatus` (DRAFT/ACTIVE/CLOSED), `TpcHealthStatus` (CRITICAL/WARNING/NORMAL); DB row interfaces; app-layer camelCase types; `canAccessTpcModule` plan gate; exported `TPC_PLAN_GATE_ERROR` constant; display maps (`TPC_TOPIC_LABEL`, `TPC_TOPIC_ICON`, `TPC_HEALTH_STATUS_COLOR`); mappers; score scale 1–5 Likert
+- `src/culture-metrics/teamPulseStore.ts` — Zustand store with 11 actions (8 async, 3 sync): `fetchConfigs`, `fetchSessions`, `fetchSummary` (PROFESSIONAL+ gated), `upsertConfig` (re-fetches after success), `createSession` (appends to state), `activateSession` / `closeSession` (optimistic local state update), `submitResponse` (PLAN-GATE EXEMPT — anonymous, no `auth.getUser`), `setActiveSession`, `setFilters`, `clearError`; mirrors EST store conventions
+- `src/culture-metrics/SentimentTimelineBoard.tsx` — admin panel upgraded from stub to full interactive form: `upsertTimelineConfig` destructured from store; 5 admin form state hooks (`adminDim`, `adminPeriod`, `adminActive`, `adminInverted`, `adminMinResp`); `handleAdminUpsert` async handler; `<form data-testid="est-admin-config-form">` with testids `est-admin-dim-select`, `est-admin-period-select`, `est-admin-active-checkbox`, `est-admin-inverted-checkbox`, `est-admin-min-responses-input`, `est-admin-upsert-btn`
+- `src/culture-metrics/SentimentTimelineBoard.stories.tsx` — 13th story `AdminConfigUpsertInteraction`: end-to-end play function selects ENGAGEMENT dimension + MONTHLY period → clicks upsert → asserts `upsertTimelineConfigSpy` called once with `expect.objectContaining({ orgId, dimension: 'ENGAGEMENT', periodType: 'MONTHLY', isActive: true, isInverted: false, minResponses: 3 })` and plan `'ENTERPRISE'`
+
+#### Verified
+- Full repo Vitest suite: **5,722+ tests, 0 failures** across all modules (culture-metrics 158, org-health 79, cnc 837, core 1,272, gate 421, factory 399, ai-scheduler/qc/quotation/leadership/jobs 479, training/people/orgchart/iam 428, workflow 115, misc 1,234+)
+
 ### [18.5.6]
 
 #### Added — Sprint 14: EST tests, stories, CultureDashboard tab
