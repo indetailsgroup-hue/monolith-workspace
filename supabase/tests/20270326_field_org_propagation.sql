@@ -4,7 +4,7 @@
 -- These are attribution/provenance tests, not a claim that the existing broad
 -- governance/site/membership RPC predicates implement complete org isolation.
 BEGIN;
-SELECT plan(57);
+SELECT plan(60);
 
 CREATE TEMP TABLE field_org_results (label text PRIMARY KEY, result jsonb);
 GRANT ALL ON field_org_results TO authenticated;
@@ -30,12 +30,13 @@ INSERT INTO public.installation_projects (id,org_id,work_item_id,site_code,name)
  ('a1260000-0000-0000-0000-000000000033','a1260000-0000-0000-0000-000000000001',null,'R1-FIELD-ACCEPT','R1 acceptance'),
  ('a1260000-0000-0000-0000-000000000034','a1260000-0000-0000-0000-000000000001',null,'R1-FIELD-AMB','R1 ambiguous A'),
  ('b1260000-0000-0000-0000-000000000034','b1260000-0000-0000-0000-000000000001',null,'R1-FIELD-AMB','R1 ambiguous B'),
- ('b1260000-0000-0000-0000-000000000031','b1260000-0000-0000-0000-000000000001','b1260000-0000-0000-0000-000000000021','R1-FIELD-B','R1 B');
+ ('b1260000-0000-0000-0000-000000000031','b1260000-0000-0000-0000-000000000001','b1260000-0000-0000-0000-000000000021','R1-FIELD-B','R1 B'),
+ ('a1260000-0000-0000-0000-000000000035','a1260000-0000-0000-0000-000000000001',null,'R1-FIELD-A','R1 second house with the same site owner');
 INSERT INTO public.installation_rooms (id,org_id,project_id,site_code,room_type,display_name) VALUES
  ('a1260000-0000-0000-0000-000000000041','a1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000031','R1-FIELD-A','kitchen','R1 room without photo'),
  ('b1260000-0000-0000-0000-000000000041','b1260000-0000-0000-0000-000000000001','b1260000-0000-0000-0000-000000000031','R1-FIELD-B','kitchen','R1 foreign room');
-INSERT INTO public.line_groups (id,org_id,line_group_id,project_id,site_code,group_type,status) VALUES
- ('a1260000-0000-0000-0000-000000000051','a1260000-0000-0000-0000-000000000001','R1-FIELD-CUSTOMER','a1260000-0000-0000-0000-000000000033','R1-FIELD-ACCEPT','customer','active');
+SELECT lives_ok($$ INSERT INTO public.line_groups (id,org_id,line_group_id,project_id,site_code,group_type,status) VALUES
+ ('a1260000-0000-0000-0000-000000000051','a1260000-0000-0000-0000-000000000001','R1-FIELD-CUSTOMER','a1260000-0000-0000-0000-000000000033','R1-FIELD-ACCEPT','customer','active') $$,'Normal customer-group binding preserves welcome document links, outbound and audit');
 -- Explicitly owned seed rows isolate acceptance/immutability tests from the
 -- expected issue/QC write failures; they do not replace results of tested RPCs.
 INSERT INTO public.installation_issues (id,org_id,project_id,site_code,description) VALUES
@@ -54,7 +55,7 @@ SELECT throws_ok($$ SELECT public.rpc_field_submit_qc_inspection('a1260000-0000-
 SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('qc',public.rpc_field_submit_qc_inspection('a1260000-0000-0000-0000-000000000032',false,'R1 real QC defect','r1-org-qc')) $$,'QC capture, verification, promotion, inspection, issue and audit all persist');
 SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('qc-repeat',public.rpc_field_submit_qc_inspection('a1260000-0000-0000-0000-000000000032',false,'R1 real QC defect','r1-org-qc')) $$,'Repeated QC key is idempotent');
 RESET ROLE;
-SELECT is((SELECT org_id::text FROM public.installation_issues WHERE description='R1 actual raised issue'),'a1260000-0000-0000-0000-000000000001','Raised issue takes project ownership');
+SELECT is((SELECT org_id::text FROM public.installation_issues WHERE description LIKE '%R1 actual raised issue'),'a1260000-0000-0000-0000-000000000001','Raised issue takes project ownership');
 SELECT is((SELECT count(*)::integer FROM public.installation_audit_log WHERE project_id='a1260000-0000-0000-0000-000000000031' AND event_type='issue_raised' AND org_id='a1260000-0000-0000-0000-000000000001'),1,'Issue audit takes the same owner');
 SELECT is((SELECT result->>'complete' FROM field_org_results WHERE label='t0'),'false','T0 incompleteness does not become a halt');
 SELECT is((SELECT count(*)::integer FROM public.installation_audit_log WHERE project_id='a1260000-0000-0000-0000-000000000031' AND event_type IN ('t0_snapshot','t0_without_photos') AND org_id='a1260000-0000-0000-0000-000000000001'),2,'T0 and missing-photo audits both receive ownership');
@@ -76,7 +77,7 @@ SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('accept',jsonb_
 SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('accept-repeat',jsonb_build_object('id',public.rpc_request_customer_acceptance('a1260000-0000-0000-0000-000000000033'))) $$,'Pending acceptance remains idempotent');
 RESET ROLE;
 SELECT is((SELECT count(*)::integer FROM public.installation_approvals WHERE project_id='a1260000-0000-0000-0000-000000000033' AND org_id='a1260000-0000-0000-0000-000000000001'),1,'Approval receives project owner exactly once');
-SELECT is((SELECT count(*)::integer FROM public.line_oa_outbound_messages WHERE target_id='R1-FIELD-CUSTOMER' AND org_id='a1260000-0000-0000-0000-000000000001' AND status='pending'),1,'Customer queue row receives bound group project owner exactly once');
+SELECT is((SELECT count(*)::integer FROM public.line_oa_outbound_messages WHERE target_id='R1-FIELD-CUSTOMER' AND template_key='tpl_inst_approval_request' AND org_id='a1260000-0000-0000-0000-000000000001' AND status='pending'),1,'Acceptance queue row receives bound group project owner exactly once');
 SELECT is((SELECT count(*)::integer FROM public.installation_audit_log WHERE project_id='a1260000-0000-0000-0000-000000000033' AND event_type='customer_acceptance_requested' AND org_id='a1260000-0000-0000-0000-000000000001'),1,'Acceptance audit receives project owner');
 SELECT ok((SELECT result->>'id' FROM field_org_results WHERE label='accept') IS NOT NULL AND (SELECT result FROM field_org_results WHERE label='accept')=(SELECT result FROM field_org_results WHERE label='accept-repeat'),'Repeated acceptance returns the same approval');
 
@@ -105,12 +106,12 @@ SELECT throws_ok($$ INSERT INTO public.line_oa_outbound_messages(org_id,send_typ
 
 SELECT throws_ok($$ SELECT public.rpc_capture_ingest('qc_inspection','app','app://r1/amb','r1-org-amb','R1-FIELD-AMB') $$,'23514',null,'Site-only capture rejects two distinct project owners');
 SELECT throws_ok($$ SELECT public.rpc_capture_ingest('qc_inspection','app','app://r1/missing','r1-org-missing','R1-FIELD-UNKNOWN') $$,'23514',null,'Site-only capture rejects missing owner without JWT or sentinel fallback');
-SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('capture',jsonb_build_object('id',public.rpc_capture_ingest('qc_inspection','app','app://r1/unique','r1-org-unique','R1-FIELD-A'))) $$,'Site-only capture accepts a uniquely established project owner');
+SELECT lives_ok($$ INSERT INTO pg_temp.field_org_results VALUES ('capture',jsonb_build_object('id',public.rpc_capture_ingest('qc_inspection','app','app://r1/unique','r1-org-unique','R1-FIELD-A'))) $$,'Site-only capture accepts multiple projects sharing one distinct owner');
 SELECT is((SELECT org_id::text FROM public.capture_artifact WHERE idempotency_key='r1-org-unique'),'a1260000-0000-0000-0000-000000000001','Unique-site capture receives its parent owner');
 SELECT throws_ok($$ SELECT public.rpc_capture_ingest('qc_inspection','app','app://r1/reuse','r1-org-unique','R1-FIELD-B') $$,'23514',null,'Reusing a capture key in another organization cannot return the first artifact');
 SELECT is((SELECT count(*)::integer FROM public.capture_artifact WHERE idempotency_key IN ('r1-org-amb','r1-org-missing')),0,'Rejected site-only ingests leave no artifact');
-SELECT throws_ok($$ INSERT INTO public.workflow_audit_log(event_type,site_code) VALUES ('r1_ambiguous','R1-FIELD-AMB') $$,'23514',null,'Site-only workflow audit rejects ambiguous ownership');
-SELECT throws_ok($$ INSERT INTO public.workflow_audit_log(org_id,event_type,work_item_id,site_code) VALUES ('b1260000-0000-0000-0000-000000000001','r1_conflict','a1260000-0000-0000-0000-000000000021','R1-FIELD-A') $$,'23514',null,'Workflow audit cannot override its work-item owner');
+SELECT throws_ok($$ INSERT INTO public.workflow_audit_log(event_type,site_code,performed_by) VALUES ('r1_ambiguous','R1-FIELD-AMB','r1-fixture') $$,'23514',null,'Site-only workflow audit rejects ambiguous ownership');
+SELECT throws_ok($$ INSERT INTO public.workflow_audit_log(org_id,event_type,work_item_id,site_code,performed_by) VALUES ('b1260000-0000-0000-0000-000000000001','r1_conflict','a1260000-0000-0000-0000-000000000021','R1-FIELD-A','r1-fixture') $$,'23514',null,'Workflow audit cannot override its work-item owner');
 
 -- Approved fixture isolates promote's parent consistency checks from ingest.
 INSERT INTO public.capture_artifact(id,org_id,capture_type,source,principal,site_code,raw_uri,idempotency_key,status,corrected_fields) VALUES
@@ -120,6 +121,13 @@ SELECT throws_ok($$ SELECT public.rpc_capture_promote('a1260000-0000-0000-0000-0
 SELECT is((SELECT status::text FROM public.capture_artifact WHERE id='a1260000-0000-0000-0000-000000000081'),'approved','Rejected promotions leave approved capture unchanged');
 SELECT throws_ok($$ UPDATE public.capture_artifact SET org_id='b1260000-0000-0000-0000-000000000001',site_code='R1-FIELD-B',corrected_fields='{"project_id":"b1260000-0000-0000-0000-000000000031"}' WHERE id='a1260000-0000-0000-0000-000000000081' $$,'23514',null,'Updating provenance and owner together cannot move a capture across organizations');
 SELECT throws_ok($$ INSERT INTO public.capture_audit_log(org_id,event_type,capture_artifact_id,actor) VALUES ('b1260000-0000-0000-0000-000000000001','ingest','a1260000-0000-0000-0000-000000000081','r1-fixture') $$,'23514',null,'Capture audit rejects an explicit owner conflicting with its artifact');
+
+-- Site labels can be reused later. An existing owner's unrelated lifecycle
+-- transition must not be re-attributed from the now-ambiguous site label.
+INSERT INTO public.installation_projects(id,org_id,site_code,name) VALUES
+ ('b1260000-0000-0000-0000-000000000035','b1260000-0000-0000-0000-000000000001','R1-FIELD-A','R1 later reuse of an existing site label');
+SELECT lives_ok($$ SELECT public.rpc_capture_verify((SELECT id FROM public.capture_artifact WHERE idempotency_key='r1-org-unique'),'approved',true,0,'R1 established ownership','{"project_id":"a1260000-0000-0000-0000-000000000031","result":"pass"}'::jsonb) $$,'Existing capture can be verified after a second organization reuses its site label');
+SELECT is((SELECT org_id::text FROM public.capture_artifact WHERE idempotency_key='r1-org-unique'),'a1260000-0000-0000-0000-000000000001','Later site ambiguity does not reassign established capture ownership');
 
 DO $$ BEGIN
  PERFORM set_config('request.jwt.claims','{"sub":"a1260000-0000-0000-0000-000000000011","role":"authenticated","org_id":"b1260000-0000-0000-0000-000000000001","app_metadata":{"roles":[],"site_codes":[]}}',true);
