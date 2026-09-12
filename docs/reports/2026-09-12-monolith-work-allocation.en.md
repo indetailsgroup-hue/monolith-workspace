@@ -77,6 +77,8 @@ The owner selects the pilot and field-app path, accepts the canonical AIE/GAP ma
 
 S-01 covers SC-01/04/08 and CON-011/013. S-02 covers SC-03/05/06/07/15 and CON-001–010. S-03 covers SC-02/03/09/10/11/12/13/14 and CON-012. S-04 covers SC-17/18 and the newly inspected Blum handoff. S-05 covers SC-16 and later research/training/AI scope. C-01–05 implement and verify the applicable delivery work; this mapping does not promise to build every historical proposal.
 
-Read together with the [delivery roadmap](../roadmap/2026-09-11-monolith-delivery-roadmap.en.md), [intake corrections](2026-09-11-scispace-reconciliation-intake.en.md) and repository-scope correction in the parent governance root (`docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md`; local source, not copied into the product repository). The newer 36-file SciSpace package has not been equated with the earlier six-file intake or assigned its hash. Reported PFMEA approvals and programme closure must be reconciled with their actual decision records; neither their presence nor absence is inferred from a chat summary.
+Read together with the [delivery roadmap](../roadmap/2026-09-11-monolith-delivery-roadmap.en.md), [intake corrections](2026-09-11-scispace-reconciliation-intake.en.md) and repository-scope correction (`docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md`; local source in the parent governance root).
+
+The newer 36-file SciSpace package has not been equated with the earlier six-file intake or assigned its hash. Reported PFMEA approvals and programme closure must be reconciled with their actual decision records; neither their presence nor absence is inferred from a chat summary.
 
 [Thai edition](2026-09-12-monolith-work-allocation.th.md)

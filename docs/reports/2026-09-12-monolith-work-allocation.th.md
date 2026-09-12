@@ -77,6 +77,8 @@
 
 S-01 ครอบคลุม SC-01/04/08 และ CON-011/013; S-02 ครอบคลุม SC-03/05/06/07/15 และ CON-001–010; S-03 ครอบคลุม SC-02/03/09/10/11/12/13/14 และ CON-012; S-04 ครอบคลุม SC-17/18 พร้อมงาน Blum ที่เพิ่งตรวจ; S-05 ครอบคลุม SC-16 และงานวิจัย/อบรม/AI ระยะหลัง ส่วน C-01–05 ลงมือและตรวจยืนยันงานส่งมอบที่เกี่ยวข้อง การจับคู่นี้ไม่ใช่คำมั่นว่าจะสร้างทุกข้อเสนอในประวัติ
 
-อ่านร่วมกับ [roadmap การส่งมอบ](../roadmap/2026-09-11-monolith-delivery-roadmap.th.md), [ข้อแก้ไข intake](2026-09-11-scispace-reconciliation-intake.th.md) และ ข้อแก้ไขขอบเขต repository ใน governance root (`docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.th.md`; เอกสารในเครื่อง ยังไม่ได้คัดลอกเข้า product repository) ชุด SciSpace ใหม่ 36 ไฟล์ยังไม่ถือเป็นชุดเดียวกับ intake 6 ไฟล์เดิมและไม่ได้ใช้ hash ของชุดเก่าแทน รายงานการอนุมัติ PFMEA และปิดโครงการต้องเทียบกับมติจริง ไม่อนุมานว่ามีหรือไม่มีการอนุมัติจากสรุปบทสนทนาเพียงอย่างเดียว
+อ่านร่วมกับ [roadmap การส่งมอบ](../roadmap/2026-09-11-monolith-delivery-roadmap.th.md), [ข้อแก้ไข intake](2026-09-11-scispace-reconciliation-intake.th.md) และ ข้อแก้ไขขอบเขต repository (`docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.th.md`; เป็นแหล่งเอกสารใน governance root ของเครื่องนี้)
+
+ชุด SciSpace ใหม่ 36 ไฟล์ยังไม่ถือเป็นชุดเดียวกับ intake 6 ไฟล์เดิมและไม่ได้ใช้ hash ของชุดเก่าแทน รายงานการอนุมัติ PFMEA และปิดโครงการต้องเทียบกับมติจริง ไม่อนุมานว่ามีหรือไม่มีการอนุมัติจากสรุปบทสนทนาเพียงอย่างเดียว
 
 [English edition](2026-09-12-monolith-work-allocation.en.md)
