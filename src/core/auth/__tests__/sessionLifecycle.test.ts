@@ -298,4 +298,32 @@ describe('transport and local logout integration', () => {
     await request;
     expect(new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get('Authorization')).toBeNull();
   });
+
+  it('preserves the first API bearer when INITIAL_SESSION establishes the same actor during lookup', async () => {
+    const { useSessionStore } = await import('../useSessionStore');
+    const { apiFetch } = await import('../../../factory/api/client');
+    const lookup = deferred<SessionResult>();
+    auth.getSession.mockReturnValueOnce(lookup.promise);
+    const request = apiFetch('/fixture');
+    const initializing = useSessionStore.getState().initialize();
+    onChange('INITIAL_SESSION', session());
+    await initializing;
+    lookup.resolve({ data: { session: session() } });
+    await request;
+    expect(new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get('Authorization')).toBe('Bearer fixture-actor-a');
+  });
+
+  it.each(['actor-b', null])('omits the first API bearer when INITIAL_SESSION establishes %s instead', async (actorId) => {
+    const { useSessionStore } = await import('../useSessionStore');
+    const { apiFetch } = await import('../../../factory/api/client');
+    const lookup = deferred<SessionResult>();
+    auth.getSession.mockReturnValueOnce(lookup.promise);
+    const request = apiFetch('/fixture');
+    const initializing = useSessionStore.getState().initialize();
+    onChange('INITIAL_SESSION', actorId ? session(actorId) : null);
+    await initializing;
+    lookup.resolve({ data: { session: session() } });
+    await request;
+    expect(new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get('Authorization')).toBeNull();
+  });
 });

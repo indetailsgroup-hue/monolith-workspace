@@ -7,7 +7,7 @@
 -- That is a prerequisite failure, not notification-specific RED evidence.
 -- Rerun after that repair and before the notification forward migration.
 BEGIN;
-SELECT plan(50);
+SELECT plan(58);
 
 CREATE TEMP TABLE issue_retry_attempts (label text PRIMARY KEY, result jsonb);
 CREATE TEMP TABLE issue_dispatch_calls (
@@ -264,6 +264,46 @@ SELECT is((SELECT count(*)::integer FROM public.installation_issues WHERE projec
  AND description LIKE '%R1 denied%'),0,'Denied call creates no issue');
 SELECT ok((SELECT count(*)=1 AND bool_and(receipt_id IS NOT NULL) FROM issue_dispatch_calls
  WHERE slots->>'detail'='R1 normal'),'Successful dispatcher returns a queue receipt UUID');
+
+-- The successful immediate fallback must still mark escalation; preserving
+-- retryability must not turn every fallback into an unmarked attempt.
+SELECT set_config('request.jwt.claim.sub','a0260000-0000-0000-0000-000000000011',true);
+SELECT set_config('request.jwt.claims','{"sub":"a0260000-0000-0000-0000-000000000011","role":"authenticated","app_metadata":{"roles":["admin"],"site_codes":["R1-RETRY-01"]}}',true);
+SELECT set_config('test.issue_retry_dispatch','success',true);
+SET LOCAL ROLE authenticated;
+SELECT lives_ok($$ INSERT INTO pg_temp.issue_retry_attempts VALUES ('immediate-success',
+ public.rpc_field_raise_issue('a0260000-0000-0000-0000-000000000031','design','R1 immediate success')) $$,
+ 'No matching design role still queues an immediate PM fallback');
+RESET ROLE;
+SELECT ok(coalesce((SELECT escalated_to_pm_at IS NOT NULL FROM public.installation_issues
+ WHERE id=(SELECT (result->>'issue_id')::uuid FROM issue_retry_attempts WHERE label='immediate-success')),false),
+ 'A successful immediate PM queue receipt sets the escalation marker');
+SELECT is((SELECT count(*)::integer FROM public.notification WHERE site_code='R1-RETRY-01'
+ AND slots->>'detail'='R1 immediate success' AND template_key='tpl_issue_escalated'
+ AND target->>'employee_id'='a0260000-0000-0000-0000-000000000041' AND status='queued'),1,
+ 'Immediate fallback preserves its PM recipient and creates one real queued row');
+
+-- Real outbound queue trigger:0197 publishes created_at on pending rows.
+-- The column repair preserves unknown historical times and does not claim delivery.
+INSERT INTO public.line_groups (org_id,line_group_id,project_id,site_code,group_type,status) VALUES
+ ('a0260000-0000-0000-0000-000000000001','R1-RETRY-INTERNAL','a0260000-0000-0000-0000-000000000031','R1-RETRY-01','internal','active');
+SELECT lives_ok($$ INSERT INTO public.line_oa_outbound_messages
+ (id,org_id,send_type,status,template_key,slot_values,target_type,target_id) VALUES
+ ('a0260000-0000-0000-0000-000000000061','a0260000-0000-0000-0000-000000000001','push','pending','tpl_issue_routed','{}','group','R1-RETRY-INTERNAL') $$,
+ 'A new pending outbound row traverses the actual notification trigger');
+SELECT is((SELECT created_at FROM public.line_oa_outbound_messages
+ WHERE id='a0260000-0000-0000-0000-000000000061'),CURRENT_TIMESTAMP,
+ 'A new outbound row records its creation timestamp by default');
+SELECT lives_ok($$ INSERT INTO public.line_oa_outbound_messages
+ (id,org_id,send_type,status,template_key,slot_values,target_type,target_id,created_at) VALUES
+ ('a0260000-0000-0000-0000-000000000062','a0260000-0000-0000-0000-000000000001','push','failed','tpl_issue_routed','{}','group','R1-RETRY-INTERNAL',NULL) $$,
+ 'A historical outbound row may retain an explicitly unknown creation time');
+SELECT lives_ok($$ UPDATE public.line_oa_outbound_messages SET status='pending'
+ WHERE id='a0260000-0000-0000-0000-000000000062' $$,
+ 'Retrying a historical row traverses the actual trigger without a timestamp error');
+SELECT ok(coalesce((SELECT status='pending' AND created_at IS NULL FROM public.line_oa_outbound_messages
+ WHERE id='a0260000-0000-0000-0000-000000000062'),false),
+ 'Retry keeps the historical creation time unknown instead of fabricating one');
 
 SELECT * FROM finish();
 ROLLBACK;

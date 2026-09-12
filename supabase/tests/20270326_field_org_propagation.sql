@@ -96,7 +96,7 @@ SELECT throws_ok($$ INSERT INTO public.installation_issues(org_id,project_id,sit
 SELECT throws_ok($$ INSERT INTO public.installation_issues(project_id,room_id,site_code,description) VALUES ('a1260000-0000-0000-0000-000000000031','b1260000-0000-0000-0000-000000000041','R1-FIELD-A','wrong room parent') $$,'23514',null,'Issue rejects a room belonging to another project');
 SELECT throws_ok($$ INSERT INTO public.installation_issues(project_id,site_code,description) VALUES ('a1260000-0000-0000-0000-000000000031','R1-FIELD-B','wrong site') $$,'23514',null,'Project attribution rejects a contradictory site');
 SELECT throws_ok($$ UPDATE public.installation_issues SET org_id='b1260000-0000-0000-0000-000000000001',project_id='b1260000-0000-0000-0000-000000000031',site_code='R1-FIELD-B' WHERE id='a1260000-0000-0000-0000-000000000061' $$,'23514',null,'Changing both parent and owner cannot move an existing issue across organizations');
-SELECT throws_ok($$ INSERT INTO public.installation_approvals(org_id,project_id,subject,channel) VALUES ('b1260000-0000-0000-0000-000000000001','a1260000-0000-0000-000000000031','customer_acceptance','line') $$,'23514',null,'Approval rejects conflicting explicit owner');
+SELECT throws_ok($$ INSERT INTO public.installation_approvals(org_id,project_id,subject,channel) VALUES ('b1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000031','customer_acceptance','line') $$,'23514',null,'Approval rejects conflicting explicit owner');
 SELECT throws_ok($$ INSERT INTO public.qc_inspections(org_id,project_id,result) VALUES ('b1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000031','pass') $$,'23514',null,'QC rejects conflicting explicit owner');
 SELECT throws_ok($$ INSERT INTO public.installation_audit_log(org_id,project_id,event_type) VALUES ('b1260000-0000-0000-0000-000000000001','a1260000-0000-0000-0000-000000000031','wrong_owner') $$,'23514',null,'Installation audit rejects conflicting explicit owner');
 SELECT throws_ok($$ UPDATE public.installation_audit_log SET event_type='changed' WHERE id='a1260000-0000-0000-0000-000000000071' $$,'23001',null,'Existing installation audit remains append-only on update');
@@ -134,11 +134,11 @@ SELECT is((SELECT org_id::text FROM public.capture_artifact WHERE idempotency_ke
 -- Each lives_ok contains its own persisted-owner check so a failure is a TAP
 -- assertion instead of aborting the remainder of this transaction.
 INSERT INTO public.capture_type_config(capture_type,org_id,field_schema,commit_target) VALUES
- ('r1_parentless_compat','a1260000-0000-0000-000000000001','{}','evidence_only');
+ ('r1_parentless_compat','a1260000-0000-0000-0000-000000000001','{}','evidence_only');
 SELECT lives_ok($$ DO $compat$ DECLARE v_owner uuid; BEGIN
  INSERT INTO public.capture_artifact(id,org_id,capture_type,source,principal,raw_uri,idempotency_key) VALUES
-  ('a1260000-0000-0000-0000-000000000082','a1260000-0000-0000-000000000001','r1_parentless_compat','app','r1-explicit-owner','app://r1/nonfield','r1-parentless-capture');
- SELECT org_id INTO v_owner FROM public.capture_artifact WHERE id='a1260000-0000-0000-000000000082';
+  ('a1260000-0000-0000-0000-000000000082','a1260000-0000-0000-0000-000000000001','r1_parentless_compat','app','r1-explicit-owner','app://r1/nonfield','r1-parentless-capture');
+ SELECT org_id INTO v_owner FROM public.capture_artifact WHERE id='a1260000-0000-0000-0000-000000000082';
  IF v_owner IS DISTINCT FROM 'a1260000-0000-0000-0000-000000000001'::uuid THEN
   RAISE EXCEPTION 'Parentless capture did not retain its supplied organization';
  END IF;

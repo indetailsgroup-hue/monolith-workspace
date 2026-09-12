@@ -8,7 +8,8 @@ let currentActorId: string | null | undefined;
 /** Invalidate pending lookups across identity changes; same-actor refresh is not a new identity. */
 export function updateRequestAuthSession(actorId: string | null): void {
   if (currentActorId === actorId) return;
-  sessionVersion += 1;
+  // The first actor establishes context; the resolved SDK session must still match below.
+  if (currentActorId !== undefined || actorId === null) sessionVersion += 1;
   sessionAllowed = actorId !== null;
   currentActorId = actorId;
 }
