@@ -215,9 +215,11 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback, onAction }) => {
 interface CultureDashboardProps {
   /** The active organisation ID (tenant-scoped) */
   orgId: string;
+  /** Omit to retain the chart library's animation defaults. */
+  animateCharts?: boolean;
 }
 
-export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId }) => {
+export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId, animateCharts }) => {
   // ── store slices ──────────────────────────────────────────
   const psScores = useCultureStore((s) => s.psScores);
   const anonymousFeedback = useCultureStore((s) => s.anonymousFeedback);
@@ -405,6 +407,7 @@ export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId }) => 
                 }}
               />
               <Line
+                isAnimationActive={animateCharts}
                 type="monotone"
                 dataKey="score"
                 name="คะแนนรวม"
@@ -450,7 +453,7 @@ export const CultureDashboard: React.FC<CultureDashboardProps> = ({ orgId }) => 
                 stroke="#f59e0b"
                 strokeDasharray="4 2"
               />
-              <Bar dataKey="score" name="คะแนน" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="score" name="คะแนน" radius={[0, 4, 4, 0]} isAnimationActive={animateCharts}>
                 {dimensionData.map((entry, idx) => (
                   <Cell key={idx} fill={entry.color} />
                 ))}
