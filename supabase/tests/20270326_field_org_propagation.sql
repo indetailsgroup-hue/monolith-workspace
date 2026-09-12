@@ -4,7 +4,7 @@
 -- These are attribution/provenance tests, not a claim that the existing broad
 -- governance/site/membership RPC predicates implement complete org isolation.
 BEGIN;
-SELECT plan(60);
+SELECT plan(66);
 
 CREATE TEMP TABLE field_org_results (label text PRIMARY KEY, result jsonb);
 GRANT ALL ON field_org_results TO authenticated;
@@ -128,6 +128,56 @@ INSERT INTO public.installation_projects(id,org_id,site_code,name) VALUES
  ('b1260000-0000-0000-0000-000000000035','b1260000-0000-0000-0000-000000000001','R1-FIELD-A','R1 later reuse of an existing site label');
 SELECT lives_ok($$ SELECT public.rpc_capture_verify((SELECT id FROM public.capture_artifact WHERE idempotency_key='r1-org-unique'),'approved',true,0,'R1 established ownership','{"project_id":"a1260000-0000-0000-0000-000000000031","result":"pass"}'::jsonb) $$,'Existing capture can be verified after a second organization reuses its site label');
 SELECT is((SELECT org_id::text FROM public.capture_artifact WHERE idempotency_key='r1-org-unique'),'a1260000-0000-0000-0000-000000000001','Later site ambiguity does not reassign established capture ownership');
+
+-- Shared tables also accept explicitly owned records outside the field-parent
+-- path. Exercise their real INSERT triggers, retaining the supplied owner.
+-- Each lives_ok contains its own persisted-owner check so a failure is a TAP
+-- assertion instead of aborting the remainder of this transaction.
+INSERT INTO public.capture_type_config(capture_type,org_id,field_schema,commit_target) VALUES
+ ('r1_parentless_compat','a1260000-0000-0000-000000000001','{}','evidence_only');
+SELECT lives_ok($$ DO $compat$ DECLARE v_owner uuid; BEGIN
+ INSERT INTO public.capture_artifact(id,org_id,capture_type,source,principal,raw_uri,idempotency_key) VALUES
+  ('a1260000-0000-0000-0000-000000000082','a1260000-0000-0000-000000000001','r1_parentless_compat','app','r1-explicit-owner','app://r1/nonfield','r1-parentless-capture');
+ SELECT org_id INTO v_owner FROM public.capture_artifact WHERE id='a1260000-0000-0000-000000000082';
+ IF v_owner IS DISTINCT FROM 'a1260000-0000-0000-0000-000000000001'::uuid THEN
+  RAISE EXCEPTION 'Parentless capture did not retain its supplied organization';
+ END IF;
+ END $compat$ $$,'Explicitly owned non-field capture remains writable and keeps its owner');
+SELECT lives_ok($$ DO $compat$ DECLARE v_owner uuid; BEGIN
+ INSERT INTO public.capture_audit_log(id,org_id,event_type,actor) VALUES
+  ('a1260000-0000-0000-0000-000000000083','a1260000-0000-0000-0000-000000000001','failure','r1-explicit-owner');
+ SELECT org_id INTO v_owner FROM public.capture_audit_log WHERE id='a1260000-0000-0000-0000-000000000083';
+ IF v_owner IS DISTINCT FROM 'a1260000-0000-0000-0000-000000000001'::uuid THEN
+  RAISE EXCEPTION 'Pre-artifact audit did not retain its supplied organization';
+ END IF;
+ END $compat$ $$,'Explicitly owned capture failure can be audited before an artifact exists');
+SELECT lives_ok($$ DO $compat$ DECLARE v_owner uuid; BEGIN
+ INSERT INTO public.workflow_audit_log(id,org_id,event_type,performed_by) VALUES
+  ('a1260000-0000-0000-0000-000000000084','a1260000-0000-0000-0000-000000000001','r1_nonfield_event','r1-explicit-owner');
+ SELECT org_id INTO v_owner FROM public.workflow_audit_log WHERE id='a1260000-0000-0000-0000-000000000084';
+ IF v_owner IS DISTINCT FROM 'a1260000-0000-0000-0000-000000000001'::uuid THEN
+  RAISE EXCEPTION 'Parentless workflow audit did not retain its supplied organization';
+ END IF;
+ END $compat$ $$,'Explicitly owned workflow audit remains writable without a work item or site');
+SELECT lives_ok($$ DO $compat$ DECLARE v_owner uuid; BEGIN
+ INSERT INTO public.installation_audit_log(id,org_id,event_type,performed_by) VALUES
+  ('a1260000-0000-0000-0000-000000000085','a1260000-0000-0000-0000-000000000001','r1_nonproject_event','r1-explicit-owner');
+ SELECT org_id INTO v_owner FROM public.installation_audit_log WHERE id='a1260000-0000-0000-0000-000000000085';
+ IF v_owner IS DISTINCT FROM 'a1260000-0000-0000-0000-000000000001'::uuid THEN
+  RAISE EXCEPTION 'Parentless installation audit did not retain its supplied organization';
+ END IF;
+ END $compat$ $$,'Explicitly owned installation audit remains writable without a project');
+
+-- Archived internal groups keep normal triggers active without invoking the
+-- customer-only welcome flow. Outbound must reject inconsistent stored parent
+-- metadata even when the proposed outbound org correctly matches the project.
+INSERT INTO public.line_groups(id,org_id,line_group_id,project_id,site_code,group_type,status) VALUES
+ ('a1260000-0000-0000-0000-000000000052','b1260000-0000-0000-0000-000000000001','R1-FIELD-BAD-GROUP-ORG','a1260000-0000-0000-0000-000000000031','R1-FIELD-A','internal','archived'),
+ ('a1260000-0000-0000-0000-000000000053','a1260000-0000-0000-0000-000000000001','R1-FIELD-BAD-GROUP-SITE','a1260000-0000-0000-0000-000000000031','R1-FIELD-B','internal','archived');
+SELECT throws_ok($$ INSERT INTO public.line_oa_outbound_messages(org_id,send_type,status,template_key,slot_values,target_type,target_id) VALUES
+ ('a1260000-0000-0000-0000-000000000001','push','pending','tpl_inst_issue_alert','{}','group','R1-FIELD-BAD-GROUP-ORG') $$,'23514',null,'Outbound rejects a group organization conflicting with its project');
+SELECT throws_ok($$ INSERT INTO public.line_oa_outbound_messages(org_id,send_type,status,template_key,slot_values,target_type,target_id) VALUES
+ ('a1260000-0000-0000-0000-000000000001','push','pending','tpl_inst_issue_alert','{}','group','R1-FIELD-BAD-GROUP-SITE') $$,'23514',null,'Outbound rejects a group site conflicting with its project');
 
 DO $$ BEGIN
  PERFORM set_config('request.jwt.claims','{"sub":"a1260000-0000-0000-0000-000000000011","role":"authenticated","org_id":"b1260000-0000-0000-0000-000000000001","app_metadata":{"roles":[],"site_codes":[]}}',true);

@@ -7,7 +7,7 @@
 -- That is a prerequisite failure, not notification-specific RED evidence.
 -- Rerun after that repair and before the notification forward migration.
 BEGIN;
-SELECT plan(48);
+SELECT plan(50);
 
 CREATE TEMP TABLE issue_retry_attempts (label text PRIMARY KEY, result jsonb);
 CREATE TEMP TABLE issue_dispatch_calls (
@@ -71,6 +71,26 @@ SELECT ok(has_function_privilege('authenticated','public.rpc_field_raise_issue(u
  'Authenticated callers retain issue RPC execution');
 SELECT ok(NOT has_function_privilege('authenticated','public.fn_issue_sla_sweep()','EXECUTE'),
  'Authenticated callers do not gain service-only SLA sweep execution');
+-- Record the actual ACL and creator defaults in ephemeral CI; a PUBLIC revoke
+-- cannot remove direct anon/authenticated grants installed by those defaults.
+SELECT diag('SLA sweep ACL: ' || coalesce(proacl::text,'<default>'))
+ FROM pg_proc WHERE oid='public.fn_issue_sla_sweep()'::regprocedure;
+SELECT diag('Function default ACL: ' || pg_get_userbyid(defaclrole) || '/' ||
+ coalesce(nullif(defaclnamespace,0)::regnamespace::text,'<global>') || ' ' || defaclacl::text)
+ FROM pg_default_acl WHERE defaclobjtype='f'
+ AND defaclrole=(SELECT proowner FROM pg_proc WHERE oid='public.fn_issue_sla_sweep()'::regprocedure);
+-- No PM and no issue exist yet, so the buggy function returns successfully
+-- without dispatch. Test the real call under each role, not just ACL metadata.
+SET LOCAL ROLE authenticated;
+SELECT throws_ok($$ SELECT public.fn_issue_sla_sweep() $$,'42501',
+ 'permission denied for function fn_issue_sla_sweep',
+ 'Authenticated callers cannot invoke the service-only SLA sweep');
+RESET ROLE;
+SET LOCAL ROLE anon;
+SELECT throws_ok($$ SELECT public.fn_issue_sla_sweep() $$,'42501',
+ 'permission denied for function fn_issue_sla_sweep',
+ 'Anonymous callers cannot invoke the service-only SLA sweep');
+RESET ROLE;
 
 -- No matching recipient and no PM: marker must remain empty, even after SLA.
 SET LOCAL ROLE authenticated;
