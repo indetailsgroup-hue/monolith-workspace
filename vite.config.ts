@@ -63,14 +63,13 @@ export default defineConfig({
       // (DXF generation, Uint8Array payloads) that need Node, not jsdom.
       // They run in dedicated e2e lanes, not the root unit-test runner.
       'src/e2e/**',
-      // Supabase Edge Function tests use Deno imports (npm:@supabase/supabase-js@2)
-      // that Vite/vitest cannot bundle. They run via Deno CLI, not root vitest.
-      'supabase/**',
-      // Entitlement DB has its own runner and DB context.
-      'entitlement-db/**',
-      // External integration/workflow test suites under tests/ use their own
-      // node:test or dedicated CI runners, not root vitest.
-      'tests/**',
+      // DI transport/workflow tests use Node's Request/Response/Web Crypto.
+      // vitest.transport.config.ts owns these four projects; CI runs them in
+      // verify-full, edge-fn-verify and entitlement-db-verify with report guards.
+      'supabase/functions/**',
+      'entitlement-db/supabase/functions/**',
+      'tests/workflow/ts/**',
+      'tests/line-oa-commerce/ts/**',
     ],
   },
   server: {

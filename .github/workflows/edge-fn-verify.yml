@@ -16,10 +16,21 @@ on:
     branches: [main, "fix/**", "s17/**"]
     paths:
       - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "vitest.transport.config.ts"
+      - "scripts/check-transport-test-report*"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/edge-fn-verify.yml"
   pull_request:
     paths:
       - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "vitest.transport.config.ts"
+      - "scripts/check-transport-test-report*"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/edge-fn-verify.yml"
   workflow_dispatch:
 
 concurrency:
@@ -47,7 +58,11 @@ jobs:
 
       - name: Run edge-function transport suite
         # Fails the job on any test failure (vitest exits non-zero).
-        run: npx vitest run supabase/functions --reporter=default --reporter=json --outputFile=edge-fn-report.json
+        run: npm run test:transport -- --project edge --reporter=default --reporter=json --outputFile=edge-fn-report.json
+
+      - name: Require every expected edge test file to run and pass
+        if: always()
+        run: node scripts/check-transport-test-report.mjs edge-fn-report.json edge
 
       - name: Assemble edge-function evidence
         if: always()
@@ -83,7 +98,7 @@ jobs:
             runUrl: process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/actions/runs/' + process.env.GITHUB_RUN_ID,
             environment: 'ubuntu-latest / node ' + process.version,
             timestamp: new Date().toISOString(),
-            suite: 'vitest run supabase/functions',
+            suite: 'vitest run --config vitest.transport.config.ts --project edge',
             edgeBoundary: {
               functionsCovered: Object.keys(functions).length,
               functions,

@@ -10,10 +10,18 @@ on:
     branches: [main, "feat/**", "fix/**", "s17/**", "governance/**"]
     paths:
       - "entitlement-db/**"
+      - "vitest.transport.config.ts"
+      - "scripts/check-transport-test-report*"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/entitlement-db-verify.yml"
   pull_request:
     paths:
       - "entitlement-db/**"
+      - "vitest.transport.config.ts"
+      - "scripts/check-transport-test-report*"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/entitlement-db-verify.yml"
   workflow_dispatch:
 
@@ -41,7 +49,11 @@ jobs:
       - name: Install dependencies (root — vitest runner)
         run: npm ci
       - name: Run billing-webhook transport tests
-        run: npx vitest run entitlement-db/supabase/functions --reporter=default
+        run: npm run test:transport -- --project entitlement --reporter=default --reporter=json --outputFile=entitlement-transport-report.json
+
+      - name: Require every expected entitlement transport test file to run and pass
+        if: always()
+        run: node scripts/check-transport-test-report.mjs entitlement-transport-report.json entitlement
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
@@ -125,6 +137,7 @@ jobs:
           name: entitlement-db-evidence-${{ github.sha }}
           path: |
             entitlement-evidence.txt
+            entitlement-transport-report.json
             migrations-applied.txt
             negative-tests.log
             entitlement-invariants.tap

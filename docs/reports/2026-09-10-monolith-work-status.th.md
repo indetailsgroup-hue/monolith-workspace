@@ -81,7 +81,7 @@
 - **ค้างยืนยันชัด:** lint budget, Full Verify ครบทุก lane, billing-report failure, PERFORMANCE placeholder, การจัด route/acceptance ของ Org Health, update status ledger
 - **workflow มี แต่ integration ไม่ยืนยัน:** AI scheduler/model execution, AI quotation generation, external bank/OCR/PDM, end-to-end accounting, production quota coverage และ live tenant-boundary acceptance
 - **roadmap / ยังไม่พบ implementation ใน inventory:** Design Hub Phase 2, marketplace/UGC/learning/payment scope, Capacity Planning AI, Industry Benchmarks, Cross-functional Team Builder, SOP AI Assistant
-- **UNKNOWN:** การปิดบ้าน dogfood ครบสาย, calibration/bench test เครื่องจริง, key/signoff ceremony ล่าสุด และ field acceptance. [dogfood record](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json) พิสูจน์เพียง STARTED เมื่อ 18 ก.ค. และ realCutAllowed=false; tree ของ house-01 มี started.json/sha256 ไม่มี completion record
+- **UNKNOWN:** การปิดบ้าน dogfood ครบสาย, calibration/bench test เครื่องจริง, key/signoff ceremony ล่าสุด และ field acceptance. [dogfood record](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json) บันทึก STARTED เมื่อ 18 ก.ค. และ `realCutAllowed=false`. Recursive-tree snapshot วันที่ 10 ก.ย. ของ SHA ที่ระบุแสดง `started.json` และ `started.sha256` ใต้ `docs/evidence/dogfood/house-01/`; การยอมรับครบสายยังไม่ยืนยันจาก snapshot นี้
 - Change Readiness, AI Adoption Comfort, SpatialLM และ labels ไม่ควรถูกเรียกเสร็จจากชื่อโมดูลใกล้เคียง ต้องมี caller และ acceptance evidence เฉพาะ
 
 ## PR / issue ที่ค้าง
@@ -118,7 +118,7 @@ Parent มีแผน tenancy/protected delivery ที่แก้ค้าง
 | [.kiro/specs/_archived/obsidian-second-brain/tasks.md](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/_archived/obsidian-second-brain/tasks.md) | 0 | 16 |
 | [specs/main/tasks.md](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/specs/main/tasks.md) | 0 | 0 |
 
-นับ checkbox line ทั้ง parent และ child ไม่ใช่ unique deliverables และไม่คำนวณเป็น progress %. Archived Second Brain ถูกแทนด้วย active checklist; specs/main/tasks.md ใช้รูปแบบอื่นจึง 0/0 ไม่ได้แปลว่าไม่มีงาน. รายการ checkbox ทุกบรรทัดอยู่ใน evidence JSON (local evidence snapshot; not published)
+นับ checkbox line ทั้ง parent และ child ไม่ใช่ unique deliverables และไม่คำนวณเป็น progress %. Archived Second Brain ถูกแทนด้วย active checklist. `specs/main/tasks.md` ใช้รูปแบบอื่น; ผล 0/0 วัดเฉพาะรูปแบบ checkbox ส่วนสถานะ requirement ต้องประเมินจากรูปแบบงานภายในไฟล์นั้น. รายการ checkbox ทุกบรรทัดอยู่ใน evidence JSON (local evidence snapshot; not published)
 
 ## ลำดับแนะนำและเกณฑ์รับงาน (PROPOSAL)
 

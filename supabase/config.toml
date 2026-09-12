@@ -35,6 +35,12 @@ site_url     = "http://localhost:3000"
 jwt_expiry   = 3600
 enable_signup = true
 
+# Mirror the existing RPC identity contract in locally issued Auth tokens.
+# Hosted Supabase requires enabling this same function in Auth Hooks separately.
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Edge Functions
 # ─────────────────────────────────────────────────────────────────────────────

@@ -81,7 +81,7 @@ These are freshly retrieved GitHub Actions conclusions for the same SHA, not loc
 - **Confirmed outstanding:** lint budget, complete Full Verify, billing-report failure, PERFORMANCE placeholder, Org Health routing/acceptance, status-ledger reconciliation.
 - **Workflow exists; integration unverified:** AI scheduler model execution, AI quotation generation, external bank/OCR/PDM, end-to-end accounting, production quota coverage and live tenant-boundary acceptance.
 - **Roadmap / implementation not identified in inventory:** Design Hub Phase 2, marketplace/UGC/learning/payment scope, Capacity Planning AI, Industry Benchmarks, Cross-functional Team Builder and SOP AI Assistant.
-- **UNKNOWN:** complete dogfood house-chain acceptance, physical machine calibration/bench evidence, current key/signoff ceremony and field acceptance. The [dogfood record](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json) establishes STARTED on 18 July and realCutAllowed=false only; house-01 tree contains started.json/sha256, not a completion record.
+- **UNKNOWN:** complete dogfood house-chain acceptance, physical machine calibration/bench evidence, current key/signoff ceremony and field acceptance. The [dogfood record](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/evidence/dogfood/house-01/started.json) records STARTED on 18 July and `realCutAllowed=false`. The 10 September recursive-tree snapshot at the pinned SHA lists `started.json` and `started.sha256` under `docs/evidence/dogfood/house-01/`; complete-chain acceptance remains unverified by that snapshot.
 - Change Readiness, AI Adoption Comfort, SpatialLM and labels require specific caller and acceptance evidence; similarly named modules are insufficient.
 
 ## Open PRs and issues
@@ -118,7 +118,7 @@ Separate ProjectContext, protected-delivery, LINE trust, repair, Section 16 and 
 | [.kiro/specs/_archived/obsidian-second-brain/tasks.md](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/.kiro/specs/_archived/obsidian-second-brain/tasks.md) | 0 | 16 |
 | [specs/main/tasks.md](https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/specs/main/tasks.md) | 0 | 0 |
 
-Counts include parent and child checkbox lines, not unique deliverables, and must not become progress percentages. Archived Second Brain is superseded by the active checklist. specs/main/tasks.md uses a different format; 0/0 does not mean no work. Every checkbox line is retained in the evidence JSON (local evidence snapshot; not published).
+Counts include parent and child checkbox lines, not unique deliverables, and must not become progress percentages. Archived Second Brain is superseded by the active checklist. `specs/main/tasks.md` uses a different format; its 0/0 result measures checkbox syntax only, while requirement status must be assessed from the file's own task format. Every checkbox line is retained in the evidence JSON (local evidence snapshot; not published).
 
 ## Proposed sequence and acceptance (PROPOSAL)
 

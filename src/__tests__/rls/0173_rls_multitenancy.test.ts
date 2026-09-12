@@ -40,6 +40,11 @@ function userClient(accessToken: string): SupabaseClient {
   });
 }
 
+function issuedClaims(accessToken: string): { sub: string; org_id?: string; role: string } {
+  // Read tokens returned by Supabase Auth; do not manufacture signed sessions.
+  return JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8"));
+}
+
 async function createTestOrg(name: string): Promise<TestOrg> {
   const orgId = crypto.randomUUID();
   const { data, error } = await serviceClient
@@ -86,25 +91,17 @@ async function createTestUser(
   if (memberErr)
     throw new Error(`createTestUser member failed: ${memberErr.message}`);
 
-  // Sign in to get token
-  const { data: signIn, error: signInErr } =
-    await serviceClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-  if (signInErr)
-    throw new Error(`generateLink failed: ${signInErr.message}`);
-
-  // Use service client impersonation via JWT
-  const { data: session } =
-    await serviceClient.auth.admin.getUserById(userId);
-
-  // For tests: create a session token via sign-in
-  const anonClient = createClient(SUPABASE_URL, ANON_KEY);
+  // The same production hook configured locally must populate the signed claim.
+  const anonClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const { data: loginData, error: loginErr } =
     await anonClient.auth.signInWithPassword({ email, password: "Test1234!" });
   if (loginErr)
     throw new Error(`signIn failed: ${loginErr.message}`);
+  expect(issuedClaims(loginData.session!.access_token)).toMatchObject({
+    sub: userId, org_id: orgId, role: "authenticated",
+  });
 
   return {
     id: userId,
@@ -127,6 +124,22 @@ let orgA: TestOrg;
 let orgB: TestOrg;
 let userA: TestUser; // belongs to orgA (FINANCE role)
 let userB: TestUser; // belongs to orgB (FINANCE role)
+const customerIds = new Map<string, string>();
+
+function tenantFixture(orgId: string) {
+  const customerId = customerIds.get(orgId);
+  const creator = [userA, userB].find(user => user.orgId === orgId);
+  if (!customerId || !creator) throw new Error(`Missing tenant fixture for ${orgId}`);
+  return { customer_id: customerId, created_by: creator.id };
+}
+
+function invoiceFixture(orgId: string, code: string) {
+  const invoiceId = crypto.randomUUID();
+  // The legacy approval RPC uses id/code; child FKs use invoice_id. Seed one
+  // identity in both published representations, with all canonical fields.
+  return { ...tenantFixture(orgId), invoice_id: invoiceId, id: invoiceId,
+    invoice_code: code, due_date: "2026-08-31" };
+}
 
 // ─── Setup / Teardown ─────────────────────────────────────────────────────────
 beforeAll(async () => {
@@ -137,6 +150,19 @@ beforeAll(async () => {
   // Create 1 user per org
   userA = await createTestUser("test-userA@rls-test.local", orgA.id, 60);
   userB = await createTestUser("test-userB@rls-test.local", orgB.id, 60);
+
+  for (const org of [orgA, orgB]) {
+    const { data: customer } = await serviceClient.from("customers")
+      .insert({ org_id: org.id, name: `Fixture customer ${org.name}` })
+      .select("customer_id").single().throwOnError();
+    customerIds.set(org.id, customer!.customer_id);
+    await serviceClient.from("chart_of_accounts").upsert([
+      { org_id: org.id, code: "1100", name: "Cash", type: "asset" },
+      { org_id: org.id, code: "1200", name: "Accounts receivable", type: "asset" },
+      { org_id: org.id, code: "4100", name: "Revenue", type: "revenue" },
+      { org_id: org.id, code: "2200", name: "VAT payable", type: "liability" },
+    ], { onConflict: "org_id,code" }).throwOnError();
+  }
 
   const { error: bookError } = await serviceClient.from("book_registry").upsert([
     {
@@ -168,27 +194,28 @@ afterAll(async () => {
 async function seedJob(orgId: string, code: string) {
   const { data, error } = await serviceClient
     .from("jobs")
-    .insert({ org_id: orgId, code, title: `Job ${code}`, status: "draft" })
-    .select("id")
+    .insert({ ...tenantFixture(orgId), org_id: orgId, job_code: code, title: `Job ${code}`, status: "DRAFT" })
+    .select("job_id")
     .single();
   if (error) throw new Error(`seedJob failed: ${error.message}`);
-  return data.id as string;
+  return data.job_id as string;
 }
 
 async function seedQuotation(orgId: string, jobId: string, code: string) {
   const { data, error } = await serviceClient
     .from("quotations")
-    .insert({ org_id: orgId, job_id: jobId, code, status: "draft", total: 0 })
-    .select("id")
+    .insert({ ...tenantFixture(orgId), org_id: orgId, job_id: jobId, quotation_code: code, status: "DRAFT", total: 0 })
+    .select("quotation_id")
     .single();
   if (error) throw new Error(`seedQuotation failed: ${error.message}`);
-  return data.id as string;
+  return data.quotation_id as string;
 }
 
 async function seedInvoice(orgId: string, jobId: string, code: string) {
   const { data, error } = await serviceClient
     .from("invoices")
     .insert({
+      ...invoiceFixture(orgId, code),
       org_id: orgId,
       job_id: jobId,
       code,
@@ -204,6 +231,64 @@ async function seedInvoice(orgId: string, jobId: string, code: string) {
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
 describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
+  describe("Auth-issued organization claim", () => {
+    it("password login and refresh issue the active org claim accepted by the RPC", async () => {
+      const client = createClient(SUPABASE_URL, ANON_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: login, error: loginError } = await client.auth.signInWithPassword({
+        email: userA.email, password: "Test1234!",
+      });
+      expect(loginError).toBeNull();
+      expect(issuedClaims(login.session!.access_token)).toMatchObject({ sub: userA.id, org_id: orgA.id });
+      const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+      expect(refreshError).toBeNull();
+      expect(issuedClaims(refreshed.session!.access_token)).toMatchObject({ sub: userA.id, org_id: orgA.id });
+      const { error } = await userClient(refreshed.session!.access_token).rpc(
+        "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
+      );
+      expect(error).toBeNull();
+    });
+
+    it.each(["foreign selection", "inactive membership"] as const)(
+      "refresh removes tenant authority for %s and the RPC rejects the issued token",
+      async (reason) => {
+        const user = await createTestUser(`hook-${crypto.randomUUID()}@rls-test.local`, orgA.id);
+        try {
+          const client = createClient(SUPABASE_URL, ANON_KEY, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          const { error: loginError } = await client.auth.signInWithPassword({
+            email: user.email, password: "Test1234!",
+          });
+          expect(loginError).toBeNull();
+          if (reason === "foreign selection") {
+            const { error } = await serviceClient.auth.admin.updateUserById(user.id, {
+              app_metadata: { roles: ["finance"], org_id: orgB.id },
+            });
+            expect(error).toBeNull();
+          } else {
+            await serviceClient.from("org_members").update({ is_active: false })
+              .eq("user_id", user.id).eq("org_id", orgA.id).throwOnError();
+          }
+
+          const { data: refreshed, error: refreshError } = await client.auth.refreshSession();
+          expect(refreshError).toBeNull();
+          expect(refreshed.session).not.toBeNull();
+          expect(issuedClaims(refreshed.session!.access_token).org_id).toBeUndefined();
+          const { data, error } = await userClient(refreshed.session!.access_token).rpc(
+            "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
+          );
+          expect(data).toBeNull();
+          expect(error).toMatchObject({ code: "22023" });
+          expect(error!.message).toMatch(/org_id JWT claim is absent or null/);
+        } finally {
+          await cleanupUser(user.id);
+        }
+      }
+    );
+  });
+
   // ── jobs table ──────────────────────────────────────────────────────────────
   describe("Table: jobs", () => {
     let jobAId: string;
@@ -217,8 +302,8 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA can SELECT own org jobs", async () => {
       const { data, error } = await userClient(userA.accessToken)
         .from("jobs")
-        .select("id, org_id")
-        .eq("id", jobAId);
+        .select("job_id, org_id")
+        .eq("job_id", jobAId);
       expect(error).toBeNull();
       expect(data).toHaveLength(1);
       expect(data![0].org_id).toBe(orgA.id);
@@ -227,8 +312,8 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA CANNOT SELECT orgB jobs", async () => {
       const { data, error } = await userClient(userA.accessToken)
         .from("jobs")
-        .select("id")
-        .eq("id", jobBId);
+        .select("job_id")
+        .eq("job_id", jobBId);
       expect(error).toBeNull();
       expect(data).toHaveLength(0); // RLS filters it out
     });
@@ -237,14 +322,14 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
       const { error } = await userClient(userA.accessToken)
         .from("jobs")
         .update({ title: "HACKED" })
-        .eq("id", jobBId);
+        .eq("job_id", jobBId);
       // Either error or 0 rows affected
       if (!error) {
         const { data } = await serviceClient
           .from("jobs")
           .select("title")
-          .eq("id", jobBId)
-          .single();
+          .eq("job_id", jobBId)
+          .single().throwOnError();
         expect(data!.title).not.toBe("HACKED");
       }
     });
@@ -253,33 +338,33 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
       const { error } = await userClient(userA.accessToken)
         .from("jobs")
         .delete()
-        .eq("id", jobBId);
+        .eq("job_id", jobBId);
       // Verify record still exists
       const { data } = await serviceClient
         .from("jobs")
-        .select("id")
-        .eq("id", jobBId)
-        .single();
+        .select("job_id")
+        .eq("job_id", jobBId)
+        .single().throwOnError();
       expect(data).not.toBeNull();
     });
 
     it("userA job code uniqueness is per-tenant (same code allowed in orgB)", async () => {
       // orgB should be able to use same code as orgA
       const { error } = await serviceClient.from("jobs").insert({
-        org_id: orgB.id,
-        code: "JOB-TEST-A001", // same code as orgA — should be OK
+        ...tenantFixture(orgB.id), org_id: orgB.id,
+        job_code: "JOB-TEST-A001", // same code as orgA — should be OK
         title: "Same code different org",
-        status: "draft",
+        status: "DRAFT",
       });
       expect(error).toBeNull();
     });
 
     it("CANNOT insert duplicate code within same org", async () => {
       const { error } = await serviceClient.from("jobs").insert({
-        org_id: orgA.id,
-        code: "JOB-TEST-A001", // duplicate within orgA
+        ...tenantFixture(orgA.id), org_id: orgA.id,
+        job_code: "JOB-TEST-A001", // duplicate within orgA
         title: "Duplicate",
-        status: "draft",
+        status: "DRAFT",
       });
       expect(error).not.toBeNull();
       expect(error!.code).toBe("23505"); // unique_violation
@@ -303,8 +388,8 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA can SELECT own org quotations", async () => {
       const { data, error } = await userClient(userA.accessToken)
         .from("quotations")
-        .select("id, org_id")
-        .eq("id", quotAId);
+        .select("quotation_id, org_id")
+        .eq("quotation_id", quotAId);
       expect(error).toBeNull();
       expect(data).toHaveLength(1);
     });
@@ -312,16 +397,16 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     it("userA CANNOT SELECT orgB quotations", async () => {
       const { data } = await userClient(userA.accessToken)
         .from("quotations")
-        .select("id")
-        .eq("id", quotBId);
+        .select("quotation_id")
+        .eq("quotation_id", quotBId);
       expect(data).toHaveLength(0);
     });
 
     it("userB CANNOT SELECT orgA quotations", async () => {
       const { data } = await userClient(userB.accessToken)
         .from("quotations")
-        .select("id")
-        .eq("id", quotAId);
+        .select("quotation_id")
+        .eq("quotation_id", quotAId);
       expect(data).toHaveLength(0);
     });
   });
@@ -368,7 +453,7 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
         .from("invoices")
         .select("status")
         .eq("id", invBId)
-        .single();
+        .single().throwOnError();
       expect(data!.status).toBe("draft");
     });
   });
@@ -391,14 +476,14 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
         .from("invoice_line_items")
         .insert({ org_id: orgA.id, invoice_id: invAId, description: "Item A", amount: 100 })
         .select("id")
-        .single();
+        .single().throwOnError();
       lineAId = la!.id;
 
       const { data: lb } = await serviceClient
         .from("invoice_line_items")
         .insert({ org_id: orgB.id, invoice_id: invBId, description: "Item B", amount: 200 })
         .select("id")
-        .single();
+        .single().throwOnError();
       lineBId = lb!.id;
     });
 
@@ -432,9 +517,10 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
           entry_date: "2026-08-01",
           description: "Test entry A",
           book_id: "internal",
+          created_by: userA.id,
         })
         .select("id")
-        .single();
+        .single().throwOnError();
       entryAId = ea!.id;
 
       const { data: eb } = await serviceClient
@@ -444,9 +530,10 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
           entry_date: "2026-08-01",
           description: "Test entry B",
           book_id: "internal",
+          created_by: userB.id,
         })
         .select("id")
-        .single();
+        .single().throwOnError();
       entryBId = eb!.id;
     });
 
@@ -468,31 +555,39 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
     });
   });
 
-  // ── RPC: rpc_list_jobs ────────────────────────────────────────────────────────
-  describe("RPC: rpc_list_jobs", () => {
+  // ── RPC: canonical job board ────────────────────────────────────────────────
+  describe("RPC: rpc_job_board", () => {
+    let jobAId: string;
+    let jobBId: string;
     beforeAll(async () => {
-      await seedJob(orgA.id, "JOB-RPC-A001");
-      await seedJob(orgB.id, "JOB-RPC-B001");
+      jobAId = await seedJob(orgA.id, "JOB-RPC-A001");
+      jobBId = await seedJob(orgB.id, "JOB-RPC-B001");
     });
 
     it("returns only orgA jobs for userA", async () => {
       const { data, error } = await userClient(userA.accessToken).rpc(
-        "rpc_list_jobs"
+        "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
       );
       expect(error).toBeNull();
-      const orgIds = (data as any[]).map((r: any) => r.org_id);
-      const hasOrgB = orgIds.some((id: string) => id === orgB.id);
-      expect(hasOrgB).toBe(false);
+      const ids = (data as { job_id: string }[]).map(row => row.job_id);
+      const { data: ownJobs } = await serviceClient.from("jobs")
+        .select("job_id").eq("org_id", orgA.id).throwOnError();
+      expect(ids).toContain(jobAId);
+      expect(ids).not.toContain(jobBId);
+      expect(ids.every(id => ownJobs!.some(job => job.job_id === id))).toBe(true);
     });
 
     it("returns only orgB jobs for userB", async () => {
       const { data, error } = await userClient(userB.accessToken).rpc(
-        "rpc_list_jobs"
+        "rpc_job_board", { p_status: null, p_limit: 50, p_offset: 0 }
       );
       expect(error).toBeNull();
-      const orgIds = (data as any[]).map((r: any) => r.org_id);
-      const hasOrgA = orgIds.some((id: string) => id === orgA.id);
-      expect(hasOrgA).toBe(false);
+      const ids = (data as { job_id: string }[]).map(row => row.job_id);
+      const { data: ownJobs } = await serviceClient.from("jobs")
+        .select("job_id").eq("org_id", orgB.id).throwOnError();
+      expect(ids).toContain(jobBId);
+      expect(ids).not.toContain(jobAId);
+      expect(ids.every(id => ownJobs!.some(job => job.job_id === id))).toBe(true);
     });
   });
 
@@ -510,6 +605,17 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
 
   // ── Privilege escalation ─────────────────────────────────────────────────────
   describe("Privilege escalation prevention", () => {
+    it("FINANCE(60) can INSERT and read a job in its own org", async () => {
+      const { data, error } = await userClient(userA.accessToken).from("jobs")
+        .insert({ ...tenantFixture(orgA.id), org_id: orgA.id, job_code: "FINANCE-ALLOWED", title: "Finance own job", status: "DRAFT" })
+        .select("job_id, org_id").single();
+      expect(error).toBeNull();
+      expect(data).toMatchObject({ org_id: orgA.id });
+      const { data: stored } = await serviceClient.from("jobs").select("job_id, org_id")
+        .eq("job_id", data!.job_id).single().throwOnError();
+      expect(stored).toEqual(data);
+    });
+
     it("VIEWER(10) cannot INSERT jobs", async () => {
       // Create viewer user in orgA
       const viewer = await createTestUser(
@@ -519,8 +625,9 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
       );
       const { error } = await userClient(viewer.accessToken)
         .from("jobs")
-        .insert({ org_id: orgA.id, code: "VIEWER-JOB", title: "Viewer job", status: "draft" });
+        .insert({ ...tenantFixture(orgA.id), org_id: orgA.id, job_code: "VIEWER-JOB", title: "Viewer job", status: "DRAFT" });
       expect(error).not.toBeNull(); // Should be blocked
+      expect(error!.code).toBe("42501");
       await cleanupUser(viewer.id);
     });
 
@@ -529,12 +636,13 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
       const { error } = await userClient(userA.accessToken)
         .from("jobs")
         .insert({
-          org_id: orgB.id, // Trying to insert into orgB
-          code: "INJECT-001",
+          ...tenantFixture(orgB.id), org_id: orgB.id, // Trying to insert into orgB
+          job_code: "INJECT-001",
           title: "Injection attempt",
-          status: "draft",
+          status: "DRAFT",
         });
       expect(error).not.toBeNull();
+      expect(error!.code).toBe("42501");
     });
   });
 
@@ -568,7 +676,7 @@ describe("RLS Cross-Tenant Isolation — Migration 0173", () => {
         .from("book_registry")
         .select("org_id")
         .eq("book_id", "test-book-rls")
-        .single();
+        .single().throwOnError();
       expect(book!.org_id).toBe(orgA.id);
     });
   });
@@ -611,13 +719,27 @@ describe("Accounting Invariants", () => {
   });
 
   describe("Append-only journal invariant", () => {
+    let postedEntryId: string;
+    beforeAll(async () => {
+      const { data } = await userClient(userA.accessToken).rpc("rpc_post_journal_entry", {
+        p_book_id: "internal", p_entry_date: "2026-08-01",
+        p_description: "Append-only fixture", p_currency: "THB", p_source_ref: null,
+        p_lines: [
+          { account_code: "1100", debit: 1000, credit: 0 },
+          { account_code: "4100", debit: 0, credit: 1000 },
+        ],
+      }).throwOnError();
+      expect(data.entry_id).toEqual(expect.any(String));
+      postedEntryId = data.entry_id;
+    });
+
     it("cannot DELETE journal_entry rows", async () => {
       const { data } = await serviceClient
         .from("journal_entry")
         .select("id")
         .eq("org_id", orgA.id)
-        .limit(1)
-        .single();
+        .eq("id", postedEntryId)
+        .single().throwOnError();
 
       const { error } = await userClient(userA.accessToken)
         .from("journal_entry")
@@ -625,16 +747,14 @@ describe("Accounting Invariants", () => {
         .eq("id", data!.id);
 
       // PostgreSQL RLS may reject the statement or silently affect zero rows.
-      // The invariant is that the journal row remains present either way.
-      if (!error) {
-        const { data: after, error: verifyError } = await serviceClient
-          .from("journal_entry")
-          .select("id")
-          .eq("id", data!.id)
-          .single();
-        expect(verifyError).toBeNull();
-        expect(after!.id).toBe(data!.id);
-      }
+      // Unrelated transport/schema errors cannot certify this invariant.
+      if (error) expect(error.code).toBe("42501");
+      const { data: after } = await serviceClient
+        .from("journal_entry")
+        .select("id")
+        .eq("id", data!.id)
+        .single().throwOnError();
+      expect(after!.id).toBe(data!.id);
     });
 
     it("cannot UPDATE journal_line amount after posting", async () => {
@@ -642,30 +762,28 @@ describe("Accounting Invariants", () => {
         .from("journal_entry")
         .select("id")
         .eq("org_id", orgA.id)
-        .limit(1)
-        .single();
+        .eq("id", postedEntryId)
+        .single().throwOnError();
 
       const { data: line } = await serviceClient
         .from("journal_line")
         .select("id, debit")
         .eq("journal_entry_id", entry!.id)
-        .limit(1)
-        .single();
+        .gt("debit", 0)
+        .single().throwOnError();
 
       const { error } = await userClient(userA.accessToken)
         .from("journal_line")
         .update({ debit: 99999 })
         .eq("id", line!.id);
 
-      if (!error) {
-        // If no error, verify value unchanged (protected by trigger)
-        const { data: after } = await serviceClient
-          .from("journal_line")
-          .select("debit")
-          .eq("id", line!.id)
-          .single();
-        expect(after!.debit).toBe(line!.debit);
-      }
+      if (error) expect(error.code).toBe("42501");
+      const { data: after } = await serviceClient
+        .from("journal_line")
+        .select("debit")
+        .eq("id", line!.id)
+        .single().throwOnError();
+      expect(after!.debit).toBe(line!.debit);
     });
   });
 });
@@ -687,6 +805,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
     const { data: inv } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-APPR-001"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-APPR-001",
@@ -696,7 +815,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         issued_date: "2026-08-01",
       })
       .select("id")
-      .single();
+      .single().throwOnError();
     draftInvoiceId = inv!.id;
 
     // Add line item
@@ -705,12 +824,13 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
       invoice_id: draftInvoiceId,
       description: "Cabinet set",
       amount: 10700,
-    });
+    }).throwOnError();
 
     // Pre-approved invoice (for idempotency test)
     const { data: approved } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-ALREADY-APPROVED"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-ALREADY-APPROVED",
@@ -721,13 +841,14 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         approved_at: new Date().toISOString(),
       })
       .select("id")
-      .single();
+      .single().throwOnError();
     approvedInvoiceId = approved!.id;
 
     // Invoice marked as eTax submitted
     const { data: etax } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-ETAX-001"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-ETAX-001",
@@ -739,7 +860,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         etax_submitted_at: new Date().toISOString(),
       })
       .select("id")
-      .single();
+      .single().throwOnError();
     etaxInvoiceId = etax!.id;
   });
 
@@ -762,7 +883,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("status, approved_at")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
       expect(data!.status).toBe("approved");
       expect(data!.approved_at).not.toBeNull();
     });
@@ -772,7 +893,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id, auto_journal_posted_at")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
       expect(data!.auto_journal_entry_id).not.toBeNull();
       expect(data!.auto_journal_posted_at).not.toBeNull();
     });
@@ -782,7 +903,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id, total")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
 
       const { data: lines } = await serviceClient
         .from("journal_line")
@@ -800,21 +921,21 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id, total")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
 
       const { data: arLine } = await serviceClient
         .from("journal_line")
         .select("debit, account_id")
         .eq("journal_entry_id", inv!.auto_journal_entry_id)
         .gt("debit", 0)
-        .single();
+        .single().throwOnError();
 
       // Verify account code = 1200
       const { data: account } = await serviceClient
         .from("chart_of_accounts")
         .select("code")
         .eq("id", arLine!.account_id)
-        .single();
+        .single().throwOnError();
 
       expect(account!.code).toBe("1200");
       expect(Number(arLine!.debit)).toBeCloseTo(Number(inv!.total), 1);
@@ -825,7 +946,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id, total")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
 
       const { data: lines } = await serviceClient
         .from("journal_line")
@@ -840,7 +961,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
           .from("chart_of_accounts")
           .select("code")
           .eq("id", line.account_id)
-          .single();
+          .single().throwOnError();
         if (acc?.code === "4100") revenueLines.push(line);
       }
       expect(revenueLines).toHaveLength(1);
@@ -853,7 +974,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
 
       const { data: lines } = await serviceClient
         .from("journal_line")
@@ -867,7 +988,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
           .from("chart_of_accounts")
           .select("code")
           .eq("id", line.account_id)
-          .single();
+          .single().throwOnError();
         if (acc?.code === "2200") vatLines.push(line);
       }
       expect(vatLines).toHaveLength(1);
@@ -877,12 +998,30 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
 
   describe("Idempotency", () => {
     it("calling rpc_approve_invoice on already-approved invoice returns error", async () => {
-      const { data } = await userClient(userA.accessToken).rpc(
+      const { data: before } = await serviceClient.from("invoices")
+        .select("status, approved_at, auto_journal_entry_id, auto_journal_posted_at")
+        .eq("id", approvedInvoiceId).single().throwOnError();
+      const { count: journalsBefore } = await serviceClient.from("journal_entry")
+        .select("id", { count: "exact", head: true })
+        .eq("source_id", approvedInvoiceId).throwOnError();
+
+      const { data, error } = await userClient(userA.accessToken).rpc(
         "rpc_approve_invoice",
         { p_invoice_id: approvedInvoiceId }
       );
-      expect(data.success).toBe(false);
-      expect(data.error).toMatch(/already approved/i);
+      // P0004 is assert_failure, deliberately not caught by PL/pgSQL OTHERS.
+      expect(data).toBeNull();
+      expect(error).toMatchObject({ code: "P0004" });
+      expect(error!.message).toMatch(/already approved/i);
+
+      const { data: after } = await serviceClient.from("invoices")
+        .select("status, approved_at, auto_journal_entry_id, auto_journal_posted_at")
+        .eq("id", approvedInvoiceId).single().throwOnError();
+      const { count: journalsAfter } = await serviceClient.from("journal_entry")
+        .select("id", { count: "exact", head: true })
+        .eq("source_id", approvedInvoiceId).throwOnError();
+      expect(after).toEqual(before);
+      expect(journalsAfter).toBe(journalsBefore);
     });
 
     it("does NOT double-post journal if trigger fires twice (idempotency guard)", async () => {
@@ -897,7 +1036,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("auto_journal_entry_id")
         .eq("id", draftInvoiceId)
-        .single();
+        .single().throwOnError();
 
       const { count } = await serviceClient
         .from("journal_entry")
@@ -914,6 +1053,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
       const { data: zeroInv } = await serviceClient
         .from("invoices")
         .insert({
+          ...invoiceFixture(orgA.id, "INV-ZERO"),
           org_id: orgA.id,
           job_id: jobId,
           code: "INV-ZERO",
@@ -922,7 +1062,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
           issued_date: "2026-08-01",
         })
         .select("id")
-        .single();
+        .single().throwOnError();
 
       // Add line item
       await serviceClient.from("invoice_line_items").insert({
@@ -930,7 +1070,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         invoice_id: zeroInv!.id,
         description: "Empty",
         amount: 0,
-      });
+      }).throwOnError();
 
       const { data } = await userClient(userA.accessToken).rpc(
         "rpc_approve_invoice",
@@ -943,6 +1083,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
       const { data: noLineInv } = await serviceClient
         .from("invoices")
         .insert({
+          ...invoiceFixture(orgA.id, "INV-NOLINE"),
           org_id: orgA.id,
           job_id: jobId,
           code: "INV-NOLINE",
@@ -951,7 +1092,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
           issued_date: "2026-08-01",
         })
         .select("id")
-        .single();
+        .single().throwOnError();
 
       const { data } = await userClient(userA.accessToken).rpc(
         "rpc_approve_invoice",
@@ -969,6 +1110,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
       const { data: xInv } = await serviceClient
         .from("invoices")
         .insert({
+          ...invoiceFixture(orgA.id, "INV-XAPPR"),
           org_id: orgA.id,
           job_id: jobAId2,
           code: "INV-XAPPR",
@@ -977,14 +1119,14 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
           issued_date: "2026-08-01",
         })
         .select("id")
-        .single();
+        .single().throwOnError();
 
       await serviceClient.from("invoice_line_items").insert({
         org_id: orgA.id,
         invoice_id: xInv!.id,
         description: "Cross-tenant test",
         amount: 5350,
-      });
+      }).throwOnError();
 
       const { data } = await userClient(userB.accessToken).rpc(
         "rpc_approve_invoice",
@@ -997,7 +1139,7 @@ describe("RPC: rpc_approve_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("status")
         .eq("id", xInv!.id)
-        .single();
+        .single().throwOnError();
       expect(after!.status).toBe("draft");
     });
   });
@@ -1021,6 +1163,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
     const { data: inv } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-VOID-001"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-VOID-001",
@@ -1030,25 +1173,27 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         issued_date: "2026-08-01",
       })
       .select("id")
-      .single();
+      .single().throwOnError();
 
     await serviceClient.from("invoice_line_items").insert({
       org_id: orgA.id,
       invoice_id: inv!.id,
       description: "To be voided",
       amount: 5350,
-    });
+    }).throwOnError();
 
     // Approve it first (to create the AR journal entry)
-    await userClient(userA.accessToken).rpc("rpc_approve_invoice", {
+    const { data: approval, error: approvalError } = await userClient(userA.accessToken).rpc("rpc_approve_invoice", {
       p_invoice_id: inv!.id,
     });
+    expect(approvalError).toBeNull();
+    expect(approval).toMatchObject({ success: true });
 
     const { data: approved } = await serviceClient
       .from("invoices")
       .select("id, auto_journal_entry_id")
       .eq("id", inv!.id)
-      .single();
+      .single().throwOnError();
     approvedInvoiceId = approved!.id;
     originalEntryId = approved!.auto_journal_entry_id;
 
@@ -1056,6 +1201,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
     const { data: etax } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-ETAX-VOID"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-ETAX-VOID",
@@ -1069,13 +1215,14 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         auto_journal_posted_at: new Date().toISOString(),
       })
       .select("id")
-      .single();
+      .single().throwOnError();
     etaxInvoiceId = etax!.id;
 
     // Draft invoice (cannot be voided via rpc_void_invoice — needs approval first)
     const { data: draft } = await serviceClient
       .from("invoices")
       .insert({
+        ...invoiceFixture(orgA.id, "INV-DRAFT-VOID"),
         org_id: orgA.id,
         job_id: jobId,
         code: "INV-DRAFT-VOID",
@@ -1084,7 +1231,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         issued_date: "2026-08-01",
       })
       .select("id")
-      .single();
+      .single().throwOnError();
     draftInvoiceId2 = draft!.id;
   });
 
@@ -1103,7 +1250,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("status, voided_at, void_reason")
         .eq("id", approvedInvoiceId)
-        .single();
+        .single().throwOnError();
       expect(data!.status).toBe("voided");
       expect(data!.voided_at).not.toBeNull();
       expect(data!.void_reason).toBe("Customer cancelled order");
@@ -1116,7 +1263,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .select("id, reversal_of, source_type")
         .eq("source_id", approvedInvoiceId)
         .eq("source_type", "invoice_reversal")
-        .single();
+        .single().throwOnError();
       expect(reversal).not.toBeNull();
       expect(reversal!.reversal_of).toBe(originalEntryId);
     });
@@ -1127,7 +1274,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .select("id")
         .eq("source_id", approvedInvoiceId)
         .eq("source_type", "invoice_reversal")
-        .single();
+        .single().throwOnError();
 
       const { data: lines } = await serviceClient
         .from("journal_line")
@@ -1145,7 +1292,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .select("id")
         .eq("source_id", approvedInvoiceId)
         .eq("source_type", "invoice_reversal")
-        .single();
+        .single().throwOnError();
 
       const { data: originalLines } = await serviceClient
         .from("journal_line")
@@ -1185,7 +1332,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("status")
         .eq("id", etaxInvoiceId)
-        .single();
+        .single().throwOnError();
       expect(after!.status).toBe("approved");
     });
   });
@@ -1211,6 +1358,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
       const { data: inv } = await serviceClient
         .from("invoices")
         .insert({
+          ...invoiceFixture(orgA.id, "INV-XVOID"),
           org_id: orgA.id,
           job_id: jobAId3,
           code: "INV-XVOID",
@@ -1220,7 +1368,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
           approved_at: new Date().toISOString(),
         })
         .select("id")
-        .single();
+        .single().throwOnError();
 
       const { data } = await userClient(userB.accessToken).rpc(
         "rpc_void_invoice",
@@ -1233,7 +1381,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("status")
         .eq("id", inv!.id)
-        .single();
+        .single().throwOnError();
       expect(after!.status).toBe("approved");
     });
   });
@@ -1244,7 +1392,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .from("v_invoice_journal_status")
         .select("*")
         .eq("invoice_id", approvedInvoiceId)
-        .single();
+        .single().throwOnError();
       expect(data!.journal_posting_status).toBe("reversed");
     });
 
@@ -1254,13 +1402,13 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
         .from("invoices")
         .select("id")
         .eq("code", "INV-APPR-001")
-        .single();
+        .single().throwOnError();
 
       const { data } = await userClient(userA.accessToken)
         .from("v_invoice_journal_status")
         .select("*")
         .eq("invoice_id", inv!.id)
-        .single();
+        .single().throwOnError();
       expect(data!.journal_posting_status).toBe("posted");
     });
 
@@ -1269,6 +1417,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
       const { data: bInv } = await serviceClient
         .from("invoices")
         .insert({
+          ...invoiceFixture(orgB.id, "INV-VIEW-B001"),
           org_id: orgB.id,
           job_id: jobBId2,
           code: "INV-VIEW-B001",
@@ -1277,7 +1426,7 @@ describe("RPC: rpc_void_invoice (Migration 0176)", () => {
           issued_date: "2026-08-01",
         })
         .select("id")
-        .single();
+        .single().throwOnError();
 
       const { data } = await userClient(userA.accessToken)
         .from("v_invoice_journal_status")

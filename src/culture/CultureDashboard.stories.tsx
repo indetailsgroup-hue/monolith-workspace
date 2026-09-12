@@ -264,6 +264,7 @@ const meta: Meta<typeof CultureDashboard> = {
   },
   args: {
     orgId: ORG_ID,
+    animateCharts: false,
   },
   argTypes: {
     orgId: {
