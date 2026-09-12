@@ -28,6 +28,21 @@ import type { CmdEnpsSurvey, CmdEnpsResults, CmdOrgHealth } from '../cultureMetr
 // ─────────────────────────────────────────────────────────────────────────────
 
 vi.mock('../cultureMetricsStore');
+const pulseBoard = vi.hoisted(() => vi.fn());
+vi.mock('../TeamPulseBoard', () => ({
+  default: (props: unknown) => { pulseBoard(props); return <div data-testid="pulse-integration" />; },
+}));
+
+it('mounts Team Pulse on its tab and forwards the authenticated identity', () => {
+  vi.mocked(useCultureMetricsStore).mockReturnValue(makeStore());
+  render(<CultureDashboard orgId="org-a" orgPlan="ENTERPRISE" isAdmin userId="user-a" />);
+  expect(screen.queryByTestId('pulse-integration')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByTestId('culture-tab-pulse'));
+  expect(screen.getByTestId('pulse-integration')).toBeInTheDocument();
+  expect(pulseBoard).toHaveBeenLastCalledWith({ orgId: 'org-a', plan: 'ENTERPRISE', isAdmin: true, userId: 'user-a' });
+  fireEvent.click(screen.getByTestId('culture-tab-surveys'));
+  expect(screen.queryByTestId('pulse-integration')).not.toBeInTheDocument();
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Store factory
