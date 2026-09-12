@@ -48,6 +48,7 @@ import type {
   EstSentimentSummaryRow,
   EstTimelineConfigRow,
 } from '../employeeSentimentTypes';
+import type { OrgPlan } from '../../tenant/types';
 
 // ============================================================================
 // CAPTURING PROXY — module-level state reset in beforeEach
@@ -157,17 +158,17 @@ beforeEach(() => {
 const PLAN_GATE_CASES = [
   {
     name:   'fetchSummary',
-    action: (plan: string) =>
+    action: (plan: OrgPlan) =>
       useEstStore.getState().fetchSummary(ORG_ID, plan),
   },
   {
     name:   'fetchTimelineConfigs',
-    action: (plan: string) =>
+    action: (plan: OrgPlan) =>
       useEstStore.getState().fetchTimelineConfigs(ORG_ID, plan),
   },
   {
     name:   'upsertTimelineConfig',
-    action: (plan: string) =>
+    action: (plan: OrgPlan) =>
       useEstStore
         .getState()
         .upsertTimelineConfig({ orgId: ORG_ID, dimension: 'MORALE' }, plan),
