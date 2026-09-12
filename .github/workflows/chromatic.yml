@@ -31,17 +31,10 @@ on:
       - 'playwright.config.ts'
       - '.github/workflows/chromatic.yml'
   pull_request:
+    # Required PR checks must report for every change to these target branches.
     branches:
       - main
       - develop
-    paths:
-      - 'src/people/**'
-      - 'src/culture/**'
-      - '.storybook/**'
-      - '**/*.stories.tsx'
-      - '**/*.visual.spec.ts'
-      - 'playwright.config.ts'
-      - '.github/workflows/chromatic.yml'
 
 concurrency:
   group: chromatic-${{ github.ref }}

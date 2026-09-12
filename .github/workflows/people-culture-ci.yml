@@ -17,19 +17,8 @@ on:
       - '.storybook/**'
       - '**/*.stories.tsx'
   pull_request:
+    # Required PR checks must report for every change to these target branches.
     branches: [main, develop]
-    paths:
-      - 'src/people/**'
-      - 'src/culture/**'
-      - 'vite.config.ts'
-      - 'vitest.setup.ts'
-      - 'tsconfig.json'
-      - 'tsconfig.people-culture.json'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/people-culture-ci.yml'
-      - '.storybook/**'
-      - '**/*.stories.tsx'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
