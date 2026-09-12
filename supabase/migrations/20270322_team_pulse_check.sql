@@ -136,16 +136,16 @@ CREATE POLICY tpc_configs_admin ON tpc_pulse_configs
   TO authenticated
   USING (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   )
   WITH CHECK (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   );
 
@@ -155,7 +155,8 @@ CREATE POLICY tpc_sessions_select_member ON tpc_pulse_sessions
   TO authenticated
   USING (
     org_id IN (
-      SELECT org_id FROM user_profiles WHERE auth_user_id = auth.uid()
+      SELECT org_id FROM public.org_members
+       WHERE user_id = auth.uid() AND is_active = true
     )
     AND status IN ('ACTIVE', 'CLOSED')
   );
@@ -166,16 +167,16 @@ CREATE POLICY tpc_sessions_write_admin ON tpc_pulse_sessions
   TO authenticated
   USING (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   )
   WITH CHECK (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   );
 
@@ -185,7 +186,8 @@ CREATE POLICY tpc_responses_insert_member ON tpc_pulse_responses
   TO authenticated
   WITH CHECK (
     org_id IN (
-      SELECT org_id FROM user_profiles WHERE auth_user_id = auth.uid()
+      SELECT org_id FROM public.org_members
+       WHERE user_id = auth.uid() AND is_active = true
     )
   );
 
@@ -195,9 +197,9 @@ CREATE POLICY tpc_responses_select_admin ON tpc_pulse_responses
   TO authenticated
   USING (
     org_id IN (
-      SELECT up.org_id FROM user_profiles up
-       WHERE up.auth_user_id = auth.uid()
-         AND up.hierarchy >= 80
+      SELECT om.org_id FROM public.org_members om
+       WHERE om.user_id = auth.uid()
+         AND om.role IN ('OWNER', 'ADMIN') AND om.is_active = true
     )
   );
 
