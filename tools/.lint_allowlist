@@ -11,13 +11,6 @@
 #
 # Every linter run prints: 'allowlisted debt: N hits across M files'.
 # adopted: lint_certifications
-lint_certifications	docs/SKILL.md	1
-lint_certifications	docs/engineering/2026-07-21-design-to-production-engineering-playbook.en.md	3
-lint_certifications	docs/governance/adr-070-machine-onboarding.en.md	1
-lint_certifications	docs/prd/monolith-prd-v5-review.en.md	1
-lint_certifications	docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.th.md	1
-lint_certifications	docs/specs/s17-canonical-packet-spec-v1.en.md	1
-lint_certifications	docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.en.md	1
 # adopted: lint_claims
 lint_claims	docs/0178-vs-multi-tenant-diff-report.md	1
 lint_claims	docs/CHANGELOG_1520.md	1
@@ -36,14 +29,19 @@ lint_claims	docs/PR_DESCRIPTION_people_culture.md	1
 lint_claims	docs/SAFETY_GATE.md	1
 lint_claims	docs/SCRUTINY-2026-07-06-workflow-close.md	7
 lint_claims	docs/SECURITY_REVIEW_RLS.md	6
+lint_certifications	docs/SKILL.md	1
 lint_claims	docs/UX-Tenet-System-Audit-v1.md	2
 lint_claims	docs/api/FACTORY_EXPORT_API.md	3
 lint_claims	docs/architecture/CLOUD_SYNC_ARCHITECTURE.md	1
+lint_claims	docs/ci/ci_status_round23.md	6
+lint_claims	docs/ci/session_handoff_round24.md	7
 lint_claims	docs/dogfood/first-house-runbook.md	1
+lint_certifications	docs/engineering/2026-07-21-design-to-production-engineering-playbook.en.md	3
 lint_claims	docs/engineering/2026-07-21-design-to-production-engineering-playbook.en.md	2
 lint_claims	docs/evidence/ci/9ac7cff3/evidence-record.en.md	1
 lint_claims	docs/evidence/ci/9ac7cff3/evidence-record.th.md	1
 lint_claims	docs/full-system-scrutiny-2026-07-15.th.md	5
+lint_certifications	docs/governance/adr-070-machine-onboarding.en.md	1
 lint_claims	docs/governance/adr-070-machine-onboarding.th.md	1
 lint_claims	docs/governance/ct-dec-001-s17-baseline-governance.th.md	1
 lint_claims	docs/governance/ct-dec-002-signoff-checklist.en.md	1
@@ -63,12 +61,17 @@ lint_claims	docs/pr_0188_0194_phase2_rls.md	2
 lint_claims	docs/prd/monolith-complete-prd-v5.en.md	1
 lint_claims	docs/prd/monolith-complete-prd-v5.th.md	6
 lint_claims	docs/prd/monolith-complete-roadmap-v1.th.md	1
+lint_certifications	docs/prd/monolith-prd-v5-review.en.md	1
 lint_claims	docs/reports/2026-07-19-kitchen-kernel-bootstrap.th.md	3
 lint_claims	docs/reports/2026-07-21-ima-audit-independent-claim-verification.th.md	23
+lint_certifications	docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.th.md	1
 lint_claims	docs/reports/2026-07-21-monolith-repository-production-readiness-baseline.en.md	1
 lint_claims	docs/reports/2026-07-21-monolith-repository-production-readiness-baseline.th.md	5
 lint_claims	docs/reports/2026-07-21-plans-review-worktree-review-pr31.th.md	15
 lint_claims	docs/reports/2026-07-22-monolith-platform-executive-deep-audit.th.md	1
+lint_claims	docs/reports/2026-09-10-monolith-work-status.th.md	2
+lint_claims	docs/reports/2026-09-11-fieldflow-artifact-status.en.md	3
+lint_claims	docs/reports/2026-09-11-fieldflow-artifact-status.th.md	6
 lint_claims	docs/research/2026-07-19-kitchen-master-gap-analysis.th.md	4
 lint_claims	docs/research/2026-07-21-imos-ix-capability-dna-and-monolith-gap-ledger.en.md	1
 lint_claims	docs/research/2026-07-21-imos-ix-capability-dna-and-monolith-gap-ledger.th.md	3
@@ -82,8 +85,10 @@ lint_claims	docs/research/competitors/pplx-corpus-errata.md	4
 lint_claims	docs/roadmap/monolith-love-roadmap-2026-07.th.md	3
 lint_claims	docs/secrets-naming-convention.md	5
 lint_claims	docs/security-posture-report.md	5
+lint_certifications	docs/specs/s17-canonical-packet-spec-v1.en.md	1
 lint_claims	docs/specs/s17-canonical-packet-spec-v1.en.md	8
 lint_claims	docs/specs/s17-canonical-packet-spec-v1.th.md	14
+lint_certifications	docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.en.md	1
 lint_claims	docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.en.md	1
 lint_claims	docs/superpowers/plans/2026-07-19-kitchen-knowledge-kernel-bootstrap.th.md	4
 lint_claims	docs/superpowers/plans/2026-07-21-agent-claim-guardrails.md	1
