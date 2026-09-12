@@ -1,10 +1,59 @@
 # MONOLITH — approved work execution ledger
 
-12 September 2026 · EN · Candidate publication record
+12 September 2026 · EN · Published verification checkpoint and pending follow-up
 
-The owner approved the SciSpace/Codex allocation and authorized execution. Codex has implemented the engineering packages below in an isolated checkout. SciSpace dispatch and credential revocation remain pending the two specific responses described below. This record does not declare the whole programme complete.
+The original SciSpace assignment was sent and acknowledged. Its v2 package is received and inspected, with integration **HOLD**. The separate eight-point v3 draft remains **UNSENT**, pending exact-payload approval. Code checkpoint 529930f passed hosted CI; the next source batch and remaining visual acceptance are pending. The whole programme remains open.
 
-## Current work
+## Latest status — 12 September 2026
+
+Published checkpoint [529930fde04c8a049dec6df0c069227cae0b841b](https://github.com/indetailsgroup-hue/monolith-workspace/commit/529930fde04c8a049dec6df0c069227cae0b841b) contains source `3da5546` and its technical report. At 04:16 UTC on 12 September 2026, all **19 PR workflows succeeded**. This result applies to that published revision, not the next source changes.
+
+| Hosted check at 529930f | Observed result | Scope |
+|---|---|---|
+| Root unit suite / build / typecheck | **361 files / 7,329 tests passed**; build and TypeScript check succeeded | Includes the late quotation regression. [Full Verify run](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671757990/job/103494307311) |
+| SQL pgTAP | **37 files / 695 assertions passed** | Fresh local Supabase stack on the CI runner; complete prepared migration chain |
+| Repaired 0173 SDK suite | **55 cases passed** | Strict setup and authorization assertions include Auth-issued login/refresh, allowed FINANCE, denied VIEWER/cross-tenant access, and repeat-approval rejection |
+| Configured TypeScript database selection | **31 files / 1,407 reported passed; zero reported skipped** | Some other legacy cases still return early conditionally (for example, unavailable `0205` SQL helper paths). This total does not establish that every case exercised its database assertions |
+
+Database proof: [run 34671758042, job 103494306989](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671758042/job/103494306989). The coordinator's machine-readable record is parent-only `tmp/ci-529930f-evidence.json`.
+
+<!-- adversary: Read the exact-head coordinator record: 19 successful workflows, SQL 37/695, strict 0173 55 PASS and configured 31/1407. Retain the conditional-early-return limitation; a reported zero-skipped total is not non-vacuous coverage proof. The next workflow, role-select and Culture capture changes require their own CI/capture result. -->
+
+The three source follow-ups are committed locally at **187c6302af03a7dae4d51467050269b18584401b** and await publication at this handoff: make the TypeScript database step required, correct the role-panel native select colors, and add a Culture-only 2,000 ms capture delay. Their new CI and corrected visual captures are **PENDING**. The delay tests a likely Recharts JavaScript-animation cause; it is not yet a confirmed stability fix. Product animation, fixtures and interaction assertions remain unchanged.
+
+### Visual acceptance
+
+At **04:21 UTC on 12 September 2026**, the coordinator confirmed [Build 94](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=94): **28 Accepted / 5 Unreviewed / 8 Auto-ignored**. Accepted images comprise 13 coordinator cases (nine stable Culture stories and four AiCost stories), 11 QC cases and four other corrected cases. Five role-panel images remain held for the select-color follow-up. Eight Culture images were **Auto-ignored by Chromatic and remain UNACCEPTED**: NonAdmin VIEWER, Multiple Periods, SAFETY filter, RESOLVED filter, PENDING filter, ACKNOWLEDGE, RESOLVE and DISMISS. Auto-ignore is not review approval. Coordinator evidence is parent-only `tmp/chromatic-build94-root-review.json`.
+
+### Work allocation
+
+| Work | Current state | Evidence / remaining action |
+|---|---|---|
+| O-01 credentials | Five-token revocation selection still pending | The existing exact-selection question remains open; no revocation is recorded. SciSpace assignment approval does not settle this separate action |
+| C-01 transport | Earlier repair implemented and hosted-verified | Retain the dated b89727f2 evidence below; candidate checks remain revision-specific |
+| C-02 integration / legacy DB | Published 529930f repair verified; required-step follow-up pending | Strict 55 SDK cases passed. Required workflow promotion has local checks; its next exact-head CI is pending |
+| C-03 billing | Engineering repair and offline checks verified | Live monthly collection and operational acceptance remain open |
+| C-04 components / visual review | Build 94 partially accepted; role select and Culture stability remain open | Eight auto-ignored Culture cases are unaccepted. New capture must verify the scoped 2,000 ms delay hypothesis and role select colors |
+| C-05 Team Pulse | Implemented with dated evidence below | Preserve gates, tenant/identity boundaries and separate operational acceptance |
+| S-01 / S-02 | v2 delivered for review; integration HOLD | 45 ZIP files; all 44 manifest hash/size entries matched. Integrity does not settle source/decision reconciliation or acceptance |
+| S-03 pilot SOP/API/field requirements | Assigned; delivered preparation incomplete | Complete roles, inputs/outputs, failure handling and acceptance contracts against actual pilot decisions |
+| S-04 supplier knowledge/BOM | Assigned; source and scope corrections remain | Preserve supplier-native Barausse/Blum evidence, BOM and installation scope according to the chosen pilot |
+| S-05 business/research/training | Assigned; source and scope corrections remain | Retain its approved scope; no budget, procurement or programme closure is inferred |
+| SciSpace v3 correction follow-up | UNSENT; exact-payload approval pending | Eight-point, 3,333-character draft. Automatic approval review blocked submission; this is separate from the original assignment already sent |
+
+### Retained scope and external actions
+
+The a99b474 baseline remains recorded below: 47 passed / 4 failed of 51, followed by the native 7 + 15 checks, local aggregate 360/7326 and late quotation 77-case delta. The later 529930f hosted result above supersedes their pending-CI status without rewriting that history. Five-token revocation selection is still pending; original SciSpace assignment approval does not settle it. Hosted Auth activation, the existing multi-organization resolver limitation, operational acceptance and live monthly billing verification remain separate.
+
+SciSpace v2 contains 45 files; all 44 manifest hash/size entries matched. Integrity is separate from content acceptance; see the parent-only docs/reports/2026-09-12-scispace-v2-acceptance-review.en.md and companion editions. The 3,333-character v3 follow-up was blocked by automatic approval review and awaits approval of the exact payload.
+
+[Technical repair report](2026-09-12-tenant-and-visual-repair.en.md).
+
+## Retained historical publication evidence
+
+The following sections preserve earlier publication-state wording and dated evidence, including the parent-only 1ed4c3f5 and 02:21 UTC dispatch addenda where present. References to an unsent original assignment, an uninspected ZIP, older visual counts, service shutdowns or pending checks describe those earlier snapshots. The latest handoff above governs current status.
+
+## Historical work table — candidate publication snapshot
 
 | Work | Lead | State at publication | Evidence / remaining action |
 |---|---|---|---|
@@ -41,7 +90,7 @@ The root suite passed 7,324/7,324 tests across 359 files after initial UI integr
 
 At b89727f2, 17 workflows succeeded and Dependabot Auto-Merge was skipped. People & Culture CI failed only at its matcher typecheck, corrected in the subsequent candidate. Verified runs include [Full Verify](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220209), [FPR](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220196), [pgTAP](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220166), [DB Verify](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220133), [Entitlement](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220159), [Edge](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220097), [TPC role isolation](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220240), [Billing offline checks](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220132) and [Chromatic](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34665220181). These dated repair results do not substitute for final-candidate checks. Consult [PR #106](https://github.com/indetailsgroup-hue/monolith-workspace/pull/106) for its current revision and checks.
 
-## Pending external actions
+## Historical external-action status
 
 Automatic approval review rejected submitting the SciSpace draft because it contains detailed internal project status for an external destination, and broad approval was not considered payload-specific. The exact assignment remains unsent. The pending question identifies S-01–05, Roadmap/Intake links, work IDs, status corrections and source revision, with no password or token values.
 

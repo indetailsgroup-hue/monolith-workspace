@@ -4,15 +4,32 @@
 
 **Date:** 12 September 2026
 
-**Status:** Working draft for review; updated candidate CI and visual acceptance remain pending
+**Status:** Published 529930f checkpoint verified; the next three-file source batch and remaining visual acceptance are pending
 
 **Source baseline:** product commit `a99b474b790d1b94932302ed818834272f16e529`
 
-**Candidate code commit:** `3da55463ccb1bacb179068084218afae9c78a6c4` (local commit; hosted CI pending)
+**Published repair source commit:** `3da55463ccb1bacb179068084218afae9c78a6c4` (included in published 529930f; verified checkpoint below)
 
 **Companion:** [Thai edition](2026-09-12-tenant-and-visual-repair.th.md)
 
 This patch addresses a jobs INSERT policy bypass, the organization claim required by existing RPCs, an incorrect repeated-invoice-approval assertion, and specific visual defects found during Build 93 review. Evidence is scoped to source review, the recorded tests, and the named browser checks. This record grants neither production deployment nor operational acceptance, and it does not integrate the SciSpace v2 package.
+
+## Published verification checkpoint
+
+Published checkpoint [529930fde04c8a049dec6df0c069227cae0b841b](https://github.com/indetailsgroup-hue/monolith-workspace/commit/529930fde04c8a049dec6df0c069227cae0b841b) contains source `3da5546` and its technical report. At 04:16 UTC on 12 September 2026, all **19 PR workflows succeeded**. This result applies to that published revision, not the next source changes.
+
+| Hosted check at 529930f | Observed result | Scope |
+|---|---|---|
+| Root unit suite / build / typecheck | **361 files / 7,329 tests passed**; build and TypeScript check succeeded | Includes the late quotation regression. [Full Verify run](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671757990/job/103494307311) |
+| SQL pgTAP | **37 files / 695 assertions passed** | Fresh local Supabase stack on the CI runner; complete prepared migration chain |
+| Repaired 0173 SDK suite | **55 cases passed** | Strict setup and authorization assertions include Auth-issued login/refresh, allowed FINANCE, denied VIEWER/cross-tenant access, and repeat-approval rejection |
+| Configured TypeScript database selection | **31 files / 1,407 reported passed; zero reported skipped** | Some other legacy cases still return early conditionally (for example, unavailable `0205` SQL helper paths). This total does not establish that every case exercised its database assertions |
+
+Database proof: [run 34671758042, job 103494306989](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671758042/job/103494306989). The coordinator's machine-readable record is parent-only `tmp/ci-529930f-evidence.json`.
+
+<!-- adversary: Read the exact-head coordinator record: 19 successful workflows, SQL 37/695, strict 0173 55 PASS and configured 31/1407. Retain the conditional-early-return limitation; a reported zero-skipped total is not non-vacuous coverage proof. The next workflow, role-select and Culture capture changes require their own CI/capture result. -->
+
+The three source follow-ups are committed locally at **187c6302af03a7dae4d51467050269b18584401b** and await publication at this handoff: make the TypeScript database step required, correct the role-panel native select colors, and add a Culture-only 2,000 ms capture delay. Their new CI and corrected visual captures are **PENDING**. The delay tests a likely Recharts JavaScript-animation cause; it is not yet a confirmed stability fix. Product animation, fixtures and interaction assertions remain unchanged.
 
 ## 1. Repository and evidence boundary
 
@@ -26,17 +43,17 @@ The governance parent and original nested product were inspected separately befo
 
 Parent-only authority files are `CONTEXT.md` and `docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md`. They are named here as parent paths, not published relative links in the product checkout. Product implementation claims below refer to the implementation checkout.
 
-## 2. Actual baseline and candidate verification
+## 2. Retained baseline and earlier local verification
 
 The actual legacy result at `a99b474` was **47 passing and 4 failing cases out of 51, with zero skipped**, while the SQL lane recorded **673 passing assertions across 35 files**. The four failures were the VIEWER jobs INSERT case, two RPC cases requiring a top-level organization claim, and the repeated invoice approval assertion. Earlier stale database fixture names had blocked the 51 cases before their authorization assertions; compatibility repair exposed these four real failures. The SQL result therefore did not establish that the legacy TypeScript contract was green. Coordinator proof: [baseline run 34668739760, job 103485889281](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34668739760/job/103485889281).
 
-<!-- adversary: The coordinator supplied the actual a99b474 job above with the 47/51 legacy result and SQL 673 result. This draft preserves the four failures and does not relabel the baseline as a successful complete tenant lane. Candidate CI has not yet been supplied. -->
+<!-- adversary: The coordinator supplied the actual a99b474 job above with the 47/51 legacy result and SQL 673 result. This draft preserves the four failures and does not relabel the baseline as a successful complete tenant lane. At that initial handoff candidate CI had not yet been supplied; the exact published result is now recorded above. -->
 
-| Candidate check | Evidence available for this draft | Limit |
+| Earlier local check | Evidence before the published checkpoint | Limit at that time |
 |---|---|---|
 | Jobs restrictive guard | 7 source test assertions; native PostgreSQL 18 log records 7 PASS results. | Source-extracted minimal fixture, not the full historical migration chain. |
 | Shared Auth hook | 15 source test assertions; native PostgreSQL 18 log records 15 PASS results, including function privileges and claim behavior. | Same limited native fixture; hosted Auth activation and complete Supabase startup are separate checks. |
-| Legacy SDK suite | Candidate file now contains 55 total cases; added real password-login/refresh paths and FINANCE positive coverage. | Execution of the updated 55-case suite through CI remains pending. |
+| Legacy SDK suite | Candidate file now contains 55 total cases; added real password-login/refresh paths and FINANCE positive coverage. | The subsequent 529930f job passed all 55; see the exact-head result above. |
 | Culture chart regression | Implementing reviewer reported 20 focused tests passing, including the real-selector/real-axis regression. | Local focused result; updated visual snapshots and final candidate CI remain pending. |
 | QC control styling | Scoped ESLint and scoped `git diff --check` exited 0 for the 9-line change. | Reversible style-only change; Build 93 contains the earlier pixels. |
 
@@ -46,7 +63,7 @@ The native proof files are parent-only local evidence: `tmp/legacy-db-20260912/j
 
 The coordinator subsequently recorded a local root Vitest result of **360 files / 7,326 tests, all passing with zero skipped**, and a full TypeScript build check with exit 0. Evidence is parent-only `tmp/final-aggregate-20260912/root-vitest.json`, `root-vitest.log`, `typecheck.log`, and `status.json`. This aggregate precedes the late quotation tax-label fix described below; it is not verification of that later candidate and is not hosted CI success.
 
-<!-- adversary: The coordinator supplied the 360-file/7326-test result and TypeScript exit 0; the named local aggregate is explicitly dated before the late tax change. The updated 55-case Supabase SDK lane still needs its own CI result. -->
+<!-- adversary: The coordinator supplied the 360-file/7326-test result and TypeScript exit 0; the named local aggregate is explicitly dated before the late tax change. The later 529930f SDK result is separately recorded above. -->
 
 ## 3. Tenant repair mechanism and retained contracts
 
@@ -66,7 +83,9 @@ A hosted Supabase project must apply the migration and separately enable this sa
 
 The pre-existing multi-organization resolver divergence remains: `get_user_org_id()` chooses the earliest active membership by `joined_at`, while the identity guard can validate the selected organization in the JWT. `rpc_job_board` still resolves its query organization through `get_user_org_id()`. Thus a user with multiple active memberships needs an explicit follow-up reconciliation of selection and query scope; this patch does not establish that those scopes coincide. Sources: `supabase/migrations/20261001_people_culture_schema.sql:24` and `supabase/migrations/0180_identity_reconciliation_hardening.sql:296`.
 
-## 5. Visual defects and fixture corrections
+## 5. Build 93 defects and earlier fixture verification
+
+This table preserves the defect findings and verification available during the earlier Build 93 review. The Build 94 checkpoint below supersedes its pending-capture entries.
 
 | Area | Observed cause and candidate change | Review evidence and remaining check |
 |---|---|---|
@@ -82,9 +101,9 @@ The pre-existing multi-organization resolver divergence remains: `get_user_org_i
 
 Why the defects escaped earlier checks: AiCost unit assertions counted bar nodes without measuring their rendered height. The coordinator's new browser geometry evidence is recorded in parent-only `tmp/ai-cost-cua-geometry-20260912.json`. Legacy Culture tests/stories injected unused store selector methods, so the XAxis field drift was not exercised through the production selector; the new regression uses that selector and real Recharts axes. Fixture count/rate consistency and drag geometry now follow the production data contract instead of accepting a spy-only visual inconsistency.
 
-The late quotation regression first produced 2 failures and 1 pass; after the display fix, 77 focused tests passed (3 new rendering cases plus 74 store cases). Incremental TypeScript build and diff check exited 0; scoped ESLint reported 0 errors and 3 existing warnings. Proof: `src/ai-quotation/__tests__/AiQuotationDraftBoard.test.tsx`; parent-only `tmp/quotation-tax-red.log`, `tmp/quotation-tax-green.log`, `tmp/quotation-tax-types.log`, and `tmp/quotation-tax-types-status.json`. This targeted delta follows the earlier 7,326-test aggregate; the full unit suite was not rerun afterward.
+The late quotation regression first produced 2 failures and 1 pass; after the display fix, 77 focused tests passed (3 new rendering cases plus 74 store cases). Incremental TypeScript build and diff check exited 0; scoped ESLint reported 0 errors and 3 existing warnings. Proof: `src/ai-quotation/__tests__/AiQuotationDraftBoard.test.tsx`; parent-only `tmp/quotation-tax-red.log`, `tmp/quotation-tax-green.log`, `tmp/quotation-tax-types.log`, and `tmp/quotation-tax-types-status.json`. This targeted delta follows the earlier 7,326-test aggregate; the full unit suite was not rerun at that local checkpoint. The subsequent 529930f hosted aggregate passed 361 files / 7,329 tests.
 
-<!-- adversary: The implementing reviewer supplied the red 2-fail/1-pass then green 77-case logs, checked unchanged tax/subtotal/total and stored fraction, and recorded incremental TypeScript exit 0. Coordinator independently read that evidence; hosted CI remains pending. -->
+<!-- adversary: The implementing reviewer supplied the red 2-fail/1-pass then green 77-case logs, checked unchanged tax/subtotal/total and stored fraction, and recorded incremental TypeScript exit 0. Coordinator independently read that evidence; subsequent 529930f hosted CI is recorded above. -->
 
 ## 6. Build 93 acceptance checkpoint
 
@@ -100,13 +119,18 @@ The late quotation regression first produced 2 failures and 1 pass; after the di
 
 Training enrollment's failure story intentionally displays “DB write failed — server error” and retains its employee tag for retry. Success clears the form; its spy does not populate a real timeline. Other action stories may retain fixture state when callbacks only record calls. Those expected states were preserved in the review.
 
-Local Storybook verification is ongoing. Fresh visual evidence for the repair candidate must be linked to its eventual commit/build before withheld items can be accepted.
+## 6.1. Build 94 acceptance checkpoint
 
-## 7. Handoff gates
+At **04:21 UTC on 12 September 2026**, the coordinator confirmed [Build 94](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=94): **28 Accepted / 5 Unreviewed / 8 Auto-ignored**. Accepted images comprise 13 coordinator cases (nine stable Culture stories and four AiCost stories), 11 QC cases and four other corrected cases. Five role-panel images remain held for the select-color follow-up. Eight Culture images were **Auto-ignored by Chromatic and remain UNACCEPTED**: NonAdmin VIEWER, Multiple Periods, SAFETY filter, RESOLVED filter, PENDING filter, ACKNOWLEDGE, RESOLVE and DISMISS. Auto-ignore is not review approval. Coordinator evidence is parent-only `tmp/chromatic-build94-root-review.json`.
 
-1. Publish the reviewed candidate and record its exact commit, then retain full CI output for the updated 55 SDK cases and complete migration-chain SQL lane.
-2. Record the final local Storybook checks and inspect each changed hosted snapshot, including the eleven withheld QC cases; reconcile reviewer ledgers before stating a build-wide acceptance total.
-3. Verify hosted Auth hook activation and login/refresh behavior separately before any operational acceptance; track multi-organization resolver reconciliation as an open follow-up.
-4. Keep production release, operational acceptance, and SciSpace v2 canonical integration as separate decisions backed by their own evidence.
+The 2,000 ms Culture delay is scoped to story metadata. Recharts 2.15.4 uses JavaScript animation (Line 1,500 ms, Bar 400 ms); the [Chromatic animation guidance](https://www.chromatic.com/docs/animations/) explains that JavaScript animation is not automatically paused. This is a controlled hypothesis, not confirmed root cause. A subsequently inspected NonAdmin trace showed bar lengths cycling over a 7.1-second sequence; whether those frames span capture attempts or remounts remains unresolved. That observation limits the explanation based only on the initial 1,500 ms animation. The next build must show stable, correct captures before acceptance.
 
-This is a technical repair handoff, with the baseline failures, completed narrow checks, and remaining gates retained for review.
+The coordinator also measured the local AdminWithFeedback story through CUA in two separated samples: bar widths were identical at 775.212158 / 715.580444 / 691.727783 / 763.285828 px. That local render settled without an observed continuous loop. It supports testing the scoped delay first, while leaving the hosted instability explanation and final acceptance unresolved.
+
+## 7. Next source batch and handoff gates
+
+- **Required database step:** remove its `continue-on-error`, report success/failure/skipped/cancelled explicitly, and reject unknown outcomes. Keep JSON upload and cleanup under `always()`. Actual Bash report/exit checks went from four failures to nine passing checks; actionlint and YAML parsing passed. Parent evidence: `tmp/pgtap-required-status-red.json` and `tmp/pgtap-required-status-green.json`. This does not change branch protection or remove conditional guards in other suites.
+- **Role select colors:** the native relationship-type select needs explicit light background, dark foreground and light control scheme. The five affected role snapshots remain held until the corrected capture.
+- **Culture capture:** story-only `chromatic.delay: 2000` retains product animation, fixtures and assertions. Scoped lint had zero errors and three existing warnings; TypeScript and diff checks exited 0. Stability remains pending new capture.
+
+Publish this batch with the reports once. Its exact-head CI and final snapshot result must be recorded in the PR and a final parent addendum; the verified 529930f result does not certify those later source changes. Hosted Auth activation/login/refresh, multi-organization resolver reconciliation, production release, operational acceptance and SciSpace v2 canonical integration remain separate evidence gates.

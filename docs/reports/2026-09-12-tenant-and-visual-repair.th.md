@@ -4,15 +4,32 @@
 
 **วันที่:** 12 กันยายน 2026
 
-**สถานะ:** ฉบับร่างสำหรับตรวจทาน; ยังรอ CI ของ candidate และการรับภาพใหม่
+**สถานะ:** รุ่น 529930f ที่เผยแพร่ตรวจผ่านแล้ว; ยังรอ source รอบถัดไปสามไฟล์และการรับภาพที่เหลือ
 
 **ฐาน source:** product commit `a99b474b790d1b94932302ed818834272f16e529`
 
-**Candidate code commit:** `3da55463ccb1bacb179068084218afae9c78a6c4` (commit local; ยังรอ hosted CI)
+**Source commit ของชุดซ่อมที่เผยแพร่:** `3da55463ccb1bacb179068084218afae9c78a6c4` (รวมอยู่ในรุ่น 529930f ที่เผยแพร่แล้ว; ดูจุดตรวจที่ยืนยันด้านล่าง)
 
 **ฉบับคู่กัน:** [English edition](2026-09-12-tenant-and-visual-repair.en.md)
 
 แพตช์นี้แก้การข้าม policy INSERT ของ jobs, organization claim ที่ RPC เดิมต้องใช้, assertion การอนุมัติ invoice ซ้ำที่ไม่ตรงสัญญา และข้อบกพร่องด้านภาพที่พบระหว่างตรวจ Build 93 หลักฐานครอบคลุมการอ่าน source ผลทดสอบที่ระบุ และการตรวจ browser ที่มีชื่อกำกับ เอกสารนี้ไม่ได้ให้สิทธิ์ deploy production หรือรับรองการใช้งานจริง และไม่ได้ผนวกแพ็กเกจ SciSpace v2
+
+## จุดตรวจรุ่นที่เผยแพร่
+
+รุ่นที่เผยแพร่ [529930fde04c8a049dec6df0c069227cae0b841b](https://github.com/indetailsgroup-hue/monolith-workspace/commit/529930fde04c8a049dec6df0c069227cae0b841b) รวม source `3da5546` และรายงานเทคนิค เวลา 11:16 น. ไทย วันที่ 12 กันยายน 2026 ยืนยันว่า **19 PR workflows ผ่านทั้งหมด** ผลนี้ผูกกับรุ่นที่เผยแพร่นั้น ไม่ใช่ source ที่กำลังแก้รอบถัดไป
+
+| การตรวจบน CI ที่ 529930f | ผลที่พบจริง | ขอบเขต |
+|---|---|---|
+| Root unit / build / typecheck | **ผ่าน 361 ไฟล์ / 7,329 ข้อ**; build และ TypeScript ผ่าน | รวม regression ป้ายภาษีที่เพิ่มท้ายรอบแล้ว [Full Verify run](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671757990/job/103494307311) |
+| SQL pgTAP | **ผ่าน 37 ไฟล์ / 695 assertions** | Supabase local ใหม่บน CI runner พร้อม prepared migration chain ครบ |
+| ชุด SDK 0173 ที่ซ่อม | **ผ่าน 55 กรณี** | ตรวจ setup และสิทธิ์จริง รวม login/refresh ที่ Auth ออก token, FINANCE ที่มีสิทธิ์, การปฏิเสธ VIEWER/ข้ามองค์กร และการอนุมัติซ้ำ |
+| TypeScript database ที่ตั้งค่าให้รัน | **31 ไฟล์ / รายงานผ่าน 1,407 ข้อ; รายงานข้าม 0** | ชุด legacy อื่นบางกรณียัง return ก่อนตามเงื่อนไข เช่นเส้นทาง SQL helper ของ `0205` ที่ใช้ไม่ได้ ยอดนี้ไม่พิสูจน์ว่าทุกกรณีได้ตรวจ assertions ของฐานข้อมูลจริง |
+
+หลักฐานฐานข้อมูล: [run 34671758042, job 103494306989](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34671758042/job/103494306989) บันทึกผลที่เครื่องอ่านได้ของผู้ประสานงานอยู่เฉพาะ parent ที่ `tmp/ci-529930f-evidence.json`
+
+<!-- adversary: อ่านบันทึกผู้ประสานงานที่ผูกกับ head จริง: workflow ผ่าน 19, SQL 37/695, 0173 แบบ strict ผ่าน 55 และชุดที่ตั้งค่ารายงาน 31/1407 คงข้อจำกัด conditional early return ไว้ ยอด reported skipped เป็นศูนย์ไม่พิสูจน์ว่าทุกเคสตรวจจริง การเปลี่ยน workflow, role select และการถ่าย Culture รอบถัดไปต้องมีผล CI/ภาพของตนเอง -->
+
+source ติดตามสามไฟล์ commit ในเครื่องที่ **187c6302af03a7dae4d51467050269b18584401b** และยังรอเผยแพร่ ณ จุดส่งต่อนี้ ได้แก่ บังคับให้ขั้น TypeScript database ล้มเหลวแล้วหยุดงาน แก้สี native select ใน role panel และเพิ่มเวลารอถ่ายภาพเฉพาะ Culture 2,000 ms ผล CI และภาพแก้ไขรอบใหม่ยัง **PENDING** การรอภาพเป็นการทดลองสมมติฐานว่า Recharts JavaScript animation เป็นสาเหตุที่น่าจะเกี่ยวข้อง ยังไม่ยืนยันว่าแก้ความไม่คงที่แล้ว โดยคง animation ของผลิตภัณฑ์ fixtures และ interaction assertions ไว้
 
 ## 1. ขอบเขต repository และหลักฐาน
 
@@ -26,17 +43,17 @@
 
 เอกสารอำนาจกำกับที่อยู่เฉพาะ parent คือ `CONTEXT.md` และ `docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md` ระบุเป็น path ของ parent ไม่สร้าง relative link ที่ใช้ไม่ได้เมื่อเผยแพร่ product checkout ข้อสรุป implementation ด้านล่างอ้าง checkout สำหรับ implementation
 
-## 2. ผลฐานเดิมจริงและการตรวจ candidate
+## 2. ผลฐานเดิมและการตรวจในเครื่องที่เก็บไว้
 
 ผลชุด legacy จริงที่ `a99b474` คือ **ผ่าน 47 และไม่ผ่าน 4 จาก 51 กรณี โดยไม่ข้ามกรณีใด** ส่วน SQL lane บันทึก **ผ่าน 673 assertions ใน 35 ไฟล์** ข้อผิดพลาดทั้งสี่คือ VIEWER INSERT jobs, RPC สองกรณีที่ต้องใช้ organization claim ระดับบน และ assertion อนุมัติ invoice ซ้ำ ก่อนหน้านี้ชื่อ database fixture ที่ล้าสมัยขวางทั้ง 51 กรณีก่อนถึง authorization assertions การแก้ compatibility จึงเปิดให้เห็นข้อผิดพลาดจริงสี่กรณีนี้ ดังนั้นผล SQL ไม่ได้ยืนยันว่าชุดสัญญา TypeScript legacy ผ่านแล้ว หลักฐานจากผู้ประสานงาน: [baseline run 34668739760, job 103485889281](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34668739760/job/103485889281)
 
-<!-- adversary: ผู้ประสานงานส่งผล job ของ a99b474 ตามลิงก์ โดย legacy ได้ 47/51 และ SQL ได้ 673 เอกสารนี้คงข้อผิดพลาดทั้งสี่ ไม่เปลี่ยนผลฐานเดิมเป็น tenant lane ที่ผ่านครบ และยังไม่มีผล candidate CI ส่งมา -->
+<!-- adversary: ผู้ประสานงานส่งผล job ของ a99b474 ตามลิงก์ โดย legacy ได้ 47/51 และ SQL ได้ 673 เอกสารนี้คงข้อผิดพลาดทั้งสี่ ไม่เปลี่ยนผลฐานเดิมเป็น tenant lane ที่ผ่านครบ ในจุดส่งต่อเดิมยังไม่มีผล candidate CI ส่วนผลรุ่นที่เผยแพร่จริงบันทึกด้านบนแล้ว -->
 
-| การตรวจ candidate | หลักฐานที่มีสำหรับฉบับร่าง | ข้อจำกัด |
+| การตรวจในเครื่องเดิม | หลักฐานก่อนรุ่นที่เผยแพร่ | ข้อจำกัด ณ เวลานั้น |
 |---|---|---|
 | Restrictive guard ของ jobs | Source มี 7 assertions; log PostgreSQL 18 แบบ native บันทึก PASS 7 รายการ | เป็น minimal fixture ที่แยกจาก source ไม่ใช่ migration chain เดิมทั้งหมด |
 | Auth hook ร่วม | Source มี 15 assertions; log PostgreSQL 18 แบบ native บันทึก PASS 15 รายการ รวมสิทธิ์เรียก function และพฤติกรรม claim | ใช้ native fixture ขอบเขตจำกัดเดียวกัน; hosted Auth activation และ Supabase startup เต็มยังเป็นคนละการตรวจ |
-| Legacy SDK suite | Candidate file มีรวม 55 กรณี เพิ่มเส้นทาง password login/refresh จริงและกรณีบวกของ FINANCE | ยังรอรันชุด 55 กรณีที่แก้แล้วผ่าน CI |
+| Legacy SDK suite | Candidate file มีรวม 55 กรณี เพิ่มเส้นทาง password login/refresh จริงและกรณีบวกของ FINANCE | ต่อมา job ของ 529930f ผ่านครบ 55 กรณี ดูผลที่ผูกกับ head ด้านบน |
 | Culture chart regression | ผู้ลงมือแก้รายงาน focused tests ผ่าน 20 กรณี รวม regression ที่ใช้ selector และแกนกราฟจริง | เป็นผล local แบบจำกัดขอบเขต; ยังรอภาพใหม่และ CI สุดท้ายของ candidate |
 | รูปแบบ control ของ QC | Scoped ESLint และ `git diff --check` เฉพาะไฟล์จบด้วย exit 0 สำหรับการแก้ 9 บรรทัด | เป็น style change ที่ย้อนกลับได้; Build 93 ยังเป็นภาพเดิม |
 
@@ -46,7 +63,7 @@
 
 ต่อมาผู้ประสานงานบันทึกผล local root Vitest **360 ไฟล์ / 7,326 tests ผ่านทั้งหมดโดยไม่มีการข้าม** และ full TypeScript build check จบ exit 0 หลักฐานอยู่เฉพาะ parent ที่ `tmp/final-aggregate-20260912/root-vitest.json`, `root-vitest.log`, `typecheck.log` และ `status.json` ผลรวมนี้เกิดก่อนการแก้ป้ายภาษี quotation ที่พบภายหลังตามด้านล่าง จึงไม่ใช่ผลตรวจ candidate หลังแก้จุดนั้น และไม่ใช่ผล hosted CI ที่สำเร็จ
 
-<!-- adversary: ผู้ประสานงานส่งผล 360 ไฟล์/7326 tests และ TypeScript exit 0 โดยระบุว่า local aggregate ตามชื่อไฟล์เกิดก่อนแก้ tax จุดหลังสุด ส่วน Supabase SDK lane 55 กรณีที่แก้ยังต้องมีผล CI ของตัวเอง -->
+<!-- adversary: ผู้ประสานงานส่งผล 360 ไฟล์/7326 tests และ TypeScript exit 0 โดยระบุว่า local aggregate ตามชื่อไฟล์เกิดก่อนแก้ tax จุดหลังสุด ผล SDK ของ 529930f ที่ตามมาบันทึกแยกไว้ด้านบนแล้ว -->
 
 ## 3. กลไกการแก้ tenant และสัญญาที่รักษาไว้
 
@@ -66,7 +83,9 @@ Hosted Supabase ต้องใช้ migration และเปิด function �
 
 ความต่างของตัวเลือก organization สำหรับผู้มีหลาย membership ที่มีอยู่เดิมยังคงอยู่: `get_user_org_id()` เลือก active membership ที่เก่าที่สุดตาม `joined_at` ขณะที่ identity guard ตรวจ organization ที่เลือกใน JWT ได้ และ `rpc_job_board` ยังเลือก organization สำหรับ query ผ่าน `get_user_org_id()` ดังนั้นผู้ที่มี active membership หลาย organization ต้องมีงานติดตามเพื่อทำให้การเลือกและขอบเขต query ตรงกัน แพตช์นี้ไม่ได้ยืนยันว่าทั้งสองตรงกัน Source: `supabase/migrations/20261001_people_culture_schema.sql:24` และ `supabase/migrations/0180_identity_reconciliation_hardening.sql:296`
 
-## 5. ข้อบกพร่องด้านภาพและการแก้ fixture
+## 5. ข้อบกพร่อง Build 93 และผลตรวจ fixture เดิม
+
+ตารางนี้เก็บข้อบกพร่องและหลักฐานที่มีในช่วงตรวจ Build 93 เดิม จุดตรวจ Build 94 ด้านล่างใช้แทนสถานะรอภาพในตาราง
 
 | ส่วน | สาเหตุที่พบและการแก้ candidate | หลักฐานตรวจและสิ่งที่ยังรอ |
 |---|---|---|
@@ -82,9 +101,9 @@ Hosted Supabase ต้องใช้ migration และเปิด function �
 
 สาเหตุที่การตรวจเดิมไม่พบ: Unit assertions ของ AiCost นับ bar nodes แต่ไม่ได้วัดความสูงที่แสดงจริง หลักฐาน browser geometry ใหม่ของผู้ประสานงานอยู่เฉพาะ parent ที่ `tmp/ai-cost-cua-geometry-20260912.json` ส่วน Culture tests/stories เดิมเติม store selector methods ที่ไม่ได้ถูกเรียก จึงไม่ได้ทดสอบความคลาดเคลื่อนของ field XAxis ผ่าน production selector; regression ใหม่ใช้ selector นั้นและ Recharts axes จริง การทำจำนวน/rate และ geometry หลัง drag ใน fixture ให้ตรงจึงยึดสัญญาข้อมูล production แทนการรับภาพที่ spy ทำให้ไม่สอดคล้อง
 
-Regression quotation ที่เพิ่มภายหลังเริ่มจากไม่ผ่าน 2 และผ่าน 1; หลังแก้การแสดงผล focused tests ผ่าน 77 กรณี (rendering ใหม่ 3 และ store 74) Incremental TypeScript build และ diff check จบ exit 0 ส่วน scoped ESLint มี 0 errors และคำเตือนเดิม 3 รายการ หลักฐาน: `src/ai-quotation/__tests__/AiQuotationDraftBoard.test.tsx`; และไฟล์เฉพาะ parent `tmp/quotation-tax-red.log`, `tmp/quotation-tax-green.log`, `tmp/quotation-tax-types.log`, `tmp/quotation-tax-types-status.json` เป็นการตรวจเพิ่มเฉพาะส่วนหลังผลรวม 7,326 tests เดิม โดยไม่ได้รัน full unit suite ใหม่หลังจากนั้น
+Regression quotation ที่เพิ่มภายหลังเริ่มจากไม่ผ่าน 2 และผ่าน 1; หลังแก้การแสดงผล focused tests ผ่าน 77 กรณี (rendering ใหม่ 3 และ store 74) Incremental TypeScript build และ diff check จบ exit 0 ส่วน scoped ESLint มี 0 errors และคำเตือนเดิม 3 รายการ หลักฐาน: `src/ai-quotation/__tests__/AiQuotationDraftBoard.test.tsx`; และไฟล์เฉพาะ parent `tmp/quotation-tax-red.log`, `tmp/quotation-tax-green.log`, `tmp/quotation-tax-types.log`, `tmp/quotation-tax-types-status.json` เป็นการตรวจเพิ่มเฉพาะส่วนหลังผลรวม 7,326 tests เดิม โดยไม่ได้รัน full unit suite ใหม่ ณ จุดตรวจในเครื่องนั้น ต่อมา hosted aggregate ของ 529930f ผ่าน 361 ไฟล์ / 7,329 ข้อ
 
-<!-- adversary: ผู้ลงมือแก้ส่ง logs ของ red 2 fail/1 pass แล้ว green 77 กรณี ตรวจ tax/subtotal/total และ stored fraction ว่าไม่เปลี่ยน พร้อมผล incremental TypeScript exit 0 ผู้ประสานงานอ่านหลักฐานยืนยันแยกแล้ว แต่ยังรอ hosted CI -->
+<!-- adversary: ผู้ลงมือแก้ส่ง logs ของ red 2 fail/1 pass แล้ว green 77 กรณี ตรวจ tax/subtotal/total และ stored fraction ว่าไม่เปลี่ยน พร้อมผล incremental TypeScript exit 0 ผู้ประสานงานอ่านหลักฐานยืนยันแยกแล้ว ผล hosted CI ที่ตามมาของ 529930f อยู่ด้านบน -->
 
 ## 6. จุดตรวจการรับภาพ Build 93
 
@@ -100,13 +119,18 @@ Regression quotation ที่เพิ่มภายหลังเริ่�
 
 Story การมอบหมายอบรมที่ล้มเหลวจงใจแสดง “DB write failed — server error” และเก็บ tag พนักงานไว้ให้ลองใหม่ ส่วน success ล้าง form โดย spy ไม่ได้เติม timeline จริง Story interaction อื่นอาจคง fixture เดิมเมื่อ callback มีหน้าที่บันทึกการเรียกเท่านั้น การตรวจรักษาผลที่คาดไว้เหล่านี้
 
-ยังตรวจ local Storybook ต่อ ต้องผูกหลักฐานภาพใหม่ของ candidate กับ commit/build สุดท้ายก่อนรับรายการที่พักไว้
+## 6.1. จุดตรวจการรับภาพ Build 94
 
-## 7. เกณฑ์ส่งต่องาน
+เวลา **11:21 น. ไทย วันที่ 12 กันยายน 2026** ผู้ประสานงานยืนยัน [Build 94](https://www.chromatic.com/build?appId=6a916bc5171efe1f3f09f56e&number=94): **Accepted 28 / Unreviewed 5 / Auto-ignored 8** ภาพที่รับประกอบด้วยขอบเขตผู้ประสานงาน 13 ภาพ (Culture ที่คงที่เก้าและ AiCost สี่) QC 11 และภาพแก้อื่นอีกสี่ ภาพ role panel ห้ารายการยังพักรับเพื่อแก้สี select ส่วน Culture แปดรายการถูก **Chromatic Auto-ignored และยังไม่ได้รับ (UNACCEPTED)** ได้แก่ NonAdmin VIEWER, Multiple Periods, ตัวกรอง SAFETY, RESOLVED, PENDING และ ACKNOWLEDGE, RESOLVE, DISMISS การ auto-ignore ไม่ใช่การอนุมัติรับภาพ หลักฐานผู้ประสานงานอยู่เฉพาะ parent ที่ `tmp/chromatic-build94-root-review.json`
 
-1. เผยแพร่ candidate ที่ผ่านการตรวจทานพร้อมบันทึก commit ตรงตัว แล้วเก็บผล CI เต็มสำหรับ SDK 55 กรณีที่แก้และ SQL lane ที่ใช้ migration chain ครบ
-2. บันทึก local Storybook checks สุดท้ายและดู hosted snapshots ที่เปลี่ยนทีละภาพ รวม QC 11 กรณีที่พักไว้ รวม ledger ของผู้ตรวจให้ตรงก่อนประกาศยอดรับทั้ง build
-3. ตรวจ hosted Auth hook activation และ login/refresh แยกก่อนรับใช้งานจริง ติดตามงาน reconciliation ของ multi-organization resolver ต่อ
-4. แยกการปล่อย production, การรับใช้งานจริง และ canonical integration ของ SciSpace v2 เป็นการตัดสินใจที่ใช้หลักฐานเฉพาะของแต่ละเรื่อง
+เวลารอ Culture 2,000 ms จำกัดเฉพาะ metadata ของ story โดย Recharts 2.15.4 ใช้ JavaScript animation (Line 1,500 ms, Bar 400 ms) และ[คำแนะนำ Chromatic](https://www.chromatic.com/docs/animations/) ระบุว่าไม่หยุด JavaScript animation อัตโนมัติ นี่เป็นการทดลองสมมติฐาน ยังไม่ยืนยันสาเหตุ ต่อมาพบ trace ของ NonAdmin ที่ความยาว bar เปลี่ยนซ้ำตลอดลำดับ 7.1 วินาที ยังไม่ยืนยันว่าเป็นคนละ capture attempt หรือ remount จึงจำกัดข้อสรุปที่อาศัยเพียง animation แรก 1,500 ms ต้องใช้ build ถัดไปพิสูจน์ว่าภาพคงที่และถูกต้องก่อนรับ
 
-เอกสารนี้เป็นการส่งต่องานแก้ทางเทคนิค โดยรักษาข้อผิดพลาดฐานเดิม การตรวจขอบเขตจำกัดที่ทำแล้ว และเกณฑ์ที่ยังต้องตรวจไว้สำหรับทบทวน
+ผู้ประสานงานวัด story AdminWithFeedback ในเครื่องผ่าน CUA สองช่วงที่เว้นระยะกัน ได้ความกว้าง bar เท่ากันที่ 775.212158 / 715.580444 / 691.727783 / 763.285828 px ภาพในเครื่องหยุดนิ่งโดยไม่พบการวนต่อเนื่อง หลักฐานนี้สนับสนุนการลองเวลารอเฉพาะส่วนก่อน แต่ยังไม่ยืนยันคำอธิบายความไม่คงที่บน hosted หรือการรับภาพสุดท้าย
+
+## 7. Source รอบถัดไปและเกณฑ์ส่งต่อ
+
+- **ขั้นฐานข้อมูลที่บังคับ:** ลบ `continue-on-error` รายงาน success/failure/skipped/cancelled แยกกันและปฏิเสธ outcome ที่ไม่รู้จัก คง JSON upload และ cleanup ภายใต้ `always()` ผลตรวจ Bash จริงและ exit เปลี่ยนจากล้มเหลวสี่จุดเป็นผ่านเก้าข้อ actionlint และ YAML ผ่าน หลักฐาน parent: `tmp/pgtap-required-status-red.json`, `tmp/pgtap-required-status-green.json` ไม่เปลี่ยน branch protection หรือถอด conditional guards ของชุดอื่น
+- **สี role select:** native select ประเภทความสัมพันธ์ต้องมีพื้นหลังอ่อน ตัวอักษรเข้ม และ light control scheme ภาพ role ห้ารายการยังพักรับจนได้ภาพแก้ไข
+- **การถ่าย Culture:** ตั้ง `chromatic.delay: 2000` เฉพาะ story คง animation ของผลิตภัณฑ์ fixtures และ assertions ไว้ Scoped lint มีศูนย์ errors และคำเตือนเดิมสามรายการ TypeScript และ diff checks exit 0 แต่ความคงที่ยังรอภาพใหม่
+
+เผยแพร่รอบนี้พร้อมรายงานครั้งเดียว แล้วบันทึกผล CI ของ head นั้นและผลภาพสุดท้ายใน PR กับภาคผนวก parent ผล 529930f ที่ผ่านไม่รับรอง source ที่แก้ภายหลัง Hosted Auth activation/login/refresh งาน resolver หลายองค์กร การปล่อย production การรับใช้งานจริง และ canonical integration ของ SciSpace v2 ยังเป็นเกณฑ์ที่ต้องมีหลักฐานแยก
