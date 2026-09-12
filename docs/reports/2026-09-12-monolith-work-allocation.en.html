@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH — SciSpace and Codex work allocation</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">MONOLITH — SciSpace and Codex work allocation</h1>
+<p id="L3">12 September 2026 · EN · Management recommendation based on inspected work</p>
+<p id="L5"><strong>Recommendation:</strong> SciSpace leads research, requirements reconciliation, SOPs and supplier knowledge. Codex coordinates the engineering backlog, verifies source and tests, implements agreed changes and prepares integration. The owner decides business scope and accepts operational results. Preserve and reuse the code SciSpace has already delivered.</p>
+<p id="L7">This document allocates work for review. No assignment message was sent to SciSpace, no running task was interrupted, and no repository permission, production setting or approval was changed.</p>
+<h2 id="L9">Evidence boundary</h2>
+<p id="L11">The signed-in SciSpace Monolith folder showed <strong>9 chats, 10 notebooks and 0 files in the folder's Files tab</strong>. Chat attachments exist separately. The latest visible activity or summary in all 9 chats was inspected; notebook titles were inventoried. Full chat histories, all notebook contents and attached archives were not audited.</p>
+<p id="L13">Both local Git roots were checked separately, with CONTEXT and the 21 July scope correction read:</p>
+<div class="tablewrap"><table><thead><tr id="L15"><th>Source</th><th>Revision / scope</th><th>Existing changes</th></tr></thead><tbody>
+<tr id="L17"><td>Parent governance root, <code>C:/Users/thai3/determined-williams (2)</code></td><td><code>aa1b30e509ece9d8efad3d68e949860aa79bdecf</code>, <code>guardrails/claim-linters</code>; roadmap and intake evidence</td><td>11 tracked changes; 591 untracked entries before this report</td></tr>
+<tr id="L18"><td>Nested product root, <code>determined-williams/</code></td><td><code>9c4bee6759f6d1919a320a2f56088ce683287f58</code>, <code>fix/dxf-truth-chain</code>; separate active product repository</td><td>22 tracked changes; 61 untracked entries; preserved</td></tr>
+<tr id="L19"><td>GitHub remote</td><td><code>1c554a3cdf33c43ae4971ce1b984d39572f5d47a</code>; CI snapshot at approximately 07:47 ICT</td><td>Current integration evidence below; distinct from both local revisions</td></tr>
+</tbody></table></div>
+<p id="L21">No new runtime tests were run for this allocation. Source presence, a passing workflow and operational acceptance are separate states. The current CI findings refer to GitHub remote, not either older local checkout.</p>
+<h2 id="L23">What the actual SciSpace work shows</h2>
+<div class="tablewrap"><table><thead><tr id="L25"><th>Inspected chat</th><th>Latest visible work</th><th>Recommended handoff</th></tr></thead><tbody>
+<tr id="L27"><td><a href="https://scispace.com/chat/8fe0bb23-1325-4cf5-98c5-5e05b740286f" target="_blank" rel="noopener">MONOLITH Manufacturing OS</a></td><td>Sprint 15, Team Pulse Check migration/types/store and Sentiment Timeline admin work; reports commit <code>8387a825</code></td><td>Preserve the implementation. SciSpace supplies user requirements; Codex verifies and continues UI/tests against the existing contract</td></tr>
+<tr id="L28"><td><a href="https://scispace.com/chat/240be26b-287a-4ada-8ab0-f181ffe8e788" target="_blank" rel="noopener">Security Audit Session Roadmap</a></td><td>Root test repairs and exclusions; pending security-report updates</td><td>Codex owns test coverage and security evidence; SciSpace updates the narrative from verified results</td></tr>
+<tr id="L29"><td><a href="https://scispace.com/chat/80c1d8ef-3d73-41ac-ad74-c890b6e278cd" target="_blank" rel="noopener">Integrated Operational Framework</a></td><td>Round 23 database fixes and Round 24 handoff, alongside SOP artifacts</td><td>SciSpace owns SOP consistency. Codex reconciles the old technical backlog with current commits before implementation</td></tr>
+<tr id="L30"><td><a href="https://scispace.com/chat/c8c7d395-868d-488f-835e-caafa146e675" target="_blank" rel="noopener">Elastic Monolith Review</a></td><td>A newer 36-file reconciliation package and dashboard; CON-013 still shown blocked; PFMEA and programme items shown closed</td><td>SciSpace reconciles this newer package with the intake. Codex verifies source links and implementation implications; retain actual owner decisions with their evidence</td></tr>
+<tr id="L31"><td><a href="https://scispace.com/chat/abcf131c-4325-49f4-af02-38af4d5555d6" target="_blank" rel="noopener">Barausse Manual Guide</a></td><td>SC-17/18 domain-verification documents and central index; reports publication pending</td><td>SciSpace hands over the package and provenance; Codex checks the remote before importing anything</td></tr>
+<tr id="L32"><td><a href="https://scispace.com/chat/e677e193-a431-48b9-96e6-96c81c07d9ae" target="_blank" rel="noopener">Modular Monolithic Furniture</a></td><td>Blum BOM, comparison, RFQ and checklist; reports local commit <code>573cf73</code> with push pending</td><td>SciSpace verifies product facts and commercial assumptions; Codex checks publication and document compatibility. “Ready to push” is not remote acceptance</td></tr>
+<tr id="L33"><td><a href="https://scispace.com/chat/770b95f7-6594-426b-81a3-fb1bba44d646" target="_blank" rel="noopener">Here are the thread names 1 Fix Missing</a></td><td>Secret-name/hook work and a request for a LINE Notify token</td><td>Codex reconciles current workflow configuration. Replace the obsolete LINE Notify task; credentials go through account settings, never chat</td></tr>
+<tr id="L34"><td><a href="https://scispace.com/chat/0ea95798-2ce9-467d-a450-6e7c8b5962b1" target="_blank" rel="noopener">ระบบ accounting ในระบบ Monolith การจัดการบัญชีแบบรวมศูนย์</a></td><td>Actively following CI at inspection time</td><td>Receive its current engineering handoff; do not allocate by the accounting title alone</td></tr>
+<tr id="L35"><td><a href="https://scispace.com/chat/883b1d71-3e68-4f56-9ee6-be3b5612814f" target="_blank" rel="noopener">Supplier Portal (พอร์ทัลซัพพลายเออร์ หรือ Vendor Portal) ของ Monolith ทั้งระบบ</a></td><td>TPC database-policy fix <code>1c554a3c</code> and active CI polling</td><td>Preserve the fix and receive the handoff; supplier-portal completion cannot be inferred from this chat title</td></tr>
+</tbody></table></div>
+<h2 id="L37">Start with these work packages</h2>
+<p id="L39">Priorities express order, not promised dates. “Owner” below is the proposed lead for the work, not an appointment of a named human approver.</p>
+<div class="tablewrap"><table><thead><tr id="L41"><th>ID / priority</th><th>Lead</th><th>Deliverable</th><th>Completion evidence</th></tr></thead><tbody>
+<tr id="L43"><td>O-01 / immediate</td><td>Account owner, Codex supporting</td><td>Revoke or rotate the GitHub credentials visibly exposed in SciSpace command history; restore required connections through secure settings</td><td>Owner records completion without publishing values; required access checked. Current token validity was not tested</td></tr>
+<tr id="L44"><td>C-01 / P1</td><td>Codex</td><td>Map each test group to its runtime/configuration and CI trigger; correct exclusions or dedicated runners where needed</td><td>Every affected group has an executable lane, nonzero expected tests and retained results at the same revision; preserve the existing edge empty-suite guard</td></tr>
+<tr id="L45"><td>C-02 / P1</td><td>Codex</td><td>Prepare PR #106 against current main, preserving SciSpace changes and checking lint/allowlist policy changes</td><td>Reviewable combined candidate, fresh relevant checks, no lost changes. Keep integration separate from operational release</td></tr>
+<tr id="L46"><td>C-03 / P1</td><td>Codex; SciSpace supplies notification needs</td><td>Repair billing-report workflow configuration and design a supported notification path</td><td>Report generation works independently of notification delivery; selected channel has tested failure handling. Any real message requires an authorized recipient and send</td></tr>
+<tr id="L47"><td>C-04 / P2</td><td>Codex</td><td>Diagnose the reported Chromatic component error</td><td>Explain the actual component failure and validate the fix; do not accept a baseline merely to hide an error</td></tr>
+<tr id="L48"><td>C-05 / next agreed product slice</td><td>Codex; SciSpace requirements</td><td>TPC user interface and tests using the existing store/schema, if retained in the selected delivery scope</td><td>Plan gating, response permission, DRAFT→ACTIVE→CLOSED, failure/rollback and tenant boundaries covered; UI and user acceptance linked</td></tr>
+<tr id="L49"><td>S-01 / P1, parallel</td><td>SciSpace; Codex verifies evidence</td><td>One source index and corrected decision/status register covering the newer package</td><td>Source/version and disposition for every SC-01–18 stream; resolve stale CON-013 using the existing roadmap; reconcile closed items with recorded decisions and scope</td></tr>
+<tr id="L50"><td>S-02 / P1, parallel</td><td>SciSpace; architecture/product owner decides</td><td>AIE/GAP semantic matrix, namespace glossary and VS-01 naming proposal</td><td>Preserve all distinct capabilities; distinguish SOP S17 from manufacturing S17-1…5; no automatic GAP-16 or silently retired requirement; versioned decision before dependent implementation</td></tr>
+<tr id="L51"><td>S-03 / before pilot implementation</td><td>SciSpace; Codex implements/tests</td><td>Pilot SOP, agent/API requirements and field/PFMEA action table</td><td>Inputs, outputs, roles, retry, escalation, evidence and acceptance examples specified; distinguish classify/notify/halt/resume per domain; Codex traces consumers and tests boundaries 7/8/9</td></tr>
+<tr id="L52"><td>S-04 / conditional on pilot</td><td>SciSpace; domain owner reviews; Codex imports</td><td>Barausse/Blum source register, BOM and installation checklist</td><td>Supplier-native codes, source edition, units, rights and compatibility reviewed; dimensions/quantities and actual costs confirmed by responsible people; remote import tracked</td></tr>
+<tr id="L53"><td>S-05 / business or later phase</td><td>SciSpace; owner prioritizes</td><td>BOI/business evidence, research, training and later AI/knowledge requirements</td><td>Current primary sources and explicit assumptions; Codex provides demonstrated product facts. External commitments and programme closure require the appropriate owner decision</td></tr>
+</tbody></table></div>
+<h2 id="L55">Why the engineering queue changed</h2>
+<p id="L57">At the pinned main snapshot, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443159" target="_blank" rel="noopener">Full Verify</a>, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443157" target="_blank" rel="noopener">FPR</a> and <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443140" target="_blank" rel="noopener">DB Verify</a> succeeded. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662443146" target="_blank" rel="noopener">pgTAP</a> was still running. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662442748" target="_blank" rel="noopener">Billing</a> failed with no job listed. These are dated observations, not an “all green” declaration.</p>
+<ul>
+<li id="L59"><strong>Test coverage needs verification:</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/commit/ecf48605a3981e50419d3a59e941e9982de6ba25" target="_blank" rel="noopener">ecf48605</a> added broad <code>tests/**</code>, <code>supabase/**</code> and <code>entitlement-db/**</code> exclusions. The inspected <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/tests/workflow/ts/captureMediaWorker.unit.test.ts" target="_blank" rel="noopener">workflow test</a> uses Vitest. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/edge-fn-verify.yml" target="_blank" rel="noopener">Edge</a> and <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/entitlement-db-verify.yml" target="_blank" rel="noopener">entitlement</a> workflows also invoke Vitest without an explicit alternative config. This source-level mismatch warrants C-01; it is not a fresh reproduction of every affected lane.</li>
+<li id="L60"><strong>Avoid duplicate repairs:</strong> EST and TPC <code>user_profiles</code> references were already changed upstream. Reconcile the old 33 root failures with upstream fixes and coverage before assigning them again. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/106" target="_blank" rel="noopener">PR #106</a> remains Draft/Open at <code>43ed3720</code>, behind main; one open PR and zero open issues were found in this snapshot. Open-issue count is not the project backlog count.</li>
+<li id="L61"><strong>Billing needs a current channel:</strong> the <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c554a3cdf33c43ae4971ce1b984d39572f5d47a/.github/workflows/billing-report.yml" target="_blank" rel="noopener">workflow</a> references secrets in conditions and LINE Notify. The precise startup failure annotation was not verified. LINE officially ended Notify on <strong>31 March 2025</strong>; obtaining a new Notify token is not a viable task. See the <a href="https://developers.line.biz/en/news/2025/04/01/line-notify/" target="_blank" rel="noopener">LINE announcement</a>.</li>
+<li id="L62"><strong>Other scoped evidence:</strong> <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34662132678/job/103466643573" target="_blank" rel="noopener">Chromatic run</a> reported one component error at <code>8387a825</code>. The inspected <code>src/culture-metrics</code> tree at main contains TPC types/store but no dedicated TPC UI/story/test; this is a scoped finding, not a whole-repository absence claim.</li>
+<li id="L63"><strong>Credential exposure:</strong> live command history displayed GitHub credentials. Their validity and any misuse are unknown. Revoke/rotate them without copying values into reports or messages, consistent with <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository" target="_blank" rel="noopener">GitHub guidance</a>.</li>
+</ul>
+<h2 id="L65">Shared working agreement</h2>
+<ol>
+<li id="L67">Use one backlog with work ID, lead, reviewer, source revision, affected files, dependencies, status and acceptance evidence. SciSpace's chat title is not the work ID.</li>
+<li id="L68">Let running SciSpace engineering tasks finish or reach a handoff before another agent writes the same files. Record their final revision and unfinished work. This review did not stop them.</li>
+<li id="L69">SciSpace may provide code or prototypes in an isolated, task-specific branch. Codex reviews, tests and prepares integration through a PR. Recommend one integration coordinator; no direct simultaneous editing of main and no duplicate migration allocation.</li>
+<li id="L70">Every handoff contains the artifact/source version, what changed, what remains uncertain, decisions already authorized, expected tests and the next recipient. Never include credentials.</li>
+<li id="L71">Use explicit states: proposed, active, delivered for review, verified, accepted. A generated document, local commit, successful upload or selected passing tests does not alone establish programme completion.</li>
+<li id="L72">Produce project documents in TH/EN Markdown and matching standalone HTML. SciSpace owns content quality; Codex checks source links and technical assertions before publication.</li>
+</ol>
+<p id="L74">The owner selects the pilot and field-app path, accepts the canonical AIE/GAP map, confirms domain-specific PFMEA rules, budgets and real manufacturing acceptance. Prepare concrete options and evidence before requesting those decisions. Continue independent R0 work while decisions are pending. Later AI expansion remains in R5 unless an accepted pilot dependency changes the order.</p>
+<h2 id="L76">Coverage of the existing roadmap</h2>
+<p id="L78">S-01 covers SC-01/04/08 and CON-011/013. S-02 covers SC-03/05/06/07/15 and CON-001–010. S-03 covers SC-02/03/09/10/11/12/13/14 and CON-012. S-04 covers SC-17/18 and the newly inspected Blum handoff. S-05 covers SC-16 and later research/training/AI scope. C-01–05 implement and verify the applicable delivery work; this mapping does not promise to build every historical proposal.</p>
+<p id="L80">Read together with the <a href="../roadmap/2026-09-11-monolith-delivery-roadmap.en.html">delivery roadmap</a>, <a href="2026-09-11-scispace-reconciliation-intake.en.html">intake corrections</a> and repository-scope correction in the parent governance root (<code>docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md</code>; local source, not copied into the product repository). The newer 36-file SciSpace package has not been equated with the earlier six-file intake or assigned its hash. Reported PFMEA approvals and programme closure must be reconciled with their actual decision records; neither their presence nor absence is inferred from a chat summary.</p>
+<p id="L82"><a href="2026-09-12-monolith-work-allocation.th.html">Thai edition</a></p>
+</main></body>
+</html>
