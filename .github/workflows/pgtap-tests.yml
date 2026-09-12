@@ -161,11 +161,11 @@ jobs:
           PGPASSWORD: postgres
 
       # -----------------------------------------------------------------------
-      # 10. Run the legacy TypeScript RLS/migration/integration suites against
-      #     the same real local stack as an explicit non-blocking diagnostic.
-      #     These tests still target pre-canonical columns such as
-      #     organizations.id and are not the pgTAP release gate. Their JSON
-      #     report remains available while each fixture is migrated to org_id.
+      # 10. Run the TypeScript RLS/migration/integration suites against the
+      #     same real local stack. A nonzero test exit fails this job; retain
+      #     the JSON report on every outcome. Some legacy cases still have
+      #     conditional early returns, so suite success is not proof that
+      #     every optional database path was exercised.
       # -----------------------------------------------------------------------
       - name: Export local Supabase credentials
         run: |
@@ -197,19 +197,32 @@ jobs:
       - name: Seed deterministic tenant fixtures
         run: node scripts/seed_supabase_integration_ci.mjs
 
-      - name: Run legacy TypeScript database suites (non-blocking diagnostic)
+      - name: Run TypeScript database suites (required)
         id: legacy_database_tests
-        continue-on-error: true
         run: npm run test:database -- --reporter=default --reporter=json --outputFile=database-vitest-report.json
 
-      - name: Report legacy database diagnostic status
+      - name: Report TypeScript database suite outcome
         if: always()
         run: |
-          if [ "${{ steps.legacy_database_tests.outcome }}" = "failure" ]; then
-            echo "::warning::Legacy TypeScript database suites are not release-blocking yet; see the uploaded JSON report for schema-drift failures."
-          else
-            echo "Legacy TypeScript database suites passed."
-          fi
+          case "${{ steps.legacy_database_tests.outcome }}" in
+            success)
+              echo "TypeScript database suites passed; inspect the JSON report and suite guards for coverage."
+              ;;
+            failure)
+              echo "::error::TypeScript database suites failed; this job is blocked. See the uploaded JSON report."
+              exit 1
+              ;;
+            skipped)
+              echo "::notice::TypeScript database suites were skipped; database verification was not established."
+              ;;
+            cancelled)
+              echo "::warning::TypeScript database suites were cancelled; database verification was not established."
+              ;;
+            *)
+              echo "::error::TypeScript database suite outcome is unavailable; database verification was not established."
+              exit 1
+              ;;
+          esac
 
       - name: Upload database integration evidence
         if: always()

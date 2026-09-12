@@ -248,6 +248,8 @@ const meta: Meta<typeof CultureDashboard> = {
   component: CultureDashboard,
   parameters: {
     layout: 'fullscreen',
+    // Recharts uses JavaScript animation (up to 1,500 ms); capture after it settles.
+    chromatic: { delay: 2000 },
     docs: {
       description: {
         component: `

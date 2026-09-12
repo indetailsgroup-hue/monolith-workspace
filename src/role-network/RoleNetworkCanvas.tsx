@@ -468,6 +468,9 @@ function RoleDetailPanel({
             onChange={e => setTargetRoleId(e.target.value)}
             aria-label="เลือกตำแหน่งปลายทาง"
             style={{
+              background: '#ffffff',
+              color: '#111827',
+              colorScheme: 'light',
               width: '100%',
               marginBottom: 8,
               padding: '4px 8px',
@@ -490,6 +493,9 @@ function RoleDetailPanel({
             onChange={e => setRelType(e.target.value as RnvRelationshipType)}
             aria-label="เลือกประเภทความสัมพันธ์"
             style={{
+              background: '#ffffff',
+              color: '#111827',
+              colorScheme: 'light',
               width: '100%',
               marginBottom: 8,
               padding: '4px 8px',
