@@ -24,7 +24,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import SentimentTimelineBoard from '../SentimentTimelineBoard';
 import { useEstStore } from '../employeeSentimentStore';
-import { canAccessEstModule, type EstSentimentSummary, type EstTimelineConfig } from '../employeeSentimentTypes';
+import { canAccessEstModule as _canAccessEstModule, type EstSentimentSummary, type EstTimelineConfig } from '../employeeSentimentTypes';
 import type { OrgPlan } from '../../tenant/types';
 
 // =============================================================================
@@ -73,6 +73,7 @@ function makeStore(overrides: Partial<StoreShape> = {}): StoreShape {
 }
 
 function setStore(overrides: Partial<StoreShape> = {}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mockUseEstStore.mockReturnValue(makeStore(overrides) as any);
 }
 

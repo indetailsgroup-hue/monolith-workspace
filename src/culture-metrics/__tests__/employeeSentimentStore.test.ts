@@ -57,7 +57,7 @@ let mockResult: { data: unknown; error: unknown } = { data: null, error: null };
 let lastInsertArgs:    unknown = null;
 let lastUpsertData:    unknown = null;
 let lastUpsertOptions: unknown = null;
-let lastFromTable:     string | null = null;
+let _lastFromTable:     string | null = null;
 
 function makeCapturingProxy(): unknown {
   const handler: ProxyHandler<Record<string, unknown>> = {
@@ -129,10 +129,10 @@ beforeEach(() => {
   lastInsertArgs    = null;
   lastUpsertData    = null;
   lastUpsertOptions = null;
-  lastFromTable     = null;
+  _lastFromTable     = null;
 
   mockSupabase.from.mockImplementation((table: string) => {
-    lastFromTable = table;
+    _lastFromTable = table;
     return makeCapturingProxy();
   });
 
@@ -157,17 +157,17 @@ beforeEach(() => {
 const PLAN_GATE_CASES = [
   {
     name:   'fetchSummary',
-    action: (plan: any) =>
+    action: (plan: string) =>
       useEstStore.getState().fetchSummary(ORG_ID, plan),
   },
   {
     name:   'fetchTimelineConfigs',
-    action: (plan: any) =>
+    action: (plan: string) =>
       useEstStore.getState().fetchTimelineConfigs(ORG_ID, plan),
   },
   {
     name:   'upsertTimelineConfig',
-    action: (plan: any) =>
+    action: (plan: string) =>
       useEstStore
         .getState()
         .upsertTimelineConfig({ orgId: ORG_ID, dimension: 'MORALE' }, plan),
@@ -369,6 +369,7 @@ describe('submitSentimentEntry', () => {
       periodLabel: '2027-W01',
       // note intentionally omitted
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((lastInsertArgs as any).note).toBeNull();
   });
 
@@ -382,6 +383,7 @@ describe('submitSentimentEntry', () => {
       periodLabel: '2027-W01',
       note:        'รู้สึกดีมาก',
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((lastInsertArgs as any).note).toBe('รู้สึกดีมาก');
   });
 
@@ -482,6 +484,7 @@ describe('upsertTimelineConfig', () => {
       { orgId: ORG_ID, dimension: 'MORALE' },
       'ENTERPRISE',
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((lastUpsertData as any).updated_at).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
     );

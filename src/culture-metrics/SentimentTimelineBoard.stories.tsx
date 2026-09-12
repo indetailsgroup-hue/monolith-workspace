@@ -115,14 +115,19 @@ function withEstStore(
       loading:   false,
       error:     null,
       // no-op fetches to prevent real Supabase calls on mount
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fetchSummary:          noopAsync as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fetchTimelineConfigs:  noopAsync as any,
       // mutating action spies
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       submitSentimentEntry:  submitSentimentEntrySpy as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       upsertTimelineConfig:  upsertTimelineConfigSpy as any,
       setFilters:            setFiltersSpy,
       clearError:            clearErrorSpy,
       ...stateOverride,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     fetchSummarySpy.mockClear();
