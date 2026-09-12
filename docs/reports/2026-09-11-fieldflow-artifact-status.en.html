@@ -57,7 +57,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <p id="L3">Publication note: This is a dated evidence snapshot, not a new runtime or CI audit. Local artifact references are not included in this publication. SC-01–SC-18 are roadmap workstream IDs, distinct from Steering Committee resolutions.</p>
 <p id="L5">Review date: 11 September 2026 · EN</p>
 <h2 id="L7">Verdict</h2>
-<p id="L8">This bundle contains real FieldFlow Mobile v0.1.0 Expo/React Native source, schema, tests and Sprint 1–3 documents. The implementation is incomplete as a buildable package and contains conflicting contracts. Build, tests, staging and sprint completion are not certified.</p>
+<p id="L8">This bundle contains real FieldFlow Mobile v0.1.0 Expo/React Native source, schema, tests and Sprint 1–3 documents. The source has conflicting contracts and an import/dependency-declaration mismatch; reproducible package assembly remains unverified. Build, tests, staging and sprint completion are not certified.</p>
 <p id="L10">The actual directory is the single name agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566, rather than the three-level supplied path. It is outside the nested product repository; this review does not establish integration into GitHub main.</p>
 <p id="L12">Both Git roots were rechecked: parent aa1b30e509ece9d8efad3d68e949860aa79bdecf and nested 9c4bee6759f6d1919a320a2f56088ce683287f58. Existing changes remain untouched. September 10 CI conclusions remain a dated snapshot, not a fresh September 11 GitHub check.</p>
 <h2 id="L14">Implemented work and remaining evidence</h2>
@@ -66,8 +66,8 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <tr id="L19"><td>T2 Auth</td><td>Supabase client, SecureStore adapter, auth helpers</td><td>Code present; dependencies/types incomplete</td></tr>
 <tr id="L20"><td>T3 QR scan</td><td>Scan screen, QR schema, debounce and jobs API</td><td>Code present; offline queue and device acceptance missing</td></tr>
 <tr id="L21"><td>T4 Photo</td><td>Camera/gallery/compression/upload/record/delete</td><td>Partial; conflicting return contract and storage rules</td></tr>
-<tr id="L22"><td>T5 Email/password</td><td>Login screen and auth helpers</td><td>Code/tests present; no fresh execution result</td></tr>
-<tr id="L23"><td>T6 Magic Link</td><td>signInWithOtp and fieldflow://login</td><td>Send path exists; callback/session completion not identified</td></tr>
+<tr id="L22"><td>T5 Email/password</td><td>app/login.tsx and lib/auth.ts</td><td>Code/tests present; execution was outside the 11 September static review</td></tr>
+<tr id="L23"><td>T6 Magic Link</td><td>signInWithOtp and fieldflow://login</td><td>Send path exists in inspected source; callback/session completion remains unverified by the 11 September review</td></tr>
 <tr id="L24"><td>T7 Countdown</td><td>Timer and resend guard</td><td>Code/tests present; no fresh execution result</td></tr>
 <tr id="L25"><td>T8 Forgot password</td><td>Switch to magic-link mode and Alert</td><td>Code present; not a password-reset flow; depends on T6</td></tr>
 <tr id="L26"><td>T9–T10 Session/protected routes</td><td>getSession/subscription/redirect</td><td>Code present; not server authorization evidence</td></tr>
@@ -75,28 +75,29 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <tr id="L28"><td>T12 Filtering/search</td><td>Job list and API</td><td>Search/filter UI not found in inspected list</td></tr>
 <tr id="L29"><td>CI/EAS/Sprint DoD</td><td>YAML, eas.json and documents</td><td>Configuration/criteria present; no run/deploy/signoff evidence</td></tr>
 </tbody></table></div>
-<p id="L31">Criteria: docs/sprint1-dod.md (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/docs/sprint1-dod.md&gt;), docs/sprint2-dod.md (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/docs/sprint2-dod.md&gt;), docs/sprint3-dod.md (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/docs/sprint3-dod.md&gt;). Sprint 2 retrospective has blank scores/acceptance results; it is a template, not passing evidence.</p>
-<h2 id="L33">Confirmed gaps</h2>
+<p id="L31">Criteria: <code>docs/sprint1-dod.md</code>, <code>docs/sprint2-dod.md</code> and <code>docs/sprint3-dod.md</code> (bundle-local artifacts; not published). Sprint 2 retrospective has blank scores/acceptance results; it is a template, not passing evidence.</p>
+<h2 id="L33">Source findings and unresolved acceptance</h2>
+<p id="L35">These findings describe the extracted bundle reviewed on 11 September 2026. Source-contract observations and unresolved acceptance are distinguished below; they do not establish whole-product absence or the state of a later package revision.</p>
 <ol>
-<li id="L35"><strong>B1 — Photo contract mismatch (VERIFIED FACT):</strong> fieldflow-mobile/lib/supabase.ts (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/fieldflow-mobile/lib/supabase.ts:72&gt;) returns Promise&lt;string&gt;, a public URL; fieldflow-mobile/lib/api/photos.ts (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/fieldflow-mobile/lib/api/photos.ts:53&gt;) reads uploadResult.path/publicUrl. Align the contract and verify upload → DB row → display/delete.</li>
-<li id="L36"><strong>B1 — Incomplete package assembly (VERIFIED FACT):</strong> package-lock.json, tsconfig.json, types/supabase.ts and local ESLint configuration are absent. supabase.ts imports the missing generated type. expo-secure-store and expo-constants are imported without direct package declarations. .github/workflows/ci.yml (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/.github/workflows/ci.yml&gt;) uses npm ci and caches the absent lockfile.</li>
-<li id="L37"><strong>B1 — Magic-link callback missing in inspected source (INFERENCE):</strong> detectSessionInUrl=false; no auth.setSession/exchangeCodeForSession or token URL listener was identified. onAuthStateChange does not demonstrate callback-to-session conversion. Verify cold/warm email-link launches.</li>
-<li id="L38"><strong>B1 — Storage privacy/path contracts conflict (VERIFIED FACT):</strong> fieldflow-mobile/drizzle/migrations/0001_initial.sql (local artifact; not published)/agent-artifacts-zip_abcf131c-4325-49f4-af02-38af4d5555d6_1789040566/fieldflow-mobile/drizzle/migrations/0001_initial.sql:182&gt;) comments recommend a public bucket and authenticated-only upload, while Sprint 1 requires own-org access. Delete guidance reads path segment three; upload uses two segments, jobId/timestamp.jpg. This is not a claim of deployed exposure.</li>
-<li id="L39"><strong>B1 — Storage/DB partial failures lack recovery (VERIFIED FACT):</strong> addPhotoRecord uploads before user lookup/row insertion without cleanup after later failure. deletePhoto removes storage before DB deletion without recovery. Partial-failure acceptance is required.</li>
-<li id="L40"><strong>B2 — Offline and test evidence incomplete (UNKNOWN/INFERENCE):</strong> Five test files exist, but no node_modules or CI results are included. No mobile offline queue was identified. DoD text and test files are not PASS results.</li>
+<li id="L37"><strong>B1 — Photo contract mismatch (VERIFIED FACT):</strong> <code>fieldflow-mobile/lib/supabase.ts</code> returns Promise&lt;string&gt;, a public URL; <code>fieldflow-mobile/lib/api/photos.ts</code> reads uploadResult.path/publicUrl (bundle-local source; not published). Align the contract and verify upload → DB row → display/delete.</li>
+<li id="L38"><strong>B1 — Package assembly acceptance pending (UNKNOWN; source facts recorded):</strong> The 11 September static review leaves buildability unverified. Resolve <code>package-lock.json</code>, <code>tsconfig.json</code>, <code>types/supabase.ts</code> and local ESLint configuration against the reviewed package before accepting assembly. <code>fieldflow-mobile/lib/supabase.ts</code> imports the generated <code>Database</code> type plus expo-secure-store and expo-constants. The reviewed <code>package.json</code> declares, for example, expo ~51.0.0, @supabase/supabase-js ^2.43.0 and expo-router ~3.5.0; comparing its full dependency declarations with those imports identifies expo-secure-store and expo-constants as direct imports requiring declaration. Repair that manifest mismatch and resolve generated types. The bundle's <code>.github/workflows/ci.yml</code> uses npm ci and lockfile caching, so reproducible installation is part of this acceptance gate.</li>
+<li id="L39"><strong>B1 — Magic-link callback acceptance pending (INFERENCE):</strong> The reviewed client sets <code>detectSessionInUrl=false</code>; the auth helper calls <code>signInWithOtp</code> with <code>fieldflow://login</code>, and the session guard subscribes to <code>onAuthStateChange</code>. These source observations establish sending and subscription, while callback-to-session conversion remains unverified by the 11 September review. Trace the token URL handler and the applicable <code>auth.setSession</code> or <code>exchangeCodeForSession</code> path, then verify cold/warm email-link launches.</li>
+<li id="L40"><strong>B1 — Storage privacy/path contracts conflict (VERIFIED FACT):</strong> <code>fieldflow-mobile/drizzle/migrations/0001_initial.sql</code> (bundle-local source; not published) comments recommend a public bucket and authenticated-only upload, while Sprint 1 requires own-org access. Delete guidance reads path segment three; upload uses two segments, jobId/timestamp.jpg. This is not a claim of deployed exposure.</li>
+<li id="L41"><strong>B1 — Storage/DB partial-failure paths need acceptance (VERIFIED FACT / recovery unverified):</strong> In the reviewed <code>fieldflow-mobile/lib/api/photos.ts</code>, <code>addPhotoRecord</code> uploads before user lookup/row insertion; later auth/insert error branches log and return null. <code>deletePhoto</code> removes storage before DB deletion; the DB-error branch logs and returns false. These separate operations can leave partial state. Verify cleanup, recovery and retry behavior for each failure boundary before acceptance.</li>
+<li id="L42"><strong>B2 — Offline and test acceptance pending (UNKNOWN/INFERENCE):</strong> The 11 September inventory records five test files. Dependency installation into <code>node_modules</code>, test execution and CI execution were outside this static review; build/test outcomes remain unverified. Mobile offline queue, replay and conflict-recovery acceptance also remain unverified. DoD text and test files are not PASS results.</li>
 </ol>
-<h2 id="L42">Effect on the prior MONOLITH report</h2>
-<p id="L43">Add <strong>FieldFlow native mobile — separate source, partial implementation, build/integration evidence missing</strong>. MONOLITH packages/field-app CI cannot certify this separate fieldflow-mobile package.</p>
-<p id="L45">The bundle also contains Barausse research, BOI decks, factory packets/shop drawings/quotations and exported PRD/roadmap documents. Their presence establishes artifacts only. This review does not certify every technical/commercial claim or equate documents with production operation.</p>
-<h2 id="L47">Proposed next steps</h2>
+<h2 id="L44">Effect on the prior MONOLITH report</h2>
+<p id="L45">Add <strong>FieldFlow native mobile — separate source, partial implementation, build/integration evidence missing</strong>. MONOLITH packages/field-app CI cannot certify this separate fieldflow-mobile package.</p>
+<p id="L47">The bundle also contains Barausse research, BOI decks, factory packets/shop drawings/quotations and exported PRD/roadmap documents. Their presence establishes artifacts only. This review does not certify every technical/commercial claim or equate documents with production operation.</p>
+<h2 id="L49">Proposed next steps</h2>
 <ol>
-<li id="L48">Restore reproducible dependencies, lockfile, types and configuration.</li>
-<li id="L49">Repair photo return contracts, org/path storage policies and partial-failure handling.</li>
-<li id="L50">Complete magic-link callbacks, offline requirements and T12 filtering/search.</li>
-<li id="L51">Execute typecheck/lint/tests, negative DB RLS checks and device acceptance; record actual DoD results.</li>
-<li id="L52">Reconcile schema/identity with MONOLITH before an integration PR; do not assume this migration's jobs/users match production.</li>
+<li id="L50">Restore reproducible dependencies, lockfile, types and configuration.</li>
+<li id="L51">Repair photo return contracts, org/path storage policies and partial-failure handling.</li>
+<li id="L52">Complete magic-link callbacks, offline requirements and T12 filtering/search.</li>
+<li id="L53">Execute typecheck/lint/tests, negative DB RLS checks and device acceptance; record actual DoD results.</li>
+<li id="L54">Reconcile schema/identity with MONOLITH before an integration PR; do not assume this migration's jobs/users match production.</li>
 </ol>
-<h2 id="L54">Limitations</h2>
-<p id="L55">Static review of extracted source only. No dependency installation, app execution, database migration, deployment or source repair was performed. No passing-test or closed-sprint claim is made. This addendum preserves the previous dated report.</p>
+<h2 id="L56">Limitations</h2>
+<p id="L57">Static review of extracted source only. No dependency installation, app execution, database migration, deployment or source repair was performed. No passing-test or closed-sprint claim is made. This addendum preserves the previous dated report.</p>
 </main></body>
 </html>
