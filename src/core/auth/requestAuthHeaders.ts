@@ -14,26 +14,32 @@ export function updateRequestAuthSession(actorId: string | null): void {
   currentActorId = actorId;
 }
 
-/** The configured SDK session is the only bearer source; server authorization remains authoritative. */
-export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {};
-  if (ANON_KEY) headers.apikey = ANON_KEY;
+/** Resolve the configured SDK identity and dispatch without an await after validation. */
+export async function fetchWithRequestAuth(url: string, options?: RequestInit): Promise<Response> {
+  const headers = new Headers(options?.headers);
+  headers.delete('Authorization');
+  headers.delete('apikey');
+  if (ANON_KEY) headers.set('apikey', ANON_KEY);
   const observedVersion = sessionVersion;
-  if (!sessionAllowed) return headers;
-  try {
-    const client = getSupabaseClient();
-    if (!client) return headers;
-    const { data, error } = await client.auth.getSession();
-    if (!sessionAllowed || observedVersion !== sessionVersion) return headers;
-    const session = data.session;
-    if (error || !session) return headers;
-    if (currentActorId && session.user?.id !== currentActorId) return headers;
-    const token = session.access_token;
-    if (typeof token !== 'string' || !token || /\s/.test(token)) return headers;
-    if (session.expires_at !== undefined && (!Number.isFinite(session.expires_at) || session.expires_at * 1000 <= Date.now())) return headers;
-    headers.Authorization = `Bearer ${token}`;
-  } catch {
-    // A failed lookup must not fall back to another account or the anon key.
+  if (sessionAllowed && !options?.signal?.aborted) {
+    try {
+      const client = getSupabaseClient();
+      const result = client ? await client.auth.getSession() : null;
+      const session = result?.data.session;
+      if (!result?.error && session && sessionAllowed && observedVersion === sessionVersion
+        && (!currentActorId || session.user?.id === currentActorId)) {
+        const token = session.access_token;
+        const unexpired = session.expires_at === undefined
+          || (Number.isFinite(session.expires_at) && session.expires_at * 1000 > Date.now());
+        if (typeof token === 'string' && token && !/\s/.test(token) && unexpired) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+      }
+    } catch {
+      // A failed lookup must not fall back to another account or the anon key.
+    }
   }
-  return headers;
+  if (options?.signal?.aborted) throw new DOMException('The request was aborted', 'AbortError');
+  // Keep this invocation synchronous with the identity checks above, including first-session matching.
+  return fetch(url, { ...options, headers });
 }

@@ -203,6 +203,39 @@ describe('transport and local logout integration', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { headers: { 'Content-Type': 'application/json' } })));
   });
 
+  describe.each(['logout', 'actor switch', 'actor roundtrip'] as const)('%s next to dispatch', (change) => {
+    it.each(callers)('keeps the %s bearer consistent with the identity at fetch invocation', async (_name, loadCaller) => {
+      const { useSessionStore } = await import('../useSessionStore');
+      await useSessionStore.getState().initialize();
+      const call = await loadCaller();
+      const lookup = deferred<SessionResult>();
+      let changed = false;
+      let changedAtDispatch = false;
+      // Schedule the identity event immediately after the credential lookup continuation.
+      // This exposes a gap between a helper returning headers and its caller invoking fetch.
+      void lookup.promise.then(() => queueMicrotask(() => {
+        if (change === 'logout') void useSessionStore.getState().signOut();
+        else {
+          onChange('SIGNED_IN', session('actor-b'));
+          if (change === 'actor roundtrip') onChange('SIGNED_IN', session());
+        }
+        changed = true;
+      }));
+      auth.getSession.mockReturnValue(lookup.promise);
+      vi.mocked(fetch).mockImplementation(async () => {
+        changedAtDispatch = changed;
+        return new Response('{}');
+      });
+      const request = call('/fixture');
+      lookup.resolve({ data: { session: session() } });
+      await request;
+      expect(changed).toBe(true);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      const bearer = new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get('Authorization');
+      expect(bearer).toBe(changedAtDispatch ? null : 'Bearer fixture-actor-a');
+    });
+  });
+
   it.each(callers)('does not send a delayed %s bearer after explicit logout', async (_name, loadCaller) => {
     const { useSessionStore } = await import('../useSessionStore');
     await useSessionStore.getState().initialize();
