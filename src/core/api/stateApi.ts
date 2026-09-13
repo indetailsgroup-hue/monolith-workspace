@@ -12,7 +12,7 @@
  * @version 1.1.0
  */
 
-import { readRaw } from '../persistence/unsafeStorage';
+import { fetchWithRequestAuth } from '../auth/requestAuthHeaders';
 
 // ============================================
 // TYPES
@@ -55,29 +55,6 @@ export interface TransitionRequest {
 
 // ADR-060: ชี้ factory-api (Supabase Edge Function) — ตั้งผ่าน env; ว่าง = vite proxy เดิม
 const API_BASE = (import.meta.env?.VITE_FACTORY_API_BASE as string | undefined) ?? '';
-const ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
-
-/**
- * Attach only the current end-user JWT. The anon key remains an API key, never a
- * substitute identity: a missing/expired session is rejected by factory-api.
- */
-function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = {};
-  if (!ANON_KEY) return h;
-  h['apikey'] = ANON_KEY;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const s = JSON.parse(readRaw(key) ?? '');
-      if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
-        h['Authorization'] = 'Bearer ' + s.access_token;
-        break;
-      }
-    }
-  } catch { /* no session */ }
-  return h;
-}
 
 // ============================================
 // API FUNCTIONS
@@ -89,11 +66,10 @@ function authHeaders(): Record<string, string> {
  */
 export async function getJobState(jobId: string): Promise<StateResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/state`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/state`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
     });
 
@@ -117,11 +93,10 @@ export async function freezeJob(
   options?: TransitionRequest
 ): Promise<StateResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/freeze`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/freeze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -146,11 +121,10 @@ export async function releaseJob(
   options?: TransitionRequest
 ): Promise<StateResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/release`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/release`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -175,11 +149,10 @@ export async function unfreezeJob(
   options?: TransitionRequest
 ): Promise<StateResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/unfreeze`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/unfreeze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -204,11 +177,10 @@ export async function revokeJob(
   options?: TransitionRequest
 ): Promise<StateResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/revoke`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/revoke`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
       body: JSON.stringify(options || {}),
     });
@@ -230,11 +202,10 @@ export async function revokeJob(
  */
 export async function checkCanExport(jobId: string): Promise<CanExportResponse> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/can-export`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/can-export`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
     });
 
@@ -267,9 +238,9 @@ export async function uploadPacket(
     }
     const zipBase64 = btoa(bin);
 
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/packet`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/packet`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ zipBase64 }),
     });
     return await response.json();
@@ -302,15 +273,27 @@ export function getSyncStatus(response: StateResponse): SyncStatus {
  * Check if server is reachable.
  */
 export async function isServerReachable(): Promise<boolean> {
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const response = await fetch(`${API_BASE}/api/health`, {
-      method: 'GET',
-      headers: authHeaders(),
-      signal: AbortSignal.timeout(3000), // 3 second timeout
+    const deadline = new Promise<boolean>((resolve) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        resolve(false);
+      }, 3000);
     });
-    return response.ok;
+    const probe = async () => {
+      const response = await fetchWithRequestAuth(`${API_BASE}/api/health`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      return response.ok;
+    };
+    return await Promise.race([deadline, probe()]);
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -388,11 +371,10 @@ export interface ProofBundle {
  */
 export async function getProofBundle(jobId: string): Promise<ProofBundle> {
   try {
-    const response = await fetch(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/proof`, {
+    const response = await fetchWithRequestAuth(`${API_BASE}/api/factory/jobs/${encodeURIComponent(jobId)}/proof`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
       },
     });
 
