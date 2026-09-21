@@ -34,7 +34,7 @@ status: complete
 
 ## Accepted editorial changes
 
-Titles02–10 now follow their existing body subjects: System Overview, Research & Background, Technical Architecture, Product Requirements Document (PRD), Technical Specifications, Developer Documentation, Rebuild Blueprint, Risk Management, Roadmap. Titles11–12 become Conclusions & Recommendations and API Reference — MCP Server & REST Endpoints. Chapter IDs and bodies remain unchanged. Existing labels move to phase_label; phase derives from the existing phase_num, never an invented assignment.
+Titles02–10 now follow their existing body subjects: System Overview, Research & Background, Technical Architecture, Product Requirements Document (PRD), Technical Specifications, Developer Documentation, Rebuild Blueprint, Risk Management, Roadmap. Titles11–12 become Conclusions & Recommendations and API Reference — MCP Server & REST Endpoints. Chapter IDs remain unchanged. The metadata migration preserved all bodies; a subsequent editorial correction clarified23 statements in six chapters. See [correction receipt](../reports/2026-09-21-docs-claim-corrections.en.html). Existing labels move to phase_label; phase derives from the existing phase_num, never an invented assignment.
 
 Metadata statuses remain 53 complete and 2 in-progress (54–55). MCP metadata sums to126, but this is neither a unique-tool count nor verified runtime inventory. Do not clear counts as presumed placeholders, promote status, move chapter content, or declare ADR implementation from DOC-S1 alone. Language differences in titles are not automatically defects.
 

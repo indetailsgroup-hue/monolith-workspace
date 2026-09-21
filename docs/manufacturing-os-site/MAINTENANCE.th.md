@@ -34,7 +34,7 @@ status: complete
 
 ## Editorial corrections ที่รับแล้ว
 
-ชื่อบท02–10 ใช้หัวข้อเนื้อหาเดิมตามลำดับ: System Overview, Research & Background, Technical Architecture, Product Requirements Document (PRD), Technical Specifications, Developer Documentation, Rebuild Blueprint, Risk Management, Roadmap บท11–12 ใช้ Conclusions & Recommendations และ API Reference — MCP Server & REST Endpoints คงหมายเลขและ body ทุกบท ย้ายชื่อ phase เดิมไป phase_label และใช้เลข phase_num เดิม ไม่สร้างการจัด phase ใหม่
+ชื่อบท02–10 ใช้หัวข้อเนื้อหาเดิมตามลำดับ: System Overview, Research & Background, Technical Architecture, Product Requirements Document (PRD), Technical Specifications, Developer Documentation, Rebuild Blueprint, Risk Management, Roadmap บท11–12 ใช้ Conclusions & Recommendations และ API Reference — MCP Server & REST Endpoints คงหมายเลขทุกบท การย้าย metadata คง body เดิมทั้งหมด แต่รอบ editorial correction ต่อมาแก้บริบท23จุดใน6บท ดู[บันทึกการแก้](../reports/2026-09-21-docs-claim-corrections.th.html) ย้ายชื่อ phase เดิมไป phase_label และใช้เลข phase_num เดิม ไม่สร้างการจัด phase ใหม่
 
 คง status complete53บทและ in-progress2บท (54–55) ผลรวม MCP metadata126 ไม่ใช่จำนวน tool ที่ไม่ซ้ำหรือ inventory runtime ที่ยืนยันแล้ว ห้ามล้างจำนวนโดยสมมติว่าเป็น placeholder, เปลี่ยนสถานะ, ย้ายเนื้อหา หรืออ้างว่า ADR implement แล้วจาก DOC-S1 เพียงอย่างเดียว ชื่อคนละภาษาไม่ใช่ defect โดยอัตโนมัติ
 

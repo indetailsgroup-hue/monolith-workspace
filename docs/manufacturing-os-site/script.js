@@ -22,7 +22,9 @@ function trackChapterView(num) {
     const hist = JSON.parse(localStorage.getItem('monolith-history') || '[]');
     hist.unshift({ num: num, ts: Date.now() });
     localStorage.setItem('monolith-history', JSON.stringify(hist.slice(0, 50)));
-  } catch(e) {}
+  } catch {
+    // Analytics are best-effort; blocked or invalid local storage must not stop reading.
+  }
 }
 
 async function showChapter(num, pushState = true) {
@@ -56,7 +58,7 @@ async function showChapter(num, pushState = true) {
   document.getElementById('loading').style.display = 'none';
   // Syntax highlighting
   if (window.hljs) {
-    document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    document.querySelectorAll('pre code').forEach(el => window.hljs.highlightElement(el));
   }
   // Update URL
   if (pushState) history.pushState({ chapter: num }, '', '#ch' + num);
