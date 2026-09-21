@@ -13,7 +13,7 @@ on:
       - '.github/workflows/*chapter*.yml'
       - '.github/workflows/generate-site-data.yml'
       - '.github/workflows/lighthouse-audit.yml'
-      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/notify-line-deploy.yml'
       - '.github/workflows/auto-update-changelog.yml'
       - '.github/workflows/auto-deploy-scispace.yml'
   pull_request:
@@ -29,7 +29,7 @@ on:
       - '.github/workflows/*chapter*.yml'
       - '.github/workflows/generate-site-data.yml'
       - '.github/workflows/lighthouse-audit.yml'
-      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/notify-line-deploy.yml'
       - '.github/workflows/auto-update-changelog.yml'
       - '.github/workflows/auto-deploy-scispace.yml'
   workflow_dispatch:

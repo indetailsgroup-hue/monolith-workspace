@@ -1,0 +1,44 @@
+name: Notify LINE on Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - "Deploy Manufacturing OS Docs to GitHub Pages"
+      - "Auto-Deploy SciSpace Site"
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: line-deploy-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  line-notify:
+    name: Send LINE Notification
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main' &&
+      (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')
+    steps:
+      - name: Checkout trusted notification code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Send workflow result to LINE
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_MONOLITH_CHANNEL_ACCESS_TOKEN }}
+          LINE_DEPLOY_RECIPIENT_ID: ${{ secrets.LINE_DEPLOY_RECIPIENT_ID }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: python -m scripts.docs.notify_line
