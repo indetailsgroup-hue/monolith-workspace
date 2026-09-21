@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — Monolith Manufacturing OS</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #f78166;
+      --accent2: #79c0ff;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --purple: #bc8cff;
+      --orange: #ffa657;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* Top bar */
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .top-bar a.back-btn {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .top-bar a.back-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .top-bar h1 { font-size: 1.1rem; font-weight: 600; }
+    .top-bar .project-meta { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
+
+    /* Layout */
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+
+    /* Hero */
+    .changelog-hero {
+      text-align: center;
+      padding: 40px 20px 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+    .changelog-hero h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+    .changelog-hero p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .hero-badges { display: flex; justify-content: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .hero-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .hb-green { color: var(--green); border-color: var(--green); background: rgba(63,185,80,0.1); }
+    .hb-blue { color: var(--accent2); border-color: var(--accent2); background: rgba(121,192,255,0.1); }
+    .hb-orange { color: var(--orange); border-color: var(--orange); background: rgba(255,166,87,0.1); }
+    .hb-purple { color: var(--purple); border-color: var(--purple); background: rgba(188,140,255,0.1); }
+
+    /* Timeline */
+    .timeline { position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 80px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--border) 30%, var(--border) 100%);
+    }
+
+    /* Entry */
+    .entry {
+      display: flex;
+      gap: 0;
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .entry-version {
+      width: 80px;
+      flex-shrink: 0;
+      text-align: right;
+      padding-right: 20px;
+      padding-top: 4px;
+    }
+    .version-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .version-tag.major { background: rgba(247,129,102,0.15); color: var(--accent); border-color: var(--accent); }
+    .version-tag.minor { background: rgba(121,192,255,0.1); color: var(--accent2); border-color: var(--accent2); }
+    .version-tag.wip { background: rgba(210,153,34,0.1); color: var(--yellow); border-color: var(--yellow); }
+
+    /* Dot on timeline */
+    .entry-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--bg);
+      flex-shrink: 0;
+      margin-top: 6px;
+      z-index: 1;
+      position: relative;
+    }
+    .entry-dot.active { background: var(--accent); box-shadow: 0 0 8px rgba(247,129,102,0.5); }
+    .entry-dot.done { background: var(--green); }
+    .entry-dot.wip { background: var(--yellow); }
+
+    /* Entry body */
+    .entry-body {
+      flex: 1;
+      padding: 0 0 0 20px;
+    }
+    .entry-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .entry-title { font-size: 1rem; font-weight: 600; color: var(--text); }
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .sb-done { background: rgba(63,185,80,0.15); color: var(--green); }
+    .sb-wip { background: rgba(210,153,34,0.15); color: var(--yellow); }
+    .mcp-badge { font-size: 0.7rem; background: rgba(188,140,255,0.12); color: var(--purple); padding: 2px 8px; border-radius: 12px; }
+
+    .entry-desc { color: var(--muted); font-size: 0.83rem; line-height: 1.5; margin-bottom: 10px; }
+
+    /* Chapters list */
+    .chapters-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ch-pill {
+      font-size: 0.73rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .ch-pill:hover { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+
+    /* Feature list */
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .feature-list li { font-size: 0.82rem; color: var(--muted); padding-left: 16px; position: relative; line-height: 1.4; }
+    .feature-list li::before { content: '•'; position: absolute; left: 4px; color: var(--accent); }
+
+    /* Entry card wrapper */
+    .entry-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      transition: border-color 0.2s;
+    }
+    .entry-card:hover { border-color: #444c56; }
+    .entry-card.is-wip { border-color: var(--yellow); }
+    .entry-card.is-latest { border-color: var(--accent); }
+
+    /* Divider */
+    .timeline-label {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: inline-block;
+      margin: 0 auto 24px;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* Footer */
+    .changelog-footer {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+      margin-top: 32px;
+    }
+    .changelog-footer a { color: var(--accent); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .timeline::before { left: 60px; }
+      .entry-version { width: 60px; }
+      .container { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="index.html" class="back-btn">← กลับหน้าหลัก</a>
+  <h1>📋 Changelog</h1>
+  <span class="project-meta">Monolith Manufacturing OS · v2.0.0 · 55 Chapters · 123 MCP Tools</span>
+</div>
+
+<div class="container">
+  <div class="changelog-hero">
+    <h2>📋 Version History</h2>
+    <p>บันทึกการพัฒนา Monolith Manufacturing OS ครอบคลุม 15 Phases<br>
+    ตั้งแต่ Core Architecture Design จนถึง Predictive Maintenance System</p>
+    <div class="hero-badges">
+      <span class="hero-badge hb-green">✅ 14 Phases สมบูรณ์</span>
+      <span class="hero-badge hb-blue">55 Chapters</span>
+      <span class="hero-badge hb-purple">123 MCP Tools</span>
+      <span class="hero-badge hb-orange">🔄 Phase 15 กำลังดำเนินการ</span>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <!-- v2.0.0 Phase 15 - WIP -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag wip">v2.0.0</span></div>
+      <div class="entry-dot wip"></div>
+      <div class="entry-body">
+        <div class="entry-card is-wip">
+          <div class="entry-header">
+            <span class="entry-title">🤖 Phase 15 — Predictive Maintenance & Deployment</span>
+            <span class="status-badge sb-wip">🔄 กำลังดำเนินการ</span>
+            <span class="mcp-badge">+3 MCP Tools · รวม 123</span>
+          </div>
+          <p class="entry-desc">Phase สุดท้ายที่รวมทุก Module เข้าด้วยกัน ครอบคลุม Predictive Maintenance System ด้วย Machine Learning, AI Agents, Digital Twin Integration, Deployment Governance, และ Enterprise-wide Persona Use Cases</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch54">Ch 54: Predictive Maintenance System</a>
+            <a class="ch-pill" href="index.html#ch55">Ch 55: Deployment, Governance & Persona Use Cases</a>
+          </div>
+          <ul class="feature-list">
+            <li>ML-based Equipment Failure Prediction Engine</li>
+            <li>Real-time Anomaly Detection ด้วย IoT + Edge AI</li>
+            <li>Multi-tenant Deployment Governance Framework</li>
+            <li>Enterprise Persona Journey สำหรับทุก Role</li>
+            <li>Production-grade Observability Stack</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.14.0 Phase 14 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.14.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">📡 Phase 14 — IoT Sensor & Edge Device Management</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 120</span>
+          </div>
+          <p class="entry-desc">Integration Layer สำหรับ Industrial IoT — รับข้อมูลจาก Sensor Network, ประมวลผลที่ Edge Device, และส่ง Alert แบบ Real-time</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch52">Ch 52: IoT Sensor Data Management</a>
+            <a class="ch-pill" href="index.html#ch53">Ch 53: Edge Device & Real-Time Alerting</a>
+          </div>
+          <ul class="feature-list">
+            <li>MQTT / OPC-UA Protocol Support สำหรับ Industrial Sensors</li>
+            <li>Edge Computing Pipeline ลด Latency และ Bandwidth</li>
+            <li>Real-time Alert Engine พร้อม Escalation Policy</li>
+            <li>Time-series Data Store สำหรับ Long-term Analysis</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.13.0 Phase 13 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.13.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🗄️ Phase 13 — Data Warehouse & BI Dashboard</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 114</span>
+          </div>
+          <p class="entry-desc">Enterprise Data Platform — รวบรวมข้อมูลจากทุก Module เข้า Data Warehouse และสร้าง BI Dashboard สำหรับ Executive Decision Making</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch50">Ch 50: Data Warehouse Integration</a>
+            <a class="ch-pill" href="index.html#ch51">Ch 51: BI Dashboard & Reporting</a>
+          </div>
+          <ul class="feature-list">
+            <li>ETL Pipeline จากทุก Operational Database</li>
+            <li>Star Schema Data Model สำหรับ OLAP Queries</li>
+            <li>Executive Dashboard พร้อม KPI Tracking</li>
+            <li>Scheduled Report Generation และ Distribution</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.12.0 Phase 12 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.12.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🤝 Phase 12 — CRM & Customer Feedback Analytics</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 108</span>
+          </div>
+          <p class="entry-desc">Customer Relationship Management System พร้อม AI-powered Feedback Analysis และ Customer Lifetime Value Prediction</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch48">Ch 48: CRM Management Module</a>
+            <a class="ch-pill" href="index.html#ch49">Ch 49: Customer Feedback & Analytics</a>
+          </div>
+          <ul class="feature-list">
+            <li>360° Customer Profile ครอบคลุม Sales, Service, Support</li>
+            <li>NPS / CSAT Survey Engine พร้อม Auto-analysis</li>
+            <li>Churn Prediction Model ด้วย ML</li>
+            <li>Customer Segmentation และ Targeted Communication</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.11.0 Phase 11 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.11.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🛡️ Phase 11 — Compliance & Regulatory Reporting</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 102</span>
+          </div>
+          <p class="entry-desc">Compliance Framework สำหรับ Manufacturing Industry ครอบคลุม Audit Trail, Regulatory Reporting, และ ISO/Safety Standard Compliance</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch46">Ch 46: Compliance & Audit Trail</a>
+            <a class="ch-pill" href="index.html#ch47">Ch 47: Regulatory Reporting</a>
+          </div>
+          <ul class="feature-list">
+            <li>Immutable Audit Log ทุก Transaction พร้อม Digital Signature</li>
+            <li>ISO 9001 / ISO 14001 Compliance Checker</li>
+            <li>Automated Regulatory Report สำหรับหน่วยงานภาครัฐ</li>
+            <li>Violation Alert และ Corrective Action Workflow</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.10.0 Phase 10 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.10.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">📄 Phase 10 — Document Management & E-Signature</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 96</span>
+          </div>
+          <p class="entry-desc">Paperless Enterprise Platform สำหรับ Document Lifecycle Management พร้อม E-Signature ที่รองรับ Thai Law (PDPA)</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch44">Ch 44: Document Management Module</a>
+            <a class="ch-pill" href="index.html#ch45">Ch 45: E-Signature Module</a>
+          </div>
+          <ul class="feature-list">
+            <li>Versioned Document Repository พร้อม Full-text Search</li>
+            <li>Approval Workflow Engine ที่ Configurable</li>
+            <li>E-Signature ที่ถูกต้องตาม PDPA และ กฎหมายไทย</li>
+            <li>Document Template Engine สำหรับสัญญาและใบสั่งซื้อ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.9.0 Phase 9 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.9.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">👥 Phase 9 — HR Management & Employee Self-Service</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 90</span>
+          </div>
+          <p class="entry-desc">Complete Human Resource Management System ครอบคลุมตั้งแต่ Recruitment จนถึง Payroll พร้อม Employee Self-Service Portal</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch41">Ch 41: HR Management Module</a>
+            <a class="ch-pill" href="index.html#ch42">Ch 42: Employee Self-Service Module</a>
+            <a class="ch-pill" href="index.html#ch43">Ch 43: Phase 9 Load Test Results</a>
+          </div>
+          <ul class="feature-list">
+            <li>Employee Lifecycle Management (Hire to Retire)</li>
+            <li>Leave Request, Attendance, Payroll Integration</li>
+            <li>Performance Review Cycle ด้วย OKR/KPI Framework</li>
+            <li>Load Test ผ่าน: 500 concurrent users, p95 &lt; 800ms</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.8.0 Phase 8 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.8.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">💰 Phase 8 — Financial Management & Invoicing</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 84</span>
+          </div>
+          <p class="entry-desc">Financial Operations Platform ครอบคลุม Accounts Receivable/Payable, Thai Tax Compliance, และ Performance Benchmarking</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch39">Ch 39: Financial Management & Invoicing</a>
+            <a class="ch-pill" href="index.html#ch40">Ch 40: Performance Benchmark Report</a>
+          </div>
+          <ul class="feature-list">
+            <li>Thai VAT / WHT / e-Tax Invoice (RD Thailand)</li>
+            <li>Multi-currency Accounting และ Bank Reconciliation</li>
+            <li>Budget Planning และ Cost Center Management</li>
+            <li>Benchmark: API p99 &lt; 1.2s, DB queries optimized 60%</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.7.0 Phase 7 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.7.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🚚 Phase 7 — Supply Chain Management & Vendor Portal</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 78</span>
+          </div>
+          <p class="entry-desc">End-to-end Supply Chain Visibility Platform พร้อม Vendor Self-service Portal และ AI-driven Demand Forecasting</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch37">Ch 37: Supply Chain Management & Vendor Portal</a>
+            <a class="ch-pill" href="index.html#ch38">Ch 38: Persona User Journey Mapping</a>
+          </div>
+          <ul class="feature-list">
+            <li>Vendor Onboarding, Scoring, และ Performance Tracking</li>
+            <li>Purchase Order Automation ด้วย AI Matching</li>
+            <li>Demand Forecasting Model ด้วย Time-series ML</li>
+            <li>User Journey Maps สำหรับ 8 Persona Types</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.6.0 Phase 6 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.6.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">📊 Phase 6 — Analytics Dashboard & Real-time Monitoring</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+6 MCP Tools · รวม 72</span>
+          </div>
+          <p class="entry-desc">Observability Stack ครอบคลุม Operational KPI Dashboard, Real-time Production Monitoring, Load Testing, และ Performance Baseline</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch35">Ch 35: Analytics Dashboard & Real-time Monitoring</a>
+            <a class="ch-pill" href="index.html#ch36">Ch 36: Load Testing Strategy & Performance Benchmarks</a>
+          </div>
+          <ul class="feature-list">
+            <li>Real-time WebSocket Dashboard ด้วย Grafana-style Panels</li>
+            <li>Production KPI: OEE, Downtime, Yield Rate Tracking</li>
+            <li>k6 Load Test Suite พร้อม SLA Enforcement</li>
+            <li>Performance Regression Gate ใน CI/CD Pipeline</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.5.0 Phase 5 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.5.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🏗️ Phase 5 — Organization, Culture & CI/CD Hardening</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+9 MCP Tools · รวม 66</span>
+          </div>
+          <p class="entry-desc">Engineering Excellence Foundation — Culture Module, ADR Documentation, CI/CD Pipeline Hardening, และ Production Readiness Checklist</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch33">Ch 33: Organization, Culture & CI/CD Hardening</a>
+            <a class="ch-pill" href="index.html#ch34">Ch 34: Architecture Decision Records (ADR)</a>
+          </div>
+          <ul class="feature-list">
+            <li>ADR Catalog ครอบคลุมทุก Major Architecture Decision</li>
+            <li>GitHub Actions Pipeline: Test → Build → Deploy → Smoke</li>
+            <li>Culture Dashboard สำหรับ Team Health Monitoring</li>
+            <li>Zero-downtime Deployment ด้วย Blue-Green Strategy</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.4.0 Phase 4 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.4.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🔔 Phase 4 — Notification, Reporting & Backup Management</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+9 MCP Tools · รวม 57</span>
+          </div>
+          <p class="entry-desc">Reliability Infrastructure — Multi-channel Notification System, Automated Report Generation, Disaster Recovery, และ Backup Orchestration</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch32">Ch 32: Notification, Reporting & Backup Management</a>
+          </div>
+          <ul class="feature-list">
+            <li>Notification Engine: Email, SMS, LINE, Webhook</li>
+            <li>Scheduled Report PDF Generation ด้วย Puppeteer</li>
+            <li>Automated Backup ไป S3 พร้อม Point-in-time Recovery</li>
+            <li>Disaster Recovery Plan พร้อม RTO &lt; 4h, RPO &lt; 1h</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.3.0 Phase 3 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.3.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🌐 Phase 3 — Digital Shadow, Customer Portal & Analytics</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+9 MCP Tools · รวม 48</span>
+          </div>
+          <p class="entry-desc">Advanced Digital Manufacturing Features — Digital Shadow (Virtual Factory Mirror), Customer Self-service Portal, Business Analytics, และ QA Test Suite</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch30">Ch 30: Digital Shadow, Customer Portal, Analytics</a>
+            <a class="ch-pill" href="index.html#ch31">Ch 31: Test Suite & Quality Assurance</a>
+          </div>
+          <ul class="feature-list">
+            <li>Digital Shadow: Real-time Factory State Synchronization</li>
+            <li>Customer Portal: Order Tracking, SLA Monitoring</li>
+            <li>Business Analytics: Revenue, Margin, Forecast Reports</li>
+            <li>QA Test Suite ครอบคลุม Unit, Integration, E2E</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.2.0 Phase 2 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.2.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🏭 Phase 2 — Factory, CNC & Workflow Automation</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+9 MCP Tools · รวม 39</span>
+          </div>
+          <p class="entry-desc">Manufacturing Core Operations — Factory Floor Management, CNC Machine Integration, Workflow Automation Engine, และ Job Scheduling</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch29">Ch 29: Phase 2 Tools — Factory, CNC, Workflow</a>
+          </div>
+          <ul class="feature-list">
+            <li>CNC Machine MCP Tools: G-code Upload, Status Monitor, Alert</li>
+            <li>Factory Floor Digital Layout ด้วย SVG/Canvas</li>
+            <li>Workflow Engine: BPMN-style Process Orchestration</li>
+            <li>Job Queue Management พร้อม Priority Scheduling</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.1.0 Phase 1 -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag minor">v1.1.0</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">🤖 Phase 1 — AI Module MCP Tools</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+9 MCP Tools · รวม 30</span>
+          </div>
+          <p class="entry-desc">AI Integration Layer — Claude/GPT Integration ผ่าน MCP Protocol สำหรับ Manufacturing Context: Work Order Analysis, Quality Inspection AI, Predictive Tools</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch28">Ch 28: AI Module MCP Tools (Phase 1)</a>
+          </div>
+          <ul class="feature-list">
+            <li>AI-powered Work Order Interpretation และ Auto-routing</li>
+            <li>Visual Quality Inspection ด้วย Computer Vision</li>
+            <li>Natural Language Query สำหรับ Production Database</li>
+            <li>AI Agent Orchestration Framework ด้วย LangGraph</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- v1.0.0 Foundation -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag major">v1.0.0</span></div>
+      <div class="entry-dot active"></div>
+      <div class="entry-body">
+        <div class="entry-card is-latest">
+          <div class="entry-header">
+            <span class="entry-title">⚡ Foundation — Core Architecture & Domain Modules</span>
+            <span class="status-badge sb-done">✅ สมบูรณ์</span>
+            <span class="mcp-badge">+21 MCP Tools · รวม 21</span>
+          </div>
+          <p class="entry-desc">รากฐานของ Monolith Manufacturing OS — System Architecture, Domain Modules (13 ระบบหลัก), MCP Governance Stack, API Reference, และ Developer Documentation</p>
+          <div class="chapters-row">
+            <a class="ch-pill" href="index.html#ch1">Ch 1: บทสรุปสำหรับผู้บริหาร</a>
+            <a class="ch-pill" href="index.html#ch2">Ch 2: ภาพรวมของระบบ</a>
+            <a class="ch-pill" href="index.html#ch3">Ch 3: งานวิจัยและฐานทางวิชาการ</a>
+            <a class="ch-pill" href="index.html#ch4">Ch 4: สถาปัตยกรรมทางเทคนิค</a>
+            <a class="ch-pill" href="index.html#ch5">Ch 5: PRD</a>
+            <a class="ch-pill" href="index.html#ch6">Ch 6: Technical Specification</a>
+            <a class="ch-pill" href="index.html#ch7">Ch 7: Developer Documentation</a>
+            <a class="ch-pill" href="index.html#ch8">Ch 8: Rebuild Blueprint</a>
+            <a class="ch-pill" href="index.html#ch9">Ch 9: Risk Management</a>
+            <a class="ch-pill" href="index.html#ch10">Ch 10: Roadmap</a>
+            <a class="ch-pill" href="index.html#ch11">Ch 11: บทสรุปและข้อเสนอแนะ</a>
+            <a class="ch-pill" href="index.html#ch12">Ch 12: API Reference</a>
+            <a class="ch-pill" href="index.html#ch13">Ch 13–25: Domain Modules</a>
+            <a class="ch-pill" href="index.html#ch26">Ch 26–27: MCP Governance</a>
+          </div>
+          <ul class="feature-list">
+            <li>Multi-tenant PostgreSQL + Supabase Architecture พร้อม Row-Level Security</li>
+            <li>13 Domain Modules: Installation, QC, Inventory, Logistics, CRM, Production, HR, BI, After-Sales, Procurement, Safety, Training, + Communication</li>
+            <li>MCP Governance Stack: Policy Engine, Rate Limiting, Audit Log, Tool Registry</li>
+            <li>REST + GraphQL + WebSocket API สำหรับทุก Domain</li>
+            <li>TypeScript/React Frontend, Deno Backend, GitHub Actions CI/CD</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.timeline -->
+
+  <div class="changelog-footer">
+    <p>Monolith Manufacturing OS Documentation · <a href="index.html">เปิด Documentation Site</a> · <a href="analytics.html">Analytics Dashboard</a></p>
+    <p style="margin-top:8px;">55 Chapters · 123 MCP Tools · 15 Development Phases · สร้างด้วย SciSpace</p>
+  </div>
+</div>
+</body>
+</html>

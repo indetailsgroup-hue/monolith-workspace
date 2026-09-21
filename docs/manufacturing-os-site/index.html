@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monolith Manufacturing OS — เอกสารฉบับสมบูรณ์ v2.0.0</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+</head>
+<body>
+<header id="top-header">
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <span class="header-title">⚡ Monolith Manufacturing OS</span>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+    <span class="header-meta">55 Chapters · 123 MCP Tools · 15 Phases</span>
+    <span class="version-badge">v2.0.0</span>
+    <button class="search-open-btn" onclick="openSearch()" title="ค้นหา (Ctrl+K)">🔍 <kbd>Ctrl+K</kbd></button>
+    <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="เปลี่ยน Theme">🌙</button>
+  </div>
+</header>
+<div class="layout">
+<nav id="sidebar">
+<div class="sidebar-header">
+<div class="logo">⚡</div>
+<div class="site-title">Monolith Manufacturing OS</div>
+<div class="site-subtitle">เอกสารฉบับสมบูรณ์ v2.0.0</div>
+</div>
+<div class="sidebar-search"><input type="text" id="chapter-search" placeholder="🔍 ค้นหา chapter..." onkeyup="filterChapters(this.value)"></div>
+<div class="chapter-list" id="chapter-list">
+<div class="chapter-group">
+<div class="group-label">📋 Foundation (Ch 1–12)</div>
+<a href="#" class="chapter-link" data-chapter="1" onclick="showChapter(1); return false;"><span class="ch-num">Ch 1</span><span class="ch-title">บทสรุปสำหรับผู้บริหาร</span></a>
+<a href="#" class="chapter-link" data-chapter="2" onclick="showChapter(2); return false;"><span class="ch-num">Ch 2</span><span class="ch-title">ภาพรวมของระบบ</span></a>
+<a href="#" class="chapter-link" data-chapter="3" onclick="showChapter(3); return false;"><span class="ch-num">Ch 3</span><span class="ch-title">งานวิจัยและฐานทางวิชาการ</span></a>
+<a href="#" class="chapter-link" data-chapter="4" onclick="showChapter(4); return false;"><span class="ch-num">Ch 4</span><span class="ch-title">สถาปัตยกรรมทางเทคนิค</span></a>
+<a href="#" class="chapter-link" data-chapter="5" onclick="showChapter(5); return false;"><span class="ch-num">Ch 5</span><span class="ch-title">ข้อกำหนดผลิตภัณฑ์ (PRD)</span></a>
+<a href="#" class="chapter-link" data-chapter="6" onclick="showChapter(6); return false;"><span class="ch-num">Ch 6</span><span class="ch-title">ข้อกำหนดทางเทคนิค (Technical Specification)</span></a>
+<a href="#" class="chapter-link" data-chapter="7" onclick="showChapter(7); return false;"><span class="ch-num">Ch 7</span><span class="ch-title">เอกสารสำหรับนักพัฒนา (Developer Documentation...</span></a>
+<a href="#" class="chapter-link" data-chapter="8" onclick="showChapter(8); return false;"><span class="ch-num">Ch 8</span><span class="ch-title">Rebuild Blueprint</span></a>
+<a href="#" class="chapter-link" data-chapter="9" onclick="showChapter(9); return false;"><span class="ch-num">Ch 9</span><span class="ch-title">การจัดการความเสี่ยงและความท้าทาย</span></a>
+<a href="#" class="chapter-link" data-chapter="10" onclick="showChapter(10); return false;"><span class="ch-num">Ch 10</span><span class="ch-title">แผนงานและ Roadmap</span></a>
+<a href="#" class="chapter-link" data-chapter="11" onclick="showChapter(11); return false;"><span class="ch-num">Ch 11</span><span class="ch-title">บทสรุปและข้อเสนอแนะ</span></a>
+<a href="#" class="chapter-link" data-chapter="12" onclick="showChapter(12); return false;"><span class="ch-num">Ch 12</span><span class="ch-title">API Reference — MCP Server & REST Endpoints</span></a>
+</div>
+<div class="chapter-group">
+<div class="group-label">🏭 Domain Modules (Ch 13–25)</div>
+<a href="#" class="chapter-link" data-chapter="13" onclick="showChapter(13); return false;"><span class="ch-num">Ch 13</span><span class="ch-title">ระบบจัดการช่างติดตั้ง (Installation Module)</span></a>
+<a href="#" class="chapter-link" data-chapter="14" onclick="showChapter(14); return false;"><span class="ch-num">Ch 14</span><span class="ch-title">การสื่อสารระหว่างแผนก (Inter-Department Commu...</span></a>
+<a href="#" class="chapter-link" data-chapter="15" onclick="showChapter(15); return false;"><span class="ch-num">Ch 15</span><span class="ch-title">ระบบควบคุมคุณภาพ (Quality Control)</span></a>
+<a href="#" class="chapter-link" data-chapter="16" onclick="showChapter(16); return false;"><span class="ch-num">Ch 16</span><span class="ch-title">ระบบจัดการคลังวัสดุ (Inventory Management)</span></a>
+<a href="#" class="chapter-link" data-chapter="17" onclick="showChapter(17); return false;"><span class="ch-num">Ch 17</span><span class="ch-title">ระบบโลจิสติกส์และจัดส่ง (Logistics & Delivery...</span></a>
+<a href="#" class="chapter-link" data-chapter="18" onclick="showChapter(18); return false;"><span class="ch-num">Ch 18</span><span class="ch-title">ระบบจัดการลูกค้า (CRM)</span></a>
+<a href="#" class="chapter-link" data-chapter="19" onclick="showChapter(19); return false;"><span class="ch-num">Ch 19</span><span class="ch-title">ระบบวางแผนการผลิต (Production Planning)</span></a>
+<a href="#" class="chapter-link" data-chapter="20" onclick="showChapter(20); return false;"><span class="ch-num">Ch 20</span><span class="ch-title">ระบบจัดการทีมและบุคลากร (HR & Team Management...</span></a>
+<a href="#" class="chapter-link" data-chapter="21" onclick="showChapter(21); return false;"><span class="ch-num">Ch 21</span><span class="ch-title">ระบบ Business Intelligence และ Dashboard</span></a>
+<a href="#" class="chapter-link" data-chapter="22" onclick="showChapter(22); return false;"><span class="ch-num">Ch 22</span><span class="ch-title">ระบบ After-Sales และการรับประกัน (After-Sales...</span></a>
+<a href="#" class="chapter-link" data-chapter="23" onclick="showChapter(23); return false;"><span class="ch-num">Ch 23</span><span class="ch-title">ระบบจัดซื้อจัดจ้าง (Procurement)</span></a>
+<a href="#" class="chapter-link" data-chapter="24" onclick="showChapter(24); return false;"><span class="ch-num">Ch 24</span><span class="ch-title">ระบบความปลอดภัยและมาตรฐาน (Safety & Complianc...</span></a>
+<a href="#" class="chapter-link" data-chapter="25" onclick="showChapter(25); return false;"><span class="ch-num">Ch 25</span><span class="ch-title">ระบบฝึกอบรม (Training & Onboarding)</span></a>
+</div>
+<div class="chapter-group">
+<div class="group-label">⚙️ MCP Governance (Ch 26–27)</div>
+<a href="#" class="chapter-link" data-chapter="26" onclick="showChapter(26); return false;"><span class="ch-num">Ch 26</span><span class="ch-title">MCP Governance Stack</span></a>
+<a href="#" class="chapter-link" data-chapter="27" onclick="showChapter(27); return false;"><span class="ch-num">Ch 27</span><span class="ch-title">Governance Middleware & Pipeline</span></a>
+</div>
+<div class="chapter-group">
+<div class="group-label">🚀 Phase 1–5 Migration (Ch 28–33)</div>
+<a href="#" class="chapter-link" data-chapter="28" onclick="showChapter(28); return false;"><span class="ch-num">Ch 28</span><span class="ch-title">AI Module MCP Tools (Phase 1)</span></a>
+<a href="#" class="chapter-link" data-chapter="29" onclick="showChapter(29); return false;"><span class="ch-num">Ch 29</span><span class="ch-title">Phase 2 Tools — Factory, CNC, Workflow</span></a>
+<a href="#" class="chapter-link" data-chapter="30" onclick="showChapter(30); return false;"><span class="ch-num">Ch 30</span><span class="ch-title">Phase 3 Tools — Digital Shadow, Customer Port...</span></a>
+<a href="#" class="chapter-link" data-chapter="31" onclick="showChapter(31); return false;"><span class="ch-num">Ch 31</span><span class="ch-title">Test Suite & Quality Assurance</span></a>
+<a href="#" class="chapter-link" data-chapter="32" onclick="showChapter(32); return false;"><span class="ch-num">Ch 32</span><span class="ch-title">Phase 4 — Notification, Reporting & Backup Ma...</span></a>
+<a href="#" class="chapter-link" data-chapter="33" onclick="showChapter(33); return false;"><span class="ch-num">Ch 33</span><span class="ch-title">Phase 5 — Organization, Culture & CI/CD Harde...</span></a>
+</div>
+<div class="chapter-group">
+<div class="group-label">📊 Phase 6–9 Extension (Ch 34–40)</div>
+<a href="#" class="chapter-link" data-chapter="34" onclick="showChapter(34); return false;"><span class="ch-num">Ch 34</span><span class="ch-title">Architecture Decision Records (ADR)</span></a>
+<a href="#" class="chapter-link" data-chapter="35" onclick="showChapter(35); return false;"><span class="ch-num">Ch 35</span><span class="ch-title">Phase 6 — Analytics Dashboard & Real-time Mon...</span></a>
+<a href="#" class="chapter-link" data-chapter="36" onclick="showChapter(36); return false;"><span class="ch-num">Ch 36</span><span class="ch-title">Load Testing Strategy & Performance Benchmark...</span></a>
+<a href="#" class="chapter-link" data-chapter="37" onclick="showChapter(37); return false;"><span class="ch-num">Ch 37</span><span class="ch-title">Phase 7: Supply Chain Management & Vendor Por...</span></a>
+<a href="#" class="chapter-link" data-chapter="38" onclick="showChapter(38); return false;"><span class="ch-num">Ch 38</span><span class="ch-title">Persona User Journey Mapping</span></a>
+<a href="#" class="chapter-link" data-chapter="39" onclick="showChapter(39); return false;"><span class="ch-num">Ch 39</span><span class="ch-title">Financial Management & Invoicing (Phase 8)</span></a>
+<a href="#" class="chapter-link" data-chapter="40" onclick="showChapter(40); return false;"><span class="ch-num">Ch 40</span><span class="ch-title">Performance Benchmark Report (Phase 8)</span></a>
+</div>
+<div class="chapter-group">
+<div class="group-label">🏢 Phase 10–15 Enterprise (Ch 41–55)</div>
+<a href="#" class="chapter-link" data-chapter="41" onclick="showChapter(41); return false;"><span class="ch-num">Ch 41</span><span class="ch-title">HR Management Module (Phase 9)</span></a>
+<a href="#" class="chapter-link" data-chapter="42" onclick="showChapter(42); return false;"><span class="ch-num">Ch 42</span><span class="ch-title">Employee Self-Service Module (Phase 9)</span></a>
+<a href="#" class="chapter-link" data-chapter="43" onclick="showChapter(43); return false;"><span class="ch-num">Ch 43</span><span class="ch-title">Phase 9 Load Test Results</span></a>
+<a href="#" class="chapter-link" data-chapter="44" onclick="showChapter(44); return false;"><span class="ch-num">Ch 44</span><span class="ch-title">Document Management Module (Phase 10)</span></a>
+<a href="#" class="chapter-link" data-chapter="45" onclick="showChapter(45); return false;"><span class="ch-num">Ch 45</span><span class="ch-title">E-Signature Module (Phase 10)</span></a>
+<a href="#" class="chapter-link" data-chapter="46" onclick="showChapter(46); return false;"><span class="ch-num">Ch 46</span><span class="ch-title">Compliance & Audit Trail Module (Phase 11)</span></a>
+<a href="#" class="chapter-link" data-chapter="47" onclick="showChapter(47); return false;"><span class="ch-num">Ch 47</span><span class="ch-title">Regulatory Reporting Module (Phase 11)</span></a>
+<a href="#" class="chapter-link" data-chapter="48" onclick="showChapter(48); return false;"><span class="ch-num">Ch 48</span><span class="ch-title">CRM Management Module (Phase 12)</span></a>
+<a href="#" class="chapter-link" data-chapter="49" onclick="showChapter(49); return false;"><span class="ch-num">Ch 49</span><span class="ch-title">Customer Feedback & Analytics Module (Phase 1...</span></a>
+<a href="#" class="chapter-link" data-chapter="50" onclick="showChapter(50); return false;"><span class="ch-num">Ch 50</span><span class="ch-title">Data Warehouse Integration Module (Phase 13)</span></a>
+<a href="#" class="chapter-link" data-chapter="51" onclick="showChapter(51); return false;"><span class="ch-num">Ch 51</span><span class="ch-title">BI Dashboard & Reporting Module (Phase 13)</span></a>
+<a href="#" class="chapter-link" data-chapter="52" onclick="showChapter(52); return false;"><span class="ch-num">Ch 52</span><span class="ch-title">IoT Sensor Data Management Module (Phase 14)</span></a>
+<a href="#" class="chapter-link" data-chapter="53" onclick="showChapter(53); return false;"><span class="ch-num">Ch 53</span><span class="ch-title">Edge Device & Real-Time Alerting Module (Phas...</span></a>
+<a href="#" class="chapter-link" data-chapter="54" onclick="showChapter(54); return false;"><span class="ch-num">Ch 54</span><span class="ch-title">Phase 15 — Predictive Maintenance System</span></a>
+<a href="#" class="chapter-link" data-chapter="55" onclick="showChapter(55); return false;"><span class="ch-num">Ch 55</span><span class="ch-title">Phase 15 — Deployment, Governance, and Person...</span></a>
+</div>
+</div>
+<div class="sidebar-extra-nav" id="extra-nav-links">
+  <a href="analytics.html" class="extra-nav-link">📊 Analytics Dashboard</a>
+  <a href="changelog.html" class="extra-nav-link">📋 Changelog</a>
+</div>
+<div class="sidebar-footer">55 Chapters | 123 MCP Tools | 15 Phases</div>
+</nav>
+
+<main id="main-content">
+  <div id="loading"><div class="spinner"></div><p>กำลังโหลด...</p></div>
+  <div id="chapter-container">
+<div class="welcome-banner">
+  <h1>⚡ Monolith Manufacturing OS</h1>
+  <p>เอกสารฉบับสมบูรณ์ครอบคลุมการออกแบบระบบ Manufacturing OS ตั้งแต่ Core Architecture จนถึง Predictive Maintenance</p>
+  <div class="meta">
+    <span class="badge">v2.0.0</span>
+    <span class="badge">55 Chapters</span>
+    <span class="badge">123 MCP Tools</span>
+    <span class="badge">15 Phases</span>
+    <span class="badge">18 กันยายน 2569</span>
+  </div>
+</div>
+<h2>15-Phase Development Roadmap</h2>
+<div class="phase-grid">
+<div class="phase-card"><div class="phase-num">Foundation</div><div class="phase-name">Core Design & Business Ops</div><div class="tools-count">+21 tools → รวม 21</div></div>
+<div class="phase-card"><div class="phase-num">Phase 1</div><div class="phase-name">AI Integration</div><div class="tools-count">+9 tools → รวม 30</div></div>
+<div class="phase-card"><div class="phase-num">Phase 2</div><div class="phase-name">Factory / CNC / Workflow</div><div class="tools-count">+9 tools → รวม 39</div></div>
+<div class="phase-card"><div class="phase-num">Phase 3</div><div class="phase-name">Digital Shadow / Analytics</div><div class="tools-count">+9 tools → รวม 48</div></div>
+<div class="phase-card"><div class="phase-num">Phase 4</div><div class="phase-name">Notification / Reporting / Backup</div><div class="tools-count">+9 tools → รวม 57</div></div>
+<div class="phase-card"><div class="phase-num">Phase 5</div><div class="phase-name">Organization / Culture / CI-CD</div><div class="tools-count">+9 tools → รวม 66</div></div>
+<div class="phase-card"><div class="phase-num">Phase 6</div><div class="phase-name">Analytics Dashboard & Real-time Monitor</div><div class="tools-count">+6 tools → รวม 72</div></div>
+<div class="phase-card"><div class="phase-num">Phase 7</div><div class="phase-name">Supply Chain & Vendor Portal</div><div class="tools-count">+6 tools → รวม 78</div></div>
+<div class="phase-card"><div class="phase-num">Phase 8</div><div class="phase-name">Financial Management & Invoicing</div><div class="tools-count">+6 tools → รวม 84</div></div>
+<div class="phase-card"><div class="phase-num">Phase 9</div><div class="phase-name">HR Management & Self-Service</div><div class="tools-count">+6 tools → รวม 90</div></div>
+<div class="phase-card"><div class="phase-num">Phase 10</div><div class="phase-name">Document Management & E-Signature</div><div class="tools-count">+6 tools → รวม 96</div></div>
+<div class="phase-card"><div class="phase-num">Phase 11</div><div class="phase-name">Compliance & Audit Trail</div><div class="tools-count">+6 tools → รวม 102</div></div>
+<div class="phase-card"><div class="phase-num">Phase 12</div><div class="phase-name">CRM & Customer Feedback</div><div class="tools-count">+6 tools → รวม 108</div></div>
+<div class="phase-card"><div class="phase-num">Phase 13</div><div class="phase-name">Data Warehouse & BI Dashboard</div><div class="tools-count">+6 tools → รวม 114</div></div>
+<div class="phase-card"><div class="phase-num">Phase 14</div><div class="phase-name">IoT Sensor & Edge Device Alerting</div><div class="tools-count">+6 tools → รวม 120</div></div>
+<div class="phase-card"><div class="phase-num">Phase 15</div><div class="phase-name">Predictive Maintenance & Governance ★</div><div class="tools-count">+3 tools → รวม 123</div></div>
+
+</div>
+<p>เลือก Chapter จาก Navigation Sidebar ทางซ้ายเพื่อเริ่มอ่านเอกสาร หรือคลิกเริ่มที่ <a href="#" onclick="showChapter(1); return false;">บทที่ 1: บทสรุปสำหรับผู้บริหาร</a></p>
+
+<div class="home-section" id="chapter-map-section">
+  <h2>📊 Chapter Map — All 15 Phases</h2>
+  <p>ตารางสรุปครอบคลุม 55 Chapters, MCP Tools (สะสม) และ Dependencies ระหว่าง Phase</p>
+  <div class="cmap-wrap">
+    <table class="cmap-table">
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Chapters</th>
+          <th>MCP (ใหม่)</th>
+          <th>MCP (สะสม)</th>
+          <th>Status</th>
+          <th>Dependencies</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-foundation">
+          <td><b>Foundation</b></td>
+          <td>Ch 1–12, 26–27</td>
+          <td>+21</td>
+          <td>21</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><b>Phase 1</b></td>
+          <td>Ch 28</td>
+          <td>+9</td>
+          <td>30</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Foundation</td>
+        </tr>
+        <tr>
+          <td><b>Phase 2</b></td>
+          <td>Ch 29</td>
+          <td>+9</td>
+          <td>39</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 1</td>
+        </tr>
+        <tr>
+          <td><b>Phase 3</b></td>
+          <td>Ch 30–31</td>
+          <td>+9</td>
+          <td>48</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 2</td>
+        </tr>
+        <tr>
+          <td><b>Phase 4</b></td>
+          <td>Ch 32</td>
+          <td>+9</td>
+          <td>57</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 3</td>
+        </tr>
+        <tr>
+          <td><b>Phase 5</b></td>
+          <td>Ch 33–34</td>
+          <td>+9</td>
+          <td>66</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 4</td>
+        </tr>
+        <tr>
+          <td><b>Phase 6</b></td>
+          <td>Ch 35–36</td>
+          <td>+6</td>
+          <td>72</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 5</td>
+        </tr>
+        <tr>
+          <td><b>Phase 7</b></td>
+          <td>Ch 37–38</td>
+          <td>+6</td>
+          <td>78</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 5 + Phase 6</td>
+        </tr>
+        <tr>
+          <td><b>Phase 8</b></td>
+          <td>Ch 39–40</td>
+          <td>+6</td>
+          <td>84</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 6 + Phase 7</td>
+        </tr>
+        <tr>
+          <td><b>Phase 9</b></td>
+          <td>Ch 41–43</td>
+          <td>+6</td>
+          <td>90</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 8</td>
+        </tr>
+        <tr>
+          <td><b>Phase 10</b></td>
+          <td>Ch 44–45</td>
+          <td>+6</td>
+          <td>96</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 9</td>
+        </tr>
+        <tr>
+          <td><b>Phase 11</b></td>
+          <td>Ch 46–47</td>
+          <td>+6</td>
+          <td>102</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 10</td>
+        </tr>
+        <tr>
+          <td><b>Phase 12</b></td>
+          <td>Ch 48–49</td>
+          <td>+6</td>
+          <td>108</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 7 + Phase 11</td>
+        </tr>
+        <tr>
+          <td><b>Phase 13</b></td>
+          <td>Ch 50–51</td>
+          <td>+6</td>
+          <td>114</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 6 + Phase 12</td>
+        </tr>
+        <tr>
+          <td><b>Phase 14</b></td>
+          <td>Ch 52–53</td>
+          <td>+6</td>
+          <td>120</td>
+          <td><span class="badge-done">✅ สมบูรณ์</span></td>
+          <td>Phase 13</td>
+        </tr>
+        <tr class="row-active">
+          <td><b>Phase 15</b></td>
+          <td>Ch 54–55</td>
+          <td>+3</td>
+          <td><b>123</b></td>
+          <td><span class="badge-wip">🔄 กำลังดำเนินการ</span></td>
+          <td>Phase 14 + ทุก Phase</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+  </div>
+</main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- Search Overlay Modal -->
+<div id="search-overlay" class="search-overlay" onclick="closeSearch()">
+  <div class="search-modal" onclick="event.stopPropagation()">
+    <div class="search-input-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="ค้นหาข้ามทุก 55 chapters..." autocomplete="off" oninput="debouncedSearch(this.value)">
+      <button class="search-close-btn" onclick="closeSearch()">✕</button>
+    </div>
+    <div id="search-count" class="search-count"></div>
+    <div id="search-results" class="search-results-list"></div>
+    <div class="search-footer">กด <kbd>Esc</kbd> เพื่อปิด · คลิก Chapter เพื่อเปิด</div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

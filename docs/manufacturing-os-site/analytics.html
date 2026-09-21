@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard — Monolith Manufacturing OS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #f78166;
+      --accent2: #79c0ff;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* Header */
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .top-bar a.back-btn {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .top-bar a.back-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .top-bar h1 { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+    .top-bar .badge { background: var(--accent); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; margin-left: 8px; }
+    .last-updated { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+    .clear-btn {
+      background: transparent;
+      border: 1px solid #6e3030;
+      color: #f85149;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { background: #6e3030; color: #fff; }
+
+    /* Main content */
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+    /* Stat cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .stat-card .stat-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); line-height: 1; }
+    .stat-card .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .stat-card.green .stat-value { color: var(--green); }
+    .stat-card.blue .stat-value { color: var(--accent2); }
+    .stat-card.purple .stat-value { color: var(--purple); }
+
+    /* Chart section */
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+    .section h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .section h2 .section-badge { font-size: 0.72rem; color: var(--muted); background: var(--surface2); padding: 2px 8px; border-radius: 4px; font-weight: 400; }
+    .chart-wrap { position: relative; height: 320px; }
+
+    /* Phase breakdown bars */
+    .phase-bars { display: flex; flex-direction: column; gap: 8px; }
+    .phase-row { display: flex; align-items: center; gap: 10px; }
+    .phase-name { font-size: 0.78rem; color: var(--muted); width: 90px; text-align: right; flex-shrink: 0; }
+    .phase-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 20px; overflow: hidden; }
+    .phase-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #ff9580); border-radius: 4px; transition: width 0.8s ease; min-width: 2px; }
+    .phase-count { font-size: 0.78rem; color: var(--text); width: 40px; text-align: left; flex-shrink: 0; }
+
+    /* Top chapters table */
+    .top-table { width: 100%; border-collapse: collapse; }
+    .top-table th { font-size: 0.75rem; color: var(--muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .top-table td { padding: 9px 10px; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+    .top-table tr:last-child td { border-bottom: none; }
+    .top-table tr:hover td { background: var(--surface2); }
+    .rank-badge { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+    .rank-1 { background: #ffd700; color: #000; }
+    .rank-2 { background: #c0c0c0; color: #000; }
+    .rank-3 { background: #cd7f32; color: #fff; }
+    .rank-other { background: var(--surface2); color: var(--muted); }
+    .ch-num-cell { color: var(--accent2); font-weight: 600; }
+    .view-bar { display: inline-block; height: 6px; background: var(--accent); border-radius: 3px; margin-left: 8px; vertical-align: middle; }
+    .views-count { color: var(--accent); font-weight: 600; }
+    .group-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: var(--surface2); color: var(--muted); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.6; }
+    .empty-state a { color: var(--accent); }
+
+    /* History timeline */
+    .history-list { display: flex; flex-direction: column; gap: 0; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 0.83rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-time { color: var(--muted); font-size: 0.75rem; width: 80px; flex-shrink: 0; }
+    .history-ch { color: var(--accent2); font-weight: 600; }
+    .history-title { color: var(--text); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .history-title a { color: inherit; text-decoration: none; }
+    .history-title a:hover { color: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .container { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="index.html" class="back-btn">← กลับหน้าหลัก</a>
+  <h1>📊 Analytics Dashboard <span class="badge">LIVE</span></h1>
+  <span class="last-updated" id="last-updated">อัปเดตล่าสุด: กำลังโหลด...</span>
+  <button class="clear-btn" onclick="clearData()">🗑️ ล้างข้อมูล</button>
+</div>
+
+<div class="container">
+  <!-- Stat Cards -->
+  <div class="stats-grid" id="stat-cards">
+    <div class="stat-card">
+      <div class="stat-label">การเปิดอ่านทั้งหมด</div>
+      <div class="stat-value" id="stat-total">—</div>
+      <div class="stat-sub">Total page views</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Chapters ที่เปิดอ่าน</div>
+      <div class="stat-value" id="stat-unique">—</div>
+      <div class="stat-sub">จาก 55 chapters ทั้งหมด</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">อ่านมากที่สุด</div>
+      <div class="stat-value" id="stat-top-ch">—</div>
+      <div class="stat-sub" id="stat-top-title">—</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">อ่านล่าสุด</div>
+      <div class="stat-value" id="stat-last-ch">—</div>
+      <div class="stat-sub" id="stat-last-time">—</div>
+    </div>
+  </div>
+
+  <!-- Bar Chart: Top 20 Chapters -->
+  <div class="section" id="chart-section">
+    <h2>📈 Chapter Views <span class="section-badge">Top 20 Most Read</span></h2>
+    <div id="chart-empty" class="empty-state" style="display:none;">
+      <div class="empty-icon">📚</div>
+      <p>ยังไม่มีข้อมูลการอ่าน<br>
+      <a href="index.html">เปิดอ่าน Documentation</a> แล้วกลับมาดูสถิติที่นี่</p>
+    </div>
+    <div class="chart-wrap" id="chart-wrap">
+      <canvas id="viewsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Phase Breakdown -->
+  <div class="section">
+    <h2>🏭 Views ตาม Phase <span class="section-badge">Phase Distribution</span></h2>
+    <div class="phase-bars" id="phase-bars">
+      <div style="color:var(--muted);font-size:0.85rem;padding:12px 0;">กำลังโหลดข้อมูล...</div>
+    </div>
+  </div>
+
+  <!-- Top 10 Table -->
+  <div class="section">
+    <h2>🏆 Top 10 Chapters ที่อ่านมากที่สุด</h2>
+    <div id="top10-table">
+      <div style="color:var(--muted);font-size:0.85rem;padding:12px 0;">กำลังโหลดข้อมูล...</div>
+    </div>
+  </div>
+
+  <!-- Recent History -->
+  <div class="section">
+    <h2>🕐 ประวัติการอ่านล่าสุด <span class="section-badge">50 รายการล่าสุด</span></h2>
+    <div class="history-list" id="history-list">
+      <div style="color:var(--muted);font-size:0.85rem;padding:12px 0;">กำลังโหลดข้อมูล...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHAPTERS_META = [
+  {num:1,title:"บทสรุปสำหรับผู้บริหาร",group:"Foundation"},{num:2,title:"ภาพรวมของระบบ",group:"Foundation"},
+  {num:3,title:"งานวิจัยและฐานทางวิชาการ",group:"Foundation"},{num:4,title:"สถาปัตยกรรมทางเทคนิค",group:"Foundation"},
+  {num:5,title:"ข้อกำหนดผลิตภัณฑ์ (PRD)",group:"Foundation"},{num:6,title:"ข้อกำหนดทางเทคนิค (Technical Specification)",group:"Foundation"},
+  {num:7,title:"เอกสารสำหรับนักพัฒนา (Developer Documentation)",group:"Foundation"},{num:8,title:"Rebuild Blueprint",group:"Foundation"},
+  {num:9,title:"การจัดการความเสี่ยงและความท้าทาย",group:"Foundation"},{num:10,title:"แผนงานและ Roadmap",group:"Foundation"},
+  {num:11,title:"บทสรุปและข้อเสนอแนะ",group:"Foundation"},{num:12,title:"API Reference — MCP Server & REST Endpoints",group:"Foundation"},
+  {num:13,title:"ระบบจัดการช่างติดตั้ง (Installation Module)",group:"Domain"},{num:14,title:"การสื่อสารระหว่างแผนก (Inter-Department Communication)",group:"Domain"},
+  {num:15,title:"ระบบควบคุมคุณภาพ (Quality Control)",group:"Domain"},{num:16,title:"ระบบจัดการคลังวัสดุ (Inventory Management)",group:"Domain"},
+  {num:17,title:"ระบบโลจิสติกส์และจัดส่ง (Logistics & Delivery)",group:"Domain"},{num:18,title:"ระบบจัดการลูกค้า (CRM)",group:"Domain"},
+  {num:19,title:"ระบบวางแผนการผลิต (Production Planning)",group:"Domain"},{num:20,title:"ระบบจัดการทีมและบุคลากร (HR & Team Management)",group:"Domain"},
+  {num:21,title:"ระบบ Business Intelligence และ Dashboard",group:"Domain"},{num:22,title:"ระบบ After-Sales และการรับประกัน",group:"Domain"},
+  {num:23,title:"ระบบจัดซื้อจัดจ้าง (Procurement)",group:"Domain"},{num:24,title:"ระบบความปลอดภัยและมาตรฐาน (Safety & Compliance)",group:"Domain"},
+  {num:25,title:"ระบบฝึกอบรม (Training & Onboarding)",group:"Domain"},{num:26,title:"MCP Governance Stack",group:"MCP"},
+  {num:27,title:"Governance Middleware & Pipeline",group:"MCP"},{num:28,title:"AI Module MCP Tools (Phase 1)",group:"Phase 1"},
+  {num:29,title:"Phase 2 Tools — Factory, CNC, Workflow",group:"Phase 2"},{num:30,title:"Phase 3 Tools — Digital Shadow, Customer Portal, Analytics",group:"Phase 3"},
+  {num:31,title:"Test Suite & Quality Assurance",group:"Phase 3"},{num:32,title:"Phase 4 — Notification, Reporting & Backup Management",group:"Phase 4"},
+  {num:33,title:"Phase 5 — Organization, Culture & CI/CD Hardening",group:"Phase 5"},{num:34,title:"Architecture Decision Records (ADR)",group:"Phase 5"},
+  {num:35,title:"Phase 6 — Analytics Dashboard & Real-time Monitoring",group:"Phase 6"},{num:36,title:"Load Testing Strategy & Performance Benchmarks",group:"Phase 6"},
+  {num:37,title:"Phase 7: Supply Chain Management & Vendor Portal",group:"Phase 7"},{num:38,title:"Persona User Journey Mapping",group:"Phase 7"},
+  {num:39,title:"Financial Management & Invoicing (Phase 8)",group:"Phase 8"},{num:40,title:"Performance Benchmark Report (Phase 8)",group:"Phase 8"},
+  {num:41,title:"HR Management Module (Phase 9)",group:"Phase 9"},{num:42,title:"Employee Self-Service Module (Phase 9)",group:"Phase 9"},
+  {num:43,title:"Phase 9 Load Test Results",group:"Phase 9"},{num:44,title:"Document Management Module (Phase 10)",group:"Phase 10"},
+  {num:45,title:"E-Signature Module (Phase 10)",group:"Phase 10"},{num:46,title:"Compliance & Audit Trail Module (Phase 11)",group:"Phase 11"},
+  {num:47,title:"Regulatory Reporting Module (Phase 11)",group:"Phase 11"},{num:48,title:"CRM Management Module (Phase 12)",group:"Phase 12"},
+  {num:49,title:"Customer Feedback & Analytics Module (Phase 12)",group:"Phase 12"},{num:50,title:"Data Warehouse Integration Module (Phase 13)",group:"Phase 13"},
+  {num:51,title:"BI Dashboard & Reporting Module (Phase 13)",group:"Phase 13"},{num:52,title:"IoT Sensor Data Management Module (Phase 14)",group:"Phase 14"},
+  {num:53,title:"Edge Device & Real-Time Alerting Module (Phase 14)",group:"Phase 14"},{num:54,title:"Phase 15 — Predictive Maintenance System",group:"Phase 15"},
+  {num:55,title:"Phase 15 — Deployment, Governance, and Persona Use Cases",group:"Phase 15"}
+];
+
+const PHASE_GROUPS = ["Foundation","Domain","MCP","Phase 1","Phase 2","Phase 3","Phase 4","Phase 5","Phase 6","Phase 7","Phase 8","Phase 9","Phase 10","Phase 11","Phase 12","Phase 13","Phase 14","Phase 15"];
+const PHASE_COLORS = {"Foundation":"#f78166","Domain":"#79c0ff","MCP":"#d2a8ff","Phase 1":"#3fb950","Phase 2":"#3fb950","Phase 3":"#3fb950","Phase 4":"#d29922","Phase 5":"#d29922","Phase 6":"#d29922","Phase 7":"#ff7b72","Phase 8":"#ff7b72","Phase 9":"#a5d6ff","Phase 10":"#a5d6ff","Phase 11":"#ffa657","Phase 12":"#ffa657","Phase 13":"#bc8cff","Phase 14":"#bc8cff","Phase 15":"#f0883e"};
+
+function getViews() {
+  try { return JSON.parse(localStorage.getItem('monolith-views') || '{}'); } catch(e) { return {}; }
+}
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('monolith-history') || '[]'); } catch(e) { return []; }
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60) return diff + ' วินาทีที่แล้ว';
+  if (diff < 3600) return Math.floor(diff/60) + ' นาทีที่แล้ว';
+  if (diff < 86400) return Math.floor(diff/3600) + ' ชั่วโมงที่แล้ว';
+  return Math.floor(diff/86400) + ' วันที่แล้ว';
+}
+
+let chartInstance = null;
+
+function renderDashboard() {
+  const views = getViews();
+  const history = getHistory();
+  const totalViews = Object.values(views).reduce((a,b) => a+b, 0);
+  const uniqueChapters = Object.keys(views).length;
+
+  // Stat cards
+  document.getElementById('stat-total').textContent = totalViews.toLocaleString();
+  document.getElementById('stat-unique').textContent = uniqueChapters + ' / 55';
+
+  // Top chapter
+  const sorted = Object.entries(views).sort((a,b) => b[1]-a[1]);
+  if (sorted.length > 0) {
+    const topNum = parseInt(sorted[0][0]);
+    const topMeta = CHAPTERS_META.find(c => c.num === topNum);
+    document.getElementById('stat-top-ch').textContent = 'Ch ' + topNum;
+    document.getElementById('stat-top-title').textContent = topMeta ? topMeta.title.substring(0,35) + (topMeta.title.length>35?'...':'') : '—';
+  } else {
+    document.getElementById('stat-top-ch').textContent = '—';
+    document.getElementById('stat-top-title').textContent = 'ยังไม่มีข้อมูล';
+  }
+
+  // Last read
+  if (history.length > 0) {
+    const last = history[0];
+    document.getElementById('stat-last-ch').textContent = 'Ch ' + last.num;
+    document.getElementById('stat-last-time').textContent = formatTime(last.ts);
+  } else {
+    document.getElementById('stat-last-ch').textContent = '—';
+    document.getElementById('stat-last-time').textContent = 'ยังไม่มีข้อมูล';
+  }
+
+  // Last updated
+  const lu = history.length > 0 ? new Date(history[0].ts).toLocaleString('th-TH') : '—';
+  document.getElementById('last-updated').textContent = 'อัปเดตล่าสุด: ' + lu;
+
+  // Chart
+  const top20 = sorted.slice(0, 20);
+  if (top20.length === 0) {
+    document.getElementById('chart-empty').style.display = 'block';
+    document.getElementById('chart-wrap').style.display = 'none';
+  } else {
+    document.getElementById('chart-empty').style.display = 'none';
+    document.getElementById('chart-wrap').style.display = 'block';
+    const labels = top20.map(([num]) => {
+      const m = CHAPTERS_META.find(c => c.num === parseInt(num));
+      return 'Ch ' + num;
+    });
+    const tooltips = top20.map(([num]) => {
+      const m = CHAPTERS_META.find(c => c.num === parseInt(num));
+      return m ? m.title : 'Ch ' + num;
+    });
+    const data = top20.map(([,v]) => v);
+    const colors = top20.map(([num]) => {
+      const m = CHAPTERS_META.find(c => c.num === parseInt(num));
+      return PHASE_COLORS[m ? m.group : 'Foundation'] || '#f78166';
+    });
+
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('viewsChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Views',
+          data: data,
+          backgroundColor: colors,
+          borderRadius: 5,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => tooltips[items[0].dataIndex],
+              label: (item) => '  Views: ' + item.raw
+            },
+            backgroundColor: '#21262d',
+            titleColor: '#e6edf3',
+            bodyColor: '#8b949e',
+            borderColor: '#30363d',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', font: { size: 11 } },
+            grid: { color: '#21262d' }
+          },
+          y: {
+            ticks: { color: '#8b949e', stepSize: 1 },
+            grid: { color: '#21262d' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // Phase breakdown
+  const phaseViews = {};
+  PHASE_GROUPS.forEach(g => { phaseViews[g] = 0; });
+  Object.entries(views).forEach(([num, count]) => {
+    const m = CHAPTERS_META.find(c => c.num === parseInt(num));
+    if (m) phaseViews[m.group] = (phaseViews[m.group] || 0) + count;
+  });
+  const maxPhaseViews = Math.max(...Object.values(phaseViews), 1);
+  const phaseBarsHtml = PHASE_GROUPS.map(g => {
+    const v = phaseViews[g] || 0;
+    const pct = Math.round((v / maxPhaseViews) * 100);
+    const color = PHASE_COLORS[g] || '#f78166';
+    return `<div class="phase-row">
+      <div class="phase-name">${g}</div>
+      <div class="phase-bar-wrap">
+        <div class="phase-bar-fill" style="width:${pct}%;background:${color};"></div>
+      </div>
+      <div class="phase-count">${v}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('phase-bars').innerHTML = phaseBarsHtml || '<div style="color:var(--muted);font-size:0.85rem;">ยังไม่มีข้อมูล</div>';
+
+  // Top 10 table
+  if (sorted.length === 0) {
+    document.getElementById('top10-table').innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>ยังไม่มีข้อมูลการอ่าน<br><a href="index.html">เริ่มอ่าน Documentation</a> แล้วกลับมาดูสถิติที่นี่</p></div>';
+  } else {
+    const top10 = sorted.slice(0, 10);
+    const maxViews = parseInt(top10[0][1]);
+    let tableHtml = '<table class="top-table"><thead><tr><th>#</th><th>Chapter</th><th>Phase</th><th>Views</th></tr></thead><tbody>';
+    top10.forEach(([num, count], i) => {
+      const m = CHAPTERS_META.find(c => c.num === parseInt(num));
+      const title = m ? m.title : 'Chapter ' + num;
+      const group = m ? m.group : '—';
+      const barWidth = Math.round((count / maxViews) * 80);
+      const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+      tableHtml += `<tr>
+        <td><span class="rank-badge ${rankClass}">${i+1}</span></td>
+        <td>
+          <span class="ch-num-cell">Ch ${num}</span>
+          <a href="index.html#ch${num}" style="color:var(--text);text-decoration:none;margin-left:8px;" onmouseover="this.style.color='#f78166'" onmouseout="this.style.color='var(--text)'">${title.substring(0,55)}${title.length>55?'...':''}</a>
+        </td>
+        <td><span class="group-tag">${group}</span></td>
+        <td><span class="views-count">${count}</span><span class="view-bar" style="width:${barWidth}px;"></span></td>
+      </tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    document.getElementById('top10-table').innerHTML = tableHtml;
+  }
+
+  // History
+  if (history.length === 0) {
+    document.getElementById('history-list').innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:12px 0;">ยังไม่มีประวัติการอ่าน</div>';
+  } else {
+    let histHtml = '';
+    history.slice(0, 30).forEach(item => {
+      const m = CHAPTERS_META.find(c => c.num === item.num);
+      const title = m ? m.title : 'Chapter ' + item.num;
+      histHtml += `<div class="history-item">
+        <div class="history-time">${formatTime(item.ts)}</div>
+        <div class="history-ch">Ch ${item.num}</div>
+        <div class="history-title"><a href="index.html#ch${item.num}">${title.substring(0,60)}${title.length>60?'...':''}</a></div>
+      </div>`;
+    });
+    document.getElementById('history-list').innerHTML = histHtml;
+  }
+}
+
+function clearData() {
+  if (!confirm('ล้างข้อมูล Analytics ทั้งหมดหรือไม่?')) return;
+  localStorage.removeItem('monolith-views');
+  localStorage.removeItem('monolith-history');
+  renderDashboard();
+}
+
+// Auto-refresh every 30 seconds
+renderDashboard();
+setInterval(renderDashboard, 30000);
+</script>
+</body>
+</html>
