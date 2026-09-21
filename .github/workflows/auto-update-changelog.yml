@@ -97,26 +97,26 @@ jobs:
 
           # ── Build HTML entry ──────────────────────────────────────────────
           ENTRY = f'''
-    <!-- auto-generated: {date_str} {sha} -->
-    <div class="entry">
-      <div class="entry-version"><span class="version-tag" style="background:#1e3a5f;color:#93c5fd;border-color:#1e40af;font-family:monospace;font-size:10px;">{sha}</span></div>
-      <div class="entry-dot done"></div>
-      <div class="entry-body">
-        <div class="entry-card">
-          <div class="entry-header">
-            <span class="entry-title">📝 {msg_first}</span>
-            <span class="status-badge" style="background:#052e16;color:#22c55e;border:1px solid #166534;">✓ pushed</span>
-          </div>
-          <p class="entry-desc" style="margin-bottom:8px;">
-            Committed by <strong style="color:var(--text);">{author}</strong> · {date_str} {time_str}
-            · <a href="{run_url}" target="_blank" style="color:#3b82f6;text-decoration:none;">view commit ↗</a>
-          </p>
-          {f'<p style="margin-bottom:6px;">{file_pills}</p>' if file_pills else ''}
-          {f'<details style="margin-top:4px;"><summary style="font-size:11px;color:var(--muted);cursor:pointer;">Full commit message</summary><pre style="font-size:11px;color:var(--muted);white-space:pre-wrap;margin-top:6px;">{msg_full}</pre></details>' if chr(10) in raw_msg else ''}
-        </div>
-      </div>
-    </div>
-'''
+              <!-- auto-generated: {date_str} {sha} -->
+              <div class="entry">
+                <div class="entry-version"><span class="version-tag" style="background:#1e3a5f;color:#93c5fd;border-color:#1e40af;font-family:monospace;font-size:10px;">{sha}</span></div>
+                <div class="entry-dot done"></div>
+                <div class="entry-body">
+                  <div class="entry-card">
+                    <div class="entry-header">
+                      <span class="entry-title">📝 {msg_first}</span>
+                      <span class="status-badge" style="background:#052e16;color:#22c55e;border:1px solid #166534;">✓ pushed</span>
+                    </div>
+                    <p class="entry-desc" style="margin-bottom:8px;">
+                      Committed by <strong style="color:var(--text);">{author}</strong> · {date_str} {time_str}
+                      · <a href="{run_url}" target="_blank" style="color:#3b82f6;text-decoration:none;">view commit ↗</a>
+                    </p>
+                    {f'<p style="margin-bottom:6px;">{file_pills}</p>' if file_pills else ''}
+                    {f'<details style="margin-top:4px;"><summary style="font-size:11px;color:var(--muted);cursor:pointer;">Full commit message</summary><pre style="font-size:11px;color:var(--muted);white-space:pre-wrap;margin-top:6px;">{msg_full}</pre></details>' if chr(10) in raw_msg else ''}
+                  </div>
+                </div>
+              </div>
+          '''
 
           # ── Insert into changelog.html ────────────────────────────────────
           CHANGELOG = 'docs/manufacturing-os-site/changelog.html'
@@ -147,6 +147,8 @@ jobs:
 
       # ── 5. Commit updated changelog ─────────────────────────────────
       - name: Commit updated changelog.html
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -160,7 +162,7 @@ jobs:
 
           git commit -m "chore(docs): auto-update changelog for ${{ steps.insert.outputs.entry_sha }} [skip changelog]
 
-          Triggered by: ${{ github.event.head_commit.message }}
+          Triggered by: ${COMMIT_MSG}
           Date: ${{ steps.insert.outputs.entry_date }}
           Run: ${{ github.run_id }}"
 
@@ -170,13 +172,16 @@ jobs:
       # ── 6. Job summary ───────────────────────────────────────────────
       - name: Write job summary
         if: always()
+        env:
+          COMMIT_AUTH: ${{ github.event.head_commit.author.name }}
+          CHANGED_FILES: ${{ steps.diff.outputs.changed_files }}
         run: |
           echo "## Auto-Update Changelog — Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Commit SHA | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Author | ${{ github.event.head_commit.author.name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Author | ${COMMIT_AUTH} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Entry date | ${{ steps.insert.outputs.entry_date }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Changed files | ${{ steps.diff.outputs.changed_files }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Changed files | ${CHANGED_FILES} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Run | ${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"

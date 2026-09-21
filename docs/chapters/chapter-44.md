@@ -1,7 +1,8 @@
 ---
 num: 44
 title: "Document Management Module"
-phase: "Phase 10"
+phase: 10
+phase_label: "Phase 10"
 phase_num: 10
 mcp_tools: 3
 status: complete

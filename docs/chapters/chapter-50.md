@@ -1,7 +1,8 @@
 ---
 num: 50
 title: "Data Warehouse Integration Module"
-phase: "Phase 13"
+phase: 13
+phase_label: "Phase 13"
 phase_num: 13
 mcp_tools: 3
 status: complete

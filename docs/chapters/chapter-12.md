@@ -1,7 +1,8 @@
 ---
 num: 12
-title: "Core Foundation Chapter 12"
-phase: "Foundation"
+title: "API Reference — MCP Server & REST Endpoints"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 1
 status: complete

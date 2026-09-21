@@ -1,7 +1,8 @@
 ---
 num: 11
-title: "Core Foundation Chapter 11"
-phase: "Foundation"
+title: "Conclusions & Recommendations"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

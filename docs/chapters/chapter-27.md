@@ -1,7 +1,8 @@
 ---
 num: 27
 title: "Governance Middleware & Pipeline"
-phase: "Foundation"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 1
 status: complete

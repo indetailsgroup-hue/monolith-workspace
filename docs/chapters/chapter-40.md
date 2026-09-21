@@ -1,7 +1,8 @@
 ---
 num: 40
 title: "Performance Benchmark Report"
-phase: "Phase 8"
+phase: 8
+phase_label: "Phase 8"
 phase_num: 8
 mcp_tools: 3
 status: complete

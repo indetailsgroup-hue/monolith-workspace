@@ -1,7 +1,8 @@
 ---
 num: 28
 title: "AI Module MCP Tools"
-phase: "Phase 1"
+phase: 1
+phase_label: "Phase 1"
 phase_num: 1
 mcp_tools: 9
 status: complete

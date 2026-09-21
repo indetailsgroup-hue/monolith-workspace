@@ -1,7 +1,8 @@
 ---
 num: 38
 title: "Persona Journey Mapping"
-phase: "Phase 7"
+phase: 7
+phase_label: "Phase 7"
 phase_num: 7
 mcp_tools: 3
 status: complete

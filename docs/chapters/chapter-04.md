@@ -1,7 +1,8 @@
 ---
 num: 4
-title: "Product Requirements Document (PRD)"
-phase: "Foundation"
+title: "Technical Architecture"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

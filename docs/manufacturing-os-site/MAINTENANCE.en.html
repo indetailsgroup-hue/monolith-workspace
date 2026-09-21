@@ -1,0 +1,90 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MAINTENANCE</title><style>body{max-width:1100px;margin:40px auto;padding:0 24px;font:17px/1.65 system-ui;color:#182b3b}table{border-collapse:collapse;width:100%}td,th{padding:9px;border:1px solid #ccd5df;text-align:left}pre{white-space:pre-wrap;background:#eef3f7;padding:16px}a{color:#0658a8}</style><body><h1>Manufacturing documentation contract and maintenance</h1>
+<p>Owner approved on 2026-09-21 in the Codex task: phase range <strong>0–15</strong>, with Foundation=0. This explicitly supersedes the original audit requirement of 1–15; the original baseline result is preserved, not retroactively declared passing.</p>
+<h2>Evidence and scope</h2>
+<p>Pinned source: <code>1f4dc37fed3d5f32ce9c5f29f1d3cc1f303c973f</code>. All 55 Git blobs were compared with the DOC-S1 inventory. Chapters 01–27 explicitly declare <code>phase_num: 0</code>; chapters 28–55 explicitly declare phases 1–15. Examples: <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1f4dc37fed3d5f32ce9c5f29f1d3cc1f303c973f/docs/chapters/chapter-01.md">chapter01</a>, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1f4dc37fed3d5f32ce9c5f29f1d3cc1f303c973f/docs/chapters/chapter-27.md">chapter27</a>, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1f4dc37fed3d5f32ce9c5f29f1d3cc1f303c973f/docs/chapters/chapter-28.md">chapter28</a>, <a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1f4dc37fed3d5f32ce9c5f29f1d3cc1f303c973f/docs/chapters/chapter-55.md">chapter55</a>.</p>
+<p>This contract covers the documentation corpus, not product implementation maturity. The local governance/bootstrap root and nested product repository are separate Git roots; neither source prose nor chapter status proves production deployment.</p>
+<h2>Required frontmatter</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>num</td>
+<td>Integer 1–55 matching chapter-NN.md; booleans rejected</td>
+</tr>
+<tr>
+<td>title</td>
+<td>Non-empty string describing the existing body</td>
+</tr>
+<tr>
+<td>phase</td>
+<td>Integer 0–15; 0 is Foundation, 1–15 are numbered phases</td>
+</tr>
+<tr>
+<td>phase_num</td>
+<td>Integer exactly equal to phase; compatibility alias</td>
+</tr>
+<tr>
+<td>phase_label</td>
+<td>Foundation when phase=0; otherwise Phase N</td>
+</tr>
+<tr>
+<td>mcp_tools</td>
+<td>Nonnegative integer metadata count; booleans rejected</td>
+</tr>
+<tr>
+<td>status</td>
+<td>complete, in-progress, planned, or draft</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-yaml">---
+num: 1
+title: Executive Summary — Monolith Manufacturing OS
+phase: 0
+phase_num: 0
+phase_label: Foundation
+mcp_tools: 2
+status: complete
+---
+</code></pre>
+<h2>Accepted editorial changes</h2>
+<p>Titles02–10 now follow their existing body subjects: System Overview, Research &amp; Background, Technical Architecture, Product Requirements Document (PRD), Technical Specifications, Developer Documentation, Rebuild Blueprint, Risk Management, Roadmap. Titles11–12 become Conclusions &amp; Recommendations and API Reference — MCP Server &amp; REST Endpoints. Chapter IDs and bodies remain unchanged. Existing labels move to phase_label; phase derives from the existing phase_num, never an invented assignment.</p>
+<p>Metadata statuses remain 53 complete and 2 in-progress (54–55). MCP metadata sums to126, but this is neither a unique-tool count nor verified runtime inventory. Do not clear counts as presumed placeholders, promote status, move chapter content, or declare ADR implementation from DOC-S1 alone. Language differences in titles are not automatically defects.</p>
+<h2>Local verification and generation</h2>
+<p>Run from repository root using Python3.12 and Node.js; Git Bash is required for embedded shell syntax tests on Windows.</p>
+<pre><code class="language-bash">python -m pip install -r scripts/docs/requirements.txt
+python -m unittest discover -s tests/docs -v
+python -c &quot;from scripts.docs.site_data import *; c=render_chapters('docs/chapters'); s=search_index(c); validate_data(c,s,{str(n) for n in range(1,56)}); write_json('docs/manufacturing-os-site/chapters.json',c); write_json('docs/manufacturing-os-site/search_index.json',s)&quot;
+python -m scripts.docs.site_data
+python -m http.server 3000 --directory docs/manufacturing-os-site
+</code></pre>
+<p>The generator and release sync use the same renderer. Cache fingerprints include source, renderer/workflow and dependency versions. Missing or invalid generated data forces rebuilding. Keep maintenance documents outside docs/chapters: all Markdown files there are validated as chapter sources. Adding chapter56 or phase16 requires an explicit schema and UI change first.</p>
+<h2>Review and deployment evidence</h2>
+<p>Open a PR and verify actual Actions on its head SHA. Required branch-protection checks must pass; do not equate local tests with Actions. Verify frontmatter and generated JSON, then review chapter01/chapter55, global search and code blocks in a browser.</p>
+<table>
+<thead>
+<tr>
+<th>Destination</th>
+<th>Deployment mechanism</th>
+<th>Acceptance evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://indetailsgroup-hue.github.io/monolith-workspace/">GitHub Pages</a></td>
+<td>deploy-docs-pages.yml and auto-deploy-scispace.yml both use deploy-pages</td>
+<td>Successful deployment run, deployed SHA/artifact, live content</td>
+</tr>
+<tr>
+<td><a href="https://0ly1b489.scispace.co/">SciSpace site</a></td>
+<td>Separate SciSpace publishing process</td>
+<td>SciSpace publication evidence and independently checked live content</td>
+</tr>
+</tbody>
+</table>
+<p>The workflow named Auto-Deploy SciSpace Site does <strong>not</strong> publish to scispace.co. A reachable old site is not proof that the PR was deployed. Record pending/skipped/failed runs as observed. Lighthouse requires performance≥70 and accessibility≥90; reports/comments must be preserved before the final gate fails.</p></body></html>

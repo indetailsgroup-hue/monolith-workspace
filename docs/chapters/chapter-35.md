@@ -1,7 +1,8 @@
 ---
 num: 35
 title: "Analytics Dashboard & Real-time Monitoring Tools"
-phase: "Phase 6"
+phase: 6
+phase_label: "Phase 6"
 phase_num: 6
 mcp_tools: 3
 status: complete

@@ -1,7 +1,8 @@
 ---
 num: 31
 title: "Test Suite & Quality Assurance"
-phase: "Phase 3"
+phase: 3
+phase_label: "Phase 3"
 phase_num: 3
 mcp_tools: 4
 status: complete

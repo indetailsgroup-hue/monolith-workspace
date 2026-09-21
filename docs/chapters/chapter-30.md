@@ -1,7 +1,8 @@
 ---
 num: 30
 title: "Digital Shadow, Customer Portal, Analytics Tools"
-phase: "Phase 3"
+phase: 3
+phase_label: "Phase 3"
 phase_num: 3
 mcp_tools: 5
 status: complete

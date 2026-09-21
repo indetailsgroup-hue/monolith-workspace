@@ -1,7 +1,8 @@
 ---
 num: 37
 title: "Supply Chain Management & Vendor Portal Tools"
-phase: "Phase 7"
+phase: 7
+phase_label: "Phase 7"
 phase_num: 7
 mcp_tools: 3
 status: complete

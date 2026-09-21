@@ -6,11 +6,31 @@ on:
       - main
     paths:
       - 'docs/manufacturing-os-site/**'
+      - 'docs/chapters/**'
+      - 'scripts/docs/**'
+      - 'tests/docs/**'
+      - '.github/workflows/*docs*.yml'
+      - '.github/workflows/*chapter*.yml'
+      - '.github/workflows/generate-site-data.yml'
+      - '.github/workflows/lighthouse-audit.yml'
+      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/auto-update-changelog.yml'
+      - '.github/workflows/auto-deploy-scispace.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'docs/manufacturing-os-site/**'
+      - 'docs/chapters/**'
+      - 'scripts/docs/**'
+      - 'tests/docs/**'
+      - '.github/workflows/*docs*.yml'
+      - '.github/workflows/*chapter*.yml'
+      - '.github/workflows/generate-site-data.yml'
+      - '.github/workflows/lighthouse-audit.yml'
+      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/auto-update-changelog.yml'
+      - '.github/workflows/auto-deploy-scispace.yml'
   workflow_dispatch:
 
 jobs:
@@ -21,13 +41,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install documentation dependencies
+        run: python -m pip install -r scripts/docs/requirements.txt
+
+      - name: Run documentation regression tests
+        run: python -m unittest discover -s tests/docs -v
+
       - name: Check required files
         run: |
           echo "========================================"
           echo "  Monolith Manufacturing OS — CI Check  "
           echo "========================================"
           SITE_DIR="docs/manufacturing-os-site"
-          REQUIRED_FILES=("index.html" "script.js" "style.css" "chapters.json" "search_index.json" "analytics.html" "changelog.html" "README.md")
+          REQUIRED_FILES=("index.html" "script.js" "style.css" "chapters.json" "search_index.json" "analytics.html" "changelog.html" "status.html" "README.md")
           FAIL=0
           for f in "${REQUIRED_FILES[@]}"; do
             if [ -f "$SITE_DIR/$f" ]; then
@@ -45,49 +76,7 @@ jobs:
           fi
 
       - name: Validate JSON files
-        run: |
-          echo ""
-          echo "=== JSON Validation ==="
-          SITE_DIR="docs/manufacturing-os-site"
-
-          # Validate chapters.json
-          CHAPTER_COUNT=$(python3 -c "
-          import json, sys
-          try:
-              data = json.load(open('$SITE_DIR/chapters.json'))
-              print(len(data))
-          except Exception as e:
-              print(f'ERROR: {e}', file=sys.stderr)
-              sys.exit(1)
-          ")
-          echo "  ✅ chapters.json — ${CHAPTER_COUNT} chapters"
-          if [ "$CHAPTER_COUNT" -ne 55 ]; then
-            echo "  ⚠️  WARNING: Expected 55 chapters, found ${CHAPTER_COUNT}"
-          fi
-
-          # Validate search_index.json
-          INDEX_COUNT=$(python3 -c "
-          import json, sys
-          try:
-              data = json.load(open('$SITE_DIR/search_index.json'))
-              print(len(data))
-          except Exception as e:
-              print(f'ERROR: {e}', file=sys.stderr)
-              sys.exit(1)
-          ")
-          echo "  ✅ search_index.json — ${INDEX_COUNT} chapters indexed"
+        run: python -m scripts.docs.site_data
 
       - name: Print site summary
-        run: |
-          echo ""
-          echo "=== Monolith Manufacturing OS — Site Summary ==="
-          echo "  Chapters     : 55 (Foundation + 15 Phases)"
-          echo "  MCP Tools    : 123 total (21 Foundation + 9×5 + 6×9 + 3×1)"
-          echo "  Features     : Full-text search, Dark/Light mode,"
-          echo "                 Syntax highlighting, PDF export,"
-          echo "                 Analytics dashboard, Changelog"
-          echo ""
-          echo "  Live URL     : https://indetailsgroup-hue.github.io/monolith-workspace/"
-          echo "  Repo path    : docs/manufacturing-os-site/"
-          echo ""
-          echo "  CI Status    : ✅ All checks passed"
+        run: echo "Documentation file, JSON contract and regression checks passed."

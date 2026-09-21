@@ -1,7 +1,8 @@
 ---
 num: 46
 title: "Compliance & Audit Trail Module"
-phase: "Phase 11"
+phase: 11
+phase_label: "Phase 11"
 phase_num: 11
 mcp_tools: 3
 status: complete
