@@ -384,18 +384,61 @@
   <div class="uptime-section">
     <div class="section-header">
       <span class="section-title">90-Day Uptime History</span>
-      <span style="font-size:12px;color:var(--muted);">Each bar = 1 day</span>
+      <span style="font-size:12px;color:var(--muted);">Each bar = 1 day · built from real localStorage checks</span>
     </div>
     <div class="uptime-bar-wrap">
       <div class="uptime-bar-label">
         <span>90 days ago</span>
-        <span id="uptime-pct-label">100% uptime</span>
+        <span id="uptime-pct-label">—</span>
         <span>Today</span>
       </div>
       <div class="uptime-bar">
-        <div class="uptime-bar-fill" id="uptime-fill" style="width:100%"></div>
+        <div class="uptime-bar-fill" id="uptime-fill" style="width:0%"></div>
       </div>
       <div class="uptime-blocks" id="uptime-blocks"></div>
+    </div>
+    <!-- History stats row -->
+    <div id="history-stats" style="
+      display:flex; gap:24px; flex-wrap:wrap; margin-top:14px;
+      padding:12px 16px; background:var(--surface);
+      border:1px solid var(--border); border-radius:8px;
+      font-size:12px; color:var(--muted);
+    ">
+      <span>Checks stored: <strong id="stat-total" style="color:var(--text)">0</strong></span>
+      <span>First check: <strong id="stat-first" style="color:var(--text)">—</strong></span>
+      <span>Last check: <strong id="stat-last" style="color:var(--text)">—</strong></span>
+      <span>Days with data: <strong id="stat-days" style="color:var(--text)">0</strong></span>
+      <span style="margin-left:auto;">
+        <button id="btn-clear-history" style="
+          background:var(--red-bg); color:var(--red);
+          border:1px solid var(--red-border); border-radius:6px;
+          padding:3px 10px; font-size:11px; cursor:pointer;
+        ">Clear History</button>
+      </span>
+    </div>
+
+    <!-- Recent checks table -->
+    <div style="margin-top:14px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;">Recent Checks (last 10)</div>
+      <div id="recent-checks-table" style="
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:8px; overflow:hidden;
+      ">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#1e2433;">
+              <th style="padding:8px 14px;text-align:left;color:var(--muted);font-weight:500;">Timestamp</th>
+              <th style="padding:8px 8px;text-align:center;color:var(--muted);font-weight:500;">Docs</th>
+              <th style="padding:8px 8px;text-align:center;color:var(--muted);font-weight:500;">Analytics</th>
+              <th style="padding:8px 8px;text-align:center;color:var(--muted);font-weight:500;">Changelog</th>
+              <th style="padding:8px 8px;text-align:center;color:var(--muted);font-weight:500;">GH Pages</th>
+            </tr>
+          </thead>
+          <tbody id="recent-checks-body">
+            <tr><td colspan="5" style="padding:12px 14px;color:var(--muted);text-align:center;">No checks recorded yet — results appear after first health check</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -471,48 +514,170 @@
 </footer>
 
 <script>
-// ── Constants ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+//  Monolith Status Page — localStorage-backed uptime history
+//  Key: monolith-status-checks
+//  Format: [{ts:number, ep:{id:{ok:boolean,ms:number|null}}}]
+// ═══════════════════════════════════════════════════════════════════════
+
 const LAST_DEPLOY = new Date('2026-09-21T04:21:14.093Z');
+const LS_KEY      = 'monolith-status-checks';
+const MAX_ENTRIES = 8640;   // 90 days × 96 checks/day (every 15 min)
 
 const ENDPOINTS = [
-  { id: 'scispace',  url: 'https://0ly1b489.scispace.co',                         mode: 'no-cors' },
-  { id: 'analytics', url: 'https://0ly1b489.scispace.co/analytics.html',          mode: 'no-cors' },
-  { id: 'changelog', url: 'https://0ly1b489.scispace.co/changelog.html',          mode: 'no-cors' },
-  { id: 'ghpages',   url: 'https://indetailsgroup-hue.github.io/monolith-workspace/', mode: 'no-cors' },
+  { id: 'scispace',   url: 'https://0ly1b489.scispace.co',                             mode: 'no-cors' },
+  { id: 'analytics',  url: 'https://0ly1b489.scispace.co/analytics.html',              mode: 'no-cors' },
+  { id: 'changelog',  url: 'https://0ly1b489.scispace.co/changelog.html',              mode: 'no-cors' },
+  { id: 'ghpages',    url: 'https://indetailsgroup-hue.github.io/monolith-workspace/', mode: 'no-cors' },
 ];
 
-// ── Uptime blocks ──────────────────────────────────────────────────────
-(function buildUptimeBlocks() {
-  const container = document.getElementById('uptime-blocks');
-  const DAYS = 90;
-  // Load stored outage days from localStorage
-  const outages = JSON.parse(localStorage.getItem('monolith-status-outages') || '[]');
-  const frag = document.createDocumentFragment();
+// ── localStorage helpers ───────────────────────────────────────────────
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function appendCheck(ts, epResult) {
+  const h = loadHistory();
+  h.push({ ts, ep: epResult });
+  if (h.length > MAX_ENTRIES) h.splice(0, h.length - MAX_ENTRIES);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(h)); } catch {}
+}
+
+// ── Uptime engine ──────────────────────────────────────────────────────
+function computeUptimeData() {
+  const h     = loadHistory();
+  const DAYS  = 90;
+  const byDay = {};                   // 'YYYY-MM-DD' → [{ok:bool}]
+
+  for (const check of h) {
+    const key   = new Date(check.ts).toISOString().slice(0, 10);
+    const vals  = Object.values(check.ep || {});
+    const allOk = vals.length > 0 && vals.every(v => v.ok);
+    if (!byDay[key]) byDay[key] = [];
+    byDay[key].push(allOk);
+  }
+
+  const days = [];
+  let operationalDays = 0, dataDays = 0;
+
   for (let i = 0; i < DAYS; i++) {
-    const d = document.createElement('div');
-    // First ~70 days no data (site is new), last ~20 days green
-    if (i < 69) {
-      d.className = 'ub no-data';
-      d.title = `Day ${i + 1}: No data`;
+    const date   = new Date(Date.now() - (DAYS - 1 - i) * 86400000);
+    const key    = date.toISOString().slice(0, 10);
+    const checks = byDay[key];
+
+    if (!checks || checks.length === 0) {
+      days.push({ key, status: 'nodata', pct: null, count: 0 });
     } else {
-      const isOutage = outages.includes(i);
-      d.className = 'ub' + (isOutage ? ' outage' : '');
-      const date = new Date(Date.now() - (DAYS - 1 - i) * 86400000);
-      d.title = `${date.toISOString().slice(0, 10)}: ${isOutage ? 'Incident' : 'Operational'}`;
-      if (isOutage) d.style.background = 'var(--red)';
+      dataDays++;
+      const ok  = checks.filter(Boolean).length;
+      const pct = (ok / checks.length) * 100;
+      const status = pct >= 99 ? 'ok' : pct >= 50 ? 'degraded' : 'outage';
+      if (status === 'ok') operationalDays++;
+      days.push({ key, status, pct, count: checks.length });
     }
+  }
+
+  const uptimePct = dataDays > 0
+    ? ((operationalDays / dataDays) * 100).toFixed(2)
+    : null;
+
+  return { days, uptimePct, totalChecks: h.length, dataDays,
+           firstTs: h.length ? h[0].ts : null,
+           lastTs:  h.length ? h[h.length - 1].ts : null };
+}
+
+// ── Render uptime blocks ───────────────────────────────────────────────
+function renderUptimeBlocks(data) {
+  const container = document.getElementById('uptime-blocks');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const COLOR = {
+    ok:      'var(--green)',
+    degraded:'var(--yellow)',
+    outage:  'var(--red)',
+    nodata:  'var(--border)',
+  };
+
+  const frag = document.createDocumentFragment();
+  for (const day of data.days) {
+    const d = document.createElement('div');
+    d.className = 'ub';
+    d.style.background = COLOR[day.status];
+    if (day.status === 'nodata') d.style.opacity = '1';
+    const label = day.status === 'nodata'
+      ? 'No data'
+      : `${day.pct.toFixed(1)}% uptime (${day.count} checks)`;
+    d.title = `${day.key}: ${label}`;
     frag.appendChild(d);
   }
   container.appendChild(frag);
-})();
+
+  // Progress bar
+  const fillEl = document.getElementById('uptime-fill');
+  const pctLabel = document.getElementById('uptime-pct-label');
+  if (data.uptimePct !== null) {
+    if (fillEl)   fillEl.style.width = data.uptimePct + '%';
+    if (pctLabel) pctLabel.textContent = data.uptimePct + '% uptime';
+    document.getElementById('overall-pct').textContent = data.uptimePct + '%';
+  } else {
+    if (fillEl)   fillEl.style.width = '0%';
+    if (pctLabel) pctLabel.textContent = 'No history yet';
+  }
+}
+
+// ── Render history stats row ───────────────────────────────────────────
+function renderHistoryStats(data) {
+  const $  = id => document.getElementById(id);
+  const fmtTs = ts => ts ? new Date(ts).toLocaleString('en-GB', {
+    day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+  }) : '—';
+
+  $('stat-total').textContent = data.totalChecks.toLocaleString();
+  $('stat-first').textContent = fmtTs(data.firstTs);
+  $('stat-last' ).textContent = fmtTs(data.lastTs);
+  $('stat-days' ).textContent = data.dataDays;
+}
+
+// ── Render recent checks table ─────────────────────────────────────────
+function renderRecentChecks() {
+  const h    = loadHistory();
+  const last = h.slice(-10).reverse();
+  const tbody = document.getElementById('recent-checks-body');
+  if (!tbody) return;
+
+  if (last.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:12px 14px;color:var(--muted);text-align:center;">No checks recorded yet</td></tr>';
+    return;
+  }
+
+  const IDS = ['scispace', 'analytics', 'changelog', 'ghpages'];
+  tbody.innerHTML = last.map((c, idx) => {
+    const ts = new Date(c.ts).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const date = new Date(c.ts).toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+    const cells = IDS.map(id => {
+      const r = (c.ep || {})[id];
+      if (!r) return `<td style="text-align:center;color:var(--muted);">—</td>`;
+      const color = r.ok ? 'var(--green)' : 'var(--red)';
+      const label = r.ok ? (r.ms ? r.ms + 'ms' : 'OK') : 'ERR';
+      return `<td style="text-align:center;color:${color};font-family:monospace;">${label}</td>`;
+    }).join('');
+    const rowBg = idx % 2 === 0 ? '' : 'background:#191c28;';
+    return `<tr style="${rowBg}">
+      <td style="padding:7px 14px;color:var(--muted);">${date} ${ts}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
 
 // ── Relative time ──────────────────────────────────────────────────────
 function relativeTime(date) {
-  const diff = Math.floor((Date.now() - date) / 1000);
-  if (diff < 60)   return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  const s = Math.floor((Date.now() - date) / 1000);
+  if (s < 60)    return `${s}s ago`;
+  if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
 }
 
 function updateDeployAge() {
@@ -524,18 +689,13 @@ setInterval(updateDeployAge, 30000);
 
 // ── Health check ──────────────────────────────────────────────────────
 async function checkEndpoint(ep) {
-  const start = performance.now();
+  const t0 = performance.now();
   try {
     await fetch(ep.url, { method: 'HEAD', mode: ep.mode, cache: 'no-cache' });
-    const ms = Math.round(performance.now() - start);
-    return { ok: true, ms };
-  } catch (e) {
-    // With no-cors, a TypeError means the request was blocked by CORS but DID reach the server.
-    // A genuine network failure has a different message. We treat all no-cors responses as ok.
-    if (ep.mode === 'no-cors') {
-      const ms = Math.round(performance.now() - start);
-      return { ok: true, ms };
-    }
+    return { ok: true,  ms: Math.round(performance.now() - t0) };
+  } catch {
+    if (ep.mode === 'no-cors')
+      return { ok: true,  ms: Math.round(performance.now() - t0) };
     return { ok: false, ms: null };
   }
 }
@@ -547,7 +707,7 @@ function setBadge(id, ok, ms) {
   if (ok) {
     badge.className = 'badge operational';
     badge.innerHTML = '<span class="dot"></span> Operational';
-    ping.querySelector('.val').textContent = ms != null ? ms + 'ms' : '—';
+    ping.querySelector('.val').textContent = ms ? ms + 'ms' : 'OK';
   } else {
     badge.className = 'badge outage';
     badge.innerHTML = '<span class="dot"></span> Unreachable';
@@ -555,31 +715,45 @@ function setBadge(id, ok, ms) {
   }
 }
 
+// ── Full refresh cycle ────────────────────────────────────────────────
 async function runChecks() {
   const now = new Date();
   document.getElementById('last-checked').textContent =
-    now.toTimeString().slice(0, 8) + ' UTC+0';
+    now.toTimeString().slice(0, 8);
 
-  let allOk = true;
+  // Run all endpoint checks
   const results = await Promise.all(ENDPOINTS.map(ep => checkEndpoint(ep)));
 
+  // Build ep map and update badges
+  const epMap = {};
+  let allOk = true;
   results.forEach((r, i) => {
-    setBadge(ENDPOINTS[i].id, r.ok, r.ms);
+    const ep = ENDPOINTS[i];
+    epMap[ep.id] = r;
+    setBadge(ep.id, r.ok, r.ms);
     if (!r.ok) allOk = false;
   });
+
+  // Persist to localStorage
+  appendCheck(now.getTime(), epMap);
+
+  // Refresh UI
+  const data = computeUptimeData();
+  renderUptimeBlocks(data);
+  renderHistoryStats(data);
+  renderRecentChecks();
 
   // Update overall banner
   const banner = document.getElementById('overall-banner');
   const label  = document.getElementById('overall-label');
-  const pct    = document.getElementById('overall-pct');
   const ring   = document.getElementById('pulse-ring');
+  const pct    = document.getElementById('overall-pct');
 
   if (allOk) {
     banner.className = 'overall-banner';
     label.textContent = 'All Systems Operational';
     label.style.color = 'var(--green)';
     ring.style.background = 'var(--green)';
-    ring.style.setProperty('--ring-color', 'var(--green)');
     pct.style.color = 'var(--green)';
   } else {
     banner.className = 'overall-banner degraded';
@@ -591,18 +765,36 @@ async function runChecks() {
 }
 
 // ── Auto-refresh countdown ─────────────────────────────────────────────
-let countdownVal = 60;
-function tick() {
-  countdownVal--;
-  document.getElementById('countdown').textContent = countdownVal;
-  if (countdownVal <= 0) {
-    countdownVal = 60;
-    runChecks();
+let countdown = 60;
+setInterval(() => {
+  countdown--;
+  const el = document.getElementById('countdown');
+  if (el) el.textContent = countdown;
+  if (countdown <= 0) { countdown = 60; runChecks(); }
+}, 1000);
+
+// ── Clear history button ───────────────────────────────────────────────
+document.getElementById('btn-clear-history')?.addEventListener('click', () => {
+  if (confirm('Clear all stored uptime history? This cannot be undone.')) {
+    localStorage.removeItem(LS_KEY);
+    const data = computeUptimeData();
+    renderUptimeBlocks(data);
+    renderHistoryStats(data);
+    renderRecentChecks();
   }
-}
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────
+// Render stored data immediately (no flicker while first check runs)
+(function boot() {
+  const data = computeUptimeData();
+  renderUptimeBlocks(data);
+  renderHistoryStats(data);
+  renderRecentChecks();
+})();
 
 runChecks();
-setInterval(tick, 1000);
 </script>
+
 </body>
 </html>
