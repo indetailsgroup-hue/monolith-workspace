@@ -221,7 +221,7 @@ Type | Parameters | Description
 `threshold` | `operator` + `value` | Fire when metric crosses threshold  
 `rate_of_change` | `operator` + `value` + `rateWindow` | Fire when rate of change exceeds limit  
 `anomaly_detection` | N/A | ML-based anomaly detection  
-`absence` | `absenceDuration` | Fire when metric is absent for duration  
+`absence` | `absenceDuration` | Trigger condition: zero metric samples during the configured duration
   
 **Alert Actions:**
 

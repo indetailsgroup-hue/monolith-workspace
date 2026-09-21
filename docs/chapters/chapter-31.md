@@ -25,11 +25,13 @@ dependencies: "Phase 2"
 
 ### 31.2 Test File Inventory
 
+ตารางนี้เป็นรายการและชื่อกรณีทดสอบที่เอกสารต้นฉบับระบุ จำนวนในตารางไม่ใช่ผลการรัน tests รอบปัจจุบัน
+
 Test File | Domain | Tests | คำอธิบาย  
 ---|---|---|---  
 `governance/authz.test.ts` | Governance | 14 | Plan gating (6 cases), Role-based ToolClass (7 cases), Deprecation (1 case)  
 `governance/ratelimit.test.ts` | Governance | 14 | Token consumption (4), Bucket isolation (2), Token refill (2), Override (1), Admin utils (5)  
-`governance/pdpa.test.ts` | Governance | 12 | No requirement (2), Missing consent (2), Scope verification (4), Expiry (2), Summary (5) — note: some test "overlaps" count as 12  
+`governance/pdpa.test.ts` | Governance | 12 | No requirement (2), `Missing consent` (2), Scope verification (4), Expiry (2), Summary (5) — note: some test "overlaps" count as 12
 `governance/redaction.test.ts` | Governance | 13 | Field redaction (5), Pattern detection (8), Catalog-aware (3), Pattern names (1) — note: grouped as 13  
 `middleware/governance-chain.integration.test.ts` | Integration | ~20 | Catalog gate (1), Authz gate (4), Ratelimit gate (2), PDPA gate (3), Happy path (3), Error handling (1), Denial audit (2), canInvoke (6), Pipeline ordering (2)  
 `tools/digital-shadow.test.ts` | Phase 3 | 14 | Registration (4), Create (4), Query (3), Compare (6)  
@@ -104,7 +106,7 @@ PDPA Gate | 3 | No consent → deny, Consented → allow, Expired → deny
 Full Pipeline | 3 | Read_Tool happy path, ENTERPRISE Write_Tool + PDPA, Audit record verification  
 Error Handling | 1 | Handler throw → ERROR status in audit  
 Denial Audit Trail | 2 | Authz denial + PDPA denial logged in audit  
-canInvoke Preflight | 6 | Valid → allowed, Unknown tool, Insufficient plan, Insufficient role, Missing PDPA, Granted PDPA  
+canInvoke Preflight | 6 | Valid → allowed, Unknown tool, Insufficient plan, Insufficient role, `Missing PDPA`, `Granted PDPA`
 Pipeline Ordering | 2 | Authz stops before ratelimit, Ratelimit stops before pdpa  
   
 ### 31.6 CHANGELOG v2.0.0

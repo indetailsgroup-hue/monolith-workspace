@@ -50,16 +50,16 @@ Stage | Touchpoint | Action | MCP Tools | Emotion
 7\. Handoff | To Production | ส่งแบบให้ผู้จัดการโรงงาน review | `generate_cutting_list` | Accomplished  
 8\. Feedback | From Field | รับ feedback จากช่างติดตั้งเพื่อปรับแบบ | `manage_customer_feedback` | Learning  
   
-**Pain Points & Solutions:**
+**Pain Points & Proposed Solutions (สถานการณ์สมมติ):**
 
-Pain Point | Before Monolith | With Monolith  
+Pain Point (สมมติ) | Scenario baseline (สมมติ) | Proposed Monolith behavior
 ---|---|---  
 ไม่แน่ใจว่าผลิตได้หรือไม่ | ส่งแบบไป ถูกตีกลับ 2-3 รอบ | `validate_panel_design` ตรวจทันที  
 คำนวณต้นทุนยาก | Excel + ประมาณการเอง | `ai_cost_estimation` คำนวณ real-time  
 ไฟล์ไม่ compatible | Export แล้วต้องแปลงอีกหลายรอบ | `export_dxf` + `export_step_file` ส่งตรง CNC  
-ไม่รู้ว่าแบบมีปัญหาอะไรหน้างาน | ไม่มี feedback loop | `manage_customer_feedback` ส่งกลับทันที  
-  
-**Key Metrics:**
+ปัญหาหน้างานสื่อสารกลับถึง designer ล่าช้า | การส่ง feedback ยังเป็นงานเฉพาะกิจ | `manage_customer_feedback` ส่งกลับทันที
+
+**Target Metrics (เป้าหมายที่ยังต้องวัดยืนยัน):**
 
   * Design-to-Production time: ลดจาก 3 วัน → 4 ชั่วโมง
   * Design revision rounds: ลดจาก 3.5 → 0.8 ครั้ง
@@ -82,16 +82,16 @@ Stage | Touchpoint | Action | MCP Tools | Emotion
 7\. Report | End-of-Day | สรุปผลผลิตประจำวัน ส่งรายงาน | `generate_report`, `get_dashboard_data` | Accomplished  
 8\. Supply | Procurement | ติดตามสถานะ PO และ shipments | `track_shipment`, `manage_supplier` | Connected  
   
-**Pain Points & Solutions:**
+**Pain Points & Proposed Solutions (สถานการณ์สมมติ):**
 
-Pain Point | Before Monolith | With Monolith  
+Pain Point (สมมติ) | Scenario baseline (สมมติ) | Proposed Monolith behavior
 ---|---|---  
 ของเสียจากการตัดสูง | Nesting ด้วย Excel/manual | `optimize_nesting` ลดเหลือ < 15%  
 ไม่รู้สถานะ real-time | เดินดูหน้างาน | `get_live_metrics` + `configure_monitor`  
 วางแผนยาก | Excel + whiteboard | `create_production_plan` + AI scheduling  
-วัสดุขาดบ่อย | นับ stock ด้วยมือ | `get_inventory_report` + auto-reorder  
-  
-**Key Metrics:**
+วัสดุคงเหลือต่ำกว่าความต้องการบ่อย | นับ stock ด้วยมือ | `get_inventory_report` + auto-reorder
+
+**Target Metrics (เป้าหมายที่ยังต้องวัดยืนยัน):**
 
   * Material waste: ลดจาก 28% → 12%
   * Production planning time: ลดจาก 2 ชั่วโมง → 15 นาที
@@ -114,16 +114,16 @@ Stage | Touchpoint | Action | MCP Tools | Emotion
 7\. HR | Organization | ดูแลทีมงาน + culture scores | `manage_organization`, `get_culture_metrics` | Caring  
 8\. Decision | Strategic | ตัดสินใจลงทุน/ขยาย based on data | `generate_report` | Decisive  
   
-**Pain Points & Solutions:**
+**Pain Points & Proposed Solutions (สถานการณ์สมมติ):**
 
-Pain Point | Before Monolith | With Monolith  
----|---|---  
-ไม่มีข้อมูลตัดสินใจ | รอ Excel จากทุกแผนก | `create_dashboard` รวมข้อมูลทั้งระบบ  
+Pain Point (สมมติ) | Scenario baseline (สมมติ) | Proposed Monolith behavior
+---|---|---
+ข้อมูลตัดสินใจกระจัดกระจาย | รอ Excel จากทุกแผนก | `create_dashboard` รวมข้อมูลทั้งระบบ
 Quotation ช้า | ทำมือ 2-3 วัน | `generate_quotation_draft` เสร็จใน 5 นาที  
 ประเมิน supplier ยาก | ความรู้สึก + ประสบการณ์ | `vendor_performance_report` data-driven  
-PDPA compliance เสี่ยง | ไม่มีระบบ consent | `manage_consent` + `manage_data_lifecycle`  
-  
-**Key Metrics:**
+PDPA compliance เสี่ยง | การจัดการ consent ยังเป็นงานเฉพาะกิจ | `manage_consent` + `manage_data_lifecycle`
+
+**Target Metrics (เป้าหมายที่ยังต้องวัดยืนยัน):**
 
   * Decision time: ลดจาก 3 วัน → same-day
   * Quotation accuracy: เพิ่มจาก 70% → 95%
@@ -146,16 +146,16 @@ Stage | Touchpoint | Action | MCP Tools | Emotion
 7\. Complete | Close Job | ปิดงาน บันทึกผลผลิต | `manage_work_order` | Satisfied  
 8\. Maintain | Machine Care | บันทึก maintenance log | `execute_cnc_command` (diagnostic) | Responsible  
   
-**Pain Points & Solutions:**
+**Pain Points & Proposed Solutions (สถานการณ์สมมติ):**
 
-Pain Point | Before Monolith | With Monolith  
+Pain Point (สมมติ) | Scenario baseline (สมมติ) | Proposed Monolith behavior
 ---|---|---  
 แบบผิดพลาด/ไม่ชัดเจน | ต้องโทรถาม designer | `validate_panel_design` ตรวจก่อนส่ง  
-ไม่มี feedback ไป designer | ปัญหาซ้ำ ๆ ไม่ถูกแก้ | `manage_customer_feedback` → design loop  
+feedback ถึง designer ล่าช้า | ปัญหาเดิมเกิดซ้ำ | `manage_customer_feedback` → design loop
 ไม่รู้สถานะเครื่อง | เดินดูเอง | `get_machine_status` real-time  
 G-code ต้องแก้เอง | Adjust manual ทุกงาน | `generate_cutting_list` ได้ G-code พร้อมใช้  
   
-**Key Metrics:**
+**Target Metrics (เป้าหมายที่ยังต้องวัดยืนยัน):**
 
   * Job setup time: ลดจาก 45 นาที → 10 นาที
   * Error rate from bad designs: ลดจาก 15% → 2%
@@ -179,17 +179,17 @@ Stage | Touchpoint | Action | MCP Tools | Emotion
 8\. Report | Feedback | รายงานปัญหา/ข้อเสนอแนะกลับโรงงาน | `manage_customer_feedback` | Proactive  
 9\. Track | Status Update | อัปเดตสถานะงานเข้าระบบทันที | `track_order_status` | Connected  
   
-**Pain Points & Solutions:**
+**Pain Points & Proposed Solutions (สถานการณ์สมมติ):**
 
-Pain Point | Before Monolith | With Monolith  
+Pain Point (สมมติ) | Scenario baseline (สมมติ) | Proposed Monolith behavior
 ---|---|---  
 เอกสารติดตั้งไม่ครบ/ล้าสมัย | แบบไม่ตรงกับชิ้นส่วนจริง | `manage_installation` sync แบบล่าสุด  
-หน้างานมีข้อจำกัดไม่ระบุในแบบ | ดัดแปลงเอง ไม่มี record | `create_digital_shadow` บันทึก deviation  
+หน้างานมีข้อจำกัดไม่ระบุในแบบ | ดัดแปลงเองและบันทึกแบบเฉพาะกิจ | `create_digital_shadow` บันทึก deviation
 สื่อสารกลับโรงงานยาก | LINE + ข้อมูลกระจัดกระจาย | `manage_customer_feedback` centralized  
-จัดลำดับงานจาก Excel | ไม่มี route optimization | `optimize_schedule` วางแผน route อัตโนมัติ  
-ไม่มีประวัติติดตั้งย้อนหลัง | จำจากความทรงจำ | `manage_installation` searchable history  
-  
-**Key Metrics:**
+จัดลำดับงานจาก Excel | วางแผน route ด้วยมือ | `optimize_schedule` วางแผน route อัตโนมัติ
+ค้นประวัติติดตั้งย้อนหลังยาก | จำจากความทรงจำ | `manage_installation` searchable history
+
+**Target Metrics (เป้าหมายที่ยังต้องวัดยืนยัน):**
 
   * First-time fix rate: เพิ่มจาก 78% → 96%
   * Daily installation capacity: เพิ่มจาก 3 → 5 จุด (route optimization)

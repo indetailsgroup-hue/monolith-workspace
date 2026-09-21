@@ -59,7 +59,7 @@ Query สถานะล่าสุดของ digital shadow:
 #### 30.2.3 `compare_shadow_physical`
 
 ตรวจจับ **drift** ระหว่าง digital shadow กับ physical state:
-[code] 
+```text
     // Drift Types
     - "value_mismatch": ค่าไม่ตรง (shadow ≠ physical)
     - "missing_in_physical": field อยู่ใน shadow แต่ไม่มีใน physical
@@ -75,7 +75,7 @@ Query สถานะล่าสุดของ digital shadow:
       comparedAt: string;
     }
     
-[/code]
+```
 
 ### 30.3 Customer Portal Module (`src/tools/customer-portal.ts`)
 

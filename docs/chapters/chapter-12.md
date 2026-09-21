@@ -40,19 +40,21 @@ Body Limit | 50 MB | — | รองรับ PNG payloads สำหรับ sn
 
 ### 12.2. Authentication
 
+ข้อความและตารางต่อไปนี้อธิบายพฤติกรรมตามข้อกำหนดในสถานการณ์ที่ระบุ การยืนยันพฤติกรรมของ runtime ต้องตรวจ implementation และทดสอบกับ environment ที่ใช้งานจริง
+
 ทุก endpoint (ยกเว้น `/health`) ใช้ Bearer token authentication เมื่อตั้ง `MCP_TOKEN`:
 [code] 
     Authorization: Bearer <MCP_TOKEN>
     
 [/code]
 
-หากไม่ได้ตั้ง `MCP_TOKEN` จะเปิดแบบ dev mode (ไม่มี auth) — **ห้ามใช้ใน production**
+กรณีละเว้นการตั้งค่า `MCP_TOKEN`: เอกสารนี้กำหนด dev mode ที่ปิดการตรวจ authentication — **ห้ามใช้ใน production**
 
 **Error Responses:**
 
 HTTP Status | เงื่อนไข  
 ---|---  
-`401 Unauthorized` | ไม่มี Bearer token ใน header  
+`401 Unauthorized` | กรณี request ละเว้น Bearer token ใน header
 `403 Forbidden` | Token ไม่ตรงกับ `MCP_TOKEN`  
   
 # Section 18
@@ -672,8 +674,8 @@ Endpoint สำหรับ AI-driven nesting optimization — Gemini จะว�
 
 HTTP Status | Error Code | เงื่อนไข  
 ---|---|---  
-`400` | — | ขาด `jobId` หรือ `design`  
-`500` | `AGENT_INIT_FAILED` | ไม่มี Gemini API key  
+`400` | — | กรณี request ละเว้น `jobId` หรือ `design`
+`500` | `AGENT_INIT_FAILED` | กรณีละเว้นการตั้งค่า Gemini API key
 `500` | `AGENT_LOOP_FAILED` | Loop error (เช่น API rate limit)  
 `500` | `NESTING_PRERUN_FAILED` | Initial nesting generation ล้มเหลว  
 `503` | `NO_OPTIMIZER` | Adapter ไม่รองรับ `optimizeNesting`  
@@ -1582,8 +1584,8 @@ GraphQL errors ใช้ standard `errors` array ใน response:
 
 Code | Description  
 ---|---  
-`JOB_NOT_FOUND` | ไม่พบ job ที่ระบุ  
-`PANEL_NOT_FOUND` | ไม่พบ panel ที่ระบุ  
+`JOB_NOT_FOUND` | กรณีค้นหา job ตาม ID แล้วได้ผลลัพธ์ว่าง
+`PANEL_NOT_FOUND` | กรณีค้นหา panel ตาม ID แล้วได้ผลลัพธ์ว่าง
 `VALIDATION_FAILED` | Panel design ไม่ผ่านการตรวจสอบ  
 `NESTING_FAILED` | Nesting optimization ล้มเหลว  
 `EXPORT_FAILED` | การ export ล้มเหลว  

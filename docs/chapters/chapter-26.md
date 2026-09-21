@@ -218,15 +218,15 @@ Central registry ที่เก็บ metadata ของทุก tool — **48
 
 #### 26.6.1 `checkPdpaConsent(ctx): GovernanceResult`
 
-ขั้นตอนตรวจสอบ:
+ขั้นตอนตรวจสอบตามข้อกำหนด (เงื่อนไขของ input แต่ละกรณี ไม่ใช่ผลตรวจสถานะ repository):
 
-  1. ถ้า tool ไม่มี `requiredConsentScopes` → **อนุญาต** (pass-through)
-  2. ถ้าไม่มี `consentRecords` → `deniedBy: "pdpa:no_consent_records"`
+  1. กรณี tool ละเว้นฟิลด์ `requiredConsentScopes` → **อนุญาต** (pass-through)
+  2. กรณี context ละเว้น `consentRecords` → `deniedBy: "pdpa:no_consent_records"`
   3. ตรวจแต่ละ scope ที่ต้องการ:
 
 
 
-\- ไม่พบ record → `deniedBy: "pdpa:missing_consent"`
+\- กรณีค้นหา consent record แล้วได้ผลลัพธ์ว่าง → `deniedBy: "pdpa:missing_consent"`
 
 \- `consented = false` → `deniedBy: "pdpa:missing_consent"`
 
