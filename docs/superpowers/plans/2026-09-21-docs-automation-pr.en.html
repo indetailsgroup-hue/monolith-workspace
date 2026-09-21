@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Documentation automation PRs</title><style>body{max-width:980px;margin:32px auto;padding:0 24px;font:17px/1.65 system-ui}code{overflow-wrap:anywhere}</style><body><h1>Documentation automation through review PRs</h1>
+<p>Owner request: replace Generator/Changelog direct pushes to main with PRs. Base:62651733ffe8d249a1eacc627382dc8fdd3eaaa8. This is a follow-up to PR121; merge permission for PR121 does not authorize merging this follow-up.</p>
+<h2>Design and implementation plan</h2>
+<ul>
+<li>[x] Reproduce protected-main publication and duplicate-entry regressions in tests.</li>
+<li>[x] Generator: checkout latest main; serialize runs; generate and validate as before; open/update codex/automated-site-data with only chapters.json, search_index.json and chapter-cache.json. Dry runs never publish. No-diff runs let the action reconcile an obsolete PR.</li>
+<li>[x] Changelog: checkout latest main, but derive changed files and metadata from the triggering source SHA. Use one deterministic codex/changelog-SHA PR per source commit so another source event cannot replace an unmerged entry. Full-SHA markers prevent duplicate entries on reruns; UTC display converts the source timestamp.</li>
+<li>[x] Publish signed bot commits using create-pull-request v7.0.8 pinned to271a8d0340265f705b14b6d32b9829c1cb33d45e. Limit add-paths, target main, keep the PR draft after every update. Do not merge automatically.</li>
+<li>[x] Include cache-only PRs in the required docs CI path filter.</li>
+<li>[ ] Independent review, normal commit hook, draft implementation PR and actual Actions evidence.</li>
+<li>[ ] After owner approves the implementation PR: merge, verify the first real generated PR and its signature, then activate its required checks and review normally.</li>
+</ul>
+<h2>Maintainer procedure</h2>
+<ol>
+<li>Repository Actions settings must already permit GitHub Actions to create pull requests. This change requests contents:write and pull-requests:write for the two workflows; it does not modify repository settings or branch protection. If the repository policy denies PR creation, the run fails and needs the owner to enable the setting. Do not substitute an old credential or bypass branch rules.</li>
+<li>The default GITHUB_TOKEN signs bot commits but does not trigger downstream push/pull_request CI. After the final bot update, a maintainer using their normal GitHub identity must close and reopen the generated PR. This creates a human-originated reopened event. Making a draft ready alone is insufficient because existing workflows do not subscribe to ready_for_review. If the bot updates again, repeat close/reopen for the new head.</li>
+<li>Verify all five required checks on that PR head and review the diff. Do not treat an absent check as success. Mark ready and obtain the owner's merge decision. Preserve [skip changelog] in the generated PR's merge/squash message.</li>
+<li>Different changelog PRs may conflict at the insertion marker. Re-run the original source workflow after earlier PRs merge, then repeat close/reopen and review; the latest main checkout retains previously merged entries.</li>
+<li>A successful generator now means generation and PR reconciliation succeeded, not that main or the live site changed. The existing Auto-Deploy SciSpace Site workflow may run on generator completion but checks out main, so it cannot publish the unmerged bot branch. Publishing new JSON still requires the generated PR to merge. Check actual hosting content separately.</li>
+</ol>
+<h2>Alternatives and limits</h2>
+<p>A GitHub App token could trigger CI automatically, but requires a separately authorized identity and secret setup; it is not introduced here. A custom REST/GraphQL PR publisher would duplicate branch, diff, signing and retry logic. The pinned existing action provides those operations with a small workflow change. Separate changelog PRs favor preserving every event over minimizing PR count.</p>
+<p>No generated site content, Slack settings, SciSpace hosting, or branch protections are changed in this patch. sync-chapters.yml is a separate release workflow and remains outside this request. Actual PR-creation policy and bot signing must be confirmed in a real run after this workflow is active; local tests cannot establish them.</p>
+<h2>Verification</h2>
+<p>Baseline:23 documentation tests passed. New regressions initially failed for missing PR publication, repeated changelog insertion and cache-only CI routing. The implemented candidate passes27 documentation tests including execution of the actual embedded changelog Python twice, preservation of another entry, and shell syntax across all nine docs workflows. GitHub Actions evidence is recorded in the implementation PR after push.</p>
+<p>Source scope: the parent governance root and nested product worktree were inspected separately and left unchanged. Work is in the existing isolated docs repair worktree on codex/docs-automation-pr, based on the merged GitHub source. No product-runtime readiness claim follows from these tests.</p>
+<p>References: <a href="https://github.com/peter-evans/create-pull-request/tree/v7.0.8">action v7.0.8</a>, <a href="https://github.com/peter-evans/create-pull-request/blob/v7.0.8/docs/concepts-guidelines.md#triggering-further-workflow-runs">triggering further workflows</a>.</p></body></html>

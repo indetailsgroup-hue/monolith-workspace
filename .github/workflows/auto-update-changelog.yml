@@ -16,6 +16,11 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-changelog-pr-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   update-changelog:
@@ -33,7 +38,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2   # need parent commit for diff
+          fetch-depth: 0   # event commit may be behind the latest main checkout
+          ref: main
 
       # ── 2. Set up Python ────────────────────────────────────────────
       - name: Set up Python 3.11
@@ -44,16 +50,18 @@ jobs:
       # ── 3. Detect changed files ─────────────────────────────────────
       - name: Detect changed site files
         id: diff
+        env:
+          SOURCE_SHA: ${{ github.sha }}
         run: |
-          FILES=$(git diff --name-only HEAD~1 HEAD -- docs/manufacturing-os-site/ \
-                  | grep -v 'changelog.html' \
-                  | head -20 | tr '\n' ' ')
+          FILES=$(git diff --name-only "${SOURCE_SHA}^" "$SOURCE_SHA" -- docs/manufacturing-os-site/ \
+                  | awk '$0 != "docs/manufacturing-os-site/changelog.html" && ++n <= 20' | tr '\n' ' ')
           echo "changed_files=$FILES" >> "$GITHUB_OUTPUT"
           echo "Changed: $FILES"
 
       # ── 4. Insert changelog entry ───────────────────────────────────
       - name: Insert changelog entry
         id: insert
+        if: steps.diff.outputs.changed_files != ''
         env:
           COMMIT_SHA:  ${{ github.sha }}
           COMMIT_MSG:  ${{ github.event.head_commit.message }}
@@ -67,7 +75,8 @@ jobs:
           from datetime import datetime, timezone
 
           # ── Collect env vars ──────────────────────────────────────────────
-          sha      = os.environ.get('COMMIT_SHA', 'unknown')[:8]
+          full_sha = os.environ['COMMIT_SHA']
+          sha      = full_sha[:8]
           raw_msg  = os.environ.get('COMMIT_MSG',  'update docs').strip()
           author   = html.escape(os.environ.get('COMMIT_AUTH', 'unknown'))
           ts_raw   = os.environ.get('COMMIT_TS', '')
@@ -76,7 +85,7 @@ jobs:
 
           # Parse timestamp
           try:
-              dt = datetime.fromisoformat(ts_raw.replace('Z', '+00:00'))
+              dt = datetime.fromisoformat(ts_raw.replace('Z', '+00:00')).astimezone(timezone.utc)
               date_str = dt.strftime('%Y-%m-%d')
               time_str = dt.strftime('%H:%M UTC')
           except Exception:
@@ -97,6 +106,7 @@ jobs:
 
           # ── Build HTML entry ──────────────────────────────────────────────
           ENTRY = f'''
+              <!-- source-commit: {full_sha} -->
               <!-- auto-generated: {date_str} {sha} -->
               <div class="entry">
                 <div class="entry-version"><span class="version-tag" style="background:#1e3a5f;color:#93c5fd;border-color:#1e40af;font-family:monospace;font-size:10px;">{sha}</span></div>
@@ -125,6 +135,14 @@ jobs:
           with open(CHANGELOG, 'r', encoding='utf-8') as f:
               src = f.read()
 
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as gh:
+              gh.write(f"entry_sha={sha}\n")
+              gh.write(f"entry_date={date_str}\n")
+
+          if f'<!-- source-commit: {full_sha} -->' in src:
+              print(f"Entry for {full_sha} already present; no change")
+              raise SystemExit(0)
+
           if MARKER not in src:
               # Marker not present — insert marker + entry after <div class="timeline">
               src = src.replace(
@@ -140,34 +158,38 @@ jobs:
 
           print(f"Inserted entry for commit {sha} into changelog.html")
 
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as gh:
-              gh.write(f"entry_sha={sha}\n")
-              gh.write(f"entry_date={date_str}\n")
           PYEOF
 
-      # ── 5. Commit updated changelog ─────────────────────────────────
-      - name: Commit updated changelog.html
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      # ── 5. One idempotent review PR per source commit ─────────────────
+      - name: Create or update changelog PR
+        id: pr
+        if: steps.diff.outputs.changed_files != ''
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: codex/changelog-${{ github.sha }}
+          sign-commits: true
+          draft: always-true
+          add-paths: |
+            docs/manufacturing-os-site/changelog.html
+          commit-message: 'chore(docs): auto-update changelog for ${{ steps.insert.outputs.entry_sha }} [skip changelog]'
+          title: 'chore(docs): auto-update changelog for ${{ steps.insert.outputs.entry_sha }} [skip changelog]'
+          body: |
+            ## English
+            Adds a changelog entry for source commit ${{ github.sha }}; only changelog.html is included.
+            Re-running this source run updates this same PR; different source commits keep separate PRs.
+            GITHUB_TOKEN does not trigger follow-up CI: a maintainer must close and reopen
+            this PR after the last bot update, then verify all required checks on its current head.
+            Mark ready only after review. Retain [skip changelog] in the merge/squash message.
 
-          git add docs/manufacturing-os-site/changelog.html
+            ## ภาษาไทย
+            เพิ่ม changelog ของ source commit นี้ รวมเฉพาะ changelog.html
+            รัน source เดิมซ้ำจะอัปเดต PR เดิม คนละ commit ใช้คนละ PR เพื่อรักษาทุก entry
+            ผู้ดูแลต้องปิดแล้วเปิด PR อีกครั้งหลัง bot อัปเดตล่าสุด เพื่อเริ่ม CI
+            ตรวจ required checks ก่อน merge และคง [skip changelog] ในข้อความ merge/squash
 
-          if git diff --cached --quiet; then
-            echo "No changes to changelog.html — nothing to commit."
-            exit 0
-          fi
-
-          git commit -m "chore(docs): auto-update changelog for ${{ steps.insert.outputs.entry_sha }} [skip changelog]
-
-          Triggered by: ${COMMIT_MSG}
-          Date: ${{ steps.insert.outputs.entry_date }}
-          Run: ${{ github.run_id }}"
-
-          git push origin main
-          echo "✅ changelog.html updated and pushed"
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       # ── 6. Job summary ───────────────────────────────────────────────
       - name: Write job summary
@@ -175,6 +197,8 @@ jobs:
         env:
           COMMIT_AUTH: ${{ github.event.head_commit.author.name }}
           CHANGED_FILES: ${{ steps.diff.outputs.changed_files }}
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          PR_OPERATION: ${{ steps.pr.outputs.pull-request-operation }}
         run: |
           echo "## Auto-Update Changelog — Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -185,3 +209,6 @@ jobs:
           echo "| Entry date | ${{ steps.insert.outputs.entry_date }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Changed files | ${CHANGED_FILES} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Run | ${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Review PR | ${PR_URL:-none (no diff or publication failed)} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| PR operation | ${PR_OPERATION:-none} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "Review and merge required; this run does not update main." >> "$GITHUB_STEP_SUMMARY"
