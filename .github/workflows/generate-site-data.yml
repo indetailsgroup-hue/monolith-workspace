@@ -21,7 +21,7 @@
 #     status: complete
 #     ---
 #
-# Outputs (committed back to repo):
+# Outputs (submitted in a signed draft PR to main):
 #   docs/manufacturing-os-site/chapters.json      — {num_str: html, ...}
 #   docs/manufacturing-os-site/search_index.json  — [{num, text}, ...]
 #   .github/chapter-cache.json                    — {filename: sha256, ...}
@@ -62,6 +62,11 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-generated-data-pr
+  cancel-in-progress: false
 
 env:
   CHAPTERS_PATH:  ${{ github.event.inputs.chapters_path  || 'docs/chapters' }}
@@ -81,6 +86,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          ref: main
 
       # ── 2. Set up Python ─────────────────────────────────────────────────────
       - name: Set up Python
@@ -365,28 +371,37 @@ jobs:
           print(f'✅ chapter-cache.json updated: {len(d)} entries')
           "
 
-      # ── 9. Commit and push updated files ─────────────────────────────────────
-      - name: Commit and push updated files
-        if: steps.cache.outputs.has_changes == 'true' && env.DRY_RUN != 'true'
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      # ── 9. Publish for review; never push generated commits to main ───────────
+      - name: Create or update site data PR
+        id: pr
+        if: env.DRY_RUN != 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: codex/automated-site-data
+          sign-commits: true
+          draft: always-true
+          add-paths: |
+            ${{ env.OUTPUT_PATH }}/chapters.json
+            ${{ env.OUTPUT_PATH }}/search_index.json
+            .github/chapter-cache.json
+          commit-message: 'chore(data): regenerate site data [skip changelog]'
+          title: 'chore(data): regenerate site data [skip changelog]'
+          body: |
+            ## English
+            Generated from the latest main checkout; only site JSON and chapter cache are included.
+            This PR does not publish the generated content until reviewed and merged.
+            GITHUB_TOKEN does not trigger follow-up CI: a maintainer must close and reopen
+            this PR after the last bot update, then verify all required checks on its current head.
+            Mark ready only after review. Keep branch protection and signature requirements enabled.
 
-          git add \
-            "${OUTPUT_PATH}/chapters.json" \
-            "${OUTPUT_PATH}/search_index.json" \
-            ".github/chapter-cache.json"
+            ## ภาษาไทย
+            สร้างจาก main ล่าสุด รวมเฉพาะ JSON และ cache ต้องตรวจและ merge PR ก่อนเผยแพร่
+            ผู้ดูแลต้องปิดแล้วเปิด PR อีกครั้งหลัง bot อัปเดตล่าสุด เพื่อเริ่ม CI
+            ตรวจ required checks ที่ head ปัจจุบัน แล้วจึงพิจารณา merge โดยคง branch protection
 
-          if git diff --cached --quiet; then
-            echo "No changes detected in tracked files — skipping commit"
-          else
-            NEW="${{ steps.generate.outputs.new_chapters }}"
-            TOTAL="${{ steps.generate.outputs.total_chapters }}"
-            UNCHANGED="${{ steps.cache.outputs.unchanged_count }}"
-            git commit -m "chore(data): regenerate site data [${NEW} updated, ${UNCHANGED} cached, ${TOTAL} total] [skip changelog]"
-            git push
-            echo "✅ Pushed updated JSON files and chapter-cache.json"
-          fi
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       # ── 10. Dry run summary ──────────────────────────────────────────────────
       - name: Dry run notice
@@ -402,6 +417,9 @@ jobs:
       # ── 11. Write job summary ────────────────────────────────────────────────
       - name: Write job summary
         if: always()
+        env:
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          PR_OPERATION: ${{ steps.pr.outputs.pull-request-operation }}
         run: |
           HAS="${{ steps.cache.outputs.has_changes }}"
           CHANGED="${{ steps.cache.outputs.changed_count }}"
@@ -433,4 +451,7 @@ jobs:
           - **Output path:** \`${OUTPUT_PATH}\`
           - **Dry run:** ${DRY_RUN}
           - **Force rebuild:** ${FORCE_REBUILD}
+          - **Review PR:** ${PR_URL:-none (dry-run, no diff, or publication failed)}
+          - **PR operation:** ${PR_OPERATION:-none}
+          - **Publication:** review and merge required; this run does not update main.
           SUMMARY
