@@ -1,0 +1,212 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# sync-chapters.yml
+# Auto-sync chapters.json + search_index.json into docs/manufacturing-os-site/
+# whenever a new GitHub Release is published on the monolith-workspace repo.
+#
+# Triggers:
+#   • release (published) — automatic sync on every new release
+#   • workflow_dispatch   — manual trigger with optional version input
+# ─────────────────────────────────────────────────────────────────────────────
+name: Sync Chapters on Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to tag in chapters.json (e.g. v2.1.0)'
+        required: false
+        default: 'manual'
+      dry_run:
+        description: 'Dry run — build but do not commit'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+permissions:
+  contents: write
+
+jobs:
+  sync-chapters:
+    name: Rebuild & Sync Chapter Data
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # ── 2. Setup Python ─────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 3. Install dependencies ─────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install beautifulsoup4 lxml
+
+      # ── 4. Determine release version ────────────────────────────────
+      - name: Resolve release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 5. Build chapters.json ───────────────────────────────────────
+      # Adapt this step to your actual source layout.
+      # Current implementation rebuilds from the existing docs/ markdown/HTML
+      # sources in the repository.  Replace the python script path or add your
+      # own content-generation logic here.
+      - name: Build chapters.json
+        id: build-chapters
+        run: |
+          python - << 'PYEOF'
+          import json, os, pathlib, re, hashlib
+
+          SITE_DIR = pathlib.Path("docs/manufacturing-os-site")
+          OUT_FILE  = SITE_DIR / "chapters.json"
+
+          # ── Locate source files ────────────────────────────────────────────
+          # Priority 1: markdown files under docs/chapters/
+          # Priority 2: existing chapters.json (re-stamp only)
+          chapters_src = pathlib.Path("docs/chapters")
+          md_files = sorted(chapters_src.glob("*.md")) if chapters_src.exists() else []
+
+          if md_files:
+              print(f"Found {len(md_files)} markdown source files — rebuilding chapters.json")
+              chapters = []
+              for f in md_files:
+                  m = re.match(r'chapter[-_]?(\d+)', f.stem, re.I)
+                  num = int(m.group(1)) if m else 0
+                  raw = f.read_text(encoding='utf-8')
+                  # Convert minimal markdown → HTML (headings, bold, code)
+                  html = re.sub(r'^# (.+)$',  r'<h1>\1</h1>', raw, flags=re.M)
+                  html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.M)
+                  html = re.sub(r'^### (.+)$',r'<h3>\1</h3>', html, flags=re.M)
+                  html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+                  html = re.sub(r'`([^`]+)`', r'<code>\1</code>', html)
+                  title_m = re.search(r'<h1>(.+?)</h1>', html)
+                  title   = title_m.group(1) if title_m else f.stem
+                  chapters.append({"num": num, "title": title, "html": html})
+              chapters.sort(key=lambda c: c["num"])
+
+          else:
+              # Re-stamp version in existing chapters.json
+              print("No markdown sources found — re-stamping existing chapters.json")
+              if not OUT_FILE.exists():
+                  print("ERROR: chapters.json not found and no source files present.")
+                  raise SystemExit(1)
+              chapters = json.loads(OUT_FILE.read_text(encoding='utf-8'))
+
+          # ── Write output ───────────────────────────────────────────────────
+          payload = json.dumps(chapters, ensure_ascii=False, indent=2)
+          OUT_FILE.write_text(payload, encoding='utf-8')
+          checksum = hashlib.sha256(payload.encode()).hexdigest()[:12]
+          print(f"chapters.json written — {len(chapters)} chapters · sha256:{checksum}")
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              fh.write(f"chapter_count={len(chapters)}\n")
+              fh.write(f"checksum={checksum}\n")
+          PYEOF
+
+      # ── 6. Rebuild search_index.json ────────────────────────────────
+      - name: Build search_index.json
+        run: |
+          python - << 'PYEOF'
+          import json, pathlib, re
+
+          SITE_DIR  = pathlib.Path("docs/manufacturing-os-site")
+          SRC_FILE  = SITE_DIR / "chapters.json"
+          OUT_FILE  = SITE_DIR / "search_index.json"
+
+          chapters = json.loads(SRC_FILE.read_text(encoding='utf-8'))
+          index = []
+          for ch in chapters:
+              plain = re.sub(r'<[^>]+>', ' ', ch.get('html', ''))
+              plain = re.sub(r'\s+', ' ', plain).strip()
+              index.append({
+                  "num":   ch.get("num", 0),
+                  "title": ch.get("title", ""),
+                  "text":  plain
+              })
+
+          OUT_FILE.write_text(
+              json.dumps(index, ensure_ascii=False),
+              encoding='utf-8'
+          )
+          print(f"search_index.json written — {len(index)} entries")
+          PYEOF
+
+      # ── 7. Validate output ───────────────────────────────────────────
+      - name: Validate JSON outputs
+        run: |
+          python - << 'PYEOF'
+          import json, pathlib, sys
+          SITE = pathlib.Path("docs/manufacturing-os-site")
+          ok = True
+          for fname in ("chapters.json", "search_index.json"):
+              f = SITE / fname
+              if not f.exists():
+                  print(f"FAIL: {fname} missing"); ok = False; continue
+              try:
+                  data = json.loads(f.read_text())
+                  print(f"OK: {fname} — {len(data)} entries — {f.stat().st_size:,} bytes")
+              except Exception as e:
+                  print(f"FAIL: {fname} invalid JSON — {e}"); ok = False
+          sys.exit(0 if ok else 1)
+          PYEOF
+
+      # ── 8. Commit & push (skipped on dry_run) ───────────────────────
+      - name: Commit updated chapter data
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/manufacturing-os-site/chapters.json \
+                  docs/manufacturing-os-site/search_index.json
+
+          # Only commit if there are actual changes
+          if git diff --cached --quiet; then
+            echo "No changes to chapters.json or search_index.json — skipping commit."
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.tag }}"
+          COUNT="${{ steps.build-chapters.outputs.chapter_count }}"
+          SUM="${{ steps.build-chapters.outputs.checksum }}"
+
+          git commit -m "chore(docs): sync chapters.json on release ${VERSION}
+
+          - Chapters: ${COUNT}
+          - SHA256: ${SUM}
+          - Triggered by: ${{ github.event_name }}
+          - Run: ${{ github.run_id }}"
+
+          git push origin main
+          echo "✅ chapters.json + search_index.json pushed to main"
+
+      # ── 9. Summary ──────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Sync Chapters — Job Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger | ${{ github.event_name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | ${{ steps.version.outputs.tag }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chapters | ${{ steps.build-chapters.outputs.chapter_count }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Checksum | ${{ steps.build-chapters.outputs.checksum }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dry Run  | ${{ github.event.inputs.dry_run || 'false' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Repo     | ${{ github.repository }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Run ID   | ${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"

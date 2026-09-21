@@ -1,0 +1,182 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# auto-update-changelog.yml
+# Auto-insert a changelog entry in changelog.html whenever a commit is pushed
+# to docs/manufacturing-os-site/ on main (excluding bot commits to avoid loops).
+#
+# Inserts the entry right after the marker:
+#   <!-- COMMIT_LOG_INSERT_HERE -->
+# ─────────────────────────────────────────────────────────────────────────────
+name: Auto-Update Changelog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/manufacturing-os-site/**'
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    name: Insert Changelog Entry
+    runs-on: ubuntu-latest
+
+    # Skip commits made by this bot to prevent infinite loops
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      !contains(github.event.head_commit.message, '[skip changelog]') &&
+      !contains(github.event.head_commit.message, 'chore(docs): auto-update changelog')
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # need parent commit for diff
+
+      # ── 2. Set up Python ────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 3. Detect changed files ─────────────────────────────────────
+      - name: Detect changed site files
+        id: diff
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD -- docs/manufacturing-os-site/ \
+                  | grep -v 'changelog.html' \
+                  | head -20 | tr '\n' ' ')
+          echo "changed_files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "Changed: $FILES"
+
+      # ── 4. Insert changelog entry ───────────────────────────────────
+      - name: Insert changelog entry
+        id: insert
+        env:
+          COMMIT_SHA:  ${{ github.sha }}
+          COMMIT_MSG:  ${{ github.event.head_commit.message }}
+          COMMIT_AUTH: ${{ github.event.head_commit.author.name }}
+          COMMIT_TS:   ${{ github.event.head_commit.timestamp }}
+          CHANGED:     ${{ steps.diff.outputs.changed_files }}
+          RUN_URL:     ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          python - << 'PYEOF'
+          import os, re, html, textwrap
+          from datetime import datetime, timezone
+
+          # ── Collect env vars ──────────────────────────────────────────────
+          sha      = os.environ.get('COMMIT_SHA', 'unknown')[:8]
+          raw_msg  = os.environ.get('COMMIT_MSG',  'update docs').strip()
+          author   = html.escape(os.environ.get('COMMIT_AUTH', 'unknown'))
+          ts_raw   = os.environ.get('COMMIT_TS', '')
+          changed  = os.environ.get('CHANGED', '').strip()
+          run_url  = os.environ.get('RUN_URL', '#')
+
+          # Parse timestamp
+          try:
+              dt = datetime.fromisoformat(ts_raw.replace('Z', '+00:00'))
+              date_str = dt.strftime('%Y-%m-%d')
+              time_str = dt.strftime('%H:%M UTC')
+          except Exception:
+              date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+              time_str = datetime.now(timezone.utc).strftime('%H:%M UTC')
+
+          # Escape message (first line only)
+          msg_first  = html.escape(raw_msg.split('\n')[0][:120])
+          msg_full   = html.escape(raw_msg[:400])
+
+          # Changed files as pills
+          file_pills = ''
+          if changed:
+              for f in changed.split():
+                  basename = f.split('/')[-1]
+                  if basename:
+                      file_pills += f'<span style="display:inline-block;background:#1e2433;border:1px solid #2a2d3e;border-radius:4px;padding:1px 7px;font-size:11px;margin:2px 2px 0 0;color:#94a3b8;font-family:monospace;">{html.escape(basename)}</span>'
+
+          # ── Build HTML entry ──────────────────────────────────────────────
+          ENTRY = f'''
+    <!-- auto-generated: {date_str} {sha} -->
+    <div class="entry">
+      <div class="entry-version"><span class="version-tag" style="background:#1e3a5f;color:#93c5fd;border-color:#1e40af;font-family:monospace;font-size:10px;">{sha}</span></div>
+      <div class="entry-dot done"></div>
+      <div class="entry-body">
+        <div class="entry-card">
+          <div class="entry-header">
+            <span class="entry-title">📝 {msg_first}</span>
+            <span class="status-badge" style="background:#052e16;color:#22c55e;border:1px solid #166534;">✓ pushed</span>
+          </div>
+          <p class="entry-desc" style="margin-bottom:8px;">
+            Committed by <strong style="color:var(--text);">{author}</strong> · {date_str} {time_str}
+            · <a href="{run_url}" target="_blank" style="color:#3b82f6;text-decoration:none;">view commit ↗</a>
+          </p>
+          {f'<p style="margin-bottom:6px;">{file_pills}</p>' if file_pills else ''}
+          {f'<details style="margin-top:4px;"><summary style="font-size:11px;color:var(--muted);cursor:pointer;">Full commit message</summary><pre style="font-size:11px;color:var(--muted);white-space:pre-wrap;margin-top:6px;">{msg_full}</pre></details>' if chr(10) in raw_msg else ''}
+        </div>
+      </div>
+    </div>
+'''
+
+          # ── Insert into changelog.html ────────────────────────────────────
+          CHANGELOG = 'docs/manufacturing-os-site/changelog.html'
+          MARKER    = '<!-- COMMIT_LOG_INSERT_HERE -->'
+
+          with open(CHANGELOG, 'r', encoding='utf-8') as f:
+              src = f.read()
+
+          if MARKER not in src:
+              # Marker not present — insert marker + entry after <div class="timeline">
+              src = src.replace(
+                  '<div class="timeline">',
+                  f'<div class="timeline">\n\n    {MARKER}\n',
+                  1
+              )
+
+          new_src = src.replace(MARKER, MARKER + ENTRY, 1)
+
+          with open(CHANGELOG, 'w', encoding='utf-8') as f:
+              f.write(new_src)
+
+          print(f"Inserted entry for commit {sha} into changelog.html")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as gh:
+              gh.write(f"entry_sha={sha}\n")
+              gh.write(f"entry_date={date_str}\n")
+          PYEOF
+
+      # ── 5. Commit updated changelog ─────────────────────────────────
+      - name: Commit updated changelog.html
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/manufacturing-os-site/changelog.html
+
+          if git diff --cached --quiet; then
+            echo "No changes to changelog.html — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(docs): auto-update changelog for ${{ steps.insert.outputs.entry_sha }} [skip changelog]
+
+          Triggered by: ${{ github.event.head_commit.message }}
+          Date: ${{ steps.insert.outputs.entry_date }}
+          Run: ${{ github.run_id }}"
+
+          git push origin main
+          echo "✅ changelog.html updated and pushed"
+
+      # ── 6. Job summary ───────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Auto-Update Changelog — Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit SHA | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Author | ${{ github.event.head_commit.author.name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Entry date | ${{ steps.insert.outputs.entry_date }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Changed files | ${{ steps.diff.outputs.changed_files }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Run | ${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"

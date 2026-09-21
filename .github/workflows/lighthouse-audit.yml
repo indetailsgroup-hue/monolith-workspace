@@ -1,0 +1,328 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# lighthouse-audit.yml
+# Runs Lighthouse audit on the deployed GitHub Pages site after deploy succeeds,
+# then posts a formatted comment to the associated PR (if any).
+#
+# Triggers:
+#   - workflow_run: fires when "Deploy Manufacturing OS Docs" completes (success only)
+#   - workflow_dispatch: manual run with optional URL override
+# ──────────────────────────────────────────────────────────────────────────────
+name: Lighthouse Audit
+
+on:
+  workflow_run:
+    workflows:
+      - "Deploy Manufacturing OS Docs"
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: "URL to audit (leave blank for GitHub Pages default)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+env:
+  DEFAULT_URL: "https://indetailsgroup-hue.github.io/monolith-workspace/"
+
+jobs:
+  lighthouse:
+    name: Run Lighthouse Audit
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      # ── 1. Resolve target URL ────────────────────────────────────────────────
+      - name: Resolve audit URL
+        id: url
+        run: |
+          if [ -n "${{ github.event.inputs.site_url }}" ]; then
+            URL="${{ github.event.inputs.site_url }}"
+          else
+            URL="${DEFAULT_URL}"
+          fi
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "Auditing: ${URL}"
+
+      # ── 2. Wait for GitHub Pages propagation ────────────────────────────────
+      - name: Wait for Pages propagation
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo "Waiting 30s for GitHub Pages…"
+          sleep 30
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.url.outputs.url }}")
+          echo "HTTP status: ${HTTP}"
+          if [ "$HTTP" != "200" ]; then
+            echo "::warning::Site returned HTTP ${HTTP} — audit may target stale content"
+          fi
+
+      # ── 3. Install Lighthouse CLI ────────────────────────────────────────────
+      - name: Install Lighthouse
+        run: |
+          npm install -g lighthouse@12
+          lighthouse --version
+
+      # ── 4. Run Lighthouse ────────────────────────────────────────────────────
+      - name: Run Lighthouse audit
+        id: audit
+        run: |
+          mkdir -p /tmp/lh
+
+          lighthouse "${{ steps.url.outputs.url }}" \
+            --output=json \
+            --output=html \
+            --output-path=/tmp/lh/report \
+            --chrome-flags="--no-sandbox --headless --disable-gpu" \
+            --quiet \
+            || true
+
+          # lighthouse writes /tmp/lh/report.report.json and /tmp/lh/report.report.html
+          JSON_FILE="/tmp/lh/report.report.json"
+          HTML_FILE="/tmp/lh/report.report.html"
+
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "::error::Lighthouse report not generated"
+            echo "perf=N/A"   >> $GITHUB_OUTPUT
+            echo "a11y=N/A"   >> $GITHUB_OUTPUT
+            echo "bp=N/A"     >> $GITHUB_OUTPUT
+            echo "seo=N/A"    >> $GITHUB_OUTPUT
+            echo "fcp=N/A"    >> $GITHUB_OUTPUT
+            echo "lcp=N/A"    >> $GITHUB_OUTPUT
+            echo "tbt=N/A"    >> $GITHUB_OUTPUT
+            echo "cls=N/A"    >> $GITHUB_OUTPUT
+            echo "tti=N/A"    >> $GITHUB_OUTPUT
+            echo "perf_emoji=⚪" >> $GITHUB_OUTPUT
+            echo "a11y_emoji=⚪" >> $GITHUB_OUTPUT
+            echo "bp_emoji=⚪"   >> $GITHUB_OUTPUT
+            echo "seo_emoji=⚪"  >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Parse scores with Python
+          python3 - "$JSON_FILE" "$GITHUB_OUTPUT" << 'PYEOF'
+          import json, sys
+
+          json_file   = sys.argv[1]
+          output_file = sys.argv[2]
+
+          with open(json_file) as f:
+              data = json.load(f)
+
+          cats   = data.get('categories', {})
+          audits = data.get('audits', {})
+
+          def score(key):
+              v = cats.get(key, {}).get('score')
+              return str(int(v * 100)) if v is not None else 'N/A'
+
+          def metric(key):
+              v = audits.get(key, {}).get('numericValue')
+              if v is None:
+                  return 'N/A'
+              if key == 'cumulative-layout-shift':
+                  return f"{v:.3f}"
+              return f"{v/1000:.1f}s" if v >= 1000 else f"{int(v)}ms"
+
+          def emoji(s):
+              if s == 'N/A': return '⚪'
+              n = int(s)
+              return '🟢' if n >= 90 else ('🟡' if n >= 50 else '🔴')
+
+          scores = {
+              'perf': score('performance'),
+              'a11y': score('accessibility'),
+              'bp':   score('best-practices'),
+              'seo':  score('seo'),
+          }
+          metrics = {
+              'fcp': metric('first-contentful-paint'),
+              'lcp': metric('largest-contentful-paint'),
+              'tbt': metric('total-blocking-time'),
+              'cls': metric('cumulative-layout-shift'),
+              'tti': metric('interactive'),
+          }
+
+          with open(output_file, 'a') as out:
+              for k, v in scores.items():
+                  out.write(f"{k}={v}\n")
+                  out.write(f"{k}_emoji={emoji(v)}\n")
+              for k, v in metrics.items():
+                  out.write(f"{k}={v}\n")
+
+          print("Scores:", scores)
+          PYEOF
+
+      # ── 5. Check score thresholds ─────────────────────────────────────────────
+      # Fail the workflow if Performance < 70 or Accessibility < 90.
+      # Use continue-on-error so artifact upload + PR comment still run.
+      - name: Check score thresholds
+        id: threshold
+        continue-on-error: true
+        run: |
+          PERF="${{ steps.audit.outputs.perf }}"
+          A11Y="${{ steps.audit.outputs.a11y }}"
+
+          PERF_THRESHOLD=70
+          A11Y_THRESHOLD=90
+          FAILED=false
+
+          check_score() {
+            local NAME="$1" SCORE="$2" THRESHOLD="$3"
+            if [ "$SCORE" = "N/A" ]; then
+              echo "::warning::${NAME} score is N/A — could not be measured"
+              return
+            fi
+            if [ "$SCORE" -lt "$THRESHOLD" ]; then
+              echo "::error::${NAME} score ${SCORE} is below threshold ${THRESHOLD}"
+              FAILED=true
+            else
+              echo "${NAME} score ${SCORE} ✅ (threshold: ${THRESHOLD})"
+            fi
+          }
+
+          check_score "Performance"    "$PERF" "$PERF_THRESHOLD"
+          check_score "Accessibility"  "$A11Y" "$A11Y_THRESHOLD"
+
+          if [ "$FAILED" = "true" ]; then
+            echo "threshold_passed=false" >> $GITHUB_OUTPUT
+            echo "::error::One or more Lighthouse thresholds failed (Performance ≥ ${PERF_THRESHOLD}, Accessibility ≥ ${A11Y_THRESHOLD})"
+            exit 1
+          else
+            echo "threshold_passed=true" >> $GITHUB_OUTPUT
+            echo "All thresholds passed ✅"
+          fi
+
+      # ── 6. Upload HTML report as artifact ────────────────────────────────────
+      - name: Upload Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-${{ github.run_id }}
+          path: /tmp/lh/
+          retention-days: 30
+
+      # ── 7. Find associated PR ─────────────────────────────────────────────────
+      - name: Find associated PR
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.eventName === 'workflow_run'
+              ? context.payload.workflow_run.head_sha
+              : context.sha;
+
+            console.log(`Searching for PR with SHA: ${sha}`);
+
+            for (const state of ['open', 'closed']) {
+              const { data } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                state,
+                per_page: 30,
+              });
+              const match = data.find(pr =>
+                pr.head.sha === sha || pr.merge_commit_sha === sha
+              );
+              if (match) {
+                console.log(`Found PR #${match.number}: ${match.title}`);
+                return { pr_number: match.number, found: true };
+              }
+            }
+
+            console.log('No associated PR — will skip PR comment');
+            return { pr_number: null, found: false };
+
+      # ── 8. Compose comment body ───────────────────────────────────────────────
+      - name: Compose comment body
+        id: comment
+        run: |
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SITE_URL="${{ steps.url.outputs.url }}"
+          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          SHORT="${SHA:0:7}"
+
+          # Use printf to avoid heredoc quoting issues with emoji
+          printf '%s\n' \
+            "## 🔦 Lighthouse Audit — \`${SHORT}\`" \
+            "" \
+            "Audited: [\`${SITE_URL}\`](${SITE_URL})" \
+            "" \
+            "| Category | Score | |" \
+            "|---|:---:|---|" \
+            "| Performance | ${{ steps.audit.outputs.perf }} | ${{ steps.audit.outputs.perf_emoji }} |" \
+            "| Accessibility | ${{ steps.audit.outputs.a11y }} | ${{ steps.audit.outputs.a11y_emoji }} |" \
+            "| Best Practices | ${{ steps.audit.outputs.bp }} | ${{ steps.audit.outputs.bp_emoji }} |" \
+            "| SEO | ${{ steps.audit.outputs.seo }} | ${{ steps.audit.outputs.seo_emoji }} |" \
+            "" \
+            "**Core Web Vitals**" \
+            "" \
+            "| Metric | Value |" \
+            "|---|---|" \
+            "| First Contentful Paint (FCP) | ${{ steps.audit.outputs.fcp }} |" \
+            "| Largest Contentful Paint (LCP) | ${{ steps.audit.outputs.lcp }} |" \
+            "| Total Blocking Time (TBT) | ${{ steps.audit.outputs.tbt }} |" \
+            "| Cumulative Layout Shift (CLS) | ${{ steps.audit.outputs.cls }} |" \
+            "| Time to Interactive (TTI) | ${{ steps.audit.outputs.tti }} |" \
+            "" \
+            "> 🟢 ≥ 90 · 🟡 50–89 · 🔴 < 50" \
+            ">" \
+            "> Full HTML report: [Download artifact](${RUN_URL})" \
+            > /tmp/lh_comment.md
+
+          echo "body_file=/tmp/lh_comment.md" >> $GITHUB_OUTPUT
+
+      # ── 9. Post / update comment on PR ───────────────────────────────────────
+      - name: Post comment to PR
+        if: fromJson(steps.pr.outputs.result).found == true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs   = require('fs');
+            const body = fs.readFileSync('${{ steps.comment.outputs.body_file }}', 'utf8');
+            const prNum = fromJson('${{ steps.pr.outputs.result }}').pr_number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: prNum,
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('🔦 Lighthouse Audit')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated comment #${existing.id} on PR #${prNum}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: prNum,
+                body,
+              });
+              console.log(`Created comment on PR #${prNum}`);
+            }
+
+      # ── 10. Write job summary (always) ─────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          if [ -f /tmp/lh_comment.md ]; then
+            cat /tmp/lh_comment.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Lighthouse audit did not produce a report." >> $GITHUB_STEP_SUMMARY
+          fi

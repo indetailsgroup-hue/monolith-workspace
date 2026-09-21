@@ -5,6 +5,8 @@
 [![Sync Chapters on Release](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/sync-chapters.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/sync-chapters.yml)
 [![Auto-Update Changelog](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-update-changelog.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-update-changelog.yml)
 [![Notify Slack on Deploy](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml)
+[![Lighthouse Audit](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml)
+[![Generate Site Data](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml)
 
 > Static documentation site covering **55 chapters** across **15 development phases**  
 > from Core Architecture to Predictive Maintenance AI.

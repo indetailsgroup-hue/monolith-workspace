@@ -1,0 +1,69 @@
+name: Deploy Manufacturing OS Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/manufacturing-os-site/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify required site files
+        run: |
+          echo "=== Verifying Monolith Manufacturing OS site files ==="
+          SITE_DIR="docs/manufacturing-os-site"
+          REQUIRED_FILES=("index.html" "script.js" "style.css" "chapters.json" "search_index.json" "analytics.html" "changelog.html" "README.md")
+          ALL_OK=true
+          for f in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$SITE_DIR/$f" ]; then
+              SIZE=$(du -sh "$SITE_DIR/$f" | cut -f1)
+              echo "  ✅ $f ($SIZE)"
+            else
+              echo "  ❌ MISSING: $f"
+              ALL_OK=false
+            fi
+          done
+          if [ "$ALL_OK" = false ]; then
+            echo "ERROR: Required files are missing. Aborting deployment."
+            exit 1
+          fi
+          echo ""
+          echo "=== JSON Validation ==="
+          python3 -c "import json; data=json.load(open('$SITE_DIR/chapters.json')); print(f'  ✅ chapters.json — {len(data)} chapters')"
+          python3 -c "import json; data=json.load(open('$SITE_DIR/search_index.json')); print(f'  ✅ search_index.json — {len(data)} chapters indexed')"
+          echo ""
+          echo "=== Deployment target ==="
+          echo "  Source : $SITE_DIR"
+          echo "  URL    : https://indetailsgroup-hue.github.io/monolith-workspace/"
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/manufacturing-os-site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
