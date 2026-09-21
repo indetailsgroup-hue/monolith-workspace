@@ -5,10 +5,12 @@ on:
     branches: [main, develop]
     paths:
       - 'docs/chapters/**/*.md'
+      - '.github/workflows/validate-chapter-frontmatter.yml'
   pull_request:
     branches: [main]
     paths:
       - 'docs/chapters/**/*.md'
+      - '.github/workflows/validate-chapter-frontmatter.yml'
   workflow_dispatch:
     inputs:
       chapters_path:
@@ -43,7 +45,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pyyaml
+        run: pip install PyYAML==6.0.3
 
       # ── Step 3: Write validation script ──────────────────────────────────────
       - name: Write frontmatter validator
@@ -56,7 +58,7 @@ jobs:
           Required fields: num, title, phase, mcp_tools, status
           Type checks:
             - num       → int, 1–55
-            - phase     → int, 1–15
+            - phase     → int, 0–15 (0 = Foundation)
             - mcp_tools → int, >= 0
           Status enum:
             complete | in-progress | planned | draft
@@ -67,13 +69,13 @@ jobs:
           import sys
           import os
           import re
-          import glob
+          from pathlib import Path
           import yaml
 
           CHAPTERS_PATH = sys.argv[1] if len(sys.argv) > 1 else "docs/chapters"
           STRICT_MODE   = sys.argv[2].lower() == "true" if len(sys.argv) > 2 else False
 
-          REQUIRED_FIELDS = ["num", "title", "phase", "mcp_tools", "status"]
+          REQUIRED_FIELDS = ["num", "title", "phase", "phase_num", "phase_label", "mcp_tools", "status"]
           VALID_STATUSES  = {"complete", "in-progress", "planned", "draft"}
           FILENAME_RE     = re.compile(r"^chapter-(\d{2})\.md$")
 
@@ -82,7 +84,7 @@ jobs:
           fail_count  = 0
           file_results = []
 
-          md_files = sorted(glob.glob(os.path.join(CHAPTERS_PATH, "chapter-*.md")))
+          md_files = sorted(Path(CHAPTERS_PATH).rglob('*.md'))
 
           if not md_files:
               print(f"::error::No chapter markdown files found in '{CHAPTERS_PATH}'")
@@ -99,8 +101,8 @@ jobs:
                   content = f.read()
 
               fm = None
-              if content.startswith("---"):
-                  parts = content.split("---", 2)
+              if content.startswith("---\n"):
+                  parts = re.split(r"(?m)^---[ \t]*$", content, maxsplit=2)
                   if len(parts) >= 3:
                       try:
                           fm = yaml.safe_load(parts[1])
@@ -114,6 +116,10 @@ jobs:
               if fm is None and not errors:
                   errors.append("Frontmatter is empty or could not be parsed")
 
+              if fm is not None and not isinstance(fm, dict):
+                  errors.append("Frontmatter must be a YAML mapping")
+                  fm = None
+
               if fm is not None:
                   # ── Required field presence ───────────────────────────────────
                   for field in REQUIRED_FIELDS:
@@ -122,27 +128,35 @@ jobs:
 
                   # ── Type checks ───────────────────────────────────────────────
                   if "num" in fm:
-                      if not isinstance(fm["num"], int):
+                      if type(fm["num"]) is not int:
                           errors.append(f"Field 'num' must be an integer, got: {type(fm['num']).__name__} ({fm['num']!r})")
                       elif not (1 <= fm["num"] <= 55):
-                          warnings.append(f"Field 'num' value {fm['num']} is outside expected range 1–55")
+                          errors.append(f"Field 'num' value {fm['num']} is outside expected range 1–55")
 
                   if "phase" in fm:
-                      if not isinstance(fm["phase"], int):
+                      if type(fm["phase"]) is not int:
                           errors.append(f"Field 'phase' must be an integer, got: {type(fm['phase']).__name__} ({fm['phase']!r})")
-                      elif not (1 <= fm["phase"] <= 15):
-                          warnings.append(f"Field 'phase' value {fm['phase']} is outside expected range 1–15")
+                      elif not (0 <= fm["phase"] <= 15):
+                          errors.append(f"Field 'phase' value {fm['phase']} is outside expected range 0–15")
+
+                  if "phase_num" in fm:
+                      if type(fm["phase_num"]) is not int or fm["phase_num"] != fm.get("phase"):
+                          errors.append("Field 'phase_num' must be an integer equal to phase")
+                  if "phase_label" in fm and type(fm.get("phase")) is int:
+                      label = "Foundation" if fm["phase"] == 0 else f"Phase {fm['phase']}"
+                      if fm["phase_label"] != label:
+                          errors.append(f"Field 'phase_label' must equal {label!r}")
 
                   if "mcp_tools" in fm:
-                      if not isinstance(fm["mcp_tools"], int):
+                      if type(fm["mcp_tools"]) is not int:
                           errors.append(f"Field 'mcp_tools' must be an integer, got: {type(fm['mcp_tools']).__name__} ({fm['mcp_tools']!r})")
                       elif fm["mcp_tools"] < 0:
                           errors.append(f"Field 'mcp_tools' must be >= 0, got: {fm['mcp_tools']}")
 
                   # ── Status enum check ─────────────────────────────────────────
                   if "status" in fm:
-                      status_val = str(fm["status"]).lower().strip()
-                      if status_val not in VALID_STATUSES:
+                      status_val = fm["status"]
+                      if not isinstance(status_val, str) or status_val not in VALID_STATUSES:
                           errors.append(
                               f"Field 'status' has invalid value '{fm['status']}'. "
                               f"Allowed values: {', '.join(sorted(VALID_STATUSES))}"
@@ -150,14 +164,14 @@ jobs:
 
                   # ── Title non-empty check ─────────────────────────────────────
                   if "title" in fm:
-                      if not str(fm.get("title", "")).strip():
-                          errors.append("Field 'title' must not be empty")
+                      if not isinstance(fm["title"], str) or not fm["title"].strip():
+                          errors.append("Field 'title' must be a non-empty string")
 
                   # ── Filename vs frontmatter num cross-check ───────────────────
                   m = FILENAME_RE.match(filename)
                   if m:
                       file_num = int(m.group(1))
-                      if "num" in fm and isinstance(fm["num"], int):
+                      if "num" in fm and type(fm["num"]) is int:
                           if fm["num"] != file_num:
                               errors.append(
                                   f"Filename number ({file_num:02d}) does not match frontmatter 'num' ({fm['num']})"
@@ -281,7 +295,7 @@ jobs:
               '',
               outcome !== 'success'
                 ? '> Check the workflow run for per-file error annotations.'
-                : '> All 55 chapter files passed frontmatter validation.',
+                : '> All discovered chapter files passed frontmatter validation; see the run summary for the actual count.',
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({

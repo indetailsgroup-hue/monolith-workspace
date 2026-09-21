@@ -1,7 +1,8 @@
 ---
 num: 33
 title: "Organization, Culture & CI/CD Hardening Tools"
-phase: "Phase 5"
+phase: 5
+phase_label: "Phase 5"
 phase_num: 5
 mcp_tools: 5
 status: complete

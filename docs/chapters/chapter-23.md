@@ -1,7 +1,8 @@
 ---
 num: 23
 title: "ระบบจัดซื้อจัดจ้าง (Procurement)"
-phase: "Foundation"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 0
 status: complete

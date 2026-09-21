@@ -1,7 +1,8 @@
 ---
 num: 3
-title: "Architecture & Digital Twin Design"
-phase: "Foundation"
+title: "Research & Background"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

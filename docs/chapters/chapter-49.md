@@ -1,7 +1,8 @@
 ---
 num: 49
 title: "Customer Feedback & Analytics Module"
-phase: "Phase 12"
+phase: 12
+phase_label: "Phase 12"
 phase_num: 12
 mcp_tools: 3
 status: complete

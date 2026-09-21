@@ -1,7 +1,8 @@
 ---
 num: 41
 title: "HR Management Module"
-phase: "Phase 9"
+phase: 9
+phase_label: "Phase 9"
 phase_num: 9
 mcp_tools: 2
 status: complete

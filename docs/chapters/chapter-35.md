@@ -1,7 +1,8 @@
 ---
 num: 35
 title: "Analytics Dashboard & Real-time Monitoring Tools"
-phase: "Phase 6"
+phase: 6
+phase_label: "Phase 6"
 phase_num: 6
 mcp_tools: 3
 status: complete
@@ -220,7 +221,7 @@ Type | Parameters | Description
 `threshold` | `operator` + `value` | Fire when metric crosses threshold  
 `rate_of_change` | `operator` + `value` + `rateWindow` | Fire when rate of change exceeds limit  
 `anomaly_detection` | N/A | ML-based anomaly detection  
-`absence` | `absenceDuration` | Fire when metric is absent for duration  
+`absence` | `absenceDuration` | Trigger condition: zero metric samples during the configured duration
   
 **Alert Actions:**
 

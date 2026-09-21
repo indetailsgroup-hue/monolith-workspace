@@ -1,7 +1,8 @@
 ---
 num: 7
-title: "Rebuild Blueprint"
-phase: "Foundation"
+title: "Developer Documentation"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

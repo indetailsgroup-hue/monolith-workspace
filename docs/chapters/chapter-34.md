@@ -1,7 +1,8 @@
 ---
 num: 34
 title: "Architecture Decision Records (ADR)"
-phase: "Phase 5"
+phase: 5
+phase_label: "Phase 5"
 phase_num: 5
 mcp_tools: 4
 status: complete

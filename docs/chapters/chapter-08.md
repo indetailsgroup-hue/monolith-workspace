@@ -1,7 +1,8 @@
 ---
 num: 8
-title: "Risk Management"
-phase: "Foundation"
+title: "Rebuild Blueprint"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

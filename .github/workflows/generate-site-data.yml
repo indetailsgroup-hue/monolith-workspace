@@ -10,11 +10,13 @@
 #
 # Source convention:
 #   docs/chapters/chapter-{N}.md   — one file per chapter, N = 1..55
-#   Frontmatter (optional):
+#   Frontmatter (required; numeric chapter ID and non-empty title):
 #     ---
 #     num: 1
 #     title: บทสรุปสำหรับผู้บริหาร
-#     phase: 1
+#     phase: 0
+#     phase_num: 0
+#     phase_label: Foundation
 #     mcp_tools: 3
 #     status: complete
 #     ---
@@ -36,6 +38,8 @@ on:
     paths:
       - "docs/chapters/**/*.md"
       - "docs/chapters/*.md"
+      - "scripts/docs/**"
+      - ".github/workflows/generate-site-data.yml"
 
   workflow_dispatch:
     inputs:
@@ -85,7 +89,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
-        run: pip install markdown PyYAML
+        run: pip install -r scripts/docs/requirements.txt
 
       # ── 3. Check source directory ────────────────────────────────────────────
       - name: Check source directory
@@ -97,19 +101,21 @@ jobs:
             mkdir -p "$CHAPTERS_DIR"
 
             cat > "${CHAPTERS_DIR}/chapter-01.md" << 'MD'
-            ---
-            num: 1
-            title: บทสรุปสำหรับผู้บริหาร
-            phase: 1
-            mcp_tools: 3
-            status: complete
-            ---
+          ---
+          num: 1
+          title: บทสรุปสำหรับผู้บริหาร
+          phase: 0
+          phase_num: 0
+          phase_label: Foundation
+          mcp_tools: 3
+          status: complete
+          ---
 
-            # 1. บทสรุปสำหรับผู้บริหาร
+          # 1. บทสรุปสำหรับผู้บริหาร
 
-            > เพิ่มเนื้อหา chapter ที่นี่
+          > เพิ่มเนื้อหา chapter ที่นี่
 
-            MD
+          MD
 
             echo "created_example=true" >> $GITHUB_OUTPUT
           fi
@@ -124,6 +130,8 @@ jobs:
         run: |
           python3 - << 'PYEOF'
           import os, json, hashlib
+          from pathlib import Path
+          from scripts.docs.site_data import get_num, validate_data, rendering_fingerprint
 
           CHAPTERS_DIR  = os.environ['CHAPTERS_PATH']
           CACHE_FILE    = '.github/chapter-cache.json'
@@ -135,22 +143,39 @@ jobs:
               try:
                   with open(CACHE_FILE) as f:
                       old_cache = json.load(f)
+                  if not isinstance(old_cache, dict):
+                      raise ValueError("Cache must be an object")
                   print(f"Loaded cache: {len(old_cache)} entries from {CACHE_FILE}")
               except Exception as e:
+                  old_cache = {}
                   print(f"Warning: could not read cache ({e}) — treating all as changed")
           elif FORCE_REBUILD:
               print("FORCE_REBUILD=true — ignoring cache, all chapters will be processed")
+
+          # Rebuild if either published output is missing, invalid or stale.
+          md_files = sorted(p.relative_to(CHAPTERS_DIR).as_posix()
+                            for p in Path(CHAPTERS_DIR).rglob('*.md'))
+          expected_keys = {str(get_num({}, f)) for f in md_files}
+          if not md_files or len(expected_keys) != len(md_files):
+              raise ValueError('Empty source inventory or duplicate chapter numbers')
+          try:
+              output = Path(os.environ['OUTPUT_PATH'])
+              chapters = json.loads((output / 'chapters.json').read_text(encoding='utf-8'))
+              search = json.loads((output / 'search_index.json').read_text(encoding='utf-8'))
+              validate_data(chapters, search, expected_keys)
+          except (OSError, ValueError, TypeError):
+              FORCE_REBUILD = True
+          fingerprint = rendering_fingerprint()
 
           # ── Compute SHA256 for every .md file ────────────────────────────────
           new_hashes = {}
           changed    = []
           unchanged  = []
 
-          md_files = sorted(f for f in os.listdir(CHAPTERS_DIR) if f.endswith('.md'))
           for fname in md_files:
               path = os.path.join(CHAPTERS_DIR, fname)
               with open(path, 'rb') as fh:
-                  sha = hashlib.sha256(fh.read()).hexdigest()
+                  sha = hashlib.sha256(fh.read() + fingerprint).hexdigest()
               new_hashes[fname] = sha
               if FORCE_REBUILD or old_cache.get(fname) != sha:
                   changed.append(fname)
@@ -189,7 +214,7 @@ jobs:
               out.write(f"changed_count={len(changed)}\n")
               out.write(f"unchanged_count={len(unchanged)}\n")
               out.write(f"total_count={len(new_hashes)}\n")
-              out.write(f"has_changes={'true' if changed else 'false'}\n")
+              out.write(f"has_changes={'true' if changed or deleted else 'false'}\n")
           PYEOF
         env:
           CHAPTERS_PATH: ${{ env.CHAPTERS_PATH }}
@@ -210,8 +235,8 @@ jobs:
         run: |
           python3 - << 'PYEOF'
           import os, re, json, html as html_mod
-          import markdown
-          import yaml
+          from pathlib import Path
+          from scripts.docs.site_data import parse_file, get_num, render_body, search_index, validate_data
 
           CHAPTERS_DIR   = os.environ['CHAPTERS_PATH']
           OUTPUT_DIR     = os.environ['OUTPUT_PATH']
@@ -223,53 +248,27 @@ jobs:
               changed_set = set(line.strip() for line in f if line.strip())
           print(f"Processing {len(changed_set)} changed chapter(s)…")
 
-          # ── Frontmatter parser ───────────────────────────────────────────────
-          FRONT_RE = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
-
-          def parse_file(path):
-              with open(path, encoding='utf-8') as f:
-                  raw = f.read()
-              meta = {}
-              body = raw
-              m = FRONT_RE.match(raw)
-              if m:
-                  try:
-                      meta = yaml.safe_load(m.group(1)) or {}
-                  except Exception:
-                      meta = {}
-                  body = raw[m.end():]
-              return meta, body
-
-          def get_num(meta, filename):
-              if 'num' in meta:
-                  return int(meta['num'])
-              m = re.search(r'(\d+)', os.path.basename(filename))
-              return int(m.group(1)) if m else None
-
-          # ── Markdown converter ───────────────────────────────────────────────
-          md = markdown.Markdown(
-              extensions=['extra', 'toc', 'codehilite', 'nl2br'],
-              extension_configs={
-                  'toc': {'permalink': True},
-                  'codehilite': {'guess_lang': False},
-              }
-          )
-
           # ── Load existing chapters.json (preserve unchanged entries) ─────────
           existing = {}
           if os.path.exists(CHAPTERS_JSON):
-              with open(CHAPTERS_JSON) as f:
-                  existing = json.load(f)
+              try:
+                  with open(CHAPTERS_JSON, encoding='utf-8') as f:
+                      existing = json.load(f)
+                  if not isinstance(existing, dict):
+                      existing = {}
+              except (ValueError, OSError):
+                  existing = {}
               print(f"Loaded {len(existing)} existing chapters from chapters.json")
 
           # ── Process ONLY changed/new chapters ────────────────────────────────
           new_chapters = {}
           skipped      = []
           all_files    = sorted(
-              [f for f in os.listdir(CHAPTERS_DIR) if f.endswith('.md')],
+              [p.relative_to(CHAPTERS_DIR).as_posix() for p in Path(CHAPTERS_DIR).rglob('*.md')],
               key=lambda f: (get_num({}, f) or 9999, f)
           )
 
+          active_keys = {str(get_num({}, f)) for f in all_files}
           for fname in all_files:
               if fname not in changed_set:
                   continue  # unchanged — existing entry will be kept
@@ -281,17 +280,12 @@ jobs:
                   skipped.append(fname)
                   continue
 
-              md.reset()
-              html_content = md.convert(body)
-
-              if not html_content.strip().startswith('<h1'):
-                  title = meta.get('title', f'Chapter {num}')
-                  html_content = f'<h1 id="{num}">{num}. {title}</h1>\n' + html_content
+              html_content = render_body(meta, body, num)
 
               new_chapters[str(num)] = html_content
 
           # ── Merge: new chapters override existing; unchanged preserved ────────
-          merged = {**existing, **new_chapters}
+          merged = {k: v for k, v in {**existing, **new_chapters}.items() if k in active_keys}
           merged = dict(sorted(merged.items(), key=lambda x: int(x[0])))
 
           # ── Write chapters.json ──────────────────────────────────────────────
@@ -300,13 +294,8 @@ jobs:
               json.dump(merged, f, ensure_ascii=False, separators=(',', ':'))
 
           # ── Rebuild full search index from merged chapters ───────────────────
-          full_search = []
-          for num_str, html_content in merged.items():
-              plain = re.sub(r'<[^>]+>', ' ', html_content)
-              plain = html_mod.unescape(plain)
-              plain = re.sub(r'\s+', ' ', plain).strip()
-              full_search.append({'num': int(num_str), 'text': plain[:6000]})
-          full_search.sort(key=lambda x: x['num'])
+          full_search = search_index(merged)
+          validate_data(merged, full_search, active_keys)
 
           with open(SEARCH_JSON, 'w', encoding='utf-8') as f:
               json.dump(full_search, f, ensure_ascii=False, separators=(',', ':'))
@@ -419,7 +408,9 @@ jobs:
           UNCHANGED="${{ steps.cache.outputs.unchanged_count }}"
           TOTAL_MD="${{ steps.cache.outputs.total_count }}"
 
-          if [ "$HAS" = "true" ]; then
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌ Failed — inspect step logs"
+          elif [ "$HAS" = "true" ]; then
             STATUS="✅ Generated"
           else
             STATUS="⏭️ Skipped (all chapters cached)"

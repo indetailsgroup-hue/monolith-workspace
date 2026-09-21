@@ -1,7 +1,8 @@
 ---
 num: 51
 title: "BI Dashboard & Reporting Module"
-phase: "Phase 13"
+phase: 13
+phase_label: "Phase 13"
 phase_num: 13
 mcp_tools: 3
 status: complete

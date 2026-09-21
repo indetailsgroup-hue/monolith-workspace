@@ -1,7 +1,8 @@
 ---
 num: 18
 title: "ระบบจัดการลูกค้า (CRM)"
-phase: "Foundation"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 0
 status: complete

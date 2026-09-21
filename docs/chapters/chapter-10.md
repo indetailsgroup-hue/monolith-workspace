@@ -1,7 +1,8 @@
 ---
 num: 10
-title: "API Reference"
-phase: "Foundation"
+title: "Roadmap"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

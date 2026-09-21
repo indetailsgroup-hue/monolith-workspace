@@ -1,7 +1,8 @@
 ---
 num: 22
 title: "ระบบ After-Sales และการรับประกัน"
-phase: "Foundation"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 0
 status: complete

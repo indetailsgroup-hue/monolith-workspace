@@ -1,7 +1,8 @@
 ---
 num: 55
 title: "Deployment, Governance & Persona Use Cases"
-phase: "Phase 15"
+phase: 15
+phase_label: "Phase 15"
 phase_num: 15
 mcp_tools: 1
 status: in-progress

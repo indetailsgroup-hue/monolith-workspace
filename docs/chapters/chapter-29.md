@@ -1,7 +1,8 @@
 ---
 num: 29
 title: "Factory, CNC, Workflow Tools"
-phase: "Phase 2"
+phase: 2
+phase_label: "Phase 2"
 phase_num: 2
 mcp_tools: 9
 status: complete

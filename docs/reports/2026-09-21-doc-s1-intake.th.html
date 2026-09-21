@@ -1,0 +1,32 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2026-09-21-doc-s1-intake</title><style>body{max-width:1100px;margin:40px auto;padding:0 24px;font:17px/1.65 system-ui;color:#182b3b}table{border-collapse:collapse;width:100%}td,th{padding:9px;border:1px solid #ccd5df;text-align:left}pre{white-space:pre-wrap;background:#eef3f7;padding:16px}a{color:#0658a8}</style><body><h1>ผลรับและตรวจ DOC-S1</h1>
+<p>ยืนยัน inventory แล้ว รับแพ็กเกจพร้อมข้อจำกัดที่บันทึก ไม่ใช่ใบรับรอง runtime</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th style="text-align: right;">ZIP entries</th>
+<th style="text-align: right;">Manifest rows</th>
+<th style="text-align: right;">Hash + size PASS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>doc-s1</td>
+<td style="text-align: right;">26</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">21</td>
+</tr>
+<tr>
+<td>v4.1</td>
+<td style="text-align: right;">66</td>
+<td style="text-align: right;">65</td>
+<td style="text-align: right;">65</td>
+</tr>
+</tbody>
+</table>
+<p>SHA256 ของ DOC-S1: <code>4712b25aa80dc0f3ef2cc6e3a68c3921b12413c81bc0f0610ca8813502f00e47</code></p>
+<p>v4.1 SHA256: <code>e6f23a67dd092bbf1ee88ab457f942ebe9917884faa6cad8d7d343be67fcac2d</code></p>
+<p>inventory55แถว ฟิลด์ metadata7รายการ ขนาด source และ pinned locators ตรงกับ Git blobs ทุกแถว DOC-S1 มี checksum ครอบคลุม21จาก25 payload files รายการนอก coverage ดู intake-verification.json การไม่รวม manifest เองเป็นเรื่องปกติ changed-file-list ระบุ22แต่ ZIPมี26ไฟล์ เอกสาร manifest3ชุดไม่มีฉบับไทย เก็บ ZIP เดิมโดยไม่แก้ intake-verification.json บันทึก hash และส่วนที่ขาด v4.1มี payload65ไฟล์ที่ checksumตรงพร้อมไฟล์ checksum อีก1ไฟล์ ข้อสรุป governance เดิมยังไม่รับรองเป็นสถานะปัจจุบัน</p>
+<p>รับการแก้ phase contract และชื่อบท02–12ตาม MAINTENANCE.th.md ไม่รับข้ออ้างว่าแก้เฉพาะ phase_num แล้วไม่ต้องแก้ไฟล์, ทุกบท01–12มี mcp_tools2 (บท12มี1), จำนวนเป็น placeholder, จำนวน120ใน body ยืนยัน runtime หรือชื่อคนละภาษาคือเนื้อหาผิด ไม่คัดลอกร่าง DOC-S2 ทั้งชุด เพราะระบุโครงสร้าง repository, schema, การรองรับบท56 และความพร้อม deploy ไม่ถูกต้อง ไม่เปลี่ยน body, จำนวน MCP หรือ status</p>
+<p>ห้องหลักได้รับและตอบรับข้อค้นพบที่ตรวจเองและ contract ที่เจ้าของอนุมัติแล้ว GitHub Pages และ SciSpace ยังเป็น release gate แยกกัน</p>
+<p><a href="https://scispace.com/chat/4965a6a4-e854-4128-95cc-d5e7a95ea7c7">Primary SciSpace room</a></p></body></html>

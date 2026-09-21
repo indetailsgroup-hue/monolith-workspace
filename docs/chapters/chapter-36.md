@@ -1,7 +1,8 @@
 ---
 num: 36
 title: "Load Testing Strategy & Performance Benchmarks"
-phase: "Phase 6"
+phase: 6
+phase_label: "Phase 6"
 phase_num: 6
 mcp_tools: 3
 status: complete

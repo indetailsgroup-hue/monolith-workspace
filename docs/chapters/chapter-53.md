@@ -1,7 +1,8 @@
 ---
 num: 53
 title: "Edge Device & Real-Time Alerting Module"
-phase: "Phase 14"
+phase: 14
+phase_label: "Phase 14"
 phase_num: 14
 mcp_tools: 3
 status: complete

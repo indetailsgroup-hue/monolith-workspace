@@ -1,7 +1,8 @@
 ---
 num: 54
 title: "Predictive Maintenance System"
-phase: "Phase 15"
+phase: 15
+phase_label: "Phase 15"
 phase_num: 15
 mcp_tools: 2
 status: in-progress

@@ -1,7 +1,8 @@
 ---
 num: 2
-title: "Research & Background"
-phase: "Foundation"
+title: "System Overview"
+phase: 0
+phase_label: "Foundation"
 phase_num: 0
 mcp_tools: 2
 status: complete

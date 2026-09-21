@@ -1,7 +1,8 @@
 ---
 num: 32
 title: "Notification, Reporting & Backup Tools"
-phase: "Phase 4"
+phase: 4
+phase_label: "Phase 4"
 phase_num: 4
 mcp_tools: 9
 status: complete

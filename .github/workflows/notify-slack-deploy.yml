@@ -11,7 +11,7 @@ name: Notify Slack on Deploy
 on:
   workflow_run:
     workflows:
-      - "Deploy Manufacturing OS Docs"   # must match `name:` in deploy-docs-pages.yml
+      - "Deploy Manufacturing OS Docs to GitHub Pages"   # must match `name:` in deploy-docs-pages.yml
     types:
       - completed
 

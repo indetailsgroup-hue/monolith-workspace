@@ -1,7 +1,8 @@
 ---
 num: 52
 title: "IoT Sensor Data Management Module"
-phase: "Phase 14"
+phase: 14
+phase_label: "Phase 14"
 phase_num: 14
 mcp_tools: 3
 status: complete

@@ -4,7 +4,7 @@
 # then posts a formatted comment to the associated PR (if any).
 #
 # Triggers:
-#   - workflow_run: fires when "Deploy Manufacturing OS Docs" completes (success only)
+#   - workflow_run: fires when "Deploy Manufacturing OS Docs to GitHub Pages" completes (success only)
 #   - workflow_dispatch: manual run with optional URL override
 # ──────────────────────────────────────────────────────────────────────────────
 name: Lighthouse Audit
@@ -12,7 +12,8 @@ name: Lighthouse Audit
 on:
   workflow_run:
     workflows:
-      - "Deploy Manufacturing OS Docs"
+      - "Deploy Manufacturing OS Docs to GitHub Pages"
+      - "Auto-Deploy SciSpace Site"
     types:
       - completed
 
@@ -176,8 +177,9 @@ jobs:
 
           check_score() {
             local NAME="$1" SCORE="$2" THRESHOLD="$3"
-            if [ "$SCORE" = "N/A" ]; then
-              echo "::warning::${NAME} score is N/A — could not be measured"
+            if [[ ! "$SCORE" =~ ^([0-9]|[1-9][0-9]|100)$ ]]; then
+              echo "::error::${NAME} score is missing or invalid: ${SCORE}"
+              FAILED=true
               return
             fi
             if [ "$SCORE" -lt "$THRESHOLD" ]; then
@@ -283,11 +285,14 @@ jobs:
       - name: Post comment to PR
         if: fromJson(steps.pr.outputs.result).found == true
         uses: actions/github-script@v7
+        env:
+          PR_RESULT: ${{ steps.pr.outputs.result }}
+          COMMENT_BODY_FILE: ${{ steps.comment.outputs.body_file }}
         with:
           script: |
             const fs   = require('fs');
-            const body = fs.readFileSync('${{ steps.comment.outputs.body_file }}', 'utf8');
-            const prNum = fromJson('${{ steps.pr.outputs.result }}').pr_number;
+            const body = fs.readFileSync(process.env.COMMENT_BODY_FILE, 'utf8');
+            const prNum = JSON.parse(process.env.PR_RESULT).pr_number;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner:        context.repo.owner,
@@ -325,4 +330,14 @@ jobs:
             cat /tmp/lh_comment.md >> $GITHUB_STEP_SUMMARY
           else
             echo "Lighthouse audit did not produce a report." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Preserve reports/comments before propagating a failed or missing check.
+      - name: Enforce Lighthouse thresholds
+        id: enforce-threshold
+        if: always()
+        run: |
+          if [ "${{ steps.threshold.outcome }}" != "success" ]; then
+            echo "::error::Lighthouse threshold verification did not pass. See the report above."
+            exit 1
           fi
