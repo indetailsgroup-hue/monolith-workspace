@@ -7,6 +7,8 @@
 [![Notify Slack on Deploy](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml)
 [![Lighthouse Audit](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml)
 [![Generate Site Data](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml)
+[![Auto-Deploy SciSpace](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-deploy-scispace.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-deploy-scispace.yml)
+[![Validate Frontmatter](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/validate-chapter-frontmatter.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/validate-chapter-frontmatter.yml)
 
 > Static documentation site covering **55 chapters** across **15 development phases**  
 > from Core Architecture to Predictive Maintenance AI.

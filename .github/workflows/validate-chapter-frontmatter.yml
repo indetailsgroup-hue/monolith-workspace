@@ -1,0 +1,312 @@
+name: Validate Chapter Frontmatter
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docs/chapters/**/*.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/chapters/**/*.md'
+  workflow_dispatch:
+    inputs:
+      chapters_path:
+        description: 'Path to chapters directory (relative to repo root)'
+        required: false
+        default: 'docs/chapters'
+        type: string
+      strict_mode:
+        description: 'Fail on warnings (strict mode)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+jobs:
+  validate:
+    name: Validate YAML Frontmatter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      # ── Step 3: Write validation script ──────────────────────────────────────
+      - name: Write frontmatter validator
+        run: |
+          cat << 'PYEOF' > /tmp/validate_frontmatter.py
+          #!/usr/bin/env python3
+          """
+          Validates YAML frontmatter for all chapter markdown files.
+
+          Required fields: num, title, phase, mcp_tools, status
+          Type checks:
+            - num       → int, 1–55
+            - phase     → int, 1–15
+            - mcp_tools → int, >= 0
+          Status enum:
+            complete | in-progress | planned | draft
+          Filename cross-check:
+            chapter-{num:02d}.md must match frontmatter num
+          """
+
+          import sys
+          import os
+          import re
+          import glob
+          import yaml
+
+          CHAPTERS_PATH = sys.argv[1] if len(sys.argv) > 1 else "docs/chapters"
+          STRICT_MODE   = sys.argv[2].lower() == "true" if len(sys.argv) > 2 else False
+
+          REQUIRED_FIELDS = ["num", "title", "phase", "mcp_tools", "status"]
+          VALID_STATUSES  = {"complete", "in-progress", "planned", "draft"}
+          FILENAME_RE     = re.compile(r"^chapter-(\d{2})\.md$")
+
+          pass_count  = 0
+          warn_count  = 0
+          fail_count  = 0
+          file_results = []
+
+          md_files = sorted(glob.glob(os.path.join(CHAPTERS_PATH, "chapter-*.md")))
+
+          if not md_files:
+              print(f"::error::No chapter markdown files found in '{CHAPTERS_PATH}'")
+              sys.exit(1)
+
+          for filepath in md_files:
+              filename  = os.path.basename(filepath)
+              rel_path  = filepath
+              errors    = []
+              warnings  = []
+
+              # ── Parse frontmatter ─────────────────────────────────────────────
+              with open(filepath, "r", encoding="utf-8") as f:
+                  content = f.read()
+
+              fm = None
+              if content.startswith("---"):
+                  parts = content.split("---", 2)
+                  if len(parts) >= 3:
+                      try:
+                          fm = yaml.safe_load(parts[1])
+                      except yaml.YAMLError as e:
+                          errors.append(f"YAML parse error: {e}")
+                  else:
+                      errors.append("Frontmatter block not properly closed (missing closing '---')")
+              else:
+                  errors.append("No YAML frontmatter found (file must start with '---')")
+
+              if fm is None and not errors:
+                  errors.append("Frontmatter is empty or could not be parsed")
+
+              if fm is not None:
+                  # ── Required field presence ───────────────────────────────────
+                  for field in REQUIRED_FIELDS:
+                      if field not in fm:
+                          errors.append(f"Missing required field: '{field}'")
+
+                  # ── Type checks ───────────────────────────────────────────────
+                  if "num" in fm:
+                      if not isinstance(fm["num"], int):
+                          errors.append(f"Field 'num' must be an integer, got: {type(fm['num']).__name__} ({fm['num']!r})")
+                      elif not (1 <= fm["num"] <= 55):
+                          warnings.append(f"Field 'num' value {fm['num']} is outside expected range 1–55")
+
+                  if "phase" in fm:
+                      if not isinstance(fm["phase"], int):
+                          errors.append(f"Field 'phase' must be an integer, got: {type(fm['phase']).__name__} ({fm['phase']!r})")
+                      elif not (1 <= fm["phase"] <= 15):
+                          warnings.append(f"Field 'phase' value {fm['phase']} is outside expected range 1–15")
+
+                  if "mcp_tools" in fm:
+                      if not isinstance(fm["mcp_tools"], int):
+                          errors.append(f"Field 'mcp_tools' must be an integer, got: {type(fm['mcp_tools']).__name__} ({fm['mcp_tools']!r})")
+                      elif fm["mcp_tools"] < 0:
+                          errors.append(f"Field 'mcp_tools' must be >= 0, got: {fm['mcp_tools']}")
+
+                  # ── Status enum check ─────────────────────────────────────────
+                  if "status" in fm:
+                      status_val = str(fm["status"]).lower().strip()
+                      if status_val not in VALID_STATUSES:
+                          errors.append(
+                              f"Field 'status' has invalid value '{fm['status']}'. "
+                              f"Allowed values: {', '.join(sorted(VALID_STATUSES))}"
+                          )
+
+                  # ── Title non-empty check ─────────────────────────────────────
+                  if "title" in fm:
+                      if not str(fm.get("title", "")).strip():
+                          errors.append("Field 'title' must not be empty")
+
+                  # ── Filename vs frontmatter num cross-check ───────────────────
+                  m = FILENAME_RE.match(filename)
+                  if m:
+                      file_num = int(m.group(1))
+                      if "num" in fm and isinstance(fm["num"], int):
+                          if fm["num"] != file_num:
+                              errors.append(
+                                  f"Filename number ({file_num:02d}) does not match frontmatter 'num' ({fm['num']})"
+                              )
+                  else:
+                      warnings.append(f"Filename '{filename}' does not match expected pattern 'chapter-XX.md'")
+
+              # ── Collect results ───────────────────────────────────────────────
+              if errors:
+                  fail_count += 1
+                  status_icon = "FAIL"
+                  for err in errors:
+                      print(f"::error file={rel_path}::{err}")
+              elif warnings:
+                  warn_count += 1
+                  status_icon = "WARN"
+                  for wrn in warnings:
+                      print(f"::warning file={rel_path}::{wrn}")
+              else:
+                  pass_count += 1
+                  status_icon = "PASS"
+
+              file_results.append({
+                  "file":     filename,
+                  "status":   status_icon,
+                  "errors":   errors,
+                  "warnings": warnings,
+                  "num":      fm.get("num", "?")    if fm else "?",
+                  "phase":    fm.get("phase", "?")  if fm else "?",
+                  "mcp":      fm.get("mcp_tools", "?") if fm else "?",
+              })
+
+          # ── Write GitHub Step Summary ─────────────────────────────────────────
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "/tmp/summary.md")
+          with open(summary_path, "a", encoding="utf-8") as s:
+              s.write("## Chapter Frontmatter Validation Report\n\n")
+              s.write(f"- **Path:** `{CHAPTERS_PATH}`\n")
+              s.write(f"- **Files checked:** {len(md_files)}\n")
+              s.write(f"- **Pass:** {pass_count} | **Warn:** {warn_count} | **Fail:** {fail_count}\n\n")
+
+              if fail_count > 0:
+                  s.write("### ❌ Files with Errors\n\n")
+                  s.write("| File | Errors |\n|------|--------|\n")
+                  for r in file_results:
+                      if r["status"] == "FAIL":
+                          err_list = "<br>".join(r["errors"])
+                          s.write(f"| `{r['file']}` | {err_list} |\n")
+                  s.write("\n")
+
+              if warn_count > 0:
+                  s.write("### ⚠️ Files with Warnings\n\n")
+                  s.write("| File | Warnings |\n|------|----------|\n")
+                  for r in file_results:
+                      if r["status"] == "WARN":
+                          wrn_list = "<br>".join(r["warnings"])
+                          s.write(f"| `{r['file']}` | {wrn_list} |\n")
+                  s.write("\n")
+
+              s.write("### All Files Summary\n\n")
+              s.write("| File | Status | Num | Phase | MCP Tools |\n")
+              s.write("|------|--------|-----|-------|----------|\n")
+              for r in file_results:
+                  icon = {"PASS": "✅", "WARN": "⚠️", "FAIL": "❌"}.get(r["status"], "?")
+                  s.write(f"| `{r['file']}` | {icon} {r['status']} | {r['num']} | {r['phase']} | {r['mcp']} |\n")
+
+          # ── Final result ──────────────────────────────────────────────────────
+          print(f"\nValidation complete: {pass_count} pass, {warn_count} warn, {fail_count} fail")
+
+          if fail_count > 0:
+              sys.exit(1)
+          elif STRICT_MODE and warn_count > 0:
+              print("::error::Strict mode enabled — treating warnings as errors")
+              sys.exit(1)
+          else:
+              sys.exit(0)
+          PYEOF
+          echo "Validator script written."
+
+      # ── Step 4: Determine chapters path ──────────────────────────────────────
+      - name: Set chapters path
+        id: set_path
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHAPTERS_PATH="${{ github.event.inputs.chapters_path }}"
+            STRICT="${{ github.event.inputs.strict_mode }}"
+          else
+            CHAPTERS_PATH="docs/chapters"
+            STRICT="false"
+          fi
+          echo "chapters_path=$CHAPTERS_PATH" >> "$GITHUB_OUTPUT"
+          echo "strict_mode=$STRICT" >> "$GITHUB_OUTPUT"
+          echo "Using chapters path: $CHAPTERS_PATH (strict=$STRICT)"
+
+      # ── Step 5: Run validation ────────────────────────────────────────────────
+      - name: Run frontmatter validation
+        id: validate
+        run: |
+          python3 /tmp/validate_frontmatter.py \
+            "${{ steps.set_path.outputs.chapters_path }}" \
+            "${{ steps.set_path.outputs.strict_mode }}"
+
+      # ── Step 6: Comment on PR (if this is a PR event) ────────────────────────
+      - name: Comment validation result on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const outcome = '${{ steps.validate.outcome }}';
+            const icon    = outcome === 'success' ? '✅' : '❌';
+            const label   = outcome === 'success' ? 'All chapter frontmatter valid' : 'Frontmatter validation failed';
+            const runUrl  = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              `## ${icon} Chapter Frontmatter Validation — ${label}`,
+              '',
+              `| Field | Value |`,
+              `|-------|-------|`,
+              `| Path | \`docs/chapters\` |`,
+              `| Result | **${outcome.toUpperCase()}** |`,
+              `| Workflow Run | [View Details](${runUrl}) |`,
+              '',
+              outcome !== 'success'
+                ? '> Check the workflow run for per-file error annotations.'
+                : '> All 55 chapter files passed frontmatter validation.',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('Chapter Frontmatter Validation')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

@@ -1,0 +1,278 @@
+name: Auto-Deploy SciSpace Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/manufacturing-os-site/chapters.json'
+      - 'docs/manufacturing-os-site/search_index.json'
+  workflow_run:
+    workflows: ["Generate Site Data"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deploy even if no changes detected'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # ─── Job 1: Determine whether deployment should proceed ─────────────────────
+  check-trigger:
+    name: Check Trigger Condition
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+      trigger_source: ${{ steps.decide.outputs.trigger_source }}
+    steps:
+      - name: Decide whether to deploy
+        id: decide
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          FORCE="${{ github.event.inputs.force_deploy }}"
+          UPSTREAM_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+
+          echo "Event: $TRIGGER"
+          echo "Force: $FORCE"
+          echo "Upstream conclusion: $UPSTREAM_CONCLUSION"
+
+          SHOULD_DEPLOY="false"
+          SOURCE=""
+
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            SHOULD_DEPLOY="true"
+            SOURCE="manual"
+          elif [ "$TRIGGER" = "push" ]; then
+            SHOULD_DEPLOY="true"
+            SOURCE="push"
+          elif [ "$TRIGGER" = "workflow_run" ]; then
+            if [ "$UPSTREAM_CONCLUSION" = "success" ]; then
+              SHOULD_DEPLOY="true"
+              SOURCE="workflow_run"
+            else
+              echo "Upstream workflow did not succeed (conclusion=$UPSTREAM_CONCLUSION). Skipping deploy."
+              SHOULD_DEPLOY="false"
+              SOURCE="workflow_run_skipped"
+            fi
+          fi
+
+          if [ "$FORCE" = "true" ]; then
+            SHOULD_DEPLOY="true"
+            SOURCE="force_${SOURCE}"
+          fi
+
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
+          echo "trigger_source=$SOURCE" >> "$GITHUB_OUTPUT"
+          echo "### Trigger Decision" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Event | \`$TRIGGER\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger Source | \`$SOURCE\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Should Deploy | **$SHOULD_DEPLOY** |" >> "$GITHUB_STEP_SUMMARY"
+
+  # ─── Job 2: Deploy to GitHub Pages ──────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      # ── Step 2: Verify required files exist ──────────────────────────────────
+      - name: Verify required site files
+        id: verify
+        run: |
+          SITE_DIR="docs/manufacturing-os-site"
+          ERRORS=0
+
+          REQUIRED_FILES=(
+            "index.html"
+            "style.css"
+            "script.js"
+            "chapters.json"
+            "search_index.json"
+          )
+
+          echo "### File Verification" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Status | Details |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|---------|" >> "$GITHUB_STEP_SUMMARY"
+
+          for FILE in "${REQUIRED_FILES[@]}"; do
+            FULL_PATH="$SITE_DIR/$FILE"
+            if [ ! -f "$FULL_PATH" ]; then
+              echo "::error file=$FULL_PATH::Required file missing: $FILE"
+              echo "| \`$FILE\` | ❌ Missing | — |" >> "$GITHUB_STEP_SUMMARY"
+              ERRORS=$((ERRORS + 1))
+            else
+              SIZE=$(du -sh "$FULL_PATH" | cut -f1)
+              echo "| \`$FILE\` | ✅ Present | $SIZE |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::$ERRORS required file(s) missing. Aborting deployment."
+            exit 1
+          fi
+
+      # ── Step 3: Validate JSON structure ──────────────────────────────────────
+      - name: Validate chapters.json structure
+        id: validate_chapters
+        run: |
+          SITE_DIR="docs/manufacturing-os-site"
+          CHAPTERS_FILE="$SITE_DIR/chapters.json"
+
+          echo "### chapters.json Validation" >> "$GITHUB_STEP_SUMMARY"
+
+          # Check JSON is valid
+          if ! python3 -c "import json; json.load(open('$CHAPTERS_FILE'))" 2>/dev/null; then
+            echo "::error file=$CHAPTERS_FILE::chapters.json is not valid JSON"
+            echo "| chapters.json | ❌ Invalid JSON |" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          # Count chapters
+          COUNT=$(python3 -c "
+          import json
+          data = json.load(open('$CHAPTERS_FILE'))
+          print(len(data))
+          ")
+          SIZE=$(du -sh "$CHAPTERS_FILE" | cut -f1)
+
+          echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Valid JSON | ✅ Yes |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chapter count | $COUNT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File size | $SIZE |" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::error file=$CHAPTERS_FILE::chapters.json has no entries"
+            exit 1
+          fi
+
+          echo "chapter_count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Validate search_index.json structure
+        id: validate_search
+        run: |
+          SITE_DIR="docs/manufacturing-os-site"
+          SEARCH_FILE="$SITE_DIR/search_index.json"
+
+          echo "### search_index.json Validation" >> "$GITHUB_STEP_SUMMARY"
+
+          if ! python3 -c "import json; json.load(open('$SEARCH_FILE'))" 2>/dev/null; then
+            echo "::error file=$SEARCH_FILE::search_index.json is not valid JSON"
+            exit 1
+          fi
+
+          COUNT=$(python3 -c "
+          import json
+          data = json.load(open('$SEARCH_FILE'))
+          print(len(data))
+          ")
+          SIZE=$(du -sh "$SEARCH_FILE" | cut -f1)
+
+          echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Valid JSON | ✅ Yes |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Entry count | $COUNT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File size | $SIZE |" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "search_count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      # ── Step 4: Configure GitHub Pages ───────────────────────────────────────
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # ── Step 5: Upload artifact ───────────────────────────────────────────────
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/manufacturing-os-site
+
+      # ── Step 6: Deploy to GitHub Pages ───────────────────────────────────────
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # ── Step 7: Slack notification ────────────────────────────────────────────
+      - name: Notify Slack on deploy success
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAGE_URL="${{ steps.deployment.outputs.page_url }}"
+          TRIGGER_SOURCE="${{ needs.check-trigger.outputs.trigger_source }}"
+          CHAPTER_COUNT="${{ steps.validate_chapters.outputs.chapter_count }}"
+          SEARCH_COUNT="${{ steps.validate_search.outputs.search_count }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "text": ":rocket: *Monolith Manufacturing OS — Deployed Successfully*",
+            "attachments": [
+              {
+                "color": "#28a745",
+                "fields": [
+                  {"title": "GitHub Pages", "value": "<${PAGE_URL}|Open Site>", "short": true},
+                  {"title": "SciSpace Site", "value": "<https://0ly1b489.scispace.co|Open SciSpace>", "short": true},
+                  {"title": "Trigger", "value": "\`${TRIGGER_SOURCE}\`", "short": true},
+                  {"title": "Chapters", "value": "${CHAPTER_COUNT}", "short": true},
+                  {"title": "Search Entries", "value": "${SEARCH_COUNT}", "short": true},
+                  {"title": "Workflow Run", "value": "<${RUN_URL}|View Run>", "short": true}
+                ],
+                "footer": "monolith-workspace · GitHub Actions",
+                "ts": $(date +%s)
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL" || echo "::warning::Slack notification failed (non-fatal)"
+
+      # ── Step 8: Job summary ───────────────────────────────────────────────────
+      - name: Write deployment summary
+        if: always()
+        run: |
+          PAGE_URL="${{ steps.deployment.outputs.page_url }}"
+          DEPLOY_STATUS="${{ steps.deployment.outcome }}"
+          CHAPTER_COUNT="${{ steps.validate_chapters.outputs.chapter_count }}"
+          SEARCH_COUNT="${{ steps.validate_search.outputs.search_count }}"
+          TRIGGER_SOURCE="${{ needs.check-trigger.outputs.trigger_source }}"
+          TS=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Status | $([ "$DEPLOY_STATUS" = "success" ] && echo "✅ Success" || echo "❌ Failed") |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger | \`$TRIGGER_SOURCE\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub Pages | [$PAGE_URL]($PAGE_URL) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SciSpace Site | [https://0ly1b489.scispace.co](https://0ly1b489.scispace.co) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chapters | $CHAPTER_COUNT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Search Entries | $SEARCH_COUNT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deployed At | $TS |" >> "$GITHUB_STEP_SUMMARY"
