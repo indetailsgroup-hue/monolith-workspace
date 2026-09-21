@@ -1,5 +1,8 @@
 # Monolith Manufacturing OS — Documentation Site
 
+[![Deploy Manufacturing OS Docs](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-pages.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-pages.yml)
+[![CI — Validate Site Files](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-ci.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-ci.yml)
+
 > Static documentation site covering **55 chapters** across **15 development phases**  
 > from Core Architecture to Predictive Maintenance AI.
 
