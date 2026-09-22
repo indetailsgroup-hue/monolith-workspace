@@ -1,54 +1,8 @@
-﻿-- Migration: line_group_plain_ack on GitHub main baseline
--- Ported from the reviewed nested behavior without copying the conflicting 0163 namespace.
--- Depends on baseline 0097_line_group_bot_flows and 0098 message_kind schema.
--- Ordinary text in an active bound group stages one shared push acknowledgement.
--- The inbound receipt stores metadata only (empty JSON) for dedupe; message content is not retained.
--- Migration: line_group_bot_flows — installation-pm task 1.8b (line-architecture §3-4, ADR-038/039)
--- Depends on: 00022 (rpc_ingest_line_webhook — **ตรวจแล้วไม่มี version ใหม่กว่า**), 0095 (line_groups/members/bind_codes,
---             guardrail G1), 0096 (installation_issues), 0053 (rpc_capture_ingest), 0086 (dispatch), 0084 (target employee_id)
---
--- Bot flows ในกลุ่ม (logic ทั้งหมดอยู่ DB ตาม trust boundary เดิม — line-webhook เป็น transport ล้วน):
---   join (bot เข้ากลุ่ม)        → กลุ่มยังไม่ผูก: ส่ง prompt "#ผูก <รหัส> ทีม|ลูกค้า"
---   '#ผูก <code> <ทีม|ลูกค้า>'  → validate: ผู้พิมพ์มี staff identity (identity_binding active) + code ยังไม่หมดอายุ/เหลือสิทธิ์
---                                → ผูก line_groups (จำ vertical จาก channel ที่รับ event) + uses_left-1 + สมาชิกผู้ผูก + ack
---   memberJoined / memberLeft   → sync line_group_members (member_kind: staff|customer|guest)
---   leave (bot โดนเตะ/ออก)      → archive กลุ่ม (ประวัติคงอยู่)
---   รูปในกลุ่ม internal          → capture 'installation_room_proof' (รูปจบเลน — ADR-039 ข้อ 3) + ack
---   '#ปัญหา <ข้อความ>' (internal) → installation_issues + แจ้งหัวหน้างาน (direct push ผ่าน notification engine) + ack
---   ข้อความอื่นในกลุ่ม            → **ไม่เก็บ** (PDPA v1: เก็บเฉพาะ รูป + #ปัญหา + member events — §8)
---
--- Idempotency: กลุ่ม branch ใช้ inbound UNIQUE(webhook_event_id) เดิม; event ที่จงใจไม่เก็บ (plain chat)
---   ไม่มี side effect → redelivery ปลอดภัยโดยไม่ต้องมีแถว
-
--- ---------------------------------------------------------------------------
--- (0) line_groups จำ vertical ของ channel ที่ผูก (sender ใช้เลือก token — group ไม่มี conversation)
--- ---------------------------------------------------------------------------
-alter table public.line_groups add column if not exists vertical_context text null;
-
--- ---------------------------------------------------------------------------
--- (1) Templates ของ bot flows (ผ่าน governance review ใน PR นี้ — ≤200, ไม่มีศัพท์ระบบ, Req 12.2)
---     bind prompt/ok/fail = audience 'both' (ใช้ได้ทั้งสองกลุ่ม — เนื้อหากลางไม่มีข้อมูลภายใน)
--- ---------------------------------------------------------------------------
-insert into public.line_oa_message_templates (org_id, template_key, vertical_context, body, is_active, audience) values
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_prompt', null,
-   'สวัสดีครับ 🙏 กลุ่มนี้ยังไม่ได้เชื่อมกับบ้าน — พิมพ์ #ผูก ตามด้วยรหัสบ้าน แล้วตามด้วยคำว่า ทีม หรือ ลูกค้า ได้เลยครับ',
-   true, 'both'),
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_ok', null,
-   'เชื่อมกลุ่มกับบ้านเรียบร้อยแล้วครับ ✅ จากนี้ระบบจะช่วยดูแลการแจ้งเตือนและรับรูปในกลุ่มนี้ครับ',
-   true, 'both'),
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_fail', null,
-   'ผูกกลุ่มไม่สำเร็จครับ 🙏 รหัสอาจไม่ถูกต้อง หมดอายุ หรือสิทธิ์ไม่พอ — ขอรหัสใหม่จากออฟฟิศได้เลยครับ',
-   true, 'both'),
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_photo_ack', null,
-   'รับรูปเข้าระบบแล้วครับ 📷 เข้าไปเลือกห้อง/จุดงานในแอปได้เลยครับ',
-   true, 'internal'),
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_issue_ack', null,
-   'รับเรื่องปัญหาแล้วครับ 🙏 ระบบแจ้งหัวหน้างานให้แล้ว ติดตามสถานะได้ในแอปครับ',
-   true, 'internal'),
-  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_issue_alert', null,
-   '🔔 มีปัญหาหน้างานที่ {{project_name}} ครับ: {{detail}} — เข้าไปดูรายละเอียดในระบบได้เลยครับ',
-   true, 'internal')
-on conflict on constraint line_oa_message_templates_key_vertical_uniq do nothing;
+-- Append-only migration after main fbaf046a: 20270327 -> 20270328.
+-- Preserve the effective 0177 group handler; add only its final text acknowledgement.
+-- Existing command/FPR paths and guard definitions are retained.
+-- RPC group receipt uses the group's org_id and an empty payload for plain ack dedupe.
+-- This is an unmerged PR migration, not a repair to a deployed migration.
 
 insert into public.line_oa_message_templates (org_id, template_key, vertical_context, body, is_active, audience, message_kind) values
 ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_group_ack', null,
@@ -56,263 +10,314 @@ insert into public.line_oa_message_templates (org_id, template_key, vertical_con
    true, 'both', 'text')
 on conflict on constraint line_oa_message_templates_key_vertical_uniq do nothing;
 
--- ---------------------------------------------------------------------------
--- (2) Guardrail G1 update: อนุญาต bind prompt/fail เข้า "กลุ่มที่ยังไม่ผูก" เท่านั้น
---     (จำเป็นตามลำดับเหตุการณ์ — prompt ต้องส่งก่อนผูก; เนื้อหา generic ไม่มีข้อมูลภายใน)
---     กติกากลุ่ม customer เดิมคงทุกบรรทัด
--- ---------------------------------------------------------------------------
-create or replace function public.fn_line_guard_customer_group()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_group_type text;
-  v_audience text;
-begin
-  if new.target_type <> 'group' then
-    return new;  -- 1:1 เดิมไม่เกี่ยว guardrail นี้
-  end if;
-
-  select g.group_type into v_group_type
-  from public.line_groups g where g.line_group_id = new.target_id;
-
-  if v_group_type is null then
-    -- กลุ่มยังไม่ผูก: อนุญาตเฉพาะ template ของ bind flow (0097) — อย่างอื่น block เหมือนเดิม
-    if new.template_key in ('tpl_inst_bind_prompt', 'tpl_inst_bind_fail') then
-      return new;
-    end if;
-    raise exception 'line guardrail: กลุ่ม % ยังไม่ถูกผูกกับบ้าน (line_groups) — ส่งไม่ได้', new.target_id
-      using errcode = 'foreign_key_violation';
-  end if;
-
-  if v_group_type = 'customer' then
-    select t.audience into v_audience
-    from public.line_oa_message_templates t
-    where t.template_key = new.template_key and t.is_active
-    order by (t.vertical_context is null) desc
-    limit 1;
-
-    if v_audience is null or v_audience not in ('customer', 'both') then
-      raise exception 'line guardrail G1: template % (audience=%) ห้ามส่งเข้ากลุ่มลูกค้า — เฉพาะ customer/both',
-        new.template_key, coalesce(v_audience, 'ไม่พบ template')
-        using errcode = 'check_violation';
-    end if;
-  end if;
-
-  return new;
-end;
-$$;
-
--- ---------------------------------------------------------------------------
--- (3) Group event handler — เรียกจาก rpc_ingest_line_webhook (ใน savepoint ต่อ event)
---     คืน result code; ห้าม raise (จับภายใน → 'handler_error') เพื่อไม่ล้มทั้ง batch
--- ---------------------------------------------------------------------------
-create or replace function public.fn_line_handle_group_event(
-  p_event jsonb,
-  p_vertical text,
-  p_actor text
+CREATE OR REPLACE FUNCTION public.fn_line_handle_group_event(
+    p_event    jsonb,
+    p_vertical text,
+    p_actor    text
 )
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_type text;
-  v_group_line_id text;
-  v_user text;
-  v_g record;
-  v_msg_type text;
-  v_text text;
-  v_parts text[];
-  v_code record;
-  v_group_type text;
-  v_kind text;
-  v_member jsonb;
-  v_desc text;
-  v_project record;
-  v_capture_id uuid;
-  v_org_id uuid;
-begin
-  v_type := p_event ->> 'type';
-  v_group_line_id := p_event #>> '{source,groupId}';
-  v_user := p_event #>> '{source,userId}';
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    -- 0097 original declarations (unchanged)
+    v_type          text;
+    v_group_line_id text;
+    v_user          text;
+    v_g             record;
+    v_msg_type      text;
+    v_text          text;
+    v_parts         text[];
+    v_code          record;
+    v_group_type    text;
+    v_kind          text;
+    v_member        jsonb;
+    v_desc          text;
+    v_project       record;
+    v_capture_id    uuid;
+    -- 0177 additions
+    v_fpr_sess      record;
+    v_fpr_amount    numeric;
+BEGIN
+    v_type          := p_event ->> 'type';
+    v_group_line_id := p_event #>> '{source,groupId}';
+    v_user          := p_event #>> '{source,userId}';
 
-  select g.id, g.project_id, g.group_type, g.status, g.site_code, g.org_id
-    into v_g
-  from public.line_groups g where g.line_group_id = v_group_line_id;
+    SELECT g.id, g.project_id, g.group_type, g.status, g.site_code
+      INTO v_g
+    FROM public.line_groups g WHERE g.line_group_id = v_group_line_id;
 
-  -- ---- bot เข้ากลุ่ม ----
-  if v_type = 'join' then
-    if v_g.id is not null then
-      return 'join_already_bound';
-    end if;
-    insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-    values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_prompt', '{}'::jsonb, 'group', v_group_line_id);
-    return 'join_prompted';
-  end if;
+    -- ── bot เข้ากลุ่ม ──────────────────────────────────────────────────────
+    IF v_type = 'join' THEN
+        IF v_g.id IS NOT NULL THEN
+            RETURN 'join_already_bound';
+        END IF;
+        INSERT INTO public.line_oa_outbound_messages
+            (send_type, status, template_key, slot_values, target_type, target_id)
+        VALUES ('push', 'pending', 'tpl_inst_bind_prompt', '{}'::jsonb, 'group', v_group_line_id);
+        RETURN 'join_prompted';
+    END IF;
 
-  -- ---- bot ออก/โดนเอาออก → archive (ประวัติคงอยู่; ผูกใหม่ได้เพราะ unique เฉพาะ active) ----
-  if v_type = 'leave' then
-    if v_g.id is not null then
-      update public.line_groups set status = 'archived' where id = v_g.id;
-      return 'bot_left_archived';
-    end if;
-    return 'bot_left_unbound';
-  end if;
+    -- ── bot ออก/โดนเอาออก → archive ──────────────────────────────────────
+    IF v_type = 'leave' THEN
+        IF v_g.id IS NOT NULL THEN
+            UPDATE public.line_groups SET status = 'archived' WHERE id = v_g.id;
+            RETURN 'bot_left_archived';
+        END IF;
+        RETURN 'bot_left_unbound';
+    END IF;
 
-  -- ---- member sync ----
-  if v_type = 'memberJoined' then
-    if v_g.id is null then return 'members_ignored_unbound'; end if;
-    for v_member in select jsonb_array_elements(coalesce(p_event #> '{joined,members}', '[]'::jsonb)) loop
-      v_kind := case
-        when exists (select 1 from public.identity_binding b
-                     where b.line_user_id = v_member ->> 'userId' and b.is_active) then 'staff'
-        when exists (select 1 from public.line_oa_customer_identity ci
-                     where ci.line_user_id = v_member ->> 'userId') then 'customer'
-        else 'guest'
-      end;
-      insert into public.line_group_members (group_id, line_user_id, member_kind)
-      values (v_g.id, v_member ->> 'userId', v_kind)
-      on conflict (group_id, line_user_id) where left_at is null do nothing;
-    end loop;
-    return 'members_joined';
-  end if;
+    -- ── member sync ───────────────────────────────────────────────────────
+    IF v_type = 'memberJoined' THEN
+        IF v_g.id IS NULL THEN RETURN 'members_ignored_unbound'; END IF;
+        FOR v_member IN SELECT jsonb_array_elements(
+                COALESCE(p_event #> '{joined,members}', '[]'::jsonb)) LOOP
+            v_kind := CASE
+                WHEN EXISTS (SELECT 1 FROM public.identity_binding b
+                             WHERE b.line_user_id = v_member ->> 'userId' AND b.is_active)
+                    THEN 'staff'
+                WHEN EXISTS (SELECT 1 FROM public.line_oa_customer_identity ci
+                             WHERE ci.line_user_id = v_member ->> 'userId')
+                    THEN 'customer'
+                ELSE 'guest'
+            END;
+            INSERT INTO public.line_group_members (group_id, line_user_id, member_kind)
+            VALUES (v_g.id, v_member ->> 'userId', v_kind)
+            ON CONFLICT (group_id, line_user_id) WHERE left_at IS NULL DO NOTHING;
+        END LOOP;
+        RETURN 'members_joined';
+    END IF;
 
-  if v_type = 'memberLeft' then
-    if v_g.id is null then return 'members_ignored_unbound'; end if;
-    update public.line_group_members m
-       set left_at = timezone('utc', now())
-     where m.group_id = v_g.id and m.left_at is null
-       and m.line_user_id in (
-         select x ->> 'userId' from jsonb_array_elements(coalesce(p_event #> '{left,members}', '[]'::jsonb)) x);
-    return 'members_left';
-  end if;
+    IF v_type = 'memberLeft' THEN
+        IF v_g.id IS NULL THEN RETURN 'members_ignored_unbound'; END IF;
+        UPDATE public.line_group_members m
+           SET left_at = timezone('utc', now())
+         WHERE m.group_id = v_g.id AND m.left_at IS NULL
+           AND m.line_user_id IN (
+               SELECT x ->> 'userId'
+               FROM jsonb_array_elements(
+                    COALESCE(p_event #> '{left,members}', '[]'::jsonb)) x);
+        RETURN 'members_left';
+    END IF;
 
-  -- ---- ข้อความในกลุ่ม ----
-  if v_type = 'message' then
-    v_msg_type := p_event #>> '{message,type}';
+    -- ── ข้อความในกลุ่ม ───────────────────────────────────────────────────
+    IF v_type = 'message' THEN
+        v_msg_type := p_event #>> '{message,type}';
 
-    -- (ก) '#ผูก <code> <ทีม|ลูกค้า>' — ทำงานเฉพาะกลุ่มที่ยังไม่ผูก
-    if v_msg_type = 'text' and btrim(coalesce(p_event #>> '{message,text}', '')) like '#ผูก%' then
-      if v_g.id is not null then
-        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-        values (coalesce(v_g.org_id, '00000000-0000-0000-0000-000000000000'::uuid), 'push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
-        return 'bind_already_bound';
-      end if;
+        -- (ก) '#ผูก <code> <ทีม|ลูกค้า>' — ทำงานเฉพาะกลุ่มที่ยังไม่ผูก
+        IF v_msg_type = 'text' AND
+           btrim(COALESCE(p_event #>> '{message,text}', '')) LIKE '#ผูก%' THEN
 
-      v_parts := regexp_split_to_array(btrim(p_event #>> '{message,text}'), '\s+');
-      v_group_type := case v_parts[3] when 'ทีม' then 'internal' when 'ลูกค้า' then 'customer' end;
+            IF v_g.id IS NOT NULL THEN
+                INSERT INTO public.line_oa_outbound_messages
+                    (send_type, status, template_key, slot_values, target_type, target_id)
+                VALUES ('push','pending','tpl_inst_bind_ok','{}'::jsonb,'group',v_group_line_id);
+                RETURN 'bind_already_bound';
+            END IF;
 
-      -- validate: ผู้พิมพ์ต้องมี staff identity (รหัส = capability token ที่ออฟฟิศแจก — ดู comment ตาราง)
-      if v_user is null
-         or not exists (select 1 from public.identity_binding b where b.line_user_id = v_user and b.is_active)
-         or array_length(v_parts, 1) < 3 or v_group_type is null then
-        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-        values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
-        return 'bind_failed_identity_or_format';
-      end if;
+            v_parts      := regexp_split_to_array(btrim(p_event #>> '{message,text}'), '\s+');
+            v_group_type := CASE v_parts[3]
+                WHEN 'ทีม'    THEN 'internal'
+                WHEN 'ลูกค้า' THEN 'customer'
+            END;
 
-      select c.code, c.project_id into v_code
-      from public.line_bind_codes c
-      where c.code = v_parts[2] and c.expires_at > timezone('utc', now()) and c.uses_left > 0
-      for update;
+            IF v_user IS NULL
+               OR NOT EXISTS (SELECT 1 FROM public.identity_binding b
+                              WHERE b.line_user_id = v_user AND b.is_active)
+               OR array_length(v_parts, 1) < 3
+               OR v_group_type IS NULL THEN
+                INSERT INTO public.line_oa_outbound_messages
+                    (send_type, status, template_key, slot_values, target_type, target_id)
+                VALUES ('push','pending','tpl_inst_bind_fail','{}'::jsonb,'group',v_group_line_id);
+                RETURN 'bind_failed_identity_or_format';
+            END IF;
 
-      if v_code.code is null then
-        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-        values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
-        return 'bind_failed_code';
-      end if;
+            SELECT c.code, c.project_id INTO v_code
+            FROM public.line_bind_codes c
+            WHERE c.code = v_parts[2]
+              AND c.expires_at > timezone('utc', now())
+              AND c.uses_left > 0
+            FOR UPDATE;
 
-      select p.id, p.site_code, p.name, p.org_id into v_project
-      from public.installation_projects p where p.id = v_code.project_id;
+            IF v_code.code IS NULL THEN
+                INSERT INTO public.line_oa_outbound_messages
+                    (send_type, status, template_key, slot_values, target_type, target_id)
+                VALUES ('push','pending','tpl_inst_bind_fail','{}'::jsonb,'group',v_group_line_id);
+                RETURN 'bind_failed_code';
+            END IF;
 
-      insert into public.line_groups (line_group_id, project_id, site_code, group_type, vertical_context, bound_by)
-      values (v_group_line_id, v_project.id, v_project.site_code, v_group_type, p_vertical, 'line:' || v_user);
-      update public.line_bind_codes set uses_left = uses_left - 1 where code = v_code.code;
-      insert into public.line_group_members (group_id, line_user_id, member_kind)
-      select g.id, v_user, 'staff' from public.line_groups g where g.line_group_id = v_group_line_id
-      on conflict (group_id, line_user_id) where left_at is null do nothing;
+            SELECT p.id, p.site_code, p.name INTO v_project
+            FROM public.installation_projects p WHERE p.id = v_code.project_id;
 
-      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-      values (coalesce(v_project.org_id, '00000000-0000-0000-0000-000000000000'::uuid), 'push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
-      return 'bound_' || v_group_type;
-    end if;
+            INSERT INTO public.line_groups
+                (line_group_id, project_id, site_code, group_type, vertical_context, bound_by)
+            VALUES (v_group_line_id, v_project.id, v_project.site_code,
+                    v_group_type, p_vertical, 'line:' || v_user);
+            UPDATE public.line_bind_codes SET uses_left = uses_left - 1 WHERE code = v_code.code;
+            INSERT INTO public.line_group_members (group_id, line_user_id, member_kind)
+            SELECT g.id, v_user, 'staff'
+            FROM public.line_groups g WHERE g.line_group_id = v_group_line_id
+            ON CONFLICT (group_id, line_user_id) WHERE left_at IS NULL DO NOTHING;
 
-    -- ต่อจากนี้ทำงานเฉพาะกลุ่มที่ผูกแล้ว + ยัง active
-    if v_g.id is null then return 'plain_unbound_ignored'; end if;
-    if v_g.status <> 'active' then return 'plain_archived_ignored'; end if;
+            INSERT INTO public.line_oa_outbound_messages
+                (send_type, status, template_key, slot_values, target_type, target_id)
+            VALUES ('push','pending','tpl_inst_bind_ok','{}'::jsonb,'group',v_group_line_id);
+            RETURN 'bound_' || v_group_type;
+        END IF;
 
-    -- (ข) '#ปัญหา <ข้อความ>' — เฉพาะกลุ่ม internal (Req: เก็บเป็นหลักฐาน + แจ้งหัวหน้างาน)
-    if v_msg_type = 'text' and v_g.group_type = 'internal'
-       and btrim(coalesce(p_event #>> '{message,text}', '')) like '#ปัญหา%' then
-      v_desc := btrim(substr(btrim(p_event #>> '{message,text}'), length('#ปัญหา') + 1));
-      if v_desc = '' then return 'issue_empty_ignored'; end if;
+        -- ต่อจากนี้ทำงานเฉพาะกลุ่มที่ผูกแล้ว + ยัง active
+        IF v_g.id IS NULL THEN RETURN 'plain_unbound_ignored'; END IF;
+        IF v_g.status <> 'active' THEN RETURN 'plain_archived_ignored'; END IF;
 
-      insert into public.installation_issues (project_id, site_code, source, reported_by, line_user_id, description)
-      values (v_g.project_id, v_g.site_code, 'line_group', 'line:' || coalesce(v_user, 'unknown'), v_user, v_desc);
+        -- ── (ข.0) 0177: FPR amount intercept ─────────────────────────────────
+        --    Text in internal group when active session is in await_amount state.
+        --    Fires before #ปัญหา so technician can still type normal #ปัญหา
+        --    commands from a different state.
+        IF v_msg_type = 'text' AND v_g.group_type = 'internal' THEN
+            SELECT s.id, s.project_id, s.site_code, s.photo_ref, s.webhook_event_id
+              INTO v_fpr_sess
+            FROM public.fpr_line_session s
+            WHERE s.line_group_id = v_group_line_id
+              AND s.line_user_id  = v_user
+              AND s.state         = 'await_amount'
+              AND s.expires_at    > timezone('utc', now());
 
-      select p.name, p.foreman_employee_id into v_project
-      from public.installation_projects p where p.id = v_g.project_id;
-      if v_project.foreman_employee_id is not null then
-        -- direct push ถึงหัวหน้างาน — resolution ผ่าน identity_binding (0084: target employee_id)
-        perform public.rpc_dispatch_notification(
-          jsonb_build_object('employee_id', v_project.foreman_employee_id),
-          'personal_responsibility', 'field_issue', 'tpl_inst_issue_alert',
-          jsonb_build_object('project_name', v_project.name, 'detail', left(v_desc, 80)),
-          false, null, true, null, v_g.site_code);
-      end if;
+            IF v_fpr_sess.id IS NOT NULL THEN
+                -- Try to parse text as a positive numeric amount
+                BEGIN
+                    v_fpr_amount := btrim(p_event #>> '{message,text}')::numeric;
+                EXCEPTION WHEN OTHERS THEN
+                    v_fpr_amount := NULL;
+                END;
 
-      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-      values (v_g.org_id, 'push', 'pending', 'tpl_inst_issue_ack', '{}'::jsonb, 'group', v_group_line_id);
-      return 'issue_created';
-    end if;
+                IF v_fpr_amount IS NULL OR v_fpr_amount <= 0 THEN
+                    -- Re-prompt; do not advance state
+                    INSERT INTO public.line_oa_outbound_messages
+                        (send_type, status, template_key, slot_values, target_type, target_id)
+                    VALUES ('push', 'pending', 'tpl_fpr_amount_prompt',
+                            jsonb_build_object('hint', 'กรุณาพิมพ์เฉพาะตัวเลข เช่น 1500'),
+                            'group', v_group_line_id);
+                    RETURN 'fpr_amount_invalid';
+                END IF;
 
-    -- (ค) รูปในกลุ่ม internal → capture รูปจบเลน (ADR-039 ข้อ 3); เลือกห้อง/เลนใน UI ภายหลัง (1.6b)
-    if v_msg_type = 'image' and v_g.group_type = 'internal' then
-      v_capture_id := public.rpc_capture_ingest(
-        'installation_room_proof', 'line',
-        'line-message://' || coalesce(p_event #>> '{message,id}', 'unknown'),
-        p_event ->> 'webhookEventId',
-        v_g.site_code);
-      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-      values (v_g.org_id, 'push', 'pending', 'tpl_inst_photo_ack', '{}'::jsonb, 'group', v_group_line_id);
-      return 'photo_captured';
-    end if;
+                -- Advance session: await_amount → await_workitem
+                UPDATE public.fpr_line_session
+                   SET state          = 'await_workitem',
+                       pending_amount = v_fpr_amount,
+                       updated_at     = timezone('utc', now())
+                 WHERE id = v_fpr_sess.id;
 
-    -- (ง) แชทธรรมดา/สื่ออื่น → ไม่เก็บ (PDPA v1 — §8)
-    -- Ordinary text stages one shared acknowledgement; other media remain ignored.
-    if v_msg_type = 'text' then
-      insert into public.line_oa_outbound_messages
-        (org_id, send_type, status, template_key, slot_values, target_type, target_id)
-      values (v_g.org_id, 'push', 'pending', 'tpl_inst_group_ack', '{}'::jsonb, 'group', v_group_line_id);
-      return 'plain_ack_staged';
-    end if;
+                -- Send workitem select prompt; slot_values carries project_id so
+                -- the edge function can query available work items and append
+                -- quick-reply items to the base template items array.
+                INSERT INTO public.line_oa_outbound_messages
+                    (send_type, status, template_key, slot_values, target_type, target_id)
+                VALUES ('push', 'pending', 'tpl_fpr_workitem_select',
+                        jsonb_build_object(
+                            'amount',     v_fpr_amount,
+                            'project_id', v_fpr_sess.project_id,
+                            'group_id',   v_group_line_id,
+                            'user_id',    v_user
+                        ),
+                        'group', v_group_line_id);
 
-    return 'plain_ignored';
-  end if;
+                RETURN 'fpr_amount_captured';
+            END IF;
+        END IF;
+        -- ── end FPR amount intercept ─────────────────────────────────────────
 
-  return 'ignored_event_type';
-exception
-  when others then
-    -- ห้ามล้มทั้ง webhook batch เพราะ event เดียว — บันทึกแล้วไปต่อ (inbound row + audit จะเก็บหลักฐาน)
-    return 'handler_error:' || sqlerrm;
-end;
+        -- (ข) '#ปัญหา <ข้อความ>' — เฉพาะกลุ่ม internal
+        IF v_msg_type = 'text' AND v_g.group_type = 'internal'
+           AND btrim(COALESCE(p_event #>> '{message,text}', '')) LIKE '#ปัญหา%' THEN
+
+            v_desc := btrim(substr(btrim(p_event #>> '{message,text}'), length('#ปัญหา') + 1));
+            IF v_desc = '' THEN RETURN 'issue_empty_ignored'; END IF;
+
+            INSERT INTO public.installation_issues
+                (project_id, site_code, source, reported_by, line_user_id, description)
+            VALUES (v_g.project_id, v_g.site_code, 'line_group',
+                    'line:' || COALESCE(v_user, 'unknown'), v_user, v_desc);
+
+            SELECT p.name, p.foreman_employee_id INTO v_project
+            FROM public.installation_projects p WHERE p.id = v_g.project_id;
+
+            IF v_project.foreman_employee_id IS NOT NULL THEN
+                PERFORM public.rpc_dispatch_notification(
+                    jsonb_build_object('employee_id', v_project.foreman_employee_id),
+                    'personal_responsibility', 'field_issue', 'tpl_inst_issue_alert',
+                    jsonb_build_object('project_name', v_project.name, 'detail', left(v_desc, 80)),
+                    false, null, true, null, v_g.site_code);
+            END IF;
+
+            INSERT INTO public.line_oa_outbound_messages
+                (send_type, status, template_key, slot_values, target_type, target_id)
+            VALUES ('push','pending','tpl_inst_issue_ack','{}'::jsonb,'group',v_group_line_id);
+            RETURN 'issue_created';
+        END IF;
+
+        -- ── (ค) 0177: รูปในกลุ่ม internal → FPR quick-reply intercept ────────
+        --    Replaces 0097's direct rpc_capture_ingest call.
+        --    Technician chooses: "🛒 ซื้อด่วน" → fpr_start postback
+        --                        "📷 เก็บรูปงาน" → room_proof postback → capture
+        IF v_msg_type = 'image' AND v_g.group_type = 'internal' THEN
+            -- Create or reset session (new photo always resets to await_confirm)
+            INSERT INTO public.fpr_line_session
+                (line_group_id, line_user_id, state, photo_ref, webhook_event_id,
+                 project_id, site_code, expires_at)
+            VALUES
+                (v_group_line_id, v_user, 'await_confirm',
+                 p_event #>> '{message,id}',
+                 p_event ->> 'webhookEventId',
+                 v_g.project_id, v_g.site_code,
+                 timezone('utc', now()) + interval '24 hours')
+            ON CONFLICT ON CONSTRAINT fpr_line_session_group_user_uniq DO UPDATE SET
+                state            = 'await_confirm',
+                photo_ref        = EXCLUDED.photo_ref,
+                webhook_event_id = EXCLUDED.webhook_event_id,
+                project_id       = EXCLUDED.project_id,
+                site_code        = EXCLUDED.site_code,
+                pending_amount   = NULL,
+                pending_request_id    = NULL,
+                pending_work_item_id  = NULL,
+                postback_token   = NULL,
+                origin_group_id  = NULL,
+                updated_at       = timezone('utc', now()),
+                expires_at       = timezone('utc', now()) + interval '24 hours';
+
+            -- Quick-reply prompt
+            INSERT INTO public.line_oa_outbound_messages
+                (send_type, status, template_key, slot_values, target_type, target_id)
+            VALUES ('push', 'pending', 'tpl_fpr_photo_received_quickreply',
+                    jsonb_build_object('message_id', p_event #>> '{message,id}'),
+                    'group', v_group_line_id);
+
+            RETURN 'fpr_photo_intercepted';
+        END IF;
+
+        -- (ง) แชทธรรมดา/สื่ออื่น → ไม่เก็บ (PDPA v1 — §8)
+        -- BEGIN plain-ack port
+        IF v_msg_type = 'text' THEN
+            INSERT INTO public.line_oa_outbound_messages
+                (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+            SELECT g.org_id, 'push', 'pending', 'tpl_inst_group_ack', '{}'::jsonb,
+                   'group', v_group_line_id
+            FROM public.line_groups g
+            WHERE g.id = v_g.id AND g.status = 'active';
+            IF FOUND THEN RETURN 'plain_ack_staged'; END IF;
+        END IF;
+        -- END plain-ack port
+        RETURN 'plain_ignored';
+    END IF;
+
+    RETURN 'ignored_event_type';
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- ห้ามล้มทั้ง webhook batch เพราะ event เดียว
+        RETURN 'handler_error:' || SQLERRM;
+END;
 $$;
-
-revoke all on function public.fn_line_handle_group_event(jsonb, text, text) from public;
-
-comment on function public.fn_line_handle_group_event(jsonb, text, text) is
-  '1.8b (line-architecture §3-4): route group events — join/bind(#ผูก)/member sync/leave/#ปัญหา/รูป; plain chat ไม่เก็บ (PDPA); ห้าม raise (คืน handler_error แทน)';
-
-
--- ---------------------------------------------------------------------------
--- (4) rpc_ingest_line_webhook — เพิ่ม group branch (body เดิมจาก 00022 ทุกบรรทัด
---     ยกเว้น: declare 2 ตัว + branch ต้นลูป; เส้นทาง 1:1 เดิมไม่แตะเลย)
--- ---------------------------------------------------------------------------
-set check_function_bodies = off;
 
 create or replace function public.rpc_ingest_line_webhook(
   p_raw_body text,

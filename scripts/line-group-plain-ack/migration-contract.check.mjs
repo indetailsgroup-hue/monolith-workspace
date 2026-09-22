@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const migrationPath = resolve(root, 'supabase/migrations/20270328_line_group_plain_ack.sql');
 
+test('port preserves the latest baseline group handler outside the acknowledgement block', async () => {
+  const sql = await readFile(migrationPath, 'utf8');
+  const baseline = await readFile(resolve(root, 'supabase/migrations/0177_field_purchase_line_flow.sql'), 'utf8');
+  const handler = source => source.match(/create or replace function public\.fn_line_handle_group_event\([\s\S]*?\$\$;/i)?.[0].replace(/\r\n/g, '\n');
+  const actual = handler(sql)?.replace(/        -- BEGIN plain-ack port[\s\S]*?        -- END plain-ack port\n/, '');
+  assert.ok(actual === handler(baseline), 'non-acknowledgement handler behavior must remain byte-for-byte baseline 0177');
+  assert.ok(!/create or replace function public\.fn_line_guard_customer_group/i.test(sql), 'do not replace the existing guard');
+});
+
 test('baseline migration stages one text acknowledgement and keeps a metadata-only receipt', async () => {
   const sql = await readFile(migrationPath, 'utf8');
   assert.match(sql, /tpl_inst_group_ack/);
