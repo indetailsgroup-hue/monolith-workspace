@@ -13,6 +13,10 @@ test('baseline migration stages one text acknowledgement and keeps a metadata-on
   assert.match(sql, /RETURN 'plain_ack_staged'/i);
   assert.match(sql, /v_group_result = 'plain_ack_staged'/);
   assert.match(sql, /case\s+when\s+v_group_result = 'plain_ack_staged'\s+then '\{\}'::jsonb\s+else v_event\s+end/i);
+  assert.match(sql, /insert into public\.line_oa_message_templates\s*\(org_id,\s*template_key,\s*vertical_context/i);
+  assert.match(sql, /'00000000-0000-0000-0000-000000000000'::uuid/);
+  assert.match(sql, /line_oa_outbound_messages\s*\(org_id,\s*send_type/i);
+  assert.match(sql, /line_oa_inbound_messages\s*\(\s*org_id,\s*conversation_id/i);
+  assert.match(sql, /line_oa_audit_log\s*\(\s*org_id,\s*event_type/i);
   assert.doesNotMatch(sql, /0163_line_org_id_function_fix/);
-  assert.doesNotMatch(sql, /org_id\s*,\s*send_type/);
 });

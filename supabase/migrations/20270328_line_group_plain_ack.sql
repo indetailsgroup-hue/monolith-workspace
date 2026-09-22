@@ -29,29 +29,29 @@ alter table public.line_groups add column if not exists vertical_context text nu
 -- (1) Templates ของ bot flows (ผ่าน governance review ใน PR นี้ — ≤200, ไม่มีศัพท์ระบบ, Req 12.2)
 --     bind prompt/ok/fail = audience 'both' (ใช้ได้ทั้งสองกลุ่ม — เนื้อหากลางไม่มีข้อมูลภายใน)
 -- ---------------------------------------------------------------------------
-insert into public.line_oa_message_templates (template_key, vertical_context, body, is_active, audience) values
-  ('tpl_inst_bind_prompt', null,
+insert into public.line_oa_message_templates (org_id, template_key, vertical_context, body, is_active, audience) values
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_prompt', null,
    'สวัสดีครับ 🙏 กลุ่มนี้ยังไม่ได้เชื่อมกับบ้าน — พิมพ์ #ผูก ตามด้วยรหัสบ้าน แล้วตามด้วยคำว่า ทีม หรือ ลูกค้า ได้เลยครับ',
    true, 'both'),
-  ('tpl_inst_bind_ok', null,
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_ok', null,
    'เชื่อมกลุ่มกับบ้านเรียบร้อยแล้วครับ ✅ จากนี้ระบบจะช่วยดูแลการแจ้งเตือนและรับรูปในกลุ่มนี้ครับ',
    true, 'both'),
-  ('tpl_inst_bind_fail', null,
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_bind_fail', null,
    'ผูกกลุ่มไม่สำเร็จครับ 🙏 รหัสอาจไม่ถูกต้อง หมดอายุ หรือสิทธิ์ไม่พอ — ขอรหัสใหม่จากออฟฟิศได้เลยครับ',
    true, 'both'),
-  ('tpl_inst_photo_ack', null,
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_photo_ack', null,
    'รับรูปเข้าระบบแล้วครับ 📷 เข้าไปเลือกห้อง/จุดงานในแอปได้เลยครับ',
    true, 'internal'),
-  ('tpl_inst_issue_ack', null,
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_issue_ack', null,
    'รับเรื่องปัญหาแล้วครับ 🙏 ระบบแจ้งหัวหน้างานให้แล้ว ติดตามสถานะได้ในแอปครับ',
    true, 'internal'),
-  ('tpl_inst_issue_alert', null,
+  ('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_issue_alert', null,
    '🔔 มีปัญหาหน้างานที่ {{project_name}} ครับ: {{detail}} — เข้าไปดูรายละเอียดในระบบได้เลยครับ',
    true, 'internal')
 on conflict on constraint line_oa_message_templates_key_vertical_uniq do nothing;
 
-insert into public.line_oa_message_templates (template_key, vertical_context, body, is_active, audience, message_kind) values
-('tpl_inst_group_ack', null,
+insert into public.line_oa_message_templates (org_id, template_key, vertical_context, body, is_active, audience, message_kind) values
+('00000000-0000-0000-0000-000000000000'::uuid, 'tpl_inst_group_ack', null,
    'รับข้อความแล้วครับ หากต้องการให้ Monolith ดำเนินการ พิมพ์ #ช่วยเหลือ หรือใช้คำสั่งงานได้เลยครับ',
    true, 'both', 'text')
 on conflict on constraint line_oa_message_templates_key_vertical_uniq do nothing;
@@ -134,12 +134,13 @@ declare
   v_desc text;
   v_project record;
   v_capture_id uuid;
+  v_org_id uuid;
 begin
   v_type := p_event ->> 'type';
   v_group_line_id := p_event #>> '{source,groupId}';
   v_user := p_event #>> '{source,userId}';
 
-  select g.id, g.project_id, g.group_type, g.status, g.site_code
+  select g.id, g.project_id, g.group_type, g.status, g.site_code, g.org_id
     into v_g
   from public.line_groups g where g.line_group_id = v_group_line_id;
 
@@ -148,8 +149,8 @@ begin
     if v_g.id is not null then
       return 'join_already_bound';
     end if;
-    insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-    values ('push', 'pending', 'tpl_inst_bind_prompt', '{}'::jsonb, 'group', v_group_line_id);
+    insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+    values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_prompt', '{}'::jsonb, 'group', v_group_line_id);
     return 'join_prompted';
   end if;
 
@@ -197,8 +198,8 @@ begin
     -- (ก) '#ผูก <code> <ทีม|ลูกค้า>' — ทำงานเฉพาะกลุ่มที่ยังไม่ผูก
     if v_msg_type = 'text' and btrim(coalesce(p_event #>> '{message,text}', '')) like '#ผูก%' then
       if v_g.id is not null then
-        insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-        values ('push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
+        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+        values (coalesce(v_g.org_id, '00000000-0000-0000-0000-000000000000'::uuid), 'push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
         return 'bind_already_bound';
       end if;
 
@@ -209,8 +210,8 @@ begin
       if v_user is null
          or not exists (select 1 from public.identity_binding b where b.line_user_id = v_user and b.is_active)
          or array_length(v_parts, 1) < 3 or v_group_type is null then
-        insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-        values ('push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
+        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+        values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
         return 'bind_failed_identity_or_format';
       end if;
 
@@ -220,12 +221,12 @@ begin
       for update;
 
       if v_code.code is null then
-        insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-        values ('push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
+        insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+        values ('00000000-0000-0000-0000-000000000000'::uuid, 'push', 'pending', 'tpl_inst_bind_fail', '{}'::jsonb, 'group', v_group_line_id);
         return 'bind_failed_code';
       end if;
 
-      select p.id, p.site_code, p.name into v_project
+      select p.id, p.site_code, p.name, p.org_id into v_project
       from public.installation_projects p where p.id = v_code.project_id;
 
       insert into public.line_groups (line_group_id, project_id, site_code, group_type, vertical_context, bound_by)
@@ -235,8 +236,8 @@ begin
       select g.id, v_user, 'staff' from public.line_groups g where g.line_group_id = v_group_line_id
       on conflict (group_id, line_user_id) where left_at is null do nothing;
 
-      insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-      values ('push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
+      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+      values (coalesce(v_project.org_id, '00000000-0000-0000-0000-000000000000'::uuid), 'push', 'pending', 'tpl_inst_bind_ok', '{}'::jsonb, 'group', v_group_line_id);
       return 'bound_' || v_group_type;
     end if;
 
@@ -264,8 +265,8 @@ begin
           false, null, true, null, v_g.site_code);
       end if;
 
-      insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-      values ('push', 'pending', 'tpl_inst_issue_ack', '{}'::jsonb, 'group', v_group_line_id);
+      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+      values (v_g.org_id, 'push', 'pending', 'tpl_inst_issue_ack', '{}'::jsonb, 'group', v_group_line_id);
       return 'issue_created';
     end if;
 
@@ -276,8 +277,8 @@ begin
         'line-message://' || coalesce(p_event #>> '{message,id}', 'unknown'),
         p_event ->> 'webhookEventId',
         v_g.site_code);
-      insert into public.line_oa_outbound_messages (send_type, status, template_key, slot_values, target_type, target_id)
-      values ('push', 'pending', 'tpl_inst_photo_ack', '{}'::jsonb, 'group', v_group_line_id);
+      insert into public.line_oa_outbound_messages (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+      values (v_g.org_id, 'push', 'pending', 'tpl_inst_photo_ack', '{}'::jsonb, 'group', v_group_line_id);
       return 'photo_captured';
     end if;
 
@@ -285,8 +286,8 @@ begin
     -- Ordinary text stages one shared acknowledgement; other media remain ignored.
     if v_msg_type = 'text' then
       insert into public.line_oa_outbound_messages
-        (send_type, status, template_key, slot_values, target_type, target_id)
-      values ('push', 'pending', 'tpl_inst_group_ack', '{}'::jsonb, 'group', v_group_line_id);
+        (org_id, send_type, status, template_key, slot_values, target_type, target_id)
+      values (v_g.org_id, 'push', 'pending', 'tpl_inst_group_ack', '{}'::jsonb, 'group', v_group_line_id);
       return 'plain_ack_staged';
     end if;
 
@@ -441,6 +442,11 @@ begin
     -- -----------------------------------------------------------------------
     v_group_id := v_event #>> '{source,groupId}';
     if v_group_id is not null then
+      select coalesce(g.org_id, '00000000-0000-0000-0000-000000000000'::uuid)
+        into v_org_id
+      from public.line_groups g
+      where g.line_group_id = v_group_id;
+      v_org_id := coalesce(v_org_id, '00000000-0000-0000-0000-000000000000'::uuid);
       if v_webhook_event_id is null or length(btrim(v_webhook_event_id)) = 0 then
         events_skipped := events_skipped + 1;
         continue;
@@ -458,19 +464,19 @@ begin
           events_skipped := events_skipped + 1;
         else
           insert into public.line_oa_inbound_messages (
-            conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
+            org_id, conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
           )
           values (
-            null, v_webhook_event_id,
+            v_org_id, null, v_webhook_event_id,
             case when v_group_result = 'plain_ack_staged' then '{}'::jsonb else v_event end,
             timezone('utc', now()), 'group', v_group_id
           );
 
           insert into public.line_oa_audit_log (
-            event_type, vertical_context, site_code, entity_ref, performed_by
+            org_id, event_type, vertical_context, site_code, entity_ref, performed_by
           )
           values (
-            'group_event', v_vertical_context, null,
+            v_org_id, 'group_event', v_vertical_context, null,
             format('webhook_event_id:%s|line_group_id:%s|result:%s', v_webhook_event_id, v_group_id, v_group_result),
             v_actor
           );
