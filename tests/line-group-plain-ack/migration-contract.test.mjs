@@ -18,5 +18,7 @@ test('baseline migration stages one text acknowledgement and keeps a metadata-on
   assert.match(sql, /line_oa_outbound_messages\s*\(org_id,\s*send_type/i);
   assert.match(sql, /line_oa_inbound_messages\s*\(\s*org_id,\s*conversation_id/i);
   assert.match(sql, /line_oa_audit_log\s*\(\s*org_id,\s*event_type/i);
+  const rpc = sql.slice(sql.indexOf('create or replace function public.rpc_ingest_line_webhook'));
+  assert.match(rpc, /v_org_id\s+uuid;/i);
   assert.doesNotMatch(sql, /0163_line_org_id_function_fix/);
 });

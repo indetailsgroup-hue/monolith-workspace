@@ -348,6 +348,7 @@ declare
   -- 1.8b group branch (0097)
   v_group_id             text;
   v_group_result         text;
+  v_org_id               uuid;
 begin
   -- Initialize OUT counters.
   accepted         := false;
