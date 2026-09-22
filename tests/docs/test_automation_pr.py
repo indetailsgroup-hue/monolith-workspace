@@ -58,8 +58,13 @@ class AutomationPRTests(unittest.TestCase):
             env['COMMIT_SHA']='b'*40;run()
             self.assertIn('a'*40,path.read_text(encoding='utf-8'));self.assertIn('b'*40,path.read_text(encoding='utf-8'))
 
-    def test_cache_only_pr_runs_required_docs_check(self):
+    def test_every_main_pr_runs_required_docs_check(self):
         w=workflow('deploy-docs-ci.yml')
-        self.assertIn('.github/chapter-cache.json',w['on']['pull_request']['paths'])
+        trigger=w['on']['pull_request']
+        self.assertEqual(trigger['branches'],['main'])
+        # Required checks must report for cache-only and product-only PRs too.
+        self.assertNotIn('paths',trigger)
+        self.assertNotIn('paths-ignore',trigger)
+        self.assertNotIn('if',w['jobs']['validate'])
 
 if __name__=='__main__':unittest.main()
