@@ -33,7 +33,7 @@ def lighthouse_steps():
 class LighthouseTests(unittest.TestCase):
     def test_followup_workflows_watch_actual_deploy_name(self):
         deployed = yaml.load((WORKFLOWS / 'deploy-docs-pages.yml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)['name']
-        for name in ['lighthouse-audit.yml', 'notify-slack-deploy.yml']:
+        for name in ['lighthouse-audit.yml', 'notify-line-deploy.yml']:
             with self.subTest(workflow=name):
                 workflow = yaml.load((WORKFLOWS / name).read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
                 self.assertIn(deployed, workflow['on']['workflow_run']['workflows'])
@@ -75,7 +75,7 @@ assert.equal(calls.length,1);assert.equal(calls[0][0],EXPECTED);assert.equal(cal
 
 class AllDocumentationShellTests(unittest.TestCase):
     def test_all_nine_workflows_parse_and_shell_scripts_compile(self):
-        names=['deploy-docs-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','notify-slack-deploy','lighthouse-audit','generate-site-data','auto-deploy-scispace','validate-chapter-frontmatter']
+        names=['deploy-docs-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','notify-line-deploy','lighthouse-audit','generate-site-data','auto-deploy-scispace','validate-chapter-frontmatter']
         for name in names:
             workflow=yaml.load((WORKFLOWS/(name+'.yml')).read_text(encoding='utf-8'),Loader=yaml.BaseLoader)
             for job in workflow['jobs'].values():

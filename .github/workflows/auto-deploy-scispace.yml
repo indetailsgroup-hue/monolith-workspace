@@ -214,44 +214,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      # ── Step 7: Slack notification ────────────────────────────────────────────
-      - name: Notify Slack on deploy success
-        if: success() && env.SLACK_WEBHOOK_URL != ''
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          PAGE_URL="${{ steps.deployment.outputs.page_url }}"
-          TRIGGER_SOURCE="${{ needs.check-trigger.outputs.trigger_source }}"
-          CHAPTER_COUNT="${{ steps.validate_chapters.outputs.chapter_count }}"
-          SEARCH_COUNT="${{ steps.validate_search.outputs.search_count }}"
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          PAYLOAD=$(cat <<EOF
-          {
-            "text": ":rocket: *Monolith Manufacturing OS — Deployed Successfully*",
-            "attachments": [
-              {
-                "color": "#28a745",
-                "fields": [
-                  {"title": "GitHub Pages", "value": "<${PAGE_URL}|Open Site>", "short": true},
-                  {"title": "SciSpace Site", "value": "<https://0ly1b489.scispace.co|Open SciSpace>", "short": true},
-                  {"title": "Trigger", "value": "\`${TRIGGER_SOURCE}\`", "short": true},
-                  {"title": "Chapters", "value": "${CHAPTER_COUNT}", "short": true},
-                  {"title": "Search Entries", "value": "${SEARCH_COUNT}", "short": true},
-                  {"title": "Workflow Run", "value": "<${RUN_URL}|View Run>", "short": true}
-                ],
-                "footer": "monolith-workspace · GitHub Actions",
-                "ts": $(date +%s)
-              }
-            ]
-          }
-          EOF
-          )
-
-          curl -fsSL -X POST \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL" || echo "::warning::Slack notification failed (non-fatal)"
+      # LINE notifications run separately in notify-line-deploy.yml.
 
       # ── Step 8: Job summary ───────────────────────────────────────────────────
       - name: Write deployment summary
